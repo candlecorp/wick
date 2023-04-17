@@ -5,7 +5,7 @@ use std::str::FromStr;
 use flow_expression_parser::parse::{NS_LINK, SCHEMATIC_OUTPUT, SENDER_ID, SENDER_PORT};
 use serde_json::Value;
 use tracing::debug;
-use wick_config::component_config::CompositeComponentConfiguration;
+use wick_config::component_config::CompositeComponentImplementation;
 use wick_config::config::{ComponentImplementation, ConnectionTargetDefinition};
 use wick_config::error::ManifestError;
 use wick_config::*;
@@ -15,7 +15,7 @@ async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
   WickConfiguration::load_from_file(path).await
 }
 
-async fn load_component(path: &str) -> Result<CompositeComponentConfiguration, ManifestError> {
+async fn load_component(path: &str) -> Result<CompositeComponentImplementation, ManifestError> {
   Ok(load(path).await?.try_component_config()?.try_composite()?.clone())
 }
 

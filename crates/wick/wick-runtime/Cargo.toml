@@ -58,6 +58,6 @@ anyhow = { workspace = true }
 futures = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
-tokio = { workspace = true, features = ["time"] }
-reqwest = { workspace = true, default-features = false }
+tokio = { workspace = true, features = ["time", "rt-multi-thread", "macros"] }
+reqwest = { workspace = true }
 wasmrs-codec = { workspace = true }

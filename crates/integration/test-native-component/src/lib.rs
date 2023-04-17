@@ -126,6 +126,7 @@ mod tests {
     assert_eq!(response.len(), 1);
     let expected = ComponentSignature {
       name: Some("test-native-component".to_owned()),
+      metadata: ComponentMetadata::new("0.1.0"),
       operations: vec![
         OperationSignature {
           name: "error".to_string(),

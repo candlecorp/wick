@@ -2,7 +2,7 @@ mod test;
 
 use anyhow::Result;
 use pretty_assertions::assert_eq;
-use wick_packet::{packets, CollectionLink, Entity, Packet};
+use wick_packet::{packets, ComponentReference, Entity, Packet};
 
 #[test_logger::test(tokio::test)]
 async fn test_echo() -> Result<()> {
@@ -29,12 +29,12 @@ async fn test_echo() -> Result<()> {
 async fn test_call_component() -> Result<()> {
   let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v1/component-call.yaml",
-    "test",
+    "testop",
     packets!(
       ("message", "Hello world!"),
       (
         "component",
-        CollectionLink::new(Entity::test("call_component").to_string(), "test")
+        ComponentReference::new(Entity::test("call_component"), Entity::component("test"))
       )
     ),
   )

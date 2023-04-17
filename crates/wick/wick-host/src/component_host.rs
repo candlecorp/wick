@@ -13,7 +13,7 @@ use wick_config::config::ComponentConfiguration;
 use wick_config::WickConfiguration;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, InherentData, Invocation, PacketStream};
-use wick_runtime::{Engine, EngineBuilder, EngineComponent};
+use wick_runtime::{EngineComponent, Runtime, RuntimeBuilder};
 
 use crate::{Error, Result};
 
@@ -31,7 +31,7 @@ fn from_registry(id: Uuid) -> SharedComponent {
 #[derive(Debug)]
 pub struct ComponentHost {
   id: String,
-  engine: Option<Engine>,
+  engine: Option<Runtime>,
   manifest: ComponentConfiguration,
   server_metadata: Option<ServerState>,
 }
@@ -79,7 +79,7 @@ impl ComponentHost {
     }
   }
 
-  pub fn get_engine(&self) -> Result<&Engine> {
+  pub fn get_engine(&self) -> Result<&Runtime> {
     self.engine.as_ref().ok_or(Error::NoEngine)
   }
 
@@ -93,7 +93,7 @@ impl ComponentHost {
       crate::Error::InvalidHostState("Host already has a engine running".into())
     );
 
-    let mut engine_builder = EngineBuilder::from_definition(self.manifest.clone())?;
+    let mut engine_builder = RuntimeBuilder::from_definition(self.manifest.clone())?;
     if let Some(seed) = seed {
       engine_builder = engine_builder.with_seed(seed);
     }

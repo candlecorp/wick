@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=../../wick/wick-config/json-schema/manifest.json
 ---
-name: test-component
+name: test-cli-with-db
 kind: wick/component@v1
 metadata:
   version: '1'
 component:
   kind: wick/component/wasmrs@v1
-  ref: ./build/test_cli_trigger_component.signed.wasm
+  ref: ./build/test_cli_with_db.signed.wasm
   requires:
     - name: db
       interface:
@@ -16,8 +16,8 @@ component:
               - name: id
                 type: u32
             outputs:
-              - name: name
-                type: string
+              - name: output
+                type: object
   types:
     - type: struct
       name: Interactive

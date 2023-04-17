@@ -114,7 +114,7 @@ enum TypeSignature {
   Optional = 18,
   "A HashMap-like type."
   Map = 19,
-  "A type representing a CollectionLink."
+  "A type representing a ComponentReference."
   Link = 20,
   "A JSON-like key/value map."
   Struct = 21,

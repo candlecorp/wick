@@ -41,15 +41,6 @@ macro_rules! payload_stream {
 
 #[macro_export]
 macro_rules! handle_port {
-  // ($packet:ident, $tx:ident, $subtx:ident, $port:expr, WickStream<$ty:ty> ) => {{
-  //   use $crate::wasmrs_rx::Observer;
-  //   if $packet.extra.is_done() {
-  //     $tx.complete();
-  //   } else {
-  //     let packet: Result<$ty, _> = $packet.deserialize().map_err(|e| e.into());
-  //     let _ = $tx.send_result(packet);
-  //   }
-  // }};
   (raw: true, $packet:ident, $tx:ident, $port:expr, $ty:ty) => {{
     use $crate::wasmrs_rx::Observer;
     if $packet.is_done() {
@@ -77,7 +68,7 @@ macro_rules! payload_fan_out {
           $crate::paste::paste! {
             $(
               #[allow(unused_parens)]
-              let ([<$port:snake _tx>],[<$port:snake _rx>]) = $crate::wasmrs_rx::FluxChannel::new_parts();
+              let ([<$port:snake _tx>],[<$port:snake _rx>]) = $crate::wasmrs_rx::FluxChannel::<_,$crate::anyhow::Error>::new_parts();
             )*
           }
         $crate::runtime::spawn(async move {
@@ -96,10 +87,41 @@ macro_rules! payload_fan_out {
             }
           }
         });
-        $crate::paste::paste! {($([<$port:snake _rx>]),*)}
+        $crate::paste::paste! {($(Box::pin([<$port:snake _rx>])),*)}
         }
     };
 }
+
+// #[macro_export]
+// macro_rules! packet_fan_out {
+//     ($stream:expr, raw:$raw:tt, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
+//       {
+//           $crate::paste::paste! {
+//             $(
+//               #[allow(unused_parens)]
+//               let ([<$port:snake _tx>],[<$port:snake _rx>]) = $crate::wasmrs_rx::FluxChannel::<_,$crate::anyhow::Error>::new_parts();
+//             )*
+//           }
+//         $crate::runtime::spawn(async move {
+
+//           use $crate::StreamExt;
+//           while let Some(Ok( payload)) = $stream.next().await {
+//             let packet: $crate::packet::Packet = payload.into();
+//             match packet.port() {
+//               $(
+//                 $port=> {
+//                   let tx = &$crate::paste::paste! {[<$port:snake _tx>]};
+//                   $crate::handle_port!(raw: $raw, packet, tx, $port, $($ty)*)
+//                 },
+//               )*
+//               _ => panic!("Unexpected port: {}", packet.port())
+//             }
+//           }
+//         });
+//         $crate::paste::paste! {($(Box::pin([<$port:snake _rx>])),*)}
+//         }
+//     };
+// }
 
 #[cfg(test)]
 mod test {
@@ -113,8 +135,7 @@ mod test {
   async fn test_basic() -> Result<()> {
     let mut stream: FluxReceiver<Packet, PayloadError> =
       payload_stream!(("foo", 1), ("bar", 2), ("foo", 3), ("bar", 4), ("foo", 5), ("bar", 6));
-    let (mut foo_rx, mut bar_rx): (FluxReceiver<i32, anyhow::Error>, FluxReceiver<i32, anyhow::Error>) =
-      payload_fan_out!(stream, raw: false, [("foo", i32), ("bar", i32)]);
+    let (mut foo_rx, mut bar_rx) = payload_fan_out!(stream, raw: false, [("foo", i32), ("bar", i32)]);
     assert_eq!(foo_rx.next().await.unwrap().unwrap(), 1);
     assert_eq!(bar_rx.next().await.unwrap().unwrap(), 2);
     assert_eq!(foo_rx.next().await.unwrap().unwrap(), 3);

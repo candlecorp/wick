@@ -18,7 +18,7 @@ use crate::resources::Resource;
 use crate::triggers::resolve_ref;
 
 async fn invoke_operation(
-  network: Arc<crate::Network>,
+  runtime: Arc<crate::Runtime>,
   operation: Arc<String>,
   payload: Arc<Vec<config::OperationInputConfig>>,
 ) -> Result<(), RuntimeError> {
@@ -30,12 +30,12 @@ async fn invoke_operation(
   let packetstream: PacketStream = packets.into();
 
   let invocation = Invocation::new(
-    Entity::client("schedule_client"),
+    Entity::server("schedule_client"),
     Entity::operation("0", operation.as_str()),
     None,
   );
 
-  let mut response = network.invoke(invocation, packetstream).await?;
+  let mut response = runtime.invoke(invocation, packetstream).await?;
   while let Some(packet) = response.next().await {
     trace!(?packet, "trigger:time:response");
   }
@@ -54,13 +54,13 @@ async fn create_schedule(
       Err(err) => panic!("Unable to resolve component: {}", err),
     };
 
-    let mut network = crate::NetworkBuilder::new();
+    let mut runtime = crate::RuntimeBuilder::new();
     let schedule_binding = config::BoundComponent::new("0", schedule_component);
-    network = network.add_import(schedule_binding);
+    runtime = runtime.add_import(schedule_binding);
     // needed for invoke command
-    let network = network.build().await.unwrap();
+    let runtime = runtime.build().await.unwrap();
 
-    let network = Arc::new(network);
+    let runtime = Arc::new(runtime);
     let operation = Arc::new(config.operation().to_owned());
     let payload = Arc::new(config.payload().clone());
 
@@ -84,11 +84,11 @@ async fn create_schedule(
 
       debug!("done sleeping");
 
-      let network_clone = network.clone();
+      let rt_clone = runtime.clone();
       let operation_clone = operation.clone();
       let payload_clone = payload.clone();
 
-      let fut = invoke_operation(network_clone, operation_clone, payload_clone);
+      let fut = invoke_operation(rt_clone, operation_clone, payload_clone);
       tokio::spawn(async move {
         if let Err(e) = fut.await {
           error!("Error invoking operation: {}", e);

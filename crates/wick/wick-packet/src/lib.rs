@@ -88,7 +88,7 @@ mod packet_stream;
 mod stream_map;
 mod wrapped_type;
 
-pub use collection_link::CollectionLink;
+pub use collection_link::ComponentReference;
 pub use entity::Entity;
 pub use error::{Error, ParseError};
 pub use inherent::InherentData;
@@ -96,7 +96,7 @@ pub use inherent::InherentData;
 pub use invocation::Invocation;
 pub use metadata::{Flags, WickMetadata, CLOSE_BRACKET, DONE_FLAG, OPEN_BRACKET};
 pub use output::Output;
-pub use packet::{from_wasmrs, into_wasmrs, Packet, PacketError, PacketPayload};
+pub use packet::{from_raw_wasmrs, from_wasmrs, into_wasmrs, Packet, PacketError, PacketPayload};
 pub use packet_stream::{PacketSender, PacketStream};
 pub use stream_map::StreamMap;
 pub use wasmrs::Metadata;

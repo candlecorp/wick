@@ -6,7 +6,7 @@ metadata:
 component:
   kind: wick/component/composite@v1
   operations:
-    - name: test
+    - name: testop
       instances:
         - name: call
           operation: test::call

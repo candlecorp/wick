@@ -150,7 +150,7 @@ impl Interpreter {
 
   async fn invoke_operation(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
     let dispatcher = self.dispatcher.clone();
-    let name = invocation.target.name().to_owned();
+    let name = invocation.target.operation_id().to_owned();
     let op = self
       .program
       .operations()

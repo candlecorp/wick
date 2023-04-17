@@ -1,8 +1,8 @@
 use std::io::{self, BufRead, BufReader};
 
 use wasmrs_guest::StreamExt;
-use wick_component::packet::CollectionLink;
-
+// mod generated;
+// use generated as wick;
 mod wick {
   wick_component::wick_import!();
 }
@@ -14,12 +14,9 @@ impl OpMain for Component {
   async fn main(
     mut args: WickStream<Vec<String>>,
     mut is_interactive: WickStream<Interactive>,
-    mut program: WickStream<Option<CollectionLink>>,
     mut outputs: OpMainOutputs,
   ) -> Result<()> {
-    while let (Some(Ok(args)), Some(Ok(tty)), Some(Ok(_app))) =
-      (args.next().await, is_interactive.next().await, program.next().await)
-    {
+    while let (Some(Ok(args)), Some(Ok(tty))) = (args.next().await, is_interactive.next().await) {
       // let stream = app.call("hello", PacketStream::default()).await.unwrap();
 
       println!(

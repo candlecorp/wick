@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde_json::Value;
 
 use crate::config;
@@ -14,6 +16,9 @@ pub struct WasmComponent {
   /// Permissions for this collection
   #[asset(skip)]
   pub permissions: Permissions,
+  /// The components to provide to the referenced component.
+  #[asset(skip)]
+  pub provide: HashMap<String, String>,
 }
 
 /// The permissions object for a collection
@@ -21,5 +26,5 @@ pub struct WasmComponent {
 pub struct Permissions {
   /// A map of directories (Note: TO -> FROM) to expose to the collection.
   #[serde(default)]
-  pub dirs: std::collections::HashMap<String, String>,
+  pub dirs: HashMap<String, String>,
 }

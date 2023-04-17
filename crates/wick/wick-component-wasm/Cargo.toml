@@ -14,12 +14,12 @@ wasmrs-rx = { workspace = true }
 wasmrs-host = { workspace = true }
 wasmrs-wasmtime = { workspace = true }
 wasmrs-codec = { workspace = true }
-flow-component = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-rpc = { workspace = true }
 wick-wascap = { workspace = true }
 wick-config = { workspace = true }
+flow-component = { workspace = true }
 seeded-random = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
 parking_lot = { workspace = true }

@@ -16,7 +16,7 @@ use super::{resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
 use crate::triggers::http::service_factory::ServiceFactory;
-use crate::Engine;
+use crate::Runtime;
 
 #[derive(Debug, thiserror::Error)]
 enum HttpError {
@@ -42,7 +42,7 @@ struct HttpInstance {
 }
 
 impl HttpInstance {
-  async fn new(engine: Engine, routers: Vec<HttpRouter>, socket: &SocketAddr) -> Self {
+  async fn new(engine: Runtime, routers: Vec<HttpRouter>, socket: &SocketAddr) -> Self {
     trace!(%socket,"http server starting");
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
 
@@ -107,7 +107,7 @@ impl Http {
     config: config::HttpTriggerConfig,
     socket: &SocketAddr,
   ) -> Result<HttpInstance, RuntimeError> {
-    let mut engine = crate::EngineBuilder::new();
+    let mut engine = crate::RuntimeBuilder::new();
     let mut routers = Vec::new();
     for (i, router) in config.routers().iter().enumerate() {
       let router = match router {
@@ -195,17 +195,6 @@ mod test {
   use anyhow::Result;
 
   use super::*;
-
-  #[test_logger::test(tokio::test)]
-  async fn test_decode() -> Result<()> {
-    let request=b"\x88\xa6method\xa3Get\xa6scheme\xa4Http\xa9authority\xa0\xb0query_parameters\x80\xa4path\xa1/\xa3uri\xa1/\xa7version\xa6Http11\xa7headers\x82\xa6accept\x91\xa3*/*\xa4host\x91\xac0.0.0.0:8888";
-    let req: wick_interface_http::HttpRequest = wasmrs_codec::messagepack::deserialize(request).unwrap();
-    assert_eq!(req.path, "/");
-    let response = b"\x83\xa7version\xa6Http11\xa6status\xa2Ok\xa7headers\x80";
-    let res: wick_interface_http::HttpResponse = wasmrs_codec::messagepack::deserialize(response).unwrap();
-    assert_eq!(res.status, wick_interface_http::StatusCode::Ok);
-    Ok(())
-  }
 
   #[test_logger::test(tokio::test)]
   async fn test_basic() -> Result<()> {

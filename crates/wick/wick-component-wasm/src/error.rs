@@ -12,6 +12,9 @@ pub enum WasmCollectionError {
   #[error(transparent)]
   WasmRS(#[from] wasmrs::Error),
 
+  #[error("Setup failed: {}", .0.msg)]
+  Setup(wasmrs::PayloadError),
+
   #[error(transparent)]
   IoError(#[from] std::io::Error),
 
@@ -29,6 +32,9 @@ pub enum WasmCollectionError {
 
   #[error("Operation '{0}' not found. Valid operations are: {}", .1.join(", "))]
   OperationNotFound(String, Vec<String>),
+
+  #[error("Operation '__setup' not exported by the wasm module.")]
+  SetupOperation,
 }
 
 impl From<serde_json::error::Error> for WasmCollectionError {

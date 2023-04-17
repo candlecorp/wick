@@ -12,7 +12,7 @@ use tokio::task::JoinHandle;
 use tracing::trace;
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::{ComponentSignature, OperationSignature, TypeSignature};
-use wick_packet::{fan_out, packet_stream, CollectionLink, Invocation, Packet, PacketPayload, PacketStream};
+use wick_packet::{fan_out, packet_stream, ComponentReference, Invocation, Packet, PacketStream};
 
 pub struct TestComponent(ComponentSignature);
 impl TestComponent {
@@ -182,7 +182,7 @@ impl Component for TestComponent {
     _config: Option<Value>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let operation = invocation.target.name();
+    let operation = invocation.target.operation_id();
     println!("got op {} in echo test collection", operation);
     Box::pin(async move { Ok(handler(invocation, stream, callback)?) })
   }
@@ -197,7 +197,7 @@ fn handler(
   mut payload_stream: PacketStream,
   callback: Arc<RuntimeCallback>,
 ) -> anyhow::Result<PacketStream> {
-  let operation = invocation.target.name();
+  let operation = invocation.target.operation_id();
   match operation {
     "echo" => {
       let (mut send, stream) = stream(1);
@@ -220,7 +220,8 @@ fn handler(
         let (mut message, mut component) = fan_out!(payload_stream, "message", "component");
         println!("got echo: waiting for payload");
         while let (Some(Ok(message)), Some(Ok(component))) = (message.next().await, component.next().await) {
-          let link: CollectionLink = component.deserialize().unwrap();
+          println!("got echo: got compref: {:?}", component.payload());
+          let link: ComponentReference = component.deserialize().unwrap();
           let message: String = message.deserialize().unwrap();
           let packets = packet_stream!(("input", message));
           let mut response = callback(link, "reverse".to_owned(), packets, None).await.unwrap();
@@ -282,18 +283,14 @@ fn handler(
       let (mut send, stream) = stream(1);
       let task = async move {
         while let (Some(input), Some(times)) = (input.next().await, times.next().await) {
-          let input = input?;
-          let times = times?;
-          if let (PacketPayload::Ok(Some(input)), PacketPayload::Ok(Some(times))) = (input.payload, times.payload) {
-            let input: String = wasmrs_codec::messagepack::deserialize(&input)?;
-            let times: u64 = wasmrs_codec::messagepack::deserialize(&times)?;
-            let mut messages = Vec::new();
-            for _ in 0..times {
-              messages.push(send(Packet::encode("output", &input)));
-            }
-            messages.push(send(Packet::done("output")));
-            defer(messages);
+          let input: String = input?.deserialize()?;
+          let times: u64 = times?.deserialize()?;
+          let mut messages = Vec::new();
+          for _ in 0..times {
+            messages.push(send(Packet::encode("output", &input)));
           }
+          messages.push(send(Packet::done("output")));
+          defer(messages);
         }
         Ok::<_, wick_packet::Error>(())
       };
@@ -305,28 +302,25 @@ fn handler(
       let (mut send, stream) = stream(1);
       let task = async move {
         while let Some(input) = input.next().await {
-          let input = input?;
-          if let PacketPayload::Ok(Some(input)) = input.payload {
-            let input: String = wasmrs_codec::messagepack::deserialize(&input)?;
-            let vowels: Vec<_> = input
-              .chars()
-              .filter(|c| matches!(c, 'a' | 'e' | 'i' | 'o' | 'u'))
-              .collect();
-            let rest: Vec<_> = input
-              .chars()
-              .filter(|c| !matches!(c, 'a' | 'e' | 'i' | 'o' | 'u'))
-              .collect();
+          let input: String = input?.deserialize()?;
+          let vowels: Vec<_> = input
+            .chars()
+            .filter(|c| matches!(c, 'a' | 'e' | 'i' | 'o' | 'u'))
+            .collect();
+          let rest: Vec<_> = input
+            .chars()
+            .filter(|c| !matches!(c, 'a' | 'e' | 'i' | 'o' | 'u'))
+            .collect();
 
-            let mut vowel_packets = vowels.iter().map(|v| Packet::encode("vowels", v)).collect::<Vec<_>>();
-            vowel_packets.push(Packet::done("vowels"));
+          let mut vowel_packets = vowels.iter().map(|v| Packet::encode("vowels", v)).collect::<Vec<_>>();
+          vowel_packets.push(Packet::done("vowels"));
 
-            let mut rest_packets = rest.iter().map(|v| Packet::encode("rest", v)).collect::<Vec<_>>();
-            rest_packets.push(Packet::done("rest"));
-            println!("{:#?}", vowel_packets);
-            println!("{:#?}", rest_packets);
-            defer(vowel_packets.into_iter().map(&mut send).collect());
-            defer(rest_packets.into_iter().map(&mut send).collect());
-          }
+          let mut rest_packets = rest.iter().map(|v| Packet::encode("rest", v)).collect::<Vec<_>>();
+          rest_packets.push(Packet::done("rest"));
+          println!("{:#?}", vowel_packets);
+          println!("{:#?}", rest_packets);
+          defer(vowel_packets.into_iter().map(&mut send).collect());
+          defer(rest_packets.into_iter().map(&mut send).collect());
         }
         Ok::<_, wick_packet::Error>(())
       };
@@ -417,7 +411,7 @@ fn handler(
     //   Ok(stream)
     // }
     // "ref_to_string" => {
-    //   let link: CollectionLink = invocation.payload.take("link").unwrap();
+    //   let link: ComponentReference = invocation.payload.take("link").unwrap();
     //   let result = link.to_string();
 
     //   let (mut send, stream) = stream(1);

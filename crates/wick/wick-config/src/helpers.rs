@@ -1,11 +1,27 @@
 use std::collections::HashMap;
 
+use serde::{Deserialize, Deserializer};
 use serde_json::Value;
+
+pub(crate) fn with_expand_envs_string<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  let val = String::deserialize(deserializer)?;
+  #[allow(clippy::option_if_let_else)]
+  match shellexpand::env(&val) {
+    Ok(value) => match value.parse::<String>() {
+      Ok(value) => Ok(value),
+      Err(_) => Ok(value.into_owned()),
+    },
+    Err(_) => Ok(val),
+  }
+}
 
 #[allow(clippy::too_many_lines)]
 pub(crate) fn deserialize_json_env<'de, D>(deserializer: D) -> Result<Value, D::Error>
 where
-  D: serde::de::Deserializer<'de>,
+  D: Deserializer<'de>,
 {
   // define a visitor that deserializes
   // `ActualData` encoded as json within a string
@@ -164,7 +180,7 @@ where
 
     fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
-      D: serde::Deserializer<'de>,
+      D: Deserializer<'de>,
     {
       deserializer.deserialize_any(self)
     }
@@ -216,7 +232,7 @@ fn expand(value: String) -> Result<String, shellexpand::LookupError<std::env::Va
 
 pub(crate) fn kv_deserializer<'de, D>(deserializer: D) -> Result<HashMap<String, String>, D::Error>
 where
-  D: serde::de::Deserializer<'de>,
+  D: Deserializer<'de>,
 {
   struct HashMapVisitor;
 

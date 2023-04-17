@@ -33,6 +33,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
   let app_config = WickConfiguration::load_from_file(&opts.path).await?.try_app_config()?;
   let mut host = AppHostBuilder::from_definition(app_config.clone()).build();
   host.start(opts.seed)?;
+  debug!("Waiting on triggers to finish or interrupt...");
   host.wait_for_done().await?;
 
   Ok(())

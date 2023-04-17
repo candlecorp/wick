@@ -57,14 +57,14 @@ wick-interface-http = { path = "./crates/interfaces/wick-interface-http", versio
 # crates/components
 wick-sqlx = { path = "./crates/components/wick-sqlx", version = "0.1.0" }
 # wasmrs
-wasmrs = { version = "0.8" }
-wasmrs-codec = { version = "0.8" }
-wasmrs-frames = { version = "0.8" }
-wasmrs-guest = { version = "0.8" }
-wasmrs-host = { version = "0.8" }
-wasmrs-runtime = { version = "0.8" }
-wasmrs-rx = { version = "0.8" }
-wasmrs-wasmtime = { version = "0.8" }
+wasmrs = { version = "0.9" }
+wasmrs-codec = { version = "0.9" }
+wasmrs-frames = { version = "0.9" }
+wasmrs-guest = { version = "0.9" }
+wasmrs-host = { version = "0.9" }
+wasmrs-runtime = { version = "0.9" }
+wasmrs-rx = { version = "0.9" }
+wasmrs-wasmtime = { version = "0.9" }
 # wasmrs = { path = "../wasmrs-rust/crates/wasmrs" }
 # wasmrs-rx = { path = "../wasmrs-rust/crates/wasmrs-rx" }
 # wasmrs-frames = { path = "../wasmrs-rust/crates/wasmrs-frames" }

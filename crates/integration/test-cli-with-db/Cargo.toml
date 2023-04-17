@@ -1,5 +1,5 @@
 [package]
-name = "test-cli-trigger-component"
+name = "test-cli-with-db"
 version = "0.1.0"
 edition = "2021"
 
@@ -16,13 +16,14 @@ panic = "abort"
 crate-type = ["cdylib"]
 
 [dependencies]
-wasmrs-guest = { version = "0.8", features = [
+wasmrs-guest = { version="0.9", features = [
 ] }
 wick-component = { path = "../../wick/wick-component" }
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"
 futures = "0.3"
 once_cell="1.17"
+console="0.15"
 
 [build-dependencies]
 wick-component-codegen = { path = "../../wick/wick-component-codegen"}

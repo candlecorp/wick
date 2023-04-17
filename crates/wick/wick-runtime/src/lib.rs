@@ -94,18 +94,18 @@ pub(crate) mod test;
 mod components;
 pub(crate) mod dev;
 mod dispatch;
-mod engine;
-mod engine_service;
 pub mod error;
 mod json_writer;
 pub mod resources;
+mod runtime;
+mod runtime_service;
 mod triggers;
 pub(crate) mod utils;
 
 pub use components::engine_component::EngineComponent;
 pub use components::error::ComponentError;
-pub use engine::{Engine, EngineBuilder};
-pub use engine_service::error::EngineError;
+pub use runtime::{Runtime, RuntimeBuilder};
+pub use runtime_service::error::EngineError;
 pub use triggers::{get_trigger_loader, Trigger};
 
 pub type Error = error::RuntimeError;

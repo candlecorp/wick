@@ -7,9 +7,17 @@ pub enum Error {
   #[error("No stream found for port '{0}'")]
   PortMissing(String),
 
-  /// Error serializing or deserializing payload.
-  #[error("Error serializing or deserializing payload: {0}")]
-  Codec(String),
+  /// Error serializing payload.
+  #[error("Error serializing payload: {1} (payload was: {:?}",.0)]
+  Encode(Vec<u8>, String),
+
+  /// Error deserializing payload.
+  #[error("Error deserializing  payload: {1} (payload was: {:?}",.0)]
+  Decode(Vec<u8>, String),
+
+  /// Error converting payload into JSON.
+  #[error("Error JSON-ifying payload: {0}")]
+  Jsonify(String),
 
   /// Error communicating over a stream or channel.
   #[error("Error communicating over a stream or channel: {0}")]
@@ -30,12 +38,6 @@ pub enum Error {
   /// Thrown when a user attempts to use a signal when they expected a payload.
   #[error("Got a Done signal in an unexpected context.")]
   UnexpectedDone,
-}
-
-impl From<wasmrs_codec::error::Error> for Error {
-  fn from(value: wasmrs_codec::error::Error) -> Self {
-    Self::Codec(value.to_string())
-  }
 }
 
 impl From<wasmrs_rx::Error> for Error {

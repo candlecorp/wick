@@ -9,11 +9,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   // let fmt = std::process::Command::new("cargo")
   //   .args(["+nightly", "fmt", "--", "src/generated/mod.rs"])
   //   .status()
-  //   .expect("Failed to run cargo fmt on generated protobuf files.");
+  //   .expect("Failed to run cargo fmt on generated files.");
 
   // if !fmt.success() {
   //   // This can happen on minimally setup machines and is not a problem on its own.
-  //   println!("Could not format protobuf files");
+  //   println!("Could not format generated files");
   // }
   Ok(())
 }

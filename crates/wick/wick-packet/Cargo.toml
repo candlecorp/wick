@@ -38,7 +38,7 @@ url = { workspace = true }
 wasmrs-guest = { workspace = true }
 wasmrs-runtime = { workspace = true }
 seeded-random = { workspace = true, optional = true }
-anymap = "0.12"
+pin-project-lite = "0.2"
 
 [dev-dependencies]
 anyhow = { workspace = true }

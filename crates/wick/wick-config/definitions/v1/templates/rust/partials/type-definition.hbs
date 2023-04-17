@@ -62,7 +62,7 @@ pub(crate) struct {{name.value}} {
       {{/case}}
       {{#case "Named"}}
         {{#switch type.name.value}}
-          {{#case "string"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
+          {{#case "string"}}#[serde(deserialize_with="crate::helpers::with_expand_envs_string")]{{/case}}
           {{#case "i8"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
           {{#case "u8"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}
           {{#case "i16"}}#[serde(deserialize_with="with_expand_envs")]{{/case}}

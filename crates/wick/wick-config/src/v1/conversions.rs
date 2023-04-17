@@ -16,7 +16,7 @@ use crate::app_config::{
   TriggerDefinition,
   UdpPort,
 };
-use crate::component_config::{CompositeComponentConfiguration, OperationSignature, WasmComponentConfiguration};
+use crate::component_config::{CompositeComponentImplementation, OperationSignature, WasmComponentImplementation};
 use crate::config::common::component_definition::{ComponentDefinition, ComponentOperationExpression};
 use crate::config::common::flow_definition::{PortReference, SenderData};
 use crate::config::common::host_definition::HostConfig;
@@ -81,6 +81,7 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
       labels: def.labels,
       tests: def.tests.into_iter().map(|v| v.into()).collect(),
       component: def.component.try_into()?,
+      resources: Default::default(),
     })
   }
 }
@@ -100,7 +101,7 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
   }
 }
 
-impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentConfiguration {
+impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentImplementation {
   type Error = ManifestError;
   fn try_from(value: v1::WasmComponentConfiguration) -> Result<Self> {
     Ok(Self {
@@ -146,7 +147,7 @@ impl TryFrom<v1::InterfaceDefinition> for config::InterfaceDefinition {
   }
 }
 
-impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentConfiguration {
+impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentImplementation {
   type Error = ManifestError;
   fn try_from(value: v1::CompositeComponentConfiguration) -> Result<Self> {
     Ok(Self {
@@ -170,9 +171,9 @@ impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentConfigur
   }
 }
 
-impl TryFrom<CompositeComponentConfiguration> for v1::CompositeComponentConfiguration {
+impl TryFrom<CompositeComponentImplementation> for v1::CompositeComponentConfiguration {
   type Error = ManifestError;
-  fn try_from(value: CompositeComponentConfiguration) -> Result<Self> {
+  fn try_from(value: CompositeComponentImplementation) -> Result<Self> {
     Ok(Self {
       operations: value
         .operations
@@ -194,9 +195,9 @@ impl TryFrom<CompositeComponentConfiguration> for v1::CompositeComponentConfigur
   }
 }
 
-impl TryFrom<WasmComponentConfiguration> for v1::WasmComponentConfiguration {
+impl TryFrom<WasmComponentImplementation> for v1::WasmComponentConfiguration {
   type Error = ManifestError;
-  fn try_from(value: WasmComponentConfiguration) -> Result<Self> {
+  fn try_from(value: WasmComponentImplementation) -> Result<Self> {
     Ok(Self {
       operations: value
         .operations
@@ -338,10 +339,10 @@ impl TryFrom<v1::Schedule> for ScheduleConfig {
 }
 
 // Implement conversion from OperationInputConfig to v1::OperationInput
-impl TryFrom<OperationInputConfig> for v1::OperationInput {
+impl TryFrom<config::OperationInputConfig> for v1::OperationInput {
   type Error = ManifestError;
 
-  fn try_from(value: OperationInputConfig) -> Result<Self> {
+  fn try_from(value: config::OperationInputConfig) -> Result<Self> {
     Ok(v1::OperationInput {
       name: value.name,
       value: value.value,
@@ -350,11 +351,11 @@ impl TryFrom<OperationInputConfig> for v1::OperationInput {
 }
 
 // Implement conversion from v1::OperationInput to OperationInputConfig
-impl TryFrom<v1::OperationInput> for OperationInputConfig {
+impl TryFrom<v1::OperationInput> for config::OperationInputConfig {
   type Error = ManifestError;
 
   fn try_from(value: v1::OperationInput) -> Result<Self> {
-    Ok(OperationInputConfig {
+    Ok(config::OperationInputConfig {
       name: value.name,
       value: value.value,
     })

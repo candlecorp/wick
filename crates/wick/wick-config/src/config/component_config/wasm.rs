@@ -9,7 +9,7 @@ use crate::config;
 #[asset(config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
-pub struct WasmComponentConfiguration {
+pub struct WasmComponentImplementation {
   /// The location of the component.
   pub(crate) reference: config::AssetReference,
 
@@ -26,7 +26,19 @@ pub struct WasmComponentConfiguration {
   pub(crate) requires: HashMap<String, BoundInterface>,
 }
 
-impl WasmComponentConfiguration {}
+impl WasmComponentImplementation {
+  /// Get the required interfaces for this component.
+  #[must_use]
+  pub fn requires(&self) -> &HashMap<String, BoundInterface> {
+    &self.requires
+  }
+
+  /// Get the signature of the component as defined by the manifest.
+  #[must_use]
+  pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
+    self.operations.values().cloned().map(Into::into).collect()
+  }
+}
 
 #[derive(Debug, Clone)]
 pub struct OperationSignature {
@@ -40,7 +52,7 @@ pub struct OperationSignature {
   pub outputs: Vec<Field>,
 }
 
-impl WasmComponentConfiguration {
+impl WasmComponentImplementation {
   /// Get the operations implemented by this component.
   #[must_use]
   pub fn operations(&self) -> &HashMap<String, OperationSignature> {

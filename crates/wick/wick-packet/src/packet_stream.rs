@@ -1,20 +1,32 @@
 use std::pin::Pin;
+use std::task::Poll;
 
 use futures::Stream;
-use parking_lot::Mutex;
+use pin_project_lite::pin_project;
 use wasmrs_rx::{FluxChannel, Observer};
 
 use crate::Packet;
 
 pub type PacketSender = FluxChannel<Packet, crate::Error>;
 
-/// A stream of [Packet]s
-#[must_use]
-pub struct PacketStream {
-  #[cfg(target_family = "wasm")]
-  inner: Mutex<Box<dyn Stream<Item = Result<Packet, crate::Error>> + Unpin>>,
-  #[cfg(not(target_family = "wasm"))]
-  inner: Mutex<Box<dyn Stream<Item = Result<Packet, crate::Error>> + Unpin + Send + Sync>>,
+#[cfg(target_family = "wasm")]
+pin_project! {
+  /// A stream of [Packet]s
+  #[must_use]
+  pub struct PacketStream {
+    #[pin]
+    inner: std::sync::Arc<parking_lot::Mutex<dyn Stream<Item = Result<Packet, crate::Error>> + Unpin>>,
+  }
+}
+
+#[cfg(not(target_family = "wasm"))]
+pin_project! {
+  /// A stream of [Packet]s
+  #[must_use]
+  pub struct PacketStream {
+    #[pin]
+    inner: std::sync::Arc<parking_lot::Mutex<dyn Stream<Item = Result<Packet, crate::Error>> + Send + Unpin>>,
+  }
 }
 
 impl From<Vec<Packet>> for PacketStream {
@@ -26,11 +38,15 @@ impl From<Vec<Packet>> for PacketStream {
 impl PacketStream {
   #[cfg(target_family = "wasm")]
   pub fn new(rx: Box<dyn Stream<Item = Result<Packet, crate::Error>> + Unpin>) -> Self {
-    Self { inner: Mutex::new(rx) }
+    Self {
+      inner: std::sync::Arc::new(parking_lot::Mutex::new(rx)),
+    }
   }
   #[cfg(not(target_family = "wasm"))]
-  pub fn new(rx: Box<dyn Stream<Item = Result<Packet, crate::Error>> + Unpin + Send + Sync>) -> Self {
-    Self { inner: Mutex::new(rx) }
+  pub fn new(rx: impl Stream<Item = Result<Packet, crate::Error>> + Unpin + Send + 'static) -> Self {
+    Self {
+      inner: std::sync::Arc::new(parking_lot::Mutex::new(rx)),
+    }
   }
 
   pub fn new_channels() -> (PacketSender, Self) {
@@ -57,11 +73,10 @@ impl std::fmt::Debug for PacketStream {
 impl Stream for PacketStream {
   type Item = Result<Packet, crate::Error>;
 
-  fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Option<Self::Item>> {
-    cx.waker().wake_by_ref();
-    let mut inner = self.inner.lock();
-    let pinned = Pin::new(&mut *inner);
-    pinned.poll_next(cx)
+  fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
+    let mut stream = self.inner.lock();
+
+    Pin::new(&mut *stream).poll_next(cx)
   }
 }
 
@@ -71,15 +86,15 @@ mod test {
 
   use super::*;
 
-  fn sync_send<T>()
+  fn is_sync_send<T>()
   where
-    T: Sync + Send,
+    T: Send + Sync,
   {
   }
 
   #[test]
   fn test_sync_send() -> Result<()> {
-    sync_send::<PacketStream>();
+    is_sync_send::<PacketStream>();
     Ok(())
   }
 }

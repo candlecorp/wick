@@ -1,7 +1,7 @@
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use flow_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
 use serde_json::Value;
-use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeSignature};
+use wick_interface_types::{ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
 
 use crate::constants::*;
@@ -16,16 +16,13 @@ pub(crate) struct InternalCollection {
 
 impl Default for InternalCollection {
   fn default() -> Self {
-    let signature = ComponentSignature::new(NS_INTERNAL)
-      .version("0.0.0")
-      .metadata(ComponentMetadata::v0())
-      .add_operation(
-        OperationSignature::new(INTERNAL_ID_INHERENT)
-          .add_input("seed", TypeSignature::U64)
-          .add_input("timestamp", TypeSignature::U64)
-          .add_output("seed", TypeSignature::U64)
-          .add_output("timestamp", TypeSignature::U64),
-      );
+    let signature = ComponentSignature::new(NS_INTERNAL).version("0.0.0").add_operation(
+      OperationSignature::new(INTERNAL_ID_INHERENT)
+        .add_input("seed", TypeSignature::U64)
+        .add_input("timestamp", TypeSignature::U64)
+        .add_output("seed", TypeSignature::U64)
+        .add_output("timestamp", TypeSignature::U64),
+    );
 
     Self { signature }
   }
@@ -40,7 +37,7 @@ impl Component for InternalCollection {
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL);
-    let op = invocation.target.name().to_owned();
+    let op = invocation.target.operation_id().to_owned();
 
     let is_oneshot = op == SCHEMATIC_INPUT || op == INTERNAL_ID_INHERENT;
     let task = async move {

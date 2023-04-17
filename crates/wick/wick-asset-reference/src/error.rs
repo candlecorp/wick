@@ -12,6 +12,6 @@ pub enum Error {
   LoadError(String, String),
 
   /// Path normalization failed.
-  #[error("Normalizing path with baseurl failed '{0}': {1}")]
+  #[error("Could not normalize path {0}: {1}")]
   BaseUrlFailure(String, String),
 }

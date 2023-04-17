@@ -18,7 +18,7 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
       .iter()
       .map(|val| Ok((val.name.clone(), val.try_into()?)))
       .collect();
-    let composite = config::CompositeComponentConfiguration {
+    let composite = config::CompositeComponentImplementation {
       types: Default::default(),
       requires: Default::default(),
       import: def
@@ -42,6 +42,7 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
       tests: Vec::new(),
       labels: def.network.labels,
       metadata: None,
+      resources: Default::default(),
     })
   }
 }
@@ -62,6 +63,7 @@ impl TryFrom<&crate::v0::CollectionDefinition> for config::ComponentDefinition {
         reference: def.reference.clone().try_into()?,
         permissions: json_struct_to_permissions(def.data.get("wasi"))?,
         config: def.data.clone(),
+        provide: Default::default(),
       }),
       crate::v0::CollectionKind::Network => {
         config::ComponentDefinition::Manifest(config::components::ManifestComponent {

@@ -13,15 +13,15 @@ use wick_packet::{packets, Entity, Invocation, Observer, Packet, PacketStream};
 use super::{HttpError, HttpRouter};
 use crate::dev::prelude::RuntimeError;
 use crate::triggers::http::conversions::{convert_request, convert_response};
-use crate::Engine;
+use crate::Runtime;
 
 pub(super) struct ServiceFactory {
-  engine: Arc<Engine>,
+  engine: Arc<Runtime>,
   routers: Arc<Vec<HttpRouter>>,
 }
 
 impl ServiceFactory {
-  pub(super) fn new(engine: Engine, routers: Vec<HttpRouter>) -> Self {
+  pub(super) fn new(engine: Runtime, routers: Vec<HttpRouter>) -> Self {
     Self {
       engine: Arc::new(engine),
       routers: Arc::new(routers),
@@ -48,12 +48,12 @@ impl<T> Service<T> for ServiceFactory {
 }
 
 pub(super) struct ResponseService {
-  engine: Arc<Engine>,
+  engine: Arc<Runtime>,
   routers: Arc<Vec<HttpRouter>>,
 }
 
 impl ResponseService {
-  fn new(engine: Arc<Engine>, routers: Arc<Vec<HttpRouter>>) -> Self {
+  fn new(engine: Arc<Runtime>, routers: Arc<Vec<HttpRouter>>) -> Self {
     Self { engine, routers }
   }
 }

@@ -1,12 +1,10 @@
-use std::io::{self, BufRead, BufReader};
-
 use futures::TryStreamExt;
 use wasmrs_guest::StreamExt;
-mod generated;
-use generated as wick;
-// mod wick {
-//   wick_component::wick_import!();
-// }
+// mod generated;
+// use generated as wick;
+mod wick {
+  wick_component::wick_import!();
+}
 use wick::*;
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -27,7 +25,7 @@ impl OpHttpHandler for Component {
     body: WickStream<bytes::Bytes>,
     mut outputs: OpHttpHandlerOutputs,
   ) -> Result<()> {
-    if let (Some(Ok(request))) = (request.next().await) {
+    if let Some(Ok(request)) = request.next().await {
       println!("{:#?}", request);
     }
 

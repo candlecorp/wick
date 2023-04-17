@@ -15,5 +15,5 @@ pub struct ManifestComponent {
   pub config: Value,
   /// The components to provide to the referenced component.
   #[asset(skip)]
-  pub(crate) provide: HashMap<String, String>,
+  pub provide: HashMap<String, String>,
 }

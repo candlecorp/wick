@@ -6,6 +6,7 @@ use wick_interface_types::{
   fields,
   operation,
   parse,
+  ComponentMetadata,
   ComponentSignature,
   Field,
   OperationSignature,
@@ -82,6 +83,7 @@ fn test_component_macro() -> Result<()> {
   let expected = ComponentSignature {
     name: Some("test-native-component".to_owned()),
     operations: opmap,
+    metadata: ComponentMetadata::new("0.1.0"),
     ..Default::default()
   };
   let actual = component! {

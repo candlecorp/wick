@@ -4,13 +4,13 @@ use futures::stream::StreamExt;
 use tracing::debug;
 use wick_config::WickConfiguration;
 use wick_packet::{Entity, InherentData, Invocation, Packet, PacketStream};
-use wick_runtime::{Engine, EngineBuilder};
+use wick_runtime::{Runtime, RuntimeBuilder};
 
-pub async fn init_engine_from_yaml(path: &str, timeout: Duration) -> anyhow::Result<(Engine, uuid::Uuid)> {
+pub async fn init_engine_from_yaml(path: &str, timeout: Duration) -> anyhow::Result<(Runtime, uuid::Uuid)> {
   let host_def = WickConfiguration::load_from_file(path).await?.try_component_config()?;
   debug!("Manifest loaded");
 
-  let builder = EngineBuilder::from_definition(host_def)?
+  let builder = RuntimeBuilder::from_definition(host_def)?
     .namespace("__TEST__")
     .timeout(timeout);
 
@@ -40,8 +40,8 @@ pub async fn base_test(
   let (engine, _) = init_engine_from_yaml(path, Duration::from_secs(1)).await?;
   let inherent = InherentData::new(1, 1000);
 
-  let target = if target.namespace() == Entity::LOCAL {
-    Entity::operation(engine.namespace(), target.name())
+  let target = if target.component_id() == Entity::LOCAL {
+    Entity::operation(engine.namespace(), target.operation_id())
   } else {
     target
   };

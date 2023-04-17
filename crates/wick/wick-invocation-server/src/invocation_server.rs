@@ -131,7 +131,7 @@ impl InvocationService for InvocationServer {
     let stream = convert_invocation_stream(stream);
     let packet_stream = PacketStream::new(Box::new(stream));
 
-    let entity_name = invocation.target.name().to_owned();
+    let op_id = invocation.target.operation_id().to_owned();
 
     let result = self
       .collection
@@ -141,7 +141,7 @@ impl InvocationService for InvocationServer {
       let message = e.to_string();
       error!("Invocation failed: {}", message);
       tx.send(Err(Status::internal(message))).await.unwrap();
-      self.record_execution(entity_name, JobResult::Error, start.elapsed());
+      self.record_execution(op_id, JobResult::Error, start.elapsed());
     } else {
       tokio::spawn(async move {
         let mut receiver = result.unwrap();
@@ -154,7 +154,7 @@ impl InvocationService for InvocationServer {
           tx.send(Ok(next.into())).await.unwrap();
         }
       });
-      self.record_execution(entity_name, JobResult::Success, start.elapsed());
+      self.record_execution(op_id, JobResult::Success, start.elapsed());
     }
 
     Ok(Response::new(ReceiverStream::new(rx)))

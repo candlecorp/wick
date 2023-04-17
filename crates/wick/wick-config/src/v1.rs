@@ -64,7 +64,7 @@ pub(crate) struct AppConfiguration {
   /// The application&#x27;s name.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Configuration that controls how this application runs within a host.
 
@@ -94,7 +94,7 @@ pub(crate) struct Metadata {
   /// The version of the component or application.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) version: String,
   /// The authors of the component or application.
 
@@ -212,7 +212,7 @@ pub(crate) struct ComponentOperationExpression {
   pub(crate) component: ComponentDefinition,
   /// The operation to call.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
 }
 
@@ -223,7 +223,7 @@ pub(crate) struct HttpTrigger {
   /// The TcpPort reference to listen on for connections.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) resource: String,
   /// The HttpRouters that should handle incoming requests
 
@@ -249,7 +249,7 @@ pub(crate) enum HttpRouter {
 pub(crate) struct RestRouter {
   /// The path to start serving this router from.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
   /// The component to expose as a Rest API.
 
@@ -263,7 +263,7 @@ pub(crate) struct RestRouter {
 pub(crate) struct RawRouter {
   /// The path to start serving this router from.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
   /// The operation that handles HTTP requests.
 
@@ -277,9 +277,9 @@ pub(crate) struct RawRouter {
 pub(crate) struct StaticRouter {
   /// The path to start serving this router from.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) from: String,
 }
 
@@ -308,7 +308,7 @@ pub(crate) struct TcpPort {
   /// The address to bind to.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) address: String,
 }
 
@@ -324,7 +324,7 @@ pub(crate) struct UdpPort {
   /// The address to bind to.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) address: String,
 }
 
@@ -395,7 +395,7 @@ pub(crate) struct ComponentConfiguration {
 pub(crate) struct BoundInterface {
   /// The name of the interface.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The interface to bind to.
   pub(crate) interface: InterfaceDefinition,
@@ -486,7 +486,7 @@ pub(crate) struct WasmComponentConfiguration {
 pub(crate) struct ResourceBinding {
   /// The name of the binding.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The resource to bind to.
   pub(crate) resource: ResourceDefinition,
@@ -498,7 +498,7 @@ pub(crate) struct ResourceBinding {
 pub(crate) struct ComponentBinding {
   /// The name of the binding.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The component to bind to.
 
@@ -531,7 +531,7 @@ pub(crate) enum ComponentDefinition {
 pub(crate) struct ComponentReference {
   /// The id of the component to reference.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) id: String,
 }
 
@@ -614,7 +614,7 @@ pub(crate) struct Permissions {
 pub(crate) struct GrpcUrlComponent {
   /// The GRPC URL to connect to.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) url: String,
   /// Any configuration necessary for the component.
 
@@ -651,7 +651,7 @@ pub(crate) struct CompositeOperationDefinition {
   /// The name of the operation.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Types of the inputs to the operation.
 
@@ -688,7 +688,7 @@ pub(crate) struct OperationDefinition {
   /// The name of the operation.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Types of the inputs to the operation.
 
@@ -716,7 +716,7 @@ pub(crate) type TypeDefinition = Value;
 pub(crate) struct InstanceBinding {
   /// The name of the binding.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The operation to bind to.
 
@@ -748,11 +748,11 @@ pub(crate) struct ConnectionDefinition {
 pub(crate) struct ConnectionTargetDefinition {
   /// The instance ID of the operation.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) instance: String,
   /// The operation port.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) port: String,
   /// The default value to provide on this connection in the event of an error.
 
@@ -766,11 +766,11 @@ pub(crate) struct ConnectionTargetDefinition {
 pub(crate) struct TestDefinition {
   /// The name of the test.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The operaton to test.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) operation: String,
   /// Inherent data to use for the test.
 
@@ -819,7 +819,7 @@ pub(crate) enum PacketData {
 pub(crate) struct PayloadData {
   /// The name of the port to send the data to.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Any flags set on the packet.
 
@@ -836,7 +836,7 @@ pub(crate) struct PayloadData {
 pub(crate) struct ErrorData {
   /// The name of the port to send the data to.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Any flags set on the packet.
 
@@ -844,7 +844,7 @@ pub(crate) struct ErrorData {
   pub(crate) flags: Option<PacketFlags>,
   /// The error message.
 
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) message: String,
 }
 
@@ -917,7 +917,7 @@ pub(crate) struct PostgresComponent {
   /// The TcpPort reference to listen on for connections.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) resource: String,
   /// The database vendor to load.
 
@@ -926,17 +926,17 @@ pub(crate) struct PostgresComponent {
   /// The username to use when connecting to the postgres database.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) user: String,
   /// The password to use when connecting to the postgres database.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) password: String,
   /// The database to connect to.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) database: String,
   /// Whether or not to use TLS.
 
@@ -956,7 +956,7 @@ pub(crate) struct PostgresOperationDefinition {
   /// The name of the operation.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Types of the inputs to the operation.
 
@@ -971,7 +971,7 @@ pub(crate) struct PostgresOperationDefinition {
   /// The query to execute.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) query: String,
   /// The arguments to the query, defined as a list of input names.
 

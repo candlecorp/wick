@@ -1,7 +1,7 @@
 static DIR: &str = "run";
 
 #[test]
-fn invoke_tests() {
+fn wick_run() {
   let kind = "unit";
   trycmd::TestCases::new()
     .case(format!("tests/{}/{}/*.toml", kind, DIR))
@@ -11,7 +11,7 @@ fn invoke_tests() {
 mod integration_tests {
   use super::DIR;
   #[test]
-  fn invoke_tests() {
+  fn wick_run() {
     let kind = "integration";
     trycmd::TestCases::new()
       .case(format!("tests/{}/{}/*.toml", kind, DIR))
