@@ -5810,12 +5810,7 @@ dependencies = [
 name = "wick-xdg"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "env_logger 0.10.0",
- "test-logger",
  "thiserror",
- "tokio",
- "wick-logger",
  "xdg",
 ]
 
