@@ -8,7 +8,6 @@ description = "Create components to execute in Wick runtimes"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-tracing = { workspace = true }
 wick-packet = { workspace = true, features = ["invocation"] }
 serde_json = { workspace = true }
 futures = { workspace = true }

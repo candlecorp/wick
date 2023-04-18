@@ -76,3 +76,8 @@ lint-commits:
 
 publish-sdk VERSION *FLAGS:
   cargo release {{VERSION}} {{FLAGS}} -p wick-packet -p wick-component-codegen -p wick-interface-types -p wick-component -p wick-config -p flow-expression-parser
+
+unused:
+  for crate in crates/bins/*; do ./etc/udeps.sh $crate; done
+  for crate in crates/wick/*; do ./etc/udeps.sh $crate; done
+  for crate in crates/misc/*; do ./etc/udeps.sh $crate; done

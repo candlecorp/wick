@@ -21,7 +21,6 @@ wick-packet = { workspace = true, default-features = false }
 wasmrs = { workspace = true }
 wasmrs-rx = { workspace = true }
 wasmrs-runtime = { workspace = true }
-tracing = { workspace = true }
 futures = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
