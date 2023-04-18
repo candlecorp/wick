@@ -38,7 +38,6 @@ licenses:
 	cargo deny --workspace check licenses  --config etc/deny.toml --hide-inclusion-graph
 
 unit-tests:
-	cargo build -p wick
 	cargo test --workspace -- --skip integration_test --test-threads=6
 
 ci-tests: wasm
@@ -55,8 +54,7 @@ integration-setup:
 	./etc/integration/postgres.sh up init
 	./etc/integration/mssql.sh up init
 	./etc/integration/registry.sh up init
-	cargo build -p wick
-	cargo run -p wick -- reg push --debug ${DOCKER_REGISTRY}/test-component/baseline:0.1.0 ./crates/integration/test-baseline-component/component.yaml --insecure=${DOCKER_REGISTRY}
+	cargo run -p wick-cli -- reg push --debug ${DOCKER_REGISTRY}/test-component/baseline:0.1.0 ./crates/integration/test-baseline-component/component.yaml --insecure=${DOCKER_REGISTRY}
 
 integration-teardown:
 	# docker rm -f simple_registry

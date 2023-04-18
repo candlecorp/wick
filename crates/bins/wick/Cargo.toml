@@ -1,5 +1,5 @@
 [package]
-name = "wick"
+name = "wick-cli"
 version = "0.6.0"
 edition = "2021"
 default-run = "wick"

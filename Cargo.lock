@@ -6168,7 +6168,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "wick"
+name = "wick-asset-reference"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "asset-container",
+ "bytes",
+ "normpath",
+ "parking_lot 0.12.1",
+ "pretty_assertions",
+ "test-logger",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "wick-logger",
+ "wick-oci-utils",
+]
+
+[[package]]
+name = "wick-cli"
 version = "0.6.0"
 dependencies = [
  "anyhow",
@@ -6200,25 +6219,6 @@ dependencies = [
  "wick-test",
  "wick-wascap",
  "wick-xdg",
-]
-
-[[package]]
-name = "wick-asset-reference"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "asset-container",
- "bytes",
- "normpath",
- "parking_lot 0.12.1",
- "pretty_assertions",
- "test-logger",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "wick-logger",
- "wick-oci-utils",
 ]
 
 [[package]]
