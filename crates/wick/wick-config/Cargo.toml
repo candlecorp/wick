@@ -12,7 +12,6 @@ flow-component = { workspace = true }
 flow-expression-parser = { workspace = true }
 wick-packet = { workspace = true, default-features = false }
 wick-interface-types = { workspace = true, features = ["yaml"] }
-wick-oci-utils = { workspace = true }
 wick-asset-reference = { workspace = true }
 regex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -32,6 +31,7 @@ url = { workspace = true }
 [dev-dependencies]
 wick-package = { workspace = true }
 wick-xdg = { workspace = true }
+wick-oci-utils = { workspace = true }
 anyhow = { workspace = true }
 pretty_assertions = { workspace = true }
 wick-logger = { workspace = true }

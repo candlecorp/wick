@@ -6,11 +6,12 @@ deps=$(cargo read-manifest --manifest-path ${PROJECT}/Cargo.toml | jq -r '.depen
 
 UNUSED=""
 for dep in $deps; do
-    NUM_FILES=$(egrep -rl "use ${dep}|${dep}::|extern crate ${dep}" $PROJECT)
+    NUM_FILES=$(egrep -rl "use ${dep}|${dep}::|extern crate ${dep}" $PROJECT/src)
     if [[ "$NUM_FILES" ==  "" ]]; then
       UNUSED="$UNUSED$dep\n"
     fi
 done
+
 if [[ "$UNUSED" != "" ]]; then
   echo Project $PROJECT has unused dependencies:
   echo -e $UNUSED
