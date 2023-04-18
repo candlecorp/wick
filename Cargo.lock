@@ -1216,7 +1216,7 @@ checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
 
 [[package]]
 name = "flow-component"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -1231,7 +1231,7 @@ dependencies = [
 
 [[package]]
 name = "flow-expression-parser"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "lazy_static",
@@ -1247,7 +1247,7 @@ dependencies = [
 
 [[package]]
 name = "flow-graph"
-version = "0.20.0"
+version = "0.21.0"
 dependencies = [
  "anyhow",
  "serde_json",
@@ -5363,7 +5363,7 @@ dependencies = [
 
 [[package]]
 name = "wick-asset-reference"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "asset-container",
@@ -5382,7 +5382,7 @@ dependencies = [
 
 [[package]]
 name = "wick-component"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -5424,7 +5424,7 @@ dependencies = [
 
 [[package]]
 name = "wick-component-codegen"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "heck 0.4.1",
@@ -5469,7 +5469,7 @@ dependencies = [
 
 [[package]]
 name = "wick-config"
-version = "0.24.0"
+version = "0.26.0"
 dependencies = [
  "anyhow",
  "asset-container",
@@ -5598,7 +5598,7 @@ dependencies = [
 
 [[package]]
 name = "wick-oci-utils"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-recursion",

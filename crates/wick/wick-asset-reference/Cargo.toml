@@ -5,7 +5,7 @@ edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/candlecorp/wick"
 description = "Data structures for representing Wick assets and asset references."
-version = "0.1.0"
+version = "0.3.0"
 
 [dependencies]
 wick-oci-utils = { workspace = true }
