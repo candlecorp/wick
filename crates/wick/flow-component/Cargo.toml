@@ -15,9 +15,3 @@ wick-interface-types = { workspace = true }
 anyhow = { workspace = true }
 
 [dev-dependencies]
-serde_json = { workspace = true }
-wick-config = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt"] }
-wick-logger = { workspace = true }
-test-logger = { workspace = true }
-anyhow = { workspace = true }

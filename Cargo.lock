@@ -1221,11 +1221,7 @@ dependencies = [
  "anyhow",
  "futures",
  "serde_json",
- "test-logger",
- "tokio",
- "wick-config",
  "wick-interface-types",
- "wick-logger",
  "wick-packet",
 ]
 
