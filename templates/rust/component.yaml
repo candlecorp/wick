@@ -1,22 +1,25 @@
 ---
 name: '{{project-name}}'
-format: 1
+kind: wick/component@v1
 metadata:
   version: '0.0.1'
-operations:
-  - name: greet
-    inputs:
-      - name: input
-        type: string
-    outputs:
-      - name: output
-        type: string
-  - name: add
-    inputs:
-      - name: left
-        type: u64
-      - name: right
-        type: u64
-    outputs:
-      - name: output
-        type: u64
+component:
+  kind: wick/component/wasmrs@v1
+  ref: build/{{project-name | snake_case}}.signed.wasm
+  operations:
+    - name: greet
+      inputs:
+        - name: input
+          type: string
+      outputs:
+        - name: output
+          type: string
+    - name: add
+      inputs:
+        - name: left
+          type: u64
+        - name: right
+          type: u64
+      outputs:
+        - name: output
+          type: u64

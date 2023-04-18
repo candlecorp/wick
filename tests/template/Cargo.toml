@@ -1,0 +1,12 @@
+[package]
+name = "test-template"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+
+[dev-dependencies]
+cargo-generate = "0.18"
+tokio = { workspace = true, features = ["macros", "process", "rt"] }
+test_bin = { workspace = true }
