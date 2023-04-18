@@ -41,8 +41,6 @@ thiserror = { workspace = true }
 parking_lot = { workspace = true }
 serde_json = { workspace = true }
 #
-openssl = { workspace = true, features = ["vendored"] }
-byteorder = { workspace = true, features = [] }
 bytes = { workspace = true }
 chrono = { workspace = true }
 

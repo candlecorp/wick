@@ -8,7 +8,6 @@ description = "OCI utility library for the Wick project"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-wick-interface-types = { workspace = true }
 wick-xdg = { workspace = true }
 oci-distribution = { workspace = true, features = [
   "rustls-tls",
@@ -18,7 +17,6 @@ tracing = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-tar = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
 sha256 = { workspace = true }
 bytes = { workspace = true }

@@ -11,13 +11,8 @@ description = "Utility for managing and fetching packages for the wick project."
 wick-config = { workspace = true }
 wick-oci-utils = { workspace = true }
 asset-container = { workspace = true }
-oci-distribution = { workspace = true, features = [
-  "rustls-tls"
-], default-features = false }
 thiserror = { workspace = true }
-tracing = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["fs"] }
 sha256 = { workspace = true }

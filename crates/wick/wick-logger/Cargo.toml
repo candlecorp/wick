@@ -11,7 +11,6 @@ description = "Wick's logging library"
 [dependencies]
 wick-xdg = { workspace = true }
 tracing = { workspace = true }
-tracing-log = { workspace = true }
 tracing-subscriber = { workspace = true, features = [
   "env-filter",
   "fmt",

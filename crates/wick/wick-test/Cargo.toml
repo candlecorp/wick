@@ -12,7 +12,6 @@ description = "Test runner for Wick components"
 flow-component = { workspace = true }
 wick-packet = { workspace = true }
 wick-config = { workspace = true }
-wick-rpc = { workspace = true }
 # TAP interface
 tap-harness = { workspace = true }
 # WasmRS
@@ -20,7 +19,6 @@ wasmrs-codec = { workspace = true }
 # Common dependencies
 serde = { workspace = true, features = ["derive"] }
 serde-value = { workspace = true }
-serde_yaml = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["io-std", "macros", "rt-multi-thread"] }
 tokio-stream = { workspace = true }

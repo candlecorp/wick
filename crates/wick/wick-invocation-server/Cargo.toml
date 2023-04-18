@@ -13,9 +13,6 @@ flow-component = { workspace = true }
 tonic = { workspace = true, features = ["tls"] }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }
 tokio-stream = { workspace = true, features = ["net"] }
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-rand = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }

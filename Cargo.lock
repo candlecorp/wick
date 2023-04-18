@@ -1223,7 +1223,6 @@ dependencies = [
  "serde_json",
  "test-logger",
  "tokio",
- "tracing",
  "wick-config",
  "wick-interface-types",
  "wick-logger",
@@ -1265,7 +1264,6 @@ name = "flow-graph-interpreter"
 version = "0.20.0"
 dependencies = [
  "anyhow",
- "bytes",
  "flow-component",
  "flow-expression-parser",
  "flow-graph",
@@ -1273,7 +1271,6 @@ dependencies = [
  "parking_lot 0.12.1",
  "performance-mark",
  "pretty_assertions",
- "rand",
  "seeded-random",
  "serde",
  "serde-value",
@@ -1287,7 +1284,6 @@ dependencies = [
  "uuid",
  "wasmrs",
  "wasmrs-codec",
- "wasmrs-frames",
  "wasmrs-rx",
  "wick-config",
  "wick-interface-types",
@@ -3892,17 +3888,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tar"
-version = "0.4.38"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b55807c0344e1e6c04d7c965f5289c39a8d94ae23ed5c0b57aabac549f871c6"
-dependencies = [
- "filetime",
- "libc",
- "xattr",
-]
-
-[[package]]
 name = "target-lexicon"
 version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5346,20 +5331,16 @@ name = "wick"
 version = "0.6.0"
 dependencies = [
  "anyhow",
- "async-recursion",
  "atty",
  "clap 4.1.8",
  "futures",
  "jaq-core",
  "markup-converter",
  "nkeys",
- "oci-distribution",
  "openssl",
  "regex",
  "seeded-random",
- "serde",
  "serde_json",
- "serde_yaml",
  "test-logger",
  "test_bin",
  "thiserror",
@@ -5367,7 +5348,6 @@ dependencies = [
  "tracing",
  "trycmd",
  "wick-component-cli",
- "wick-component-wasm",
  "wick-config",
  "wick-host",
  "wick-interface-types",
@@ -5376,7 +5356,6 @@ dependencies = [
  "wick-package",
  "wick-packet",
  "wick-rpc",
- "wick-runtime",
  "wick-test",
  "wick-wascap",
  "wick-xdg",
@@ -5409,7 +5388,6 @@ dependencies = [
  "futures",
  "paste",
  "tokio",
- "tracing",
  "wasmrs",
  "wasmrs-runtime",
  "wasmrs-rx",
@@ -5421,7 +5399,6 @@ name = "wick-component-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-stream",
  "cfg-if",
  "clap 4.1.8",
  "flow-component",
@@ -5453,7 +5430,6 @@ dependencies = [
  "heck 0.4.1",
  "proc-macro2",
  "quote",
- "serde_yaml",
  "syn 2.0.11",
  "test-logger",
  "tokio",
@@ -5467,14 +5443,11 @@ name = "wick-component-wasm"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-stream",
- "async-trait",
  "flow-component",
  "futures",
  "parking_lot 0.12.1",
  "seeded-random",
  "serde",
- "serde-value",
  "serde_json",
  "test-logger",
  "thiserror",
@@ -5532,15 +5505,12 @@ name = "wick-host"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "flow-component",
  "futures",
  "http",
  "once_cell",
  "parking_lot 0.12.1",
  "seeded-random",
- "serde",
- "serde_json",
  "test-logger",
  "thiserror",
  "tokio",
@@ -5594,9 +5564,6 @@ dependencies = [
  "flow-component",
  "futures",
  "parking_lot 0.12.1",
- "rand",
- "serde",
- "serde_json",
  "test-logger",
  "test-native-component",
  "thiserror",
@@ -5624,7 +5591,6 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-bunyan-formatter",
- "tracing-log",
  "tracing-opentelemetry",
  "tracing-subscriber",
  "wick-xdg",
@@ -5646,12 +5612,10 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sha256",
- "tar",
  "test-logger",
  "thiserror",
  "tokio",
  "tracing",
- "wick-interface-types",
  "wick-logger",
  "wick-xdg",
 ]
@@ -5665,15 +5629,12 @@ dependencies = [
  "async-recursion",
  "clap 4.1.8",
  "env_logger 0.10.0",
- "oci-distribution",
  "serde",
  "serde_json",
- "serde_yaml",
  "sha256",
  "test-logger",
  "thiserror",
  "tokio",
- "tracing",
  "wick-config",
  "wick-logger",
  "wick-oci-utils",
@@ -5708,14 +5669,9 @@ dependencies = [
 name = "wick-rpc"
 version = "0.1.0"
 dependencies = [
- "async-stream",
- "async-trait",
  "flow-component",
  "prost",
- "prost-types",
- "rand",
  "serde",
- "serde_json",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -5723,7 +5679,6 @@ dependencies = [
  "tonic-build",
  "tracing",
  "uuid",
- "wasmrs-rx",
  "wick-interface-types",
  "wick-packet",
 ]
@@ -5750,9 +5705,7 @@ dependencies = [
  "reqwest",
  "seeded-random",
  "serde",
- "serde-value",
  "serde_json",
- "serde_yaml",
  "test-logger",
  "test-native-component",
  "thiserror",
@@ -5779,12 +5732,10 @@ name = "wick-sqlx"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "byteorder",
  "bytes",
  "chrono",
  "flow-component",
  "futures",
- "openssl",
  "parking_lot 0.12.1",
  "pretty_assertions",
  "serde",
@@ -5806,13 +5757,10 @@ name = "wick-stdlib"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "flow-component",
  "futures",
  "seeded-random",
- "serde",
  "test-logger",
- "thiserror",
  "tokio",
  "tracing",
  "wick-interface-types",
@@ -5829,7 +5777,6 @@ dependencies = [
  "flow-component",
  "serde",
  "serde-value",
- "serde_yaml",
  "tap-harness",
  "test-logger",
  "test-native-component",
@@ -5841,7 +5788,6 @@ dependencies = [
  "wick-config",
  "wick-logger",
  "wick-packet",
- "wick-rpc",
 ]
 
 [[package]]
@@ -6156,15 +6102,6 @@ dependencies = [
  "log",
  "thiserror",
  "wast 35.0.2",
-]
-
-[[package]]
-name = "xattr"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d1526bbe5aaeb5eb06885f4d987bcdfa5e23187055de9b83fe00156a821fabc"
-dependencies = [
- "libc",
 ]
 
 [[package]]

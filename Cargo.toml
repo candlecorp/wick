@@ -13,8 +13,6 @@ exclude = [
   "crates/integration/test-cli-trigger-component",
   "crates/integration/test-cli-with-db",
   "crates/integration/test-http-trigger-component",
-  "crates/wick/wick-component-grpc", #TODO: remove/fix
-
 ]
 
 [workspace.dependencies]

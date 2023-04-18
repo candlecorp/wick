@@ -17,9 +17,7 @@ wick-xdg = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-rpc = { workspace = true, features = ["client"] }
-wick-component-wasm = { workspace = true }
 wick-component-cli = { workspace = true }
-wick-runtime = { workspace = true }
 wick-host = { workspace = true }
 wick-config = { workspace = true }
 wick-test = { workspace = true }
@@ -31,8 +29,6 @@ seeded-random = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true }
-serde = { workspace = true }
 anyhow = { workspace = true }
 futures = { workspace = true }
 thiserror = { workspace = true }
@@ -41,10 +37,6 @@ nkeys = { workspace = true }
 atty = { workspace = true }
 jaq-core = { workspace = true }
 markup-converter = { workspace = true }
-oci-distribution = { workspace = true, features = [
-  "rustls-tls",
-], default-features = false }
-async-recursion = { workspace = true }
 openssl = { workspace = true, features = ["vendored"], optional = true }
 
 [dev-dependencies]

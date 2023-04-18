@@ -16,11 +16,8 @@ wick-rpc = { workspace = true }
 wick-interface-types = { workspace = true, features = ["parser"] }
 seeded-random = { workspace = true }
 tracing = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-async-trait = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 futures = { workspace = true }
-thiserror = { workspace = true }
 
 [dev-dependencies]
 wick-logger = { workspace = true }

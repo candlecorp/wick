@@ -11,14 +11,8 @@ description = "Generic implementation of a wick CLI component"
 default = ['cli']
 reflection = ["tonic-reflection"]
 cli = ['grpc', 'mesh']
-grpc = [
-  'wick-rpc',
-  'tonic/tls',
-  'wick-invocation-server',
-  'async-stream',
-  'wick-config'
-]
-mesh = ['wick-rpc', 'async-stream', 'wick-config']
+grpc = ['wick-rpc', 'tonic/tls', 'wick-invocation-server', 'wick-config']
+mesh = ['wick-rpc', 'wick-config']
 
 [dependencies]
 wick-logger = { workspace = true }
@@ -38,7 +32,6 @@ tokio = { workspace = true, features = [
   "rt-multi-thread",
 ] }
 tokio-stream = { workspace = true }
-async-stream = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tracing = { workspace = true }
