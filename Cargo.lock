@@ -75,7 +75,7 @@ checksum = "224afbd727c3d6e4b90103ece64b8d1b67fbb1973b1046c2281eed3f3803f800"
 
 [[package]]
 name = "asset-container"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "bytes",
@@ -938,7 +938,7 @@ dependencies = [
 
 [[package]]
 name = "derive-asset-container"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "asset-container",
@@ -2716,7 +2716,7 @@ checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
 name = "performance-mark"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -3881,7 +3881,7 @@ dependencies = [
 
 [[package]]
 name = "tap-harness"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "testanything",
@@ -5542,7 +5542,7 @@ dependencies = [
 
 [[package]]
 name = "wick-interface-types"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "anyhow",
  "env_logger 0.10.0",
@@ -5578,7 +5578,7 @@ dependencies = [
 
 [[package]]
 name = "wick-logger"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ansi_term",
  "clap 4.1.8",
@@ -5642,7 +5642,7 @@ dependencies = [
 
 [[package]]
 name = "wick-packet"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "anyhow",
  "bytes",
@@ -5808,7 +5808,7 @@ dependencies = [
 
 [[package]]
 name = "wick-xdg"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "thiserror",
  "xdg",

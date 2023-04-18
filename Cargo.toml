@@ -21,7 +21,7 @@ flow-component = { path = "./crates/wick/flow-component", version = "0.4.0" }
 flow-expression-parser = { path = "./crates/wick/flow-expression-parser", version = "0.4.0" }
 flow-graph = { path = "./crates/wick/flow-graph", version = "0.20.0" }
 flow-graph-interpreter = { path = "./crates/wick/flow-graph-interpreter", version = "0.20.0" }
-wick-logger = { path = "./crates/wick/wick-logger", version = "0.1.0" }
+wick-logger = { path = "./crates/wick/wick-logger", version = "0.2.0" }
 wick-asset-reference = { path = "./crates/wick/wick-asset-reference", version = "0.1.0" }
 wick-component = { path = "./crates/wick/wick-component", version = "0.14.0" }
 wick-component-cli = { path = "./crates/wick/wick-component-cli", version = "0.1.0" }
@@ -29,23 +29,23 @@ wick-component-codegen = { path = "./crates/wick/wick-component-codegen", versio
 wick-component-wasm = { path = "./crates/wick/wick-component-wasm", version = "0.1.0" }
 wick-config = { path = "./crates/wick/wick-config", version = "0.24.0" }
 wick-host = { path = "./crates/wick/wick-host", version = "0.1.0" }
-wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.14.0" }
+wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.15.0" }
 wick-invocation-server = { path = "./crates/wick/wick-invocation-server", version = "0.1.0" }
 wick-oci-utils = { path = "./crates/wick/wick-oci-utils", version = "0.1.0" }
 wick-package = { path = "./crates/wick/wick-package", version = "0.1.0" }
-wick-packet = { path = "./crates/wick/wick-packet", version = "0.14.0" }
+wick-packet = { path = "./crates/wick/wick-packet", version = "0.15.0" }
 wick-rpc = { path = "./crates/wick/wick-rpc", version = "0.1.0" }
 wick-runtime = { path = "./crates/wick/wick-runtime", version = "0.20.0" }
 wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.1.0" }
 wick-test = { path = "./crates/wick/wick-test", version = "0.0.0" }
 wick-wascap = { path = "./crates/wick/wick-wascap", version = "0.1.0" }
-wick-xdg = { path = "./crates/wick/wick-xdg", version = "0.1.0" }
+wick-xdg = { path = "./crates/wick/wick-xdg", version = "0.2.0" }
 # crates/misc
-asset-container = { path = "./crates/misc/asset-container", version = "0.1.0" }
-derive-asset-container = { path = "./crates/misc/derive-asset-container", version = "0.1.0" }
-performance-mark = { path = "./crates/misc/performance-mark", version = "0.0.1" }
+asset-container = { path = "./crates/misc/asset-container", version = "0.2.0" }
+derive-asset-container = { path = "./crates/misc/derive-asset-container", version = "0.2.0" }
+performance-mark = { path = "./crates/misc/performance-mark", version = "0.1.0" }
 seeded-random = { path = "./crates/misc/seeded-random", version = "0.3.0" }
-tap-harness = { path = "./crates/misc/tap-harness", version = "0.0.0" }
+tap-harness = { path = "./crates/misc/tap-harness", version = "0.1.0" }
 test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
 # crates/integration
 test-native-component = { path = "./crates/integration/test-native-component", version = "0.1.0" }
