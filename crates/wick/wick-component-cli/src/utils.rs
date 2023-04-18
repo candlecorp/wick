@@ -2,7 +2,7 @@ use wick_packet::Packet;
 
 use crate::Error;
 
-/// Parse CLI arguments into a [PacketStream]
+/// Parse CLI arguments into a [wick_packet::PacketStream]
 pub fn parse_args(args: &[String]) -> Result<Vec<Packet>, Error> {
   let mut packets = Vec::new();
   let mut iter = args.iter();

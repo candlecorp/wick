@@ -48,7 +48,6 @@ bytes = { workspace = true }
 
 [dev-dependencies]
 wick-invocation-server = { workspace = true }
-test-native-component = { workspace = true }
 wick-logger = { workspace = true }
 test-logger = { workspace = true }
 pretty_assertions = { workspace = true }

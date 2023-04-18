@@ -413,30 +413,5 @@ fn promote_val(val: Value) -> Value {
 
 #[cfg(test)]
 mod test {
-  use std::sync::Arc;
-
-  use anyhow::Result;
-  use test_native_component::NativeComponent;
-  use wick_config::WickConfiguration;
-
-  use super::*;
-
-  fn get_component() -> SharedComponent {
-    Arc::new(NativeComponent::default())
-  }
-
-  #[test_logger::test(tokio::test)]
-  async fn test_basic() -> Result<()> {
-    let config = include_str!("../tests/manifests/test.yaml");
-    let config = WickConfiguration::from_yaml(config, &None)?.try_test_config()?;
-    let mut unit_tests = TestSuite::from_test_cases(config.tests());
-    let results = unit_tests.run(None, get_component()).await;
-    assert!(results.is_ok());
-    let results = results.unwrap();
-    let lines = results.get_tap_lines();
-    println!("{}", lines.join("\n"));
-    assert_eq!(results.num_failed(), 0);
-
-    Ok(())
-  }
+  // tested in the workspace root with a native component.
 }

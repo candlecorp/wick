@@ -25,7 +25,3 @@ tokio-stream = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]
-wick-logger = { workspace = true }
-test-logger = { workspace = true }
-test-native-component = { workspace = true }
-anyhow = { workspace = true }

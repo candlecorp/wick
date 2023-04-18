@@ -42,7 +42,6 @@ uuid = { workspace = true, features = ["v4"] }
 [dev-dependencies]
 wick-logger = { workspace = true }
 test-logger = { workspace = true }
-test-native-component = { workspace = true }
 once_cell = { workspace = true }
 reqwest = { workspace = true, features = ["json"], default-features = false }
 anyhow = { workspace = true }

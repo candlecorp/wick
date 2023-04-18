@@ -1,7 +1,6 @@
 [workspace]
 members = [
   "crates/interfaces/*",
-  "crates/integration/test-native-component",
   "crates/integration/test-bdd",
   "crates/misc/*",
   "crates/components/*",
@@ -48,8 +47,6 @@ performance-mark = { path = "./crates/misc/performance-mark", version = "0.1.0" 
 seeded-random = { path = "./crates/misc/seeded-random", version = "0.3.0" }
 tap-harness = { path = "./crates/misc/tap-harness", version = "0.1.0" }
 test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
-# crates/integration
-test-native-component = { path = "./crates/integration/test-native-component", version = "0.1.0" }
 # crates/interfaces
 wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.1.0" }
 # crates/components

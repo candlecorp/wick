@@ -2360,6 +2360,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8bb03732005da905c88227371639bf1ad885cc712789c011c31c5fb3ab3ccf02"
 
 [[package]]
+name = "integration"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 3.2.23",
+ "flow-component",
+ "futures",
+ "pretty_assertions",
+ "serde",
+ "test-logger",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tracing",
+ "wick-component",
+ "wick-component-cli",
+ "wick-interface-types",
+ "wick-invocation-server",
+ "wick-logger",
+ "wick-packet",
+ "wick-rpc",
+]
+
+[[package]]
 name = "inventory"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4746,25 +4770,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-native-component"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap 3.2.23",
- "flow-component",
- "futures",
- "pretty_assertions",
- "serde",
- "test-logger",
- "tokio",
- "tracing",
- "wick-interface-types",
- "wick-logger",
- "wick-packet",
- "wick-rpc",
-]
-
-[[package]]
 name = "test-template"
 version = "0.1.0"
 dependencies = [
@@ -6243,7 +6248,6 @@ dependencies = [
  "serde",
  "serde_json",
  "test-logger",
- "test-native-component",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -6400,7 +6404,6 @@ dependencies = [
  "futures",
  "parking_lot 0.12.1",
  "test-logger",
- "test-native-component",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -6542,7 +6545,6 @@ dependencies = [
  "serde",
  "serde_json",
  "test-logger",
- "test-native-component",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -6608,20 +6610,16 @@ dependencies = [
 name = "wick-test"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "flow-component",
  "serde",
  "serde-value",
  "tap-harness",
- "test-logger",
- "test-native-component",
  "thiserror",
  "tokio",
  "tokio-stream",
  "tracing",
  "wasmrs-codec",
  "wick-config",
- "wick-logger",
  "wick-packet",
 ]
 

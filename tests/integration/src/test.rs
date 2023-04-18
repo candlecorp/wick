@@ -6,8 +6,9 @@ use wick_interface_types::{component, ComponentSignature};
 use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream};
 use wick_rpc::{dispatch, RpcHandler};
 
-#[macro_use]
-extern crate tracing;
+mod wick_component_cli;
+mod wick_invocation_server;
+mod wick_test;
 
 #[derive(Clone, Debug)]
 pub struct Context {}
@@ -82,8 +83,6 @@ async fn test_component(mut input: PacketStream) -> Result<PacketStream, Compone
 
   Ok(stream)
 }
-
-#[cfg(test)]
 mod tests {
 
   use flow_component::panic_callback;

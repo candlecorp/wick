@@ -23,5 +23,4 @@ wick-packet = { workspace = true }
 wick-logger = { workspace = true }
 test-logger = { workspace = true }
 anyhow = { workspace = true }
-test-native-component = { workspace = true }
 futures = { workspace = true }

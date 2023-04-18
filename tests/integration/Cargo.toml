@@ -1,11 +1,12 @@
 [package]
-name = "test-native-component"
+name = "integration"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "Apache-2.0"
 description = "A generic, native component to use in Wick testing"
 repository = "https://github.com/candlecorp/wick"
+publish = false
 
 [features]
 default = ["host", "guest"]
@@ -13,23 +14,23 @@ host = []
 guest = []
 
 [dependencies]
-wick-packet = { workspace = true, features = [
-] }
-wick-interface-types = { workspace = true, features=["parser"] }
+
+[dev-dependencies]
+wick-packet = { workspace = true }
+wick-component = { workspace = true }
+wick-interface-types = { workspace = true, features = ["parser"] }
 flow-component = { workspace = true }
 wick-rpc = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-tokio = { workspace = true, features = ["rt-multi-thread"] }
-tracing = { workspace = true }
-anyhow = {workspace = true}
-futures = { workspace = true }
-
-[dev-dependencies]
-futures = { workspace = true }
-test-logger = { workspace = true }
-tokio = { workspace = true, features = ["macros"] }
-wick-logger = { workspace = true }
-clap = { version = "3.0", features = ["derive", "env"] }
 tracing = { workspace = true }
 anyhow = { workspace = true }
+futures = { workspace = true }
+test-logger = { workspace = true }
+tokio = { workspace = true, features = ["macros", "process", "rt"] }
+wick-logger = { workspace = true }
+clap = { version = "3.0", features = ["derive", "env"] }
 pretty_assertions = { workspace = true }
+wick-component-cli = { workspace = true }
+tonic = { workspace = true }
+wick-invocation-server = { workspace = true }
+tokio-stream = { workspace = true }
