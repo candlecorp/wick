@@ -5491,7 +5491,6 @@ dependencies = [
  "wick-interface-types",
  "wick-logger",
  "wick-oci-utils",
- "wick-package",
  "wick-packet",
  "wick-xdg",
 ]
