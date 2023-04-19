@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod test {
+mod slow_test {
 
   use cargo_generate::{GenerateArgs, TemplatePath};
 

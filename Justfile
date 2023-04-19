@@ -38,7 +38,7 @@ licenses:
 	cargo deny --workspace check licenses  --config etc/deny.toml --hide-inclusion-graph
 
 unit-tests:
-	cargo test --workspace -- --skip integration_test --test-threads=6
+	cargo test --workspace -- --skip integration_test --skip slow_test --test-threads=6
 
 ci-tests: wasm
   just unit-tests
@@ -47,7 +47,12 @@ integration: integration-setup && integration-teardown
 	just integration-tests
 
 integration-tests:
-	cargo test --workspace
+	cargo nextest run -E 'not test(slow_test)'
+	# cargo test --workspace -- --skip slow_test --test-threads=6
+
+all-tests:
+	# cargo test --workspace -- --test-threads=6
+	cargo nextest run
 
 integration-setup:
 	rm -rf ~/.cache/wick

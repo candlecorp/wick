@@ -11,6 +11,9 @@ pub enum Error {
   #[error("Failed to fetch result of query: {0}")]
   Fetch(String),
 
+  #[error("Unknown database scheme '{0}'")]
+  InvalidScheme(String),
+
   #[error("Failed to connect to MsSqlServer: {0}")]
   MssqlConnect(String),
 

@@ -3,27 +3,22 @@ kind: wick/app@v1
 resources:
   - name: DBADDR
     resource:
-      kind: wick/resource/tcpport@v1
-      port: $POSTGRES_PORT
-      address: $TEST_HOST
+      kind: wick/resource/url@v1
+      url: postgres://postgres:$TEST_PASSWORD@$TEST_HOST:$POSTGRES_PORT/wick_test
 import:
   - name: MYDB
     component:
       kind: wick/component/sql@v1
-      database: wick_test
-      user: postgres
-      password: $TEST_PASSWORD
       resource: DBADDR
       tls: false
-      vendor: Postgres
       operations:
         - name: get_user
           inputs:
             - name: id
               type: u32
           outputs:
-            - name: name
-              type: string
+            - name: output
+              type: object
           query: SELECT name FROM users WHERE id = $$1
           arguments:
             - id

@@ -265,7 +265,11 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
         .into_iter()
         .map(|v| Ok((v.name.clone(), v.try_into()?)))
         .collect::<Result<_>>()?,
-      resources: def.resources.into_iter().map(|v| (v.name.clone(), v.into())).collect(),
+      resources: def
+        .resources
+        .into_iter()
+        .map(|v| Ok((v.name.clone(), v.try_into()?)))
+        .collect::<Result<_>>()?,
       triggers: def.triggers.into_iter().map(|v| v.try_into()).collect::<Result<_>>()?,
     })
   }
@@ -427,7 +431,14 @@ impl From<ResourceDefinition> for v1::ResourceDefinition {
     match value {
       ResourceDefinition::TcpPort(v) => v1::ResourceDefinition::TcpPort(v.into()),
       ResourceDefinition::UdpPort(v) => v1::ResourceDefinition::UdpPort(v.into()),
+      ResourceDefinition::Url(v) => v1::ResourceDefinition::Url(v.into()),
     }
+  }
+}
+
+impl From<config::UrlResource> for v1::Url {
+  fn from(value: config::UrlResource) -> Self {
+    Self { url: value.to_string() }
   }
 }
 
@@ -768,14 +779,17 @@ impl TryFrom<crate::v1::ConnectionTargetDefinition> for config::ConnectionTarget
   }
 }
 
-impl From<v1::ResourceDefinition> for ResourceDefinition {
-  fn from(value: v1::ResourceDefinition) -> Self {
-    match value {
+impl TryFrom<v1::ResourceDefinition> for ResourceDefinition {
+  type Error = ManifestError;
+  fn try_from(value: v1::ResourceDefinition) -> Result<Self> {
+    Ok(match value {
       v1::ResourceDefinition::TcpPort(v) => Self::TcpPort(v.into()),
       v1::ResourceDefinition::UdpPort(v) => Self::UdpPort(v.into()),
-    }
+      v1::ResourceDefinition::Url(v) => Self::Url(v.url.try_into()?),
+    })
   }
 }
+
 impl From<v1::TcpPort> for TcpPort {
   fn from(value: v1::TcpPort) -> Self {
     Self {
@@ -846,12 +860,13 @@ impl TryFrom<v1::ComponentBinding> for config::BoundComponent {
   }
 }
 
-impl From<v1::ResourceBinding> for BoundResource {
-  fn from(value: v1::ResourceBinding) -> Self {
-    Self {
+impl TryFrom<v1::ResourceBinding> for BoundResource {
+  type Error = ManifestError;
+  fn try_from(value: v1::ResourceBinding) -> Result<Self> {
+    Ok(Self {
       id: value.name,
-      kind: value.resource.into(),
-    }
+      kind: value.resource.try_into()?,
+    })
   }
 }
 
@@ -1024,11 +1039,7 @@ impl TryFrom<v1::SqlComponent> for components::SqlComponentConfig {
   fn try_from(value: v1::SqlComponent) -> Result<Self> {
     Ok(Self {
       resource: value.resource,
-      user: value.user,
-      password: value.password,
-      database: value.database,
       tls: value.tls,
-      vendor: value.vendor.into(),
       operations: value
         .operations
         .into_iter()
@@ -1056,11 +1067,7 @@ impl TryFrom<components::SqlComponentConfig> for v1::SqlComponent {
   fn try_from(value: components::SqlComponentConfig) -> Result<Self> {
     Ok(Self {
       resource: value.resource,
-      user: value.user,
-      password: value.password,
-      database: value.database,
       tls: value.tls,
-      vendor: value.vendor.into(),
       operations: value
         .operations
         .into_iter()

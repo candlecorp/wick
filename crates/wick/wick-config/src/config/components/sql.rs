@@ -4,18 +4,6 @@ pub struct SqlComponentConfig {
   /// The TcpPort reference to listen on for connections.
   pub resource: String,
 
-  /// The kind of database to connect to.
-  pub vendor: DatabaseKind,
-
-  /// The username to use when connecting to the database.
-  pub user: String,
-
-  /// The password to use when connecting to the database.
-  pub password: String,
-
-  /// The database to connect to.
-  pub database: String,
-
   /// Whether or not to use TLS.
   pub tls: bool,
 

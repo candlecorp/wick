@@ -294,11 +294,14 @@ pub(crate) enum ResourceDefinition {
   /// A variant representing a [UdpPort] type.
   #[serde(rename = "wick/resource/udpport@v1")]
   UdpPort(UdpPort),
+  /// A variant representing a [Url] type.
+  #[serde(rename = "wick/resource/url@v1")]
+  Url(Url),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A WebAssembly component.
+/// A TCP port to bind to.
 pub(crate) struct TcpPort {
   /// The port to bind to.
 
@@ -314,7 +317,7 @@ pub(crate) struct TcpPort {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A WebAssembly component.
+/// A UDP port to bind to.
 pub(crate) struct UdpPort {
   /// The port to bind to.
 
@@ -326,6 +329,16 @@ pub(crate) struct UdpPort {
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) address: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A URL configured as a resource.
+pub(crate) struct Url {
+  /// The url string.
+
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) url: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -919,25 +932,6 @@ pub(crate) struct SqlComponent {
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) resource: String,
-  /// The database vendor to load.
-
-  #[serde(default)]
-  pub(crate) vendor: DatabaseKind,
-  /// The username to use when connecting to the database.
-
-  #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) user: String,
-  /// The password to use when connecting to the database.
-
-  #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) password: String,
-  /// The database to connect to.
-
-  #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) database: String,
   /// Whether or not to use TLS.
 
   #[serde(default)]

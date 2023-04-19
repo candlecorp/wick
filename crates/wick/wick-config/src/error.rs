@@ -58,6 +58,10 @@ pub enum ManifestError {
   /// Parser error.
   #[error(transparent)]
   Parser(#[from] flow_expression_parser::Error),
+
+  /// Invalid authority format
+  #[error("Invalid authority: {0}")]
+  InvalidUrl(String),
 }
 
 #[derive(Error, Debug, Clone, Copy)]
