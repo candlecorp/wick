@@ -72,7 +72,7 @@ impl ComponentConfiguration {
 
   /// Returns a function that resolves a binding to a configuration item.
   #[must_use]
-  pub fn resolver(&self) -> Resolver {
+  pub fn resolver(&self) -> Box<Resolver> {
     let imports = self.component.imports_owned();
     let resources = self.resources.clone();
     Box::new(move |name| {

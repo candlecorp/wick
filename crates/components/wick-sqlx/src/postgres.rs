@@ -4,23 +4,16 @@ pub(crate) use serialize::*;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use wick_config::config::components::SqlComponentConfig;
-use wick_config::config::TcpPort;
+use wick_config::config::UrlResource;
 
 use crate::Error;
 
-pub(crate) async fn connect(config: SqlComponentConfig, addr: &TcpPort) -> Result<PgPool, Error> {
-  let connect_string = format!(
-    "postgres://{}:{}@{}/{}",
-    config.user,
-    config.password,
-    addr.address(),
-    config.database
-  );
-  debug!(connect = connect_string, "connecting to postgres");
+pub(crate) async fn connect(_config: SqlComponentConfig, addr: &UrlResource) -> Result<PgPool, Error> {
+  debug!(connect = %addr, "connecting to postgres");
 
   let pool = PgPoolOptions::new()
     .max_connections(5)
-    .connect(&connect_string)
+    .connect(&addr.to_string())
     .await
     .map_err(|e| Error::PostgresConnect(e.to_string()))?;
   Ok(pool)
@@ -32,8 +25,8 @@ mod integration_test {
   use flow_component::{panic_callback, Component};
   use futures::StreamExt;
   use serde_json::json;
-  use wick_config::config::components::{DatabaseKind, SqlOperationDefinition};
-  use wick_config::config::{ResourceDefinition, TcpPort};
+  use wick_config::config::components::SqlOperationDefinition;
+  use wick_config::config::ResourceDefinition;
   use wick_config::HighLevelComponent;
   use wick_interface_types::{Field, TypeSignature};
   use wick_packet::{packet_stream, Invocation, Packet};
@@ -46,13 +39,11 @@ mod integration_test {
     let db_host = docker_host.split(':').next().unwrap();
     let password = std::env::var("TEST_PASSWORD").unwrap();
     let port = std::env::var("POSTGRES_PORT").unwrap();
+    let user = "postgres";
+    let db_name = "wick_test";
 
     let mut config = SqlComponentConfig {
       resource: "db".to_owned(),
-      user: "postgres".to_owned(),
-      password,
-      database: "wick_test".to_owned(),
-      vendor: DatabaseKind::Postgres,
       tls: false,
       operations: vec![],
     };
@@ -67,7 +58,11 @@ mod integration_test {
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource(
       "db",
-      ResourceDefinition::TcpPort(TcpPort::new(db_host, port.parse().unwrap())),
+      ResourceDefinition::Url(
+        format!("postgres://{}:{}@{}:{}/{}", user, password, db_host, port, db_name)
+          .try_into()
+          .unwrap(),
+      ),
     );
 
     let component = SqlXComponent::new();

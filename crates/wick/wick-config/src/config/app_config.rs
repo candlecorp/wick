@@ -59,7 +59,7 @@ impl AppConfiguration {
 
   /// Returns a function that resolves a binding to a configuration item.
   #[must_use]
-  pub fn resolver(&self) -> Resolver {
+  pub fn resolver(&self) -> Box<Resolver> {
     let imports = self.import.clone();
     let resources = self.resources.clone();
     Box::new(move |name| {

@@ -1,7 +1,7 @@
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 
-use wick_config::config::{ResourceDefinition, TcpPort, UdpPort};
+use wick_config::config::{ResourceDefinition, TcpPort, UdpPort, UrlResource};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ResourceError {
@@ -14,6 +14,7 @@ pub enum ResourceError {
 pub enum Resource {
   TcpPort(SocketAddr),
   UdpPort(SocketAddr),
+  Url(UrlResource),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -21,6 +22,7 @@ pub enum Resource {
 pub enum ResourceKind {
   TcpPort,
   UdpPort,
+  Url,
 }
 
 impl std::fmt::Display for ResourceKind {
@@ -28,6 +30,7 @@ impl std::fmt::Display for ResourceKind {
     match self {
       Self::TcpPort => write!(f, "TcpPort"),
       Self::UdpPort => write!(f, "UdpPort"),
+      Self::Url => write!(f, "Url"),
     }
   }
 }
@@ -37,6 +40,7 @@ impl Resource {
     match config {
       ResourceDefinition::TcpPort(config) => Self::new_tcp_port(&config),
       ResourceDefinition::UdpPort(config) => Self::new_udp_port(&config),
+      ResourceDefinition::Url(config) => Self::new_url(&config),
     }
   }
   pub fn new_tcp_port(config: &TcpPort) -> Result<Self, ResourceError> {
@@ -54,10 +58,16 @@ impl Resource {
       config.port(),
     )))
   }
+
+  pub fn new_url(config: &UrlResource) -> Result<Self, ResourceError> {
+    Ok(Self::Url(config.clone()))
+  }
+
   pub fn kind(&self) -> ResourceKind {
     match self {
       Self::TcpPort(_) => ResourceKind::TcpPort,
       Self::UdpPort(_) => ResourceKind::UdpPort,
+      Self::Url(_) => ResourceKind::Url,
     }
   }
 }

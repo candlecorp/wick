@@ -231,7 +231,7 @@ pub(crate) struct ComponentInitOptions<'a> {
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) timeout: Duration,
-  pub(crate) resolver: Option<Resolver>,
+  pub(crate) resolver: Option<Box<Resolver>>,
   #[allow(unused)]
   pub(crate) span: &'a tracing::Span,
 }
@@ -272,6 +272,7 @@ pub(crate) async fn initialize_component<'a, 'b>(
         }
         let resolver = opts.resolver.unwrap();
         let comp = wick_sqlx::SqlXComponent::default();
+        comp.validate(config, &resolver)?;
         comp
           .init(config.clone(), resolver)
           .await

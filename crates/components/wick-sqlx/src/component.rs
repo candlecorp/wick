@@ -8,7 +8,7 @@ use parking_lot::Mutex;
 use serde_json::Value;
 use sqlx::{MssqlPool, PgPool};
 use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition};
-use wick_config::config::{OwnedConfigurationItem, TcpPort};
+use wick_config::config::{OwnedConfigurationItem, UrlResource};
 use wick_config::{HighLevelComponent, Resolver};
 use wick_interface_types::{component, ComponentSignature, Field, TypeSignature};
 use wick_packet::{FluxChannel, Invocation, Observer, Packet, PacketStream, StreamMap, TypeWrapper};
@@ -190,10 +190,10 @@ impl HighLevelComponent for SqlXComponent {
   fn init(
     &self,
     config: Self::Config,
-    resolver: Resolver,
+    resolver: Box<Resolver>,
   ) -> std::pin::Pin<Box<dyn futures::Future<Output = Result<(), ComponentError>> + Send + 'static>> {
     let ctx = self.context.clone();
-    let addr: TcpPort = resolver(&config.resource).unwrap().try_resource().unwrap().into();
+    let addr: UrlResource = resolver(&config.resource).unwrap().try_resource().unwrap().into();
     let init_context = init_context(config, addr);
 
     Box::pin(async move {
@@ -205,7 +205,7 @@ impl HighLevelComponent for SqlXComponent {
     })
   }
 
-  fn validate(&self, config: &Self::Config, resolver: Resolver) -> Result<(), ComponentError> {
+  fn validate(&self, config: &Self::Config, resolver: &Resolver) -> Result<(), ComponentError> {
     Ok(validate(config, &resolver)?)
   }
 }
@@ -230,20 +230,19 @@ fn validate(
   Ok(())
 }
 
-async fn init_client(config: SqlComponentConfig, addr: TcpPort) -> Result<CtxPool, Error> {
-  let pool = match config.vendor {
-    wick_config::config::components::DatabaseKind::MsSql => CtxPool::MsSql(mssql::connect(config, &addr).await?),
-    wick_config::config::components::DatabaseKind::Postgres => {
-      CtxPool::Postgres(postgres::connect(config, &addr).await?)
-    }
-    wick_config::config::components::DatabaseKind::Mysql => todo!(),
-    wick_config::config::components::DatabaseKind::Sqlite => todo!(),
+async fn init_client(config: SqlComponentConfig, addr: UrlResource) -> Result<CtxPool, Error> {
+  let pool = match addr.scheme() {
+    "mssql" => CtxPool::MsSql(mssql::connect(config, &addr).await?),
+    "postgres" => CtxPool::Postgres(postgres::connect(config, &addr).await?),
+    "mysql" => unimplemented!("MySql is not supported yet"),
+    "sqllite" => unimplemented!("Sqllite is not supported yet"),
+    s => return Err(Error::InvalidScheme(s.to_owned())),
   };
   debug!(addr=%addr.address(), "connected to db");
   Ok(pool)
 }
 
-async fn init_context(config: SqlComponentConfig, addr: TcpPort) -> Result<Context, Error> {
+async fn init_context(config: SqlComponentConfig, addr: UrlResource) -> Result<Context, Error> {
   let client = init_client(config.clone(), addr).await?;
   let mut queries = HashMap::new();
   trace!(count=%config.operations.len(), "preparing queries");
@@ -331,7 +330,7 @@ fn fan_out(mut stream: PacketStream, ports: &[String]) -> Vec<PacketStream> {
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use wick_config::config::components::{DatabaseKind, SqlOperationDefinition};
+  use wick_config::config::components::SqlOperationDefinition;
   use wick_config::config::{ResourceDefinition, TcpPort};
   use wick_interface_types::{Field, TypeSignature};
 
@@ -347,10 +346,6 @@ mod test {
   fn test_validate() -> Result<()> {
     let mut config = SqlComponentConfig {
       resource: "db".to_owned(),
-      user: "postgres".to_owned(),
-      password: "postgres".to_owned(),
-      database: "testdb".to_owned(),
-      vendor: DatabaseKind::Postgres,
       tls: false,
       operations: vec![],
     };

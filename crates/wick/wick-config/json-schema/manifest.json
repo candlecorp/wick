@@ -713,6 +713,9 @@
           },
           {
             "$ref": "#/$defs/v1/UdpPort"
+          },
+          {
+            "$ref": "#/$defs/v1/Url"
           }
         ]
       },
@@ -773,6 +776,26 @@
           }
         },
         "required": []
+      },
+      "Url": {
+        "$anchor": "#v1/Url",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The kind of the collection",
+            "enum": [
+              "wick/resource/url@v1"
+            ]
+          },
+          "url": {
+            "description": "The url string.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ]
       },
       "TypesConfiguration": {
         "$anchor": "#v1/TypesConfiguration",
@@ -1531,22 +1554,6 @@
           },
           "resource": {
             "description": "The TcpPort reference to listen on for connections.",
-            "type": "string"
-          },
-          "vendor": {
-            "description": "The database vendor to load.",
-            "$ref": "#/$defs/v1/DatabaseKind"
-          },
-          "user": {
-            "description": "The username to use when connecting to the database.",
-            "type": "string"
-          },
-          "password": {
-            "description": "The password to use when connecting to the database.",
-            "type": "string"
-          },
-          "database": {
-            "description": "The database to connect to.",
             "type": "string"
           },
           "tls": {

@@ -125,9 +125,9 @@ type StaticRouter @tagged("wick/router/static@v1") {
 }
 
 "The possible types of resources."
-union ResourceDefinition = TcpPort | UdpPort
+union ResourceDefinition = TcpPort | UdpPort | Url
 
-"A WebAssembly component."
+"A TCP port to bind to."
 type TcpPort @tagged("wick/resource/tcpport@v1") {
   "The port to bind to."
   port: u16
@@ -135,7 +135,7 @@ type TcpPort @tagged("wick/resource/tcpport@v1") {
   address: string
 }
 
-"A WebAssembly component."
+"A UDP port to bind to."
 type UdpPort @tagged("wick/resource/udpport@v1") {
   "The port to bind to."
   port: u16
@@ -143,6 +143,11 @@ type UdpPort @tagged("wick/resource/udpport@v1") {
   address: string
 }
 
+"A URL configured as a resource."
+type Url @tagged("wick/resource/url@v1") {
+  "The url string."
+  url: string @required
+}
 
 "A configuration for a Wick Component"
 type TypesConfiguration @tagged("wick/types@v1") {
@@ -460,18 +465,6 @@ enum DatabaseKind {
 type SqlComponent @tagged("wick/component/sql@v1") {
   "The TcpPort reference to listen on for connections."
   resource: string
-
-  "The database vendor to load."
-  vendor: DatabaseKind
-
-  "The username to use when connecting to the database."
-  user: string
-
-  "The password to use when connecting to the database."
-  password: string
-
-  "The database to connect to."
-  database: string
 
   "Whether or not to use TLS."
   tls: bool
