@@ -1,123 +1,220 @@
+<a name="readme-top"></a>
+
+[![Contributors][contributors-shield]][contributors-url]
+[![Issues][issues-shield]][issues-url]
+[![Chat][discord-shield]][discord-url]
+[![Build][build-shield]][build-url]
+[![Version][version-shield]][version-url]
+[![License][license-shield]][license-url]
+[![License][license-shield2]][license-url]
+[![Twitter][twitter-shield]][twitter-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
+
+
+<!-- PROJECT LOGO -->
+<br />
 <div align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/candlecorp/.github/blob/main/assets/wick_logo.png?raw=true">
-  <img alt="wick logo" width="50%" src="https://github.com/candlecorp/.github/blob/main/assets/wick_logo.png@.5.png?raw=true">
-</picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" width="50%" srcset="https://github.com/candlecorp/.github/blob/main/assets/wick_logo_light@.5.png?raw=true">
+    <img alt="wick logo" width="50%" src="https://github.com/candlecorp/.github/blob/main/assets/wick_logo.png@.5.png?raw=true">
+  </picture>
+
+  <p align="center">
+    A flow-based runtime for WebAssembly components.
+    <br />
+    <a href="https://github.com/candlecorp/wick"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="#installation">Install</a>
+    ·
+    <a href="https://github.com/candlecorp/wick/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/candlecorp/wick/issues">Request Feature</a>
+  </p>
 </div>
 
-# Wick
 
-Wick is a reactive, flow-based framework for building applications out of WebAssembly components.
 
-Wick is built with Rust and Wasmtime and takes ideas from Docker, Kubernetes, Erlang, Rx, FBP, and more.
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
 
+
+
+<!-- ABOUT THE PROJECT -->
+## About The Project
+
+Wick is a low-code, flow-like runtime for stitching together WebAssembly components into full applications. Built With ❤️, Rust, and Wasm.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- GETTING STARTED -->
 ## Getting Started
 
-Visit the docs in the [Wick Wiki](https://github.com/candlecorp/wick/wiki) for the getting started guide and API documentation.
+You'll need the `wick` binary to run Wick applications or invoke Wick components. You can install it with one of the following methods:
 
-## Quick Install - Mac and Linux
+### Installation
 
-Mac and Linux users can install the latest stable version of `wick` with the following command:
+Pick your installation preference:
 
-```sh
-curl -sSL sh.wick.run | bash
+1. [Cargo](#install-with-cargo)
+2. [Homebrew](#install-with-homebrew)
+3. [Pre-built binaries](#install-pre-built-binaries)
+4. [Install from source](#install-from-source)
+
+#### Install with Cargo
+
+```
+cargo install wick-cli
 ```
 
-To download and install the nightly version, or other releases of `wick`, pass the version or tag as the argument.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```sh
-curl -sSL sh.wick.run | bash -s -- nightly
+#### Install with Homebrew
+
 ```
-
-## Quick Install - Windows
-
-Windows users can install the latest stable version of `wick` with the following command:
-
-```sh
-curl https://ps.wick.run -UseBasicParsing | Invoke-Expression
-```
-
-To download and install the nightly version, or other releases of `wick`, pass a tag or version to the downloaded PowerShell script:
-
-```sh
-curl https://ps.wick.run -OutFile setup-wick.ps1; .\setup-wick.ps1 -ReleaseVersion "nightly"; rm setup-wick.ps1;
-```
-
-### Install with Homebrew
-
-```sh
 brew install candlecorp/tap/wick
 ```
 
-Or to install from source:
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```sh
-brew install candlecorp/tap/wick --head
+#### Install pre-built binaries
+
+##### Mac/Linux
+
+```
+curl -sSL sh.wick.run | bash
 ```
 
-## Manual Installation
+##### Windows
 
-Go to the [releases page](https://github.com/candlecorp/wick/releases) to download precompiled binaries for your platform.
+```
+curl https://ps.wick.run -UseBasicParsing | Invoke-Expression
+```
 
-## Compile from Source
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-1. Clone the repository
+#### Install from source
 
 ```sh
 git clone https://github.com/candlecorp/wick.git && cd wick
+just deps # install necessary dependencies
+just install # or cargo install --path crates/bins/wick
 ```
 
-2. Run the install task with `just install`. This will install `wick` to your local cargo bin directory, usually `~/.cargo/bin`.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```sh
-just install
-```
+<!-- USAGE EXAMPLES -->
+## Usage
 
-## Prerequisites for building from source
+We're constantly adding examples to the [./examples](https://github.com/candlecorp/wick/tree/main/examples) directory which we also use as a base for our integration tests.
 
-Aside from rust & cargo, you'll need node.js & npm to run and build the code generator.
+_For more information, please refer to the [Documentation](https://github.com/candlecorp/wick/wiki)_
 
-You can install all the prerequisites for tools that can be installed via rust and npm with the command:
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```sh
-$ just deps
-```
 
-### jq
 
-The tasks also make use of `jq`. Find installation instructions on the `jq` homepage: https://stedolan.github.io/jq/
+<!-- ROADMAP -->
+## Roadmap
 
-### protoc
+- [X] HTTP Trigger
+- [X] Cron Trigger
+- [X] CLI Trigger
+- [ ] WebAssembly Component-model support
+- [ ] Expand automatic API generation
+- [ ] WebSocket support
+    - [ ] WebTransport as support improves
 
-The generated protobuf code relies on protoc. Check the [protobuf](https://grpc.io/docs/protoc-installation/) homepage for installation instructions.
+See the [open issues](https://github.com/candlecorp/wick/issues) for a full list of proposed features (and known issues).
 
-### Rust nightly
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-You will need the Rust nightly toolchain for some of the dependent tools and code formatting.
 
-```
-rustup toolchain add nightly
-```
 
-## Building Wick
+<!-- CONTRIBUTING -->
+## Contributing
 
-Build Wick with `just` alone.
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-```console
-just build
-```
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Don't forget to give the project a star! Thanks again!
 
-## Running tests
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Run unit and self-contained integration tests via `just`
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```console
-just test
-```
 
-To run the full suite of tests, run the `integration-tests` task below. Integration tasks require a modern version of Docker to run.
 
-```console
-just integration-tests
-```
+<!-- LICENSE -->
+## License
 
+Wick is distributed under the Elastic License 2.0 and Apache-2.0 licenses. See `LICENSE` for more information and individual crates for details.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- CONTACT -->
+## Contact
+
+Your Name - [@candle_corp](https://twitter.com/@candle_corp) - jarrod@candle.dev
+
+Project Link: [https://github.com/candlecorp/wick](https://github.com/candlecorp/wick)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[tests-shield]: https://img.shields.io/github/actions/workflow/status/candlecorp/wick/mono_workflow.yaml
+[contributors-shield]: https://img.shields.io/github/contributors/candlecorp/wick.svg
+[contributors-url]: https://github.com/candlecorp/wick/graphs/contributors
+[version-shield]: https://img.shields.io/crates/v/wick-cli
+[version-url]: https://crates.io/crates/wick-cli
+[build-shield]: https://img.shields.io/github/actions/workflow/status/candlecorp/wick/mono_workflow.yaml
+[build-url]: https://github.com/candlecorp/wick/actions/workflows/mono_workflow.yaml
+[discord-shield]: https://img.shields.io/discord/909866379904167947
+[discord-url]: https://discord.gg/candle
+[issues-shield]: https://img.shields.io/github/issues/candlecorp/wick.svg
+[issues-url]: https://github.com/candlecorp/wick/issues
+[license-shield]: https://img.shields.io/crates/l/wick-cli
+[license-shield2]: https://img.shields.io/crates/l/wick-component
+[license-url]: https://github.com/candlecorp/wick/blob/master/LICENSE
+[twitter-shield]: https://img.shields.io/badge/-Twitter-black.svg?logo=twitter&colorB=555
+[twitter-url]: https://www.twitter.com/@wickwasm
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?logo=linkedin&colorB=555
+[linkedin-url]: https://www.linkedin.com/company/candlecorp
+[product-screenshot]: images/screenshot.png
+[Rust-badge]: https://img.shields.io/badge/rust-000000?style=for-the-badge&logo=rust&logoColor=white
+[Rust-url]: https://www.rust-lang.org
+[Wasm-badge]: https://img.shields.io/badge/wasm-000000?style=for-the-badge&logo=webassembly&logoColor=white
+[Wasm-url]: https://webassembly.org
