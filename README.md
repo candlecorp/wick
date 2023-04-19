@@ -5,8 +5,6 @@
 [![Chat][discord-shield]][discord-url]
 [![Build][build-shield]][build-url]
 [![Version][version-shield]][version-url]
-[![License][license-shield]][license-url]
-[![License][license-shield2]][license-url]
 [![Twitter][twitter-shield]][twitter-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
