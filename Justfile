@@ -39,6 +39,7 @@ licenses:
 
 unit-tests:
 	cargo test --workspace -- --skip integration_test --skip slow_test --test-threads=6
+	# cargo nextest run -E 'not (test(slow_test) | test(integration_test))'
 
 ci-tests: wasm
   just unit-tests
@@ -51,8 +52,8 @@ integration-tests:
 	cargo test --workspace -- --skip slow_test --test-threads=6
 
 all-tests:
-	cargo test --workspace -- --test-threads=6
-	# cargo nextest run
+	# cargo test --workspace -- --test-threads=6
+	cargo nextest run
 
 integration-setup:
 	rm -rf ~/.cache/wick

@@ -93,9 +93,122 @@ pub mod parse;
 /// Error module.
 pub mod error;
 
+use std::str::FromStr;
+
 pub use parse::v0::parse_id;
 
 use crate::error::ParserError;
 
 /// The crate's error type.
 pub type Error = ParserError;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[must_use]
+/// A node instance
+pub enum InstanceTarget {
+  /// A flow input node.
+  Input,
+  /// A flow output node.
+  Output,
+  /// A reserved namespace for built-in nodes.
+  Core,
+  /// An unspecified node.
+  Default,
+  #[doc(hidden)]
+  Link,
+  /// A named node instance.
+  Named(String),
+  /// An instance created inline.
+  Path(String, String),
+}
+
+impl InstanceTarget {
+  /// Returns [self] unless self is [InstanceTarget::Default], in which case it returns [other].
+  pub fn or(self, other: InstanceTarget) -> InstanceTarget {
+    match self {
+      InstanceTarget::Default => other,
+      _ => self,
+    }
+  }
+
+  /// Get the id of the instance target.
+  #[must_use]
+  pub fn id(&self) -> &str {
+    match self {
+      InstanceTarget::Input => parse::SCHEMATIC_INPUT,
+      InstanceTarget::Output => parse::SCHEMATIC_OUTPUT,
+      InstanceTarget::Core => parse::CORE_ID,
+      InstanceTarget::Default => panic!("Cannot get id of default instance"),
+      InstanceTarget::Link => parse::NS_LINK,
+      InstanceTarget::Named(name) => name,
+      InstanceTarget::Path(_, id) => id,
+    }
+  }
+
+  /// Create a new [InstanceTarget::Named] from a string.
+  pub fn named(name: impl AsRef<str>) -> Self {
+    Self::Named(name.as_ref().to_owned())
+  }
+
+  /// Create a new [InstanceTarget::Path] from a path and id.
+  pub fn path(path: impl AsRef<str>, id: impl AsRef<str>) -> Self {
+    Self::Path(path.as_ref().to_owned(), id.as_ref().to_owned())
+  }
+}
+
+impl FromStr for InstanceTarget {
+  type Err = Error;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    parse::v1::parse_instance(s)
+  }
+}
+
+impl std::fmt::Display for InstanceTarget {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      InstanceTarget::Input => f.write_str(parse::SCHEMATIC_INPUT),
+      InstanceTarget::Output => f.write_str(parse::SCHEMATIC_OUTPUT),
+      InstanceTarget::Core => f.write_str(parse::CORE_ID),
+      InstanceTarget::Default => f.write_str("<>"),
+      InstanceTarget::Link => f.write_str(parse::NS_LINK),
+      InstanceTarget::Named(name) => f.write_str(name),
+      InstanceTarget::Path(path, id) => write!(f, "{}[{}]", path, id),
+    }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[must_use]
+/// A port on a node instance, used to connect node instances together.
+pub struct ConnectionTarget {
+  pub(crate) target: InstanceTarget,
+  pub(crate) port: String,
+}
+
+impl ConnectionTarget {
+  /// Create a new ConnectionTarget.
+  pub fn new(target: InstanceTarget, port: impl AsRef<str>) -> Self {
+    Self {
+      target,
+      port: port.as_ref().to_owned(),
+    }
+  }
+
+  /// Get the target port
+  #[must_use]
+  pub fn port(&self) -> &str {
+    &self.port
+  }
+
+  /// Get the target instance
+  pub fn target(&self) -> &InstanceTarget {
+    &self.target
+  }
+}
+
+impl std::fmt::Display for ConnectionTarget {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}.{}", self.target, self.port)
+  }
+}

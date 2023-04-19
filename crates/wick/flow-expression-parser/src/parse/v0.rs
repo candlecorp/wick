@@ -17,7 +17,12 @@ type Result<T> = std::result::Result<T, Error>;
 /// Parse a string as connection target pieces.
 pub fn parse_target(s: &str) -> Result<(Option<&str>, Option<&str>)> {
   CONNECTION_TARGET_REGEX.captures(s.trim()).map_or_else(
-    || Err(Error::ConnectionTargetSyntax(s.to_owned())),
+    || {
+      Err(Error::ConnectionTargetSyntax(
+        s.to_owned(),
+        "Unspecified error".to_owned(),
+      ))
+    },
     |captures| {
       Ok((
         captures.get(1).map(|m| m.as_str().trim()),
@@ -67,7 +72,7 @@ fn parse_from_or_sender(from: &str, default_port: Option<&str>) -> Result<Connec
         parse::SENDER_PORT.to_owned(),
         Some(serde_json::from_str(from.trim()).map_err(|e| Error::InvalidSenderData(e.to_string()))?),
       )),
-      Err(_e) => Err(Error::ConnectionTargetSyntax(from.to_owned())),
+      Err(e) => Err(Error::ConnectionTargetSyntax(from.to_owned(), e.to_string())),
     },
   }
 }

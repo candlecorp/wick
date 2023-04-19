@@ -8,6 +8,7 @@ pub mod types {
 }
 
 use flow_expression_parser::parse::CORE_ID;
+use flow_expression_parser::InstanceTarget;
 use flow_graph::NodeReference;
 use types::*;
 use wick_config::config::ComponentImplementation;
@@ -57,21 +58,33 @@ pub fn from_def(manifest: &wick_config::config::ComponentConfiguration) -> Resul
         schematic.add_external(name, NodeReference::new(&def.component_id, &def.name), def.data.clone());
       }
 
+      // inline instances
+      for connection in &flow.connections {
+        if let InstanceTarget::Path(path, id) = connection.from.get_instance() {
+          let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
+          schematic.add_external(id, NodeReference::new(component_id, op), None);
+        }
+        if let InstanceTarget::Path(path, id) = connection.to.get_instance() {
+          let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
+          schematic.add_external(id, NodeReference::new(component_id, op), None);
+        }
+      }
+
       for connection in &flow.connections {
         let from = &connection.from;
         let to = &connection.to;
         let to_port = schematic
-          .find_mut(to.get_instance())
+          .find_mut(to.get_instance().id())
           .map(|component| component.add_input(to.get_port()));
 
-        assert!(
-          to_port.is_some(),
-          "Could not find downstream instance '{}'",
-          to.get_instance(),
-        );
+        if to_port.is_none() {
+          return Err(flow_graph::error::Error::MissingDownstream(
+            to.get_instance().id().to_owned(),
+          ));
+        }
         let to_port = to_port.unwrap();
 
-        if let Some(component) = schematic.find_mut(from.get_instance()) {
+        if let Some(component) = schematic.find_mut(from.get_instance().id()) {
           let from_port = component.add_output(from.get_port());
           schematic.connect(from_port, to_port, None)?;
         } else {

@@ -6,4 +6,6 @@ pub enum Error {
   InvalidPortIndex(PortIndex),
   #[error("Too many connections to input port '{0}'")]
   MultipleInputConnections(String),
+  #[error("Missing downstream '{0}'")]
+  MissingDownstream(String),
 }
