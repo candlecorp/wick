@@ -3,6 +3,7 @@ use std::fmt::Display;
 use std::hash::Hash;
 use std::str::FromStr;
 
+use flow_expression_parser::{ConnectionTarget, InstanceTarget};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use wick_interface_types::Field;
@@ -90,7 +91,7 @@ impl Display for InstanceReference {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 /// A [ConnectionDefinition] defines the link between an upstream and downstream port as well as.
 /// the default value to use in the case of an exception.
 #[must_use]
@@ -117,8 +118,8 @@ impl PartialEq for ConnectionDefinition {
 impl Eq for ConnectionDefinition {}
 
 impl ConnectionDefinition {
-  /// Constructor for a [ConnectionDefinition]. This is mostly used in tests,.
-  /// the most common way to get a [ConnectionDefinition] is by parsing a manifest.
+  /// Constructor for a [ConnectionDefinition].
+  /// The most common way to get a [ConnectionDefinition] is by parsing a manifest.
   pub fn new(from: ConnectionTargetDefinition, to: ConnectionTargetDefinition) -> Self {
     Self { from, to }
   }
@@ -153,11 +154,11 @@ impl FromStr for SenderData {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-/// A [ConnectionTargetDefinition] is a wrapper around an [Option<PortReference>].
+#[derive(Debug, Clone)]
+/// A [ConnectionTargetDefinition] is a [ConnectionTarget] that may or may not have associated data.
 #[must_use]
 pub struct ConnectionTargetDefinition {
-  pub(crate) target: PortReference,
+  pub(crate) target: ConnectionTarget,
   pub(crate) data: Option<SenderData>,
 }
 
@@ -177,36 +178,8 @@ impl Eq for ConnectionTargetDefinition {}
 
 impl ConnectionTargetDefinition {
   /// Constructor for a [PortReference]. Used mostly in test code.
-  pub fn new<T: AsRef<str>, U: AsRef<str>>(instance: T, port: U) -> Self {
-    Self {
-      target: PortReference {
-        instance: instance.as_ref().to_owned(),
-        port: port.as_ref().to_owned(),
-      },
-      data: None,
-    }
-  }
-
-  /// Constructor for a [PortReference]. Used mostly in test code.
-  pub fn new_with_data<T: AsRef<str>, U: AsRef<str>>(instance: T, port: U, data: Value) -> Self {
-    Self {
-      target: PortReference {
-        instance: instance.as_ref().to_owned(),
-        port: port.as_ref().to_owned(),
-      },
-      data: Some(SenderData { inner: data }),
-    }
-  }
-
-  /// Create a [ConnectionTargetDefinition] that points nowhere.
-  pub fn sender(config: Option<SenderData>) -> Self {
-    Self {
-      target: PortReference {
-        instance: crate::SENDER_ID.to_owned(),
-        port: crate::SENDER_PORT.to_owned(),
-      },
-      data: config,
-    }
+  pub fn new(target: ConnectionTarget) -> Self {
+    Self { target, data: None }
   }
 
   /// Getter for the target's [SenderData].
@@ -215,54 +188,15 @@ impl ConnectionTargetDefinition {
     self.data.as_ref()
   }
 
-  /// Create a [ConnectionTargetDefinition] with the target set to the passed port.
-  pub fn from_port(port: PortReference) -> Self {
-    Self {
-      target: port,
-      data: None,
-    }
-  }
-
-  #[must_use]
-  /// Convenience method to test if the target's instance matches the passed string.
-  pub fn matches_instance(&self, instance: &str) -> bool {
-    self.target.instance == instance
-  }
-
-  #[must_use]
-  /// Convenience method to test if the target's port matches the passed string.
-  pub fn matches_port(&self, port: &str) -> bool {
-    self.target.port == port
-  }
-
-  /// Get the target's instance.
-  #[must_use]
-  pub fn get_instance(&self) -> &str {
-    &self.target.instance
-  }
-
-  /// Get the target's instance as an owned String.
-  #[must_use]
-  pub fn get_instance_owned(&self) -> String {
-    self.target.instance.clone()
+  /// Get the the actual [InstanceTarget].
+  pub fn get_instance(&self) -> &InstanceTarget {
+    self.target.target()
   }
 
   /// Get the target's port.
   #[must_use]
   pub fn get_port(&self) -> &str {
-    &self.target.port
-  }
-
-  /// Get the target's port as an owned String if it exists.
-  #[must_use]
-  pub fn get_port_owned(&self) -> String {
-    self.target.port.clone()
-  }
-
-  /// Generate a [ConnectionTargetDefinition] from short form syntax.
-  pub fn from_v0_str(s: &str) -> Result<Self> {
-    let parsed = crate::v0::parse::parse_connection_target(s)?;
-    parsed.try_into()
+    self.target.port()
   }
 }
 
@@ -272,57 +206,9 @@ impl Display for ConnectionDefinition {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-
-/// A [PortReference] is the link to a port for a specific reference of a component.
-pub struct PortReference {
-  /// A schematic-wide unique reference that maps to a [ComponentDefinition].
-  pub instance: String,
-  /// A port on the referenced [ComponentDefinition].
-  pub port: String,
-}
-
-impl PortReference {
-  /// Constructor for a [PortReference]. Used mostly in test code.
-  pub fn new<T: AsRef<str>, U: AsRef<str>>(instance: T, port: U) -> Self {
-    Self {
-      instance: instance.as_ref().to_owned(),
-      port: port.as_ref().to_owned(),
-    }
-  }
-}
-
-impl Default for PortReference {
-  fn default() -> Self {
-    Self {
-      instance: "<None>".to_owned(),
-      port: "<None>".to_owned(),
-    }
-  }
-}
-
-impl<T, U> From<(T, U)> for PortReference
-where
-  T: AsRef<str>,
-  U: AsRef<str>,
-{
-  fn from((instance, port): (T, U)) -> Self {
-    PortReference {
-      instance: instance.as_ref().to_owned(),
-      port: port.as_ref().to_owned(),
-    }
-  }
-}
-
 impl Display for ConnectionTargetDefinition {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}[{}]", self.target.instance, self.target.port)
-  }
-}
-
-impl Display for PortReference {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}[{}]", self.instance, self.port)
+    write!(f, "{}", self.target)
   }
 }
 

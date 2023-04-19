@@ -8,7 +8,7 @@ fn wick_run() {
     .case(format!("tests/{}/{}/*.trycmd", kind, DIR));
 }
 
-mod integration_tests {
+mod integration_test {
   use super::DIR;
   #[test]
   fn wick_run() {

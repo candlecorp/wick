@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=../../wick/wick-config/json-schema/manifest.json
+# yaml-language-server: $schema=https://github.com/candlecorp/wick/releases/download/nightly/schema.json
 ---
 name: test-component
 kind: wick/component@v1

@@ -26,6 +26,27 @@ async fn test_echo() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn test_anon_nodes() -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(
+    "./tests/manifests/v1/inline-node-ids.yaml",
+    "testop",
+    packets!(("input", "Hello world!")),
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _wrapper = outputs.pop().unwrap(); //done signal
+  let wrapper = outputs.pop().unwrap();
+  let expected = Packet::encode("output", "!DLROW OLLEH");
+
+  assert_eq!(wrapper.unwrap(), expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
 async fn test_call_component() -> Result<()> {
   let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v1/component-call.yaml",

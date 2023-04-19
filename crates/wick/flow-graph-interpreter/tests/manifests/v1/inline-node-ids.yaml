@@ -1,0 +1,21 @@
+---
+name: 'test'
+kind: wick/component@v1
+metadata:
+  version: '0.0.2'
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: testop
+      inputs:
+        - name: message
+          type: string
+        - name: component
+          type: link
+      outputs:
+        - name: output
+          type: string
+      flow:
+        - <> -> test::reverse[A].input
+        - A.output -> test::uppercase[B].input
+        - B.output -> <>

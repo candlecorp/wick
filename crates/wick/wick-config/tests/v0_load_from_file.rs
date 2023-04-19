@@ -1,9 +1,7 @@
 use std::env;
 use std::path::PathBuf;
-use std::str::FromStr;
 
-use flow_expression_parser::parse::{NS_LINK, SCHEMATIC_OUTPUT, SENDER_ID, SENDER_PORT};
-use serde_json::Value;
+use flow_expression_parser::{ConnectionTarget, InstanceTarget};
 use tracing::debug;
 use wick_config::component_config::CompositeComponentImplementation;
 use wick_config::config::{ComponentImplementation, ConnectionTargetDefinition};
@@ -79,8 +77,14 @@ async fn load_shortform_yaml() -> Result<(), ManifestError> {
 
   let first_from = &manifest.flow("logger").unwrap().connections[0].from;
   let first_to = &manifest.flow("logger").unwrap().connections[0].to;
-  assert_eq!(first_from, &ConnectionTargetDefinition::new("<input>", "input"));
-  assert_eq!(first_to, &ConnectionTargetDefinition::new("logger", "input"));
+  assert_eq!(
+    first_from,
+    &ConnectionTargetDefinition::new(ConnectionTarget::new(InstanceTarget::Input, "input"))
+  );
+  assert_eq!(
+    first_to,
+    &ConnectionTargetDefinition::new(ConnectionTarget::new(InstanceTarget::named("logger"), "input"))
+  );
 
   Ok(())
 }
@@ -99,27 +103,13 @@ async fn load_env() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test(tokio::test)]
-async fn load_sender_yaml() -> Result<(), ManifestError> {
-  let manifest = load_component("./tests/manifests/v0/sender.yaml").await?;
-
-  let first_from = &manifest.flow("sender").unwrap().connections[0].from;
-  let first_to = &manifest.flow("sender").unwrap().connections[0].to;
-  assert_eq!(
-    first_from,
-    &ConnectionTargetDefinition::new_with_data(SENDER_ID, SENDER_PORT, Value::from_str(r#""1234512345""#).unwrap())
-  );
-  assert_eq!(first_to, &ConnectionTargetDefinition::new(SCHEMATIC_OUTPUT, "output"));
-
-  Ok(())
-}
-
-#[test_logger::test(tokio::test)]
 async fn load_ns_link() -> Result<(), ManifestError> {
   let manifest = load_component("./tests/manifests/v0/ns.yaml").await?;
 
   let schematic = &manifest.flow("logger").unwrap();
   let from = &schematic.connections[0].from;
-  assert!(from.matches_instance(NS_LINK));
+
+  assert_eq!(from.get_instance(), &InstanceTarget::Link);
 
   Ok(())
 }

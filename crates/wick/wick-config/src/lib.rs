@@ -108,14 +108,7 @@ pub use wick_asset_reference::Error as AssetError;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
-pub use wick_asset_reference::FetchOptions;
-
-/// The reserved name for components that send static data.
-pub(crate) static SENDER_ID: &str = "core::sender";
-/// The name of SENDER's output port.
-pub(crate) static SENDER_PORT: &str = "output";
-
-pub use wick_asset_reference::{normalize_path, normalize_path_str};
+pub use wick_asset_reference::{normalize_path, normalize_path_str, FetchOptions};
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 pub type Resolver = dyn Fn(&str) -> Option<config::OwnedConfigurationItem> + Send + Sync;

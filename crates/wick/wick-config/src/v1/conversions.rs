@@ -1,5 +1,8 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::time::Duration;
+
+use flow_expression_parser::{ConnectionTarget, InstanceTarget};
 
 // use flow_expression_parser::parse_id;
 use crate::app_config::{
@@ -18,7 +21,7 @@ use crate::app_config::{
 };
 use crate::component_config::{CompositeComponentImplementation, OperationSignature, WasmComponentImplementation};
 use crate::config::common::component_definition::{ComponentDefinition, ComponentOperationExpression};
-use crate::config::common::flow_definition::{PortReference, SenderData};
+use crate::config::common::flow_definition::SenderData;
 use crate::config::common::host_definition::HostConfig;
 use crate::config::common::test_case;
 use crate::config::components::{self, ComponentReference, GrpcUrlComponent, ManifestComponent};
@@ -631,8 +634,8 @@ impl TryFrom<config::ConnectionTargetDefinition> for v1::ConnectionTargetDefinit
   fn try_from(value: config::ConnectionTargetDefinition) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       data: value.data.map(|v| v.inner),
-      instance: value.target.instance,
-      port: value.target.port,
+      instance: value.target.target().to_string(),
+      port: value.target.port().to_owned(),
     })
   }
 }
@@ -770,10 +773,7 @@ impl TryFrom<crate::v1::ConnectionTargetDefinition> for config::ConnectionTarget
   fn try_from(def: crate::v1::ConnectionTargetDefinition) -> Result<Self> {
     let data = def.data.map(|json| SenderData { inner: json });
     Ok(config::ConnectionTargetDefinition {
-      target: PortReference {
-        instance: def.instance,
-        port: def.port,
-      },
+      target: ConnectionTarget::new(InstanceTarget::from_str(&def.instance)?, def.port),
       data,
     })
   }

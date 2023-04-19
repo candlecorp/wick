@@ -203,11 +203,15 @@ where
   }
 
   pub fn add_external<T: AsStr>(&mut self, name: T, reference: NodeReference, data: Option<DATA>) -> NodeIndex {
-    self.add_node(name.as_ref().to_owned(), NodeKind::External(reference), data)
+    let name = name.as_ref().to_owned();
+    trace!(%name, %reference, "adding external node");
+    self.add_node(name, NodeKind::External(reference), data)
   }
 
   pub fn add_inherent<T: AsStr>(&mut self, name: T, reference: NodeReference, data: Option<DATA>) -> NodeIndex {
-    self.add_node(name.as_ref().to_owned(), NodeKind::Inherent(reference), data)
+    let name = name.as_ref().to_owned();
+    trace!(%name, %reference, "adding inherent node");
+    self.add_node(name, NodeKind::Inherent(reference), data)
   }
 
   fn add_node(&mut self, name: String, kind: NodeKind, data: Option<DATA>) -> NodeIndex {

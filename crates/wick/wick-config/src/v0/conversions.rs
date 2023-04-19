@@ -1,7 +1,8 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::time::Duration;
 
-use flow_expression_parser::parse_id;
+use flow_expression_parser::{parse_id, ConnectionTarget, InstanceTarget};
 use serde_json::Value;
 
 use crate::error::ManifestError;
@@ -149,10 +150,7 @@ impl TryFrom<crate::v0::ConnectionTargetDefinition> for config::ConnectionTarget
   fn try_from(def: crate::v0::ConnectionTargetDefinition) -> Result<Self> {
     let data = def.data.map(|json| config::SenderData { inner: json });
     Ok(config::ConnectionTargetDefinition {
-      target: config::PortReference {
-        instance: def.instance,
-        port: def.port,
-      },
+      target: ConnectionTarget::new(InstanceTarget::from_str(&def.instance)?, def.port),
       data,
     })
   }

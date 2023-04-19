@@ -10,8 +10,8 @@ pub enum ParserError {
   ComponentIdError(String),
 
   /// Default was requested when none present.
-  #[error("Invalid connection target syntax: '{0}'")]
-  ConnectionTargetSyntax(String),
+  #[error("Invalid connection target syntax: '{0}': {1}")]
+  ConnectionTargetSyntax(String, String),
 
   /// Default was requested when none present.
   #[error("Invalid connection definition syntax: '{0}'")]
