@@ -5,7 +5,7 @@ use seeded_random::{Random, Seed};
 use uuid::Uuid;
 
 use crate::dev::prelude::*;
-use crate::runtime_service::Initialize;
+use crate::runtime_service::{ComponentFactory, ComponentRegistry, Initialize};
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 #[derive(Debug)]
@@ -25,6 +25,7 @@ pub struct RuntimeInit {
   timeout: Duration,
   namespace: Option<String>,
   rng_seed: Seed,
+  native_components: ComponentRegistry,
 }
 
 impl Runtime {
@@ -40,6 +41,7 @@ impl Runtime {
       allow_latest: config.allow_latest,
       timeout: config.timeout,
       namespace: config.namespace,
+      native_components: config.native_components,
       rng_seed: rng.seed(),
       event_log: None,
       span: debug_span!("runtime:new"),
@@ -87,16 +89,30 @@ impl Runtime {
 }
 
 /// The [RuntimeBuilder] builds the configuration for a Wick [Runtime].
-#[derive(Debug, Default)]
+#[derive(Default)]
 #[must_use]
 pub struct RuntimeBuilder {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   manifest_builder: config::ComponentConfigurationBuilder,
-  // mesh: Option<Arc<Mesh>>,
   timeout: Duration,
   rng_seed: Option<Seed>,
   namespace: Option<String>,
+  native_components: ComponentRegistry,
+}
+
+impl std::fmt::Debug for RuntimeBuilder {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("RuntimeBuilder")
+      .field("allow_latest", &self.allow_latest)
+      .field("allowed_insecure", &self.allowed_insecure)
+      .field("manifest_builder", &self.manifest_builder)
+      .field("timeout", &self.timeout)
+      .field("rng_seed", &self.rng_seed)
+      .field("namespace", &self.namespace)
+      .field("native_components", &self.native_components)
+      .finish()
+  }
 }
 
 impl RuntimeBuilder {
@@ -114,6 +130,7 @@ impl RuntimeBuilder {
       allowed_insecure: definition.insecure_registries().clone(),
       manifest_builder: config::ComponentConfigurationBuilder::with_base(definition),
       timeout: Duration::from_secs(5),
+      native_components: ComponentRegistry::default(),
       namespace: None,
       rng_seed: None,
     })
@@ -158,6 +175,10 @@ impl RuntimeBuilder {
     }
   }
 
+  pub fn native_component(&mut self, factory: Box<ComponentFactory>) {
+    self.native_components.add(factory);
+  }
+
   /// Constructs an instance of a Wick [Runtime].
   pub async fn build(self) -> Result<Runtime> {
     let definition = self.manifest_builder.build();
@@ -165,6 +186,7 @@ impl RuntimeBuilder {
       definition,
       allow_latest: self.allow_latest,
       allowed_insecure: self.allowed_insecure,
+      native_components: self.native_components,
       timeout: self.timeout,
       namespace: self.namespace,
       rng_seed: self.rng_seed.unwrap_or_else(new_seed),

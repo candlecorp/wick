@@ -96,7 +96,7 @@ type HttpTrigger @tagged("wick/trigger/http@v1") {
   routers: [HttpRouter]
 }
 
-union HttpRouter = RawRouter | RestRouter
+union HttpRouter = RawRouter | RestRouter | StaticRouter
 
 type RestRouter @tagged("wick/router/rest@v1") {
   "The path to start serving this router from."
@@ -104,6 +104,14 @@ type RestRouter @tagged("wick/router/rest@v1") {
 
   "The component to expose as a Rest API."
   component: ComponentDefinition @required
+}
+
+type StaticRouter @tagged("wick/router/static@v1") {
+  "The path to start serving this router from."
+  path: string @required
+
+  "The volume to serve static files from."
+  volume: string @required
 }
 
 "A RawHttpRouter delegates raw requests and bodies to operations based on the request path."
@@ -115,17 +123,8 @@ type RawRouter @tagged("wick/router/raw@v1") {
   operation: ComponentOperationExpression @required
 }
 
-
-"A RawHttpRouter delegates raw requests and bodies to operations based on the request path."
-type StaticRouter @tagged("wick/router/static@v1") {
-  "The path to start serving this router from."
-  path: string @required
-
-  from: string @required
-}
-
 "The possible types of resources."
-union ResourceDefinition = TcpPort | UdpPort | Url
+union ResourceDefinition = TcpPort | UdpPort | Url | Volume
 
 "A TCP port to bind to."
 type TcpPort @tagged("wick/resource/tcpport@v1") {
@@ -133,6 +132,12 @@ type TcpPort @tagged("wick/resource/tcpport@v1") {
   port: u16
   "The address to bind to."
   address: string
+}
+
+"A filesystem or network volume resource."
+type Volume @tagged("wick/resource/volume@v1") {
+  "The path."
+  path: string @required
 }
 
 "A UDP port to bind to."

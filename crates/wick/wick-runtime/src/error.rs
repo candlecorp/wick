@@ -38,6 +38,9 @@ pub enum RuntimeError {
   #[error("{0}")]
   InitializationFailed(String),
 
+  #[error("{0}")]
+  TriggerFailed(String),
+
   #[error(transparent)]
   InvocationError(#[from] InvocationError),
 

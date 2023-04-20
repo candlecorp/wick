@@ -2,6 +2,7 @@
 
 mod conversions;
 mod service_factory;
+mod static_component;
 use std::collections::HashMap;
 use std::fmt;
 use std::net::SocketAddr;
@@ -11,7 +12,9 @@ use async_trait::async_trait;
 use hyper::Server;
 use parking_lot::Mutex;
 use tokio::task::JoinHandle;
+use wick_config::config::{AppConfiguration, BoundComponent, RawRouterConfig, StaticRouterConfig};
 
+use self::static_component::{RawRouter, StaticComponent};
 use super::{resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
@@ -20,14 +23,16 @@ use crate::Runtime;
 
 #[derive(Debug, thiserror::Error)]
 enum HttpError {
+  #[error("Operation error: {0}")]
+  OperationError(String),
   #[error("Unsupported HTTP method: {0}")]
   UnsupportedMethod(String),
   #[error("Unsupported HTTP version: {0}")]
   UnsupportedVersion(String),
   #[error("Invalid status code: {0}")]
   InvalidStatusCode(String),
-  #[error("Not found: {0}")]
-  NotFound(String),
+  // #[error("Not found: {0}")]
+  // NotFound(String),
   #[error("Invalid response: {0}")]
   InvalidResponse(String),
   #[error("Error deserializing response on port {0}: {1}")]
@@ -39,26 +44,33 @@ enum HttpError {
 struct HttpInstance {
   handle: JoinHandle<()>,
   shutdown_tx: tokio::sync::oneshot::Sender<()>,
+  running_rx: Option<tokio::sync::oneshot::Receiver<()>>,
 }
 
 impl HttpInstance {
   async fn new(engine: Runtime, routers: Vec<HttpRouter>, socket: &SocketAddr) -> Self {
     trace!(%socket,"http server starting");
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
+    let (running_tx, running_rx) = tokio::sync::oneshot::channel::<()>();
 
     let server = Server::bind(socket).serve(ServiceFactory::new(engine, routers));
     let handle = tokio::spawn(async move {
       let _ = server
         .with_graceful_shutdown(async move {
-          let _ = rx.await;
+          match rx.await {
+            Ok(_) => trace!("http server received shutdown signal"),
+            Err(_) => trace!("http server shutdown signal dropped"),
+          }
           trace!("http server shutting down");
         })
         .await;
+      let _ = running_tx.send(());
     });
 
     Self {
       handle,
       shutdown_tx: tx,
+      running_rx: Some(running_rx),
     }
   }
 
@@ -81,7 +93,33 @@ impl HttpInstance {
 }
 
 #[derive(Debug, Clone)]
-struct HttpRouter {
+enum HttpRouter {
+  Raw(RawRouterHandler),
+  Component(ComponentRouterHandler),
+}
+
+impl HttpRouter {
+  fn path(&self) -> &str {
+    match self {
+      HttpRouter::Raw(r) => &r.path,
+      HttpRouter::Component(r) => &r.path,
+    }
+  }
+}
+
+#[derive(Clone)]
+struct RawRouterHandler {
+  path: String,
+  component: Arc<dyn RawRouter + Send + Sync>,
+}
+impl std::fmt::Debug for RawRouterHandler {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_struct("RawRouterHandler").field("path", &self.path).finish()
+  }
+}
+
+#[derive(Debug, Clone)]
+struct ComponentRouterHandler {
   path: String,
   operation: String,
   component: String,
@@ -103,28 +141,24 @@ impl Http {
 
   async fn handle_command(
     &self,
-    app_config: config::AppConfiguration,
+    app_config: AppConfiguration,
     config: config::HttpTriggerConfig,
+    resources: Arc<HashMap<String, Resource>>,
     socket: &SocketAddr,
   ) -> Result<HttpInstance, RuntimeError> {
-    let mut engine = crate::RuntimeBuilder::new();
+    let mut rt = crate::RuntimeBuilder::new();
     let mut routers = Vec::new();
     for (i, router) in config.routers().iter().enumerate() {
-      let router = match router {
-        config::HttpRouterConfig::RawRouter(r) => r,
+      let (router_binding, router) = match router {
+        config::HttpRouterConfig::RawRouter(r) => register_raw_router(i, &app_config, r)?,
+        config::HttpRouterConfig::StaticRouter(r) => register_static_router(i, resources.clone(), &app_config, r)?,
         _ => unimplemented!(),
       };
-      let router_component = resolve_ref(&app_config, router.operation().component())?;
-      let router_binding = config::BoundComponent::new(i.to_string(), router_component);
-      engine = engine.add_import(router_binding);
-      routers.push(HttpRouter {
-        path: router.path().to_owned(),
-        operation: router.operation().operation().to_owned(),
-        component: i.to_string(),
-      });
+      rt = rt.add_import(router_binding);
+      routers.push(router);
     }
     debug!(?routers, "http routers");
-    let engine = engine.build().await?;
+    let engine = rt.build().await?;
 
     let instance = HttpInstance::new(engine, routers, socket).await;
 
@@ -132,12 +166,63 @@ impl Http {
   }
 }
 
+fn register_raw_router(
+  index: usize,
+  app_config: &AppConfiguration,
+  router_config: &RawRouterConfig,
+) -> Result<(BoundComponent, HttpRouter), RuntimeError> {
+  trace!(index, "registering raw router");
+  let router_component = resolve_ref(app_config, router_config.operation().component())?;
+  let router_binding = config::BoundComponent::new(index.to_string(), router_component);
+  let router = ComponentRouterHandler {
+    path: router_config.path().to_owned(),
+    operation: router_config.operation().operation().to_owned(),
+    component: index.to_string(),
+  };
+  Ok((router_binding, HttpRouter::Component(router)))
+}
+
+fn register_static_router(
+  index: usize,
+  resources: Arc<HashMap<String, Resource>>,
+  _app_config: &AppConfiguration,
+  router_config: &StaticRouterConfig,
+) -> Result<(BoundComponent, HttpRouter), RuntimeError> {
+  trace!(index, "registering static router");
+  let volume = resources.get(router_config.volume()).ok_or_else(|| {
+    RuntimeError::ResourceNotFound(
+      TriggerKind::Http,
+      format!("volume {} not found", router_config.volume()),
+    )
+  })?;
+  let volume = match volume {
+    Resource::Volume(s) => s.clone(),
+    _ => {
+      return Err(RuntimeError::InvalidResourceType(
+        TriggerKind::Http,
+        ResourceKind::Volume,
+        volume.kind(),
+      ))
+    }
+  };
+  let router = StaticComponent::new(volume.clone());
+  let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
+  let router_binding = config::BoundComponent::new(index.to_string(), router_component);
+  Ok((
+    router_binding,
+    HttpRouter::Raw(RawRouterHandler {
+      path: router_config.path().to_owned(),
+      component: Arc::new(router),
+    }),
+  ))
+}
+
 #[async_trait]
 impl Trigger for Http {
   async fn run(
     &self,
     _name: String,
-    app_config: config::AppConfiguration,
+    app_config: AppConfiguration,
     config: config::TriggerDefinition,
     resources: Arc<HashMap<String, Resource>>,
   ) -> Result<(), RuntimeError> {
@@ -152,7 +237,7 @@ impl Trigger for Http {
       .get(resource_name)
       .ok_or_else(|| RuntimeError::ResourceNotFound(TriggerKind::Http, resource_name.to_owned()))?;
     let socket = match resource {
-      Resource::TcpPort(s) => s,
+      Resource::TcpPort(s) => *s,
       _ => {
         return Err(RuntimeError::InvalidResourceType(
           TriggerKind::Http,
@@ -162,13 +247,14 @@ impl Trigger for Http {
       }
     };
 
-    let instance = self.handle_command(app_config, config, socket).await?;
+    let instance = self.handle_command(app_config, config, resources, &socket).await?;
     self.instance.lock().replace(instance);
 
     Ok(())
   }
 
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError> {
+    info!("HTTP server shutting down gracefully");
     if self.instance.lock().is_none() {
       return Ok(());
     }
@@ -178,9 +264,15 @@ impl Trigger for Http {
   }
 
   async fn wait_for_done(&self) {
-    info!("HTTP server waiting for SIGINT");
-    tokio::signal::ctrl_c().await.unwrap();
-    debug!("SIGINT received");
+    let rx = if let Some(instance) = self.instance.lock().as_mut() {
+      instance
+        .running_rx
+        .take()
+        .map_or_else(|| panic!("http trigger not running"), |running_rx| running_rx)
+    } else {
+      panic!("http trigger not running")
+    };
+    let _ = rx.await;
   }
 }
 

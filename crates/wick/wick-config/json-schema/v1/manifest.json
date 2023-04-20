@@ -271,7 +271,8 @@
     "HttpRouter": {
       "oneOf": [
         { "$ref": "#/$defs/v1/RawRouter" },
-        { "$ref": "#/$defs/v1/RestRouter" }
+        { "$ref": "#/$defs/v1/RestRouter" },
+        { "$ref": "#/$defs/v1/StaticRouter" }
       ]
     },
 
@@ -298,6 +299,29 @@
       "required": ["path", "component"]
     },
 
+    "StaticRouter": {
+      "$anchor": "#v1/StaticRouter",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/router/static@v1"]
+        },
+        "path": {
+          "description": "The path to start serving this router from.",
+
+          "type": "string"
+        },
+        "volume": {
+          "description": "The volume to serve static files from.",
+
+          "type": "string"
+        }
+      },
+      "required": ["path", "volume"]
+    },
+
     "RawRouter": {
       "$anchor": "#v1/RawRouter",
       "additionalProperties": false,
@@ -321,32 +345,12 @@
       "required": ["path", "operation"]
     },
 
-    "StaticRouter": {
-      "$anchor": "#v1/StaticRouter",
-      "additionalProperties": false,
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": ["wick/router/static@v1"]
-        },
-        "path": {
-          "description": "The path to start serving this router from.",
-
-          "type": "string"
-        },
-        "from": {
-          "type": "string"
-        }
-      },
-      "required": ["path", "from"]
-    },
-
     "ResourceDefinition": {
       "oneOf": [
         { "$ref": "#/$defs/v1/TcpPort" },
         { "$ref": "#/$defs/v1/UdpPort" },
-        { "$ref": "#/$defs/v1/Url" }
+        { "$ref": "#/$defs/v1/Url" },
+        { "$ref": "#/$defs/v1/Volume" }
       ]
     },
 
@@ -371,6 +375,24 @@
         }
       },
       "required": []
+    },
+
+    "Volume": {
+      "$anchor": "#v1/Volume",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/resource/volume@v1"]
+        },
+        "path": {
+          "description": "The path.",
+
+          "type": "string"
+        }
+      },
+      "required": ["path"]
     },
 
     "UdpPort": {

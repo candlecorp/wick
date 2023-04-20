@@ -106,6 +106,7 @@ pub use components::engine_component::EngineComponent;
 pub use components::error::ComponentError;
 pub use runtime::{Runtime, RuntimeBuilder};
 pub use runtime_service::error::EngineError;
+pub use runtime_service::ComponentFactory;
 pub use triggers::{get_trigger_loader, Trigger};
 
 pub type Error = error::RuntimeError;

@@ -27,8 +27,10 @@ pub enum ResourceDefinition {
   TcpPort(TcpPort),
   /// A UDP port.
   UdpPort(UdpPort),
-  /// An authority, for use in URLs, i.e. `"user:password@host:port"`.
+  /// A URL resource.
   Url(UrlResource),
+  /// A filesystem or network volume.
+  Volume(Volume),
 }
 
 impl From<ResourceDefinition> for TcpPort {
@@ -67,11 +69,30 @@ impl TryFrom<String> for UrlResource {
       .map(Self::new)
   }
 }
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// A filesystem or network volume.
+#[must_use]
+pub struct Volume {
+  pub(crate) path: String,
+}
+
+impl Volume {
+  /// Create a new Volume.
+  pub fn new(path: impl AsRef<str>) -> Self {
+    Self {
+      path: path.as_ref().to_owned(),
+    }
+  }
+
+  /// Get the path.
+  #[must_use]
+  pub fn path(&self) -> &str {
+    &self.path
+  }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-/// The authority portion, as in a URL.
-///
-/// This must contain a host and can optionally include a port, username, and password.
+/// A URL resource.
 #[must_use]
 pub struct UrlResource {
   /// The URL
