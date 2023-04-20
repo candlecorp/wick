@@ -242,6 +242,13 @@ impl PacketPayload {
     }
   }
 
+  pub fn into_bytes(self) -> Option<Bytes> {
+    match self {
+      Self::Ok(b) => b,
+      _ => None,
+    }
+  }
+
   pub fn to_json(&self) -> serde_json::Value {
     match self {
       Self::Ok(Some(b)) => match wasmrs_codec::messagepack::deserialize::<serde_json::Value>(b) {

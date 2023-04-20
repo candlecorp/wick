@@ -1,7 +1,7 @@
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 
-use wick_config::config::{ResourceDefinition, TcpPort, UdpPort, UrlResource};
+use wick_config::config::{ResourceDefinition, TcpPort, UdpPort, UrlResource, Volume};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ResourceError {
@@ -15,6 +15,7 @@ pub enum Resource {
   TcpPort(SocketAddr),
   UdpPort(SocketAddr),
   Url(UrlResource),
+  Volume(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -23,6 +24,7 @@ pub enum ResourceKind {
   TcpPort,
   UdpPort,
   Url,
+  Volume,
 }
 
 impl std::fmt::Display for ResourceKind {
@@ -31,6 +33,7 @@ impl std::fmt::Display for ResourceKind {
       Self::TcpPort => write!(f, "TcpPort"),
       Self::UdpPort => write!(f, "UdpPort"),
       Self::Url => write!(f, "Url"),
+      Self::Volume => write!(f, "Volume"),
     }
   }
 }
@@ -41,6 +44,7 @@ impl Resource {
       ResourceDefinition::TcpPort(config) => Self::new_tcp_port(&config),
       ResourceDefinition::UdpPort(config) => Self::new_udp_port(&config),
       ResourceDefinition::Url(config) => Self::new_url(&config),
+      ResourceDefinition::Volume(config) => Self::new_volume(&config),
     }
   }
   pub fn new_tcp_port(config: &TcpPort) -> Result<Self, ResourceError> {
@@ -63,11 +67,16 @@ impl Resource {
     Ok(Self::Url(config.clone()))
   }
 
+  pub fn new_volume(config: &Volume) -> Result<Self, ResourceError> {
+    Ok(Self::Volume(config.path().to_owned()))
+  }
+
   pub fn kind(&self) -> ResourceKind {
     match self {
       Self::TcpPort(_) => ResourceKind::TcpPort,
       Self::UdpPort(_) => ResourceKind::UdpPort,
       Self::Url(_) => ResourceKind::Url,
+      Self::Volume(_) => ResourceKind::Volume,
     }
   }
 }

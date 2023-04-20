@@ -242,6 +242,9 @@ pub(crate) enum HttpRouter {
   /// A variant representing a [RestRouter] type.
   #[serde(rename = "wick/router/rest@v1")]
   RestRouter(RestRouter),
+  /// A variant representing a [StaticRouter] type.
+  #[serde(rename = "wick/router/static@v1")]
+  StaticRouter(StaticRouter),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -255,6 +258,19 @@ pub(crate) struct RestRouter {
 
   #[serde(deserialize_with = "crate::v1::parse::component_shortform")]
   pub(crate) component: ComponentDefinition,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct StaticRouter {
+  /// The path to start serving this router from.
+
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) path: String,
+  /// The volume to serve static files from.
+
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) volume: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -273,18 +289,6 @@ pub(crate) struct RawRouter {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A RawHttpRouter delegates raw requests and bodies to operations based on the request path.
-pub(crate) struct StaticRouter {
-  /// The path to start serving this router from.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) path: String,
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) from: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
 #[serde(tag = "kind")]
 /// The possible types of resources.
 pub(crate) enum ResourceDefinition {
@@ -297,6 +301,9 @@ pub(crate) enum ResourceDefinition {
   /// A variant representing a [Url] type.
   #[serde(rename = "wick/resource/url@v1")]
   Url(Url),
+  /// A variant representing a [Volume] type.
+  #[serde(rename = "wick/resource/volume@v1")]
+  Volume(Volume),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -313,6 +320,16 @@ pub(crate) struct TcpPort {
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) address: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A filesystem or network volume resource.
+pub(crate) struct Volume {
+  /// The path.
+
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) path: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

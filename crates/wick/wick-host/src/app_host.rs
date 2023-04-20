@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use futures::FutureExt;
+use futures::future::join_all;
 use tokio::task::{JoinError, JoinHandle};
 use wick_config::config::{AppConfiguration, WickConfiguration};
 use wick_runtime::error::RuntimeError;
@@ -89,25 +89,23 @@ impl AppHost {
   #[allow(clippy::unused_async)]
   pub async fn wait_for_done(&mut self) -> Result<()> {
     let state = self.triggers.take().unwrap();
-    let mut triggers: Vec<_> = state
+    let (triggers, start_tasks): (Vec<_>, Vec<_>) = state
       .triggers
-      .iter()
-      .map(|(trigger, task)| (trigger.wait_for_done(), task))
-      .collect();
-
-    loop {
-      let all_done = triggers
-        .iter_mut()
-        .all(|ref mut v| v.1.as_ref().unwrap().is_finished() || (&mut v.0).now_or_never().is_some());
-      if all_done {
-        break;
-      }
+      .into_iter()
+      .map(|(trigger, task)| (trigger, task.unwrap()))
+      .unzip();
+    join_all(start_tasks).await;
+    debug!("all triggers started");
+    for trigger in triggers.iter() {
+      trigger.wait_for_done().await;
     }
+    debug!("all triggers finished");
+
     Ok(())
   }
 }
 
-type SharedTrigger = Arc<dyn Trigger + Send + Sync>;
+type SharedTrigger = Arc<dyn Trigger + Send + Sync + 'static>;
 type TriggerTask = JoinHandle<std::result::Result<(), RuntimeError>>;
 
 #[derive(Default)]

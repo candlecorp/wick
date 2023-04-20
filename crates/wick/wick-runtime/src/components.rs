@@ -177,8 +177,7 @@ fn generate_provides(
   Ok(provide)
 }
 
-pub(crate) fn initialize_native_component(namespace: String, seed: Seed, _span: &tracing::Span) -> ComponentInitResult {
-  trace!("registering");
+pub(crate) fn initialize_native_component(namespace: String, seed: Seed) -> ComponentInitResult {
   let collection = Arc::new(wick_stdlib::Collection::new(seed));
   let service = NativeComponentService::new(collection);
 

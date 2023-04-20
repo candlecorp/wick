@@ -6,7 +6,7 @@ use wick_interface_http as wick_http;
 
 use super::HttpError;
 
-pub(super) fn convert_method(method: &hyper::Method) -> Result<wick_http::HttpMethod, HttpError> {
+pub(super) fn method_to_wick(method: &hyper::Method) -> Result<wick_http::HttpMethod, HttpError> {
   match method {
     &hyper::Method::GET => Ok(wick_http::HttpMethod::Get),
     &hyper::Method::POST => Ok(wick_http::HttpMethod::Post),
@@ -19,7 +19,7 @@ pub(super) fn convert_method(method: &hyper::Method) -> Result<wick_http::HttpMe
   }
 }
 
-pub(super) fn convert_scheme(scheme: Option<&hyper::http::uri::Scheme>) -> Result<wick_http::HttpScheme, HttpError> {
+pub(super) fn scheme_to_wick(scheme: Option<&hyper::http::uri::Scheme>) -> Result<wick_http::HttpScheme, HttpError> {
   scheme.map_or(Ok(wick_http::HttpScheme::Http), |scheme| {
     if scheme == &hyper::http::uri::Scheme::HTTP {
       Ok(wick_http::HttpScheme::Http)
@@ -29,11 +29,11 @@ pub(super) fn convert_scheme(scheme: Option<&hyper::http::uri::Scheme>) -> Resul
   })
 }
 
-pub(super) fn convert_authority(authority: Option<&hyper::http::uri::Authority>) -> Result<String, HttpError> {
+pub(super) fn authority_to_wick(authority: Option<&hyper::http::uri::Authority>) -> Result<String, HttpError> {
   Ok(authority.map_or_else(String::default, |v| v.to_string()))
 }
 
-pub(super) fn convert_query_parameters(query: Option<&str>) -> Result<HashMap<String, Vec<String>>, HttpError> {
+pub(super) fn query_params_to_wick(query: Option<&str>) -> Result<HashMap<String, Vec<String>>, HttpError> {
   let query = url::form_urlencoded::parse(query.unwrap_or_default().as_bytes())
     .into_owned()
     .collect::<Vec<(String, String)>>();
@@ -44,15 +44,15 @@ pub(super) fn convert_query_parameters(query: Option<&str>) -> Result<HashMap<St
   Ok(map)
 }
 
-pub(super) fn convert_path(path: &str) -> Result<String, HttpError> {
+pub(super) fn path_to_wick(path: &str) -> Result<String, HttpError> {
   Ok(path.to_owned())
 }
 
-pub(super) fn convert_uri(url: &hyper::http::uri::Uri) -> Result<String, HttpError> {
+pub(super) fn uri_to_wick(url: &hyper::http::uri::Uri) -> Result<String, HttpError> {
   Ok(url.to_string())
 }
 
-pub(super) fn convert_version(version: hyper::http::Version) -> Result<wick_http::HttpVersion, HttpError> {
+pub(super) fn version_to_wick(version: hyper::http::Version) -> Result<wick_http::HttpVersion, HttpError> {
   match version {
     hyper::http::Version::HTTP_09 => Err(HttpError::UnsupportedVersion("HTTP/0.9".to_owned())),
     hyper::http::Version::HTTP_10 => Ok(wick_http::HttpVersion::Http10),
@@ -62,7 +62,7 @@ pub(super) fn convert_version(version: hyper::http::Version) -> Result<wick_http
   }
 }
 
-pub(super) fn convert_headers(headers: &hyper::http::HeaderMap) -> Result<HashMap<String, Vec<String>>, HttpError> {
+pub(super) fn headers_to_wick(headers: &hyper::http::HeaderMap) -> Result<HashMap<String, Vec<String>>, HttpError> {
   let mut map = HashMap::new();
   for (key, value) in headers {
     let key = key.as_str().to_owned();
@@ -72,17 +72,17 @@ pub(super) fn convert_headers(headers: &hyper::http::HeaderMap) -> Result<HashMa
   Ok(map)
 }
 
-pub(super) fn convert_request(req: Request<Body>) -> Result<(wick_http::HttpRequest, Body), HttpError> {
+pub(super) fn request_to_wick(req: Request<Body>) -> Result<(wick_http::HttpRequest, Body), HttpError> {
   Ok((
     wick_http::HttpRequest {
-      method: convert_method(req.method())?,
-      scheme: convert_scheme(req.uri().scheme())?,
-      authority: convert_authority(req.uri().authority())?,
-      query_parameters: convert_query_parameters(req.uri().query())?,
-      path: convert_path(req.uri().path())?,
-      uri: convert_uri(req.uri())?,
-      version: convert_version(req.version())?,
-      headers: convert_headers(req.headers())?,
+      method: method_to_wick(req.method())?,
+      scheme: scheme_to_wick(req.uri().scheme())?,
+      authority: authority_to_wick(req.uri().authority())?,
+      query_parameters: query_params_to_wick(req.uri().query())?,
+      path: path_to_wick(req.uri().path())?,
+      uri: uri_to_wick(req.uri())?,
+      version: version_to_wick(req.version())?,
+      headers: headers_to_wick(req.headers())?,
     },
     req.into_body(),
   ))

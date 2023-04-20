@@ -52,7 +52,7 @@ impl TryFrom<&crate::v0::CollectionDefinition> for config::ComponentDefinition {
   type Error = crate::Error;
   fn try_from(def: &crate::v0::CollectionDefinition) -> std::result::Result<Self, Self::Error> {
     let kind = match def.kind {
-      crate::v0::CollectionKind::Native => config::ComponentDefinition::Native(config::components::NativeComponent {}),
+      crate::v0::CollectionKind::Native => panic!("Can not define native components in a manifest"),
       crate::v0::CollectionKind::GrpcUrl => {
         config::ComponentDefinition::GrpcUrl(config::components::GrpcUrlComponent {
           url: def.reference.clone(),

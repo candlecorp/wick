@@ -14,6 +14,7 @@ use crate::app_config::{
   RawRouterConfig,
   ResourceDefinition,
   RestRouterConfig,
+  StaticRouterConfig,
   TcpPort,
   TimeTriggerConfig,
   TriggerDefinition,
@@ -395,6 +396,17 @@ impl TryFrom<HttpRouterConfig> for v1::HttpRouter {
     Ok(match value {
       HttpRouterConfig::RawRouter(v) => v1::HttpRouter::RawRouter(v.try_into()?),
       HttpRouterConfig::RestRouter(v) => v1::HttpRouter::RestRouter(v.try_into()?),
+      HttpRouterConfig::StaticRouter(v) => v1::HttpRouter::StaticRouter(v.try_into()?),
+    })
+  }
+}
+
+impl TryFrom<StaticRouterConfig> for v1::StaticRouter {
+  type Error = ManifestError;
+  fn try_from(value: StaticRouterConfig) -> Result<Self> {
+    Ok(Self {
+      path: value.path,
+      volume: value.volume,
     })
   }
 }
@@ -435,6 +447,7 @@ impl From<ResourceDefinition> for v1::ResourceDefinition {
       ResourceDefinition::TcpPort(v) => v1::ResourceDefinition::TcpPort(v.into()),
       ResourceDefinition::UdpPort(v) => v1::ResourceDefinition::UdpPort(v.into()),
       ResourceDefinition::Url(v) => v1::ResourceDefinition::Url(v.into()),
+      ResourceDefinition::Volume(v) => v1::ResourceDefinition::Volume(v.into()),
     }
   }
 }
@@ -442,6 +455,12 @@ impl From<ResourceDefinition> for v1::ResourceDefinition {
 impl From<config::UrlResource> for v1::Url {
   fn from(value: config::UrlResource) -> Self {
     Self { url: value.to_string() }
+  }
+}
+
+impl From<config::Volume> for v1::Volume {
+  fn from(value: config::Volume) -> Self {
+    Self { path: value.path }
   }
 }
 
@@ -786,7 +805,14 @@ impl TryFrom<v1::ResourceDefinition> for ResourceDefinition {
       v1::ResourceDefinition::TcpPort(v) => Self::TcpPort(v.into()),
       v1::ResourceDefinition::UdpPort(v) => Self::UdpPort(v.into()),
       v1::ResourceDefinition::Url(v) => Self::Url(v.url.try_into()?),
+      v1::ResourceDefinition::Volume(v) => Self::Volume(v.into()),
     })
+  }
+}
+
+impl From<v1::Volume> for config::Volume {
+  fn from(value: v1::Volume) -> Self {
+    Self { path: value.path }
   }
 }
 
@@ -798,6 +824,7 @@ impl From<v1::TcpPort> for TcpPort {
     }
   }
 }
+
 impl From<v1::UdpPort> for UdpPort {
   fn from(value: v1::UdpPort) -> Self {
     Self {
@@ -844,6 +871,10 @@ impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
       v1::HttpRouter::RestRouter(v) => Self::RestRouter(RestRouterConfig {
         path: v.path,
         component: v.component.try_into()?,
+      }),
+      v1::HttpRouter::StaticRouter(v) => Self::StaticRouter(StaticRouterConfig {
+        path: v.path,
+        volume: v.volume,
       }),
     };
     Ok(rv)
