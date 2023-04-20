@@ -100,7 +100,7 @@ exceptions = [
   # Wick-core is licensed under the Elastic License 2.0
     { name = "wick-host", allow = ["Elastic-2.0"] },
     { name = "wick-runtime", allow = ["Elastic-2.0"] },
-    { name = "wick", allow = ["Elastic-2.0"] },
+    { name = "wick-cli", allow = ["Elastic-2.0"] },
     { name = "wick-test", allow = ["Elastic-2.0"] },
     { name = "wick-stdlib", allow = ["Elastic-2.0"] },
     { name = "wick-rpc", allow = ["Elastic-2.0"] },
