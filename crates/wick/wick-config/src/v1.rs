@@ -245,6 +245,27 @@ pub(crate) enum HttpRouter {
   /// A variant representing a [StaticRouter] type.
   #[serde(rename = "wick/router/static@v1")]
   StaticRouter(StaticRouter),
+  /// A variant representing a [ProxyRouter] type.
+  #[serde(rename = "wick/router/proxy@v1")]
+  ProxyRouter(ProxyRouter),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct ProxyRouter {
+  /// The path to start serving this router from.
+
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) path: String,
+  /// The URL resource to proxy to.
+
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) url: String,
+  /// Whether or not to strip the router&#x27;s path from the proxied request.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "with_expand_envs")]
+  pub(crate) strip_path: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

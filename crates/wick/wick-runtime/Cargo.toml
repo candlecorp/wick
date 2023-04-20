@@ -47,6 +47,7 @@ url = { workspace = true }
 bytes = { workspace = true }
 regex = { workspace = true }
 hyper-staticfile = "0.9"
+hyper-reverse-proxy = "0.5"
 
 [dev-dependencies]
 wick-invocation-server = { workspace = true }

@@ -2235,6 +2235,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "hyper-reverse-proxy"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc1af9b1b483fb9f33bd1cda26b35eacf902f0d116fcf0d56075ea5e5923b935"
+dependencies = [
+ "hyper",
+ "lazy_static",
+ "unicase",
+]
+
+[[package]]
 name = "hyper-rustls"
 version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6605,6 +6616,7 @@ dependencies = [
  "flow-graph-interpreter",
  "futures",
  "hyper",
+ "hyper-reverse-proxy",
  "hyper-staticfile",
  "lazy_static",
  "once_cell",

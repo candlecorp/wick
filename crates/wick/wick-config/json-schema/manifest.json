@@ -632,7 +632,39 @@
           },
           {
             "$ref": "#/$defs/v1/StaticRouter"
+          },
+          {
+            "$ref": "#/$defs/v1/ProxyRouter"
           }
+        ]
+      },
+      "ProxyRouter": {
+        "$anchor": "#v1/ProxyRouter",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The kind of the collection",
+            "enum": [
+              "wick/router/proxy@v1"
+            ]
+          },
+          "path": {
+            "description": "The path to start serving this router from.",
+            "type": "string"
+          },
+          "url": {
+            "description": "The URL resource to proxy to.",
+            "type": "string"
+          },
+          "strip_path": {
+            "description": "Whether or not to strip the router&#x27;s path from the proxied request.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "path",
+          "url"
         ]
       },
       "RestRouter": {

@@ -11,6 +11,7 @@ use crate::app_config::{
   CliConfig,
   HttpRouterConfig,
   HttpTriggerConfig,
+  ProxyRouterConfig,
   RawRouterConfig,
   ResourceDefinition,
   RestRouterConfig,
@@ -397,6 +398,18 @@ impl TryFrom<HttpRouterConfig> for v1::HttpRouter {
       HttpRouterConfig::RawRouter(v) => v1::HttpRouter::RawRouter(v.try_into()?),
       HttpRouterConfig::RestRouter(v) => v1::HttpRouter::RestRouter(v.try_into()?),
       HttpRouterConfig::StaticRouter(v) => v1::HttpRouter::StaticRouter(v.try_into()?),
+      HttpRouterConfig::ProxyRouter(v) => v1::HttpRouter::ProxyRouter(v.try_into()?),
+    })
+  }
+}
+
+impl TryFrom<ProxyRouterConfig> for v1::ProxyRouter {
+  type Error = ManifestError;
+  fn try_from(value: ProxyRouterConfig) -> Result<Self> {
+    Ok(Self {
+      path: value.path,
+      url: value.url,
+      strip_path: value.strip_path,
     })
   }
 }
@@ -875,6 +888,11 @@ impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
       v1::HttpRouter::StaticRouter(v) => Self::StaticRouter(StaticRouterConfig {
         path: v.path,
         volume: v.volume,
+      }),
+      v1::HttpRouter::ProxyRouter(v) => Self::ProxyRouter(ProxyRouterConfig {
+        path: v.path,
+        url: v.url,
+        strip_path: v.strip_path,
       }),
     };
     Ok(rv)
