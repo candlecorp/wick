@@ -1,8 +1,10 @@
+use std::net::SocketAddr;
+
 use futures::future::BoxFuture;
 use hyper::{Body, Request, Response};
 use hyper_staticfile::Static;
 
-use super::HttpError;
+use super::{HttpError, RawRouter};
 
 #[derive()]
 #[must_use]
@@ -17,12 +19,8 @@ impl StaticComponent {
   }
 }
 
-pub(super) trait RawRouter {
-  fn handle(&self, request: Request<Body>) -> BoxFuture<Result<Response<Body>, HttpError>>;
-}
-
 impl RawRouter for StaticComponent {
-  fn handle(&self, request: Request<Body>) -> BoxFuture<Result<Response<Body>, HttpError>> {
+  fn handle(&self, _remote_addr: SocketAddr, request: Request<Body>) -> BoxFuture<Result<Response<Body>, HttpError>> {
     let handler = self.handler.clone();
     let fut = async move {
       let response = handler

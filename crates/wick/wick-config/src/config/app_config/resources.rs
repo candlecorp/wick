@@ -105,6 +105,12 @@ impl UrlResource {
     Self { url }
   }
 
+  /// Get the URL.
+  #[must_use]
+  pub fn into_inner(self) -> Url {
+    self.url
+  }
+
   /// Get the scheme
   #[must_use]
   pub fn scheme(&self) -> &str {
@@ -145,6 +151,14 @@ impl UrlResource {
     self
       .port()
       .map_or_else(|| self.host().to_owned(), |port| format!("{}:{}", self.host(), port))
+  }
+}
+
+impl std::ops::Deref for UrlResource {
+  type Target = Url;
+
+  fn deref(&self) -> &Self::Target {
+    &self.url
   }
 }
 

@@ -1,0 +1,36 @@
+---
+kind: wick/app@v1
+name: serve_http_component
+metadata:
+  description: Serve raw HTTP with a WASM component
+  version: 0.0.1
+  authors:
+    - 'Wick Maintainers'
+  vendors:
+    - 'Candle Corporation'
+  licenses:
+    - Apache-2.0
+resources:
+  - name: http
+    resource:
+      kind: wick/resource/tcpport@v1
+      port: 8999
+      address: 0.0.0.0
+  - name: DIR
+    resource:
+      kind: wick/resource/volume@v1
+      path: $PWD
+  - name: PROXY_URL
+    resource:
+      kind: wick/resource/url@v1
+      url: http://localhost:5173
+triggers:
+  - kind: wick/trigger/http@v1
+    resource: http
+    routers:
+      - kind: wick/router/proxy@v1
+        url: PROXY_URL
+        path: /proxied
+      - kind: wick/router/static@v1
+        path: /
+        volume: DIR

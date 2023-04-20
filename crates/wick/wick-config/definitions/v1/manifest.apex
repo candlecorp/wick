@@ -96,7 +96,18 @@ type HttpTrigger @tagged("wick/trigger/http@v1") {
   routers: [HttpRouter]
 }
 
-union HttpRouter = RawRouter | RestRouter | StaticRouter
+union HttpRouter = RawRouter | RestRouter | StaticRouter | ProxyRouter
+
+type ProxyRouter @tagged("wick/router/proxy@v1") {
+  "The path to start serving this router from."
+  path: string @required
+
+  "The URL resource to proxy to."
+  url: string @required
+
+  "Whether or not to strip the router's path from the proxied request."
+  strip_path: bool
+}
 
 type RestRouter @tagged("wick/router/rest@v1") {
   "The path to start serving this router from."

@@ -1,4 +1,5 @@
 #![allow(unreachable_code, unused)]
+use std::net::SocketAddr;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -8,6 +9,7 @@ use futures::future::BoxFuture;
 use futures::Future;
 use hyper::http::response::Builder;
 use hyper::http::uri::InvalidUri;
+use hyper::server::conn::AddrStream;
 use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
 use tokio_stream::StreamExt;
@@ -32,7 +34,7 @@ impl ServiceFactory {
   }
 }
 
-impl<T> Service<T> for ServiceFactory {
+impl Service<&AddrStream> for ServiceFactory {
   type Response = ResponseService;
   type Error = hyper::Error;
   type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + Sync>>;
@@ -41,23 +43,30 @@ impl<T> Service<T> for ServiceFactory {
     Poll::Ready(Ok(()))
   }
 
-  fn call(&mut self, _: T) -> Self::Future {
+  fn call(&mut self, conn: &AddrStream) -> Self::Future {
     let engine = self.engine.clone();
     let routers = self.routers.clone();
 
-    let fut = async move { Ok(ResponseService::new(engine, routers)) };
+    let remote_addr = conn.remote_addr();
+
+    let fut = async move { Ok(ResponseService::new(remote_addr, engine, routers)) };
     Box::pin(fut)
   }
 }
 
 pub(super) struct ResponseService {
+  remote_addr: SocketAddr,
   engine: Arc<Runtime>,
   routers: Arc<Vec<HttpRouter>>,
 }
 
 impl ResponseService {
-  fn new(engine: Arc<Runtime>, routers: Arc<Vec<HttpRouter>>) -> Self {
-    Self { engine, routers }
+  fn new(remote_addr: SocketAddr, engine: Arc<Runtime>, routers: Arc<Vec<HttpRouter>>) -> Self {
+    Self {
+      remote_addr,
+      engine,
+      routers,
+    }
   }
 }
 
@@ -108,13 +117,13 @@ impl Service<Request<Body>> for ResponseService {
   }
 
   fn call(&mut self, req: Request<Body>) -> Self::Future {
-    trace!("http:static:request");
     let engine = self.engine.clone();
     let router = self
       .routers
       .iter()
       .find(|r| req.uri().path().starts_with(r.path()))
       .cloned();
+    let remote_addr = self.remote_addr;
 
     Box::pin(async move {
       match router {
@@ -125,41 +134,28 @@ impl Service<Request<Body>> for ResponseService {
               Ok(handler) => {
                 match respond(handler.await.map_err(|e| RuntimeError::TriggerFailed(e.to_string()))).await {
                   Ok(r) => Ok(r),
-                  Err(e) => Ok(
-                    Builder::new()
-                      .status(StatusCode::INTERNAL_SERVER_ERROR)
-                      .body(Body::from(e.to_string()))
-                      .unwrap(),
-                  ),
+                  Err(e) => Ok(make_ise(e)),
                 }
               }
-              Err(e) => Ok(
-                Builder::new()
-                  .status(StatusCode::INTERNAL_SERVER_ERROR)
-                  .body(Body::from(e.to_string()))
-                  .unwrap(),
-              ),
+              Err(e) => Ok(make_ise(e)),
             }
           }
-          HttpRouter::Raw(r) => match r.component.handle(req).await {
+          HttpRouter::Raw(r) => match r.component.handle(remote_addr, req).await {
             Ok(res) => Ok(res),
-            Err(e) => Ok(
-              Builder::new()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from(e.to_string()))
-                .unwrap(),
-            ),
+            Err(e) => Ok(make_ise(e)),
           },
         },
-        None => Ok(
-          Builder::new()
-            .status(StatusCode::NOT_FOUND)
-            .body(Body::from(""))
-            .unwrap(),
-        ),
+        None => Ok(make_ise("")),
       }
     })
   }
+}
+
+fn make_ise(e: impl std::fmt::Display) -> Response<Body> {
+  Builder::new()
+    .status(StatusCode::INTERNAL_SERVER_ERROR)
+    .body(Body::from(e.to_string()))
+    .unwrap()
 }
 
 fn handle_component_router(

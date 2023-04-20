@@ -1,6 +1,7 @@
 #![allow(clippy::needless_pass_by_value)]
 
 mod conversions;
+mod proxy_component;
 mod service_factory;
 mod static_component;
 use std::collections::HashMap;
@@ -9,15 +10,17 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use hyper::Server;
+use futures::future::BoxFuture;
+use hyper::{Body, Request, Response, Server};
 use parking_lot::Mutex;
 use tokio::task::JoinHandle;
-use wick_config::config::{AppConfiguration, BoundComponent, RawRouterConfig, StaticRouterConfig};
+use wick_config::config::{AppConfiguration, BoundComponent, ProxyRouterConfig, RawRouterConfig, StaticRouterConfig};
 
-use self::static_component::{RawRouter, StaticComponent};
+use self::static_component::StaticComponent;
 use super::{resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
+use crate::triggers::http::proxy_component::ProxyComponent;
 use crate::triggers::http::service_factory::ServiceFactory;
 use crate::Runtime;
 
@@ -152,7 +155,8 @@ impl Http {
       let (router_binding, router) = match router {
         config::HttpRouterConfig::RawRouter(r) => register_raw_router(i, &app_config, r)?,
         config::HttpRouterConfig::StaticRouter(r) => register_static_router(i, resources.clone(), &app_config, r)?,
-        _ => unimplemented!(),
+        config::HttpRouterConfig::ProxyRouter(r) => register_proxy_router(i, resources.clone(), &app_config, r)?,
+        config::HttpRouterConfig::RestRouter(_) => unimplemented!("Rest router not implemented yet"),
       };
       rt = rt.add_import(router_binding);
       routers.push(router);
@@ -205,7 +209,47 @@ fn register_static_router(
       ))
     }
   };
-  let router = StaticComponent::new(volume.clone());
+  let router = StaticComponent::new(volume);
+  let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
+  let router_binding = config::BoundComponent::new(index.to_string(), router_component);
+  Ok((
+    router_binding,
+    HttpRouter::Raw(RawRouterHandler {
+      path: router_config.path().to_owned(),
+      component: Arc::new(router),
+    }),
+  ))
+}
+
+fn register_proxy_router(
+  index: usize,
+  resources: Arc<HashMap<String, Resource>>,
+  _app_config: &AppConfiguration,
+  router_config: &ProxyRouterConfig,
+) -> Result<(BoundComponent, HttpRouter), RuntimeError> {
+  trace!(index, "registering proxy router");
+  let url = resources.get(router_config.url()).ok_or_else(|| {
+    RuntimeError::ResourceNotFound(
+      TriggerKind::Http,
+      format!("url resource {} not found", router_config.url()),
+    )
+  })?;
+  let url = match url {
+    Resource::Url(s) => s.clone(),
+    _ => {
+      return Err(RuntimeError::InvalidResourceType(
+        TriggerKind::Http,
+        ResourceKind::Url,
+        url.kind(),
+      ))
+    }
+  };
+  let strip_path = if router_config.strip_path() {
+    Some(router_config.path().to_owned())
+  } else {
+    None
+  };
+  let router = ProxyComponent::new(url, strip_path);
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
   let router_binding = config::BoundComponent::new(index.to_string(), router_component);
   Ok((
@@ -334,4 +378,8 @@ triggers:
 
     Ok(())
   }
+}
+
+trait RawRouter {
+  fn handle(&self, remote_addr: SocketAddr, request: Request<Body>) -> BoxFuture<Result<Response<Body>, HttpError>>;
 }
