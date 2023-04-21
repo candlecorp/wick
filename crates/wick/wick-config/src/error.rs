@@ -15,6 +15,18 @@ pub enum ManifestError {
   #[error(transparent)]
   AssetReference(#[from] wick_asset_reference::Error),
 
+  /// Error related to fetching asset references.
+  #[error(transparent)]
+  AssetContainer(#[from] asset_container::Error),
+
+  /// Attempted to retrieve the types in a manifest before they've been fetched.
+  #[error("Attempted to retrieve the types in a manifest before they've been fetched")]
+  TypesNotFetched,
+
+  /// Attempted to import a type that was not found in the manifest.
+  #[error("Attempted to import a type that was not found in the manifest: {0}")]
+  TypeNotFound(String),
+
   /// No format version or kind found in the parsed manifest.
   #[error("Manifest needs a format version (v0) or kind (v1+)")]
   NoFormat,

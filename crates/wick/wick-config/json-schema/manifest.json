@@ -387,7 +387,7 @@
             "description": "Components to import into the application&#x27;s scope.",
             "type": "array",
             "items": {
-              "$ref": "#/$defs/v1/ComponentBinding"
+              "$ref": "#/$defs/v1/ImportBinding"
             }
           },
           "resources": {
@@ -1026,10 +1026,10 @@
             }
           },
           "import": {
-            "description": "Components to import into the application&#x27;s scope.",
+            "description": "Components or types to import into the application&#x27;s scope.",
             "type": "array",
             "items": {
-              "$ref": "#/$defs/v1/ComponentBinding"
+              "$ref": "#/$defs/v1/ImportBinding"
             }
           },
           "operations": {
@@ -1063,6 +1063,13 @@
           "ref": {
             "description": "A reference to a local WebAssembly implementation",
             "type": "string"
+          },
+          "import": {
+            "description": "Components or types to import into the application&#x27;s scope.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/ImportBinding"
+            }
           },
           "types": {
             "description": "Additional types to export and make available to the component.",
@@ -1108,8 +1115,8 @@
           "resource"
         ]
       },
-      "ComponentBinding": {
-        "$anchor": "#v1/ComponentBinding",
+      "ImportBinding": {
+        "$anchor": "#v1/ImportBinding",
         "additionalProperties": false,
         "properties": {
           "name": {
@@ -1117,13 +1124,32 @@
             "type": "string"
           },
           "component": {
-            "description": "The component to bind to.",
-            "$ref": "#/$defs/v1/ComponentDefinition"
+            "description": "The import to bind to.",
+            "$ref": "#/$defs/v1/ImportDefinition"
           }
         },
         "required": [
           "name",
           "component"
+        ]
+      },
+      "ImportDefinition": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/v1/TypesComponent"
+          },
+          {
+            "$ref": "#/$defs/v1/GrpcUrlComponent"
+          },
+          {
+            "$ref": "#/$defs/v1/ManifestComponent"
+          },
+          {
+            "$ref": "#/$defs/v1/ComponentReference"
+          },
+          {
+            "$ref": "#/$defs/v1/SqlComponent"
+          }
         ]
       },
       "ComponentDefinition": {
@@ -1140,6 +1166,33 @@
           {
             "$ref": "#/$defs/v1/SqlComponent"
           }
+        ]
+      },
+      "TypesComponent": {
+        "$anchor": "#v1/TypesComponent",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The kind of the collection",
+            "enum": [
+              "wick/component/types@v1"
+            ]
+          },
+          "ref": {
+            "description": "The URL (and optional tag) or local file path to find the types manifest.",
+            "type": "string"
+          },
+          "types": {
+            "description": "The types to import from the manifest.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ref"
         ]
       },
       "ComponentReference": {

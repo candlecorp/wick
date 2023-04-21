@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use wick_interface_types::{Field, TypeDefinition};
 
-use crate::common::BoundInterface;
+use crate::common::{BoundInterface, ImportBinding};
 use crate::config;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
@@ -12,6 +12,8 @@ use crate::config;
 pub struct WasmComponentImplementation {
   /// The location of the component.
   pub(crate) reference: config::AssetReference,
+
+  pub(crate) import: HashMap<String, ImportBinding>,
 
   /// Types used by the component's operations.
   #[asset(skip)]
@@ -65,7 +67,7 @@ impl WasmComponentImplementation {
   }
 
   /// Get the types used by the component's operations.
-  pub fn types(&self) -> &[TypeDefinition] {
+  pub fn local_types(&self) -> &[TypeDefinition] {
     &self.types
   }
 }

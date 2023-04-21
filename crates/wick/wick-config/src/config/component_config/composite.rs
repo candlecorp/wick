@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use wick_interface_types::TypeDefinition;
 
 use crate::common::BoundInterface;
-use crate::config::common::bindings::BoundComponent;
+use crate::config::common::bindings::ImportBinding;
 use crate::config::common::flow_definition::FlowOperation;
 
 #[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
@@ -13,7 +13,7 @@ use crate::config::common::flow_definition::FlowOperation;
 pub struct CompositeComponentImplementation {
   #[asset(skip)]
   pub(crate) types: Vec<TypeDefinition>,
-  pub(crate) import: HashMap<String, BoundComponent>,
+  pub(crate) import: HashMap<String, ImportBinding>,
   #[asset(skip)]
   pub(crate) operations: HashMap<String, FlowOperation>,
   #[asset(skip)]
@@ -22,7 +22,7 @@ pub struct CompositeComponentImplementation {
 
 impl CompositeComponentImplementation {
   /// Add a [BoundComponent] to the configuration.
-  pub fn add_import(mut self, component: BoundComponent) -> Self {
+  pub fn add_import(mut self, component: ImportBinding) -> Self {
     self.import.insert(component.id.clone(), component);
     self
   }
@@ -34,13 +34,13 @@ impl CompositeComponentImplementation {
 
   #[must_use]
   /// Get the components imported by this [CompositeComponentConfiguration].
-  pub fn components(&self) -> &HashMap<String, BoundComponent> {
+  pub fn components(&self) -> &HashMap<String, ImportBinding> {
     &self.import
   }
 
   #[must_use]
   /// Get an imported component by ID.
-  pub fn component(&self, id: &str) -> Option<&BoundComponent> {
+  pub fn component(&self, id: &str) -> Option<&ImportBinding> {
     self.import.iter().find(|(k, _)| *k == id).map(|(_, v)| v)
   }
 

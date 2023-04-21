@@ -271,8 +271,19 @@ pub enum TypeDefinition {
   Enum(EnumSignature),
 }
 
+impl TypeDefinition {
+  /// Get the name of the type.
+  #[must_use]
+  pub fn name(&self) -> &str {
+    match self {
+      TypeDefinition::Struct(s) => &s.name,
+      TypeDefinition::Enum(e) => &e.name,
+    }
+  }
+}
+
 /// Signatures of enum type definitions.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
 #[must_use]
 pub struct EnumSignature {
   /// The name of the enum.
@@ -280,6 +291,9 @@ pub struct EnumSignature {
   /// The variants in the enum.
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub variants: Vec<EnumVariant>,
+  /// Whether this type is imported.
+  #[serde(default, skip_serializing_if = "is_false")]
+  pub imported: bool,
 }
 
 impl EnumSignature {
@@ -288,7 +302,14 @@ impl EnumSignature {
     Self {
       name: name.as_ref().to_owned(),
       variants,
+      imported: false,
     }
+  }
+}
+
+impl PartialEq for EnumSignature {
+  fn eq(&self, other: &Self) -> bool {
+    self.name == other.name && self.variants == other.variants
   }
 }
 
@@ -326,6 +347,9 @@ pub struct StructSignature {
   /// The fields in this struct.
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub fields: Vec<Field>,
+  /// Whether this type is imported.
+  #[serde(default, skip_serializing_if = "is_false")]
+  pub imported: bool,
 }
 
 impl PartialEq for StructSignature {
@@ -340,6 +364,7 @@ impl StructSignature {
     Self {
       name: name.as_ref().to_owned(),
       fields,
+      imported: false,
     }
   }
 }

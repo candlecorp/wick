@@ -7,16 +7,11 @@ metadata:
 component:
   kind: wick/component/wasmrs@v1
   ref: ./build/test_cli_trigger_component.signed.wasm
-  types:
-    - type: struct
-      name: Interactive
-      fields:
-        - name: stdin
-          type: bool
-        - name: stdout
-          type: bool
-        - name: stderr
-          type: bool
+  import:
+    - name: cli
+      component:
+        kind: wick/component/types@v1
+        ref: ../../interfaces/wick-interface-cli/component.yaml
   operations:
     - name: main
       inputs:
@@ -25,7 +20,7 @@ component:
             list:
               type: string
         - name: isInteractive
-          type: Interactive
+          type: cli::Interactive
       outputs:
         - name: code
           type: u32

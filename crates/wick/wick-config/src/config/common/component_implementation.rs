@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use wick_interface_types::TypeDefinition;
 
-use super::BoundComponent;
+use super::ImportBinding;
 use crate::config;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
@@ -23,15 +23,23 @@ impl ComponentImplementation {
 
   pub fn types(&self) -> &[TypeDefinition] {
     match self {
-      ComponentImplementation::Wasm(w) => w.types(),
+      ComponentImplementation::Wasm(w) => w.local_types(),
       ComponentImplementation::Composite(c) => c.types(),
     }
   }
 
   #[must_use]
-  pub fn imports_owned(&self) -> HashMap<String, BoundComponent> {
+  pub fn imports(&self) -> &HashMap<String, ImportBinding> {
     match self {
-      ComponentImplementation::Wasm(_w) => HashMap::new(),
+      ComponentImplementation::Wasm(c) => &c.import,
+      ComponentImplementation::Composite(c) => &c.import,
+    }
+  }
+
+  #[must_use]
+  pub fn imports_owned(&self) -> HashMap<String, ImportBinding> {
+    match self {
+      ComponentImplementation::Wasm(c) => c.import.clone(),
       ComponentImplementation::Composite(c) => c.import.clone(),
     }
   }

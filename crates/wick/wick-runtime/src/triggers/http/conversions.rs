@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use hyper::http::response::Builder;
 use hyper::{Body, Request, StatusCode};
-use wick_interface_http as wick_http;
+use wick_interface_http::types as wick_http;
 
 use super::HttpError;
 

@@ -108,19 +108,19 @@ impl RuntimeService {
         span: &span,
       };
 
-      let component = config::BoundComponent::new(
+      let component = config::ImportBinding::wasm(
         &ns,
         #[allow(deprecated)]
-        config::ComponentDefinition::Wasm(config::components::WasmComponent {
+        config::components::WasmComponent {
           reference: comp.reference().clone(),
           config: Default::default(),
           permissions: Default::default(),
           provide: Default::default(),
-        }),
+        },
       );
       if let Some(main_component) = initialize_component(&component, collection_init).await? {
         let signed_sig = main_component.component().list();
-        let manifest_sig = init.manifest.signature();
+        let manifest_sig = init.manifest.signature()?;
 
         expect_signature_match(
           comp.reference().location(),
@@ -289,40 +289,45 @@ impl<'a> std::fmt::Debug for ComponentInitOptions<'a> {
 }
 
 pub(crate) async fn initialize_component<'a, 'b>(
-  collection: &'a config::BoundComponent,
+  collection: &'a config::ImportBinding,
   opts: ComponentInitOptions<'b>,
 ) -> Result<Option<NamespaceHandler>> {
   debug!(?collection, ?opts, "initializing component");
   let id = collection.id.clone();
   let span = opts.span.clone();
   match &collection.kind {
-    #[allow(deprecated)]
-    config::ComponentDefinition::Wasm(def) => Ok(Some(
-      init_wasm_component(def, id, opts, Default::default())
-        .instrument(span)
-        .await?,
-    )),
-    config::ComponentDefinition::Manifest(def) => {
-      Ok(Some(init_manifest_component(def, id, opts).instrument(span).await?))
-    }
-    config::ComponentDefinition::Reference(_) => unreachable!(),
-    config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
-    config::ComponentDefinition::HighLevelComponent(hlc) => match hlc {
-      config::HighLevelComponent::Postgres(config) => {
-        if opts.resolver.is_none() {
-          return Err(EngineError::InternalError(InternalError::MissingResolver));
+    config::ImportDefinition::Component(c) => {
+      match c {
+        #[allow(deprecated)]
+        config::ComponentDefinition::Wasm(def) => Ok(Some(
+          init_wasm_component(def, id, opts, Default::default())
+            .instrument(span)
+            .await?,
+        )),
+        config::ComponentDefinition::Manifest(def) => {
+          Ok(Some(init_manifest_component(def, id, opts).instrument(span).await?))
         }
-        let resolver = opts.resolver.unwrap();
-        let comp = wick_sqlx::SqlXComponent::default();
-        comp.validate(config, &resolver)?;
-        comp
-          .init(config.clone(), resolver)
-          .await
-          .map_err(EngineError::NativeComponent)?;
-        Ok(Some(NamespaceHandler::new(id, Box::new(comp))))
+        config::ComponentDefinition::Reference(_) => unreachable!(),
+        config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
+        config::ComponentDefinition::HighLevelComponent(hlc) => match hlc {
+          config::HighLevelComponent::Postgres(config) => {
+            if opts.resolver.is_none() {
+              return Err(EngineError::InternalError(InternalError::MissingResolver));
+            }
+            let resolver = opts.resolver.unwrap();
+            let comp = wick_sqlx::SqlXComponent::default();
+            comp.validate(config, &resolver)?;
+            comp
+              .init(config.clone(), resolver)
+              .await
+              .map_err(EngineError::NativeComponent)?;
+            Ok(Some(NamespaceHandler::new(id, Box::new(comp))))
+          }
+        },
+        config::ComponentDefinition::Native(_) => Ok(None),
       }
-    },
-    config::ComponentDefinition::Native(_) => Ok(None),
+    }
+    config::ImportDefinition::Types(_) => Err(EngineError::InternalError(InternalError::InitTypeImport)),
   }
 }
 

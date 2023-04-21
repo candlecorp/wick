@@ -1,16 +1,19 @@
 mod builder;
 pub(crate) mod config;
+use std::cell::{RefCell, RefMut};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 use anyhow::Result;
 pub use builder::configure;
 use heck::{AsPascalCase, AsSnakeCase};
 use proc_macro2::{Ident, Literal, Span, TokenStream};
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, Expr, Lit, LitStr};
 use wick_config::config::{BoundInterface, FlowOperation, InterfaceDefinition, OperationSignature};
-use wick_config::{normalize_path, WickConfiguration};
+use wick_config::{normalize_path, FetchOptions, WickConfiguration};
 use wick_interface_types::{EnumSignature, EnumVariant, StructSignature, TypeDefinition};
 
 fn snake(s: &str) -> String {
@@ -29,8 +32,30 @@ fn op_outputs_name(op: &OperationSignature) -> String {
   format!("Op{}Outputs", pascal(&op.name))
 }
 
-fn structdef_name(ty: &StructSignature) -> String {
-  pascal(&ty.name)
+fn get_typename_parts(name: &str) -> (Vec<&str>, &str) {
+  let parts = name.split("::").collect::<Vec<_>>();
+  let len = parts.len();
+  let parts = parts.split_at(len - 1);
+  (parts.0.to_vec(), parts.1[0])
+}
+
+fn pathify_typename(name: &str) -> String {
+  println!("name: {:?}", name);
+  let (module_parts, item_part) = get_typename_parts(name);
+  let mut path = module_parts
+    .iter()
+    .map(|p| format!("{}::", snake(p)))
+    .collect::<String>();
+  let name = pascal(item_part);
+
+  path.push_str(&name);
+
+  println!("structdef_name: {:?}", path);
+  path
+}
+
+fn structdef_path(ty: &StructSignature) -> String {
+  pathify_typename(&ty.name)
 }
 
 fn enumdef_name(ty: &EnumSignature) -> String {
@@ -63,7 +88,13 @@ enum Direction {
   Out,
 }
 
-fn expand_type(config: &config::Config, dir: Direction, ty: &wick_interface_types::TypeSignature) -> TokenStream {
+fn expand_type(
+  config: &config::Config,
+  dir: Direction,
+  imported: bool,
+  ty: &wick_interface_types::TypeSignature,
+) -> TokenStream {
+  println!("expand_type:  {:?}", ty);
   if config.raw && dir != Direction::Out {
     return quote! { wick_component::packet::Packet };
   }
@@ -81,30 +112,37 @@ fn expand_type(config: &config::Config, dir: Direction, ty: &wick_interface_type
     wick_interface_types::TypeSignature::F64 => quote! { f64 },
     wick_interface_types::TypeSignature::String => quote! { String },
     wick_interface_types::TypeSignature::List { ty } => {
-      let ty = expand_type(config, dir, ty);
+      let ty = expand_type(config, dir, imported, ty);
       quote! { Vec<#ty> }
     }
     wick_interface_types::TypeSignature::Bytes => {
       quote! {bytes::Bytes}
     }
     wick_interface_types::TypeSignature::Custom(name) => {
-      let ty = Ident::new(name, Span::call_site());
-      quote! {#ty}
+      let (mod_parts, item_part) = get_typename_parts(name);
+      let mod_parts = mod_parts.iter().map(|p| Ident::new(p, Span::call_site()));
+      let ty = Ident::new(item_part, Span::call_site());
+      let location = if imported {
+        quote! {}
+      } else {
+        quote! {types::}
+      };
+      quote! {#location #(#mod_parts ::)*#ty}
     }
     wick_interface_types::TypeSignature::Optional { ty } => {
-      let ty = expand_type(config, dir, ty);
+      let ty = expand_type(config, dir, imported, ty);
       quote! { Option<#ty> }
     }
     wick_interface_types::TypeSignature::Map { key, value } => {
-      let key = expand_type(config, dir, key);
-      let value = expand_type(config, dir, value);
+      let key = expand_type(config, dir, imported, key);
+      let value = expand_type(config, dir, imported, value);
       quote! { std::collections::HashMap<#key,#value> }
     }
     wick_interface_types::TypeSignature::Link { schemas } => quote! {wick_component::packet::ComponentReference},
     wick_interface_types::TypeSignature::Datetime => todo!("implement datetime in new codegen"),
     wick_interface_types::TypeSignature::Ref { reference } => todo!("implement ref in new codegen"),
     wick_interface_types::TypeSignature::Stream { ty } => {
-      let ty = expand_type(config, dir, ty);
+      let ty = expand_type(config, dir, imported, ty);
       quote! { WickStream<#ty> }
     }
     wick_interface_types::TypeSignature::Object => {
@@ -114,11 +152,71 @@ fn expand_type(config: &config::Config, dir: Direction, ty: &wick_interface_type
   }
 }
 
-fn gen_types<'a>(config: &config::Config, ty: impl Iterator<Item = &'a TypeDefinition>) -> Vec<TokenStream> {
-  ty.map(|v| gen_type(config, v))
-    .collect::<Vec<_>>()
-    .into_iter()
-    .collect()
+struct Module(String, Vec<TokenStream>, Vec<Rc<RefCell<Module>>>);
+
+impl Module {
+  fn new(name: &str) -> Rc<RefCell<Self>> {
+    Rc::new(RefCell::new(Self(name.to_owned(), vec![], vec![])))
+  }
+
+  fn add(&mut self, implementation: TokenStream) {
+    self.1.push(implementation);
+  }
+
+  fn add_module(&mut self, module: Rc<RefCell<Module>>) {
+    self.2.push(module);
+  }
+
+  #[allow(clippy::option_if_let_else)]
+  fn get_or_add(&mut self, name: &str) -> Rc<RefCell<Self>> {
+    if let Some(module) = self.2.iter_mut().find(|m| m.borrow().0 == name) {
+      module.clone()
+    } else {
+      self.add_module(Module::new(name));
+      self.get_or_add(name)
+    }
+  }
+
+  fn to_tokens_(&self) -> TokenStream {
+    let name = Ident::new(&self.0, Span::call_site());
+    let implementations = &self.1;
+    let modules = &self.2.iter().map(|m| m.borrow().to_tokens_()).collect::<Vec<_>>();
+    quote! {
+      pub mod #name {
+        #[allow(unused)]
+        use super::#name;
+        #(#implementations)*
+        #(#modules)*
+      }
+    }
+  }
+}
+
+impl ToTokens for Module {
+  fn to_tokens(&self, tokens: &mut TokenStream) {
+    tokens.extend(self.to_tokens_());
+  }
+}
+
+fn place_item(module: &Rc<RefCell<Module>>, mut path_parts_reverse: Vec<&str>, implementation: TokenStream) {
+  if let Some(next) = path_parts_reverse.pop() {
+    let module = module.borrow_mut().get_or_add(next);
+    place_item(&module, path_parts_reverse, implementation);
+  } else {
+    module.borrow_mut().add(implementation);
+  }
+}
+
+fn gen_types<'a>(config: &config::Config, ty: impl Iterator<Item = &'a TypeDefinition>) -> TokenStream {
+  let types = ty.map(|v| gen_type(config, v)).collect::<Vec<_>>();
+  let mut mod_map: HashMap<String, Vec<&TokenStream>> = HashMap::default();
+  let mut root = Module::new("types");
+  for (mod_parts, implementation) in types {
+    place_item(&root, mod_parts, implementation);
+  }
+
+  let borrowed = root.borrow();
+  borrowed.to_tokens_()
 }
 
 fn gen_provided(config: &config::Config, required: &[BoundInterface]) -> TokenStream {
@@ -173,7 +271,7 @@ fn gen_response_streams(config: &config::Config, required: Vec<BoundInterface>) 
           let response_streams: Vec<_> = op
             .outputs
             .iter()
-            .map(|output| (output.name.clone(), expand_type(config, Direction::In, &output.ty)))
+            .map(|output| (output.name.clone(), expand_type(config, Direction::In, false,&output.ty)))
             .collect();
           let response_stream_types = response_streams.iter().map(|(_, ty)| quote!{ WickStream<#ty>});
           let fan_out: Vec<_> = response_streams
@@ -221,15 +319,16 @@ fn gen_response_streams(config: &config::Config, required: Vec<BoundInterface>) 
   }
 }
 
-fn gen_type(config: &config::Config, ty: &TypeDefinition) -> TokenStream {
+fn gen_type<'a>(config: &config::Config, ty: &'a TypeDefinition) -> (Vec<&'a str>, TokenStream) {
   match ty {
     TypeDefinition::Enum(ty) => gen_enum(config, ty),
     TypeDefinition::Struct(ty) => gen_struct(config, ty),
   }
 }
 
-fn gen_enum(config: &config::Config, ty: &EnumSignature) -> TokenStream {
-  let name = Ident::new(&enumdef_name(ty), Span::call_site());
+fn gen_enum<'a>(config: &config::Config, ty: &'a EnumSignature) -> (Vec<&'a str>, TokenStream) {
+  let (path_parts, item_part) = get_typename_parts(&ty.name);
+  let name = Ident::new(item_part, Span::call_site());
   let variants = ty
     .variants
     .iter()
@@ -267,7 +366,7 @@ fn gen_enum(config: &config::Config, ty: &EnumSignature) -> TokenStream {
     })
     .collect::<Vec<_>>();
 
-  quote! {
+  let enum_impl = quote! {
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
     pub enum #name {
       #(#variants,)*
@@ -300,27 +399,32 @@ fn gen_enum(config: &config::Config, ty: &EnumSignature) -> TokenStream {
         }
       }
     }
-  }
+  };
+  (path_parts, enum_impl)
 }
 
-fn gen_struct(config: &config::Config, ty: &StructSignature) -> TokenStream {
-  let name = Ident::new(&structdef_name(ty), Span::call_site());
+fn gen_struct<'a>(config: &config::Config, ty: &'a StructSignature) -> (Vec<&'a str>, TokenStream) {
+  let (module_parts, item_part) = get_typename_parts(&ty.name);
+  let imported = ty.imported;
+
+  let name = Ident::new(item_part, Span::call_site());
   let fields = ty
     .fields
     .iter()
     .map(|f| {
       let name = Ident::new(&snake(&f.name), Span::call_site());
-      let ty = expand_type(config, Direction::In, &f.ty);
+      let ty = expand_type(config, Direction::In, imported, &f.ty);
       quote! {pub #name: #ty}
     })
     .collect::<Vec<_>>();
 
-  quote! {
+  let item = quote! {
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
     pub struct #name {
       #(#fields,)*
     }
-  }
+  };
+  (module_parts, item)
 }
 
 fn gen_wrapper_fns<'a>(
@@ -343,7 +447,7 @@ fn gen_wrapper_fn(config: &config::Config, component: &Ident, op: &OperationSign
     .iter()
     .map(|i| {
       let port_name = &i.name;
-      let port_type = expand_type(config, Direction::In, &i.ty);
+      let port_type = expand_type(config, Direction::In, false, &i.ty);
       quote! {(#port_name, #port_type)}
     })
     .collect::<Vec<_>>();
@@ -404,7 +508,7 @@ fn gen_trait_signature(config: &config::Config, component: &Ident, op: &Operatio
     .iter()
     .map(|i| {
       let port_name = &i.name;
-      let port_type = expand_type(config, Direction::In, &i.ty);
+      let port_type = expand_type(config, Direction::In, false, &i.ty);
       quote! {(#port_name, #port_type)}
     })
     .collect::<Vec<_>>();
@@ -414,7 +518,7 @@ fn gen_trait_signature(config: &config::Config, component: &Ident, op: &Operatio
     .map(|i| {
       let port_name = &i.name;
       let port_field_name = Ident::new(&snake(&i.name), Span::call_site());
-      let port_type = expand_type(config, Direction::Out, &i.ty);
+      let port_type = expand_type(config, Direction::Out, false, &i.ty);
       quote! {pub(crate) #port_field_name: wick_component::packet::Output<#port_type>}
     })
     .collect::<Vec<_>>();
@@ -433,7 +537,7 @@ fn gen_trait_signature(config: &config::Config, component: &Ident, op: &Operatio
     .iter()
     .map(|i| {
       let port_name = Ident::new(&snake(&i.name), Span::call_site());
-      let port_type = expand_type(config, Direction::In, &i.ty);
+      let port_type = expand_type(config, Direction::In, false, &i.ty);
       quote! {#port_name: WickStream<#port_type>}
     })
     .collect::<Vec<_>>();
@@ -459,21 +563,24 @@ fn gen_trait_signature(config: &config::Config, component: &Ident, op: &Operatio
   }
 }
 
-#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
 fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Result<String> {
   let (ops, types, required): (_, _, Vec<_>) = match &wick_config {
-    wick_config::WickConfiguration::Component(config) => match config.component() {
-      wick_config::config::ComponentImplementation::Wasm(c) => (
-        c.operations().clone(),
-        c.types().to_vec(),
-        c.requires().clone().into_values().collect(),
-      ),
-      wick_config::config::ComponentImplementation::Composite(c) => (
-        c.operations().clone().into_iter().map(|(k, v)| (k, v.into())).collect(),
-        c.types().to_vec(),
-        c.requires().clone().into_values().collect(),
-      ),
-    },
+    wick_config::WickConfiguration::Component(config) => {
+      let types = config.types()?;
+      match config.component() {
+        wick_config::config::ComponentImplementation::Wasm(c) => (
+          c.operations().clone(),
+          types,
+          c.requires().clone().into_values().collect(),
+        ),
+        wick_config::config::ComponentImplementation::Composite(c) => (
+          c.operations().clone().into_iter().map(|(k, v)| (k, v.into())).collect(),
+          types,
+          c.requires().clone().into_values().collect(),
+        ),
+      }
+    }
     wick_config::WickConfiguration::Types(config) => (
       std::collections::HashMap::default(),
       config.types().to_vec(),
@@ -495,22 +602,26 @@ fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Resul
     let response_streams = gen_response_streams(gen_config, required);
     quote! {
       #[no_mangle]
+      #[cfg(target_family = "wasm")]
       extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {
         guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
         guest::register_request_response("wick", "__setup", Box::new(__setup));
         #(#register_stmts)*
       }
 
+      #[cfg(target_family = "wasm")]
       thread_local! {
         static __CONFIG: std::cell::UnsafeCell<Option<SetupPayload>> = std::cell::UnsafeCell::new(None);
       }
 
+      #[cfg(target_family = "wasm")]
       #[derive(Debug, serde::Deserialize)]
       pub(crate) struct SetupPayload {
         #[allow(unused)]
         pub(crate) provided: std::collections::HashMap<String,wick_component::packet::ComponentReference>
       }
 
+      #[cfg(target_family = "wasm")]
       fn __setup(input: BoxMono<Payload, PayloadError>) -> Result<BoxMono<RawPayload, PayloadError>, GenericError> {
         Ok(Mono::from_future(async move {
           match input.await {
@@ -530,6 +641,7 @@ fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Resul
       }
 
       #[allow(unused)]
+      #[cfg(target_family = "wasm")]
       pub(crate) fn get_config() -> &'static SetupPayload {
         __CONFIG.with(|cell| {
           #[allow(unsafe_code)]
@@ -542,17 +654,24 @@ fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Resul
     }
   };
 
+  let guest = if matches!(wick_config, WickConfiguration::Types(_)) {
+    quote! {}
+  } else {
+    quote! {
+      #[allow(unused)]
+      use guest::*;
+      use wasmrs_guest as guest;
+    }
+  };
   let expanded = quote! {
+    #guest
     #[allow(unused)]
-    use guest::*;
-    use wasmrs_guest as guest;
-    #[allow(unused)]
-    pub(crate) type WickStream<T> = BoxFlux<T, wick_component::anyhow::Error>;
+    pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, wick_component::anyhow::Error>;
     pub use wick_component::anyhow::Result;
 
     #init
 
-    #( #typedefs )*
+    #typedefs
     #( #trait_defs )*
 
     #[derive(Default, Clone)]
@@ -564,16 +683,20 @@ fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Resul
   Ok(expanded.to_string())
 }
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn build(config: config::Config) -> Result<()> {
-  let wick_yaml = std::fs::read_to_string(&config.spec)?;
-  let wick_config = wick_config::WickConfiguration::from_yaml(&wick_yaml, &Some(config.spec.display().to_string()))?;
+  let rt = tokio::runtime::Runtime::new()?;
+  rt.block_on(async_build(config))
+}
+
+pub async fn async_build(config: config::Config) -> Result<()> {
+  let path = config.spec.as_path().to_str().unwrap();
+  let wick_config = wick_config::WickConfiguration::fetch(path, FetchOptions::default()).await?;
 
   let src = codegen(wick_config, &config)?;
-  std::fs::create_dir_all(&config.out_dir)?;
+  tokio::fs::create_dir_all(&config.out_dir).await?;
   let target = config.out_dir.join("mod.rs");
   println!("Writing to {}", target.display());
-  std::fs::write(target, src)?;
+  tokio::fs::write(target, src).await?;
   Ok(())
 }
 
@@ -585,7 +708,6 @@ mod test {
   use super::*;
   use crate::Config;
 
-  // TODO: make better tests for the codegen. This one's pretty bad.
   #[tokio::test]
   async fn test_build() -> Result<()> {
     let config = Config::new().spec("./tests/testdata/component.yaml");
@@ -598,12 +720,11 @@ mod test {
     Ok(())
   }
 
-  // TODO: make better tests for the codegen. This one's pretty bad.
   #[test]
   fn test_expand_type() -> Result<()> {
     let config = Config::default();
     let ty = TypeSignature::Object;
-    let src = expand_type(&config, Direction::In, &ty);
+    let src = expand_type(&config, Direction::In, false, &ty);
 
     assert_eq!(&src.to_string(), "wasmrs_guest :: Value");
 

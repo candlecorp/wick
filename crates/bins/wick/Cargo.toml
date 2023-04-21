@@ -45,6 +45,7 @@ trycmd = { workspace = true }
 test-logger = { workspace = true }
 regex = { workspace = true }
 tokio = { workspace = true, features = ["process"] }
+rstest = { workspace = true }
 
 [[bin]]
 name = "wick"

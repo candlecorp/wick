@@ -422,6 +422,7 @@ impl TryFrom<rpc::StructSignature> for wick::StructSignature {
     Ok(Self {
       name: v.name,
       fields: convert_list(v.fields)?,
+      imported: false,
     })
   }
 }

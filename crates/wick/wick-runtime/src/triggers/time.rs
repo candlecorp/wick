@@ -55,7 +55,7 @@ async fn create_schedule(
     };
 
     let mut runtime = crate::RuntimeBuilder::new();
-    let schedule_binding = config::BoundComponent::new("0", schedule_component);
+    let schedule_binding = config::ImportBinding::component("0", schedule_component);
     runtime = runtime.add_import(schedule_binding);
     // needed for invoke command
     let runtime = runtime.build().await.unwrap();

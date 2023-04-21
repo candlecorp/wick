@@ -15,6 +15,7 @@ quote = { workspace = true }
 syn = { workspace = true }
 proc-macro2 = { workspace = true }
 heck = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "fs"] }
 
 [dev-dependencies]
 wick-logger = { workspace = true }

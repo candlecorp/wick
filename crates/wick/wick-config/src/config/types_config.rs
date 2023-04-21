@@ -17,6 +17,18 @@ impl TypesConfiguration {
     &self.types
   }
 
+  /// Get the types defined in this configuration, consuming the [TypesConfiguration].
+  #[must_use]
+  pub fn into_types(self) -> Vec<TypeDefinition> {
+    self.types
+  }
+
+  /// Get a type by name
+  #[must_use]
+  pub fn get_type(&self, name: &str) -> Option<&TypeDefinition> {
+    self.types.iter().find(|t| t.name() == name)
+  }
+
   /// Set the source location of the configuration.
   pub fn set_source(&mut self, source: String) {
     // Source is a file, so our baseurl needs to be the parent directory.

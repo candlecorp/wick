@@ -8,7 +8,7 @@ use parking_lot::RwLock;
 use tokio::io::AsyncReadExt;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::Stream;
-use tracing::{debug, trace};
+use tracing::debug;
 
 use crate::{normalize_path_str, Error};
 
@@ -92,7 +92,6 @@ impl AssetReference {
   }
 
   pub fn path(&self) -> Result<String, Error> {
-    trace!(baseurl=?self.baseurl.read(), location=?self.location, "asset location");
     if let Some(cache_loc) = self.cache_location.read().as_ref() {
       Ok(cache_loc.to_string_lossy().to_string())
     } else if self.location.starts_with('@') {

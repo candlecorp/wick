@@ -1,0 +1,21 @@
+---
+kind: wick/component@v1
+name: 'test'
+component:
+  kind: wick/component/composite@v1
+  import:
+    - name: http
+      component:
+        kind: wick/component/types@v1
+        ref: ./http-types.yaml
+  operations:
+    - name: testop
+      inputs:
+        - name: message
+          type: http.HttpRequest
+      outputs:
+        - name: output
+          type: string
+      flow:
+        - <> -> test::whatever[A].input
+        - A.output -> <>

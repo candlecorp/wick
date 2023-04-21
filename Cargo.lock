@@ -610,6 +610,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a2dd5a6fe8c6e3502f568a6353e5273bbb15193ad9a89e457b9970798efbea1"
 
 [[package]]
+name = "codegen-tests"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bytes",
+ "flow-component",
+ "serde",
+ "tokio",
+ "tokio-stream",
+ "wasmrs-guest",
+ "wick-component",
+ "wick-interface-types",
+ "wick-packet",
+]
+
+[[package]]
 name = "codespan-reporting"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4827,6 +4844,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-codegen-bin"
+version = "0.1.0"
+dependencies = [
+ "wick-component-codegen",
+]
+
+[[package]]
 name = "test-log"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6279,6 +6303,7 @@ dependencies = [
  "nkeys",
  "openssl",
  "regex",
+ "rstest",
  "seeded-random",
  "serde_json",
  "test-logger",
@@ -6397,6 +6422,7 @@ dependencies = [
  "flow-component",
  "flow-expression-parser",
  "num-traits",
+ "parking_lot 0.12.1",
  "pretty_assertions",
  "regex",
  "serde",
@@ -6447,14 +6473,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "wick-interface-cli"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "wick-component",
+ "wick-component-codegen",
+]
+
+[[package]]
 name = "wick-interface-http"
 version = "0.2.0"
 dependencies = [
- "bytes",
- "futures",
  "serde",
- "serde_json",
- "wasmrs-guest",
  "wick-component",
  "wick-component-codegen",
 ]
@@ -6467,6 +6498,7 @@ dependencies = [
  "env_logger 0.10.0",
  "nom",
  "pretty_assertions",
+ "rstest",
  "serde",
  "serde_json",
  "serde_repr",

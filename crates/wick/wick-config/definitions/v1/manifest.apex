@@ -18,7 +18,7 @@ type AppConfiguration @default @tagged("wick/app@v1") {
   host: HostConfig,
 
   "Components to import into the application's scope."
-  import: [ComponentBinding],
+  import: [ImportBinding],
 
   "Resources that the application can access."
   resources: [ResourceBinding],
@@ -230,8 +230,8 @@ type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
   "Additional types to export and make available to the component."
   types: [TypeDefinition]
 
-  "Components to import into the application's scope."
-  import: [ComponentBinding]
+  "Components or types to import into the application's scope."
+  import: [ImportBinding]
 
   "A list of operations implemented by the Composite component."
   operations: [CompositeOperationDefinition]
@@ -244,6 +244,9 @@ type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
 type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
   "A reference to a local WebAssembly implementation"
   ref: LocationReference @rename("reference") @required
+
+  "Components or types to import into the application's scope."
+  import: [ImportBinding]
 
   "Additional types to export and make available to the component."
   types: [TypeDefinition]
@@ -263,16 +266,28 @@ type ResourceBinding {
   resource: ResourceDefinition @required
 }
 
-"An identifier bound to a component."
-type ComponentBinding {
+"An identifier bound to an imported component or type manifest."
+type ImportBinding {
   "The name of the binding."
   name: string @required
-  "The component to bind to."
-  component: ComponentDefinition @required
+  "The import to bind to."
+  component: ImportDefinition @required
 }
+
+"The possible types to import into a component or application."
+union ImportDefinition = TypesComponent | GrpcUrlComponent | ManifestComponent | ComponentReference | SqlComponent
 
 "The possible types of components."
 union ComponentDefinition = GrpcUrlComponent | ManifestComponent | ComponentReference | SqlComponent
+
+"A types manifest to import into this component's scope."
+type TypesComponent @tagged("wick/component/types@v1") {
+  "The URL (and optional tag) or local file path to find the types manifest."
+  ref: LocationReference @rename("reference")  @required
+
+  "The types to import from the manifest."
+  types: [string]
+}
 
 "A reference to a component in the application's scope."
 type ComponentReference  @tagged("wick/component/reference@v1") {

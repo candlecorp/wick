@@ -1,6 +1,8 @@
 use std::net::Ipv4Addr;
 use std::str::FromStr;
+use std::sync::Arc;
 
+use parking_lot::RwLock;
 use serde::de::DeserializeOwned;
 
 use crate::error::ManifestError;
@@ -28,3 +30,5 @@ where
   let result = serde_yaml::from_slice(src).map_err(|e| Error::YamlError(path.as_ref().cloned(), e.to_string()))?;
   Ok(result)
 }
+
+pub(crate) type RwOption<T> = Arc<RwLock<Option<T>>>;

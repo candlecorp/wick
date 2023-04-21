@@ -3,14 +3,14 @@ use url::Url;
 #[derive(Debug, Clone, PartialEq)]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
-pub struct BoundResource {
+pub struct ResourceBinding {
   /// The id to bind the resource to.
   pub id: String,
   /// The bound resource.
   pub kind: ResourceDefinition,
 }
 
-impl BoundResource {
+impl ResourceBinding {
   /// Create a new [CollectionDefinition] with specified name and type.
   pub fn new(name: impl AsRef<str>, kind: ResourceDefinition) -> Self {
     Self {
