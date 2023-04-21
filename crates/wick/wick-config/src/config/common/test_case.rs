@@ -42,6 +42,24 @@ impl TestPacket {
       TestPacket::ErrorData(data) => &data.port,
     }
   }
+
+  /// Get the flags for the packet.
+  #[must_use]
+  pub fn flags(&self) -> Option<PacketFlags> {
+    match self {
+      TestPacket::PayloadData(data) => data.flags,
+      TestPacket::ErrorData(data) => data.flags,
+    }
+  }
+
+  /// Get the data for the packet.
+  #[must_use]
+  pub fn data(&self) -> Option<&Value> {
+    match self {
+      TestPacket::PayloadData(data) => data.data.as_ref(),
+      TestPacket::ErrorData(_) => None,
+    }
+  }
 }
 
 #[derive(Debug, Clone, PartialEq)]

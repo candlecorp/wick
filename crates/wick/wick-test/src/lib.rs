@@ -85,7 +85,8 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::collections::HashSet;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use flow_component::SharedComponent;
 use serde_value::Value;
@@ -190,13 +191,23 @@ pub struct UnitTest<'a> {
 
 pub(crate) fn get_payload(test: &UnitTest) -> (PacketStream, Option<InherentData>) {
   let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+  let mut not_done = HashSet::new();
   for packet in &test.test.inputs {
+    let done = packet.flags().map_or(false, |f| f.done);
+    if done {
+      not_done.remove(packet.port());
+    } else {
+      not_done.insert(packet.port());
+    }
     debug!("Test input for port {:?}", packet);
     tx.send(
       gen_packet(packet)
         .map_err(|e| wick_packet::Error::General(format!("could not convert test packet to real packet: {}", e))),
     )
     .unwrap();
+  }
+  for port in not_done {
+    tx.send(Ok(Packet::done(port))).unwrap();
   }
   let stream = PacketStream::new(Box::new(UnboundedReceiverStream::new(rx)));
   if let Some(inherent) = test.test.inherent {
@@ -258,9 +269,11 @@ async fn run_unit<'a>(
 
   trace!(i, %entity, "invoke");
   let invocation = Invocation::new(Entity::test(&test_name), entity, inherent);
-  let result = collection
-    .handle(invocation, stream, None, std::sync::Arc::new(|_, _, _, _| panic!()))
+  let fut = collection.handle(invocation, stream, None, std::sync::Arc::new(|_, _, _, _| panic!()));
+  let fut = tokio::time::timeout(Duration::from_secs(5), fut);
+  let result = fut
     .await
+    .map_err(|e| Error::InvocationTimeout(e.to_string()))?
     .map_err(|e| Error::InvocationFailed(e.to_string()));
 
   if let Err(e) = result {
