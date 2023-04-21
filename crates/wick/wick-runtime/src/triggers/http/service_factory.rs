@@ -3,6 +3,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use bytes::Bytes;
 use futures::future::BoxFuture;
 use futures::Future;
 use hyper::http::response::Builder;
@@ -87,7 +88,7 @@ async fn respond(stream: Result<PacketStream, RuntimeError>) -> Result<Response<
           if p.is_done() {
             continue;
           }
-          let response = p.payload.into_bytes().unwrap_or_default();
+          let response: Bytes = p.deserialize().map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
           body.extend_from_slice(&response);
         }
       }
