@@ -6,14 +6,17 @@ use asset_container::AssetManager;
 pub use composite::CompositeComponentImplementation;
 use config::{ComponentImplementation, ComponentKind};
 pub use wasm::{OperationSignature, WasmComponentImplementation};
-use wick_interface_types::{ComponentMetadata, ComponentSignature, ComponentVersion, TypeDefinition};
+use wick_asset_reference::{AssetReference, FetchOptions};
+use wick_interface_types::{ComponentMetadata, ComponentSignature, TypeDefinition};
 
-use super::BoundComponent;
-use crate::app_config::{BoundResource, OwnedConfigurationItem};
+use super::{make_resolver, ImportBinding};
+use crate::app_config::ResourceBinding;
+use crate::import_cache::{setup_cache, ImportCache};
+use crate::utils::RwOption;
 use crate::{config, v1, Error, Resolver, Result};
 
 #[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct ComponentConfiguration {
@@ -22,7 +25,7 @@ pub struct ComponentConfiguration {
   #[asset(skip)]
   pub(crate) source: Option<String>,
   #[asset(skip)]
-  pub(crate) resources: HashMap<String, BoundResource>,
+  pub(crate) resources: HashMap<String, ResourceBinding>,
   #[asset(skip)]
   pub(crate) host: config::HostConfig,
   #[asset(skip)]
@@ -32,6 +35,10 @@ pub struct ComponentConfiguration {
   #[asset(skip)]
   pub(crate) metadata: Option<config::Metadata>,
   pub(crate) component: ComponentImplementation,
+  #[asset(skip)]
+  pub(crate) type_cache: ImportCache,
+  #[asset(skip)]
+  pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
 }
 
 impl ComponentConfiguration {
@@ -73,17 +80,11 @@ impl ComponentConfiguration {
   /// Returns a function that resolves a binding to a configuration item.
   #[must_use]
   pub fn resolver(&self) -> Box<Resolver> {
-    let imports = self.component.imports_owned();
-    let resources = self.resources.clone();
-    Box::new(move |name| {
-      if let Some(component) = imports.get(name) {
-        return Some(OwnedConfigurationItem::Component(component.kind.clone()));
-      }
-      if let Some(resource) = resources.get(name) {
-        return Some(OwnedConfigurationItem::Resource(resource.kind.clone()));
-      }
-      None
-    })
+    let (imports, resources) = match self.component {
+      ComponentImplementation::Wasm(ref c) => (c.import.clone(), self.resources.clone()),
+      ComponentImplementation::Composite(ref c) => (c.import.clone(), self.resources.clone()),
+    };
+    make_resolver(imports, resources)
   }
 
   /// Determine if the configuration allows for fetching artifacts with the :latest tag.
@@ -143,13 +144,34 @@ impl ComponentConfiguration {
   }
 
   /// Return the types defined in this component.
-  pub fn types(&self) -> &[TypeDefinition] {
-    self.component.types()
+  pub fn types(&self) -> Result<Vec<TypeDefinition>> {
+    self.cached_types.read().as_ref().map_or_else(
+      || {
+        if self.component.imports().is_empty() {
+          Ok(self.component.types().to_vec())
+        } else {
+          Err(Error::TypesNotFetched)
+        }
+      },
+      |types| Ok(types.clone()),
+    )
+  }
+
+  /// Fetch/cache anything critical to the first use of this configuration.
+  pub(crate) async fn setup_cache(&self, options: FetchOptions) -> Result<()> {
+    setup_cache(
+      &self.type_cache,
+      self.component.imports().values(),
+      &self.cached_types,
+      self.component.types().to_vec(),
+      options,
+    )
+    .await
   }
 
   /// Return the resources defined in this component.
   #[must_use]
-  pub fn resources(&self) -> &HashMap<String, BoundResource> {
+  pub fn resources(&self) -> &HashMap<String, ResourceBinding> {
     &self.resources
   }
 
@@ -166,14 +188,14 @@ impl ComponentConfiguration {
   }
 
   /// Get the component signature for this configuration.
-  pub fn signature(&self) -> ComponentSignature {
+  pub fn signature(&self) -> Result<ComponentSignature> {
     let mut sig = wick_interface_types::component! {
       name: self.name().clone().unwrap_or_else(||"".to_owned()),
       version: self.version(),
       operations: self.component.operation_signatures(),
     };
-    sig.types = self.types().to_vec();
-    sig
+    sig.types = self.types()?;
+    Ok(sig)
   }
 
   pub fn into_v1_yaml(self) -> Result<String> {
@@ -193,7 +215,7 @@ pub struct ComponentConfigurationBuilder {
   tests: Vec<config::TestCase>,
   component: ComponentImplementation,
   metadata: Option<config::Metadata>,
-  resources: HashMap<String, BoundResource>,
+  resources: HashMap<String, ResourceBinding>,
 }
 
 impl Default for ComponentConfigurationBuilder {
@@ -232,7 +254,7 @@ impl ComponentConfigurationBuilder {
     }
   }
 
-  pub fn add_import(mut self, import: BoundComponent) -> Self {
+  pub fn add_import(mut self, import: ImportBinding) -> Self {
     self.component = match self.component {
       ComponentImplementation::Composite(c) => ComponentImplementation::Composite(c.add_import(import)),
       ComponentImplementation::Wasm(_) => panic!("Can not add imports to anything but a Composite component"),
@@ -240,7 +262,7 @@ impl ComponentConfigurationBuilder {
     self
   }
 
-  pub fn add_resource(mut self, resource: BoundResource) -> Self {
+  pub fn add_resource(mut self, resource: ResourceBinding) -> Self {
     self.resources.insert(resource.id.clone(), resource);
     self
   }
@@ -256,26 +278,9 @@ impl ComponentConfigurationBuilder {
       metadata: self.metadata,
       tests: self.tests,
       resources: self.resources,
+      cached_types: Default::default(),
+      type_cache: Default::default(),
     }
-  }
-}
-
-impl TryFrom<ComponentConfiguration> for ComponentSignature {
-  type Error = Error;
-  fn try_from(value: ComponentConfiguration) -> Result<Self> {
-    let c = match value.component {
-      ComponentImplementation::Wasm(c) => Self {
-        name: value.name,
-        format: ComponentVersion::V1,
-        metadata: value.metadata.map(|m| m.into()).unwrap_or_default(),
-        wellknown: vec![],
-        types: c.types().to_vec(),
-        operations: c.operations.into_values().map(|o| o.into()).collect(),
-        config: Default::default(),
-      },
-      ComponentImplementation::Composite(_) => todo!(),
-    };
-    Ok(c)
   }
 }
 

@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../../wick/wick-config/json-schema/manifest.json
+---
+name: cli
+kind: wick/types@v1
+types:
+  - type: struct
+    name: Interactive
+    fields:
+      - name: stdin
+        type: bool
+      - name: stdout
+        type: bool
+      - name: stderr
+        type: bool

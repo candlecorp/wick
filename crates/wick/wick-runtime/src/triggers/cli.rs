@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::{env, fmt};
 
 use async_trait::async_trait;
-use config::{AppConfiguration, BoundComponent, CliConfig, TriggerDefinition};
+use config::{AppConfiguration, CliConfig, ImportBinding, TriggerDefinition};
 // use futures::StreamExt;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
@@ -47,7 +47,7 @@ impl Cli {
     args: Vec<String>,
   ) -> Result<(), RuntimeError> {
     let cli_component = resolve_ref(&app_config, config.component())?;
-    let cli_binding = BoundComponent::new("cli", cli_component);
+    let cli_binding = ImportBinding::component("cli", cli_component);
 
     let invocation = Invocation::new(
       Entity::server("cli_channel"),

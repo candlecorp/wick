@@ -1,0 +1,2 @@
+codegen:
+  cargo run --manifest-path ../codegen-bin/Cargo.toml -- tests/testdata/import-types.yaml src/import_types

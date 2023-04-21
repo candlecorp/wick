@@ -59,7 +59,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentBinding">ComponentBinding</a>[]</span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#ImportBinding">ImportBinding</a>[]</span></span></li>
 
 
 </ul>
@@ -947,11 +947,11 @@
   <a name="import">import</a>
 </h3>
 
-<span class="description field-description">Components to import into the application's scope.</span>
+<span class="description field-description">Components or types to import into the application's scope.</span>
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentBinding">ComponentBinding</a>[]</span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#ImportBinding">ImportBinding</a>[]</span></span></li>
 
 
 </ul>
@@ -1002,6 +1002,20 @@
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#LocationReference">LocationReference</a></span></span></li>
 <li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="import">import</a>
+</h3>
+
+<span class="description field-description">Components or types to import into the application's scope.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ImportBinding">ImportBinding</a>[]</span></span></li>
+
 
 </ul>
 </div><div class=field>
@@ -1083,10 +1097,10 @@
 </ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
-  <a name="ComponentBinding">ComponentBinding</a>
+  <a name="ImportBinding">ImportBinding</a>
 </h2>
 
-<span class="description type-description">An identifier bound to a component.</span>
+<span class="description type-description">An identifier bound to an imported component or type manifest.</span>
 <div class=fields>
 <div class=field>
 
@@ -1108,16 +1122,52 @@
   <a name="component">component</a>
 </h3>
 
-<span class="description field-description">The component to bind to.</span>
+<span class="description field-description">The import to bind to.</span>
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentDefinition">ComponentDefinition</a></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#ImportDefinition">ImportDefinition</a></span></span></li>
 <li><span class="annotation field-note">Required</span></li>
 
 </ul>
 </div></div></div><div class="definition">## unhandled
+    panic!()</div><div class="definition">## unhandled
     panic!()</div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="TypesComponent">TypesComponent</a>
+</h2>
+
+<span class="description type-description">A types manifest to import into this component's scope.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="ref">ref</a>
+</h3>
+
+<span class="description field-description">The URL (and optional tag) or local file path to find the types manifest.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#LocationReference">LocationReference</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="types">types</a>
+</h3>
+
+<span class="description field-description">The types to import from the manifest.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
 <h2 class="definition-name type-name">
   <a name="ComponentReference">ComponentReference</a>
 </h2>

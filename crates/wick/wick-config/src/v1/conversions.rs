@@ -7,12 +7,12 @@ use flow_expression_parser::{ConnectionTarget, InstanceTarget};
 // use flow_expression_parser::parse_id;
 use crate::app_config::{
   AppConfiguration,
-  BoundResource,
   CliConfig,
   HttpRouterConfig,
   HttpTriggerConfig,
   ProxyRouterConfig,
   RawRouterConfig,
+  ResourceBinding,
   ResourceDefinition,
   RestRouterConfig,
   StaticRouterConfig,
@@ -87,6 +87,8 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
       tests: def.tests.into_iter().map(|v| v.into()).collect(),
       component: def.component.try_into()?,
       resources: Default::default(),
+      cached_types: Default::default(),
+      type_cache: Default::default(),
     })
   }
 }
@@ -120,6 +122,11 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentImplementation {
         .operations
         .into_iter()
         .map(|op| Ok((op.name.clone(), op.try_into()?)))
+        .collect::<Result<_>>()?,
+      import: value
+        .import
+        .into_iter()
+        .map(|v| Ok((v.name.clone(), v.try_into()?)))
         .collect::<Result<_>>()?,
       types: value.types,
     })
@@ -214,6 +221,11 @@ impl TryFrom<WasmComponentImplementation> for v1::WasmComponentConfiguration {
         .into_values()
         .map(|op| op.try_into())
         .collect::<Result<_>>()?,
+      import: value
+        .import
+        .into_values()
+        .map(|v| v.try_into())
+        .collect::<Result<_>>()?,
       types: value.types,
       reference: value.reference.try_into()?,
     })
@@ -276,6 +288,8 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
         .map(|v| Ok((v.name.clone(), v.try_into()?)))
         .collect::<Result<_>>()?,
       triggers: def.triggers.into_iter().map(|v| v.try_into()).collect::<Result<_>>()?,
+      cached_types: Default::default(),
+      type_cache: Default::default(),
     })
   }
 }
@@ -560,9 +574,9 @@ impl TryFrom<OperationSignature> for crate::v1::OperationDefinition {
   }
 }
 
-impl TryFrom<config::BoundComponent> for v1::ComponentBinding {
+impl TryFrom<config::ImportBinding> for v1::ImportBinding {
   type Error = ManifestError;
-  fn try_from(def: config::BoundComponent) -> Result<Self> {
+  fn try_from(def: config::ImportBinding) -> Result<Self> {
     Ok(Self {
       name: def.id,
       component: def.kind.try_into()?,
@@ -570,12 +584,42 @@ impl TryFrom<config::BoundComponent> for v1::ComponentBinding {
   }
 }
 
-impl From<BoundResource> for v1::ResourceBinding {
-  fn from(value: BoundResource) -> Self {
+impl TryFrom<config::ImportDefinition> for v1::ImportDefinition {
+  type Error = ManifestError;
+  fn try_from(def: config::ImportDefinition) -> Result<Self> {
+    Ok(match def {
+      crate::common::ImportDefinition::Component(comp) => match comp {
+        ComponentDefinition::Native(_) => unreachable!("Native components are not allowed in imports"),
+        #[allow(deprecated)]
+        ComponentDefinition::Wasm(_) => unreachable!("Wasm components are not allowed in v1 imports"),
+        ComponentDefinition::Reference(_) => unreachable!("Component references can't exist in v1 imports"),
+        ComponentDefinition::GrpcUrl(c) => v1::ImportDefinition::GrpcUrlComponent(c.into()),
+        ComponentDefinition::Manifest(c) => v1::ImportDefinition::ManifestComponent(c.try_into()?),
+        ComponentDefinition::HighLevelComponent(c) => match c {
+          HighLevelComponent::Postgres(c) => v1::ImportDefinition::SqlComponent(c.try_into()?),
+        },
+      },
+      crate::common::ImportDefinition::Types(c) => v1::ImportDefinition::TypesComponent(c.try_into()?),
+    })
+  }
+}
+
+impl From<ResourceBinding> for v1::ResourceBinding {
+  fn from(value: ResourceBinding) -> Self {
     Self {
       name: value.id,
       resource: value.kind.into(),
     }
+  }
+}
+
+impl TryFrom<config::components::TypesComponent> for v1::TypesComponent {
+  type Error = ManifestError;
+  fn try_from(value: config::components::TypesComponent) -> Result<Self> {
+    Ok(Self {
+      reference: value.reference.try_into()?,
+      types: value.types,
+    })
   }
 }
 
@@ -899,9 +943,9 @@ impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
   }
 }
 
-impl TryFrom<v1::ComponentBinding> for config::BoundComponent {
+impl TryFrom<v1::ImportBinding> for config::ImportBinding {
   type Error = ManifestError;
-  fn try_from(value: v1::ComponentBinding) -> Result<Self> {
+  fn try_from(value: v1::ImportBinding) -> Result<Self> {
     Ok(Self {
       id: value.name,
       kind: value.component.try_into()?,
@@ -909,7 +953,42 @@ impl TryFrom<v1::ComponentBinding> for config::BoundComponent {
   }
 }
 
-impl TryFrom<v1::ResourceBinding> for BoundResource {
+impl TryFrom<v1::ImportDefinition> for config::ImportDefinition {
+  type Error = ManifestError;
+  fn try_from(value: v1::ImportDefinition) -> Result<Self> {
+    Ok(match value {
+      v1::ImportDefinition::TypesComponent(c) => config::ImportDefinition::Types(c.try_into()?),
+      v1::ImportDefinition::GrpcUrlComponent(c) => {
+        let c = v1::ComponentDefinition::GrpcUrlComponent(c);
+        config::ImportDefinition::Component(c.try_into()?)
+      }
+      v1::ImportDefinition::ManifestComponent(c) => {
+        let c = v1::ComponentDefinition::ManifestComponent(c);
+        config::ImportDefinition::Component(c.try_into()?)
+      }
+      v1::ImportDefinition::ComponentReference(c) => {
+        let c = v1::ComponentDefinition::ComponentReference(c);
+        config::ImportDefinition::Component(c.try_into()?)
+      }
+      v1::ImportDefinition::SqlComponent(c) => config::ImportDefinition::Component(
+        config::ComponentDefinition::HighLevelComponent(config::HighLevelComponent::Postgres(c.try_into()?)),
+      ),
+    })
+  }
+}
+
+impl TryFrom<v1::TypesComponent> for config::components::TypesComponent {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::TypesComponent) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      reference: value.reference.try_into()?,
+      types: value.types,
+    })
+  }
+}
+
+impl TryFrom<v1::ResourceBinding> for ResourceBinding {
   type Error = ManifestError;
   fn try_from(value: v1::ResourceBinding) -> Result<Self> {
     Ok(Self {

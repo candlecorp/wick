@@ -13,7 +13,7 @@ use wick::*;
 impl OpMain for Component {
   async fn main(
     mut args: WickStream<Vec<String>>,
-    mut is_interactive: WickStream<Interactive>,
+    mut is_interactive: WickStream<types::cli::Interactive>,
     mut outputs: OpMainOutputs,
   ) -> Result<()> {
     while let (Some(Ok(args)), Some(Ok(tty))) = (args.next().await, is_interactive.next().await) {

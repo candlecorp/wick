@@ -5,6 +5,7 @@ pub mod components;
 pub mod test_config;
 pub mod types_config;
 
+use std::collections::HashMap;
 use std::path::Path;
 
 pub use app_config::*;
@@ -18,7 +19,7 @@ pub use types_config::*;
 pub use wick_asset_reference::{AssetReference, FetchOptions};
 
 use crate::utils::{from_bytes, from_yaml};
-use crate::{v0, v1, Error};
+use crate::{v0, v1, Error, Resolver};
 
 #[derive(Debug, Clone, Copy)]
 #[must_use]
@@ -52,17 +53,25 @@ pub enum WickConfiguration {
 
 impl WickConfiguration {
   pub async fn fetch(path: impl AsRef<str> + Send, options: FetchOptions) -> Result<Self, Error> {
-    debug!("hey1");
     let path = path.as_ref();
-    debug!("hey2");
     let location = AssetReference::new(path);
-    debug!("hey3");
     let bytes = location
-      .fetch(options)
+      .fetch(options.clone())
       .await
       .map_err(|e| Error::LoadError(path.to_owned(), e.to_string()))?;
     let source = location.path().unwrap_or_else(|e| format!("<ERROR:{}>", e));
-    WickConfiguration::load_from_bytes(&bytes, &Some(source))
+    let config = WickConfiguration::load_from_bytes(&bytes, &Some(source))?;
+    match &config {
+      WickConfiguration::Component(c) => {
+        c.setup_cache(options).await?;
+      }
+      WickConfiguration::App(c) => {
+        c.setup_cache(options).await?;
+      }
+      WickConfiguration::Types(_) => {}
+      WickConfiguration::Tests(_) => {}
+    }
+    Ok(config)
   }
 
   pub fn load_from_bytes(bytes: &[u8], source: &Option<String>) -> Result<Self, Error> {
@@ -215,4 +224,21 @@ fn resolve_configuration(raw: serde_yaml::Value, source: &Option<String>) -> Res
 
   debug!("Manifest: {:?}", manifest);
   manifest
+}
+
+pub(crate) fn make_resolver(
+  imports: HashMap<String, ImportBinding>,
+  resources: HashMap<String, ResourceBinding>,
+) -> Box<Resolver> {
+  Box::new(move |name| {
+    if let Some(import) = imports.get(name) {
+      if let ImportDefinition::Component(component) = &import.kind {
+        return Some(OwnedConfigurationItem::Component(component.clone()));
+      }
+    }
+    if let Some(resource) = resources.get(name) {
+      return Some(OwnedConfigurationItem::Resource(resource.kind.clone()));
+    }
+    None
+  })
 }

@@ -29,7 +29,7 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
         .map(|val| {
           Ok((
             val.namespace.clone(),
-            config::BoundComponent::new(val.namespace.clone(), val.try_into()?),
+            config::ImportBinding::new(val.namespace.clone(), val.try_into()?),
           ))
         })
         .collect::<Result<HashMap<_, _>>>()?,
@@ -44,7 +44,16 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
       labels: def.network.labels,
       metadata: None,
       resources: Default::default(),
+      cached_types: Default::default(),
+      type_cache: Default::default(),
     })
+  }
+}
+
+impl TryFrom<&crate::v0::CollectionDefinition> for config::ImportDefinition {
+  type Error = crate::Error;
+  fn try_from(def: &crate::v0::CollectionDefinition) -> std::result::Result<Self, Self::Error> {
+    Ok(config::ImportDefinition::Component(def.try_into()?))
   }
 }
 

@@ -89,7 +89,7 @@ async fn respond(stream: Result<PacketStream, RuntimeError>) -> Result<Response<
           if p.is_done() {
             continue;
           }
-          let response: wick_interface_http::HttpResponse = p
+          let response: wick_interface_http::types::HttpResponse = p
             .deserialize()
             .map_err(|e| HttpError::Deserialize("response".to_owned(), e.to_string()))?;
           builder = convert_response(builder, response)?;

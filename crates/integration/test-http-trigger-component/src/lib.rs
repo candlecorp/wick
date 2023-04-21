@@ -7,6 +7,8 @@ mod wick {
 }
 use wick::*;
 
+use wick::types::http::{HttpRequest, HttpResponse, HttpVersion, StatusCode};
+
 #[derive(serde::Deserialize, serde::Serialize)]
 struct Request {
   message: String,

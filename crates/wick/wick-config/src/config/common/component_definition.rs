@@ -1,5 +1,6 @@
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
+use serde_json::Value;
 
 use crate::config;
 
@@ -96,6 +97,20 @@ impl ComponentDefinition {
   #[must_use]
   pub fn is_reference(&self) -> bool {
     matches!(self, ComponentDefinition::Reference(_))
+  }
+
+  /// Returns the component config, if it exists
+  #[must_use]
+  pub fn config(&self) -> Option<&Value> {
+    match self {
+      #[allow(deprecated)]
+      ComponentDefinition::Wasm(c) => Some(&c.config),
+      ComponentDefinition::GrpcUrl(c) => Some(&c.config),
+      ComponentDefinition::Manifest(c) => Some(&c.config),
+      ComponentDefinition::Native(_) => None,
+      ComponentDefinition::Reference(_) => None,
+      ComponentDefinition::HighLevelComponent(_) => None,
+    }
   }
 }
 

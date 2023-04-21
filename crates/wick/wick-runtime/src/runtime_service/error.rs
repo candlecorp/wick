@@ -35,6 +35,7 @@ pub enum EngineError {
 #[derive(Debug, Clone, Copy)]
 pub enum InternalError {
   MissingResolver = 1,
+  InitTypeImport = 2, // tried to initialize a Type manifest as a Component
 }
 
 impl std::fmt::Display for InternalError {

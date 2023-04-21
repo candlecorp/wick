@@ -123,7 +123,7 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
       };
       let comp = init_wasm_component(&wasm, id.clone(), opts, provided).await?;
       let signed_sig = comp.component().list();
-      let manifest_sig = manifest.signature();
+      let manifest_sig = manifest.signature()?;
       expect_signature_match(&id, signed_sig, wasmimpl.reference().location(), &manifest_sig)?;
       Ok(comp)
     }

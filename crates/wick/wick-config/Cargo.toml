@@ -27,6 +27,7 @@ asset-container = { workspace = true }
 derive-asset-container = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
 url = { workspace = true }
+parking_lot = { workspace = true }
 
 [dev-dependencies]
 wick-xdg = { workspace = true }

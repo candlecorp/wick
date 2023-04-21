@@ -3,16 +3,20 @@ pub(super) mod resources;
 pub(super) mod triggers;
 
 use asset_container::AssetManager;
+use wick_asset_reference::FetchOptions;
+use wick_interface_types::TypeDefinition;
 
 pub use self::resources::*;
 pub use self::triggers::*;
 use super::common::component_definition::ComponentDefinition;
 use super::common::host_definition::HostConfig;
-use super::BoundComponent;
+use super::{make_resolver, ImportBinding, ImportDefinition};
 use crate::error::ReferenceError;
+use crate::import_cache::{setup_cache, ImportCache};
+use crate::utils::RwOption;
 use crate::{config, v1, Resolver, Result};
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, Default, derive_asset_container::AssetManager)]
 #[asset(config::AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
@@ -22,34 +26,38 @@ pub struct AppConfiguration {
   #[asset(skip)]
   pub(crate) source: Option<String>,
   pub(crate) metadata: Option<config::Metadata>,
-  pub(crate) import: HashMap<String, BoundComponent>,
+  pub(crate) import: HashMap<String, ImportBinding>,
   #[asset(skip)]
-  pub(crate) resources: HashMap<String, BoundResource>,
+  pub(crate) resources: HashMap<String, ResourceBinding>,
   pub(crate) triggers: Vec<TriggerDefinition>,
   #[asset(skip)]
   pub(crate) host: HostConfig,
-}
-
-impl Default for AppConfiguration {
-  fn default() -> Self {
-    Self {
-      name: "".to_owned(),
-      source: None,
-      metadata: None,
-      host: HostConfig::default(),
-      import: HashMap::new(),
-      resources: HashMap::new(),
-      triggers: vec![],
-    }
-  }
+  #[asset(skip)]
+  pub(crate) type_cache: ImportCache,
+  #[asset(skip)]
+  pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
 }
 
 impl AppConfiguration {
+  /// Fetch/cache anything critical to the first use of this configuration.
+  pub(crate) async fn setup_cache(&self, options: FetchOptions) -> Result<()> {
+    setup_cache(
+      &self.type_cache,
+      self.import.values(),
+      &self.cached_types,
+      vec![],
+      options,
+    )
+    .await
+  }
+
   /// Get the configuration item a binding points to.
   #[must_use]
   pub fn resolve_binding(&self, name: &str) -> Option<ConfigurationItem> {
-    if let Some(component) = self.import.get(name) {
-      return Some(ConfigurationItem::Component(&component.kind));
+    if let Some(import) = self.import.get(name) {
+      if let ImportDefinition::Component(component) = &import.kind {
+        return Some(ConfigurationItem::Component(component));
+      }
     }
     if let Some(resource) = self.resources.get(name) {
       return Some(ConfigurationItem::Resource(&resource.kind));
@@ -60,17 +68,7 @@ impl AppConfiguration {
   /// Returns a function that resolves a binding to a configuration item.
   #[must_use]
   pub fn resolver(&self) -> Box<Resolver> {
-    let imports = self.import.clone();
-    let resources = self.resources.clone();
-    Box::new(move |name| {
-      if let Some(component) = imports.get(name) {
-        return Some(OwnedConfigurationItem::Component(component.kind.clone()));
-      }
-      if let Some(resource) = resources.get(name) {
-        return Some(OwnedConfigurationItem::Resource(resource.kind.clone()));
-      }
-      None
-    })
+    make_resolver(self.import.clone(), self.resources.clone())
   }
 
   /// Return the underlying version of the source manifest.
@@ -114,13 +112,13 @@ impl AppConfiguration {
 
   #[must_use]
   /// Get the application's imports.
-  pub fn imports(&self) -> &HashMap<String, BoundComponent> {
+  pub fn imports(&self) -> &HashMap<String, ImportBinding> {
     &self.import
   }
 
   #[must_use]
   /// Get the application's resources.
-  pub fn resources(&self) -> &HashMap<String, BoundResource> {
+  pub fn resources(&self) -> &HashMap<String, ResourceBinding> {
     &self.resources
   }
 
@@ -128,14 +126,14 @@ impl AppConfiguration {
   pub fn add_resource(&mut self, name: impl AsRef<str>, resource: ResourceDefinition) {
     self
       .resources
-      .insert(name.as_ref().to_owned(), BoundResource::new(name.as_ref(), resource));
+      .insert(name.as_ref().to_owned(), ResourceBinding::new(name.as_ref(), resource));
   }
 
   /// Add a component to the application configuration.
-  pub fn add_import(&mut self, name: impl AsRef<str>, component: ComponentDefinition) {
+  pub fn add_import(&mut self, name: impl AsRef<str>, import: ImportDefinition) {
     self
       .import
-      .insert(name.as_ref().to_owned(), BoundComponent::new(name.as_ref(), component));
+      .insert(name.as_ref().to_owned(), ImportBinding::new(name.as_ref(), import));
   }
 
   #[must_use]

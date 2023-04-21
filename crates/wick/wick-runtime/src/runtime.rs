@@ -136,12 +136,12 @@ impl RuntimeBuilder {
     })
   }
 
-  pub fn add_import(mut self, component: config::BoundComponent) -> Self {
+  pub fn add_import(mut self, component: config::ImportBinding) -> Self {
     self.manifest_builder = self.manifest_builder.add_import(component);
     self
   }
 
-  pub fn add_resource(mut self, resource: config::BoundResource) -> Self {
+  pub fn add_resource(mut self, resource: config::ResourceBinding) -> Self {
     self.manifest_builder = self.manifest_builder.add_resource(resource);
     self
   }

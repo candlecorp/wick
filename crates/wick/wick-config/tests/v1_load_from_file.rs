@@ -2,7 +2,7 @@ use core::panic;
 use std::path::PathBuf;
 
 use wick_config::component_config::CompositeComponentImplementation;
-use wick_config::config::ComponentDefinition;
+use wick_config::config::{ComponentDefinition, ImportDefinition};
 use wick_config::error::ManifestError;
 use wick_config::*;
 
@@ -66,7 +66,7 @@ async fn regression_issue_180() -> Result<(), ManifestError> {
   println!("{:?}", component);
   let coll = component.component("test").unwrap();
   #[allow(deprecated)]
-  if let ComponentDefinition::Manifest(module) = &coll.kind {
+  if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = &coll.kind {
     let value = module.reference.path()?;
     println!("value: {:?}", value);
     let actual = PathBuf::from(value);
@@ -88,7 +88,7 @@ async fn regression_issue_42() -> Result<(), ManifestError> {
   println!("{:?}", component);
   let coll = component.component("test").unwrap();
   #[allow(deprecated)]
-  if let ComponentDefinition::Manifest(module) = &coll.kind {
+  if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = &coll.kind {
     let value = module.config.get("pwd").unwrap().as_str().unwrap();
     let expected = std::env::var("CARGO_MANIFEST_DIR").unwrap();
 

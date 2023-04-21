@@ -14,7 +14,7 @@ use futures::future::BoxFuture;
 use hyper::{Body, Request, Response, Server};
 use parking_lot::Mutex;
 use tokio::task::JoinHandle;
-use wick_config::config::{AppConfiguration, BoundComponent, ProxyRouterConfig, RawRouterConfig, StaticRouterConfig};
+use wick_config::config::{AppConfiguration, ImportBinding, ProxyRouterConfig, RawRouterConfig, StaticRouterConfig};
 
 use self::static_component::StaticComponent;
 use super::{resolve_ref, Trigger, TriggerKind};
@@ -174,10 +174,10 @@ fn register_raw_router(
   index: usize,
   app_config: &AppConfiguration,
   router_config: &RawRouterConfig,
-) -> Result<(BoundComponent, HttpRouter), RuntimeError> {
+) -> Result<(ImportBinding, HttpRouter), RuntimeError> {
   trace!(index, "registering raw router");
   let router_component = resolve_ref(app_config, router_config.operation().component())?;
-  let router_binding = config::BoundComponent::new(index.to_string(), router_component);
+  let router_binding = config::ImportBinding::component(index.to_string(), router_component);
   let router = ComponentRouterHandler {
     path: router_config.path().to_owned(),
     operation: router_config.operation().operation().to_owned(),
@@ -191,7 +191,7 @@ fn register_static_router(
   resources: Arc<HashMap<String, Resource>>,
   _app_config: &AppConfiguration,
   router_config: &StaticRouterConfig,
-) -> Result<(BoundComponent, HttpRouter), RuntimeError> {
+) -> Result<(ImportBinding, HttpRouter), RuntimeError> {
   trace!(index, "registering static router");
   let volume = resources.get(router_config.volume()).ok_or_else(|| {
     RuntimeError::ResourceNotFound(
@@ -211,7 +211,7 @@ fn register_static_router(
   };
   let router = StaticComponent::new(volume);
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
-  let router_binding = config::BoundComponent::new(index.to_string(), router_component);
+  let router_binding = config::ImportBinding::component(index.to_string(), router_component);
   Ok((
     router_binding,
     HttpRouter::Raw(RawRouterHandler {
@@ -226,7 +226,7 @@ fn register_proxy_router(
   resources: Arc<HashMap<String, Resource>>,
   _app_config: &AppConfiguration,
   router_config: &ProxyRouterConfig,
-) -> Result<(BoundComponent, HttpRouter), RuntimeError> {
+) -> Result<(ImportBinding, HttpRouter), RuntimeError> {
   trace!(index, "registering proxy router");
   let url = resources.get(router_config.url()).ok_or_else(|| {
     RuntimeError::ResourceNotFound(
@@ -251,7 +251,7 @@ fn register_proxy_router(
   };
   let router = ProxyComponent::new(url, strip_path);
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
-  let router_binding = config::BoundComponent::new(index.to_string(), router_component);
+  let router_binding = config::ImportBinding::component(index.to_string(), router_component);
   Ok((
     router_binding,
     HttpRouter::Raw(RawRouterHandler {

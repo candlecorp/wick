@@ -87,4 +87,4 @@
 
 mod generate;
 pub use generate::config::Config;
-pub use generate::{build, configure};
+pub use generate::{async_build, build, configure};

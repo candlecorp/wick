@@ -11,7 +11,7 @@ use wick::*;
 impl OpMain for Component {
   async fn main(
     mut args: WickStream<Vec<String>>,
-    mut is_interactive: WickStream<Interactive>,
+    mut is_interactive: WickStream<types::cli::Interactive>,
     mut outputs: OpMainOutputs,
   ) -> Result<()> {
     set_colors_enabled(false);

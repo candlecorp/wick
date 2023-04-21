@@ -1,8 +1,8 @@
 ---
 kind: wick/types@v1
 types:
-  - type: enum
-    name: HttpMethod
+  - name: HttpMethod
+    type: enum
     variants:
       - name: GET
       - name: POST

@@ -8,8 +8,8 @@ use nom::character::complete::{alpha1, alphanumeric1, char, multispace0};
 use nom::character::is_alphabetic;
 use nom::combinator::recognize;
 use nom::error::ParseError;
-use nom::multi::{many0_count, separated_list1};
-use nom::sequence::{delimited, pair, tuple};
+use nom::multi::{many0, many0_count, separated_list1};
+use nom::sequence::{delimited, pair, terminated, tuple};
 use nom::IResult;
 
 use crate::signatures::Field;
@@ -71,7 +71,10 @@ fn list_type(input: &str) -> IResult<&str, TypeSignature> {
 }
 
 fn typename(input: &str) -> IResult<&str, TypeSignature> {
-  let (i, t) = identifier(input)?;
+  let (i, t) = alt((
+    recognize(pair(many0(terminated(identifier, tag("::"))), identifier)),
+    identifier,
+  ))(input)?;
   let t = match t {
     "bool" => TypeSignature::Bool,
     "i8" => TypeSignature::I8,
@@ -210,24 +213,26 @@ mod test {
     Ok(())
   }
 
-  #[test]
-  fn test_parse_type() -> Result<()> {
-    assert_eq!(typename("bool")?, ("", TypeSignature::Bool));
-    assert_eq!(typename("i8")?, ("", TypeSignature::I8));
-    assert_eq!(typename("i16")?, ("", TypeSignature::I16));
-    assert_eq!(typename("i32")?, ("", TypeSignature::I32));
-    assert_eq!(typename("i64")?, ("", TypeSignature::I64));
-    assert_eq!(typename("u8")?, ("", TypeSignature::U8));
-    assert_eq!(typename("u16")?, ("", TypeSignature::U16));
-    assert_eq!(typename("u32")?, ("", TypeSignature::U32));
-    assert_eq!(typename("u64")?, ("", TypeSignature::U64));
-    assert_eq!(typename("f32")?, ("", TypeSignature::F32));
-    assert_eq!(typename("f64")?, ("", TypeSignature::F64));
-    assert_eq!(typename("string")?, ("", TypeSignature::String));
-    assert_eq!(typename("datetime")?, ("", TypeSignature::Datetime));
-    assert_eq!(typename("bytes")?, ("", TypeSignature::Bytes));
-    assert_eq!(typename("custom")?, ("", TypeSignature::Custom("custom".to_owned())));
-
+  #[rstest::rstest]
+  #[case("bool", TypeSignature::Bool)]
+  #[case("i8", TypeSignature::I8)]
+  #[case("i16", TypeSignature::I16)]
+  #[case("i32", TypeSignature::I32)]
+  #[case("i64", TypeSignature::I64)]
+  #[case("u8", TypeSignature::U8)]
+  #[case("u16", TypeSignature::U16)]
+  #[case("u32", TypeSignature::U32)]
+  #[case("u64", TypeSignature::U64)]
+  #[case("f32", TypeSignature::F32)]
+  #[case("f64", TypeSignature::F64)]
+  #[case("bytes", TypeSignature::Bytes)]
+  #[case("string", TypeSignature::String)]
+  #[case("datetime", TypeSignature::Datetime)]
+  #[case("object", TypeSignature::Object)]
+  #[case("myType", TypeSignature::Custom("myType".to_owned()))]
+  #[case("name::myType", TypeSignature::Custom("name::myType".to_owned()))]
+  fn test_parse_type(#[case] as_str: &'static str, #[case] ty: TypeSignature) -> Result<()> {
+    assert_eq!(typename(as_str)?, ("", ty));
     Ok(())
   }
 }

@@ -44,7 +44,7 @@ pub(crate) async fn handle(opts: WasmSignCommand) -> Result<()> {
   debug!("Signing module");
 
   debug!("Reading from {}", opts.interface);
-  let interface = WickConfiguration::load_from_file(&opts.interface)
+  let interface = WickConfiguration::fetch(&opts.interface, wick_config::FetchOptions::default())
     .await?
     .try_component_config()?;
 
@@ -68,7 +68,7 @@ pub(crate) async fn handle(opts: WasmSignCommand) -> Result<()> {
 
   let signed = sign_buffer_with_claims(
     &buf,
-    interface.try_into()?,
+    interface.signature()?,
     &subject,
     &account,
     ClaimsOptions {

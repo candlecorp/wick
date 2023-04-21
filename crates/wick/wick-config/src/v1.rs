@@ -74,7 +74,7 @@ pub(crate) struct AppConfiguration {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) import: Vec<ComponentBinding>,
+  pub(crate) import: Vec<ImportBinding>,
   /// Resources that the application can access.
 
   #[serde(default)]
@@ -489,11 +489,11 @@ pub(crate) struct CompositeComponentConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
-  /// Components to import into the application&#x27;s scope.
+  /// Components or types to import into the application&#x27;s scope.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) import: Vec<ComponentBinding>,
+  pub(crate) import: Vec<ImportBinding>,
   /// A list of operations implemented by the Composite component.
 
   #[serde(default)]
@@ -514,6 +514,11 @@ pub(crate) struct WasmComponentConfiguration {
 
   #[serde(rename = "ref")]
   pub(crate) reference: crate::v1::helpers::LocationReference,
+  /// Components or types to import into the application&#x27;s scope.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) import: Vec<ImportBinding>,
   /// Additional types to export and make available to the component.
 
   #[serde(default)]
@@ -545,16 +550,36 @@ pub(crate) struct ResourceBinding {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// An identifier bound to a component.
-pub(crate) struct ComponentBinding {
+/// An identifier bound to an imported component or type manifest.
+pub(crate) struct ImportBinding {
   /// The name of the binding.
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
-  /// The component to bind to.
+  /// The import to bind to.
+  pub(crate) component: ImportDefinition,
+}
 
-  #[serde(deserialize_with = "crate::v1::parse::component_shortform")]
-  pub(crate) component: ComponentDefinition,
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(tag = "kind")]
+/// The possible types to import into a component or application.
+pub(crate) enum ImportDefinition {
+  /// A variant representing a [TypesComponent] type.
+  #[serde(rename = "wick/component/types@v1")]
+  TypesComponent(TypesComponent),
+  /// A variant representing a [GrpcUrlComponent] type.
+  #[serde(rename = "wick/component/grpc@v1")]
+  GrpcUrlComponent(GrpcUrlComponent),
+  /// A variant representing a [ManifestComponent] type.
+  #[serde(rename = "wick/component/manifest@v1")]
+  ManifestComponent(ManifestComponent),
+  /// A variant representing a [ComponentReference] type.
+  #[serde(rename = "wick/component/reference@v1")]
+  ComponentReference(ComponentReference),
+  /// A variant representing a [SqlComponent] type.
+  #[serde(rename = "wick/component/sql@v1")]
+  SqlComponent(SqlComponent),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -574,6 +599,21 @@ pub(crate) enum ComponentDefinition {
   /// A variant representing a [SqlComponent] type.
   #[serde(rename = "wick/component/sql@v1")]
   SqlComponent(SqlComponent),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A types manifest to import into this component's scope.
+pub(crate) struct TypesComponent {
+  /// The URL (and optional tag) or local file path to find the types manifest.
+
+  #[serde(rename = "ref")]
+  pub(crate) reference: crate::v1::helpers::LocationReference,
+  /// The types to import from the manifest.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) types: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
