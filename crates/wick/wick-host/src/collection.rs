@@ -17,6 +17,7 @@ pub struct Context {
 #[derive(Clone, Debug)]
 #[must_use]
 pub struct HostComponent {
+  id: String,
   host: Arc<ComponentHost>,
   signature: ComponentSignature,
 }
@@ -26,9 +27,18 @@ impl HostComponent {
     let signature: ComponentSignature = host.get_signature().unwrap();
 
     Self {
+      id: host.get_host_id().to_owned(),
       host: Arc::new(host),
       signature,
     }
+  }
+}
+
+impl HostComponent {
+  /// Returns the host id
+  #[must_use]
+  pub fn id(&self) -> &str {
+    &self.id
   }
 }
 

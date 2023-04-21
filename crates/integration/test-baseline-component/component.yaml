@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../wick/wick-config/json-schema/manifest.json
-# yaml-language-server: $schema=https://github.com/candlecorp/wick/releases/download/nightly/schema.json
 ---
 name: test-component
 kind: wick/component@v1
@@ -32,3 +31,38 @@ component:
       outputs:
         - name: output
           type: string
+tests:
+  - name: add 1 and 2
+    operation: add
+    input:
+      - name: left
+        data: 1
+      - name: right
+        data: 2
+    output:
+      - name: output
+        data: 3
+      - name: output
+        flags:
+          done: true
+  - name: add 2000 and 3292982
+    operation: add
+    input:
+      - name: left
+        data: 2000
+      - name: right
+        data: 3292982
+    output:
+      - name: output
+        data: 3294982
+      - name: output
+        flags:
+          done: true
+  - name: validate
+    operation: validate
+    input:
+      - name: input
+        data: 'hello'
+    output:
+      - name: output
+        message: Needs to be longer than 8 characters

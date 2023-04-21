@@ -8,6 +8,8 @@ pub enum TestError {
   ParseFailed(String),
   #[error("Invocation failed: {0}")]
   InvocationFailed(String),
+  #[error("Invocation timed out: {0}")]
+  InvocationTimeout(String),
   #[error("Deserialization failed: {0}")]
   ConversionFailed(String),
 }
