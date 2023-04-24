@@ -246,7 +246,7 @@ jobs:
           rustup target add wasm32-unknown-unknown wasm32-wasi
       - name: "build binary"
         run: |
-          cargo build --release -p wick --target=${{ matrix.config.target }} ${{ matrix.config.args }}
+          cargo build --release -p wick-cli --target=${{ matrix.config.target }} ${{ matrix.config.args }}
       - name: package release assets
         if: matrix.config.target != 'x86_64-pc-windows-gnu'
         run: |
