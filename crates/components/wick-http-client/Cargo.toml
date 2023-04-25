@@ -18,10 +18,10 @@ wick-interface-types = { workspace = true }
 #
 url = { workspace = true }
 reqwest = { workspace = true }
-liquid = { workspace = true }
 tokio = { workspace = true }
-bytes = { workspace = true }
 tracing = { workspace = true }
+liquid-json = { workspace = true, features = ["serde"] }
+anyhow = { workspace = true }
 #
 serde = { workspace = true, features = ["derive"] }
 #
@@ -35,5 +35,4 @@ serde_json = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 wick-logger = { workspace = true }
 test-logger = { workspace = true }
-anyhow = { workspace = true }
 pretty_assertions = { workspace = true }

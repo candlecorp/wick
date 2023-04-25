@@ -1212,6 +1212,7 @@ impl TryFrom<v1::HttpClientOperationDefinition> for components::HttpClientOperat
       codec: value.codec.map(Into::into),
       inputs: value.inputs,
       path: value.path,
+      body: value.body,
       method: value.method.into(),
     })
   }
@@ -1289,6 +1290,7 @@ impl TryFrom<components::HttpClientOperationDefinition> for v1::HttpClientOperat
       name: value.name,
       inputs: value.inputs,
       path: value.path,
+      body: value.body,
       codec: value.codec.map(Into::into),
       method: value.method.into(),
     })

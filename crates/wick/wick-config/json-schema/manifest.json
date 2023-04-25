@@ -359,6 +359,9 @@
       "LocationReference": {
         "type": "object"
       },
+      "LiquidJsonValue": {
+        "type": "object"
+      },
       "AppConfiguration": {
         "$anchor": "#v1/AppConfiguration",
         "additionalProperties": false,
@@ -1751,6 +1754,11 @@
             "description": "The codec to use when encoding/decoding data.",
             "required": false,
             "$ref": "#/$defs/v1/Codec"
+          },
+          "body": {
+            "description": "The body to send, processed as a structured JSON liquid template.",
+            "required": false,
+            "type": "object"
           },
           "path": {
             "description": "The path to append to our base URL, processed as a liquid template with each input as part of the template data.",

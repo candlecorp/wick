@@ -6,6 +6,9 @@ union WickConfig = AppConfiguration | ComponentConfiguration | TypesConfiguratio
 "A reference to a location on disk, URL, or registry."
 alias LocationReference = string @skip
 
+"A liquid JSON template."
+alias LiquidJsonValue = string @skip
+
 "The Application configuration defines a standalone Wick application."
 type AppConfiguration @default @tagged("wick/app@v1") {
   "Associated metadata for this component."
@@ -539,6 +542,9 @@ type HttpClientOperationDefinition {
 
   "The codec to use when encoding/decoding data."
   codec: Codec?
+
+  "The body to send, processed as a structured JSON liquid template."
+  body: LiquidJsonValue?
 
   "The path to append to our base URL, processed as a liquid template with each input as part of the template data."
   path: string

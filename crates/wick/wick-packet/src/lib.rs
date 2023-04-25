@@ -74,6 +74,7 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
+mod b64_bytes;
 mod collection_link;
 mod entity;
 mod error;
@@ -106,5 +107,6 @@ pub use wrapped_type::TypeWrapper;
 
 #[cfg(feature = "rt-tokio")]
 mod runtime;
+pub use b64_bytes::Base64Bytes;
 #[cfg(feature = "rt-tokio")]
 pub use runtime::split_stream;

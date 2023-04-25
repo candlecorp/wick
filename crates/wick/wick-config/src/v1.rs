@@ -1086,6 +1086,10 @@ pub(crate) struct HttpClientOperationDefinition {
 
   #[serde(default)]
   pub(crate) codec: Option<Codec>,
+  /// The body to send, processed as a structured JSON liquid template.
+
+  #[serde(default)]
+  pub(crate) body: Option<liquid_json::LiquidJsonValue>,
   /// The path to append to our base URL, processed as a liquid template with each input as part of the template data.
 
   #[serde(default)]

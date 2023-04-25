@@ -143,6 +143,7 @@ pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
     let data = Packet::from_kv_json(&opts.data)?;
 
     let args = parse_args(&opts.args)?;
+    trace!(args= ?args, "parsed CLI arguments");
     let (tx, stream) = PacketStream::new_channels();
     let mut seen_ports = HashSet::new();
     for packet in args {

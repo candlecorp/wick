@@ -108,6 +108,7 @@ exceptions = [
     { name = "wick-invocation-server", allow = ["Elastic-2.0"] },
     { name = "wick-package", allow = ["Elastic-2.0"] },
     { name = "wick-sqlx", allow = ["Elastic-2.0"] },
+    { name = "wick-http-client", allow = ["Elastic-2.0"] },
     { name = "wick-component-wasm", allow = ["Elastic-2.0"] },
     { name = "wick-component-cli", allow = ["Elastic-2.0"] },
     { name = "wick-logger", allow = ["Elastic-2.0"] },

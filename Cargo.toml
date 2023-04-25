@@ -13,6 +13,7 @@ exclude = [
   "crates/integration/test-cli-trigger-component",
   "crates/integration/test-cli-with-db",
   "crates/integration/test-http-trigger-component",
+  "tests/template",
 ]
 
 [workspace.dependencies]
@@ -53,14 +54,14 @@ wick-interface-http = { path = "./crates/interfaces/wick-interface-http", versio
 wick-sqlx = { path = "./crates/components/wick-sqlx", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
 # wasmrs
-wasmrs = { version = "0.9" }
-wasmrs-codec = { version = "0.9" }
-wasmrs-frames = { version = "0.9" }
-wasmrs-guest = { version = "0.9" }
-wasmrs-host = { version = "0.9" }
-wasmrs-runtime = { version = "0.9" }
-wasmrs-rx = { version = "0.9" }
-wasmrs-wasmtime = { version = "0.9" }
+wasmrs = { version = "0.10" }
+wasmrs-codec = { version = "0.10" }
+wasmrs-frames = { version = "0.10" }
+wasmrs-guest = { version = "0.10" }
+wasmrs-host = { version = "0.10" }
+wasmrs-runtime = { version = "0.10" }
+wasmrs-rx = { version = "0.10" }
+wasmrs-wasmtime = { version = "0.10" }
 # wasmrs = { path = "../wasmrs-rust/crates/wasmrs" }
 # wasmrs-rx = { path = "../wasmrs-rust/crates/wasmrs-rx" }
 # wasmrs-frames = { path = "../wasmrs-rust/crates/wasmrs-frames" }
@@ -77,6 +78,7 @@ async-stream = "0.3"
 async-trait = "0.1"
 atty = "0.2"
 bytes = "1.4"
+base64 = "0.21"
 cfg-if = "1.0"
 chrono = "0.4"
 clap = "4.1"
@@ -92,6 +94,7 @@ hyper = "0.14"
 jaq-core = "0.10"
 lazy_static = "1.4"
 liquid = "0.26"
+liquid-json = "0.2"
 markup-converter = "0.2"
 nkeys = "0.2"
 nom = "7.1"
@@ -114,7 +117,7 @@ prost-types = "0.11"
 quote = "1.0"
 rand = "0.8"
 rand_chacha = "0.3"
-regex = "1"
+regex = "1.8"
 reqwest = "~0.11.16"
 ring = "0.16"
 serde = "1.0"
