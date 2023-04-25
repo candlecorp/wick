@@ -5,14 +5,14 @@ pub(crate) mod error;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use flow_component::RuntimeCallback;
+use flow_component::{Component, RuntimeCallback};
 use flow_graph_interpreter::NamespaceHandler;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wick_component_wasm::error::LinkError;
 use wick_config::config::components::{ManifestComponent, WasmComponent};
-use wick_config::config::{BoundInterface, FetchOptions};
-use wick_config::WickConfiguration;
+use wick_config::config::{BoundInterface, FetchOptions, Metadata, WasmComponentImplementation};
+use wick_config::{Resolver, WickConfiguration};
 use wick_packet::{Entity, Invocation, PacketStream};
 
 use self::component_service::NativeComponentService;
@@ -59,6 +59,34 @@ pub(crate) async fn init_wasm_component<'a, 'b>(
   Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
+pub(crate) async fn init_wasmrs_component<'a, 'b>(
+  kind: &'a WasmComponentImplementation,
+  namespace: String,
+  opts: ComponentInitOptions<'b>,
+  provided: HashMap<String, String>,
+) -> ComponentInitResult {
+  trace!(namespace = %namespace, ?opts, "registering wasmrs component");
+
+  let component =
+    wick_component_wasm::helpers::load_wasm(kind.reference(), opts.allow_latest, &opts.allowed_insecure).await?;
+
+  // TODO take max threads from configuration
+  let collection = Arc::new(
+    wick_component_wasm::component::WasmComponent::try_load(
+      &component,
+      5,
+      None,
+      None,
+      Some(make_link_callback(opts.runtime_id)),
+      provided,
+    )
+    .await?,
+  );
+
+  let service = NativeComponentService::new(collection);
+
+  Ok(NamespaceHandler::new(namespace, Box::new(service)))
+}
 pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
   Arc::new(move |compref, op, stream, inherent| {
     let origin_url = compref.get_origin_url();
@@ -109,33 +137,43 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
   let rng = Random::from_seed(opts.rng_seed);
   opts.rng_seed = rng.seed();
   let uuid = rng.uuid();
+  let requires = manifest.requires();
+  let metadata = manifest.metadata();
+  let provided =
+    generate_provides(requires, &kind.provide).map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
 
   match manifest.component() {
     config::ComponentImplementation::Wasm(wasmimpl) => {
-      let provided = generate_provides(wasmimpl.requires(), &kind.provide)
-        .map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
-
-      let wasm = WasmComponent {
-        reference: wasmimpl.reference().clone(),
-        config: Default::default(),
-        permissions: Default::default(),
-        provide: Default::default(),
-      };
-      let comp = init_wasm_component(&wasm, id.clone(), opts, provided).await?;
+      let comp = init_wasmrs_component(wasmimpl, id.clone(), opts, provided).await?;
       let signed_sig = comp.component().list();
       let manifest_sig = manifest.signature()?;
       expect_signature_match(&id, signed_sig, wasmimpl.reference().location(), &manifest_sig)?;
       Ok(comp)
     }
-    config::ComponentImplementation::Composite(composite) => {
-      let _provide = generate_provides(composite.requires(), &kind.provide)
-        .map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
-
+    config::ComponentImplementation::Composite(_) => {
       let _engine = RuntimeService::new_from_manifest(uuid, manifest, Some(id.clone()), opts).await?;
 
       let collection = Arc::new(engine_component::EngineComponent::new(uuid));
       let service = NativeComponentService::new(collection);
       Ok(NamespaceHandler::new(id, Box::new(service)))
+    }
+    config::ComponentImplementation::Sql(c) => {
+      init_hlc_component(
+        id,
+        metadata,
+        wick_config::config::HighLevelComponent::Sql(c.clone()),
+        manifest.resolver(),
+      )
+      .await
+    }
+    config::ComponentImplementation::HttpClient(c) => {
+      init_hlc_component(
+        id,
+        metadata,
+        wick_config::config::HighLevelComponent::HttpClient(c.clone()),
+        manifest.resolver(),
+      )
+      .await
     }
   }
 }
@@ -182,4 +220,20 @@ pub(crate) fn initialize_native_component(namespace: String, seed: Seed) -> Comp
   let service = NativeComponentService::new(collection);
 
   Ok(NamespaceHandler::new(namespace, Box::new(service)))
+}
+
+pub(crate) async fn init_hlc_component(
+  id: String,
+  metadata: Metadata,
+  component: wick_config::config::HighLevelComponent,
+  resolver: Box<Resolver>,
+) -> ComponentInitResult {
+  let comp: Box<dyn Component + Send + Sync> = match component {
+    config::HighLevelComponent::Sql(config) => Box::new(wick_sqlx::SqlXComponent::new(config, metadata, &resolver)?),
+    config::HighLevelComponent::HttpClient(config) => {
+      Box::new(wick_http_client::HttpClientComponent::new(config, metadata, &resolver)?)
+    }
+  };
+  comp.init().await.map_err(EngineError::NativeComponent)?;
+  Ok(NamespaceHandler::new(id, comp))
 }

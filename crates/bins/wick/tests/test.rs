@@ -1,20 +1,20 @@
 static DIR: &str = "test";
 
-#[test]
-fn wick_run() {
+#[rstest::rstest]
+#[case("wasm.toml")]
+fn wick_run(#[case] file: &'static str) {
   let kind = "unit";
-  trycmd::TestCases::new()
-    .case(format!("tests/{}/{}/*.toml", kind, DIR))
-    .case(format!("tests/{}/{}/*.trycmd", kind, DIR));
+  let file = format!("tests/{}/{}/{}", kind, DIR, file);
+
+  trycmd::TestCases::new().case(file);
 }
 
-mod integration_test {
-  use super::DIR;
-  #[test]
-  fn wick_run() {
-    let kind = "integration";
-    trycmd::TestCases::new()
-      .case(format!("tests/{}/{}/*.toml", kind, DIR))
-      .case(format!("tests/{}/{}/*.trycmd", kind, DIR));
-  }
-}
+// mod integration_test {
+//   use super::DIR;
+//   #[rstest::rstest]
+//   fn wick_run(#[case] file: &'static str) {
+//     let kind = "integration";
+//     let file = format!("tests/{}/{}/{}", kind, DIR, file);
+//     trycmd::TestCases::new().case(file);
+//   }
+// }

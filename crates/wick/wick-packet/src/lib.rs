@@ -100,5 +100,11 @@ pub use packet::{from_raw_wasmrs, from_wasmrs, into_wasmrs, Packet, PacketError,
 pub use packet_stream::{PacketSender, PacketStream};
 pub use stream_map::StreamMap;
 pub use wasmrs::Metadata;
-pub use wasmrs_rx::*;
+pub use wasmrs_rx;
+pub use wasmrs_rx::{Flux, FluxChannel, FluxReceiver, Mono, Observable, Observer};
 pub use wrapped_type::TypeWrapper;
+
+#[cfg(feature = "rt-tokio")]
+mod runtime;
+#[cfg(feature = "rt-tokio")]
+pub use runtime::split_stream;

@@ -25,6 +25,7 @@ num-traits = { workspace = true }
 serde-with-expand-env = { workspace = true }
 asset-container = { workspace = true }
 derive-asset-container = { workspace = true }
+derive_builder = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
 url = { workspace = true }
 parking_lot = { workspace = true }

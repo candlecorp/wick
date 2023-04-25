@@ -3,17 +3,17 @@
 kind: wick/component@v1
 metadata:
   version: '1'
+import:
+  - name: foo
+    component:
+      kind: wick/component/manifest@v1
+      ref: hey
+  - name: bar
+    component:
+      kind: wick/component/manifest@v1
+      ref: bar
 component:
   kind: wick/component/composite@v1
-  import:
-    - name: foo
-      component:
-        kind: wick/component/manifest@v1
-        ref: hey
-    - name: bar
-      component:
-        kind: wick/component/manifest@v1
-        ref: bar
   operations:
     - name: logger
       instances:

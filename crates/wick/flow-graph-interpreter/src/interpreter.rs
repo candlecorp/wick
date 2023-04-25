@@ -69,11 +69,13 @@ impl Interpreter {
     debug!("init");
     let rng = seed.map_or_else(Random::new, Random::from_seed);
     let mut handlers = components.unwrap_or_default();
+    debug!(handlers = ?handlers.keys(), "initializing interpreter");
     let mut exposed_ops = HashMap::new();
 
     for handler in handlers.inner().values() {
       if handler.is_exposed() {
         for op in &handler.component.list().operations {
+          trace!(operation = op.name, "interpreter:exposing operation");
           exposed_ops.insert(op.name.clone(), handler.component.clone());
         }
       }
@@ -100,8 +102,10 @@ impl Interpreter {
     debug!(?self_signature, "signature");
 
     let event_loop = EventLoop::new(channel);
+    let mut handled_opts = program.operations().iter().map(|s| s.name()).collect::<Vec<_>>();
+    handled_opts.extend(exposed_ops.keys().map(|s: &String| s.as_str()));
     debug!(
-      operations = ?program.operations().iter().map(|s| s.name()).collect::<Vec<_>>(),
+      operations = ?handled_opts,
       "operations handled by this interpreter"
     );
 
@@ -189,7 +193,7 @@ impl Interpreter {
     };
     let span = trace_span!("invoke");
     let cb = self.get_callback();
-
+    trace!(?invocation, "invoking");
     let stream = match &invocation.target {
       Entity::Operation(ns, name) => {
         if ns == NS_SELF || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {

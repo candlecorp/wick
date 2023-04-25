@@ -87,11 +87,13 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
+#[macro_use]
+extern crate derive_builder;
+
 /// Module for processing JSON templates used for default values.
 mod default;
 mod helpers;
 mod import_cache;
-use std::future::Future;
 
 pub use default::{parse_default, process_default, ERROR_STR};
 pub mod config;
@@ -114,18 +116,7 @@ pub use wick_asset_reference::{normalize_path, normalize_path_str, FetchOptions}
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 pub type Resolver = dyn Fn(&str) -> Option<config::OwnedConfigurationItem> + Send + Sync;
 
-pub trait HighLevelComponent {
+pub trait ConfigValidation {
   type Config;
-
-  fn validate(
-    &self,
-    config: &Self::Config,
-    resolver: &Resolver,
-  ) -> std::result::Result<(), flow_component::ComponentError>;
-
-  fn init(
-    &self,
-    config: Self::Config,
-    resolver: Box<Resolver>,
-  ) -> std::pin::Pin<Box<dyn Future<Output = std::result::Result<(), flow_component::ComponentError>> + Send + 'static>>;
+  fn validate(config: &Self::Config, resolver: &Resolver) -> std::result::Result<(), flow_component::ComponentError>;
 }

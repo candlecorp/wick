@@ -28,6 +28,7 @@ macro_rules! packets {
 macro_rules! fan_out {
     ($stream:expr, $($port:expr),*) => {
       {
+        use $crate::wasmrs_rx::Observer;
         let mut streams = wick_packet::StreamMap::default();
         let mut senders = std::collections::HashMap::new();
         $(

@@ -18,6 +18,7 @@ maintenance = { status = "actively-developed" }
 [features]
 default = []
 invocation = ["uuid", "seeded-random"]
+rt-tokio = ["tokio/rt"]
 
 [dependencies]
 wick-interface-types = { workspace = true, features = ["typeid"] }
@@ -34,6 +35,8 @@ futures = { workspace = true }
 bytes = { workspace = true, features = ["serde"] }
 parking_lot = { workspace = true }
 url = { workspace = true }
+# for features that require an async runtime
+tokio = { workspace = true, optional = true, features = ["rt"] }
 # TODO make these feature flags
 wasmrs-guest = { workspace = true }
 wasmrs-runtime = { workspace = true }

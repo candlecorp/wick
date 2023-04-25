@@ -8,6 +8,7 @@ use wick_rpc::{dispatch, RpcHandler};
 
 mod wick_component_cli;
 mod wick_invocation_server;
+mod wick_packet_test;
 mod wick_test;
 
 #[derive(Clone, Debug)]

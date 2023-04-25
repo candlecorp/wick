@@ -1,13 +1,13 @@
 # yaml-language-server: $schema=../../../json-schema/manifest.json
 ---
 kind: wick/component@v1
+import:
+  - name: test
+    component:
+      kind: wick/component/manifest@v1
+      ref: $CARGO_MANIFEST_DIR/Cargo.toml
+      config:
+        pwd: $CARGO_MANIFEST_DIR
 component:
   kind: wick/component/composite@v1
-  import:
-    - name: test
-      component:
-        kind: wick/component/manifest@v1
-        ref: $CARGO_MANIFEST_DIR/Cargo.toml
-        config:
-          pwd: $CARGO_MANIFEST_DIR
   operations: []

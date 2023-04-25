@@ -7,6 +7,3 @@ triggers:
       component:
         kind: wick/component/manifest@v1
         ref: ../../../../../integration/test-cli-trigger-component/component.yaml
-    app:
-      kind: wick/component/manifest@v1
-      ref: ./noop.yaml

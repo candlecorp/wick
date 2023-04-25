@@ -86,7 +86,22 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
       labels: def.labels,
       tests: def.tests.into_iter().map(|v| v.into()).collect(),
       component: def.component.try_into()?,
-      resources: Default::default(),
+      types: def.types,
+      requires: def
+        .requires
+        .into_iter()
+        .map(|v| Ok((v.name.clone(), v.try_into()?)))
+        .collect::<Result<_>>()?,
+      import: def
+        .import
+        .into_iter()
+        .map(|v| Ok((v.name.clone(), v.try_into()?)))
+        .collect::<Result<_>>()?,
+      resources: def
+        .resources
+        .into_iter()
+        .map(|v| Ok((v.name.clone(), v.try_into()?)))
+        .collect::<Result<_>>()?,
       cached_types: Default::default(),
       type_cache: Default::default(),
     })
@@ -102,6 +117,14 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
       host: def.host.try_into()?,
       name: def.name,
       labels: def.labels,
+      requires: def
+        .requires
+        .into_values()
+        .map(|v| v.try_into())
+        .collect::<Result<_>>()?,
+      import: def.import.into_values().map(|v| v.try_into()).collect::<Result<_>>()?,
+      types: def.types,
+      resources: def.resources.into_values().map(|v| v.into()).collect(),
       tests: def.tests.into_iter().map(|v| v.into()).collect(),
       component: def.component.try_into()?,
     })
@@ -113,22 +136,11 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentImplementation {
   fn try_from(value: v1::WasmComponentConfiguration) -> Result<Self> {
     Ok(Self {
       reference: value.reference.try_into()?,
-      requires: value
-        .requires
-        .into_iter()
-        .map(|v| Ok((v.name.clone(), v.try_into()?)))
-        .collect::<Result<_>>()?,
       operations: value
         .operations
         .into_iter()
         .map(|op| Ok((op.name.clone(), op.try_into()?)))
         .collect::<Result<_>>()?,
-      import: value
-        .import
-        .into_iter()
-        .map(|v| Ok((v.name.clone(), v.try_into()?)))
-        .collect::<Result<_>>()?,
-      types: value.types,
     })
   }
 }
@@ -163,21 +175,10 @@ impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentImplemen
   type Error = ManifestError;
   fn try_from(value: v1::CompositeComponentConfiguration) -> Result<Self> {
     Ok(Self {
-      requires: value
-        .requires
-        .into_iter()
-        .map(|v| Ok((v.name.clone(), v.try_into()?)))
-        .collect::<Result<_>>()?,
       operations: value
         .operations
         .into_iter()
         .map(|op| Ok((op.name.clone(), op.try_into()?)))
-        .collect::<Result<_>>()?,
-      types: value.types,
-      import: value
-        .import
-        .into_iter()
-        .map(|v| Ok((v.name.clone(), v.try_into()?)))
         .collect::<Result<_>>()?,
     })
   }
@@ -192,17 +193,6 @@ impl TryFrom<CompositeComponentImplementation> for v1::CompositeComponentConfigu
         .into_values()
         .map(|op| op.try_into())
         .collect::<Result<_>>()?,
-      types: value.types,
-      requires: value
-        .requires
-        .into_values()
-        .map(|op| op.try_into())
-        .collect::<Result<_>>()?,
-      import: value
-        .import
-        .into_values()
-        .map(|v| v.try_into())
-        .collect::<Result<_>>()?,
     })
   }
 }
@@ -216,17 +206,6 @@ impl TryFrom<WasmComponentImplementation> for v1::WasmComponentConfiguration {
         .into_values()
         .map(|op| op.try_into())
         .collect::<Result<_>>()?,
-      requires: value
-        .requires
-        .into_values()
-        .map(|op| op.try_into())
-        .collect::<Result<_>>()?,
-      import: value
-        .import
-        .into_values()
-        .map(|v| v.try_into())
-        .collect::<Result<_>>()?,
-      types: value.types,
       reference: value.reference.try_into()?,
     })
   }
@@ -390,7 +369,6 @@ impl TryFrom<CliConfig> for v1::CliTrigger {
   fn try_from(value: CliConfig) -> Result<Self> {
     Ok(Self {
       operation: value.operation.try_into()?,
-      app: value.app.map(TryInto::try_into).transpose()?,
     })
   }
 }
@@ -536,6 +514,8 @@ impl TryFrom<v1::ComponentKind> for ComponentImplementation {
     Ok(match value {
       v1::ComponentKind::CompositeComponentConfiguration(v) => ComponentImplementation::Composite(v.try_into()?),
       v1::ComponentKind::WasmComponentConfiguration(v) => ComponentImplementation::Wasm(v.try_into()?),
+      v1::ComponentKind::HttpClientComponent(v) => ComponentImplementation::HttpClient(v.try_into()?),
+      v1::ComponentKind::SqlComponent(v) => ComponentImplementation::Sql(v.try_into()?),
     })
   }
 }
@@ -546,6 +526,8 @@ impl TryFrom<ComponentImplementation> for v1::ComponentKind {
     Ok(match value {
       ComponentImplementation::Composite(v) => v1::ComponentKind::CompositeComponentConfiguration(v.try_into()?),
       ComponentImplementation::Wasm(v) => v1::ComponentKind::WasmComponentConfiguration(v.try_into()?),
+      ComponentImplementation::Sql(v) => v1::ComponentKind::SqlComponent(v.try_into()?),
+      ComponentImplementation::HttpClient(v) => v1::ComponentKind::HttpClientComponent(v.try_into()?),
     })
   }
 }
@@ -593,10 +575,11 @@ impl TryFrom<config::ImportDefinition> for v1::ImportDefinition {
         #[allow(deprecated)]
         ComponentDefinition::Wasm(_) => unreachable!("Wasm components are not allowed in v1 imports"),
         ComponentDefinition::Reference(_) => unreachable!("Component references can't exist in v1 imports"),
-        ComponentDefinition::GrpcUrl(c) => v1::ImportDefinition::GrpcUrlComponent(c.into()),
+        ComponentDefinition::GrpcUrl(_) => unreachable!("GrpcUrl components are not allowed in v1 imports"),
         ComponentDefinition::Manifest(c) => v1::ImportDefinition::ManifestComponent(c.try_into()?),
         ComponentDefinition::HighLevelComponent(c) => match c {
-          HighLevelComponent::Postgres(c) => v1::ImportDefinition::SqlComponent(c.try_into()?),
+          HighLevelComponent::Sql(c) => v1::ImportDefinition::SqlComponent(c.try_into()?),
+          HighLevelComponent::HttpClient(c) => v1::ImportDefinition::HttpClientComponent(c.try_into()?),
         },
       },
       crate::common::ImportDefinition::Types(c) => v1::ImportDefinition::TypesComponent(c.try_into()?),
@@ -636,7 +619,8 @@ impl TryFrom<ComponentDefinition> for v1::ComponentDefinition {
       ComponentDefinition::Reference(v) => Self::ComponentReference(v.into()),
       ComponentDefinition::Manifest(v) => Self::ManifestComponent(v.try_into()?),
       ComponentDefinition::HighLevelComponent(v) => match v {
-        config::HighLevelComponent::Postgres(v) => Self::SqlComponent(v.try_into()?),
+        config::HighLevelComponent::Sql(v) => Self::SqlComponent(v.try_into()?),
+        config::HighLevelComponent::HttpClient(v) => Self::HttpClientComponent(v.try_into()?),
       },
     };
     Ok(def)
@@ -665,6 +649,39 @@ impl From<GrpcUrlComponent> for v1::GrpcUrlComponent {
     Self {
       url: def.url,
       config: def.config,
+    }
+  }
+}
+
+impl TryFrom<config::components::HttpClientComponentConfig> for v1::HttpClientComponent {
+  type Error = ManifestError;
+  fn try_from(value: config::components::HttpClientComponentConfig) -> Result<Self> {
+    Ok(Self {
+      resource: value.resource,
+      codec: value.codec.map(Into::into),
+      operations: value
+        .operations
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_>>()?,
+    })
+  }
+}
+
+impl From<config::components::Codec> for v1::Codec {
+  fn from(value: config::components::Codec) -> Self {
+    match value {
+      config::components::Codec::Json => Self::Json,
+      config::components::Codec::Raw => Self::Raw,
+    }
+  }
+}
+
+impl From<v1::Codec> for config::components::Codec {
+  fn from(value: v1::Codec) -> Self {
+    match value {
+      v1::Codec::Json => Self::Json,
+      v1::Codec::Raw => Self::Raw,
     }
   }
 }
@@ -746,7 +763,10 @@ impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
       }),
       v1::ComponentDefinition::ComponentReference(v) => ComponentDefinition::Reference(ComponentReference { id: v.id }),
       v1::ComponentDefinition::SqlComponent(v) => {
-        ComponentDefinition::HighLevelComponent(HighLevelComponent::Postgres(v.try_into()?))
+        ComponentDefinition::HighLevelComponent(HighLevelComponent::Sql(v.try_into()?))
+      }
+      v1::ComponentDefinition::HttpClientComponent(v) => {
+        ComponentDefinition::HighLevelComponent(HighLevelComponent::HttpClient(v.try_into()?))
       }
     };
     Ok(res)
@@ -897,7 +917,6 @@ impl TryFrom<v1::TriggerDefinition> for TriggerDefinition {
     let rv = match trigger {
       v1::TriggerDefinition::CliTrigger(cli) => Self::Cli(CliConfig {
         operation: cli.operation.try_into()?,
-        app: cli.app.map(|v| v.try_into()).transpose()?,
       }),
       v1::TriggerDefinition::HttpTrigger(v) => Self::Http(HttpTriggerConfig {
         resource: v.resource,
@@ -958,20 +977,15 @@ impl TryFrom<v1::ImportDefinition> for config::ImportDefinition {
   fn try_from(value: v1::ImportDefinition) -> Result<Self> {
     Ok(match value {
       v1::ImportDefinition::TypesComponent(c) => config::ImportDefinition::Types(c.try_into()?),
-      v1::ImportDefinition::GrpcUrlComponent(c) => {
-        let c = v1::ComponentDefinition::GrpcUrlComponent(c);
-        config::ImportDefinition::Component(c.try_into()?)
-      }
       v1::ImportDefinition::ManifestComponent(c) => {
         let c = v1::ComponentDefinition::ManifestComponent(c);
         config::ImportDefinition::Component(c.try_into()?)
       }
-      v1::ImportDefinition::ComponentReference(c) => {
-        let c = v1::ComponentDefinition::ComponentReference(c);
-        config::ImportDefinition::Component(c.try_into()?)
-      }
       v1::ImportDefinition::SqlComponent(c) => config::ImportDefinition::Component(
-        config::ComponentDefinition::HighLevelComponent(config::HighLevelComponent::Postgres(c.try_into()?)),
+        config::ComponentDefinition::HighLevelComponent(config::HighLevelComponent::Sql(c.try_into()?)),
+      ),
+      v1::ImportDefinition::HttpClientComponent(c) => config::ImportDefinition::Component(
+        config::ComponentDefinition::HighLevelComponent(config::HighLevelComponent::HttpClient(c.try_into()?)),
       ),
     })
   }
@@ -1190,6 +1204,56 @@ impl TryFrom<v1::SqlOperationDefinition> for components::SqlOperationDefinition 
   }
 }
 
+impl TryFrom<v1::HttpClientOperationDefinition> for components::HttpClientOperationDefinition {
+  type Error = crate::Error;
+  fn try_from(value: v1::HttpClientOperationDefinition) -> Result<Self> {
+    Ok(Self {
+      name: value.name,
+      codec: value.codec.map(Into::into),
+      inputs: value.inputs,
+      path: value.path,
+      method: value.method.into(),
+    })
+  }
+}
+
+impl From<v1::HttpMethod> for components::HttpMethod {
+  fn from(value: v1::HttpMethod) -> Self {
+    match value {
+      v1::HttpMethod::Get => Self::Get,
+      v1::HttpMethod::Post => Self::Post,
+      v1::HttpMethod::Put => Self::Put,
+      v1::HttpMethod::Delete => Self::Delete,
+    }
+  }
+}
+
+impl From<components::HttpMethod> for v1::HttpMethod {
+  fn from(value: components::HttpMethod) -> Self {
+    match value {
+      components::HttpMethod::Get => Self::Get,
+      components::HttpMethod::Post => Self::Post,
+      components::HttpMethod::Put => Self::Put,
+      components::HttpMethod::Delete => Self::Delete,
+    }
+  }
+}
+
+impl TryFrom<v1::HttpClientComponent> for components::HttpClientComponentConfig {
+  type Error = crate::Error;
+  fn try_from(value: v1::HttpClientComponent) -> Result<Self> {
+    Ok(Self {
+      resource: value.resource,
+      codec: value.codec.map(Into::into),
+      operations: value
+        .operations
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_>>()?,
+    })
+  }
+}
+
 impl TryFrom<components::SqlComponentConfig> for v1::SqlComponent {
   type Error = crate::Error;
   fn try_from(value: components::SqlComponentConfig) -> Result<Self> {
@@ -1214,6 +1278,19 @@ impl TryFrom<components::SqlOperationDefinition> for v1::SqlOperationDefinition 
       outputs: value.outputs,
       query: value.query,
       arguments: value.arguments,
+    })
+  }
+}
+
+impl TryFrom<components::HttpClientOperationDefinition> for v1::HttpClientOperationDefinition {
+  type Error = crate::Error;
+  fn try_from(value: components::HttpClientOperationDefinition) -> Result<Self> {
+    Ok(Self {
+      name: value.name,
+      inputs: value.inputs,
+      path: value.path,
+      codec: value.codec.map(Into::into),
+      method: value.method.into(),
     })
   }
 }

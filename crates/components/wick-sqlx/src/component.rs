@@ -8,10 +8,10 @@ use parking_lot::Mutex;
 use serde_json::Value;
 use sqlx::{MssqlPool, PgPool};
 use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition};
-use wick_config::config::{OwnedConfigurationItem, UrlResource};
-use wick_config::{HighLevelComponent, Resolver};
+use wick_config::config::{Metadata, UrlResource};
+use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{component, ComponentSignature, Field, TypeSignature};
-use wick_packet::{FluxChannel, Invocation, Observer, Packet, PacketStream, StreamMap, TypeWrapper};
+use wick_packet::{FluxChannel, Invocation, Observer, Packet, PacketStream, TypeWrapper};
 use wick_rpc::RpcHandler;
 
 use crate::error::Error;
@@ -88,25 +88,28 @@ impl Context {}
 pub struct SqlXComponent {
   context: Arc<Mutex<Option<Context>>>,
   signature: Arc<ComponentSignature>,
-}
-
-impl Default for SqlXComponent {
-  fn default() -> Self {
-    Self::new()
-  }
+  url_resource: UrlResource,
+  config: SqlComponentConfig,
 }
 
 impl SqlXComponent {
-  pub fn new() -> Self {
+  pub fn new(config: SqlComponentConfig, metadata: Metadata, resolver: &Resolver) -> Result<Self, ComponentError> {
+    validate(&config, resolver)?;
     let sig = component! {
-      name: "wick-postgres",
-      version: env!("CARGO_PKG_VERSION"),
-      operations: {}
+      name: "wick/component/sql",
+      version: metadata.version,
+      operations: config.operation_signatures(),
     };
-    Self {
+    let addr = resolver(&config.resource)
+      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource)))
+      .and_then(|r| r.try_resource().map_err(ComponentError::new))?;
+
+    Ok(Self {
       context: Arc::new(Mutex::new(None)),
       signature: Arc::new(sig),
-    }
+      url_resource: addr.into(),
+      config,
+    })
   }
 }
 
@@ -118,8 +121,6 @@ impl Component for SqlXComponent {
     _data: Option<Value>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let target = invocation.target_url();
-    trace!("stdlib invoke: {}", target);
     let ctx = self.context.clone();
 
     Box::pin(async move {
@@ -140,21 +141,21 @@ impl Component for SqlXComponent {
       };
 
       let input_list: Vec<_> = opdef.inputs.iter().map(|i| i.name.clone()).collect();
-      let mut inputs = fan_out(stream, &input_list);
+      let mut inputs = wick_packet::split_stream(stream, &input_list);
       let (tx, rx) = PacketStream::new_channels();
       tokio::spawn(async move {
         'outer: loop {
           for input in &mut inputs {
-            let mut results = Vec::new();
-            results.push(input.next().await);
-            let num_done = results.iter().filter(|r| r.is_none()).count();
+            let mut inputs = Vec::new();
+            inputs.push(input.next().await);
+            let num_done = inputs.iter().filter(|r| r.is_none()).count();
             if num_done > 0 {
               if num_done != opdef.inputs.len() {
                 let _ = tx.send(Packet::component_error("Missing input"));
               }
               break 'outer;
             }
-            let results = results.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
+            let results = inputs.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
             if let Some(Err(e)) = results.iter().find(|r| r.is_err()) {
               let _ = tx.send(Packet::component_error(e.to_string()));
               break 'outer;
@@ -169,7 +170,7 @@ impl Component for SqlXComponent {
             }
 
             if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), results, stmt.clone()).await {
-              error!(error = %e, "error executing postgres query");
+              error!(error = %e, "error executing query");
             }
           }
         }
@@ -182,38 +183,30 @@ impl Component for SqlXComponent {
   fn list(&self) -> &ComponentSignature {
     &self.signature
   }
-}
 
-impl HighLevelComponent for SqlXComponent {
-  type Config = SqlComponentConfig;
-
-  fn init(
-    &self,
-    config: Self::Config,
-    resolver: Box<Resolver>,
-  ) -> std::pin::Pin<Box<dyn futures::Future<Output = Result<(), ComponentError>> + Send + 'static>> {
+  fn init(&self) -> std::pin::Pin<Box<dyn futures::Future<Output = Result<(), ComponentError>> + Send + 'static>> {
     let ctx = self.context.clone();
-    let addr: UrlResource = resolver(&config.resource).unwrap().try_resource().unwrap().into();
-    let init_context = init_context(config, addr);
+    let addr = self.url_resource.clone();
+    let config = self.config.clone();
 
     Box::pin(async move {
-      let new_ctx = init_context.await?;
+      let new_ctx = init_context(config, addr).await?;
 
       ctx.lock().replace(new_ctx);
 
       Ok(())
     })
   }
+}
 
-  fn validate(&self, config: &Self::Config, resolver: &Resolver) -> Result<(), ComponentError> {
-    Ok(validate(config, &resolver)?)
+impl ConfigValidation for SqlXComponent {
+  type Config = SqlComponentConfig;
+  fn validate(config: &Self::Config, resolver: &Resolver) -> Result<(), ComponentError> {
+    Ok(validate(config, resolver)?)
   }
 }
 
-fn validate(
-  config: &SqlComponentConfig,
-  _resolver: &impl Fn(&str) -> Option<OwnedConfigurationItem>,
-) -> Result<(), Error> {
+fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Error> {
   let bad_ops: Vec<_> = config
     .operations
     .iter()
@@ -271,7 +264,7 @@ async fn exec(
   args: Vec<(TypeSignature, Packet)>,
   stmt: Arc<(String, String)>,
 ) -> Result<(), Error> {
-  debug!(stmt = %stmt.0, "executing postgres query");
+  debug!(stmt = %stmt.0, "executing  query");
   let input_list: Vec<_> = def.inputs.iter().map(|i| i.name.clone()).collect();
 
   let values = args
@@ -306,25 +299,6 @@ async fn exec(
   let _ = tx.send(Packet::done("output"));
 
   Ok(())
-}
-
-fn fan_out(mut stream: PacketStream, ports: &[String]) -> Vec<PacketStream> {
-  let mut streams = StreamMap::default();
-  let mut senders = HashMap::new();
-  for port in ports {
-    senders.insert(port.clone(), streams.init(port));
-  }
-  tokio::spawn(async move {
-    while let Some(Ok(payload)) = stream.next().await {
-      let sender = senders.get_mut(payload.port()).unwrap();
-      if payload.is_done() {
-        sender.complete();
-        continue;
-      }
-      sender.send(payload).unwrap();
-    }
-  });
-  ports.iter().map(|port| streams.take(port).unwrap()).collect()
 }
 
 #[cfg(test)]

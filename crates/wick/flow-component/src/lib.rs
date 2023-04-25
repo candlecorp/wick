@@ -168,6 +168,11 @@ pub trait Component {
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>>;
   fn list(&self) -> &ComponentSignature;
+  fn init(&self) -> BoxFuture<Result<(), ComponentError>> {
+    // Override if you need a more explicit init.
+    Box::pin(async move { Ok(()) })
+  }
+
   fn shutdown(&self) -> BoxFuture<Result<(), ComponentError>> {
     // Override if you need a more explicit shutdown.
     Box::pin(async move { Ok(()) })

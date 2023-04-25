@@ -1,4 +1,5 @@
 mod grpcurl;
+mod http_client;
 mod manifest;
 mod native;
 mod reference;
@@ -7,6 +8,7 @@ mod types;
 mod wasm;
 
 pub use grpcurl::*;
+pub use http_client::*;
 pub use manifest::*;
 pub use native::*;
 pub use reference::*;

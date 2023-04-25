@@ -55,7 +55,7 @@ impl From<ResourceDefinition> for UrlResource {
   fn from(value: ResourceDefinition) -> Self {
     match value {
       ResourceDefinition::Url(v) => v,
-      _ => panic!("Cannot convert non-authority resource to authority"),
+      _ => panic!("Cannot convert non-URL resource to URL"),
     }
   }
 }

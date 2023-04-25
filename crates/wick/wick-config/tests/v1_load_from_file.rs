@@ -2,7 +2,7 @@ use core::panic;
 use std::path::PathBuf;
 
 use wick_config::component_config::CompositeComponentImplementation;
-use wick_config::config::{ComponentDefinition, ImportDefinition};
+use wick_config::config::{ComponentConfiguration, ComponentDefinition, ImportDefinition};
 use wick_config::error::ManifestError;
 use wick_config::*;
 
@@ -11,13 +11,17 @@ async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
   WickConfiguration::load_from_file(path).await
 }
 
-async fn load_component(path: &str) -> Result<CompositeComponentImplementation, ManifestError> {
+async fn load_component(path: &str) -> Result<ComponentConfiguration, ManifestError> {
+  Ok(load(path).await?.try_component_config()?.clone())
+}
+
+async fn load_composite(path: &str) -> Result<CompositeComponentImplementation, ManifestError> {
   Ok(load(path).await?.try_component_config()?.try_composite()?.clone())
 }
 
 #[test_logger::test(tokio::test)]
 async fn test_basics() -> Result<(), ManifestError> {
-  let component = load_component("./tests/manifests/v1/logger.yaml").await?;
+  let component = load_composite("./tests/manifests/v1/logger.yaml").await?;
 
   assert_eq!(component.flow("logger").map(|s| s.instances().len()), Some(2));
 
@@ -43,7 +47,7 @@ async fn test_tests() -> Result<(), ManifestError> {
 
 #[test_logger::test(tokio::test)]
 async fn test_operations() -> Result<(), ManifestError> {
-  let component = load_component("./tests/manifests/v1/operations.yaml").await?;
+  let component = load_composite("./tests/manifests/v1/operations.yaml").await?;
   assert_eq!(component.operations().len(), 1);
 
   Ok(())
@@ -64,7 +68,7 @@ async fn test_main() -> Result<(), ManifestError> {
 async fn regression_issue_180() -> Result<(), ManifestError> {
   let component = load_component("./tests/manifests/v1/shell-expansion.yaml").await?;
   println!("{:?}", component);
-  let coll = component.component("test").unwrap();
+  let coll = component.get_import("test").unwrap();
   #[allow(deprecated)]
   if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = &coll.kind {
     let value = module.reference.path()?;
@@ -86,7 +90,7 @@ async fn regression_issue_180() -> Result<(), ManifestError> {
 async fn regression_issue_42() -> Result<(), ManifestError> {
   let component = load_component("./tests/manifests/v1/shell-expansion.yaml").await?;
   println!("{:?}", component);
-  let coll = component.component("test").unwrap();
+  let coll = component.get_import("test").unwrap();
   #[allow(deprecated)]
   if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = &coll.kind {
     let value = module.config.get("pwd").unwrap().as_str().unwrap();

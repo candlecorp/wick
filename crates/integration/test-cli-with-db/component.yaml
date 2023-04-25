@@ -4,25 +4,25 @@ name: test-cli-with-db
 kind: wick/component@v1
 metadata:
   version: '1'
+requires:
+  - name: db
+    interface:
+      operations:
+        - name: get_user
+          inputs:
+            - name: id
+              type: u32
+          outputs:
+            - name: output
+              type: object
+import:
+  - name: cli
+    component:
+      kind: wick/component/types@v1
+      ref: ../../interfaces/wick-interface-cli/component.yaml
 component:
   kind: wick/component/wasmrs@v1
   ref: ./build/test_cli_with_db.signed.wasm
-  requires:
-    - name: db
-      interface:
-        operations:
-          - name: get_user
-            inputs:
-              - name: id
-                type: u32
-            outputs:
-              - name: output
-                type: object
-  import:
-    - name: cli
-      component:
-        kind: wick/component/types@v1
-        ref: ../../interfaces/wick-interface-cli/component.yaml
   operations:
     - name: main
       inputs:

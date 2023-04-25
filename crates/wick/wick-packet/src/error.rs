@@ -38,6 +38,14 @@ pub enum Error {
   /// Thrown when a user attempts to use a signal when they expected a payload.
   #[error("Got a Done signal in an unexpected context.")]
   UnexpectedDone,
+
+  /// Couldn't retrieve a complete set of packets from a [crate::StreamMap]
+  #[error("Could not retrieve a complete set of packets. Stream '{0}' failed to provide a packet: '{1}'")]
+  StreamMapError(String /* port */, String /* error */),
+
+  /// Couldn't retrieve a complete set of packets from a [crate::StreamMap]
+  #[error("Could not retrieve a complete set of packets. Stream '{0}' completed or failed before providing a packet.")]
+  StreamMapMissing(String /* port */),
 }
 
 impl From<wasmrs_rx::Error> for Error {

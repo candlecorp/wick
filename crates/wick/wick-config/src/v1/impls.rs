@@ -7,6 +7,7 @@ impl ComponentDefinition {
       ComponentDefinition::ManifestComponent(_) => None,
       ComponentDefinition::ComponentReference(v) => Some(&v.id),
       ComponentDefinition::SqlComponent(_) => todo!(),
+      ComponentDefinition::HttpClientComponent(_) => todo!(),
     }
   }
 }

@@ -65,7 +65,9 @@ impl std::str::FromStr for ComponentOperationExpression {
 #[must_use]
 pub enum HighLevelComponent {
   #[asset(skip)]
-  Postgres(config::components::SqlComponentConfig),
+  Sql(config::components::SqlComponentConfig),
+  #[asset(skip)]
+  HttpClient(config::components::HttpClientComponentConfig),
 }
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]

@@ -62,11 +62,7 @@ async fn load_collections_yaml() -> Result<(), ManifestError> {
     .try_component_config()?;
 
   assert_eq!(manifest.name(), &Some("collections".to_owned()));
-  if let ComponentImplementation::Composite(component) = manifest.component() {
-    assert_eq!(component.components().len(), 3);
-  } else {
-    panic!("Expected a composite component");
-  };
+  assert_eq!(manifest.imports().len(), 3);
 
   Ok(())
 }

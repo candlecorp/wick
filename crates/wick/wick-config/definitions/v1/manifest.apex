@@ -52,8 +52,6 @@ union TriggerDefinition = CliTrigger | HttpTrigger | TimeTrigger
 type CliTrigger @tagged("wick/trigger/cli@v1") {
   "The operation that will act as the main entrypoint for this trigger."
   operation: ComponentOperationExpression @required
-  "The component that provides additional logic."
-  app: ComponentDefinition? @shortform
 }
 
 "A trigger called with a Time context."
@@ -195,6 +193,18 @@ type ComponentConfiguration @tagged("wick/component@v1") {
   "Configuration for when wick hosts this component as a service."
   host: HostConfig
 
+  "Resources that the application can access."
+  resources: [ResourceBinding],
+
+  "Components or types to import into the application's scope."
+  import: [ImportBinding]
+
+  "Additional types to export and make available to the component."
+  types: [TypeDefinition]
+
+  "Interfaces the component requires to operate."
+  requires: [BoundInterface]
+
   "The labels and values that apply to this manifest."
   labels: {string: string}
 
@@ -223,21 +233,10 @@ type InterfaceDefinition {
   operations: [OperationDefinition]
 }
 
-union ComponentKind = WasmComponentConfiguration | CompositeComponentConfiguration
-
 "A component made out of other components"
 type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
-  "Additional types to export and make available to the component."
-  types: [TypeDefinition]
-
-  "Components or types to import into the application's scope."
-  import: [ImportBinding]
-
   "A list of operations implemented by the Composite component."
   operations: [CompositeOperationDefinition]
-
-  "Interfaces the component requires to operate."
-  requires: [BoundInterface]
 }
 
 "A component made out of other components"
@@ -245,17 +244,8 @@ type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
   "A reference to a local WebAssembly implementation"
   ref: LocationReference @rename("reference") @required
 
-  "Components or types to import into the application's scope."
-  import: [ImportBinding]
-
-  "Additional types to export and make available to the component."
-  types: [TypeDefinition]
-
   "A list of operations implemented by the WebAssembly module."
   operations: [OperationDefinition]
-
-  "Interfaces the component requires to operate."
-  requires: [BoundInterface]
 }
 
 "An identifier bound to a resource."
@@ -274,11 +264,14 @@ type ImportBinding {
   component: ImportDefinition @required
 }
 
-"The possible types to import into a component or application."
-union ImportDefinition = TypesComponent | GrpcUrlComponent | ManifestComponent | ComponentReference | SqlComponent
+"Component implementation types"
+union ComponentKind = WasmComponentConfiguration | CompositeComponentConfiguration | SqlComponent | HttpClientComponent
 
-"The possible types of components."
-union ComponentDefinition = GrpcUrlComponent | ManifestComponent | ComponentReference | SqlComponent
+"Types of possible imports."
+union ImportDefinition = TypesComponent | ManifestComponent | SqlComponent | HttpClientComponent
+
+"Component types used when referencing operations or linking components."
+union ComponentDefinition = GrpcUrlComponent | ManifestComponent | ComponentReference | SqlComponent | HttpClientComponent
 
 "A types manifest to import into this component's scope."
 type TypesComponent @tagged("wick/component/types@v1") {
@@ -494,7 +487,7 @@ enum DatabaseKind {
 
 "A component made out of other components"
 type SqlComponent @tagged("wick/component/sql@v1") {
-  "The TcpPort reference to listen on for connections."
+  "The connect string URL resource for the database."
   resource: string
 
   "Whether or not to use TLS."
@@ -521,3 +514,48 @@ type SqlOperationDefinition {
   arguments: [string]
 }
 
+
+"A component made out of other components"
+type HttpClientComponent @tagged("wick/component/http@v1") {
+  "The URL base to use."
+  resource: string
+
+  "The codec to use when encoding/decoding data. Can be overridden by individual operations."
+  codec: Codec?
+
+  "A list of operations to expose on this component."
+  operations: [HttpClientOperationDefinition]
+}
+
+type HttpClientOperationDefinition {
+  "The name of the operation."
+  name: string
+
+  "Types of the inputs to the operation."
+  inputs: [Field],
+
+  "The HTTP method to use."
+  method: HttpMethod
+
+  "The codec to use when encoding/decoding data."
+  codec: Codec?
+
+  "The path to append to our base URL, processed as a liquid template with each input as part of the template data."
+  path: string
+}
+
+"Codec to use when encoding/decoding data."
+enum Codec {
+  "JSON Codec"
+  Json = 0 as "json",
+  "Raw"
+  Raw = 1 as "raw",
+}
+
+"Supported HTTP methods"
+enum HttpMethod {
+  Get = 0 as "get",
+  Post = 1 as "post",
+  Put = 2 as "put",
+  Delete = 3 as "delete",
+}
