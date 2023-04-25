@@ -14,10 +14,10 @@ macro_rules! packets {
         let mut ports = std::collections::HashSet::new();
         $(
           ports.insert($port.to_owned());
-          msgs.push(wick_packet::Packet::encode($port, $value));
+          msgs.push($crate::Packet::encode($port, $value));
         )*
         for port in ports {
-          msgs.push(wick_packet::Packet::done(&port));
+          msgs.push($crate::Packet::done(&port));
         }
         msgs
       }

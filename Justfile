@@ -48,8 +48,9 @@ integration: integration-setup && integration-teardown
 	just integration-tests
 
 integration-tests:
-	# cargo nextest run -E 'not test(slow_test)'
-	cargo test --workspace -- --skip slow_test --test-threads=6
+	cargo nextest run -E 'not test(slow_test)'
+	# cargo test --workspace -- --skip slow_test --test-threads=6
+	cargo test --manifest-path tests/template/Cargo.toml
 
 all-tests:
 	# cargo test --workspace -- --test-threads=6

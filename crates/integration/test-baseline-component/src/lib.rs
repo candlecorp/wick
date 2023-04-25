@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
 use wasmrs_guest::*;
+// mod generated;
+// use generated as wick;
 mod wick {
   wick_component::wick_import!();
 }

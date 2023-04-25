@@ -48,7 +48,6 @@ atty = { workspace = true }
 hyper = { workspace = true, features = ["runtime", "server"] }
 url = { workspace = true }
 bytes = { workspace = true }
-regex = { workspace = true }
 hyper-staticfile = "0.9"
 hyper-reverse-proxy = "0.5"
 

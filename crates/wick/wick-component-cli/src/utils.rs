@@ -70,6 +70,15 @@ mod tests {
   }
 
   #[test_logger::test]
+  fn parse_numbers() -> Result<()> {
+    let args = to_vec(&["--input-a", "123"]);
+    let packets = parse_args(&args)?;
+    assert_eq!(packets[0], Packet::encode("input-a", 123));
+    assert_eq!(packets[0].clone().deserialize::<i32>().unwrap(), 123);
+    Ok(())
+  }
+
+  #[test_logger::test]
   fn parse_combined_args() -> Result<()> {
     let args = to_vec(&["--input-a=value-a"]);
     let packets = parse_args(&args)?;

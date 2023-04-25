@@ -5,6 +5,7 @@
       {{#case "TypeDefinition"}}wick_interface_types::TypeDefinition{{/case}}
       {{#case "Field"}}wick_interface_types::Field{{/case}}
       {{#case "LocationReference"}}crate::v1::helpers::LocationReference{{/case}}
+      {{#case "LiquidJsonValue"}}liquid_json::LiquidJsonValue{{/case}}
       {{#case "any"}}Value{{/case}}
       {{#case "string"}}String{{/case}}
       {{#default}}{{name.value}}{{/default}}

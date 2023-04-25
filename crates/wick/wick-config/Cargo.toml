@@ -29,6 +29,7 @@ derive_builder = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
 url = { workspace = true }
 parking_lot = { workspace = true }
+liquid-json = { workspace = true, features = ["serde"] }
 
 [dev-dependencies]
 wick-xdg = { workspace = true }

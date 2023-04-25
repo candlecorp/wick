@@ -16,6 +16,9 @@ pub enum Error {
 
   #[error("Received invalid header value for header {0}")]
   InvalidHeader(String),
+
+  #[error("Could not find operation {0} on this component")]
+  OpNotFound(String),
 }
 
 impl From<Error> for ComponentError {

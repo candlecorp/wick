@@ -1,4 +1,3 @@
-use bytes::Bytes;
 use futures::StreamExt;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -7,7 +6,16 @@ use wasmrs::{BoxFlux, Metadata, Payload, PayloadError, RawPayload};
 use wick_interface_types::TypeSignature;
 
 use crate::metadata::DONE_FLAG;
-use crate::{ComponentReference, Error, PacketStream, TypeWrapper, WickMetadata, CLOSE_BRACKET, OPEN_BRACKET};
+use crate::{
+  Base64Bytes,
+  ComponentReference,
+  Error,
+  PacketStream,
+  TypeWrapper,
+  WickMetadata,
+  CLOSE_BRACKET,
+  OPEN_BRACKET,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[must_use]
@@ -53,7 +61,7 @@ impl Packet {
   }
 
   pub fn ok(port: impl AsRef<str>, payload: RawPayload) -> Self {
-    Self::new_for_port(port, PacketPayload::Ok(payload.data), 0)
+    Self::new_for_port(port, PacketPayload::Ok(payload.data.map(Into::into)), 0)
   }
 
   pub fn raw_err(port: impl AsRef<str>, payload: PacketError) -> Self {
@@ -175,7 +183,7 @@ impl PartialEq for PacketPayload {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PacketPayload {
-  Ok(Option<Bytes>),
+  Ok(Option<Base64Bytes>),
   Err(PacketError),
 }
 
@@ -239,14 +247,14 @@ impl PacketPayload {
     Ok(val)
   }
 
-  pub fn bytes(&self) -> Option<&Bytes> {
+  pub fn bytes(&self) -> Option<&Base64Bytes> {
     match self {
       Self::Ok(b) => b.as_ref(),
       _ => None,
     }
   }
 
-  pub fn into_bytes(self) -> Option<Bytes> {
+  pub fn into_bytes(self) -> Option<Base64Bytes> {
     match self {
       Self::Ok(b) => b,
       _ => None,
@@ -289,7 +297,7 @@ pub fn into_wasmrs(index: u32, stream: PacketStream) -> BoxFlux<RawPayload, Payl
     p.map(|p| {
       let md = wasmrs::Metadata::new_extra(index, p.extra.encode()).encode();
       match p.payload {
-        PacketPayload::Ok(b) => Ok(wasmrs::RawPayload::new_data(Some(md), b)),
+        PacketPayload::Ok(b) => Ok(wasmrs::RawPayload::new_data(Some(md), b.map(Into::into))),
         PacketPayload::Err(e) => Err(wasmrs::PayloadError::application_error(e.msg(), Some(md))),
       }
     })
@@ -319,7 +327,7 @@ pub fn from_raw_wasmrs(stream: BoxFlux<RawPayload, PayloadError>) -> PacketStrea
         // Potential danger zone: this converts empty payload to None which *should* be the
         // same thing. Calling this out as a potential source for weird bugs if they pop up.
         let data = p.data.and_then(|b| (!b.is_empty()).then_some(b));
-        Packet::new_for_port(wmd.port(), PacketPayload::Ok(data), wmd.flags())
+        Packet::new_for_port(wmd.port(), PacketPayload::Ok(data.map(Into::into)), wmd.flags())
       },
     );
     Ok(p)
@@ -346,7 +354,7 @@ pub fn from_wasmrs(stream: BoxFlux<Payload, PayloadError>) -> PacketStream {
         // Potential danger zone: this converts empty payload to None which *should* be the
         // same thing. Calling this out as a potential source for weird bugs if they pop up.
         let data = p.data;
-        Packet::new_for_port(wmd.port(), PacketPayload::Ok(Some(data)), wmd.flags())
+        Packet::new_for_port(wmd.port(), PacketPayload::Ok(Some(data.into())), wmd.flags())
       },
     );
     Ok(p)
@@ -360,7 +368,7 @@ impl From<Payload> for Packet {
     Self {
       extra: WickMetadata::decode(ex.unwrap()).unwrap(),
       metadata: value.metadata,
-      payload: PacketPayload::Ok(Some(value.data)),
+      payload: PacketPayload::Ok(Some(value.data.into())),
     }
   }
 }
@@ -370,8 +378,52 @@ impl From<Packet> for Result<RawPayload, PayloadError> {
     let mut md = value.metadata;
     md.extra = Some(value.extra.encode());
     match value.payload {
-      PacketPayload::Ok(b) => Ok(RawPayload::new_data(Some(md.encode()), b)),
+      PacketPayload::Ok(b) => Ok(RawPayload::new_data(Some(md.encode()), b.map(Into::into))),
       PacketPayload::Err(e) => Err(PayloadError::application_error(e.msg(), Some(md.encode()))),
     }
+  }
+}
+
+#[cfg(test)]
+mod test {
+  use anyhow::Result;
+  use serde_json::Value;
+
+  use crate::{Base64Bytes, Packet};
+
+  #[test]
+  fn test_basic() -> Result<()> {
+    let packet = Packet::encode("test", 10);
+    let res: i32 = packet.deserialize()?;
+    assert_eq!(res, 10);
+    Ok(())
+  }
+
+  #[rstest::rstest]
+  #[case(u64::MIN, Value::Number(serde_json::Number::from(u64::MIN)))]
+  #[case(u64::MAX, Value::Number(serde_json::Number::from(u64::MAX)))]
+  #[case(&[1,2,3,4,5,6], vec![1,2,3,4,5,6].into())]
+  #[case("test", Value::String("test".to_owned()))]
+  #[case(Base64Bytes::new(b"test".as_slice()), Value::String("dGVzdA==".to_owned()))]
+  fn test_encode_to_generic<T>(#[case] value: T, #[case] expected: Value) -> Result<()>
+  where
+    T: serde::Serialize + std::fmt::Debug,
+  {
+    let packet = Packet::encode("test", value);
+    println!("{:?}", packet);
+    let res = packet.deserialize_generic()?;
+    assert_eq!(res, expected);
+    Ok(())
+  }
+
+  #[rstest::rstest]
+  #[case("dGVzdA==", b"test")]
+  fn test_from_b64(#[case] value: &str, #[case] expected: &[u8]) -> Result<()> {
+    let packet = Packet::encode("test", value);
+    println!("{:?}", packet);
+    let res = packet.deserialize_generic()?;
+    let bytes: Base64Bytes = serde_json::from_value(res).unwrap();
+    assert_eq!(bytes, expected);
+    Ok(())
   }
 }

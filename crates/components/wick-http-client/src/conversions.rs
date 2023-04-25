@@ -1,16 +1,17 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use futures::Stream;
+use futures::{Stream, StreamExt};
 use reqwest::header::HeaderMap;
 use reqwest::Version;
 use wick_interface_http::types::{HttpResponse, HttpVersion, StatusCode};
+use wick_packet::Base64Bytes;
 
 use crate::Error;
 
 pub(crate) fn to_wick_response(
   res: reqwest::Response,
-) -> Result<(HttpResponse, impl Stream<Item = Result<bytes::Bytes, reqwest::Error>>), Error> {
+) -> Result<(HttpResponse, impl Stream<Item = Result<Base64Bytes, reqwest::Error>>), Error> {
   let ours = HttpResponse {
     version: match res.version() {
       Version::HTTP_09 => unimplemented!("HTTP/0.9 is not supported"),
@@ -22,7 +23,7 @@ pub(crate) fn to_wick_response(
     status: StatusCode::from_str(res.status().as_str()).unwrap_or(StatusCode::Unknown),
     headers: convert_headers(res.headers())?,
   };
-  Ok((ours, res.bytes_stream()))
+  Ok((ours, res.bytes_stream().map(|b| b.map(Base64Bytes::new))))
 }
 
 fn convert_headers(from_headers: &HeaderMap) -> Result<HashMap<String, Vec<String>>, Error> {

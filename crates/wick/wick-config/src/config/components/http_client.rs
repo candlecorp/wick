@@ -72,6 +72,8 @@ pub struct HttpClientOperationDefinition {
   /// The codec to use when encoding/decoding data.
   pub codec: Option<Codec>,
 
+  pub body: Option<liquid_json::LiquidJsonValue>,
+
   /// The HTTP method to use.
   pub method: HttpMethod,
 }
@@ -84,39 +86,58 @@ impl HttpClientOperationDefinition {
       inputs,
       path: path.as_ref().to_owned(),
       method: HttpMethod::Get,
+      body: Default::default(),
       codec: Default::default(),
     }
   }
 
   /// Create a new POST operation.
-  pub fn new_post(name: impl AsRef<str>, path: impl AsRef<str>, inputs: Vec<wick_interface_types::Field>) -> Self {
+  pub fn new_post(
+    name: impl AsRef<str>,
+    path: impl AsRef<str>,
+    inputs: Vec<wick_interface_types::Field>,
+    body: Option<liquid_json::LiquidJsonValue>,
+  ) -> Self {
     Self {
       name: name.as_ref().to_owned(),
       inputs,
       path: path.as_ref().to_owned(),
       method: HttpMethod::Post,
+      body,
       codec: Default::default(),
     }
   }
 
   /// Create a new PUT operation.
-  pub fn new_put(name: impl AsRef<str>, path: impl AsRef<str>, inputs: Vec<wick_interface_types::Field>) -> Self {
+  pub fn new_put(
+    name: impl AsRef<str>,
+    path: impl AsRef<str>,
+    inputs: Vec<wick_interface_types::Field>,
+    body: Option<liquid_json::LiquidJsonValue>,
+  ) -> Self {
     Self {
       name: name.as_ref().to_owned(),
       inputs,
       path: path.as_ref().to_owned(),
       method: HttpMethod::Put,
+      body,
       codec: Default::default(),
     }
   }
 
   /// Create a new DELETE operation.
-  pub fn new_delete(name: impl AsRef<str>, path: impl AsRef<str>, inputs: Vec<wick_interface_types::Field>) -> Self {
+  pub fn new_delete(
+    name: impl AsRef<str>,
+    path: impl AsRef<str>,
+    inputs: Vec<wick_interface_types::Field>,
+    body: Option<liquid_json::LiquidJsonValue>,
+  ) -> Self {
     Self {
       name: name.as_ref().to_owned(),
       inputs,
       path: path.as_ref().to_owned(),
       method: HttpMethod::Delete,
+      body,
       codec: Default::default(),
     }
   }

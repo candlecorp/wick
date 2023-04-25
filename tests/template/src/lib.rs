@@ -45,7 +45,10 @@ mod slow_test {
       panic!("stderr: {}", String::from_utf8_lossy(&cmd.stderr));
     }
 
-    let mut bin = tokio::process::Command::from(test_bin::get_test_bin("wick"));
+    let mut bin = tokio::process::Command::from(test_bin::get_test_bin("cargo"));
+    bin.arg("run");
+    bin.arg("-pwick-cli");
+    bin.arg("--");
     bin.arg("invoke");
     bin.arg(tempdir.join(name).join("component.yaml"));
     bin.arg("add");

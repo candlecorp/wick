@@ -19,6 +19,7 @@
     {{#switch name.value~}}
       {{#case "any"}}{{/case}}
       {{#case "LocationReference"}}"type":"string"{{/case}}
+      {{#case "LiquidJsonValue"}}"type":"object"{{/case}}
       {{#case "string"}}"type":"string"{{/case}}
       {{#case "i8"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
       {{#case "u8"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
