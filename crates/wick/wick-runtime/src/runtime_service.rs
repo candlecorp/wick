@@ -1,7 +1,6 @@
 pub(crate) mod error;
 
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -11,18 +10,18 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use tracing::{Instrument, Span};
 use uuid::Uuid;
-use wick_config::config::{ComponentConfiguration, ComponentImplementation};
-use wick_config::{HighLevelComponent, Resolver};
+use wick_config::config::{ComponentConfiguration, ComponentKind, Metadata};
+use wick_config::Resolver;
 
 use crate::components::{
   expect_signature_match,
+  init_hlc_component,
   init_manifest_component,
   init_wasm_component,
   initialize_native_component,
   make_link_callback,
 };
 use crate::dev::prelude::*;
-use crate::json_writer::JsonWriter;
 use crate::runtime_service::error::InternalError;
 use crate::{BoxFuture, V0_NAMESPACE};
 
@@ -35,10 +34,78 @@ pub(crate) struct Initialize {
   pub(crate) allow_latest: bool,
   pub(crate) timeout: Duration,
   pub(crate) native_components: ComponentRegistry,
-  pub(crate) rng_seed: Seed,
   pub(crate) namespace: Option<String>,
-  pub(crate) event_log: Option<PathBuf>,
   pub(crate) span: Span,
+  rng: Random,
+}
+
+impl Initialize {
+  #[allow(clippy::too_many_arguments)]
+  pub(crate) fn new(
+    rng_seed: Seed,
+    manifest: ComponentConfiguration,
+    allowed_insecure: Vec<String>,
+    allow_latest: bool,
+    timeout: Duration,
+    native_components: ComponentRegistry,
+    namespace: Option<String>,
+    span: Span,
+  ) -> Self {
+    let rng = Random::from_seed(rng_seed);
+    Self {
+      id: rng.uuid(),
+      manifest,
+      allowed_insecure,
+      allow_latest,
+      timeout,
+      native_components,
+      namespace,
+      span,
+      rng,
+    }
+  }
+
+  #[allow(clippy::too_many_arguments)]
+  pub(crate) fn new_with_id(
+    id: Uuid,
+    rng_seed: Seed,
+    manifest: ComponentConfiguration,
+    allowed_insecure: Vec<String>,
+    allow_latest: bool,
+    timeout: Duration,
+    native_components: ComponentRegistry,
+    namespace: Option<String>,
+    span: Span,
+  ) -> Self {
+    let rng = Random::from_seed(rng_seed);
+    Self {
+      id,
+      manifest,
+      allowed_insecure,
+      allow_latest,
+      timeout,
+      native_components,
+      namespace,
+      span,
+      rng,
+    }
+  }
+
+  fn component_init(&self) -> ComponentInitOptions {
+    ComponentInitOptions {
+      rng_seed: self.rng.seed(),
+      runtime_id: self.id,
+      allow_latest: self.allow_latest,
+      allowed_insecure: self.allowed_insecure.clone(),
+      timeout: self.timeout,
+      resolver: self.manifest.resolver(),
+      span: &self.span,
+    }
+  }
+
+  fn seed(&self) -> Seed {
+    self.rng.seed()
+  }
 }
 
 #[must_use]
@@ -93,71 +160,74 @@ impl RuntimeService {
     debug!("initializing engine service");
     let graph = flow_graph_interpreter::graph::from_def(&init.manifest)?;
     let mut components = HandlerMap::default();
-    let rng = Random::from_seed(init.rng_seed);
-    let ns = init.namespace.unwrap_or_else(|| init.id.to_string());
+    let ns = init.namespace.clone().unwrap_or_else(|| init.id.to_string());
 
-    if let ComponentImplementation::Wasm(comp) = init.manifest.component() {
-      let span = debug_span!(parent: &init.span, "main:init");
-      let collection_init = ComponentInitOptions {
-        rng_seed: rng.seed(),
-        runtime_id: init.id,
-        allow_latest: init.allow_latest,
-        allowed_insecure: init.allowed_insecure.clone(),
-        timeout: init.timeout,
-        resolver: Some(init.manifest.resolver()),
-        span: &span,
-      };
+    // if let ComponentImplementation::Wasm(comp) = init.manifest.component() {
+    //   let component_init = init.component_init();
+    //   let component = config::ImportBinding::wasm(
+    //     &ns,
+    //     #[allow(deprecated)]
+    //     config::components::WasmComponent {
+    //       reference: comp.reference().clone(),
+    //       config: Default::default(),
+    //       permissions: Default::default(),
+    //       provide: Default::default(),
+    //     },
+    //   );
+    //   if let Some(main_component) = instantiate_import(&component, component_init).await? {
+    //     let signed_sig = main_component.component().list();
+    //     let manifest_sig = init.manifest.signature()?;
 
-      let component = config::ImportBinding::wasm(
-        &ns,
-        #[allow(deprecated)]
-        config::components::WasmComponent {
-          reference: comp.reference().clone(),
-          config: Default::default(),
-          permissions: Default::default(),
-          provide: Default::default(),
-        },
-      );
-      if let Some(main_component) = initialize_component(&component, collection_init).await? {
-        let signed_sig = main_component.component().list();
+    //     expect_signature_match(
+    //       comp.reference().location(),
+    //       signed_sig,
+    //       init.manifest.source().clone().unwrap_or_else(|| "<Unknown>".to_owned()),
+    //       &manifest_sig,
+    //     )?;
+    //     main_component.expose();
+
+    //     debug!("Adding main component: {}", main_component.namespace());
+    //     components
+    //       .add(main_component)
+    //       .map_err(|e| EngineError::InterpreterInit(init.manifest.source().clone(), Box::new(e)))?;
+    //   }
+    // } else
+    if init.manifest.component().kind() == ComponentKind::Composite {
+      for native_comp in init.native_components.inner() {
+        components
+          .add(native_comp(init.seed())?)
+          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().clone(), Box::new(e)))?;
+      }
+    } else {
+      let component_init = init.component_init();
+      let binding = config::ImportBinding::new(&ns, init.manifest.component().clone().into());
+
+      if let Some(main_component) = instantiate_import(&binding, component_init).await? {
+        let reported_sig = main_component.component().list();
         let manifest_sig = init.manifest.signature()?;
+        debug!("manifest_sig: {:?}", init.manifest);
 
         expect_signature_match(
-          comp.reference().location(),
-          signed_sig,
+          init.manifest.source().clone().unwrap_or_else(|| "<Unknown>".to_owned()),
+          reported_sig,
           init.manifest.source().clone().unwrap_or_else(|| "<Unknown>".to_owned()),
           &manifest_sig,
         )?;
         main_component.expose();
 
+        debug!("Adding main component: {}", main_component.namespace());
         components
           .add(main_component)
           .map_err(|e| EngineError::InterpreterInit(init.manifest.source().clone(), Box::new(e)))?;
       }
-    } else if let ComponentImplementation::Composite(comp) = init.manifest.component() {
-      let span = debug_span!(parent: &init.span, "composite:init");
+    }
 
-      for native_comp in init.native_components.inner() {
+    for component in init.manifest.imports().values() {
+      let component_init = init.component_init();
+      if let Some(p) = instantiate_import(component, component_init).await? {
         components
-          .add(native_comp(rng.seed())?)
+          .add(p)
           .map_err(|e| EngineError::InterpreterInit(init.manifest.source().clone(), Box::new(e)))?;
-      }
-
-      for component in comp.components().values() {
-        let collection_init = ComponentInitOptions {
-          rng_seed: rng.seed(),
-          runtime_id: init.id,
-          allow_latest: init.allow_latest,
-          allowed_insecure: init.allowed_insecure.clone(),
-          resolver: Some(init.manifest.resolver()),
-          timeout: init.timeout,
-          span: &span,
-        };
-        if let Some(p) = initialize_component(component, collection_init).await? {
-          components
-            .add(p)
-            .map_err(|e| EngineError::InterpreterInit(init.manifest.source().clone(), Box::new(e)))?;
-        }
       }
     }
 
@@ -165,21 +235,14 @@ impl RuntimeService {
     let callback = make_link_callback(init.id);
 
     let mut interpreter =
-      flow_graph_interpreter::Interpreter::new(Some(rng.seed()), graph, Some(ns.clone()), Some(components), callback)
+      flow_graph_interpreter::Interpreter::new(Some(init.seed()), graph, Some(ns.clone()), Some(components), callback)
         .map_err(|e| EngineError::InterpreterInit(source, Box::new(e)))?;
 
     let options = InterpreterOptions {
       output_timeout: init.timeout,
       ..Default::default()
     };
-    match init.event_log {
-      Some(path) => {
-        interpreter
-          .start(Some(options), Some(Box::new(JsonWriter::new(path))))
-          .await;
-      }
-      None => interpreter.start(Some(options), None).await,
-    }
+    interpreter.start(Some(options), None).await;
 
     let engine = Arc::new(RuntimeService {
       started_time: std::time::Instant::now(),
@@ -203,21 +266,19 @@ impl RuntimeService {
   where
     'a: 'b,
   {
-    Box::pin(async move {
-      let init = Initialize {
-        id: uid,
-        manifest,
-        allowed_insecure: opts.allowed_insecure,
-        allow_latest: opts.allow_latest,
-        timeout: opts.timeout,
-        rng_seed: opts.rng_seed,
-        native_components: ComponentRegistry::default(),
-        namespace,
-        event_log: None,
-        span: debug_span!("engine:new"),
-      };
-      RuntimeService::new(init).await
-    })
+    let init = Initialize::new_with_id(
+      uid,
+      opts.rng_seed,
+      manifest,
+      opts.allowed_insecure,
+      opts.allow_latest,
+      opts.timeout,
+      ComponentRegistry::default(),
+      namespace,
+      debug_span!("engine:new"),
+    );
+
+    Box::pin(async move { RuntimeService::new(init).await })
   }
 
   pub(crate) fn for_id(id: &Uuid) -> Option<Arc<Self>> {
@@ -271,7 +332,7 @@ pub(crate) struct ComponentInitOptions<'a> {
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) timeout: Duration,
-  pub(crate) resolver: Option<Box<Resolver>>,
+  pub(crate) resolver: Box<Resolver>,
   #[allow(unused)]
   pub(crate) span: &'a Span,
 }
@@ -288,14 +349,14 @@ impl<'a> std::fmt::Debug for ComponentInitOptions<'a> {
   }
 }
 
-pub(crate) async fn initialize_component<'a, 'b>(
-  collection: &'a config::ImportBinding,
+pub(crate) async fn instantiate_import<'a, 'b>(
+  binding: &'a config::ImportBinding,
   opts: ComponentInitOptions<'b>,
 ) -> Result<Option<NamespaceHandler>> {
-  debug!(?collection, ?opts, "initializing component");
-  let id = collection.id.clone();
+  debug!(?binding, ?opts, "initializing component");
+  let id = binding.id.clone();
   let span = opts.span.clone();
-  match &collection.kind {
+  match &binding.kind {
     config::ImportDefinition::Component(c) => {
       match c {
         #[allow(deprecated)]
@@ -309,21 +370,11 @@ pub(crate) async fn initialize_component<'a, 'b>(
         }
         config::ComponentDefinition::Reference(_) => unreachable!(),
         config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
-        config::ComponentDefinition::HighLevelComponent(hlc) => match hlc {
-          config::HighLevelComponent::Postgres(config) => {
-            if opts.resolver.is_none() {
-              return Err(EngineError::InternalError(InternalError::MissingResolver));
-            }
-            let resolver = opts.resolver.unwrap();
-            let comp = wick_sqlx::SqlXComponent::default();
-            comp.validate(config, &resolver)?;
-            comp
-              .init(config.clone(), resolver)
-              .await
-              .map_err(EngineError::NativeComponent)?;
-            Ok(Some(NamespaceHandler::new(id, Box::new(comp))))
-          }
-        },
+        config::ComponentDefinition::HighLevelComponent(hlc) => {
+          init_hlc_component(id, Metadata::default(), hlc.clone(), opts.resolver)
+            .await
+            .map(Some)
+        }
         config::ComponentDefinition::Native(_) => Ok(None),
       }
     }

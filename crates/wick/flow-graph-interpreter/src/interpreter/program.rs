@@ -20,6 +20,7 @@ pub(crate) struct Program {
 
 impl Program {
   pub(crate) fn new(network: Network, mut collections: ComponentMap) -> Result<Self, Error> {
+    trace!("initializing graph program");
     generate_self_signature(&network, &mut collections).map_err(Error::EarlyError)?;
 
     let program = Self {
@@ -106,6 +107,7 @@ fn generate_self_signature(network: &Network, collections: &mut ComponentMap) ->
     for schematic in batch {
       let signature = get_schematic_signature(schematic, collections)?;
       let map = collections.get_mut(NS_SELF).unwrap();
+      trace!(operation = signature.name, "interpreter:registering op on 'self' ns");
       map.operations.push(signature);
     }
   }
@@ -117,7 +119,6 @@ fn get_schematic_signature(
   collections: &ComponentMap,
 ) -> Result<OperationSignature, ValidationError> {
   let mut schematic_signature = OperationSignature::new(schematic.name());
-
   for port in schematic.input().outputs() {
     for hop in schematic.walk_from_port(port, WalkDirection::Down).skip(1) {
       let signature = match hop {

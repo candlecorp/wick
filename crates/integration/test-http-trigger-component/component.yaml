@@ -4,14 +4,14 @@ name: http-router
 kind: wick/component@v1
 metadata:
   version: '1'
+import:
+  - name: http
+    component:
+      kind: wick/component/types@v1
+      ref: ../../interfaces/wick-interface-http/component.yaml
 component:
   kind: wick/component/wasmrs@v1
   ref: ./build/test_http_trigger_component.signed.wasm
-  import:
-    - name: http
-      component:
-        kind: wick/component/types@v1
-        ref: ../../interfaces/wick-interface-http/component.yaml
   operations:
     - name: http_handler
       inputs:

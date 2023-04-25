@@ -4,14 +4,14 @@ name: test-component
 kind: wick/component@v1
 metadata:
   version: '1'
+import:
+  - name: cli
+    component:
+      kind: wick/component/types@v1
+      ref: ../../interfaces/wick-interface-cli/component.yaml
 component:
   kind: wick/component/wasmrs@v1
   ref: ./build/test_cli_trigger_component.signed.wasm
-  import:
-    - name: cli
-      component:
-        kind: wick/component/types@v1
-        ref: ../../interfaces/wick-interface-cli/component.yaml
   operations:
     - name: main
       inputs:

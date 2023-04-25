@@ -18,6 +18,7 @@ pub mod types {
   impl HttpMethod {
     #[allow(unused)]
     pub fn value(&self) -> Option<&'static str> {
+      #[allow(clippy::match_single_binding)]
       match self {
         Self::Get => None,
         Self::Post => None,
@@ -30,24 +31,27 @@ pub mod types {
       }
     }
   }
+  impl TryFrom<u32> for HttpMethod {
+    type Error = u32;
+    fn try_from(i: u32) -> Result<Self, Self::Error> {
+      #[allow(clippy::match_single_binding)]
+      match i {
+        _ => Err(i),
+      }
+    }
+  }
   impl std::str::FromStr for HttpMethod {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+      #[allow(clippy::match_single_binding)]
       match s {
-        "GET" => Ok(Self::Get),
-        "POST" => Ok(Self::Post),
-        "PUT" => Ok(Self::Put),
-        "DELETE" => Ok(Self::Delete),
-        "PATCH" => Ok(Self::Patch),
-        "HEAD" => Ok(Self::Head),
-        "OPTIONS" => Ok(Self::Options),
-        "TRACE" => Ok(Self::Trace),
         _ => Err(s.to_owned()),
       }
     }
   }
   impl std::fmt::Display for HttpMethod {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      #[allow(clippy::match_single_binding)]
       match self {
         Self::Get => f.write_str("GET"),
         Self::Post => f.write_str("POST"),
@@ -68,24 +72,34 @@ pub mod types {
   impl HttpScheme {
     #[allow(unused)]
     pub fn value(&self) -> Option<&'static str> {
+      #[allow(clippy::match_single_binding)]
       match self {
         Self::Http => None,
         Self::Https => None,
       }
     }
   }
+  impl TryFrom<u32> for HttpScheme {
+    type Error = u32;
+    fn try_from(i: u32) -> Result<Self, Self::Error> {
+      #[allow(clippy::match_single_binding)]
+      match i {
+        _ => Err(i),
+      }
+    }
+  }
   impl std::str::FromStr for HttpScheme {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+      #[allow(clippy::match_single_binding)]
       match s {
-        "HTTP" => Ok(Self::Http),
-        "HTTPS" => Ok(Self::Https),
         _ => Err(s.to_owned()),
       }
     }
   }
   impl std::fmt::Display for HttpScheme {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      #[allow(clippy::match_single_binding)]
       match self {
         Self::Http => f.write_str("HTTP"),
         Self::Https => f.write_str("HTTPS"),
@@ -101,6 +115,7 @@ pub mod types {
   impl HttpVersion {
     #[allow(unused)]
     pub fn value(&self) -> Option<&'static str> {
+      #[allow(clippy::match_single_binding)]
       match self {
         Self::Http10 => Some("1.0"),
         Self::Http11 => Some("1.1"),
@@ -108,19 +123,30 @@ pub mod types {
       }
     }
   }
+  impl TryFrom<u32> for HttpVersion {
+    type Error = u32;
+    fn try_from(i: u32) -> Result<Self, Self::Error> {
+      #[allow(clippy::match_single_binding)]
+      match i {
+        _ => Err(i),
+      }
+    }
+  }
   impl std::str::FromStr for HttpVersion {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+      #[allow(clippy::match_single_binding)]
       match s {
-        "HTTP_1_0" => Ok(Self::Http10),
-        "HTTP_1_1" => Ok(Self::Http11),
-        "HTTP_2_0" => Ok(Self::Http20),
+        "1.0" => Ok(Self::Http10),
+        "1.1" => Ok(Self::Http11),
+        "2.0" => Ok(Self::Http20),
         _ => Err(s.to_owned()),
       }
     }
   }
   impl std::fmt::Display for HttpVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      #[allow(clippy::match_single_binding)]
       match self {
         Self::Http10 => f.write_str("HTTP_1_0"),
         Self::Http11 => f.write_str("HTTP_1_1"),
@@ -175,10 +201,12 @@ pub mod types {
     ServiceUnavailable,
     GatewayTimeout,
     HttpVersionNotSupported,
+    Unknown,
   }
   impl StatusCode {
     #[allow(unused)]
     pub fn value(&self) -> Option<&'static str> {
+      #[allow(clippy::match_single_binding)]
       match self {
         Self::Continue => Some("100"),
         Self::SwitchingProtocols => Some("101"),
@@ -225,64 +253,77 @@ pub mod types {
         Self::ServiceUnavailable => Some("503"),
         Self::GatewayTimeout => Some("504"),
         Self::HttpVersionNotSupported => Some("505"),
+        Self::Unknown => Some("-1"),
+      }
+    }
+  }
+  impl TryFrom<u32> for StatusCode {
+    type Error = u32;
+    fn try_from(i: u32) -> Result<Self, Self::Error> {
+      #[allow(clippy::match_single_binding)]
+      match i {
+        _ => Err(i),
       }
     }
   }
   impl std::str::FromStr for StatusCode {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+      #[allow(clippy::match_single_binding)]
       match s {
-        "Continue" => Ok(Self::Continue),
-        "SwitchingProtocols" => Ok(Self::SwitchingProtocols),
-        "OK" => Ok(Self::Ok),
-        "Created" => Ok(Self::Created),
-        "Accepted" => Ok(Self::Accepted),
-        "NonAuthoritativeInformation" => Ok(Self::NonAuthoritativeInformation),
-        "NoContent" => Ok(Self::NoContent),
-        "ResetContent" => Ok(Self::ResetContent),
-        "PartialContent" => Ok(Self::PartialContent),
-        "MultipleChoices" => Ok(Self::MultipleChoices),
-        "MovedPermanently" => Ok(Self::MovedPermanently),
-        "Found" => Ok(Self::Found),
-        "SeeOther" => Ok(Self::SeeOther),
-        "NotModified" => Ok(Self::NotModified),
-        "TemporaryRedirect" => Ok(Self::TemporaryRedirect),
-        "PermanentRedirect" => Ok(Self::PermanentRedirect),
-        "BadRequest" => Ok(Self::BadRequest),
-        "Unauthorized" => Ok(Self::Unauthorized),
-        "PaymentRequired" => Ok(Self::PaymentRequired),
-        "Forbidden" => Ok(Self::Forbidden),
-        "NotFound" => Ok(Self::NotFound),
-        "MethodNotAllowed" => Ok(Self::MethodNotAllowed),
-        "NotAcceptable" => Ok(Self::NotAcceptable),
-        "ProxyAuthenticationRequired" => Ok(Self::ProxyAuthenticationRequired),
-        "RequestTimeout" => Ok(Self::RequestTimeout),
-        "Conflict" => Ok(Self::Conflict),
-        "Gone" => Ok(Self::Gone),
-        "LengthRequired" => Ok(Self::LengthRequired),
-        "PreconditionFailed" => Ok(Self::PreconditionFailed),
-        "PayloadTooLarge" => Ok(Self::PayloadTooLarge),
-        "URITooLong" => Ok(Self::UriTooLong),
-        "UnsupportedMediaType" => Ok(Self::UnsupportedMediaType),
-        "RangeNotSatisfiable" => Ok(Self::RangeNotSatisfiable),
-        "ExpectationFailed" => Ok(Self::ExpectationFailed),
-        "ImATeapot" => Ok(Self::ImATeapot),
-        "UnprocessableEntity" => Ok(Self::UnprocessableEntity),
-        "Locked" => Ok(Self::Locked),
-        "FailedDependency" => Ok(Self::FailedDependency),
-        "TooManyRequests" => Ok(Self::TooManyRequests),
-        "InternalServerError" => Ok(Self::InternalServerError),
-        "NotImplemented" => Ok(Self::NotImplemented),
-        "BadGateway" => Ok(Self::BadGateway),
-        "ServiceUnavailable" => Ok(Self::ServiceUnavailable),
-        "GatewayTimeout" => Ok(Self::GatewayTimeout),
-        "HTTPVersionNotSupported" => Ok(Self::HttpVersionNotSupported),
+        "100" => Ok(Self::Continue),
+        "101" => Ok(Self::SwitchingProtocols),
+        "200" => Ok(Self::Ok),
+        "201" => Ok(Self::Created),
+        "202" => Ok(Self::Accepted),
+        "203" => Ok(Self::NonAuthoritativeInformation),
+        "204" => Ok(Self::NoContent),
+        "205" => Ok(Self::ResetContent),
+        "206" => Ok(Self::PartialContent),
+        "300" => Ok(Self::MultipleChoices),
+        "301" => Ok(Self::MovedPermanently),
+        "302" => Ok(Self::Found),
+        "303" => Ok(Self::SeeOther),
+        "304" => Ok(Self::NotModified),
+        "307" => Ok(Self::TemporaryRedirect),
+        "308" => Ok(Self::PermanentRedirect),
+        "400" => Ok(Self::BadRequest),
+        "401" => Ok(Self::Unauthorized),
+        "402" => Ok(Self::PaymentRequired),
+        "403" => Ok(Self::Forbidden),
+        "404" => Ok(Self::NotFound),
+        "405" => Ok(Self::MethodNotAllowed),
+        "406" => Ok(Self::NotAcceptable),
+        "407" => Ok(Self::ProxyAuthenticationRequired),
+        "408" => Ok(Self::RequestTimeout),
+        "409" => Ok(Self::Conflict),
+        "410" => Ok(Self::Gone),
+        "411" => Ok(Self::LengthRequired),
+        "412" => Ok(Self::PreconditionFailed),
+        "413" => Ok(Self::PayloadTooLarge),
+        "414" => Ok(Self::UriTooLong),
+        "415" => Ok(Self::UnsupportedMediaType),
+        "416" => Ok(Self::RangeNotSatisfiable),
+        "417" => Ok(Self::ExpectationFailed),
+        "418" => Ok(Self::ImATeapot),
+        "422" => Ok(Self::UnprocessableEntity),
+        "423" => Ok(Self::Locked),
+        "424" => Ok(Self::FailedDependency),
+        "429" => Ok(Self::TooManyRequests),
+        "500" => Ok(Self::InternalServerError),
+        "501" => Ok(Self::NotImplemented),
+        "502" => Ok(Self::BadGateway),
+        "503" => Ok(Self::ServiceUnavailable),
+        "504" => Ok(Self::GatewayTimeout),
+        "505" => Ok(Self::HttpVersionNotSupported),
+        "-1" => Ok(Self::Unknown),
         _ => Err(s.to_owned()),
       }
     }
   }
   impl std::fmt::Display for StatusCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      #[allow(clippy::match_single_binding)]
       match self {
         Self::Continue => f.write_str("Continue"),
         Self::SwitchingProtocols => f.write_str("SwitchingProtocols"),
@@ -329,6 +370,7 @@ pub mod types {
         Self::ServiceUnavailable => f.write_str("ServiceUnavailable"),
         Self::GatewayTimeout => f.write_str("GatewayTimeout"),
         Self::HttpVersionNotSupported => f.write_str("HTTPVersionNotSupported"),
+        Self::Unknown => f.write_str("Unknown"),
       }
     }
   }

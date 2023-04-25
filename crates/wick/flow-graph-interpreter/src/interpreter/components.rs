@@ -80,6 +80,10 @@ impl HandlerMap {
     self.components.insert(component.namespace.clone(), component);
     Ok(())
   }
+
+  pub(crate) fn keys(&self) -> Vec<String> {
+    self.components.keys().cloned().collect()
+  }
 }
 
 pub(crate) fn dyn_component_id(name: &str, schematic: &str, instance: &str) -> String {
@@ -109,6 +113,11 @@ impl NamespaceHandler {
       component: Arc::new(collection),
       exposed: Arc::new(AtomicBool::new(false)),
     }
+  }
+
+  #[must_use]
+  pub fn namespace(&self) -> &str {
+    &self.namespace
   }
 
   #[must_use]

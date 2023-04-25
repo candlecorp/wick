@@ -121,6 +121,8 @@ types:
         value: '504'
       - name: HTTPVersionNotSupported
         value: '505'
+      - name: Unknown
+        value: '-1'
   - name: HttpResponse
     type: struct
     fields:

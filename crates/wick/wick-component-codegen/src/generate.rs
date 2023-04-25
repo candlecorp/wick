@@ -337,6 +337,16 @@ fn gen_enum<'a>(config: &config::Config, ty: &'a EnumSignature) -> (Vec<&'a str>
       quote! {#name}
     })
     .collect::<Vec<_>>();
+
+  let from_index_arms = ty
+    .variants
+    .iter()
+    .filter_map(|v| {
+      let identname = Ident::new(&enumvariant_name(v), Span::call_site());
+      v.index.map(|i| quote! {i => Self::#identname})
+    })
+    .collect::<Vec<_>>();
+
   let display_match_arms = ty
     .variants
     .iter()
@@ -351,7 +361,10 @@ fn gen_enum<'a>(config: &config::Config, ty: &'a EnumSignature) -> (Vec<&'a str>
     .iter()
     .map(|v| {
       let identname = Ident::new(&enumvariant_name(v), Span::call_site());
-      let name = v.value.as_ref().map_or_else(|| quote! {None}, |v| quote! { Some(#v) });
+      let name = v
+        .value
+        .as_ref()
+        .map_or_else(|| quote! {None}, |value| quote! { Some(#value) });
       quote! {Self::#identname => #name}
     })
     .collect::<Vec<_>>();
@@ -359,10 +372,9 @@ fn gen_enum<'a>(config: &config::Config, ty: &'a EnumSignature) -> (Vec<&'a str>
   let fromstr_match_arms = ty
     .variants
     .iter()
-    .map(|v| {
+    .filter_map(|v| {
       let identname = Ident::new(&enumvariant_name(v), Span::call_site());
-      let name = v.name.clone();
-      quote! {#name => Ok(Self::#identname)}
+      v.value.as_ref().map(|name| quote! {#name => Ok(Self::#identname)})
     })
     .collect::<Vec<_>>();
 
@@ -375,8 +387,20 @@ fn gen_enum<'a>(config: &config::Config, ty: &'a EnumSignature) -> (Vec<&'a str>
     impl #name {
       #[allow(unused)]
       pub fn value(&self) -> Option<&'static str> {
+        #[allow(clippy::match_single_binding)]
         match self {
           #(#value_match_arms,)*
+        }
+      }
+    }
+
+    impl TryFrom<u32> for #name {
+      type Error = u32;
+      fn try_from(i: u32) -> Result<Self, Self::Error> {
+        #[allow(clippy::match_single_binding)]
+        match i {
+          #(#from_index_arms,)*
+          _ => Err(i)
         }
       }
     }
@@ -385,6 +409,7 @@ fn gen_enum<'a>(config: &config::Config, ty: &'a EnumSignature) -> (Vec<&'a str>
       type Err = String;
 
       fn from_str(s: &str) -> Result<Self, Self::Err> {
+        #[allow(clippy::match_single_binding)]
         match s {
           #(#fromstr_match_arms,)*
           _ => Err(s.to_owned())
@@ -394,6 +419,7 @@ fn gen_enum<'a>(config: &config::Config, ty: &'a EnumSignature) -> (Vec<&'a str>
 
     impl std::fmt::Display for #name {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[allow(clippy::match_single_binding)]
         match self {
           #(#display_match_arms,)*
         }
@@ -568,18 +594,15 @@ fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Resul
   let (ops, types, required): (_, _, Vec<_>) = match &wick_config {
     wick_config::WickConfiguration::Component(config) => {
       let types = config.types()?;
-      match config.component() {
-        wick_config::config::ComponentImplementation::Wasm(c) => (
-          c.operations().clone(),
-          types,
-          c.requires().clone().into_values().collect(),
-        ),
-        wick_config::config::ComponentImplementation::Composite(c) => (
-          c.operations().clone().into_iter().map(|(k, v)| (k, v.into())).collect(),
-          types,
-          c.requires().clone().into_values().collect(),
-        ),
-      }
+      let requires = config.requires().values().cloned().collect();
+      let ops = match config.component() {
+        wick_config::config::ComponentImplementation::Wasm(c) => c.operations().clone(),
+        wick_config::config::ComponentImplementation::Composite(c) => {
+          c.operations().clone().into_iter().map(|(k, v)| (k, v.into())).collect()
+        }
+        _ => panic!("Code generation only supports `wick/component/wasm|composite` and `wick/types` configurations"),
+      };
+      (ops, types, requires)
     }
     wick_config::WickConfiguration::Types(config) => (
       std::collections::HashMap::default(),

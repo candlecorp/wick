@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{PacketSender, PacketStream};
-pub(crate) type Result<T> = std::result::Result<T, crate::Error>;
+use futures::StreamExt;
+
+use crate::{Error, Packet, PacketSender, PacketStream};
+pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Default)]
 #[must_use]
@@ -22,6 +24,62 @@ impl StreamMap {
       .remove(key)
       .ok_or_else(|| crate::Error::PortMissing(key.to_owned()))?;
     Ok(v)
+  }
+
+  /// Take the next packet from the stream keyed by [key].
+  pub async fn next_for(&mut self, key: &str) -> Option<Result<Packet>> {
+    let stream = self.0.get_mut(key)?;
+    stream.next().await
+  }
+
+  /// Take one packet from each stream in the map. Returns an error if a complete set can't be made.
+  pub async fn next_set(&mut self) -> Result<Option<HashMap<String, Packet>>> {
+    let keys = self.0.keys().cloned().collect::<Vec<_>>();
+    let mut raw = HashMap::new();
+    for key in keys {
+      let packet = self.next_for(&key).await;
+      raw.insert(key, packet);
+    }
+    if raw.values().all(|v| v.is_none()) {
+      Ok(None)
+    } else if let Some((name, _)) = raw.iter().find(|(_, p)| p.is_none()) {
+      Err(Error::StreamMapMissing(name.clone()))
+    } else {
+      let mut rv = HashMap::new();
+      for (key, packet) in raw {
+        let packet = packet.unwrap();
+        if let Err(e) = &packet {
+          return Err(Error::StreamMapError(key, e.to_string()));
+        }
+
+        rv.insert(key, packet.unwrap());
+      }
+      Ok(Some(rv))
+    }
+  }
+
+  #[cfg(feature = "rt-tokio")]
+  /// Turn a single [PacketStream] into a [StreamMap] keyed by the passed [ports].
+  pub fn from_stream(mut stream: PacketStream, ports: &[String]) -> Self {
+    use wasmrs_rx::Observer;
+
+    #[must_use]
+    let mut streams = StreamMap::default();
+    let mut senders = HashMap::new();
+    for port in ports {
+      senders.insert(port.clone(), streams.init(port));
+    }
+    tokio::spawn(async move {
+      while let Some(Ok(payload)) = stream.next().await {
+        let sender = senders.get_mut(payload.port()).unwrap();
+        if payload.is_done() {
+          sender.complete();
+          continue;
+        }
+        sender.send(payload).unwrap();
+      }
+    });
+    streams
   }
 
   pub fn init(&mut self, port: &str) -> PacketSender {

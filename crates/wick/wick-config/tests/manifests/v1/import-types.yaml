@@ -1,13 +1,13 @@
 ---
 kind: wick/component@v1
 name: 'test'
+import:
+  - name: http
+    component:
+      kind: wick/component/types@v1
+      ref: ./http-types.yaml
 component:
   kind: wick/component/composite@v1
-  import:
-    - name: http
-      component:
-        kind: wick/component/types@v1
-        ref: ./http-types.yaml
   operations:
     - name: testop
       inputs:

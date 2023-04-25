@@ -1,5 +1,5 @@
 [package]
-name = "wick-sqlx"
+name = "wick-http-client"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
@@ -11,39 +11,26 @@ description = "SQL Database component for the wick project."
 
 [dependencies]
 wick-packet = { workspace = true, features = ["rt-tokio"] }
+wick-interface-http = { workspace = true }
 flow-component = { workspace = true }
 wick-config = { workspace = true }
-wick-rpc = { workspace = true }
-wick-interface-types = { workspace = true, features = ["parser"] }
-# v0.7.0-alpha
-# sqlx = { workspace = true, features = [
-#   "runtime-tokio",
-#   "tls-rustls",
-#   "postgres",
-#   "json"
-# ] }
+wick-interface-types = { workspace = true }
 #
-# v0.6
-sqlx = { workspace = true, features = [
-  "runtime-tokio-rustls",
-  "postgres",
-  "mssql",
-  "json",
-  "any",
-  "chrono"
-] }
-tracing = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
+url = { workspace = true }
+reqwest = { workspace = true }
+liquid = { workspace = true }
 tokio = { workspace = true }
+bytes = { workspace = true }
+tracing = { workspace = true }
+#
+serde = { workspace = true, features = ["derive"] }
 #
 futures = { workspace = true }
 thiserror = { workspace = true }
 parking_lot = { workspace = true }
 serde_json = { workspace = true }
-#
-bytes = { workspace = true }
-chrono = { workspace = true }
 
+#
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 wick-logger = { workspace = true }

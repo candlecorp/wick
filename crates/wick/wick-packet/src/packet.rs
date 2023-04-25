@@ -101,6 +101,10 @@ impl Packet {
     self.payload.deserialize_into(ty)
   }
 
+  pub fn deserialize_generic(self) -> Result<serde_json::Value, Error> {
+    self.payload.deserialize()
+  }
+
   pub fn set_port(mut self, port: impl AsRef<str>) -> Self {
     self.extra.port = port.as_ref().to_owned();
     self

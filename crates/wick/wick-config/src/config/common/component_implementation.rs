@@ -1,8 +1,3 @@
-use std::collections::HashMap;
-
-use wick_interface_types::TypeDefinition;
-
-use super::ImportBinding;
 use crate::config;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
@@ -11,6 +6,8 @@ use crate::config;
 pub enum ComponentImplementation {
   Wasm(config::WasmComponentImplementation),
   Composite(config::CompositeComponentImplementation),
+  Sql(config::components::SqlComponentConfig),
+  HttpClient(config::components::HttpClientComponentConfig),
 }
 
 impl ComponentImplementation {
@@ -18,29 +15,8 @@ impl ComponentImplementation {
     match self {
       ComponentImplementation::Wasm(_) => ComponentKind::Wasm,
       ComponentImplementation::Composite(_) => ComponentKind::Composite,
-    }
-  }
-
-  pub fn types(&self) -> &[TypeDefinition] {
-    match self {
-      ComponentImplementation::Wasm(w) => w.local_types(),
-      ComponentImplementation::Composite(c) => c.types(),
-    }
-  }
-
-  #[must_use]
-  pub fn imports(&self) -> &HashMap<String, ImportBinding> {
-    match self {
-      ComponentImplementation::Wasm(c) => &c.import,
-      ComponentImplementation::Composite(c) => &c.import,
-    }
-  }
-
-  #[must_use]
-  pub fn imports_owned(&self) -> HashMap<String, ImportBinding> {
-    match self {
-      ComponentImplementation::Wasm(c) => c.import.clone(),
-      ComponentImplementation::Composite(c) => c.import.clone(),
+      ComponentImplementation::Sql(_) => ComponentKind::Sql,
+      ComponentImplementation::HttpClient(_) => ComponentKind::HttpClient,
     }
   }
 
@@ -49,6 +25,18 @@ impl ComponentImplementation {
     match self {
       ComponentImplementation::Wasm(w) => w.operation_signatures(),
       ComponentImplementation::Composite(c) => c.operation_signatures(),
+      ComponentImplementation::Sql(c) => c.operation_signatures(),
+      ComponentImplementation::HttpClient(c) => c.operation_signatures(),
+    }
+  }
+
+  #[must_use]
+  pub fn default_name(&self) -> &'static str {
+    match self {
+      ComponentImplementation::Wasm(_) => panic!("Wasm components must be named"),
+      ComponentImplementation::Composite(_) => panic!("Composite components must be named"),
+      ComponentImplementation::Sql(_) => "wick/component/sql",
+      ComponentImplementation::HttpClient(_) => "wick/component/http",
     }
   }
 }
@@ -59,11 +47,13 @@ impl Default for ComponentImplementation {
   }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[must_use]
 pub enum ComponentKind {
   Wasm,
   Composite,
+  Sql,
+  HttpClient,
 }
 
 impl std::fmt::Display for ComponentKind {
@@ -71,6 +61,8 @@ impl std::fmt::Display for ComponentKind {
     match self {
       ComponentKind::Wasm => write!(f, "wick/component/wasm"),
       ComponentKind::Composite => write!(f, "wick/component/composite"),
+      ComponentKind::Sql => write!(f, "wick/component/sql"),
+      ComponentKind::HttpClient => write!(f, "wick/component/http"),
     }
   }
 }

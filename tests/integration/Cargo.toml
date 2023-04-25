@@ -9,14 +9,11 @@ repository = "https://github.com/candlecorp/wick"
 publish = false
 
 [features]
-default = ["host", "guest"]
-host = []
-guest = []
 
 [dependencies]
 
 [dev-dependencies]
-wick-packet = { workspace = true }
+wick-packet = { workspace = true, features = ["rt-tokio"] }
 wick-component = { workspace = true }
 wick-interface-types = { workspace = true, features = ["parser"] }
 flow-component = { workspace = true }

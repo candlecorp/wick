@@ -1,6 +1,7 @@
 use serde_json::Value;
 
-use super::{ComponentDefinition, HighLevelComponent, ImportDefinition, InterfaceDefinition};
+use super::{ComponentDefinition, ComponentImplementation, HighLevelComponent, ImportDefinition, InterfaceDefinition};
+use crate::config::components::WasmComponent;
 use crate::config::{self};
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
@@ -13,6 +14,27 @@ pub struct ImportBinding {
   pub id: String,
   /// The kind/type of the collection.
   pub kind: ImportDefinition,
+}
+
+impl From<ComponentImplementation> for ImportDefinition {
+  fn from(implementation: ComponentImplementation) -> Self {
+    match implementation {
+      #[allow(deprecated)]
+      ComponentImplementation::Wasm(wasm) => Self::Component(ComponentDefinition::Wasm(WasmComponent {
+        reference: wasm.reference,
+        config: Default::default(),
+        permissions: Default::default(),
+        provide: Default::default(),
+      })),
+      ComponentImplementation::Composite(_) => unimplemented!("Inline composite components are not yet supported."),
+      ComponentImplementation::HttpClient(client) => Self::Component(ComponentDefinition::HighLevelComponent(
+        HighLevelComponent::HttpClient(client),
+      )),
+      ComponentImplementation::Sql(c) => {
+        Self::Component(ComponentDefinition::HighLevelComponent(HighLevelComponent::Sql(c)))
+      }
+    }
+  }
 }
 
 impl ImportBinding {
@@ -40,7 +62,7 @@ impl ImportBinding {
   }
 
   /// Create a new Wasm component definition.
-  pub fn wasm(name: impl AsRef<str>, component: config::components::WasmComponent) -> Self {
+  pub fn wasm(name: impl AsRef<str>, component: WasmComponent) -> Self {
     #[allow(deprecated)]
     Self::new(name, ImportDefinition::Component(ComponentDefinition::Wasm(component)))
   }

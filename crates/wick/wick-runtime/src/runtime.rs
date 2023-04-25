@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use seeded_random::{Random, Seed};
+use seeded_random::Seed;
 use uuid::Uuid;
 
 use crate::dev::prelude::*;
@@ -32,20 +32,16 @@ impl Runtime {
   #[instrument(name = "runtime", skip_all)]
   pub async fn new(config: RuntimeInit) -> Result<Self> {
     trace!(?config, "init");
-    let rng = Random::from_seed(config.rng_seed);
-
-    let init = Initialize {
-      id: rng.uuid(),
-      manifest: config.definition,
-      allowed_insecure: config.allowed_insecure.clone(),
-      allow_latest: config.allow_latest,
-      timeout: config.timeout,
-      namespace: config.namespace,
-      native_components: config.native_components,
-      rng_seed: rng.seed(),
-      event_log: None,
-      span: debug_span!("runtime:new"),
-    };
+    let init = Initialize::new(
+      config.rng_seed,
+      config.definition,
+      config.allowed_insecure.clone(),
+      config.allow_latest,
+      config.timeout,
+      config.native_components,
+      config.namespace,
+      debug_span!("runtime:new"),
+    );
 
     let service = RuntimeService::new(init)
       .await
@@ -128,7 +124,7 @@ impl RuntimeBuilder {
     Ok(Self {
       allow_latest: definition.allow_latest(),
       allowed_insecure: definition.insecure_registries().clone(),
-      manifest_builder: config::ComponentConfigurationBuilder::with_base(definition),
+      manifest_builder: config::ComponentConfigurationBuilder::from_base(definition),
       timeout: Duration::from_secs(5),
       native_components: ComponentRegistry::default(),
       namespace: None,
@@ -136,13 +132,13 @@ impl RuntimeBuilder {
     })
   }
 
-  pub fn add_import(mut self, component: config::ImportBinding) -> Self {
-    self.manifest_builder = self.manifest_builder.add_import(component);
+  pub fn add_import(&mut self, component: config::ImportBinding) -> &mut Self {
+    self.manifest_builder.add_import(component);
     self
   }
 
-  pub fn add_resource(mut self, resource: config::ResourceBinding) -> Self {
-    self.manifest_builder = self.manifest_builder.add_resource(resource);
+  pub fn add_resource(&mut self, resource: config::ResourceBinding) -> &mut Self {
+    self.manifest_builder.add_resource(resource);
     self
   }
 
@@ -181,7 +177,10 @@ impl RuntimeBuilder {
 
   /// Constructs an instance of a Wick [Runtime].
   pub async fn build(self) -> Result<Runtime> {
-    let definition = self.manifest_builder.build();
+    let definition = self
+      .manifest_builder
+      .build()
+      .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
     Runtime::new(RuntimeInit {
       definition,
       allow_latest: self.allow_latest,

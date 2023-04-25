@@ -158,7 +158,7 @@ impl Http {
         config::HttpRouterConfig::ProxyRouter(r) => register_proxy_router(i, resources.clone(), &app_config, r)?,
         config::HttpRouterConfig::RestRouter(_) => unimplemented!("Rest router not implemented yet"),
       };
-      rt = rt.add_import(router_binding);
+      rt.add_import(router_binding);
       routers.push(router);
     }
     debug!(?routers, "http routers");

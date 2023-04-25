@@ -8,7 +8,6 @@ use crate::config::{ComponentDefinition, ComponentOperationExpression};
 /// Normalized representation of a CLI trigger configuration.
 pub struct CliConfig {
   pub(crate) operation: ComponentOperationExpression,
-  pub(crate) app: Option<ComponentDefinition>,
 }
 
 impl CliConfig {
@@ -21,11 +20,5 @@ impl CliConfig {
   #[must_use]
   pub fn operation(&self) -> &str {
     &self.operation.operation
-  }
-
-  /// Returns the app definition for the CLI trigger.
-  #[must_use]
-  pub fn app(&self) -> Option<&ComponentDefinition> {
-    self.app.as_ref()
   }
 }

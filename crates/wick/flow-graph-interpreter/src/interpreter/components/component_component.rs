@@ -9,8 +9,8 @@ use crate::{BoxFuture, HandlerMap};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Error {
-  #[error("Collection with namespace '{0}' not found on this network. This resource handles namespaces: {}", .1.join(", "))]
-  CollectionNotFound(String, Vec<String>),
+  #[error("Component with id '{0}' not found on this network. This resource handles ids: {}", .1.join(", "))]
+  ComponentNotFound(String, Vec<String>),
 }
 
 #[derive(Debug)]
@@ -20,8 +20,9 @@ pub(crate) struct ComponentComponent {
 
 impl ComponentComponent {
   pub(crate) fn new(list: &HandlerMap) -> Self {
-    let mut signature = ComponentSignature::new("collections");
+    let mut signature = ComponentSignature::new("components");
     for ns in list.inner().keys() {
+      trace!(id = ns, "interpreter:registering component on 'component' ns");
       let mut comp_sig = OperationSignature::new(ns.clone());
       comp_sig.outputs.push(Field::new(
         "ref",
@@ -54,7 +55,7 @@ impl Component for ComponentComponent {
     Box::pin(async move {
       let port_name = "ref";
       if !contains_collection {
-        return Err(ComponentError::new(Error::CollectionNotFound(
+        return Err(ComponentError::new(Error::ComponentNotFound(
           entity.operation_id().to_owned(),
           all_collections,
         )));

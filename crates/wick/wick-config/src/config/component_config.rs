@@ -11,33 +11,53 @@ use wick_interface_types::{ComponentMetadata, ComponentSignature, TypeDefinition
 
 use super::{make_resolver, ImportBinding};
 use crate::app_config::ResourceBinding;
+use crate::common::BoundInterface;
 use crate::import_cache::{setup_cache, ImportCache};
 use crate::utils::RwOption;
 use crate::{config, v1, Error, Resolver, Result};
 
-#[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
+#[derive(Debug, Default, Clone, Builder, derive_asset_container::AssetManager)]
+#[builder(derive(Debug))]
 #[asset(AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct ComponentConfiguration {
-  #[asset(skip)]
-  pub name: Option<String>,
-  #[asset(skip)]
-  pub(crate) source: Option<String>,
-  #[asset(skip)]
-  pub(crate) resources: HashMap<String, ResourceBinding>,
-  #[asset(skip)]
-  pub(crate) host: config::HostConfig,
-  #[asset(skip)]
-  pub(crate) labels: HashMap<String, String>,
-  #[asset(skip)]
-  pub(crate) tests: Vec<config::TestCase>,
-  #[asset(skip)]
-  pub(crate) metadata: Option<config::Metadata>,
+  #[builder(default = "ComponentImplementation::Composite(CompositeComponentImplementation::default())")]
   pub(crate) component: ComponentImplementation,
   #[asset(skip)]
+  #[builder(setter(into, strip_option), default)]
+  pub name: Option<String>,
+  #[asset(skip)]
+  #[builder(setter(into, strip_option), default)]
+  pub(crate) source: Option<String>,
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) types: Vec<TypeDefinition>,
+  #[builder(default)]
+  pub(crate) import: HashMap<String, ImportBinding>,
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) requires: HashMap<String, BoundInterface>,
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) resources: HashMap<String, ResourceBinding>,
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) host: config::HostConfig,
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) labels: HashMap<String, String>,
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) tests: Vec<config::TestCase>,
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) metadata: Option<config::Metadata>,
+  #[asset(skip)]
+  #[builder(setter(skip))]
   pub(crate) type_cache: ImportCache,
   #[asset(skip)]
+  #[builder(setter(skip))]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
 }
 
@@ -80,11 +100,22 @@ impl ComponentConfiguration {
   /// Returns a function that resolves a binding to a configuration item.
   #[must_use]
   pub fn resolver(&self) -> Box<Resolver> {
-    let (imports, resources) = match self.component {
-      ComponentImplementation::Wasm(ref c) => (c.import.clone(), self.resources.clone()),
-      ComponentImplementation::Composite(ref c) => (c.import.clone(), self.resources.clone()),
-    };
+    let imports = self.import.clone();
+    let resources = self.resources.clone();
+
     make_resolver(imports, resources)
+  }
+
+  /// Get the imports defined in this component.
+  #[must_use]
+  pub fn imports(&self) -> &HashMap<String, ImportBinding> {
+    &self.import
+  }
+
+  /// Returns an [ImportBinding] if it exists in the configuration.
+  #[must_use]
+  pub fn get_import(&self, name: &str) -> Option<&ImportBinding> {
+    self.import.get(name)
   }
 
   /// Determine if the configuration allows for fetching artifacts with the :latest tag.
@@ -134,7 +165,7 @@ impl ComponentConfiguration {
   /// Return the metadata of the component.
   #[must_use]
   pub fn metadata(&self) -> config::Metadata {
-    self.metadata.clone().unwrap()
+    self.metadata.clone().unwrap_or_default()
   }
 
   /// Return the underlying version of the source manifest.
@@ -147,8 +178,8 @@ impl ComponentConfiguration {
   pub fn types(&self) -> Result<Vec<TypeDefinition>> {
     self.cached_types.read().as_ref().map_or_else(
       || {
-        if self.component.imports().is_empty() {
-          Ok(self.component.types().to_vec())
+        if self.import.is_empty() {
+          Ok(self.types.clone())
         } else {
           Err(Error::TypesNotFetched)
         }
@@ -157,13 +188,19 @@ impl ComponentConfiguration {
     )
   }
 
+  /// Return the requirements defined in this component.
+  #[must_use]
+  pub fn requires(&self) -> &HashMap<String, BoundInterface> {
+    &self.requires
+  }
+
   /// Fetch/cache anything critical to the first use of this configuration.
   pub(crate) async fn setup_cache(&self, options: FetchOptions) -> Result<()> {
     setup_cache(
       &self.type_cache,
-      self.component.imports().values(),
+      self.import.values(),
       &self.cached_types,
-      self.component.types().to_vec(),
+      self.types.clone(),
       options,
     )
     .await
@@ -190,7 +227,7 @@ impl ComponentConfiguration {
   /// Get the component signature for this configuration.
   pub fn signature(&self) -> Result<ComponentSignature> {
     let mut sig = wick_interface_types::component! {
-      name: self.name().clone().unwrap_or_else(||"".to_owned()),
+      name: self.name().clone().unwrap_or_else(||self.component.default_name().to_owned()),
       version: self.version(),
       operations: self.component.operation_signatures(),
     };
@@ -204,82 +241,48 @@ impl ComponentConfiguration {
   }
 }
 
-/// ComponentConfiguration builder.
-#[derive(Debug, Clone)]
-#[must_use]
-pub struct ComponentConfigurationBuilder {
-  name: Option<String>,
-  source: Option<String>,
-  host: config::HostConfig,
-  labels: HashMap<String, String>,
-  tests: Vec<config::TestCase>,
-  component: ComponentImplementation,
-  metadata: Option<config::Metadata>,
-  resources: HashMap<String, ResourceBinding>,
-}
-
-impl Default for ComponentConfigurationBuilder {
-  fn default() -> Self {
-    Self::new()
-  }
-}
-
 impl ComponentConfigurationBuilder {
-  /// Create a new [ComponentConfigurationBuilder].
-  pub fn new() -> Self {
-    let component = CompositeComponentImplementation::default();
-    Self {
-      component: ComponentImplementation::Composite(component),
-      resources: Default::default(),
-      name: Default::default(),
-      source: Default::default(),
-      host: Default::default(),
-      labels: Default::default(),
-      tests: Default::default(),
-      metadata: Default::default(),
+  #[must_use]
+  pub fn from_base(config: ComponentConfiguration) -> Self {
+    let mut this = Self::default();
+    this
+      .component(config.component)
+      .host(config.host)
+      .labels(config.labels)
+      .tests(config.tests)
+      .types(config.types)
+      .requires(config.requires)
+      .resources(config.resources)
+      .metadata(config.metadata)
+      .import(config.import);
+
+    if let Some(name) = config.name {
+      this.name(name);
+    }
+    if let Some(source) = config.source {
+      this.source(source);
+    }
+
+    this
+  }
+
+  pub fn add_import(&mut self, import: ImportBinding) {
+    if let Some(imports) = &mut self.import {
+      imports.insert(import.id.clone(), import);
+    } else {
+      let mut imports = HashMap::new();
+      imports.insert(import.id.clone(), import);
+      self.import = Some(imports);
     }
   }
 
-  /// Create a builder with an existing manifest as a base.
-  pub fn with_base(definition: ComponentConfiguration) -> Self {
-    Self {
-      name: definition.name,
-      source: definition.source,
-      host: definition.host,
-      labels: definition.labels,
-      tests: definition.tests,
-      metadata: definition.metadata,
-      component: definition.component,
-      resources: Default::default(),
-    }
-  }
-
-  pub fn add_import(mut self, import: ImportBinding) -> Self {
-    self.component = match self.component {
-      ComponentImplementation::Composite(c) => ComponentImplementation::Composite(c.add_import(import)),
-      ComponentImplementation::Wasm(_) => panic!("Can not add imports to anything but a Composite component"),
-    };
-    self
-  }
-
-  pub fn add_resource(mut self, resource: ResourceBinding) -> Self {
-    self.resources.insert(resource.id.clone(), resource);
-    self
-  }
-
-  /// Consume the [ComponentConfigurationBuilder] and return a [ComponentConfiguration].
-  pub fn build(self) -> ComponentConfiguration {
-    ComponentConfiguration {
-      component: self.component,
-      name: self.name,
-      source: self.source,
-      host: self.host,
-      labels: self.labels,
-      metadata: self.metadata,
-      tests: self.tests,
-      resources: self.resources,
-      cached_types: Default::default(),
-      type_cache: Default::default(),
+  pub fn add_resource(&mut self, resource: ResourceBinding) {
+    if let Some(r) = &mut self.resources {
+      r.insert(resource.id.clone(), resource);
+    } else {
+      let mut r = HashMap::new();
+      r.insert(resource.id.clone(), resource);
+      self.resources = Some(r);
     }
   }
 }

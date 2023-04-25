@@ -218,20 +218,6 @@
 <li><span class="annotation field-note">Required</span></li>
 
 </ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="app">app</a>
-</h3>
-
-<span class="description field-description">The component that provides additional logic.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentDefinition">ComponentDefinition</a><span class=optional>(Optional)</span></span></span></li>
-
-
-</ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
   <a name="TimeTrigger">TimeTrigger</a>
@@ -810,6 +796,62 @@
 </div><div class=field>
 
 <h3 class=field-name>
+  <a name="resources">resources</a>
+</h3>
+
+<span class="description field-description">Resources that the application can access.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ResourceBinding">ResourceBinding</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="import">import</a>
+</h3>
+
+<span class="description field-description">Components or types to import into the application's scope.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ImportBinding">ImportBinding</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="types">types</a>
+</h3>
+
+<span class="description field-description">Additional types to export and make available to the component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TypeDefinition">TypeDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="requires">requires</a>
+</h3>
+
+<span class="description field-description">Interfaces the component requires to operate.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#BoundInterface">BoundInterface</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
   <a name="labels">labels</a>
 </h3>
 
@@ -919,8 +961,7 @@
 
 
 </ul>
-</div></div></div><div class="definition">## unhandled
-    panic!()</div><div class="definition">
+</div></div></div><div class="definition">
 <h2 class="definition-name type-name">
   <a name="CompositeComponentConfiguration">CompositeComponentConfiguration</a>
 </h2>
@@ -928,34 +969,6 @@
 <span class="description type-description">A component made out of other components</span>
 <div class=fields>
 <div class=field>
-
-<h3 class=field-name>
-  <a name="types">types</a>
-</h3>
-
-<span class="description field-description">Additional types to export and make available to the component.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#TypeDefinition">TypeDefinition</a>[]</span></span></li>
-
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="import">import</a>
-</h3>
-
-<span class="description field-description">Components or types to import into the application's scope.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ImportBinding">ImportBinding</a>[]</span></span></li>
-
-
-</ul>
-</div><div class=field>
 
 <h3 class=field-name>
   <a name="operations">operations</a>
@@ -966,20 +979,6 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#CompositeOperationDefinition">CompositeOperationDefinition</a>[]</span></span></li>
-
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="requires">requires</a>
-</h3>
-
-<span class="description field-description">Interfaces the component requires to operate.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#BoundInterface">BoundInterface</a>[]</span></span></li>
 
 
 </ul>
@@ -1007,34 +1006,6 @@
 </div><div class=field>
 
 <h3 class=field-name>
-  <a name="import">import</a>
-</h3>
-
-<span class="description field-description">Components or types to import into the application's scope.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ImportBinding">ImportBinding</a>[]</span></span></li>
-
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="types">types</a>
-</h3>
-
-<span class="description field-description">Additional types to export and make available to the component.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#TypeDefinition">TypeDefinition</a>[]</span></span></li>
-
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
   <a name="operations">operations</a>
 </h3>
 
@@ -1043,20 +1014,6 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#OperationDefinition">OperationDefinition</a>[]</span></span></li>
-
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="requires">requires</a>
-</h3>
-
-<span class="description field-description">Interfaces the component requires to operate.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#BoundInterface">BoundInterface</a>[]</span></span></li>
 
 
 </ul>
@@ -1131,6 +1088,7 @@
 
 </ul>
 </div></div></div><div class="definition">## unhandled
+    panic!()</div><div class="definition">## unhandled
     panic!()</div><div class="definition">## unhandled
     panic!()</div><div class="definition">
 <h2 class="definition-name type-name">
@@ -2059,7 +2017,7 @@
   <a name="resource">resource</a>
 </h3>
 
-<span class="description field-description">The TcpPort reference to listen on for connections.</span>
+<span class="description field-description">The connect string URL resource for the database.</span>
 
 
 <ul class="field-notes">
@@ -2172,5 +2130,233 @@
 
 
 </ul>
-</div></div></div></div>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="HttpClientComponent">HttpClientComponent</a>
+</h2>
+
+<span class="description type-description">A component made out of other components</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="resource">resource</a>
+</h3>
+
+<span class="description field-description">The URL base to use.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="codec">codec</a>
+</h3>
+
+<span class="description field-description">The codec to use when encoding/decoding data. Can be overridden by individual operations.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Codec">Codec</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="operations">operations</a>
+</h3>
+
+<span class="description field-description">A list of operations to expose on this component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#HttpClientOperationDefinition">HttpClientOperationDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="HttpClientOperationDefinition">HttpClientOperationDefinition</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="inputs">inputs</a>
+</h3>
+
+<span class="description field-description">Types of the inputs to the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="method">method</a>
+</h3>
+
+<span class="description field-description">The HTTP method to use.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#HttpMethod">HttpMethod</a></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="codec">codec</a>
+</h3>
+
+<span class="description field-description">The codec to use when encoding/decoding data.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Codec">Codec</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="path">path</a>
+</h3>
+
+<span class="description field-description">The path to append to our base URL, processed as a liquid template with each input as part of the template data.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Codec">Codec</a>
+</h2>
+
+<span class="description enum-description">Codec to use when encoding/decoding data.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="Json">Json</a>
+</h3>
+
+<span class=field-description>JSON Codec</span>
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>0</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Raw">Raw</a>
+</h3>
+
+<span class=field-description>Raw</span>
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>1</span></span></li>
+
+
+</ul>
+
+</div></div>
+</div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="HttpMethod">HttpMethod</a>
+</h2>
+
+<span class="description enum-description">Supported HTTP methods</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="Get">Get</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>0</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Post">Post</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>1</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Put">Put</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>2</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="Delete">Delete</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>3</span></span></li>
+
+
+</ul>
+
+</div></div>
+</div></div>
 

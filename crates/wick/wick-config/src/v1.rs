@@ -149,10 +149,6 @@ pub(crate) struct CliTrigger {
 
   #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
   pub(crate) operation: ComponentOperationExpression,
-  /// The component that provides additional logic.
-
-  #[serde(default)]
-  pub(crate) app: Option<ComponentDefinition>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -425,6 +421,26 @@ pub(crate) struct ComponentConfiguration {
 
   #[serde(default)]
   pub(crate) host: HostConfig,
+  /// Resources that the application can access.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) resources: Vec<ResourceBinding>,
+  /// Components or types to import into the application&#x27;s scope.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) import: Vec<ImportBinding>,
+  /// Additional types to export and make available to the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
+  /// Interfaces the component requires to operate.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) requires: Vec<BoundInterface>,
   /// The labels and values that apply to this manifest.
 
   #[serde(default)]
@@ -470,40 +486,13 @@ pub(crate) struct InterfaceDefinition {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-#[serde(tag = "kind")]
-pub(crate) enum ComponentKind {
-  /// A variant representing a [WasmComponentConfiguration] type.
-  #[serde(rename = "wick/component/wasmrs@v1")]
-  WasmComponentConfiguration(WasmComponentConfiguration),
-  /// A variant representing a [CompositeComponentConfiguration] type.
-  #[serde(rename = "wick/component/composite@v1")]
-  CompositeComponentConfiguration(CompositeComponentConfiguration),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
 /// A component made out of other components
 pub(crate) struct CompositeComponentConfiguration {
-  /// Additional types to export and make available to the component.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
-  /// Components or types to import into the application&#x27;s scope.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) import: Vec<ImportBinding>,
   /// A list of operations implemented by the Composite component.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<CompositeOperationDefinition>,
-  /// Interfaces the component requires to operate.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) requires: Vec<BoundInterface>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -514,26 +503,11 @@ pub(crate) struct WasmComponentConfiguration {
 
   #[serde(rename = "ref")]
   pub(crate) reference: crate::v1::helpers::LocationReference,
-  /// Components or types to import into the application&#x27;s scope.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) import: Vec<ImportBinding>,
-  /// Additional types to export and make available to the component.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
   /// A list of operations implemented by the WebAssembly module.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
-  /// Interfaces the component requires to operate.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) requires: Vec<BoundInterface>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -563,29 +537,45 @@ pub(crate) struct ImportBinding {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "kind")]
-/// The possible types to import into a component or application.
-pub(crate) enum ImportDefinition {
-  /// A variant representing a [TypesComponent] type.
-  #[serde(rename = "wick/component/types@v1")]
-  TypesComponent(TypesComponent),
-  /// A variant representing a [GrpcUrlComponent] type.
-  #[serde(rename = "wick/component/grpc@v1")]
-  GrpcUrlComponent(GrpcUrlComponent),
-  /// A variant representing a [ManifestComponent] type.
-  #[serde(rename = "wick/component/manifest@v1")]
-  ManifestComponent(ManifestComponent),
-  /// A variant representing a [ComponentReference] type.
-  #[serde(rename = "wick/component/reference@v1")]
-  ComponentReference(ComponentReference),
+/// Component implementation types
+pub(crate) enum ComponentKind {
+  /// A variant representing a [WasmComponentConfiguration] type.
+  #[serde(rename = "wick/component/wasmrs@v1")]
+  WasmComponentConfiguration(WasmComponentConfiguration),
+  /// A variant representing a [CompositeComponentConfiguration] type.
+  #[serde(rename = "wick/component/composite@v1")]
+  CompositeComponentConfiguration(CompositeComponentConfiguration),
   /// A variant representing a [SqlComponent] type.
   #[serde(rename = "wick/component/sql@v1")]
   SqlComponent(SqlComponent),
+  /// A variant representing a [HttpClientComponent] type.
+  #[serde(rename = "wick/component/http@v1")]
+  HttpClientComponent(HttpClientComponent),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "kind")]
-/// The possible types of components.
+/// Types of possible imports.
+pub(crate) enum ImportDefinition {
+  /// A variant representing a [TypesComponent] type.
+  #[serde(rename = "wick/component/types@v1")]
+  TypesComponent(TypesComponent),
+  /// A variant representing a [ManifestComponent] type.
+  #[serde(rename = "wick/component/manifest@v1")]
+  ManifestComponent(ManifestComponent),
+  /// A variant representing a [SqlComponent] type.
+  #[serde(rename = "wick/component/sql@v1")]
+  SqlComponent(SqlComponent),
+  /// A variant representing a [HttpClientComponent] type.
+  #[serde(rename = "wick/component/http@v1")]
+  HttpClientComponent(HttpClientComponent),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(tag = "kind")]
+/// Component types used when referencing operations or linking components.
 pub(crate) enum ComponentDefinition {
   /// A variant representing a [GrpcUrlComponent] type.
   #[serde(rename = "wick/component/grpc@v1")]
@@ -599,6 +589,9 @@ pub(crate) enum ComponentDefinition {
   /// A variant representing a [SqlComponent] type.
   #[serde(rename = "wick/component/sql@v1")]
   SqlComponent(SqlComponent),
+  /// A variant representing a [HttpClientComponent] type.
+  #[serde(rename = "wick/component/http@v1")]
+  HttpClientComponent(HttpClientComponent),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1005,7 +998,7 @@ impl FromPrimitive for DatabaseKind {
 #[serde(deny_unknown_fields)]
 /// A component made out of other components
 pub(crate) struct SqlComponent {
-  /// The TcpPort reference to listen on for connections.
+  /// The connect string URL resource for the database.
 
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
@@ -1050,4 +1043,132 @@ pub(crate) struct SqlOperationDefinition {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) arguments: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A component made out of other components
+pub(crate) struct HttpClientComponent {
+  /// The URL base to use.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) resource: String,
+  /// The codec to use when encoding/decoding data. Can be overridden by individual operations.
+
+  #[serde(default)]
+  pub(crate) codec: Option<Codec>,
+  /// A list of operations to expose on this component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) operations: Vec<HttpClientOperationDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct HttpClientOperationDefinition {
+  /// The name of the operation.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) name: String,
+  /// Types of the inputs to the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) inputs: Vec<wick_interface_types::Field>,
+  /// The HTTP method to use.
+
+  #[serde(default)]
+  pub(crate) method: HttpMethod,
+  /// The codec to use when encoding/decoding data.
+
+  #[serde(default)]
+  pub(crate) codec: Option<Codec>,
+  /// The path to append to our base URL, processed as a liquid template with each input as part of the template data.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) path: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Codec to use when encoding/decoding data.
+pub(crate) enum Codec {
+  /// JSON Codec
+  Json = 0,
+  /// Raw
+  Raw = 1,
+}
+
+impl Default for Codec {
+  fn default() -> Self {
+    Self::from_u16(0).unwrap()
+  }
+}
+
+impl FromPrimitive for Codec {
+  fn from_i64(n: i64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Json,
+      1 => Self::Raw,
+      _ => {
+        return None;
+      }
+    })
+  }
+
+  fn from_u64(n: u64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Json,
+      1 => Self::Raw,
+      _ => {
+        return None;
+      }
+    })
+  }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Supported HTTP methods
+pub(crate) enum HttpMethod {
+  Get = 0,
+  Post = 1,
+  Put = 2,
+  Delete = 3,
+}
+
+impl Default for HttpMethod {
+  fn default() -> Self {
+    Self::from_u16(0).unwrap()
+  }
+}
+
+impl FromPrimitive for HttpMethod {
+  fn from_i64(n: i64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Get,
+      1 => Self::Post,
+      2 => Self::Put,
+      3 => Self::Delete,
+      _ => {
+        return None;
+      }
+    })
+  }
+
+  fn from_u64(n: u64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Get,
+      1 => Self::Post,
+      2 => Self::Put,
+      3 => Self::Delete,
+      _ => {
+        return None;
+      }
+    })
+  }
 }

@@ -142,16 +142,6 @@
           "description": "The operation that will act as the main entrypoint for this trigger.",
 
           "$ref": "#/$defs/v1/ComponentOperationExpression"
-        },
-        "app": {
-          "description": "The component that provides additional logic.",
-          "required": false,
-          "oneOf": [
-            { "type": "string" },
-            {
-              "$ref": "#/$defs/v1/ComponentDefinition"
-            }
-          ]
         }
       },
       "required": ["operation"]
@@ -545,6 +535,38 @@
 
           "$ref": "#/$defs/v1/HostConfig"
         },
+        "resources": {
+          "description": "Resources that the application can access.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/ResourceBinding"
+          }
+        },
+        "import": {
+          "description": "Components or types to import into the application&#x27;s scope.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/ImportBinding"
+          }
+        },
+        "types": {
+          "description": "Additional types to export and make available to the component.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/TypeDefinition"
+          }
+        },
+        "requires": {
+          "description": "Interfaces the component requires to operate.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/BoundInterface"
+          }
+        },
         "labels": {
           "description": "The labels and values that apply to this manifest.",
 
@@ -614,13 +636,6 @@
       "required": []
     },
 
-    "ComponentKind": {
-      "oneOf": [
-        { "$ref": "#/$defs/v1/WasmComponentConfiguration" },
-        { "$ref": "#/$defs/v1/CompositeComponentConfiguration" }
-      ]
-    },
-
     "CompositeComponentConfiguration": {
       "$anchor": "#v1/CompositeComponentConfiguration",
       "additionalProperties": false,
@@ -630,36 +645,12 @@
           "description": "The kind of the collection",
           "enum": ["wick/component/composite@v1"]
         },
-        "types": {
-          "description": "Additional types to export and make available to the component.",
-
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1/TypeDefinition"
-          }
-        },
-        "import": {
-          "description": "Components or types to import into the application&#x27;s scope.",
-
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1/ImportBinding"
-          }
-        },
         "operations": {
           "description": "A list of operations implemented by the Composite component.",
 
           "type": "array",
           "items": {
             "$ref": "#/$defs/v1/CompositeOperationDefinition"
-          }
-        },
-        "requires": {
-          "description": "Interfaces the component requires to operate.",
-
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1/BoundInterface"
           }
         }
       },
@@ -680,36 +671,12 @@
 
           "type": "string"
         },
-        "import": {
-          "description": "Components or types to import into the application&#x27;s scope.",
-
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1/ImportBinding"
-          }
-        },
-        "types": {
-          "description": "Additional types to export and make available to the component.",
-
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1/TypeDefinition"
-          }
-        },
         "operations": {
           "description": "A list of operations implemented by the WebAssembly module.",
 
           "type": "array",
           "items": {
             "$ref": "#/$defs/v1/OperationDefinition"
-          }
-        },
-        "requires": {
-          "description": "Interfaces the component requires to operate.",
-
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1/BoundInterface"
           }
         }
       },
@@ -752,13 +719,21 @@
       "required": ["name", "component"]
     },
 
+    "ComponentKind": {
+      "oneOf": [
+        { "$ref": "#/$defs/v1/WasmComponentConfiguration" },
+        { "$ref": "#/$defs/v1/CompositeComponentConfiguration" },
+        { "$ref": "#/$defs/v1/SqlComponent" },
+        { "$ref": "#/$defs/v1/HttpClientComponent" }
+      ]
+    },
+
     "ImportDefinition": {
       "oneOf": [
         { "$ref": "#/$defs/v1/TypesComponent" },
-        { "$ref": "#/$defs/v1/GrpcUrlComponent" },
         { "$ref": "#/$defs/v1/ManifestComponent" },
-        { "$ref": "#/$defs/v1/ComponentReference" },
-        { "$ref": "#/$defs/v1/SqlComponent" }
+        { "$ref": "#/$defs/v1/SqlComponent" },
+        { "$ref": "#/$defs/v1/HttpClientComponent" }
       ]
     },
 
@@ -767,7 +742,8 @@
         { "$ref": "#/$defs/v1/GrpcUrlComponent" },
         { "$ref": "#/$defs/v1/ManifestComponent" },
         { "$ref": "#/$defs/v1/ComponentReference" },
-        { "$ref": "#/$defs/v1/SqlComponent" }
+        { "$ref": "#/$defs/v1/SqlComponent" },
+        { "$ref": "#/$defs/v1/HttpClientComponent" }
       ]
     },
 
@@ -1264,7 +1240,7 @@
           "enum": ["wick/component/sql@v1"]
         },
         "resource": {
-          "description": "The TcpPort reference to listen on for connections.",
+          "description": "The connect string URL resource for the database.",
 
           "type": "string"
         },
@@ -1325,6 +1301,85 @@
         }
       },
       "required": []
+    },
+
+    "HttpClientComponent": {
+      "$anchor": "#v1/HttpClientComponent",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/component/http@v1"]
+        },
+        "resource": {
+          "description": "The URL base to use.",
+
+          "type": "string"
+        },
+        "codec": {
+          "description": "The codec to use when encoding/decoding data. Can be overridden by individual operations.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/Codec"
+        },
+        "operations": {
+          "description": "A list of operations to expose on this component.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/HttpClientOperationDefinition"
+          }
+        }
+      },
+      "required": []
+    },
+
+    "HttpClientOperationDefinition": {
+      "$anchor": "#v1/HttpClientOperationDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "The name of the operation.",
+
+          "type": "string"
+        },
+        "inputs": {
+          "description": "Types of the inputs to the operation.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/Field"
+          }
+        },
+        "method": {
+          "description": "The HTTP method to use.",
+
+          "$ref": "#/$defs/v1/HttpMethod"
+        },
+        "codec": {
+          "description": "The codec to use when encoding/decoding data.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/Codec"
+        },
+        "path": {
+          "description": "The path to append to our base URL, processed as a liquid template with each input as part of the template data.",
+
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "Codec": {
+      "$anchor": "#v1/Codec",
+      "enum": ["Json", "Raw"]
+    },
+
+    "HttpMethod": {
+      "$anchor": "#v1/HttpMethod",
+      "enum": ["Get", "Post", "Put", "Delete"]
     }
   }
 }

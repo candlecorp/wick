@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use wick_interface_types::{Field, TypeDefinition};
+use wick_interface_types::Field;
 
-use crate::common::{BoundInterface, ImportBinding};
 use crate::config;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
@@ -13,28 +12,11 @@ pub struct WasmComponentImplementation {
   /// The location of the component.
   pub(crate) reference: config::AssetReference,
 
-  pub(crate) import: HashMap<String, ImportBinding>,
-
-  /// Types used by the component's operations.
-  #[asset(skip)]
-  pub(crate) types: Vec<TypeDefinition>,
-
-  /// The operations the component exposes.
   #[asset(skip)]
   pub(crate) operations: HashMap<String, OperationSignature>,
-
-  /// The interfaces the component requires.
-  #[asset(skip)]
-  pub(crate) requires: HashMap<String, BoundInterface>,
 }
 
 impl WasmComponentImplementation {
-  /// Get the required interfaces for this component.
-  #[must_use]
-  pub fn requires(&self) -> &HashMap<String, BoundInterface> {
-    &self.requires
-  }
-
   /// Get the signature of the component as defined by the manifest.
   #[must_use]
   pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
@@ -64,10 +46,5 @@ impl WasmComponentImplementation {
   /// Get the reference location to the component.
   pub fn reference(&self) -> &config::AssetReference {
     &self.reference
-  }
-
-  /// Get the types used by the component's operations.
-  pub fn local_types(&self) -> &[TypeDefinition] {
-    &self.types
   }
 }

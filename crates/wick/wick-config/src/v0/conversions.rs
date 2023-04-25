@@ -19,7 +19,9 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
       .iter()
       .map(|val| Ok((val.name.clone(), val.try_into()?)))
       .collect();
-    let composite = config::CompositeComponentImplementation {
+    let composite = config::CompositeComponentImplementation { operations: flows? };
+    Ok(config::ComponentConfiguration {
+      source: None,
       types: Default::default(),
       requires: Default::default(),
       import: def
@@ -33,10 +35,6 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
           ))
         })
         .collect::<Result<HashMap<_, _>>>()?,
-      operations: flows?,
-    };
-    Ok(config::ComponentConfiguration {
-      source: None,
       component: config::ComponentImplementation::Composite(composite),
       host: def.host.try_into()?,
       name: def.network.name,

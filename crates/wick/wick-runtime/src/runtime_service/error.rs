@@ -9,7 +9,7 @@ pub enum EngineError {
   #[error("Could not complete building the runtime. Component {0} failed to initialize: {1}")]
   ComponentInit(String, String),
 
-  #[error("Component signature mismatch. Signature defined in {0} differs from embedded signature in {1}. Use `wick wasm inspect` to view the embedded signature to verify its contents and update the manifest signature.")]
+  #[error("Component signature mismatch. Signature reported by instantiated component at {0} differs from configured signature in {1}. For WebAssembly, use `wick wasm inspect` to view the embedded signature to verify its contents and update the manifest signature.")]
   ComponentSignature(String, String),
 
   #[error(transparent)]

@@ -55,12 +55,13 @@ impl Cli {
       None,
     );
 
-    let mut runtime = crate::RuntimeBuilder::new().add_import(cli_binding);
+    let mut runtime = crate::RuntimeBuilder::new();
+    runtime.add_import(cli_binding);
     for import in app_config.imports().values() {
-      runtime = runtime.add_import(import.clone());
+      runtime.add_import(import.clone());
     }
     for resource in app_config.resources().values() {
-      runtime = runtime.add_resource(resource.clone());
+      runtime.add_resource(resource.clone());
     }
     let runtime = runtime.build().await?;
 

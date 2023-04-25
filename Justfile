@@ -60,6 +60,7 @@ integration-setup:
 	./etc/integration/postgres.sh up init
 	./etc/integration/mssql.sh up init
 	./etc/integration/registry.sh up init
+	./etc/integration/httpbin.sh up init
 	cargo run -p wick-cli -- reg push --debug ${DOCKER_REGISTRY}/test-component/baseline:0.1.0 ./crates/integration/test-baseline-component/component.yaml --insecure=${DOCKER_REGISTRY}
 
 integration-teardown:
@@ -67,6 +68,7 @@ integration-teardown:
 	./etc/integration/registry.sh down
 	./etc/integration/postgres.sh down
 	./etc/integration/mssql.sh down
+	./etc/integration/httpbin.sh down
 
 deps:
 	npm install -g apex-template prettier ts-node commitlint conventional-changelog-conventionalcommits

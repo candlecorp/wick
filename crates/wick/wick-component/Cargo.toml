@@ -22,7 +22,6 @@ wasmrs = { workspace = true }
 wasmrs-rx = { workspace = true }
 wasmrs-runtime = { workspace = true }
 futures = { workspace = true }
-tokio = { workspace = true }
 anyhow = { workspace = true }
 paste = { workspace = true }
 
