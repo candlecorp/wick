@@ -44,6 +44,7 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
       resources: Default::default(),
       cached_types: Default::default(),
       type_cache: Default::default(),
+      package: Default::default(),
     })
   }
 }

@@ -92,6 +92,90 @@
 
 
 </ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="package">package</a>
+</h3>
+
+<span class="description field-description">Details about the package for this application.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#PackageDefinition">PackageDefinition</a></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="PackageDefinition">PackageDefinition</a>
+</h2>
+
+<span class="description type-description">The package details for an application or component.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="files">files</a>
+</h3>
+
+<span class="description field-description">The list of files and folders to be included with the package.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="registry">registry</a>
+</h3>
+
+<span class="description field-description">Configuration for publishing the package to a registry. This will be used if the package is published without any additional arguments on the command line. If a tag is specified on the command line, that tag will be used instead. </span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#RegistryDefinition">RegistryDefinition</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="RegistryDefinition">RegistryDefinition</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="registry">registry</a>
+</h3>
+
+<span class="description field-description">The registry to publish to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="namespace">namespace</a>
+</h3>
+
+<span class="description field-description">The namespace on the registry. ex: registry.candle.dev/<namespace>/<myWickApp></span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
   <a name="Metadata">Metadata</a>
@@ -889,6 +973,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#TestDefinition">TestDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="package">package</a>
+</h3>
+
+<span class="description field-description">Details about the package for this component.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#PackageDefinition">PackageDefinition</a></span></span></li>
 
 
 </ul>

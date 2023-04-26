@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use flow_expression_parser::{ConnectionTarget, InstanceTarget};
 
+use super::REGISTRY_DEFINITION_REGISTRY;
 // use flow_expression_parser::parse_id;
 use crate::app_config::{
   AppConfiguration,
@@ -27,6 +28,7 @@ use crate::config::common::flow_definition::SenderData;
 use crate::config::common::host_definition::HostConfig;
 use crate::config::common::test_case;
 use crate::config::components::{self, ComponentReference, GrpcUrlComponent, ManifestComponent};
+use crate::config::package_definition::{PackageConfig, RegistryConfig};
 use crate::config::{
   self,
   test_config,
@@ -104,6 +106,7 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
         .collect::<Result<_>>()?,
       cached_types: Default::default(),
       type_cache: Default::default(),
+      package: Default::default(),
     })
   }
 }
@@ -127,6 +130,70 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
       resources: def.resources.into_values().map(|v| v.into()).collect(),
       tests: def.tests.into_iter().map(|v| v.into()).collect(),
       component: def.component.try_into()?,
+      package: def.package.try_into()?,
+    })
+  }
+}
+
+impl TryFrom<v1::PackageDefinition> for PackageConfig {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::PackageDefinition) -> std::result::Result<Self, Self::Error> {
+    let registry_config = match RegistryConfig::try_from(value.registry) {
+      Ok(config) => Some(config),
+      Err(err) => return Err(err),
+    };
+
+    Ok(Self {
+      files: value.files,
+      registry: registry_config,
+    })
+  }
+}
+
+impl TryFrom<Option<v1::RegistryDefinition>> for RegistryConfig {
+  type Error = ManifestError;
+
+  fn try_from(value: Option<v1::RegistryDefinition>) -> std::result::Result<Self, Self::Error> {
+    match value {
+      Some(reg_def) => Ok(Self {
+        registry: reg_def.registry,
+        namespace: reg_def.namespace,
+      }),
+      None => Ok(Self {
+        registry: REGISTRY_DEFINITION_REGISTRY(),
+        namespace: None,
+      }),
+    }
+  }
+}
+
+impl TryFrom<PackageConfig> for v1::PackageDefinition {
+  type Error = ManifestError;
+
+  fn try_from(value: PackageConfig) -> std::result::Result<Self, Self::Error> {
+    let registry_def = match value.registry {
+      Some(config) => match v1::RegistryDefinition::try_from(config) {
+        Ok(reg_def) => Some(reg_def),
+        Err(err) => return Err(err),
+      },
+      None => None,
+    };
+
+    Ok(Self {
+      files: value.files,
+      registry: registry_def,
+    })
+  }
+}
+
+impl TryFrom<RegistryConfig> for v1::RegistryDefinition {
+  type Error = ManifestError;
+
+  fn try_from(value: RegistryConfig) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      registry: value.registry,
+      namespace: value.namespace,
     })
   }
 }
@@ -269,6 +336,7 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
       triggers: def.triggers.into_iter().map(|v| v.try_into()).collect::<Result<_>>()?,
       cached_types: Default::default(),
       type_cache: Default::default(),
+      package: Default::default(),
     })
   }
 }
@@ -292,6 +360,7 @@ impl TryFrom<AppConfiguration> for v1::AppConfiguration {
         .map(|v| v.try_into())
         .collect::<Result<_>>()?,
       host: value.host.try_into()?,
+      package: value.package.try_into()?,
     })
   }
 }

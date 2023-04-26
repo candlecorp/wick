@@ -85,6 +85,44 @@ pub(crate) struct AppConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) triggers: Vec<TriggerDefinition>,
+  /// Details about the package for this application.
+
+  #[serde(default)]
+  pub(crate) package: PackageDefinition,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// The package details for an application or component.
+pub(crate) struct PackageDefinition {
+  /// The list of files and folders to be included with the package.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) files: Vec<String>,
+  /// Configuration for publishing the package to a registry. This will be used if the package is published without any additional arguments on the command line. If a tag is specified on the command line, that tag will be used instead.
+
+  #[serde(default)]
+  pub(crate) registry: Option<RegistryDefinition>,
+}
+
+#[allow(non_snake_case)]
+pub(crate) fn REGISTRY_DEFINITION_REGISTRY() -> String {
+  "registry.candle.dev".to_owned()
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RegistryDefinition {
+  /// The registry to publish to.
+
+  #[serde(default = "REGISTRY_DEFINITION_REGISTRY")]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) registry: String,
+  /// The namespace on the registry. ex: registry.candle.dev/&lt;namespace&gt;/&lt;myWickApp&gt;
+
+  #[serde(default)]
+  pub(crate) namespace: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -454,6 +492,10 @@ pub(crate) struct ComponentConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) tests: Vec<TestDefinition>,
+  /// Details about the package for this component.
+
+  #[serde(default)]
+  pub(crate) package: PackageDefinition,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

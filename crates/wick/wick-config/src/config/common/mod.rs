@@ -6,6 +6,7 @@ pub mod host_definition;
 pub mod import_definition;
 pub mod interface;
 pub mod metadata;
+pub mod package_definition;
 pub mod test_case;
 
 pub use bindings::*;

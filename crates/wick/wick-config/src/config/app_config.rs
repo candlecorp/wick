@@ -10,6 +10,7 @@ pub use self::resources::*;
 pub use self::triggers::*;
 use super::common::component_definition::ComponentDefinition;
 use super::common::host_definition::HostConfig;
+use super::common::package_definition::PackageConfig;
 use super::{make_resolver, ImportBinding, ImportDefinition};
 use crate::error::ReferenceError;
 use crate::import_cache::{setup_cache, ImportCache};
@@ -36,6 +37,8 @@ pub struct AppConfiguration {
   pub(crate) type_cache: ImportCache,
   #[asset(skip)]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
+  #[asset(skip)]
+  pub package: PackageConfig,
 }
 
 impl AppConfiguration {
@@ -49,6 +52,12 @@ impl AppConfiguration {
       options,
     )
     .await
+  }
+
+  /// Get the package files
+  #[must_use]
+  pub fn package_files(&self) -> &Vec<String> {
+    &self.package.files
   }
 
   /// Get the configuration item a binding points to.

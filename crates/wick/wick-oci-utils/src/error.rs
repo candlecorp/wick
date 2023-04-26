@@ -18,6 +18,10 @@ pub enum OciError {
   #[error("Could not fetch '{0}': {1}")]
   OciFetchFailure(String, String),
 
+  /// untar failure failure.
+  #[error("Could not untar '{0}': {1}")]
+  UntarFile(String, String),
+
   /// Failure during OCI push.
   #[error("Could not push '{0}': {1}")]
   OciPushFailure(Reference, Box<dyn std::error::Error + Send + Sync>),

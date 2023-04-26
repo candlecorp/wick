@@ -28,6 +28,24 @@ type AppConfiguration @default @tagged("wick/app@v1") {
 
   "Configured triggers that drive the application's behavior."
   triggers: [TriggerDefinition],
+
+  "Details about the package for this application."
+  package: PackageDefinition,
+}
+
+"The package details for an application or component."
+type PackageDefinition @default {
+  "The list of files and folders to be included with the package."
+  files: [string]
+  "Configuration for publishing the package to a registry. This will be used if the package is published without any additional arguments on the command line. If a tag is specified on the command line, that tag will be used instead. "
+  registry: RegistryDefinition?
+}
+
+type RegistryDefinition @default {
+  "The registry to publish to."
+  registry: string = "registry.candle.dev"
+  "The namespace on the registry. ex: registry.candle.dev/<namespace>/<myWickApp>"
+  namespace: string?
 }
 
 "Metadata for the component or application."
@@ -216,6 +234,9 @@ type ComponentConfiguration @tagged("wick/component@v1") {
 
   "Assertions that can be run against the component to validate its behavior."
   tests: [TestDefinition]
+
+  "Details about the package for this component."
+  package: PackageDefinition,
 }
 
 "An interface bound to an ID."

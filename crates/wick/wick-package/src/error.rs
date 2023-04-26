@@ -25,6 +25,14 @@ pub enum Error {
   #[error("Failed to read file '{0}': {1}")]
   ReadFile(PathBuf, #[source] std::io::Error),
 
+  /// Error returned when working with tar files
+  #[error("Failed to read file '{0}': {1}")]
+  TarFile(PathBuf, #[source] std::io::Error),
+
+  /// Error returned when working with gz files
+  #[error("Failed to read file '{0}': {1}")]
+  GzipFile(PathBuf, #[source] std::io::Error),
+
   /// Tried to publish a component that didn't have a name
   #[error("Published components must be named")]
   NoName,
