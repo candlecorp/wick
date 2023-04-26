@@ -406,6 +406,45 @@
             "items": {
               "$ref": "#/$defs/v1/TriggerDefinition"
             }
+          },
+          "package": {
+            "description": "Details about the package for this application.",
+            "$ref": "#/$defs/v1/PackageDefinition"
+          }
+        },
+        "required": []
+      },
+      "PackageDefinition": {
+        "$anchor": "#v1/PackageDefinition",
+        "additionalProperties": false,
+        "properties": {
+          "files": {
+            "description": "The list of files and folders to be included with the package.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "registry": {
+            "description": "Configuration for publishing the package to a registry. This will be used if the package is published without any additional arguments on the command line. If a tag is specified on the command line, that tag will be used instead. ",
+            "required": false,
+            "$ref": "#/$defs/v1/RegistryDefinition"
+          }
+        },
+        "required": []
+      },
+      "RegistryDefinition": {
+        "$anchor": "#v1/RegistryDefinition",
+        "additionalProperties": false,
+        "properties": {
+          "registry": {
+            "description": "The registry to publish to.",
+            "type": "string"
+          },
+          "namespace": {
+            "description": "The namespace on the registry. ex: registry.candle.dev/&lt;namespace&gt;/&lt;myWickApp&gt;",
+            "required": false,
+            "type": "string"
           }
         },
         "required": []
@@ -971,6 +1010,10 @@
             "items": {
               "$ref": "#/$defs/v1/TestDefinition"
             }
+          },
+          "package": {
+            "description": "Details about the package for this component.",
+            "$ref": "#/$defs/v1/PackageDefinition"
           }
         },
         "required": [

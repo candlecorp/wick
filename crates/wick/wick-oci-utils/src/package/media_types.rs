@@ -14,3 +14,5 @@ pub const TYPES: &str = "application/vnd.wick.types.v1+yaml";
 pub const WASM: &str = "application/wasm";
 /// Generic binary media type.
 pub const OTHER: &str = "application/octet-stream";
+/// Tarball gzipped media.
+pub const TARGZ: &str = "application/vnd.oci.image.layer.v1.tar+gzip";

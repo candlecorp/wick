@@ -1,7 +1,10 @@
+use std::io::Cursor;
 use std::path::PathBuf;
 
+use flate2::bufread::GzDecoder;
 use oci_distribution::client::ClientConfig;
 use oci_distribution::Client;
+use tar::Archive;
 
 use super::{annotations, media_types};
 use crate::utils::{create_directory_structure, get_cache_directory};
@@ -52,6 +55,7 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
     media_types::TYPES,
     media_types::WASM,
     media_types::OTHER,
+    media_types::TARGZ,
   ];
 
   let result = client.pull(&image_ref, &auth, accepted_media_types).await;
@@ -95,13 +99,29 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
       .ok_or(Error::NoTitle)?;
     let layer_path = download_dir.join(&layer_title);
     let parent_dir = layer_path.parent().ok_or(Error::InvalidLayerPath(layer_path.clone()))?;
-    //create any subdirectories if they don't exist.
-    tokio::fs::create_dir_all(parent_dir)
-      .await
-      .map_err(|e| Error::CreateDir(parent_dir.to_path_buf(), e))?;
-    tokio::fs::write(&layer_path, &layer.data)
-      .await
-      .map_err(|e| Error::WriteFile(layer_path, e))?;
+
+    if layer.media_type == media_types::TARGZ {
+      // Create a GzDecoder to uncompress the gzip data
+      let cursor = Cursor::new(&layer.data);
+      let gz_decoder = GzDecoder::new(cursor);
+
+      // Create a tar::Archive to extract the tar data
+      let mut archive = Archive::new(gz_decoder);
+
+      // Extract the tar files to the desired directory
+      archive
+        .unpack(parent_dir)
+        .map_err(|e| Error::UntarFile(parent_dir.to_str().unwrap().to_owned(), e.to_string()))?;
+    } else {
+      // Create any subdirectories if they don't exist
+      tokio::fs::create_dir_all(parent_dir)
+        .await
+        .map_err(|e| Error::CreateDir(parent_dir.to_path_buf(), e))?;
+
+      tokio::fs::write(&layer_path, &layer.data)
+        .await
+        .map_err(|e| Error::WriteFile(layer_path, e))?;
+    }
 
     if layer.media_type == media_types::APPLICATION || layer.media_type == media_types::COMPONENT {
       root_file = Some(layer_title);

@@ -8,7 +8,7 @@ use wick_oci_utils::package::annotations::Annotations;
 use wick_oci_utils::package::{media_types, PackageFile};
 use wick_oci_utils::OciOptions;
 
-use crate::utils::{get_relative_path, metadata_to_annotations};
+use crate::utils::{create_tar_gz, get_relative_path, metadata_to_annotations};
 use crate::{Error, WickPackageKind};
 
 /// Represents a Wick package, including its files and metadata.
@@ -23,6 +23,8 @@ pub struct WickPackage {
   files: Vec<PackageFile>,
   #[allow(unused)]
   annotations: Annotations,
+  #[allow(unused)]
+  registry_reference: Option<String>,
 }
 
 impl WickPackage {
@@ -36,6 +38,8 @@ impl WickPackage {
       return Err(Error::Directory(path.to_path_buf()));
     }
 
+    let registry_reference;
+
     let options = wick_config::FetchOptions::default();
     let config = WickConfiguration::fetch(&path.to_string_lossy(), options).await?;
     if !matches!(config, WickConfiguration::App(_) | WickConfiguration::Component(_)) {
@@ -47,6 +51,7 @@ impl WickPackage {
     let parent_dir = full_path
       .parent()
       .map_or_else(|| PathBuf::from("/"), |v| v.to_path_buf());
+    let extra_files: Vec<String>;
 
     let (kind, name, version, annotations, parent_dir, media_type) = match &config {
       WickConfiguration::App(app_config) => {
@@ -55,6 +60,21 @@ impl WickPackage {
         let annotations = metadata_to_annotations(app_config.metadata());
         let media_type = media_types::APPLICATION;
         let kind = WickPackageKind::APPLICATION;
+        extra_files = app_config.package_files().to_owned();
+        registry_reference = Some(format!(
+          "{}/{}/{}:{}",
+          app_config.package.registry.as_ref().unwrap().registry,
+          app_config
+            .package
+            .registry
+            .as_ref()
+            .unwrap()
+            .namespace
+            .as_ref()
+            .unwrap(),
+          name,
+          version
+        ));
         (kind, name, version, annotations, parent_dir, media_type)
       }
       WickConfiguration::Component(component_config) => {
@@ -63,10 +83,43 @@ impl WickPackage {
         let annotations = metadata_to_annotations(component_config.metadata());
         let media_type = media_types::COMPONENT;
         let kind = WickPackageKind::COMPONENT;
+        extra_files = component_config.package_files().to_owned();
+        registry_reference = Some(format!(
+          "{}/{}/{}:{}",
+          component_config.package.registry.as_ref().unwrap().registry,
+          component_config
+            .package
+            .registry
+            .as_ref()
+            .unwrap()
+            .namespace
+            .as_ref()
+            .unwrap(),
+          name,
+          version
+        ));
         (kind, name, version, annotations, parent_dir, media_type)
       }
       _ => return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string())),
     };
+
+    //if length of extra_files is greater than 0, then we need create a tar of all the files
+    //and add it to the files list.
+    if extra_files.len() > 0 {
+      let file_paths: Vec<PathBuf> = extra_files.iter().map(|file| parent_dir.join(file)).collect();
+
+      let gz_bytes = create_tar_gz(file_paths).await?;
+
+      let tar_hash = format!("sha256:{}", digest(gz_bytes.as_slice()));
+      let tar_file = PackageFile::new(
+        PathBuf::from("extra_files.tar.gz"),
+        tar_hash,
+        media_types::TARGZ.to_owned(),
+        gz_bytes.into(),
+      );
+      let mut files = Vec::new();
+      files.push(tar_file);
+    }
 
     let mut assets = config.assets();
     let mut wick_files: Vec<PackageFile> = Vec::new();
@@ -136,6 +189,7 @@ impl WickPackage {
       version: version.clone(),
       files: wick_files,
       annotations,
+      registry_reference,
     })
   }
 
@@ -143,6 +197,12 @@ impl WickPackage {
   /// Returns a list of the files contained within the WickPackage.
   pub fn list_files(&self) -> Vec<&PackageFile> {
     self.files.iter().collect()
+  }
+
+  #[must_use]
+  /// Returns the reference.
+  pub fn registry_reference(&self) -> Option<String> {
+    self.registry_reference.clone()
   }
 
   /// Pushes the WickPackage to a specified registry using the provided reference, username, and password.

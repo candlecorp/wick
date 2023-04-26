@@ -9,6 +9,7 @@ pub use wasm::{OperationSignature, WasmComponentImplementation};
 use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::{ComponentMetadata, ComponentSignature, TypeDefinition};
 
+use super::common::package_definition::PackageConfig;
 use super::{make_resolver, ImportBinding};
 use crate::app_config::ResourceBinding;
 use crate::common::BoundInterface;
@@ -59,6 +60,9 @@ pub struct ComponentConfiguration {
   #[asset(skip)]
   #[builder(setter(skip))]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
+  #[asset(skip)]
+  #[builder(default)]
+  pub package: PackageConfig,
 }
 
 impl ComponentConfiguration {
@@ -70,6 +74,12 @@ impl ComponentConfiguration {
         self.component.kind(),
       )),
     }
+  }
+
+  /// Get the package files
+  #[must_use]
+  pub fn package_files(&self) -> &Vec<String> {
+    &self.package.files
   }
 
   pub fn try_wasm(&self) -> Result<&WasmComponentImplementation> {

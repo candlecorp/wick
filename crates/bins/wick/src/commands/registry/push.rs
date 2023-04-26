@@ -12,7 +12,7 @@ pub(crate) struct RegistryPushCommand {
 
   /// OCI reference to push to.
   #[clap(action)]
-  pub(crate) reference: String,
+  pub(crate) reference: Option<String>,
 
   /// OCI artifact to push.
   #[clap(action)]
@@ -42,12 +42,16 @@ pub(crate) async fn handle(opts: RegistryPushCommand) -> Result<()> {
     .allow_latest(true)
     .username(opts.oci_opts.username)
     .password(opts.oci_opts.password);
+
+  let reference = match opts.reference {
+    Some(reference) => reference,
+    None => package.registry_reference().unwrap().to_owned(),
+  };
+
   info!("Pushing artifact...");
-  debug!(options=?oci_opts, reference= opts.reference, "pushing reference");
+  debug!(options=?oci_opts, reference= &reference, "pushing reference");
 
-  let result = package.push(&opts.reference, &oci_opts).await?;
-
-  println!("Manifest URL: {}", result);
+  let _result = package.push(&reference, &oci_opts).await?;
 
   Ok(())
 }
