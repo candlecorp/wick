@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use flow_expression_parser::{ConnectionTarget, InstanceTarget};
 
-use super::REGISTRY_DEFINITION_REGISTRY;
 // use flow_expression_parser::parse_id;
 use crate::app_config::{
   AppConfiguration,
@@ -106,7 +105,7 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
         .collect::<Result<_>>()?,
       cached_types: Default::default(),
       type_cache: Default::default(),
-      package: Default::default(),
+      package: def.package.map(TryInto::try_into).transpose()?,
     })
   }
 }
@@ -130,7 +129,7 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
       resources: def.resources.into_values().map(|v| v.into()).collect(),
       tests: def.tests.into_iter().map(|v| v.into()).collect(),
       component: def.component.try_into()?,
-      package: def.package.try_into()?,
+      package: def.package.map(TryInto::try_into).transpose()?,
     })
   }
 }
@@ -139,9 +138,9 @@ impl TryFrom<v1::PackageDefinition> for PackageConfig {
   type Error = ManifestError;
 
   fn try_from(value: v1::PackageDefinition) -> std::result::Result<Self, Self::Error> {
-    let registry_config = match RegistryConfig::try_from(value.registry) {
-      Ok(config) => Some(config),
-      Err(err) => return Err(err),
+    let registry_config = match value.registry {
+      Some(registry_def) => Some(RegistryConfig::try_from(registry_def)?),
+      None => None,
     };
 
     Ok(Self {
@@ -151,38 +150,29 @@ impl TryFrom<v1::PackageDefinition> for PackageConfig {
   }
 }
 
-impl TryFrom<Option<v1::RegistryDefinition>> for RegistryConfig {
-  type Error = ManifestError;
-
-  fn try_from(value: Option<v1::RegistryDefinition>) -> std::result::Result<Self, Self::Error> {
-    match value {
-      Some(reg_def) => Ok(Self {
-        registry: reg_def.registry,
-        namespace: reg_def.namespace,
-      }),
-      None => Ok(Self {
-        registry: REGISTRY_DEFINITION_REGISTRY(),
-        namespace: None,
-      }),
-    }
-  }
-}
-
 impl TryFrom<PackageConfig> for v1::PackageDefinition {
   type Error = ManifestError;
 
   fn try_from(value: PackageConfig) -> std::result::Result<Self, Self::Error> {
     let registry_def = match value.registry {
-      Some(config) => match v1::RegistryDefinition::try_from(config) {
-        Ok(reg_def) => Some(reg_def),
-        Err(err) => return Err(err),
-      },
+      Some(registry_config) => Some(v1::RegistryDefinition::try_from(registry_config)?),
       None => None,
     };
 
-    Ok(Self {
+    Ok(v1::PackageDefinition {
       files: value.files,
       registry: registry_def,
+    })
+  }
+}
+
+impl TryFrom<v1::RegistryDefinition> for RegistryConfig {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::RegistryDefinition) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      registry: value.registry,
+      namespace: value.namespace,
     })
   }
 }
@@ -336,7 +326,7 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
       triggers: def.triggers.into_iter().map(|v| v.try_into()).collect::<Result<_>>()?,
       cached_types: Default::default(),
       type_cache: Default::default(),
-      package: Default::default(),
+      package: def.package.map(TryInto::try_into).transpose()?,
     })
   }
 }
@@ -360,7 +350,7 @@ impl TryFrom<AppConfiguration> for v1::AppConfiguration {
         .map(|v| v.try_into())
         .collect::<Result<_>>()?,
       host: value.host.try_into()?,
-      package: value.package.try_into()?,
+      package: value.package.map(TryInto::try_into).transpose()?,
     })
   }
 }

@@ -62,7 +62,7 @@ pub struct ComponentConfiguration {
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
   #[asset(skip)]
   #[builder(default)]
-  pub package: PackageConfig,
+  pub package: Option<PackageConfig>,
 }
 
 impl ComponentConfiguration {
@@ -78,8 +78,9 @@ impl ComponentConfiguration {
 
   /// Get the package files
   #[must_use]
-  pub fn package_files(&self) -> &Vec<String> {
-    &self.package.files
+  pub fn package_files(&self) -> Option<&Vec<String>> {
+    // should return empty vec if package is None
+    self.package.as_ref().map(|p| &p.files)
   }
 
   pub fn try_wasm(&self) -> Result<&WasmComponentImplementation> {

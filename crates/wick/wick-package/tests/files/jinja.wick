@@ -2,8 +2,15 @@
 kind: wick/component@v1
 name: 'jinja'
 metadata:
-  version: '1'
+  version: '2'
   icon: './assets/icon.png'
 component:
   kind: wick/component/wasmrs@v1
   ref: ./assets/test.fake.wasm
+package:
+  files:
+    - ./assets/test.js
+    - ./assets/static
+  registry:
+    registry: localhost:59838
+    namespace: default

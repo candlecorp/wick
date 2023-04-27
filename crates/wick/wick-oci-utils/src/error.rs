@@ -6,6 +6,10 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 /// Crate error.
 pub enum OciError {
+  /// No version found in annotations
+  #[error("No version found in annotations")]
+  NoVersion(),
+
   /// Returned when reading an invalid manifest.
   #[error("Invalid manifest found at {}. Try deleting your cache directory.",.0.display())]
   InvalidManifest(PathBuf),

@@ -88,7 +88,7 @@ pub(crate) struct AppConfiguration {
   /// Details about the package for this application.
 
   #[serde(default)]
-  pub(crate) package: PackageDefinition,
+  pub(crate) package: Option<PackageDefinition>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -122,7 +122,8 @@ pub(crate) struct RegistryDefinition {
   /// The namespace on the registry. ex: registry.candle.dev/&lt;namespace&gt;/&lt;myWickApp&gt;
 
   #[serde(default)]
-  pub(crate) namespace: Option<String>,
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) namespace: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -495,7 +496,7 @@ pub(crate) struct ComponentConfiguration {
   /// Details about the package for this component.
 
   #[serde(default)]
-  pub(crate) package: PackageDefinition,
+  pub(crate) package: Option<PackageDefinition>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

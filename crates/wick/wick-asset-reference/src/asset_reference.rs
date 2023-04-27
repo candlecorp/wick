@@ -92,6 +92,7 @@ impl AssetReference {
   }
 
   pub fn path(&self) -> Result<String, Error> {
+    println!("self.location: {}", self.location);
     if let Some(cache_loc) = self.cache_location.read().as_ref() {
       Ok(cache_loc.to_string_lossy().to_string())
     } else if self.location.starts_with('@') {
@@ -244,13 +245,15 @@ impl Asset for AssetReference {
     options: FetchOptions,
   ) -> std::pin::Pin<Box<dyn Future<Output = Result<Vec<u8>, assets::Error>> + Send + Sync>> {
     let path = self.path();
+    let location = self.location().to_owned();
 
     debug!(path = ?path, "fetching asset");
     let cache_location = self.cache_location.clone();
     Box::pin(async move {
       let path = path.map_err(|e| assets::Error::Parse(e.to_string()))?;
       let pb = PathBuf::from(&path);
-      if pb.exists() {
+      let file = tokio::fs::File::open(&pb).await;
+      if file.is_ok() {
         let mut file = tokio::fs::File::open(&path)
           .await
           .map_err(|err| assets::Error::FileOpen(path.clone(), err.to_string()))?;
@@ -258,7 +261,7 @@ impl Asset for AssetReference {
         file.read_to_end(&mut bytes).await?;
         Ok(bytes)
       } else {
-        let (cache_loc, bytes) = retrieve_remote(&path, options)
+        let (cache_loc, bytes) = retrieve_remote(&location, options)
           .await
           .map_err(|err| assets::Error::FileOpen(path.clone(), err.to_string()))?;
         *cache_location.write() = Some(cache_loc);
