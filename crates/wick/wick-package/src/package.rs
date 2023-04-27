@@ -203,6 +203,12 @@ impl WickPackage {
   }
 
   #[must_use]
+  /// Returns a list of the files contained within the WickPackage.
+  pub fn path(&self) -> &PathBuf {
+    &self.absolute_path
+  }
+
+  #[must_use]
   /// Returns the reference.
   pub fn registry_reference(&self) -> Option<String> {
     //return none if the reference is empty

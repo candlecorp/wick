@@ -23,6 +23,9 @@ pub(crate) struct RunCommand {
   /// Arguments to pass as inputs to a CLI trigger in the application.
   #[clap(last(true), action)]
   args: Vec<String>,
+
+  #[clap(flatten)]
+  pub(crate) oci_opts: crate::oci::Options,
 }
 
 pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
@@ -30,7 +33,28 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
 
   debug!(args = ?opts.args, "rest args");
 
-  let app_config = WickConfiguration::load_from_file(&opts.path).await?.try_app_config()?;
+  let wick_config = WickConfiguration::load_from_file(&opts.path).await;
+
+  let app_config = match wick_config {
+    Ok(app_config) => app_config.try_app_config().unwrap(),
+    Err(_) => {
+      let oci_opts = wick_oci_utils::OciOptions::default()
+        .allow_insecure(opts.oci_opts.insecure_oci_registries)
+        .allow_latest(true)
+        .username(opts.oci_opts.username)
+        .password(opts.oci_opts.password)
+        .overwrite(true);
+      let app_pull = crate::commands::registry::pull::pull(opts.path, oci_opts)
+        .await
+        .unwrap();
+
+      WickConfiguration::load_from_file(app_pull.path())
+        .await?
+        .try_app_config()
+        .unwrap()
+    }
+  };
+
   let mut host = AppHostBuilder::from_definition(app_config.clone()).build();
   host.start(opts.seed)?;
   debug!("Waiting on triggers to finish or interrupt...");
