@@ -24,6 +24,8 @@ pub struct WickPackage {
   #[allow(unused)]
   annotations: Annotations,
   #[allow(unused)]
+  absolute_path: PathBuf,
+  #[allow(unused)]
   registry_reference: Option<String>,
 }
 
@@ -33,6 +35,7 @@ impl WickPackage {
   /// The provided path can be a file or directory. If it is a directory, the WickPackage will be created
   /// based on the files within the directory.
   pub async fn from_path(path: &Path) -> Result<Self, Error> {
+    println!("path: {:?}", path);
     //add check to see if its a path or directory and call appropriate api to find files based on that.
     if path.is_dir() {
       return Err(Error::Directory(path.to_path_buf()));
@@ -60,21 +63,22 @@ impl WickPackage {
         let annotations = metadata_to_annotations(app_config.metadata());
         let media_type = media_types::APPLICATION;
         let kind = WickPackageKind::APPLICATION;
-        extra_files = app_config.package_files().to_owned();
-        registry_reference = Some(format!(
-          "{}/{}/{}:{}",
-          app_config.package.registry.as_ref().unwrap().registry,
-          app_config
-            .package
-            .registry
-            .as_ref()
-            .unwrap()
-            .namespace
-            .as_ref()
-            .unwrap(),
-          name,
-          version
-        ));
+
+        extra_files = match app_config.package_files() {
+          Some(files) => files.to_owned(),
+          None => Vec::new(),
+        };
+
+        registry_reference = match &app_config.package {
+          Some(package) => match &package.registry {
+            Some(registry) => Some(format!(
+              "{}/{}/{}:{}",
+              registry.registry, registry.namespace, name, version
+            )),
+            None => None,
+          },
+          None => None,
+        };
         (kind, name, version, annotations, parent_dir, media_type)
       }
       WickConfiguration::Component(component_config) => {
@@ -83,43 +87,26 @@ impl WickPackage {
         let annotations = metadata_to_annotations(component_config.metadata());
         let media_type = media_types::COMPONENT;
         let kind = WickPackageKind::COMPONENT;
-        extra_files = component_config.package_files().to_owned();
-        registry_reference = Some(format!(
-          "{}/{}/{}:{}",
-          component_config.package.registry.as_ref().unwrap().registry,
-          component_config
-            .package
-            .registry
-            .as_ref()
-            .unwrap()
-            .namespace
-            .as_ref()
-            .unwrap(),
-          name,
-          version
-        ));
+
+        extra_files = match component_config.package_files() {
+          Some(files) => files.to_owned(),
+          None => Vec::new(),
+        };
+
+        registry_reference = match &component_config.package {
+          Some(package) => match &package.registry {
+            Some(registry) => Some(format!(
+              "{}/{}/{}:{}",
+              registry.registry, registry.namespace, name, version
+            )),
+            None => None,
+          },
+          None => None,
+        };
         (kind, name, version, annotations, parent_dir, media_type)
       }
       _ => return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string())),
     };
-
-    //if length of extra_files is greater than 0, then we need create a tar of all the files
-    //and add it to the files list.
-    if extra_files.len() > 0 {
-      let file_paths: Vec<PathBuf> = extra_files.iter().map(|file| parent_dir.join(file)).collect();
-
-      let gz_bytes = create_tar_gz(file_paths).await?;
-
-      let tar_hash = format!("sha256:{}", digest(gz_bytes.as_slice()));
-      let tar_file = PackageFile::new(
-        PathBuf::from("extra_files.tar.gz"),
-        tar_hash,
-        media_types::TARGZ.to_owned(),
-        gz_bytes.into(),
-      );
-      let mut files = Vec::new();
-      files.push(tar_file);
-    }
 
     let mut assets = config.assets();
     let mut wick_files: Vec<PackageFile> = Vec::new();
@@ -137,6 +124,21 @@ impl WickPackage {
     );
 
     wick_files.push(root_file);
+
+    //if length of extra_files is greater than 0, then we need create a tar of all the files
+    //and add it to the files list.
+    if extra_files.len() > 0 {
+      let gz_bytes = create_tar_gz(extra_files, &parent_dir).await?;
+
+      let tar_hash = format!("sha256:{}", digest(gz_bytes.as_slice()));
+      let tar_file = PackageFile::new(
+        PathBuf::from("extra_files.tar.gz"),
+        tar_hash,
+        media_types::TARGZ.to_owned(),
+        gz_bytes.into(),
+      );
+      wick_files.push(tar_file);
+    }
 
     //populate wick_files
     for asset in assets.iter() {
@@ -189,6 +191,7 @@ impl WickPackage {
       version: version.clone(),
       files: wick_files,
       annotations,
+      absolute_path: full_path,
       registry_reference,
     })
   }
@@ -202,7 +205,17 @@ impl WickPackage {
   #[must_use]
   /// Returns the reference.
   pub fn registry_reference(&self) -> Option<String> {
-    self.registry_reference.clone()
+    //return none if the reference is empty
+    match &self.registry_reference {
+      Some(reference) => {
+        if reference.is_empty() {
+          None
+        } else {
+          Some(reference.to_owned())
+        }
+      }
+      None => None,
+    }
   }
 
   /// Pushes the WickPackage to a specified registry using the provided reference, username, and password.

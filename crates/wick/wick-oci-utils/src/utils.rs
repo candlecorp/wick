@@ -105,6 +105,9 @@ mod tests {
     assert!(is_wick_package_reference("1alpha/2alpha:0000.2222.9999"));
     assert!(is_wick_package_reference("a_b_c_1/1_2_3_a:1.2.999-alpha"));
     assert!(is_wick_package_reference("this/that:latest"));
+    assert!(is_wick_package_reference(
+      "registry.candle.dev/fawadasaurus/serve_http_component:0.0.1"
+    ));
 
     Ok(())
   }

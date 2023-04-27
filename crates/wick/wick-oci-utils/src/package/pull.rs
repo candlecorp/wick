@@ -27,14 +27,25 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
   let download_dir = options.get_base_dir().map_or_else(|| cache_dir, |v| v.clone());
 
   let manifest_file = download_dir.join(AssetManifest::FILENAME);
+  debug!("manifest_file: {:?}", manifest_file);
   if manifest_file.exists() {
     debug!(cache_hit = true, "remote asset");
     let json = tokio::fs::read_to_string(&manifest_file).await?;
-    let manifest: AssetManifest = serde_json::from_str(&json).map_err(|_| Error::InvalidManifest(manifest_file))?;
-    return Ok(PullResult {
-      base_dir: download_dir,
-      root_path: manifest.root,
-    });
+
+    //check if manifest file is valid json, if not then break out of if statement and continue
+    let manifest: Result<AssetManifest, serde_json::Error> = serde_json::from_str(&json);
+    if manifest.is_err() {
+      //exit if statement and continue
+    } else {
+      //check if manifest.root file exists, if it does then return otherwise continue
+      let root_file = download_dir.join(&manifest.unwrap().root);
+      if root_file.exists() {
+        return Ok(PullResult {
+          base_dir: download_dir,
+          root_path: root_file,
+        });
+      }
+    }
   }
   debug!(cache_hit = false, "remote asset");
 
@@ -69,6 +80,14 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
       return Err(Error::PullFailed(e.to_string()));
     }
   };
+
+  let version = image_data
+    .manifest
+    .unwrap()
+    .annotations
+    .as_ref()
+    .and_then(|v| v.get(annotations::VERSION).cloned())
+    .ok_or(Error::NoVersion())?;
 
   let download_dir = create_directory_structure(download_dir).await?;
 
@@ -129,7 +148,7 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
   }
 
   let root_file = root_file.ok_or_else(|| Error::PackageReadFailed("No root file found".to_owned()))?;
-  let manifest = AssetManifest::new(PathBuf::from(&root_file));
+  let manifest = AssetManifest::new(PathBuf::from(&root_file), version);
   let contents = serde_json::to_string(&manifest).unwrap();
   tokio::fs::write(download_dir.join(AssetManifest::FILENAME), contents).await?;
 

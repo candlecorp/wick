@@ -6,16 +6,22 @@ use serde::{Deserialize, Serialize};
 #[must_use]
 pub struct AssetManifest {
   pub(crate) root: PathBuf,
+  pub(crate) version: String,
 }
 
 impl AssetManifest {
   pub const FILENAME: &str = ".wick-manifest.json";
-  pub fn new(root: PathBuf) -> Self {
-    Self { root }
+  pub fn new(root: PathBuf, version: String) -> Self {
+    Self { root, version }
   }
 
   #[must_use]
   pub fn root(&self) -> &PathBuf {
     &self.root
+  }
+
+  #[must_use]
+  pub fn version(&self) -> &String {
+    &self.version
   }
 }

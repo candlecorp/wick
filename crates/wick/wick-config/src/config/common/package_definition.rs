@@ -17,5 +17,5 @@ pub struct RegistryConfig {
   pub registry: String,
   /// The namespace on the registry. ex: registry.candle.dev/&lt;namespace&gt;/&lt;myWickApp&gt;
   #[builder(default)]
-  pub namespace: Option<String>,
+  pub namespace: String,
 }

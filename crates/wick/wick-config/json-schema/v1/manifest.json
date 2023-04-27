@@ -68,6 +68,7 @@
         },
         "package": {
           "description": "Details about the package for this application.",
+          "required": false,
 
           "$ref": "#/$defs/v1/PackageDefinition"
         }
@@ -108,7 +109,6 @@
         },
         "namespace": {
           "description": "The namespace on the registry. ex: registry.candle.dev/&lt;namespace&gt;/&lt;myWickApp&gt;",
-          "required": false,
 
           "type": "string"
         }
@@ -642,6 +642,7 @@
         },
         "package": {
           "description": "Details about the package for this component.",
+          "required": false,
 
           "$ref": "#/$defs/v1/PackageDefinition"
         }

@@ -38,10 +38,7 @@ impl Cache {
   /// Get the path to the cache.
   #[must_use]
   pub fn basedir(&self) -> PathBuf {
-    match self {
-      Self::Root => PathBuf::from(CACHE_BASE),
-      Self::Assets => PathBuf::from("remote"),
-    }
+    PathBuf::from(CACHE_BASE).join("remote")
   }
 }
 

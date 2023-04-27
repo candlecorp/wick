@@ -30,7 +30,7 @@ type AppConfiguration @default @tagged("wick/app@v1") {
   triggers: [TriggerDefinition],
 
   "Details about the package for this application."
-  package: PackageDefinition,
+  package: PackageDefinition?,
 }
 
 "The package details for an application or component."
@@ -45,7 +45,7 @@ type RegistryDefinition @default {
   "The registry to publish to."
   registry: string = "registry.candle.dev"
   "The namespace on the registry. ex: registry.candle.dev/<namespace>/<myWickApp>"
-  namespace: string?
+  namespace: string
 }
 
 "Metadata for the component or application."
@@ -236,7 +236,7 @@ type ComponentConfiguration @tagged("wick/component@v1") {
   tests: [TestDefinition]
 
   "Details about the package for this component."
-  package: PackageDefinition,
+  package: PackageDefinition?,
 }
 
 "An interface bound to an ID."

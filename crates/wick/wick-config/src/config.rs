@@ -55,6 +55,8 @@ impl WickConfiguration {
   pub async fn fetch(path: impl AsRef<str> + Send, options: FetchOptions) -> Result<Self, Error> {
     let path = path.as_ref();
     let location = AssetReference::new(path);
+    println!("location: {:?}", location);
+    
     let bytes = location
       .fetch(options.clone())
       .await

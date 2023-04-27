@@ -38,7 +38,7 @@ pub struct AppConfiguration {
   #[asset(skip)]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
   #[asset(skip)]
-  pub package: PackageConfig,
+  pub package: Option<PackageConfig>,
 }
 
 impl AppConfiguration {
@@ -56,8 +56,8 @@ impl AppConfiguration {
 
   /// Get the package files
   #[must_use]
-  pub fn package_files(&self) -> &Vec<String> {
-    &self.package.files
+  pub fn package_files(&self) -> Option<&Vec<String>> {
+    self.package.as_ref().map(|p| &p.files)
   }
 
   /// Get the configuration item a binding points to.
