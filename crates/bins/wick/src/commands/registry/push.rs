@@ -38,7 +38,7 @@ pub(crate) async fn handle(opts: RegistryPushCommand) -> Result<()> {
 
   let mut package = wick_package::WickPackage::from_path(&opts.source).await?;
   let oci_opts = wick_oci_utils::OciOptions::default()
-    .allow_insecure(opts.oci_opts.insecure_registries)
+    .allow_insecure(opts.oci_opts.insecure_oci_registries)
     .allow_latest(true)
     .username(opts.oci_opts.username)
     .password(opts.oci_opts.password);

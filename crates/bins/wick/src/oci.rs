@@ -12,6 +12,6 @@ pub(crate) struct Options {
   pub(crate) password: Option<String>,
 
   /// Allows the use of HTTP registry connections to these registries.
-  #[clap(long = "insecure", action)]
-  pub(crate) insecure_registries: Vec<String>,
+  #[clap(long = "insecure-oci", action)]
+  pub(crate) insecure_oci_registries: Vec<String>,
 }
