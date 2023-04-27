@@ -69,6 +69,28 @@ async fn test_merge() -> Result<()> {
   Ok(())
 }
 
+#[test_logger::test(tokio::test)]
+// #[ignore]
+async fn test_private() -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(
+    "./tests/manifests/v1/private-flows.yaml",
+    "test",
+    packets!(("input", "hello WORLD")),
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _ = outputs.pop();
+  let wrapper = outputs.pop().unwrap().unwrap();
+  let actual: String = wrapper.deserialize()?;
+  let expected = "DLROW OLLEH";
+  assert_eq!(actual, expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
 // #[test_logger::test(tokio::test)]
 // async fn test_merge() -> Result<()> {
 //   let manifest = load("./tests/manifests/v0/core/merge.yaml")?;

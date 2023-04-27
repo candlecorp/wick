@@ -587,9 +587,36 @@ impl TryFrom<crate::v1::CompositeOperationDefinition> for config::FlowOperation 
       instances: instances?,
       expressions: expressions?,
       components: op.components,
+      flows: op
+        .operations
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_>>()?,
     })
   }
 }
+
+// impl TryFrom<crate::v1::PrivateCompositeOperation> for config::FlowOperation {
+//   type Error = ManifestError;
+
+//   fn try_from(op: crate::v1::PrivateCompositeOperation) -> Result<Self> {
+//     let instances: Result<HashMap<String, config::InstanceReference>> = op
+//       .uses
+//       .into_iter()
+//       .map(|v| Ok((v.name.clone(), v.try_into()?)))
+//       .collect();
+//     let expressions: Result<Vec<ast::FlowExpression>> = op.flow.into_iter().map(TryInto::try_into).collect();
+//     Ok(Self {
+//       name: op.name,
+//       inputs: op.inputs,
+//       outputs: op.outputs,
+//       instances: instances?,
+//       expressions: expressions?,
+//       components: op.components,
+//       private: Default::default(),
+//     })
+//   }
+// }
 
 impl TryFrom<v1::FlowExpression> for ast::FlowExpression {
   type Error = ManifestError;
@@ -823,9 +850,27 @@ impl TryFrom<config::FlowOperation> for v1::CompositeOperationDefinition {
       uses: instances,
       flow: connections?,
       components: value.components,
+      operations: value.flows.into_iter().map(TryInto::try_into).collect::<Result<_>>()?,
     })
   }
 }
+
+// impl TryFrom<config::FlowOperation> for v1::PrivateCompositeOperation {
+//   type Error = ManifestError;
+
+//   fn try_from(value: config::FlowOperation) -> std::result::Result<Self, Self::Error> {
+//     let instances: Vec<v1::InstanceBinding> = value.instances.into_iter().map(|(id, val)| (id, val).into()).collect();
+//     let connections: Result<Vec<v1::FlowExpression>> = value.expressions.into_iter().map(TryInto::try_into).collect();
+//     Ok(Self {
+//       name: value.name,
+//       inputs: value.inputs,
+//       outputs: value.outputs,
+//       uses: instances,
+//       flow: connections?,
+//       components: value.components,
+//     })
+//   }
+// }
 
 impl TryFrom<ast::FlowExpression> for v1::FlowExpression {
   type Error = ManifestError;

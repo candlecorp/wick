@@ -1,0 +1,31 @@
+name: 'test'
+kind: wick/component@v1
+metadata:
+  version: '0.0.2'
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: test
+      uses:
+        - name: branch
+          operation: core::switch
+          with:
+            true: self::branch1
+            false: self::branch2
+        - name: s
+          operation: core::switch
+          with:
+            inputs:
+              - name: a
+                type: string
+              - name: b
+                type: i32
+              - name: c
+                type: list
+                element:
+                  type: string
+      flow:
+        - <>.input_a -> m.a
+        - <>.input_b -> m.b
+        - <>.input_c -> m.c
+        - m.output -> <>
