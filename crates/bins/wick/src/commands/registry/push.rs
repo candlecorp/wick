@@ -45,16 +45,13 @@ pub(crate) async fn handle(opts: RegistryPushCommand) -> Result<()> {
 
   let reference = match opts.reference {
     Some(reference) => reference,
-    None => {
-      let reference = match package.registry_reference() {
-        Some(reference) => reference,
-        None => {
-          error!("No reference provided and no reference found in package");
-          return Err(anyhow!("No reference provided and no reference found in package"));
-        }
-      };
-      reference
-    }
+    None => match package.registry_reference() {
+      Some(reference) => reference,
+      None => {
+        error!("No reference provided and no reference found in package");
+        return Err(anyhow!("No reference provided and no reference found in package"));
+      }
+    },
   };
 
   info!("Pushing artifact...");

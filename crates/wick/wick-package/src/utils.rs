@@ -60,22 +60,24 @@ pub(crate) async fn create_tar_gz(extra_files: Vec<String>, parent_dir: &PathBuf
   let mut tar = Builder::new(GzEncoder::new(&mut tar_bytes, Compression::default()));
 
   for file_path in extra_files {
-    let path = parent_dir.join(&PathBuf::from(file_path));
-    let metadata = fs::metadata(&path)
-      .await
-      .map_err(|e| Error::TarFile(path.to_owned(), e))?;
+    let path = parent_dir.join(file_path);
+    let absolute_path = path.canonicalize().unwrap();
+    //ensure that the file is within the parent directory
+    get_relative_path(&parent_dir, absolute_path.to_str().unwrap()).unwrap();
+
+    let metadata = fs::metadata(&path).await.map_err(|e| Error::TarFile(path.clone(), e))?;
 
     if metadata.is_file() {
-      let mut file = File::open(&path).map_err(|e| Error::TarFile(path.to_owned(), e))?;
+      let mut file = File::open(&path).map_err(|e| Error::TarFile(path.clone(), e))?;
       let rel_path = path.strip_prefix(parent_dir).unwrap();
       tar
         .append_file(rel_path, &mut file)
-        .map_err(|e| Error::TarFile(path.to_owned(), e))?;
+        .map_err(|e| Error::TarFile(path.clone(), e))?;
     } else if metadata.is_dir() {
       let rel_path = path.strip_prefix(parent_dir).unwrap();
       tar
-        .append_dir_all(&rel_path, &path)
-        .map_err(|e| Error::TarFile(path.to_owned(), e))?;
+        .append_dir_all(rel_path, &path)
+        .map_err(|e| Error::TarFile(path.clone(), e))?;
     }
   }
 

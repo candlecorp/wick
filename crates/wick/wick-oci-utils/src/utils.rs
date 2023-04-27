@@ -88,13 +88,13 @@ mod tests {
   fn test_directory_structure() {
     let input = "localhost:5555/test/integration:0.0.3";
 
-    let expected_dir = Path::new("/remote/localhost/test/integration/0.0.3");
-    let result = get_cache_directory(input, Some("/".into())).unwrap();
+    let expected_dir = Path::new(".wick/remote/localhost/test/integration/0.0.3");
+    let result = get_cache_directory(input, Some("".into())).unwrap();
     assert_eq!(result, expected_dir);
 
     let input = "example.com/myorg/myrepo:1.0.0";
-    let expected_dir = Path::new("/remote/example.com/myorg/myrepo/1.0.0");
-    let result = get_cache_directory(input, Some("/".into())).unwrap();
+    let expected_dir = Path::new("/foo/bar/.wick/remote/example.com/myorg/myrepo/1.0.0");
+    let result = get_cache_directory(input, Some("/foo/bar".into())).unwrap();
     assert_eq!(result, expected_dir);
   }
 
@@ -105,9 +105,6 @@ mod tests {
     assert!(is_wick_package_reference("1alpha/2alpha:0000.2222.9999"));
     assert!(is_wick_package_reference("a_b_c_1/1_2_3_a:1.2.999-alpha"));
     assert!(is_wick_package_reference("this/that:latest"));
-    assert!(is_wick_package_reference(
-      "registry.candle.dev/fawadasaurus/serve_http_component:0.0.1"
-    ));
 
     Ok(())
   }

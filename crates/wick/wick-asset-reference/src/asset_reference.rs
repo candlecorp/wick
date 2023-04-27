@@ -92,7 +92,6 @@ impl AssetReference {
   }
 
   pub fn path(&self) -> Result<String, Error> {
-    println!("self.location: {}", self.location);
     if let Some(cache_loc) = self.cache_location.read().as_ref() {
       Ok(cache_loc.to_string_lossy().to_string())
     } else if self.location.starts_with('@') {
