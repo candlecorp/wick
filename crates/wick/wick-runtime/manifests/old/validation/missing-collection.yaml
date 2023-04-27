@@ -7,7 +7,7 @@ network:
       reference: nothing.wasm
   schematics:
     - name: missing_collection
-      instances:
+      uses:
         validate:
           id: wapc::validate
       connections:

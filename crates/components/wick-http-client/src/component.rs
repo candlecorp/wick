@@ -90,7 +90,7 @@ async fn handle(
   let template = path_template.unwrap();
 
   let input_list: Vec<_> = opdef.inputs.iter().map(|i| i.name.clone()).collect();
-  let mut inputs = wick_packet::StreamMap::from_stream(stream, &input_list);
+  let mut inputs = wick_packet::StreamMap::from_stream(stream, input_list);
 
   'outer: loop {
     let inputs = match inputs.next_set().await {

@@ -416,7 +416,7 @@ pub(crate) struct Url {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A configuration for a Wick Component
+/// A type definition for a Wick Components and Operations
 pub(crate) struct TypesConfiguration {
   /// The name of this component.
 
@@ -427,6 +427,11 @@ pub(crate) struct TypesConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
+  /// A list of operation signatures.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) operations: Vec<OperationDefinition>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -747,7 +752,7 @@ pub(crate) struct GrpcUrlComponent {
 
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
-  pub(crate) config: Value,
+  pub(crate) with: Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -762,7 +767,7 @@ pub(crate) struct ManifestComponent {
 
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
-  pub(crate) config: Value,
+  pub(crate) with: Value,
   /// External components to provide to the referenced component.
 
   #[serde(default)]
@@ -795,17 +800,69 @@ pub(crate) struct CompositeOperationDefinition {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) components: Vec<String>,
-  /// A map of IDs to specific operation.
+  /// A map of IDs to specific operations.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) instances: Vec<InstanceBinding>,
+  pub(crate) uses: Vec<InstanceBinding>,
   /// A list of connections from operation to operation.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   #[serde(deserialize_with = "crate::v1::parse::vec_connection")]
-  pub(crate) flow: Vec<ConnectionDefinition>,
+  pub(crate) flow: Vec<FlowExpression>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(tag = "kind")]
+/// A flow operation, i.e. a connection from one operation to another.
+pub(crate) enum FlowExpression {
+  /// A variant representing a [ConnectionDefinition] type.
+  ConnectionDefinition(ConnectionDefinition),
+  /// A variant representing a [BlockExpression] type.
+  BlockExpression(BlockExpression),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A list of FlowExpressions
+pub(crate) struct BlockExpression {
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  #[serde(deserialize_with = "crate::v1::parse::vec_connection")]
+  pub(crate) expressions: Vec<FlowExpression>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A connection between Operations and their ports. This can be specified in short-form syntax (where applicable).
+pub(crate) struct ConnectionDefinition {
+  /// The upstream operation port.
+
+  #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
+  pub(crate) from: ConnectionTargetDefinition,
+  /// The downstream operation port.
+
+  #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
+  pub(crate) to: ConnectionTargetDefinition,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).
+pub(crate) struct ConnectionTargetDefinition {
+  /// The instance ID of the operation.
+
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) instance: String,
+  /// The operation port.
+
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) port: String,
+  /// The default value to provide on this connection in the event of an error.
+
+  #[serde(default)]
+  pub(crate) data: Option<Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -817,6 +874,10 @@ pub(crate) struct OperationDefinition {
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
+  /// Any configuration required by the operation.
+
+  #[serde(default)]
+  pub(crate) with: Option<Value>,
   /// Types of the inputs to the operation.
 
   #[serde(default)]
@@ -852,39 +913,7 @@ pub(crate) struct InstanceBinding {
   /// Data to associate with the reference, if any.
 
   #[serde(default)]
-  pub(crate) config: Option<Value>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-/// A connection between Operations and their ports. This can be specified in short-form syntax (where applicable).
-pub(crate) struct ConnectionDefinition {
-  /// The upstream operation port.
-
-  #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
-  pub(crate) from: ConnectionTargetDefinition,
-  /// The downstream operation port.
-
-  #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
-  pub(crate) to: ConnectionTargetDefinition,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-/// A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).
-pub(crate) struct ConnectionTargetDefinition {
-  /// The instance ID of the operation.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) instance: String,
-  /// The operation port.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) port: String,
-  /// The default value to provide on this connection in the event of an error.
-
-  #[serde(default)]
-  pub(crate) data: Option<Value>,
+  pub(crate) with: Option<Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

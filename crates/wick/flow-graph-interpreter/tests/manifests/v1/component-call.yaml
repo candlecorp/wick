@@ -7,7 +7,7 @@ component:
   kind: wick/component/composite@v1
   operations:
     - name: testop
-      instances:
+      uses:
         - name: call
           operation: test::call
       inputs:

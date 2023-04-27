@@ -5,9 +5,9 @@ use std::collections::HashMap;
 use asset_container::{AssetManager, Assets};
 pub use composite::CompositeComponentImplementation;
 use config::{ComponentImplementation, ComponentKind};
-pub use wasm::{OperationSignature, WasmComponentImplementation};
+pub use wasm::*;
 use wick_asset_reference::{AssetReference, FetchOptions};
-use wick_interface_types::{ComponentMetadata, ComponentSignature, TypeDefinition};
+use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeDefinition};
 
 use super::common::package_definition::PackageConfig;
 use super::{make_resolver, ImportBinding};
@@ -80,6 +80,15 @@ impl ComponentConfiguration {
   pub fn package_files(&self) -> Option<Assets<AssetReference>> {
     // should return empty vec if package is None
     self.package.as_ref().map(|p| p.assets())
+  }
+
+  #[must_use]
+  pub fn operation_signatures(&self) -> Vec<OperationSignature> {
+    match &self.component {
+      ComponentImplementation::Composite(c) => c.operation_signatures(),
+      ComponentImplementation::Wasm(c) => c.operation_signatures(),
+      _ => unimplemented!(),
+    }
   }
 
   pub fn try_wasm(&self) -> Result<&WasmComponentImplementation> {
@@ -305,8 +314,8 @@ impl From<config::Metadata> for ComponentMetadata {
   }
 }
 
-impl From<OperationSignature> for wick_interface_types::OperationSignature {
-  fn from(value: OperationSignature) -> Self {
+impl From<config::OperationSignature> for OperationSignature {
+  fn from(value: config::OperationSignature) -> Self {
     Self {
       name: value.name,
       inputs: value.inputs,

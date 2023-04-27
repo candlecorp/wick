@@ -188,13 +188,16 @@ type Url @tagged("wick/resource/url@v1") {
   url: string @required
 }
 
-"A configuration for a Wick Component"
+"A type definition for a Wick Components and Operations"
 type TypesConfiguration @tagged("wick/types@v1") {
   "The name of this component."
   name: string?
 
   "Additional types to export and make available to the component."
   types: [TypeDefinition]
+
+  "A list of operation signatures."
+  operations: [OperationDefinition]
 }
 
 "A configuration for a Wick Component"
@@ -364,7 +367,7 @@ type GrpcUrlComponent @tagged("wick/component/grpc@v1") {
   url: string @required
 
   "Any configuration necessary for the component."
-  config: any
+  with: any
 }
 
 "A native component that can be extracted and run as a microservice."
@@ -372,7 +375,7 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
   "The URL (and optional tag) or local file path to find the manifest."
   ref: LocationReference @rename("reference")  @required
   "Any configuration necessary for the component."
-  config: any
+  with: any
   "External components to provide to the referenced component."
   provide: {string:string}
 }
@@ -391,39 +394,19 @@ type CompositeOperationDefinition {
   "A list of components the schematic can use."
   components: [string],
 
-  "A map of IDs to specific operation."
-  instances: [InstanceBinding]
+  "A map of IDs to specific operations."
+  uses: [InstanceBinding]
 
   "A list of connections from operation to operation."
-  flow: [ConnectionDefinition],
+  flow: [FlowExpression],
 }
 
-"An operation name and its input and output signatures"
-type OperationDefinition {
-  "The name of the operation."
-  name: string,
+"A flow operation, i.e. a connection from one operation to another."
+union FlowExpression @shortform = ConnectionDefinition | BlockExpression
 
-  "Types of the inputs to the operation."
-  inputs: [Field],
-
-  "Types of the outputs to the operation."
-  outputs: [Field],
-}
-
-"Field definition. This is not technically an any type, it is a wick interface type field."
-alias Field = any
-
-"Type definition. This is not technically an any type, it is a wick interface type definition."
-alias TypeDefinition = any
-
-"An identifier bound to a component's operation."
-type InstanceBinding {
-  "The name of the binding."
-  name: string @required
-  "The operation to bind to."
-  operation: ComponentOperationExpression @required
-  "Data to associate with the reference, if any."
-  config: any?,
+"A list of FlowExpressions"
+type BlockExpression {
+  expressions: [FlowExpression] @required
 }
 
 "A connection between Operations and their ports. This can be specified in short-form syntax (where applicable)."
@@ -445,6 +428,37 @@ type ConnectionTargetDefinition {
 
   "The default value to provide on this connection in the event of an error."
   data: any?,
+}
+
+"An operation name and its input and output signatures"
+type OperationDefinition {
+  "The name of the operation."
+  name: string,
+
+  "Any configuration required by the operation."
+  with: any?,
+
+  "Types of the inputs to the operation."
+  inputs: [Field],
+
+  "Types of the outputs to the operation."
+  outputs: [Field],
+}
+
+"Field definition. This is not technically an any type, it is a wick interface type field."
+alias Field = any
+
+"Type definition. This is not technically an any type, it is a wick interface type definition."
+alias TypeDefinition = any
+
+"An identifier bound to a component's operation."
+type InstanceBinding {
+  "The name of the binding."
+  name: string @required
+  "The operation to bind to."
+  operation: ComponentOperationExpression @required
+  "Data to associate with the reference, if any."
+  with: any?,
 }
 
 "A test case for a component."

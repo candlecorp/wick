@@ -1,0 +1,23 @@
+---
+name: 'test'
+kind: wick/component@v1
+metadata:
+  version: '0.0.2'
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: test
+      uses:
+        - name: p
+          operation: core::pluck
+          with:
+            field: 'to_pluck'
+      inputs:
+        - name: object
+          type: object
+      outputs:
+        - name: output
+          type: string
+      flow:
+        - <> -> p.input
+        - p.output -> <>

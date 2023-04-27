@@ -911,6 +911,13 @@
             "items": {
               "$ref": "#/$defs/v1/TypeDefinition"
             }
+          },
+          "operations": {
+            "description": "A list of operation signatures.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/OperationDefinition"
+            }
           }
         },
         "required": []
@@ -1353,7 +1360,7 @@
             "description": "The GRPC URL to connect to.",
             "type": "string"
           },
-          "config": {
+          "with": {
             "description": "Any configuration necessary for the component."
           }
         },
@@ -1376,7 +1383,7 @@
             "description": "The URL (and optional tag) or local file path to find the manifest.",
             "type": "string"
           },
-          "config": {
+          "with": {
             "description": "Any configuration necessary for the component."
           },
           "provide": {
@@ -1422,8 +1429,8 @@
               "type": "string"
             }
           },
-          "instances": {
-            "description": "A map of IDs to specific operation.",
+          "uses": {
+            "description": "A map of IDs to specific operations.",
             "type": "array",
             "items": {
               "$ref": "#/$defs/v1/InstanceBinding"
@@ -1433,63 +1440,38 @@
             "description": "A list of connections from operation to operation.",
             "type": "array",
             "items": {
-              "$ref": "#/$defs/v1/ConnectionDefinition"
+              "$ref": "#/$defs/v1/FlowExpression"
             }
           }
         },
         "required": []
       },
-      "OperationDefinition": {
-        "$anchor": "#v1/OperationDefinition",
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "description": "The name of the operation.",
+      "FlowExpression": {
+        "oneOf": [
+          {
             "type": "string"
           },
-          "inputs": {
-            "description": "Types of the inputs to the operation.",
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/v1/Field"
-            }
+          {
+            "$ref": "#/$defs/v1/ConnectionDefinition"
           },
-          "outputs": {
-            "description": "Types of the outputs to the operation.",
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/v1/Field"
-            }
+          {
+            "$ref": "#/$defs/v1/BlockExpression"
           }
-        },
-        "required": []
+        ]
       },
-      "Field": {
-        "type": "object"
-      },
-      "TypeDefinition": {
-        "type": "object"
-      },
-      "InstanceBinding": {
-        "$anchor": "#v1/InstanceBinding",
+      "BlockExpression": {
+        "$anchor": "#v1/BlockExpression",
         "additionalProperties": false,
         "properties": {
-          "name": {
-            "description": "The name of the binding.",
-            "type": "string"
-          },
-          "operation": {
-            "description": "The operation to bind to.",
-            "$ref": "#/$defs/v1/ComponentOperationExpression"
-          },
-          "config": {
-            "description": "Data to associate with the reference, if any.",
-            "required": false
+          "expressions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/FlowExpression"
+            }
           }
         },
         "required": [
-          "name",
-          "operation"
+          "expressions"
         ]
       },
       "ConnectionDefinition": {
@@ -1530,6 +1512,63 @@
         "required": [
           "instance",
           "port"
+        ]
+      },
+      "OperationDefinition": {
+        "$anchor": "#v1/OperationDefinition",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "The name of the operation.",
+            "type": "string"
+          },
+          "with": {
+            "description": "Any configuration required by the operation.",
+            "required": false
+          },
+          "inputs": {
+            "description": "Types of the inputs to the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
+          "outputs": {
+            "description": "Types of the outputs to the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          }
+        },
+        "required": []
+      },
+      "Field": {
+        "type": "object"
+      },
+      "TypeDefinition": {
+        "type": "object"
+      },
+      "InstanceBinding": {
+        "$anchor": "#v1/InstanceBinding",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "The name of the binding.",
+            "type": "string"
+          },
+          "operation": {
+            "description": "The operation to bind to.",
+            "$ref": "#/$defs/v1/ComponentOperationExpression"
+          },
+          "with": {
+            "description": "Data to associate with the reference, if any.",
+            "required": false
+          }
+        },
+        "required": [
+          "name",
+          "operation"
         ]
       },
       "TestDefinition": {

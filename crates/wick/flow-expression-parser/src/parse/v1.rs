@@ -1,22 +1,20 @@
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{alpha1, alphanumeric1, char, multispace0};
-use nom::combinator::recognize;
+use nom::combinator::{eof, map, recognize};
 use nom::error::ParseError;
 use nom::multi::{many0, many1};
 use nom::sequence::{delimited, pair, terminated};
 use nom::IResult;
-use serde_json::Value;
 
-use crate::{Error, InstanceTarget};
+use crate::ast::{ConnectionExpression, ConnectionTargetExpression, FlowExpression, FlowProgram, InstanceTarget};
+use crate::Error;
 
 /// The separator in a connection between connection targets.
 pub static CONNECTION_SEPARATOR: &str = "->";
 
 /// The reserved identifier representing an as-of-yet-undetermined default value.
 const DEFAULT_ID: &str = "<>";
-
-type ConnectionPair = (ConnectionDefinitionParts, ConnectionDefinitionParts);
 
 #[derive(Debug, Clone, Copy)]
 /// Errors that can occur during parsing.
@@ -37,12 +35,10 @@ impl std::fmt::Display for ParserError {
   }
 }
 
-/// Parse a string into a list of connection pairs.
-pub fn parse(input: &str) -> Result<Vec<ConnectionPair>, ParserError> {
+/// Parse a string into a [FlowProgram].
+pub fn parse(input: &str) -> Result<FlowProgram, ParserError> {
   _parse(input).map(|(_, t)| t).map_err(|_| ParserError::Fail)
 }
-
-type PortParts<'a> = (InstanceTarget, &'a str);
 
 fn component_id(input: &str) -> IResult<&str, InstanceTarget> {
   let (i, t) = recognize(alt((reserved_component_id, identifier)))(input)?;
@@ -88,39 +84,54 @@ fn instance(input: &str) -> IResult<&str, InstanceTarget> {
   alt((component_path, component_id))(input)
 }
 
-fn port_reference_expression(input: &str) -> IResult<&str, (InstanceTarget, Option<&str>)> {
+fn connection_target_expression(input: &str) -> IResult<&str, (InstanceTarget, Option<&str>)> {
   pair(terminated(instance, char('.')), identifier)(input).map(|(i, v)| (i, (v.0, Some(v.1))))
 }
 
-fn portless_reference_expression(input: &str) -> IResult<&str, (InstanceTarget, Option<&str>)> {
+fn portless_target_expression(input: &str) -> IResult<&str, (InstanceTarget, Option<&str>)> {
   instance(input).map(|(i, v)| (i, (v, None)))
 }
 
-fn connection_expression(input: &str) -> IResult<&str, (PortParts, PortParts)> {
+fn connection_expression(input: &str) -> IResult<&str, ConnectionExpression> {
   let (i, (from, to)) = pair(
     terminated(
-      alt((port_reference_expression, portless_reference_expression)),
+      alt((connection_target_expression, portless_target_expression)),
       ws(tag(CONNECTION_SEPARATOR)),
     ),
-    ws(alt((port_reference_expression, portless_reference_expression))),
+    ws(alt((connection_target_expression, portless_target_expression))),
   )(input)?;
-  match (from.1, to.1) {
-    (None, Some(to_port)) => Ok((i, ((from.0, to_port), (to.0, to_port)))),
-    (Some(from_port), None) => Ok((i, ((from.0, from_port), (to.0, from_port)))),
-    (None, None) => Err(nom::Err::Error(nom::error::Error::new(
-      input,
-      nom::error::ErrorKind::Verify,
-    ))),
-    _ => Ok((i, ((from.0, from.1.unwrap()), (to.0, to.1.unwrap())))),
-  }
-}
-
-fn _parse(input: &str) -> IResult<&str, Vec<ConnectionPair>> {
-  let (i, (from, to)) = connection_expression(input)?;
+  let (i, (from, to)) = match (from.1, to.1) {
+    (None, Some(to_port)) => (i, ((from.0, to_port), (to.0, to_port))),
+    (Some(from_port), None) => (i, ((from.0, from_port), (to.0, from_port))),
+    (None, None) => {
+      return Err(nom::Err::Error(nom::error::Error::new(
+        input,
+        nom::error::ErrorKind::Verify,
+      )))
+    }
+    _ => (i, ((from.0, from.1.unwrap()), (to.0, to.1.unwrap()))),
+  };
   Ok((
     i,
-    vec![((from.0, from.1.to_owned(), None), (to.0, to.1.to_owned(), None))],
+    ConnectionExpression::new(
+      ConnectionTargetExpression::new(from.0, from.1, None),
+      ConnectionTargetExpression::new(to.0, to.1, None),
+    ),
   ))
+}
+
+pub(crate) fn flow_expression(input: &str) -> IResult<&str, FlowExpression> {
+  let (i, expr) = terminated(
+    map(connection_expression, FlowExpression::ConnectionExpression),
+    alt((eof, ws(tag(";")))),
+  )(input)?;
+  Ok((i, expr))
+}
+
+fn _parse(input: &str) -> IResult<&str, FlowProgram> {
+  let (i, expressions) = many0(flow_expression)(input)?;
+
+  Ok((i, FlowProgram::new(expressions)))
 }
 
 fn ws<'a, F, O, E: ParseError<&'a str>>(inner: F) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
@@ -132,34 +143,22 @@ where
 
 /// Parse a string as connection target pieces.
 pub fn parse_target(s: &str) -> Result<(String, Option<&str>), Error> {
-  let (_, (c, o)) = alt((port_reference_expression, portless_reference_expression))(s)
+  let (_, (c, o)) = alt((connection_target_expression, portless_target_expression))(s)
     .map_err(|e| Error::ConnectionTargetSyntax(s.to_owned(), e.to_string()))?;
   Ok((c.to_string(), o))
 }
 
 /// Parse a string into an InstanceTarget
-pub fn parse_instance(s: &str) -> Result<InstanceTarget, Error> {
+pub(crate) fn parse_instance(s: &str) -> Result<InstanceTarget, Error> {
   let (_, c) = instance(s).map_err(|_e| Error::ComponentIdError(s.to_owned()))?;
   Ok(c)
 }
 
-/// Parse a string as an instance.
-pub fn parse_instance_pieces(s: &str) -> Result<(String, Option<&str>), Error> {
-  let (_, (c, o)) = alt((port_reference_expression, portless_reference_expression))(s)
-    .map_err(|e| Error::ConnectionTargetSyntax(s.to_owned(), e.to_string()))?;
-  Ok((c.to_string(), o))
-}
-
-type ConnectionDefinitionParts = (InstanceTarget, String, Option<Value>);
-
 /// Parse a string as a connection and return its parts.
-pub fn parse_connection_pieces(s: &str) -> Result<ConnectionPair, Error> {
-  let (_, ((from_ref, from_port), (to_ref, to_port))) =
+pub fn parse_connection_expression(s: &str) -> Result<ConnectionExpression, Error> {
+  let (_, connection) =
     connection_expression(s).map_err(|e| Error::ConnectionTargetSyntax(s.to_owned(), e.to_string()))?;
-  Ok((
-    (from_ref.or(InstanceTarget::Input), from_port.to_owned(), None),
-    (to_ref.or(InstanceTarget::Output), to_port.to_owned(), None),
-  ))
+  Ok(connection)
 }
 
 #[cfg(test)]
@@ -208,8 +207,14 @@ mod tests {
   #[case("comp::op[FOO].foo", (InstanceTarget::path("comp::op","FOO"), Some("foo")))]
   #[case("That.bar", (InstanceTarget::Named("That".to_owned()), Some("bar")))]
   #[case("<>.input", (InstanceTarget::Default, Some("input")))]
-  fn op_expression_tester(#[case] input: &'static str, #[case] expected: (InstanceTarget, Option<&str>)) -> Result<()> {
-    let (i, t) = port_reference_expression(input)?;
+  #[case("input.foo", (InstanceTarget::named("input"), Some("foo")))]
+  #[case("ref.foo", (InstanceTarget::named("ref"), Some("foo")))]
+  #[case("<>.foo", (InstanceTarget::Default, Some("foo")))]
+  fn connection_target_expression_tester(
+    #[case] input: &'static str,
+    #[case] expected: (InstanceTarget, Option<&str>),
+  ) -> Result<()> {
+    let (i, t) = connection_target_expression(input)?;
     assert_eq!(t, expected);
     assert_eq!(i, "");
     Ok(())
@@ -229,7 +234,12 @@ mod tests {
     #[case] expected: ((InstanceTarget, &str), (InstanceTarget, &str)),
   ) -> Result<()> {
     let (i, t) = connection_expression(input)?;
-    assert_eq!(t, expected);
+    let conn = ConnectionExpression::new(
+      ConnectionTargetExpression::new(expected.0 .0, expected.0 .1, None),
+      ConnectionTargetExpression::new(expected.1 .0, expected.1 .1, None),
+    );
+
+    assert_eq!(t, conn);
     assert_eq!(i, "");
     Ok(())
   }
@@ -243,33 +253,5 @@ mod tests {
       panic!("Expected error, got {:?}", item);
     } else {
     }
-  }
-
-  #[test_logger::test]
-  fn test_reserved() -> Result<()> {
-    let parsed = parse_target("input.foo")?;
-    assert_eq!(parsed, ("input".to_owned(), Some("foo")));
-    Ok(())
-  }
-
-  #[test_logger::test]
-  fn test_basic() -> Result<()> {
-    let parsed = parse_target("ref.foo")?;
-    assert_eq!(parsed, ("ref".to_owned(), Some("foo")));
-    Ok(())
-  }
-
-  #[test_logger::test]
-  fn test_default_with_port() -> Result<()> {
-    let parsed = parse_target("<>.foo")?;
-    assert_eq!(parsed, (DEFAULT_ID.to_owned(), Some("foo")));
-    Ok(())
-  }
-
-  #[test_logger::test]
-  fn test_default() -> Result<()> {
-    let parsed = parse_target("<>")?;
-    assert_eq!(parsed, (DEFAULT_ID.to_owned(), None));
-    Ok(())
   }
 }

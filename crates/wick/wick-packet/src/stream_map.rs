@@ -7,7 +7,7 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Default)]
 #[must_use]
-/// A wrapper for a map of [String]s to [MessageTransport]
+/// A wrapper for a map of [String]s to [PacketStream]s.
 pub struct StreamMap(HashMap<String, PacketStream>);
 
 impl std::fmt::Debug for StreamMap {
@@ -24,6 +24,11 @@ impl StreamMap {
       .remove(key)
       .ok_or_else(|| crate::Error::PortMissing(key.to_owned()))?;
     Ok(v)
+  }
+
+  /// Get the keys in the map.
+  pub fn keys(&self) -> impl Iterator<Item = &String> {
+    self.0.keys()
   }
 
   /// Take the next packet from the stream keyed by [key].
@@ -60,23 +65,23 @@ impl StreamMap {
 
   #[cfg(feature = "rt-tokio")]
   /// Turn a single [PacketStream] into a [StreamMap] keyed by the passed [ports].
-  pub fn from_stream(mut stream: PacketStream, ports: &[String]) -> Self {
+  pub fn from_stream(mut stream: PacketStream, ports: impl IntoIterator<Item = String>) -> Self {
     use wasmrs_rx::Observer;
 
     #[must_use]
     let mut streams = StreamMap::default();
     let mut senders = HashMap::new();
     for port in ports {
-      senders.insert(port.clone(), streams.init(port));
+      senders.insert(port.clone(), streams.init(&port));
     }
     tokio::spawn(async move {
       while let Some(Ok(payload)) = stream.next().await {
         let sender = senders.get_mut(payload.port()).unwrap();
-        if payload.is_done() {
+        let is_done = payload.is_done();
+        let _ = sender.send(payload);
+        if is_done {
           sender.complete();
-          continue;
         }
-        sender.send(payload).unwrap();
       }
     });
     streams

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -96,23 +97,6 @@ impl InstanceHandler {
     &self.identifier
   }
 
-  // pub(crate) fn is_core_operation(&self, name: &str) -> bool {
-  //   self.reference.is_core_operation(name)
-  // }
-
-  // pub(crate) fn is_static(&self) -> bool {
-  //   self.reference.is_static()
-  // }
-
-  // pub(crate) fn done(&self) -> bool {
-  //   for port in self.inputs.iter() {
-  //     if port.status() != PortStatus::DoneClosed {
-  //       return false;
-  //     }
-  //   }
-  //   true
-  // }
-
   pub(super) fn take_packets(&self) -> Result<Vec<Packet>> {
     self.inputs.take_packets()
   }
@@ -128,15 +112,6 @@ impl InstanceHandler {
   pub(super) fn take_input(&self, port: &PortReference) -> Option<Packet> {
     self.inputs.take(port)
   }
-
-  // pub(crate) fn validate_payload(&self, payload: &TransportMap) -> Result<()> {
-  //   for input in self.inputs.iter() {
-  //     if !payload.contains_key(input.name()) {
-  //       return Err(ExecutionError::MissingInput(input.name().to_owned()));
-  //     }
-  //   }
-  //   Ok(())
-  // }
 
   pub(crate) fn buffer_in(&self, port: &PortReference, value: Packet) {
     trace!(operation=%self, port=self.inputs.get_handler(port).name(), ?value, "buffering input message");
@@ -171,20 +146,6 @@ impl InstanceHandler {
   pub(crate) fn inputs(&self) -> &InputPorts {
     &self.inputs
   }
-
-  // pub(crate) fn get_port_status(&self, port: &PortReference) -> PortStatus {
-  //   match port.direction() {
-  //     PortDirection::In => self.inputs.get_handler(port).status(),
-  //     PortDirection::Out => self.outputs.get_handler(port).status(),
-  //   }
-  // }
-
-  // pub(crate) fn buffered_packets(&self, port: &PortReference) -> usize {
-  //   match port.direction() {
-  //     PortDirection::In => self.inputs.get_handler(port).len(),
-  //     PortDirection::Out => self.outputs.get_handler(port).len(),
-  //   }
-  // }
 
   pub(crate) fn increment_pending(&self) {
     self.pending.fetch_add(1, Ordering::Acquire);
@@ -239,8 +200,8 @@ impl InstanceHandler {
     for packet in packets {
       self.sender.send(packet)?;
     }
-    let still_open = self.inputs.iter().any(|p| p.get_status() != PortStatus::DoneClosed);
-    if !still_open {
+    let all_closed = self.inputs.iter().all(|p| p.get_status().is_closed());
+    if all_closed {
       self.sender.complete();
     }
     Ok(())
@@ -353,6 +314,7 @@ async fn output_handler(
   let mut num_received = 0;
   let reason = loop {
     let response = tokio::time::timeout(timeout, stream.next());
+    let mut hanging = HashMap::new();
     match response.await {
       Ok(Some(message)) => {
         num_received += 1;
@@ -366,8 +328,13 @@ async fn output_handler(
         let message = message.unwrap();
 
         let port = instance.find_output(message.port())?;
+        if message.is_done() {
+          hanging.remove(&port);
+        } else {
+          hanging.insert(port, message.port().to_owned());
+        }
 
-        trace!(port=%message.port(),"received packet");
+        trace!(port=%message.port(),"received output packet");
 
         instance.buffer_out(&port, message);
         channel.dispatch_data(tx_id, port).await;
@@ -388,6 +355,10 @@ async fn output_handler(
             .dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(err))
             .await;
           break CompletionStatus::Error;
+        }
+        for (portref, port) in hanging {
+          debug!(%port,"auto-closing port");
+          instance.buffer_out(&portref, Packet::done(port));
         }
         trace!("stream complete");
         break CompletionStatus::Finished;

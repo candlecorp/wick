@@ -87,7 +87,7 @@
 
 use std::sync::Arc;
 
-use wick_interface_types::ComponentSignature;
+use wick_interface_types::{ComponentSignature, OperationSignature};
 use wick_packet::{ComponentReference, InherentData, Invocation, PacketStream, StreamMap};
 
 pub type SharedComponent = Arc<dyn Component + Send + Sync>;
@@ -179,6 +179,37 @@ pub trait Component {
   }
 }
 
+#[derive(Debug)]
+pub struct Context<T>
+where
+  T: std::fmt::Debug,
+{
+  pub config: Arc<T>,
+}
+
+impl<T> Context<T>
+where
+  T: std::fmt::Debug,
+{
+  pub fn new(config: T) -> Self {
+    Self {
+      config: Arc::new(config),
+    }
+  }
+}
+
 pub trait Operation {
-  fn handle(&self, payload: StreamMap, data: Option<Value>) -> BoxFuture<Result<PacketStream, ComponentError>>;
+  const ID: &'static str;
+  type Config: std::fmt::Debug + Send + Sync + 'static;
+  fn handle(
+    &self,
+    payload: StreamMap,
+    context: Context<Self::Config>,
+  ) -> BoxFuture<Result<PacketStream, ComponentError>>;
+
+  fn signature(&self, config: Option<&Self::Config>) -> &OperationSignature;
+
+  fn input_names(&self, config: &Self::Config) -> Vec<String>;
+
+  fn decode_config(data: Option<Value>) -> Result<Self::Config, ComponentError>;
 }

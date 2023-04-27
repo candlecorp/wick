@@ -12,7 +12,7 @@ network:
       collections:
         - wapc
         - wapc2
-      instances:
+      uses:
         reverse_upper:
           id: wapc::reverse-uppercase
         TEST_REF:

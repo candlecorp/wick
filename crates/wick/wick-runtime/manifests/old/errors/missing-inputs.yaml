@@ -3,7 +3,7 @@ format: 0
 network:
   schematics:
     - name: add
-      instances:
+      uses:
         add:
           id: wick::math::add
       connections:

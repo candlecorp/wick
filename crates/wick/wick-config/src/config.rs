@@ -11,7 +11,7 @@ use std::path::Path;
 pub use app_config::*;
 use asset_container::{Asset, AssetManager};
 pub use common::*;
-pub use component_config::*;
+pub use component_config::{FlowOperation, *};
 pub use test_config::*;
 use tokio::fs::read_to_string;
 use tracing::debug;

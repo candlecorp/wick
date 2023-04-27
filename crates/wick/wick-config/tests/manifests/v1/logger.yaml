@@ -16,12 +16,12 @@ component:
   kind: wick/component/composite@v1
   operations:
     - name: logger
-      instances:
+      uses:
         - name: logger
           operation: 'wick::log'
         - name: SENDER
           operation: 'core::sender'
-          config:
+          with:
             output: '123456789'
             type: string
       flow:

@@ -4,7 +4,8 @@ mod test;
 
 use anyhow::Result;
 use pretty_assertions::assert_eq;
-use wick_packet::Packet;
+use serde_json::json;
+use wick_packet::{packets, Packet};
 
 #[test_logger::test(tokio::test)]
 async fn test_senders() -> Result<()> {
@@ -17,6 +18,52 @@ async fn test_senders() -> Result<()> {
   let wrapper = outputs.pop().unwrap().unwrap();
   let expected = Packet::encode("output", "Hello world");
   assert_eq!(wrapper, expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_pluck() -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(
+    "./tests/manifests/v1/core-pluck.yaml",
+    "test",
+    packets!(("input", json!({ "to_pluck" :"Hello world!", "to_ignore": "ignore me" }))),
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _ = outputs.pop();
+  let wrapper = outputs.pop().unwrap().unwrap();
+  let expected = Packet::encode("output", "Hello world!");
+  assert_eq!(wrapper, expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+// #[ignore]
+async fn test_merge() -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(
+    "./tests/manifests/v1/core-merge.yaml",
+    "test",
+    packets!(
+      ("input_a", "first_value"),
+      ("input_b", 2u8),
+      ("input_c", ["alpha", "beta"])
+    ),
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _ = outputs.pop();
+  let wrapper = outputs.pop().unwrap().unwrap();
+  let actual = wrapper.deserialize_generic()?;
+  let expected = json!({"a": "first_value", "b": 2, "c": ["alpha", "beta"]});
+  assert_eq!(actual, expected);
   interpreter.shutdown().await?;
 
   Ok(())

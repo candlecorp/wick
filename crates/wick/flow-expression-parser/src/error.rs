@@ -28,4 +28,8 @@ pub enum ParserError {
   /// Error parsing or serializing Sender data.
   #[error("Error parsing or serializing Sender data: {0}")]
   InvalidSenderData(String),
+
+  /// Error occurred parsing a flow expression.
+  #[error("Could not parse string into a FlowExpression '{0}'")]
+  FlowExpressionParse(String),
 }

@@ -531,6 +531,14 @@
           "items": {
             "$ref": "#/$defs/v1/TypeDefinition"
           }
+        },
+        "operations": {
+          "description": "A list of operation signatures.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/OperationDefinition"
+          }
         }
       },
       "required": []
@@ -958,7 +966,7 @@
 
           "type": "string"
         },
-        "config": {
+        "with": {
           "description": "Any configuration necessary for the component."
         }
       },
@@ -979,7 +987,7 @@
 
           "type": "string"
         },
-        "config": {
+        "with": {
           "description": "Any configuration necessary for the component."
         },
         "provide": {
@@ -1029,8 +1037,8 @@
             "type": "string"
           }
         },
-        "instances": {
-          "description": "A map of IDs to specific operation.",
+        "uses": {
+          "description": "A map of IDs to specific operations.",
 
           "type": "array",
           "items": {
@@ -1042,11 +1050,73 @@
 
           "type": "array",
           "items": {
-            "$ref": "#/$defs/v1/ConnectionDefinition"
+            "$ref": "#/$defs/v1/FlowExpression"
           }
         }
       },
       "required": []
+    },
+
+    "FlowExpression": {
+      "oneOf": [
+        { "type": "string" },
+        { "$ref": "#/$defs/v1/ConnectionDefinition" },
+        { "$ref": "#/$defs/v1/BlockExpression" }
+      ]
+    },
+
+    "BlockExpression": {
+      "$anchor": "#v1/BlockExpression",
+      "additionalProperties": false,
+      "properties": {
+        "expressions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/FlowExpression"
+          }
+        }
+      },
+      "required": ["expressions"]
+    },
+
+    "ConnectionDefinition": {
+      "$anchor": "#v1/ConnectionDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "description": "The upstream operation port.",
+
+          "$ref": "#/$defs/v1/ConnectionTargetDefinition"
+        },
+        "to": {
+          "description": "The downstream operation port.",
+
+          "$ref": "#/$defs/v1/ConnectionTargetDefinition"
+        }
+      },
+      "required": ["from", "to"]
+    },
+
+    "ConnectionTargetDefinition": {
+      "$anchor": "#v1/ConnectionTargetDefinition",
+      "additionalProperties": false,
+      "properties": {
+        "instance": {
+          "description": "The instance ID of the operation.",
+
+          "type": "string"
+        },
+        "port": {
+          "description": "The operation port.",
+
+          "type": "string"
+        },
+        "data": {
+          "description": "The default value to provide on this connection in the event of an error.",
+          "required": false
+        }
+      },
+      "required": ["instance", "port"]
     },
 
     "OperationDefinition": {
@@ -1057,6 +1127,10 @@
           "description": "The name of the operation.",
 
           "type": "string"
+        },
+        "with": {
+          "description": "Any configuration required by the operation.",
+          "required": false
         },
         "inputs": {
           "description": "Types of the inputs to the operation.",
@@ -1100,52 +1174,12 @@
 
           "$ref": "#/$defs/v1/ComponentOperationExpression"
         },
-        "config": {
+        "with": {
           "description": "Data to associate with the reference, if any.",
           "required": false
         }
       },
       "required": ["name", "operation"]
-    },
-
-    "ConnectionDefinition": {
-      "$anchor": "#v1/ConnectionDefinition",
-      "additionalProperties": false,
-      "properties": {
-        "from": {
-          "description": "The upstream operation port.",
-
-          "$ref": "#/$defs/v1/ConnectionTargetDefinition"
-        },
-        "to": {
-          "description": "The downstream operation port.",
-
-          "$ref": "#/$defs/v1/ConnectionTargetDefinition"
-        }
-      },
-      "required": ["from", "to"]
-    },
-
-    "ConnectionTargetDefinition": {
-      "$anchor": "#v1/ConnectionTargetDefinition",
-      "additionalProperties": false,
-      "properties": {
-        "instance": {
-          "description": "The instance ID of the operation.",
-
-          "type": "string"
-        },
-        "port": {
-          "description": "The operation port.",
-
-          "type": "string"
-        },
-        "data": {
-          "description": "The default value to provide on this connection in the event of an error.",
-          "required": false
-        }
-      },
-      "required": ["instance", "port"]
     },
 
     "TestDefinition": {
