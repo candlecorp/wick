@@ -778,7 +778,7 @@ pub(crate) struct ManifestComponent {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A definition for an single composite operation.
+/// A definition for a single composite operation.
 pub(crate) struct CompositeOperationDefinition {
   /// The name of the operation.
 
@@ -811,6 +811,11 @@ pub(crate) struct CompositeOperationDefinition {
   #[serde(skip_serializing_if = "Vec::is_empty")]
   #[serde(deserialize_with = "crate::v1::parse::vec_connection")]
   pub(crate) flow: Vec<FlowExpression>,
+  /// Additional flow operations scoped to this operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) operations: Vec<CompositeOperationDefinition>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

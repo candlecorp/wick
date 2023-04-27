@@ -380,7 +380,7 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
   provide: {string:string}
 }
 
-"A definition for an single composite operation."
+"A definition for a single composite operation."
 type CompositeOperationDefinition {
   "The name of the operation."
   name: string,
@@ -399,6 +399,9 @@ type CompositeOperationDefinition {
 
   "A list of connections from operation to operation."
   flow: [FlowExpression],
+
+  "Additional flow operations scoped to this operation."
+  operations: [CompositeOperationDefinition]
 }
 
 "A flow operation, i.e. a connection from one operation to another."

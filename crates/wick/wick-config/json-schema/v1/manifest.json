@@ -1052,6 +1052,14 @@
           "items": {
             "$ref": "#/$defs/v1/FlowExpression"
           }
+        },
+        "operations": {
+          "description": "Additional flow operations scoped to this operation.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/CompositeOperationDefinition"
+          }
         }
       },
       "required": []

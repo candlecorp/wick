@@ -113,11 +113,12 @@ impl TryFrom<&crate::v0::SchematicManifest> for config::FlowOperation {
       .collect();
     Ok(Self {
       name: manifest.name.clone(),
-      inputs: Default::default(),
-      outputs: Default::default(),
       instances: instances?,
       expressions: connections?,
       components: manifest.collections.clone(),
+      inputs: Default::default(),
+      outputs: Default::default(),
+      flows: Default::default(),
     })
   }
 }

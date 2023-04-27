@@ -65,6 +65,9 @@ pub struct FlowOperation {
   /// A list of connections from and to ports on instances defined in the instance map.
   pub expressions: Vec<ast::FlowExpression>,
 
+  /// Additional flows scoped to this operation.
+  pub flows: Vec<FlowOperation>,
+
   /// A list of component IDs to expose to this schematic.
   pub components: Vec<String>,
 }
