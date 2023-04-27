@@ -10,7 +10,9 @@ mod integration_test {
   async fn test_push_and_pull_wick_package() {
     let host = std::env::var("DOCKER_REGISTRY").unwrap();
     let tempdir = std::env::temp_dir();
+    println!("Using tempdir: {:?}", tempdir);
     let options = OciOptions::default()
+      .overwrite(true)
       .base_dir(Some(tempdir))
       //.base_dir(Some(PathBuf::from("./wick_components")))
       .allow_insecure(vec![host.to_owned()]);
@@ -28,7 +30,6 @@ mod integration_test {
 
     // Run the pull operation
     let pulled_package_result = WickPackage::pull(&reference, &options).await;
-    println!("pulled_package_result: {:?}", pulled_package_result);
     assert!(pulled_package_result.is_ok(), "Failed to pull WickPackage");
     let pulled_package = pulled_package_result.unwrap();
 
@@ -54,6 +55,7 @@ mod integration_test {
       if pushed_file.path().to_str().unwrap().ends_with(".tar.gz") {
         continue;
       }
+      println!("Comparing hashes for file: {:?}", pushed_file.path());
       assert_eq!(pushed_file.hash(), pulled_file.hash(), "Mismatch in file hashes");
       assert_eq!(
         pushed_file.media_type(),

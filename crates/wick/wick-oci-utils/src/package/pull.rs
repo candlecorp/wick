@@ -19,6 +19,7 @@ pub struct PullResult {
   pub root_path: PathBuf,
 }
 
+#[allow(clippy::too_many_lines)]
 /// Pull a Wick package from a registry.
 pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, Error> {
   let (image_ref, protocol) = crate::utils::parse_reference_and_protocol(reference, &options.allow_insecure)?;

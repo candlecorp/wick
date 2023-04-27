@@ -34,8 +34,8 @@ impl WickPackage {
   ///
   /// The provided path can be a file or directory. If it is a directory, the WickPackage will be created
   /// based on the files within the directory.
+  #[allow(clippy::too_many_lines)]
   pub async fn from_path(path: &Path) -> Result<Self, Error> {
-    println!("path: {:?}", path);
     //add check to see if its a path or directory and call appropriate api to find files based on that.
     if path.is_dir() {
       return Err(Error::Directory(path.to_path_buf()));
@@ -64,21 +64,19 @@ impl WickPackage {
         let media_type = media_types::APPLICATION;
         let kind = WickPackageKind::APPLICATION;
 
-        extra_files = match app_config.package_files() {
-          Some(files) => files.to_owned(),
-          None => Vec::new(),
-        };
+        extra_files = app_config
+          .package_files()
+          .map_or_else(|| Vec::new(), |files| files.clone());
 
-        registry_reference = match &app_config.package {
-          Some(package) => match &package.registry {
-            Some(registry) => Some(format!(
+        registry_reference = app_config.package.as_ref().map_or(None, |package| {
+          package.registry.as_ref().map_or(None, |registry| {
+            Some(format!(
               "{}/{}/{}:{}",
               registry.registry, registry.namespace, name, version
-            )),
-            None => None,
-          },
-          None => None,
-        };
+            ))
+          })
+        });
+
         (kind, name, version, annotations, parent_dir, media_type)
       }
       WickConfiguration::Component(component_config) => {
@@ -88,21 +86,18 @@ impl WickPackage {
         let media_type = media_types::COMPONENT;
         let kind = WickPackageKind::COMPONENT;
 
-        extra_files = match component_config.package_files() {
-          Some(files) => files.to_owned(),
-          None => Vec::new(),
-        };
+        extra_files = component_config
+          .package_files()
+          .map_or_else(|| Vec::new(), |files| files.clone());
 
-        registry_reference = match &component_config.package {
-          Some(package) => match &package.registry {
-            Some(registry) => Some(format!(
+        registry_reference = component_config.package.as_ref().map_or(None, |package| {
+          package.registry.as_ref().map_or(None, |registry| {
+            Some(format!(
               "{}/{}/{}:{}",
               registry.registry, registry.namespace, name, version
-            )),
-            None => None,
-          },
-          None => None,
-        };
+            ))
+          })
+        });
         (kind, name, version, annotations, parent_dir, media_type)
       }
       _ => return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string())),
@@ -127,7 +122,7 @@ impl WickPackage {
 
     //if length of extra_files is greater than 0, then we need create a tar of all the files
     //and add it to the files list.
-    if extra_files.len() > 0 {
+    if !extra_files.is_empty() {
       let gz_bytes = create_tar_gz(extra_files, &parent_dir).await?;
 
       let tar_hash = format!("sha256:{}", digest(gz_bytes.as_slice()));
@@ -211,17 +206,13 @@ impl WickPackage {
   #[must_use]
   /// Returns the reference.
   pub fn registry_reference(&self) -> Option<String> {
-    //return none if the reference is empty
-    match &self.registry_reference {
-      Some(reference) => {
-        if reference.is_empty() {
-          None
-        } else {
-          Some(reference.to_owned())
-        }
+    self.registry_reference.as_ref().and_then(|reference| {
+      if reference.is_empty() {
+        None
+      } else {
+        Some(reference.clone())
       }
-      None => None,
-    }
+    })
   }
 
   /// Pushes the WickPackage to a specified registry using the provided reference, username, and password.
