@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use anyhow::Result;
+use flow_expression_parser::ast::FlowExpression;
 use flow_graph::iterators::SchematicHop;
 use flow_graph::{Network, NodeReference, PortDirection, Schematic};
 use serde_json::Value;
@@ -86,22 +87,24 @@ pub fn from_manifest(network_def: &wick_config::config::ComponentConfiguration) 
       schematic.add_external(name, NodeReference::new(&def.component_id, &def.name), def.data.clone());
     }
 
-    for connection in &flow.connections {
-      println!("{}", connection);
-      let from = &connection.from;
-      let to = &connection.to;
-      let to_port = if let Some(node) = schematic.find_mut(to.get_instance().id()) {
-        println!("{:?}", node);
-        node.add_input(to.get_port())
-      } else {
-        panic!();
-      };
-      if let Some(node) = schematic.find_mut(from.get_instance().id()) {
-        println!("{:?}", node);
-        let from_port = node.add_output(from.get_port());
-        schematic.connect(from_port, to_port, None)?;
-      } else {
-        // panic!();
+    for connection in &flow.expressions {
+      if let FlowExpression::ConnectionExpression(connection) = connection {
+        println!("{:?}", connection);
+        let from = connection.from();
+        let to = connection.to();
+        let to_port = if let Some(node) = schematic.find_mut(to.instance().id()) {
+          println!("{:?}", node);
+          node.add_input(to.port())
+        } else {
+          panic!();
+        };
+        if let Some(node) = schematic.find_mut(from.instance().id()) {
+          println!("{:?}", node);
+          let from_port = node.add_output(from.port());
+          schematic.connect(from_port, to_port, None)?;
+        } else {
+          // panic!();
+        }
       }
     }
     network.add_schematic(schematic);

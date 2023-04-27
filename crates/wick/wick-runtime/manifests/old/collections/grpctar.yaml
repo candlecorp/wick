@@ -11,7 +11,7 @@ network:
     - name: grpctar
       collections:
         - test-namespace
-      instances:
+      uses:
         add:
           id: test-namespace::add
       connections:

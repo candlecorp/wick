@@ -765,7 +765,7 @@
   <a name="TypesConfiguration">TypesConfiguration</a>
 </h2>
 
-<span class="description type-description">A configuration for a Wick Component</span>
+<span class="description type-description">A type definition for a Wick Components and Operations</span>
 <div class=fields>
 <div class=field>
 
@@ -792,6 +792,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#TypeDefinition">TypeDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="operations">operations</a>
+</h3>
+
+<span class="description field-description">A list of operation signatures.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#OperationDefinition">OperationDefinition</a>[]</span></span></li>
 
 
 </ul>
@@ -1445,7 +1459,7 @@
 </div><div class=field>
 
 <h3 class=field-name>
-  <a name="config">config</a>
+  <a name="with">with</a>
 </h3>
 
 <span class="description field-description">Any configuration necessary for the component.</span>
@@ -1480,7 +1494,7 @@
 </div><div class=field>
 
 <h3 class=field-name>
-  <a name="config">config</a>
+  <a name="with">with</a>
 </h3>
 
 <span class="description field-description">Any configuration necessary for the component.</span>
@@ -1571,10 +1585,10 @@
 </div><div class=field>
 
 <h3 class=field-name>
-  <a name="instances">instances</a>
+  <a name="uses">uses</a>
 </h3>
 
-<span class="description field-description">A map of IDs to specific operation.</span>
+<span class="description field-description">A map of IDs to specific operations.</span>
 
 
 <ul class="field-notes">
@@ -1592,108 +1606,29 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ConnectionDefinition">ConnectionDefinition</a>[]</span></span></li>
-
-
-</ul>
-</div></div></div><div class="definition">
-<h2 class="definition-name type-name">
-  <a name="OperationDefinition">OperationDefinition</a>
-</h2>
-
-<span class="description type-description">An operation name and its input and output signatures</span>
-<div class=fields>
-<div class=field>
-
-<h3 class=field-name>
-  <a name="name">name</a>
-</h3>
-
-<span class="description field-description">The name of the operation.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
-
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="inputs">inputs</a>
-</h3>
-
-<span class="description field-description">Types of the inputs to the operation.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
-
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="outputs">outputs</a>
-</h3>
-
-<span class="description field-description">Types of the outputs to the operation.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#FlowExpression">FlowExpression</a>[]</span></span></li>
 
 
 </ul>
 </div></div></div><div class="definition">## unhandled
-    panic!()</div><div class="definition">## unhandled
     panic!()</div><div class="definition">
 <h2 class="definition-name type-name">
-  <a name="InstanceBinding">InstanceBinding</a>
+  <a name="BlockExpression">BlockExpression</a>
 </h2>
 
-<span class="description type-description">An identifier bound to a component's operation.</span>
+<span class="description type-description">A list of FlowExpressions</span>
 <div class=fields>
 <div class=field>
 
 <h3 class=field-name>
-  <a name="name">name</a>
+  <a name="expressions">expressions</a>
 </h3>
 
-<span class="description field-description">The name of the binding.</span>
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#FlowExpression">FlowExpression</a>[]</span></span></li>
 <li><span class="annotation field-note">Required</span></li>
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="operation">operation</a>
-</h3>
-
-<span class="description field-description">The operation to bind to.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentOperationExpression">ComponentOperationExpression</a></span></span></li>
-<li><span class="annotation field-note">Required</span></li>
-
-</ul>
-</div><div class=field>
-
-<h3 class=field-name>
-  <a name="config">config</a>
-</h3>
-
-<span class="description field-description">Data to associate with the reference, if any.</span>
-
-
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a><span class=optional>(Optional)</span></span></span></li>
-
 
 </ul>
 </div></div></div><div class="definition">
@@ -1773,6 +1708,120 @@
 </h3>
 
 <span class="description field-description">The default value to provide on this connection in the event of an error.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="OperationDefinition">OperationDefinition</a>
+</h2>
+
+<span class="description type-description">An operation name and its input and output signatures</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="with">with</a>
+</h3>
+
+<span class="description field-description">Any configuration required by the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="inputs">inputs</a>
+</h3>
+
+<span class="description field-description">Types of the inputs to the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="outputs">outputs</a>
+</h3>
+
+<span class="description field-description">Types of the outputs to the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">## unhandled
+    panic!()</div><div class="definition">## unhandled
+    panic!()</div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="InstanceBinding">InstanceBinding</a>
+</h2>
+
+<span class="description type-description">An identifier bound to a component's operation.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the binding.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="operation">operation</a>
+</h3>
+
+<span class="description field-description">The operation to bind to.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentOperationExpression">ComponentOperationExpression</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="with">with</a>
+</h3>
+
+<span class="description field-description">Data to associate with the reference, if any.</span>
 
 
 <ul class="field-notes">

@@ -1,29 +1,56 @@
-use flow_component::{ComponentError, Operation};
+use flow_component::{ComponentError, Context, Operation};
 use serde_json::Value;
+use wick_interface_types::{operation, OperationSignature};
 use wick_packet::{packet_stream, PacketStream};
 
-use crate::interpreter::executor::error::ExecutionError;
 use crate::BoxFuture;
-#[derive(Default)]
-pub(crate) struct SenderOperation {}
+#[derive()]
+pub(crate) struct Op {
+  signature: OperationSignature,
+}
 
-#[derive(serde::Deserialize)]
+impl std::fmt::Debug for Op {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct(Op::ID).field("signature", &self.signature).finish()
+  }
+}
+
+impl Op {
+  pub(crate) fn new() -> Self {
+    Self {
+      signature: operation!(Op::ID=> {inputs:{}, outputs: {"output"=>"object"},}),
+    }
+  }
+}
+
+#[derive(serde::Deserialize, Debug)]
 pub(crate) struct SenderData {
   output: Value,
 }
 
-impl Operation for SenderOperation {
+impl Operation for Op {
+  const ID: &'static str = "sender";
+  type Config = SenderData;
   fn handle(
     &self,
     _payload: wick_packet::StreamMap,
-    data: Option<Value>,
+    context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let task = async move {
-      let value = data.ok_or(ComponentError::new(ExecutionError::InvalidSenderData))?;
-      let data: SenderData =
-        serde_json::from_value(value).map_err(|_| ComponentError::new(ExecutionError::InvalidSenderData))?;
-      Ok(packet_stream!(("output", data.output)))
-    };
+    let config = context.config;
+    let task = async move { Ok(packet_stream!(("output", &config.output))) };
     Box::pin(task)
+  }
+
+  fn signature(&self, _config: Option<&Self::Config>) -> &OperationSignature {
+    &self.signature
+  }
+
+  fn input_names(&self, _config: &Self::Config) -> Vec<String> {
+    self.signature.inputs.iter().map(|n| n.name.clone()).collect()
+  }
+
+  fn decode_config(data: Option<Value>) -> Result<Self::Config, ComponentError> {
+    serde_json::from_value(data.ok_or_else(|| ComponentError::message("Empty configuration passed"))?)
+      .map_err(ComponentError::new)
   }
 }

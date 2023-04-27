@@ -7,8 +7,8 @@ pub mod types {
   pub(crate) type Port<'a> = flow_graph::iterators::Port<'a, serde_json::Value>;
 }
 
+use flow_expression_parser::ast::{FlowExpression, InstanceTarget};
 use flow_expression_parser::parse::CORE_ID;
-use flow_expression_parser::InstanceTarget;
 use flow_graph::NodeReference;
 use types::*;
 use wick_config::config::ComponentImplementation;
@@ -42,7 +42,6 @@ impl Reference {
   // }
 }
 
-#[instrument(name = "graph", skip_all, level = "trace", fields(name=manifest.name()))]
 pub fn from_def(manifest: &wick_config::config::ComponentConfiguration) -> Result<Network, flow_graph::error::Error> {
   let mut network = Network::new(manifest.name().clone().unwrap_or_default());
 
@@ -59,36 +58,46 @@ pub fn from_def(manifest: &wick_config::config::ComponentConfiguration) -> Resul
       }
 
       // inline instances
-      for connection in &flow.connections {
-        if let InstanceTarget::Path(path, id) = connection.from.get_instance() {
-          let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
-          schematic.add_external(id, NodeReference::new(component_id, op), None);
-        }
-        if let InstanceTarget::Path(path, id) = connection.to.get_instance() {
-          let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
-          schematic.add_external(id, NodeReference::new(component_id, op), None);
+      for expression in &flow.expressions {
+        match expression {
+          FlowExpression::ConnectionExpression(expr) => {
+            if let InstanceTarget::Path(path, id) = expr.from().instance() {
+              let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
+              schematic.add_external(id, NodeReference::new(component_id, op), None);
+            }
+            if let InstanceTarget::Path(path, id) = expr.to().instance() {
+              let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
+              schematic.add_external(id, NodeReference::new(component_id, op), None);
+            }
+          }
+          FlowExpression::BlockExpression(_) => todo!(),
         }
       }
 
-      for connection in &flow.connections {
-        let from = &connection.from;
-        let to = &connection.to;
-        let to_port = schematic
-          .find_mut(to.get_instance().id())
-          .map(|component| component.add_input(to.get_port()));
+      for connection in &flow.expressions {
+        match connection {
+          FlowExpression::ConnectionExpression(connection) => {
+            let from = connection.from();
+            let to = connection.to();
+            let to_port = schematic
+              .find_mut(to.instance().id())
+              .map(|component| component.add_input(to.port()));
 
-        if to_port.is_none() {
-          return Err(flow_graph::error::Error::MissingDownstream(
-            to.get_instance().id().to_owned(),
-          ));
-        }
-        let to_port = to_port.unwrap();
+            if to_port.is_none() {
+              return Err(flow_graph::error::Error::MissingDownstream(
+                to.instance().id().to_owned(),
+              ));
+            }
+            let to_port = to_port.unwrap();
 
-        if let Some(component) = schematic.find_mut(from.get_instance().id()) {
-          let from_port = component.add_output(from.get_port());
-          schematic.connect(from_port, to_port, None)?;
-        } else {
-          panic!("Can't find component {}", from.get_instance());
+            if let Some(component) = schematic.find_mut(from.instance().id()) {
+              let from_port = component.add_output(from.port());
+              schematic.connect(from_port, to_port, None)?;
+            } else {
+              panic!("Can't find component {}", from.instance());
+            }
+          }
+          FlowExpression::BlockExpression(_) => todo!(),
         }
       }
       network.add_schematic(schematic);

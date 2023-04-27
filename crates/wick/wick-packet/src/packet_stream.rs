@@ -1,6 +1,7 @@
 use std::pin::Pin;
 use std::task::Poll;
 
+use futures::stream::BoxStream;
 use futures::Stream;
 use pin_project_lite::pin_project;
 use wasmrs_rx::{FluxChannel, Observer};
@@ -29,6 +30,12 @@ pin_project! {
   }
 }
 
+impl From<BoxStream<'static, Result<Packet, crate::Error>>> for PacketStream {
+  fn from(stream: BoxStream<'static, Result<Packet, crate::Error>>) -> Self {
+    Self::new(stream)
+  }
+}
+
 impl From<Vec<Packet>> for PacketStream {
   fn from(iter: Vec<Packet>) -> Self {
     Self::new(Box::new(futures::stream::iter(iter.into_iter().map(Ok))))
@@ -37,7 +44,7 @@ impl From<Vec<Packet>> for PacketStream {
 
 impl PacketStream {
   #[cfg(target_family = "wasm")]
-  pub fn new(rx: Box<dyn Stream<Item = Result<Packet, crate::Error>> + Unpin>) -> Self {
+  pub fn new(rx: impl Stream<Item = Result<Packet, crate::Error>> + Unpin + 'static) -> Self {
     Self {
       inner: std::sync::Arc::new(parking_lot::Mutex::new(rx)),
     }

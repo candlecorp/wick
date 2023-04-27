@@ -13,7 +13,7 @@ network:
     - name: wasi_component
       collections:
         - wasi
-      instances:
+      uses:
         read:
           id: wasi::fs-read
       connections:

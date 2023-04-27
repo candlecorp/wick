@@ -1,6 +1,6 @@
 use std::ops::RangeBounds;
 
-use flow_graph::{PortDirection, PortReference};
+use flow_graph::PortReference;
 use parking_lot::Mutex;
 use wick_packet::Packet;
 
@@ -85,21 +85,10 @@ impl PortHandler {
     if self.get_status() == PortStatus::DoneClosed {
       warn!(port=%self.port, "trying to buffer on closed port");
     }
-
     if value.is_done() {
-      match self.port.direction() {
-        PortDirection::In | PortDirection::Out => {
-          self.buffer.push(value);
-        }
-      };
-      if !self.is_empty() {
-        self.set_status(PortStatus::DoneClosing);
-      } else {
-        self.set_status(PortStatus::DoneClosed);
-      }
-    } else {
-      self.buffer.push(value);
-    };
+      self.set_status(PortStatus::DoneClosing);
+    }
+    self.buffer.push(value);
   }
 
   pub(super) fn take(&self) -> Option<PacketType> {
@@ -121,7 +110,7 @@ impl PortHandler {
       return vec![];
     }
     let packets = self.buffer.drain(range);
-    trace!(port=%self.port,packets=?packets, "taking from buffer");
+    trace!(port=%self.port,packets=?packets, "draining buffer");
 
     let status = self.get_status();
     if self.is_empty() && status == PortStatus::DoneClosing {

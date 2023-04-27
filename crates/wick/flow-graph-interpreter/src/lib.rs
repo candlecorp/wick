@@ -85,6 +85,10 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
+#[allow(unused_imports, missing_debug_implementations, clippy::needless_pass_by_value)]
+mod generated;
+pub use generated::types;
+
 pub mod constants;
 mod default;
 pub mod error;
@@ -99,6 +103,7 @@ type SharedHandler = std::sync::Arc<Box<dyn Component + Send + Sync>>;
 extern crate tracing;
 
 use flow_component::Component;
+pub use generated::*;
 pub use interpreter::channel::{Event, EventKind};
 pub use interpreter::components::{HandlerMap, NamespaceHandler};
 pub use interpreter::event_loop::state::State;

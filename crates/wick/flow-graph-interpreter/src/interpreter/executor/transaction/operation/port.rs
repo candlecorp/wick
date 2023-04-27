@@ -17,6 +17,25 @@ pub(crate) enum PortStatus {
   DoneClosed,
 }
 
+impl PortStatus {
+  #[allow(unused)]
+  #[must_use]
+  pub(crate) fn is_open(self) -> bool {
+    !matches!(self, PortStatus::DoneClosed)
+  }
+  #[allow(unused)]
+  #[must_use]
+  pub(crate) fn is_closed(self) -> bool {
+    matches!(self, PortStatus::DoneClosed)
+  }
+
+  #[allow(unused)]
+  #[must_use]
+  pub(crate) fn is_done(self) -> bool {
+    matches!(self, PortStatus::DoneClosed | PortStatus::DoneClosing)
+  }
+}
+
 impl std::fmt::Display for PortStatus {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(

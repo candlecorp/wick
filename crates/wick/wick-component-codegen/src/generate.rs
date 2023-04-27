@@ -1,21 +1,70 @@
-mod builder;
 pub(crate) mod config;
-use std::cell::{RefCell, RefMut};
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+mod expand_type;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use anyhow::Result;
-pub use builder::configure;
+pub use config::configure;
+use expand_type::expand_type;
 use heck::{AsPascalCase, AsSnakeCase};
-use proc_macro2::{Ident, Literal, Span, TokenStream};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
-use syn::parse::{Parse, ParseStream};
-use syn::{parse_macro_input, Expr, Lit, LitStr};
-use wick_config::config::{BoundInterface, FlowOperation, InterfaceDefinition, OperationSignature};
-use wick_config::{normalize_path, FetchOptions, WickConfiguration};
+use wick_config::config::{BoundInterface, OperationSignature};
+use wick_config::{FetchOptions, WickConfiguration};
 use wick_interface_types::{EnumSignature, EnumVariant, StructSignature, TypeDefinition};
 
+use crate::module::Module;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Direction {
+  In,
+  Out,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub(crate) enum Dependency {
+  WasmRsRx,
+  WasmRs,
+  WasmRsCodec,
+  WasmRsRuntime,
+  SerdeJson,
+  Bytes,
+  WickComponent,
+  AsyncTrait,
+  WickPacket,
+}
+
+impl ToTokens for Dependency {
+  fn to_tokens(&self, tokens: &mut TokenStream) {
+    match self {
+      Dependency::WasmRsRx => {
+        tokens.extend(
+          quote! { pub use wick_component::wasmrs_rx; pub(crate) use wick_component::wasmrs_rx::{Observer,Observable}; },
+        );
+      }
+      Dependency::WasmRsRuntime => {
+        tokens.extend(quote! { pub use wick_component::runtime; });
+      }
+
+      Dependency::WasmRs => {
+        tokens.extend(quote! { pub use wick_component::wasmrs; });
+      }
+      Dependency::WasmRsCodec => {
+        tokens.extend(quote! { pub use wick_component::wasmrs_codec; });
+      }
+      Dependency::WickPacket => tokens.extend(quote! { pub use wick_component::packet as wick_packet; }),
+      Dependency::SerdeJson => tokens.extend(quote! {
+        #[cfg(target_family="wasm")]
+        pub use wasmrs_guest::Value;
+        #[cfg(not(target_family="wasm"))]
+        pub use serde_json::Value;
+      }),
+      Dependency::Bytes => tokens.extend(quote! { pub use bytes::Bytes; }),
+      Dependency::AsyncTrait => tokens.extend(quote! { pub use async_trait::async_trait; }),
+      Dependency::WickComponent => tokens.extend(quote! { pub use wick_component; }),
+    }
+  }
+}
 fn snake(s: &str) -> String {
   AsSnakeCase(s).to_string()
 }
@@ -39,7 +88,7 @@ fn get_typename_parts(name: &str) -> (Vec<&str>, &str) {
   (parts.0.to_vec(), parts.1[0])
 }
 
-fn pathify_typename(name: &str) -> String {
+fn _pathify_typename(name: &str) -> String {
   println!("name: {:?}", name);
   let (module_parts, item_part) = get_typename_parts(name);
   let mut path = module_parts
@@ -54,20 +103,12 @@ fn pathify_typename(name: &str) -> String {
   path
 }
 
-fn structdef_path(ty: &StructSignature) -> String {
-  pathify_typename(&ty.name)
-}
-
-fn enumdef_name(ty: &EnumSignature) -> String {
-  pascal(&ty.name)
-}
-
 fn enumvariant_name(ty: &EnumVariant) -> String {
   pascal(&ty.name)
 }
 
 fn gen_register_channels<'a>(
-  config: &config::Config,
+  _config: &config::Config,
   component: &Ident,
   op: impl Iterator<Item = &'a OperationSignature>,
 ) -> Vec<TokenStream> {
@@ -76,126 +117,10 @@ fn gen_register_channels<'a>(
     let string = &op.name;
 
     quote! {
-        guest::register_request_channel("wick", #string, Box::new(#component::#name));
+      wasmrs_guest::register_request_channel("wick", #string, Box::new(#component::#name));
     }
   })
   .collect()
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum Direction {
-  In,
-  Out,
-}
-
-fn expand_type(
-  config: &config::Config,
-  dir: Direction,
-  imported: bool,
-  ty: &wick_interface_types::TypeSignature,
-) -> TokenStream {
-  println!("expand_type:  {:?}", ty);
-  if config.raw && dir != Direction::Out {
-    return quote! { wick_component::packet::Packet };
-  }
-  match ty {
-    wick_interface_types::TypeSignature::Bool => quote! { bool },
-    wick_interface_types::TypeSignature::U8 => quote! { u8 },
-    wick_interface_types::TypeSignature::U16 => quote! { u16 },
-    wick_interface_types::TypeSignature::U32 => quote! { u32 },
-    wick_interface_types::TypeSignature::U64 => quote! { u64 },
-    wick_interface_types::TypeSignature::I8 => quote! { i8 },
-    wick_interface_types::TypeSignature::I16 => quote! { i16 },
-    wick_interface_types::TypeSignature::I32 => quote! { i32 },
-    wick_interface_types::TypeSignature::I64 => quote! { i64 },
-    wick_interface_types::TypeSignature::F32 => quote! { f32 },
-    wick_interface_types::TypeSignature::F64 => quote! { f64 },
-    wick_interface_types::TypeSignature::String => quote! { String },
-    wick_interface_types::TypeSignature::List { ty } => {
-      let ty = expand_type(config, dir, imported, ty);
-      quote! { Vec<#ty> }
-    }
-    wick_interface_types::TypeSignature::Bytes => {
-      quote! {bytes::Bytes}
-    }
-    wick_interface_types::TypeSignature::Custom(name) => {
-      let (mod_parts, item_part) = get_typename_parts(name);
-      let mod_parts = mod_parts.iter().map(|p| Ident::new(p, Span::call_site()));
-      let ty = Ident::new(item_part, Span::call_site());
-      let location = if imported {
-        quote! {}
-      } else {
-        quote! {types::}
-      };
-      quote! {#location #(#mod_parts ::)*#ty}
-    }
-    wick_interface_types::TypeSignature::Optional { ty } => {
-      let ty = expand_type(config, dir, imported, ty);
-      quote! { Option<#ty> }
-    }
-    wick_interface_types::TypeSignature::Map { key, value } => {
-      let key = expand_type(config, dir, imported, key);
-      let value = expand_type(config, dir, imported, value);
-      quote! { std::collections::HashMap<#key,#value> }
-    }
-    wick_interface_types::TypeSignature::Link { schemas } => quote! {wick_component::packet::ComponentReference},
-    wick_interface_types::TypeSignature::Datetime => todo!("implement datetime in new codegen"),
-    wick_interface_types::TypeSignature::Ref { reference } => todo!("implement ref in new codegen"),
-    wick_interface_types::TypeSignature::Stream { ty } => {
-      let ty = expand_type(config, dir, imported, ty);
-      quote! { WickStream<#ty> }
-    }
-    wick_interface_types::TypeSignature::Object => {
-      quote! { wasmrs_guest::Value }
-    }
-    wick_interface_types::TypeSignature::AnonymousStruct(_) => todo!("implement anonymous struct in new codegen"),
-  }
-}
-
-struct Module(String, Vec<TokenStream>, Vec<Rc<RefCell<Module>>>);
-
-impl Module {
-  fn new(name: &str) -> Rc<RefCell<Self>> {
-    Rc::new(RefCell::new(Self(name.to_owned(), vec![], vec![])))
-  }
-
-  fn add(&mut self, implementation: TokenStream) {
-    self.1.push(implementation);
-  }
-
-  fn add_module(&mut self, module: Rc<RefCell<Module>>) {
-    self.2.push(module);
-  }
-
-  #[allow(clippy::option_if_let_else)]
-  fn get_or_add(&mut self, name: &str) -> Rc<RefCell<Self>> {
-    if let Some(module) = self.2.iter_mut().find(|m| m.borrow().0 == name) {
-      module.clone()
-    } else {
-      self.add_module(Module::new(name));
-      self.get_or_add(name)
-    }
-  }
-
-  fn to_tokens_(&self) -> TokenStream {
-    let name = Ident::new(&self.0, Span::call_site());
-    let implementations = &self.1;
-    let modules = &self.2.iter().map(|m| m.borrow().to_tokens_()).collect::<Vec<_>>();
-    quote! {
-      pub mod #name {
-        #[allow(unused)]
-        use super::#name;
-        #(#implementations)*
-        #(#modules)*
-      }
-    }
-  }
-}
-
-impl ToTokens for Module {
-  fn to_tokens(&self, tokens: &mut TokenStream) {
-    tokens.extend(self.to_tokens_());
-  }
 }
 
 fn place_item(module: &Rc<RefCell<Module>>, mut path_parts_reverse: Vec<&str>, implementation: TokenStream) {
@@ -207,23 +132,18 @@ fn place_item(module: &Rc<RefCell<Module>>, mut path_parts_reverse: Vec<&str>, i
   }
 }
 
-fn gen_types<'a>(config: &config::Config, ty: impl Iterator<Item = &'a TypeDefinition>) -> TokenStream {
+fn gen_types<'a>(config: &mut config::Config, ty: impl Iterator<Item = &'a TypeDefinition>) -> TokenStream {
   let types = ty.map(|v| gen_type(config, v)).collect::<Vec<_>>();
-  let mut mod_map: HashMap<String, Vec<&TokenStream>> = HashMap::default();
-  let mut root = Module::new("types");
+  let root = Module::new("types");
   for (mod_parts, implementation) in types {
     place_item(&root, mod_parts, implementation);
   }
 
   let borrowed = root.borrow();
-  borrowed.to_tokens_()
+  borrowed.codegen()
 }
 
-fn gen_provided(config: &config::Config, required: &[BoundInterface]) -> TokenStream {
-  if required.is_empty() {
-    return quote! {};
-  }
-
+fn gen_provided(_config: &config::Config, required: &[BoundInterface]) -> TokenStream {
   let required_names = required
     .iter()
     .map(|r: &BoundInterface| {
@@ -256,7 +176,16 @@ fn gen_provided(config: &config::Config, required: &[BoundInterface]) -> TokenSt
   }
 }
 
-fn gen_response_streams(config: &config::Config, required: Vec<BoundInterface>) -> TokenStream {
+#[allow(clippy::needless_pass_by_value)]
+fn wrap_parens(list: Vec<impl ToTokens>) -> TokenStream {
+  if list.len() == 1 {
+    quote! { #(#list),* }
+  } else {
+    quote! { (#(#list),*) }
+  }
+}
+
+fn gen_response_streams(config: &mut config::Config, required: Vec<BoundInterface>) -> TokenStream {
   let fields = required
     .into_iter()
     .map(|v| {
@@ -271,9 +200,14 @@ fn gen_response_streams(config: &config::Config, required: Vec<BoundInterface>) 
           let response_streams: Vec<_> = op
             .outputs
             .iter()
-            .map(|output| (output.name.clone(), expand_type(config, Direction::In, false,&output.ty)))
+            .map(|output| {
+              (
+                output.name.clone(),
+                expand_type(config, Direction::In, false, &output.ty),
+              )
+            })
             .collect();
-          let response_stream_types = response_streams.iter().map(|(_, ty)| quote!{ WickStream<#ty>});
+          let response_stream_types = response_streams.iter().map(|(_, ty)| quote! { WickStream<#ty>});
           let fan_out: Vec<_> = response_streams
             .iter()
             .map(|(n, t)| {
@@ -282,13 +216,10 @@ fn gen_response_streams(config: &config::Config, required: Vec<BoundInterface>) 
               }
             })
             .collect();
-          let types = if response_stream_types.len() == 1 {
-            quote! { #(#response_stream_types),* }
-          } else {
-            quote! { (#(#response_stream_types),*) }
-          };
+          let types = wrap_parens(response_stream_types.collect());
+          config.add_dep(Dependency::WickComponent);
           quote! {
-            pub fn #name(&self, input: wick_component::packet::PacketStream) -> std::result::Result<#types,wick_component::packet::Error> {
+            pub fn #name(&self, input: wick_packet::PacketStream) -> std::result::Result<#types,wick_packet::Error> {
               let mut stream = self.component.call(#op_name, input)?;
               Ok(wick_component::payload_fan_out!(stream, raw: false, [#(#fan_out),*]))
             }
@@ -296,16 +227,17 @@ fn gen_response_streams(config: &config::Config, required: Vec<BoundInterface>) 
         })
         .collect::<Vec<_>>();
 
+      config.add_dep(Dependency::WickPacket);
       quote! {
         pub struct #name {
-          component: wick_component::packet::ComponentReference,
+          component: wick_packet::ComponentReference,
         }
 
         impl #name {
-          pub fn new(component: wick_component::packet::ComponentReference) -> Self {
+          pub fn new(component: wick_packet::ComponentReference) -> Self {
             Self { component }
           }
-          pub fn component(&self) -> &wick_component::packet::ComponentReference {
+          pub fn component(&self) -> &wick_packet::ComponentReference {
             &self.component
           }
           #(#ops)*
@@ -319,14 +251,14 @@ fn gen_response_streams(config: &config::Config, required: Vec<BoundInterface>) 
   }
 }
 
-fn gen_type<'a>(config: &config::Config, ty: &'a TypeDefinition) -> (Vec<&'a str>, TokenStream) {
+fn gen_type<'a>(config: &mut config::Config, ty: &'a TypeDefinition) -> (Vec<&'a str>, TokenStream) {
   match ty {
     TypeDefinition::Enum(ty) => gen_enum(config, ty),
     TypeDefinition::Struct(ty) => gen_struct(config, ty),
   }
 }
 
-fn gen_enum<'a>(config: &config::Config, ty: &'a EnumSignature) -> (Vec<&'a str>, TokenStream) {
+fn gen_enum<'a>(_config: &config::Config, ty: &'a EnumSignature) -> (Vec<&'a str>, TokenStream) {
   let (path_parts, item_part) = get_typename_parts(&ty.name);
   let name = Ident::new(item_part, Span::call_site());
   let variants = ty
@@ -343,7 +275,7 @@ fn gen_enum<'a>(config: &config::Config, ty: &'a EnumSignature) -> (Vec<&'a str>
     .iter()
     .filter_map(|v| {
       let identname = Ident::new(&enumvariant_name(v), Span::call_site());
-      v.index.map(|i| quote! {i => Self::#identname})
+      v.index.map(|_| quote! {i => Self::#identname})
     })
     .collect::<Vec<_>>();
 
@@ -429,7 +361,7 @@ fn gen_enum<'a>(config: &config::Config, ty: &'a EnumSignature) -> (Vec<&'a str>
   (path_parts, enum_impl)
 }
 
-fn gen_struct<'a>(config: &config::Config, ty: &'a StructSignature) -> (Vec<&'a str>, TokenStream) {
+fn gen_struct<'a>(config: &mut config::Config, ty: &'a StructSignature) -> (Vec<&'a str>, TokenStream) {
   let (module_parts, item_part) = get_typename_parts(&ty.name);
   let imported = ty.imported;
 
@@ -454,7 +386,7 @@ fn gen_struct<'a>(config: &config::Config, ty: &'a StructSignature) -> (Vec<&'a 
 }
 
 fn gen_wrapper_fns<'a>(
-  config: &config::Config,
+  config: &mut config::Config,
   component: &Ident,
   op: impl Iterator<Item = &'a OperationSignature>,
 ) -> Vec<TokenStream> {
@@ -464,10 +396,9 @@ fn gen_wrapper_fns<'a>(
     .collect()
 }
 
-fn gen_wrapper_fn(config: &config::Config, component: &Ident, op: &OperationSignature) -> TokenStream {
+fn gen_wrapper_fn(config: &mut config::Config, component: &Ident, op: &OperationSignature) -> TokenStream {
   let impl_name = Ident::new(&snake(&op.name), Span::call_site());
   let wrapper_name = Ident::new(&op_wrapper_name(op), Span::call_site());
-  let string = &snake(&op.name);
   let input_pairs = op
     .inputs
     .iter()
@@ -494,17 +425,20 @@ fn gen_wrapper_fn(config: &config::Config, component: &Ident, op: &OperationSign
   } else {
     quote! {raw:false}
   };
+  config.add_dep(Dependency::WickPacket);
+  config.add_dep(Dependency::WasmRs);
+  config.add_dep(Dependency::WasmRsRuntime);
 
   quote! {
-    fn #wrapper_name(mut input: BoxFlux<Payload, PayloadError>) -> std::result::Result<BoxFlux<RawPayload, PayloadError>,Box<dyn std::error::Error + Send + Sync>> {
-      let (channel, rx) = FluxChannel::<RawPayload, PayloadError>::new_parts();
+    fn #wrapper_name(mut input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>) -> std::result::Result<wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>,Box<dyn std::error::Error + Send + Sync>> {
+      let (channel, rx) = wasmrs_rx::FluxChannel::<wasmrs::RawPayload, wasmrs::PayloadError>::new_parts();
       let outputs = #outputs_name::new(channel.clone());
 
-      spawn(async move {
+      runtime::spawn(async move {
         let #sanitized_input_names = wick_component::payload_fan_out!(input, #raw, [#(#input_pairs,)*]);
         if let Err(e) = #component::#impl_name(#(Box::pin(#inputs),)* outputs).await {
           let _ = channel.send_result(
-            wick_component::packet::Packet::component_error(e.to_string()).into(),
+            wick_packet::Packet::component_error(e.to_string()).into(),
           );
         }
       });
@@ -515,37 +449,26 @@ fn gen_wrapper_fn(config: &config::Config, component: &Ident, op: &OperationSign
 }
 
 fn gen_trait_fns<'a>(
-  config: &config::Config,
-  component: &Ident,
+  config: &mut config::Config,
   op: impl Iterator<Item = &'a OperationSignature>,
 ) -> Vec<TokenStream> {
-  op.map(|op| gen_trait_signature(config, component, op))
+  op.map(|op| gen_trait_signature(config, op))
     .collect::<Vec<_>>()
     .into_iter()
     .collect()
 }
 
-fn gen_trait_signature(config: &config::Config, component: &Ident, op: &OperationSignature) -> TokenStream {
+fn gen_trait_signature(config: &mut config::Config, op: &OperationSignature) -> TokenStream {
   let outputs_name = Ident::new(&op_outputs_name(op), Span::call_site());
   let trait_name = Ident::new(&format!("Op{}", &pascal(&op.name)), Span::call_site());
   let impl_name = Ident::new(&snake(&op.name), Span::call_site());
-  let input_pairs = op
-    .inputs
-    .iter()
-    .map(|i| {
-      let port_name = &i.name;
-      let port_type = expand_type(config, Direction::In, false, &i.ty);
-      quote! {(#port_name, #port_type)}
-    })
-    .collect::<Vec<_>>();
   let output_ports = op
     .outputs
     .iter()
     .map(|i| {
-      let port_name = &i.name;
       let port_field_name = Ident::new(&snake(&i.name), Span::call_site());
       let port_type = expand_type(config, Direction::Out, false, &i.ty);
-      quote! {pub(crate) #port_field_name: wick_component::packet::Output<#port_type>}
+      quote! {pub(crate) #port_field_name: wick_packet::Output<#port_type>}
     })
     .collect::<Vec<_>>();
   let output_ports_new = op
@@ -554,7 +477,7 @@ fn gen_trait_signature(config: &config::Config, component: &Ident, op: &Operatio
     .map(|i| {
       let port_name = &i.name;
       let port_field_name = Ident::new(&snake(&i.name), Span::call_site());
-      quote! {#port_field_name: wick_component::packet::Output::new(#port_name, channel.clone())}
+      quote! {#port_field_name: wick_packet::Output::new(#port_name, channel.clone())}
     })
     .collect::<Vec<_>>();
 
@@ -568,29 +491,116 @@ fn gen_trait_signature(config: &config::Config, component: &Ident, op: &Operatio
     })
     .collect::<Vec<_>>();
 
-  quote! {
+  let traits = gen_if(
+    config.op_traits,
+    || {
+      config.add_dep(Dependency::AsyncTrait);
+    },
+    quote! {
+      #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
+      #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+      pub trait #trait_name {
+        #[allow(unused)]
+        async fn #impl_name(#(#inputs),*, outputs: #outputs_name) -> Result<()> {unimplemented!()}
+      }
+    },
+  );
+
+  let outputs = gen_if(
+    config.output_structs,
+    || {
+      config.add_dep(Dependency::WickPacket);
+      config.add_dep(Dependency::WasmRsRx);
+      config.add_dep(Dependency::WasmRs);
+    },
+    quote! {
     pub struct #outputs_name {
       #[allow(unused)]
       #(#output_ports,)*
     }
     impl #outputs_name {
-      pub fn new(channel: FluxChannel<RawPayload, PayloadError>) -> Self {
+      pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
         Self {
           #(#output_ports_new,)*
         }
       }
+    }},
+  );
+
+  quote! {
+    #outputs
+    #traits
+  }
+}
+
+fn gen_component_impls<'a>(
+  gen_config: &mut config::Config,
+  component_name: &Ident,
+  ops: impl Iterator<Item = &'a OperationSignature>,
+  required: Vec<BoundInterface>,
+) -> TokenStream {
+  let provided = gen_if(!required.is_empty(), || {}, gen_provided(gen_config, &required));
+  let response_streams = gen_response_streams(gen_config, required);
+  let register_stmts = gen_register_channels(gen_config, component_name, ops);
+  gen_config.add_dep(Dependency::WickPacket);
+  gen_config.add_dep(Dependency::WasmRs);
+  gen_config.add_dep(Dependency::WasmRsCodec);
+  quote! {
+    #[no_mangle]
+    #[cfg(target_family = "wasm")]
+    extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {
+      wasmrs_guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
+      wasmrs_guest::register_request_response("wick", "__setup", Box::new(__setup));
+      #(#register_stmts)*
     }
-    #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
-    #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-    pub trait #trait_name {
+
+    #[cfg(target_family = "wasm")]
+    thread_local! {
+      static __CONFIG: std::cell::UnsafeCell<Option<SetupPayload>> = std::cell::UnsafeCell::new(None);
+    }
+
+    #[cfg(target_family = "wasm")]
+    #[derive(Debug, serde::Deserialize)]
+    pub(crate) struct SetupPayload {
       #[allow(unused)]
-      async fn #impl_name(#(#inputs),*, outputs: #outputs_name) -> Result<()> {unimplemented!()}
+      pub(crate) provided: std::collections::HashMap<String,wick_packet::ComponentReference>
     }
+
+    #[cfg(target_family = "wasm")]
+    fn __setup(input: wasmrs_rx::BoxMono<wasmrs::Payload, wasmrs::PayloadError>) -> Result<wasmrs_rx::BoxMono<wasmrs::RawPayload, wasmrs::PayloadError>, wick_component::BoxError> {
+      Ok(wasmrs_rx::Mono::from_future(async move {
+        match input.await {
+          Ok(payload) => {
+            let input = wasmrs_codec::messagepack::deserialize::<SetupPayload>(&payload.data).unwrap();
+            __CONFIG.with(|cell| {
+              #[allow(unsafe_code)]
+              unsafe { &mut *cell.get() }.replace(input);
+            });
+            Ok(wasmrs::RawPayload::new_data(None, None))
+          }
+          Err(e) => {
+            return Err(e);
+          }
+        }
+      }).boxed())
+    }
+
+    #[allow(unused)]
+    #[cfg(target_family = "wasm")]
+    pub(crate) fn get_config() -> &'static SetupPayload {
+      __CONFIG.with(|cell| {
+        #[allow(unsafe_code)]
+        unsafe { & *cell.get() }.as_ref().unwrap()
+      })
+    }
+    #response_streams
+    #provided
+
   }
 }
 
 #[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
-fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Result<String> {
+fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> Result<String> {
   let (ops, types, required): (_, _, Vec<_>) = match &wick_config {
     wick_config::WickConfiguration::Component(config) => {
       let types = config.types()?;
@@ -604,90 +614,42 @@ fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Resul
       };
       (ops, types, requires)
     }
-    wick_config::WickConfiguration::Types(config) => (
-      std::collections::HashMap::default(),
-      config.types().to_vec(),
-      Default::default(),
-    ),
+    wick_config::WickConfiguration::Types(config) => {
+      (config.operations().clone(), config.types().to_vec(), Default::default())
+    }
     _ => panic!("Code generation only supports `wick/component` and `wick/types` configurations"),
   };
 
   let component_name = Ident::new("Component", Span::call_site());
-  let register_stmts = gen_register_channels(gen_config, &component_name, ops.values());
   let wrapper_fns = gen_wrapper_fns(gen_config, &component_name, ops.values());
-  let trait_defs = gen_trait_fns(gen_config, &component_name, ops.values());
+  let trait_defs = gen_trait_fns(gen_config, ops.values());
   let typedefs = gen_types(gen_config, types.iter());
 
-  let init = if matches!(wick_config, WickConfiguration::Types(_)) {
-    quote! {}
-  } else {
-    let provided = gen_provided(gen_config, &required);
-    let response_streams = gen_response_streams(gen_config, required);
-    quote! {
-      #[no_mangle]
-      #[cfg(target_family = "wasm")]
-      extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {
-        guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
-        guest::register_request_response("wick", "__setup", Box::new(__setup));
-        #(#register_stmts)*
-      }
+  let init = gen_if(
+    !ops.is_empty(),
+    || {},
+    gen_component_impls(gen_config, &component_name, ops.values(), required),
+  );
+  let mut imports = Vec::new();
+  for dep in gen_config.deps.iter() {
+    imports.push(quote! {  #dep });
+  }
 
-      #[cfg(target_family = "wasm")]
-      thread_local! {
-        static __CONFIG: std::cell::UnsafeCell<Option<SetupPayload>> = std::cell::UnsafeCell::new(None);
-      }
-
-      #[cfg(target_family = "wasm")]
-      #[derive(Debug, serde::Deserialize)]
-      pub(crate) struct SetupPayload {
-        #[allow(unused)]
-        pub(crate) provided: std::collections::HashMap<String,wick_component::packet::ComponentReference>
-      }
-
-      #[cfg(target_family = "wasm")]
-      fn __setup(input: BoxMono<Payload, PayloadError>) -> Result<BoxMono<RawPayload, PayloadError>, GenericError> {
-        Ok(Mono::from_future(async move {
-          match input.await {
-            Ok(payload) => {
-              let input = wasmrs_guest::deserialize::<SetupPayload>(&payload.data).unwrap();
-              __CONFIG.with(|cell| {
-                #[allow(unsafe_code)]
-                unsafe { &mut *cell.get() }.replace(input);
-              });
-              Ok(RawPayload::new_data(None, None))
-            }
-            Err(e) => {
-              return Err(e);
-            }
-          }
-        }).boxed())
-      }
-
-      #[allow(unused)]
-      #[cfg(target_family = "wasm")]
-      pub(crate) fn get_config() -> &'static SetupPayload {
-        __CONFIG.with(|cell| {
-          #[allow(unsafe_code)]
-          unsafe { & *cell.get() }.as_ref().unwrap()
-        })
-      }
-      #response_streams
-      #provided
-
-    }
+  let imports = quote! {
+      #( #imports )*
   };
-
-  let guest = if matches!(wick_config, WickConfiguration::Types(_)) {
-    quote! {}
-  } else {
+  let components = gen_if(gen_config.components, || {}, {
     quote! {
-      #[allow(unused)]
-      use guest::*;
-      use wasmrs_guest as guest;
+      #[derive(Default, Clone)]
+      pub struct #component_name;
+      impl #component_name {
+        #( #wrapper_fns )*
+      }
     }
-  };
+  });
+
   let expanded = quote! {
-    #guest
+    #imports
     #[allow(unused)]
     pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, wick_component::anyhow::Error>;
     pub use wick_component::anyhow::Result;
@@ -696,14 +658,19 @@ fn codegen(wick_config: WickConfiguration, gen_config: &config::Config) -> Resul
 
     #typedefs
     #( #trait_defs )*
-
-    #[derive(Default, Clone)]
-    pub struct #component_name;
-    impl #component_name {
-      #( #wrapper_fns )*
-    }
+    #components
   };
   Ok(expanded.to_string())
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn gen_if(condition: bool, mut func: impl FnMut(), value: TokenStream) -> TokenStream {
+  if condition {
+    func();
+    quote! { #value }
+  } else {
+    quote! {}
+  }
 }
 
 pub fn build(config: config::Config) -> Result<()> {
@@ -711,11 +678,11 @@ pub fn build(config: config::Config) -> Result<()> {
   rt.block_on(async_build(config))
 }
 
-pub async fn async_build(config: config::Config) -> Result<()> {
+pub async fn async_build(mut config: config::Config) -> Result<()> {
   let path = config.spec.as_path().to_str().unwrap();
   let wick_config = wick_config::WickConfiguration::fetch(path, FetchOptions::default()).await?;
 
-  let src = codegen(wick_config, &config)?;
+  let src = codegen(wick_config, &mut config)?;
   tokio::fs::create_dir_all(&config.out_dir).await?;
   let target = config.out_dir.join("mod.rs");
   println!("Writing to {}", target.display());
@@ -729,14 +696,15 @@ mod test {
   use wick_interface_types::TypeSignature;
 
   use super::*;
+  use crate::generate::config::ConfigBuilder;
   use crate::Config;
 
   #[tokio::test]
   async fn test_build() -> Result<()> {
-    let config = Config::new().spec("./tests/testdata/component.yaml");
+    let mut config = ConfigBuilder::new().spec("./tests/testdata/component.yaml").build()?;
     let wick_config = WickConfiguration::load_from_file(&config.spec).await.unwrap();
 
-    let src = codegen(wick_config, &config)?;
+    let src = codegen(wick_config, &mut config)?;
 
     assert!(src.contains("pub struct Component"));
 
@@ -745,11 +713,11 @@ mod test {
 
   #[test]
   fn test_expand_type() -> Result<()> {
-    let config = Config::default();
+    let mut config = Config::default();
     let ty = TypeSignature::Object;
-    let src = expand_type(&config, Direction::In, false, &ty);
+    let src = expand_type(&mut config, Direction::In, false, &ty);
 
-    assert_eq!(&src.to_string(), "wasmrs_guest :: Value");
+    assert_eq!(&src.to_string(), "Value");
 
     Ok(())
   }

@@ -56,6 +56,14 @@ impl Packet {
     }
   }
 
+  pub fn has_data(&self) -> bool {
+    match &self.payload {
+      PacketPayload::Ok(Some(data)) => !data.is_empty(),
+      PacketPayload::Ok(None) => false,
+      PacketPayload::Err(_) => false,
+    }
+  }
+
   pub fn component_error(err: impl AsRef<str>) -> Self {
     Self::new_for_port("<component>", PacketPayload::fatal_error(err), 0)
   }

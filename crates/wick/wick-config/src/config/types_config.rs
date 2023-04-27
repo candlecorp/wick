@@ -1,5 +1,9 @@
+use std::collections::HashMap;
+
 use asset_container::AssetManager;
 use wick_interface_types::TypeDefinition;
+
+use super::OperationSignature;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(crate::config::AssetReference)]
@@ -9,6 +13,8 @@ pub struct TypesConfiguration {
   pub(crate) source: Option<String>,
   #[asset(skip)]
   pub(crate) types: Vec<TypeDefinition>,
+  #[asset(skip)]
+  pub(crate) operations: HashMap<String, OperationSignature>,
 }
 
 impl TypesConfiguration {
@@ -17,10 +23,28 @@ impl TypesConfiguration {
     &self.types
   }
 
+  /// Get the inner definitions, consuming the [TypesConfiguration].
+  #[must_use]
+  pub fn into_parts(self) -> (Vec<TypeDefinition>, HashMap<String, OperationSignature>) {
+    (self.types, self.operations)
+  }
+
   /// Get the types defined in this configuration, consuming the [TypesConfiguration].
   #[must_use]
   pub fn into_types(self) -> Vec<TypeDefinition> {
     self.types
+  }
+
+  /// Get the operations defined in this configuration.
+  #[must_use]
+  pub fn operations(&self) -> &HashMap<String, OperationSignature> {
+    &self.operations
+  }
+
+  /// Get the operations defined in this configuration, consuming the [TypesConfiguration].
+  #[must_use]
+  pub fn into_operations(self) -> HashMap<String, OperationSignature> {
+    self.operations
   }
 
   /// Get a type by name

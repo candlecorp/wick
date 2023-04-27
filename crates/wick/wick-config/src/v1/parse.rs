@@ -1,7 +1,9 @@
 use std::str::FromStr;
 
+use flow_expression_parser::ast;
 use serde::Deserialize;
 
+use crate::error::ManifestError;
 use crate::{v1, Error};
 
 type Result<T> = std::result::Result<T, Error>;
@@ -23,7 +25,8 @@ pub(crate) fn parse_connection_target(s: &str) -> Result<v1::ConnectionTargetDef
 }
 
 pub(crate) fn parse_connection(s: &str) -> Result<v1::ConnectionDefinition> {
-  let (from, to) = flow_expression_parser::parse::v1::parse_connection_pieces(s)?;
+  let (from, to) = flow_expression_parser::parse::v1::parse_connection_expression(s)?.into_parts();
+  let (from, to) = (from.into_parts(), to.into_parts());
   Ok(v1::ConnectionDefinition {
     from: v1::ConnectionTargetDefinition {
       instance: from.0.to_string(),
@@ -50,17 +53,6 @@ impl TryFrom<(String, String, Option<serde_json::Value>)> for v1::ConnectionTarg
   }
 }
 
-// impl FromStr for crate::v1::InstanceDefinition {
-//   type Err = Error;
-
-//   fn from_str(s: &str) -> Result<Self> {
-//     Ok(Self {
-//       id: s.to_owned(),
-//       config: None,
-//     })
-//   }
-// }
-
 impl FromStr for crate::v1::ConnectionDefinition {
   type Err = Error;
 
@@ -77,15 +69,13 @@ impl FromStr for crate::v1::ConnectionTargetDefinition {
   }
 }
 
-pub(crate) fn vec_connection<'de, D>(
-  deserializer: D,
-) -> std::result::Result<Vec<crate::v1::ConnectionDefinition>, D::Error>
+pub(crate) fn vec_connection<'de, D>(deserializer: D) -> std::result::Result<Vec<crate::v1::FlowExpression>, D::Error>
 where
   D: serde::Deserializer<'de>,
 {
-  struct ConnectionDefVisitor;
-  impl<'de> serde::de::Visitor<'de> for ConnectionDefVisitor {
-    type Value = Vec<crate::v1::ConnectionDefinition>;
+  struct Visitor;
+  impl<'de> serde::de::Visitor<'de> for Visitor {
+    type Value = Vec<crate::v1::FlowExpression>;
     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
       write!(f, "a list of connections")
     }
@@ -93,16 +83,17 @@ where
     fn visit_seq<A: serde::de::SeqAccess<'de>>(
       self,
       mut seq: A,
-    ) -> std::result::Result<Vec<crate::v1::ConnectionDefinition>, A::Error> {
+    ) -> std::result::Result<Vec<crate::v1::FlowExpression>, A::Error> {
       let mut v = vec![];
       while let Some(thing) = seq.next_element::<serde_value::Value>()? {
         let result = match thing {
-          serde_value::Value::String(s) => {
-            crate::v1::ConnectionDefinition::from_str(&s).map_err(|e| serde::de::Error::custom(e.to_string()))?
+          serde_value::Value::String(s) => ast::FlowExpression::from_str(&s)
+            .map_err(|e| serde::de::Error::custom(e.to_string()))?
+            .try_into()
+            .map_err(|e: ManifestError| serde::de::Error::custom(e.to_string()))?,
+          serde_value::Value::Map(map) => {
+            crate::v1::FlowExpression::deserialize(serde_value::ValueDeserializer::new(serde_value::Value::Map(map)))?
           }
-          serde_value::Value::Map(map) => crate::v1::ConnectionDefinition::deserialize(
-            serde_value::ValueDeserializer::new(serde_value::Value::Map(map)),
-          )?,
           _ => {
             return Err(serde::de::Error::invalid_type(
               serde::de::Unexpected::Other("other"),
@@ -116,7 +107,7 @@ where
     }
   }
 
-  deserializer.deserialize_seq(ConnectionDefVisitor)
+  deserializer.deserialize_seq(Visitor)
 }
 
 pub(crate) fn connection_target_shortform<'de, D>(

@@ -2,7 +2,7 @@ format: 0
 network:
   schematics:
     - name: logger
-      instances:
+      uses:
         logger:
           id: wick::core::log
       connections:
