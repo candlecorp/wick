@@ -368,6 +368,7 @@
       "AppConfiguration": {
         "$anchor": "#v1/AppConfiguration",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -455,6 +456,7 @@
       "Metadata": {
         "$anchor": "#v1/Metadata",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "version": {
             "description": "The version of the component or application.",
@@ -515,6 +517,7 @@
       "CliTrigger": {
         "$anchor": "#v1/CliTrigger",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -525,7 +528,14 @@
           },
           "operation": {
             "description": "The operation that will act as the main entrypoint for this trigger.",
-            "$ref": "#/$defs/v1/ComponentOperationExpression"
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/v1/ComponentOperationExpression"
+              }
+            ]
           }
         },
         "required": [
@@ -535,6 +545,7 @@
       "TimeTrigger": {
         "$anchor": "#v1/TimeTrigger",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -548,7 +559,14 @@
           },
           "operation": {
             "description": "The operation that will act as the main entrypoint for this trigger.",
-            "$ref": "#/$defs/v1/ComponentOperationExpression"
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/v1/ComponentOperationExpression"
+              }
+            ]
           },
           "payload": {
             "description": "Values passed to the operation as inputs",
@@ -567,6 +585,7 @@
       "OperationInput": {
         "$anchor": "#v1/OperationInput",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the operation parameter.",
@@ -584,6 +603,7 @@
       "Schedule": {
         "$anchor": "#v1/Schedule",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "cron": {
             "description": "schedule in cron format with second precision",
@@ -608,6 +628,7 @@
       "ComponentOperationExpression": {
         "$anchor": "#v1/ComponentOperationExpression",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "component": {
             "description": "The component that exports the operation.",
@@ -633,6 +654,7 @@
       "HttpTrigger": {
         "$anchor": "#v1/HttpTrigger",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -674,6 +696,7 @@
       "ProxyRouter": {
         "$anchor": "#v1/ProxyRouter",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -703,6 +726,7 @@
       "RestRouter": {
         "$anchor": "#v1/RestRouter",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -728,6 +752,7 @@
       "StaticRouter": {
         "$anchor": "#v1/StaticRouter",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -753,6 +778,7 @@
       "RawRouter": {
         "$anchor": "#v1/RawRouter",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -794,6 +820,7 @@
       "TcpPort": {
         "$anchor": "#v1/TcpPort",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -823,6 +850,7 @@
       "Volume": {
         "$anchor": "#v1/Volume",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -843,6 +871,7 @@
       "UdpPort": {
         "$anchor": "#v1/UdpPort",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -872,6 +901,7 @@
       "Url": {
         "$anchor": "#v1/Url",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -892,6 +922,7 @@
       "TypesConfiguration": {
         "$anchor": "#v1/TypesConfiguration",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -925,6 +956,7 @@
       "TestConfiguration": {
         "$anchor": "#v1/TestConfiguration",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -951,6 +983,7 @@
       "ComponentConfiguration": {
         "$anchor": "#v1/ComponentConfiguration",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -1034,6 +1067,7 @@
       "BoundInterface": {
         "$anchor": "#v1/BoundInterface",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the interface.",
@@ -1052,6 +1086,7 @@
       "InterfaceDefinition": {
         "$anchor": "#v1/InterfaceDefinition",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "types": {
             "description": "Types used by the interface&#x27;s operations",
@@ -1073,6 +1108,7 @@
       "CompositeComponentConfiguration": {
         "$anchor": "#v1/CompositeComponentConfiguration",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -1094,6 +1130,7 @@
       "WasmComponentConfiguration": {
         "$anchor": "#v1/WasmComponentConfiguration",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -1121,6 +1158,7 @@
       "ResourceBinding": {
         "$anchor": "#v1/ResourceBinding",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the binding.",
@@ -1139,6 +1177,7 @@
       "ImportBinding": {
         "$anchor": "#v1/ImportBinding",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the binding.",
@@ -1208,6 +1247,7 @@
       "TypesComponent": {
         "$anchor": "#v1/TypesComponent",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -1235,6 +1275,7 @@
       "ComponentReference": {
         "$anchor": "#v1/ComponentReference",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -1255,6 +1296,7 @@
       "HostConfig": {
         "$anchor": "#v1/HostConfig",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "allow_latest": {
             "description": "Whether or not to allow the :latest tag on remote artifacts.",
@@ -1289,6 +1331,7 @@
       "HttpConfig": {
         "$anchor": "#v1/HttpConfig",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "enabled": {
             "description": "Enable/disable the server.",
@@ -1329,25 +1372,10 @@
         },
         "required": []
       },
-      "Permissions": {
-        "$anchor": "#v1/Permissions",
-        "additionalProperties": false,
-        "properties": {
-          "dirs": {
-            "description": "A map of from internal directory to external directory that this component should be able to access.",
-            "type": "object",
-            "patternProperties": {
-              "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "required": []
-      },
       "GrpcUrlComponent": {
         "$anchor": "#v1/GrpcUrlComponent",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -1371,6 +1399,7 @@
       "ManifestComponent": {
         "$anchor": "#v1/ManifestComponent",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -1403,6 +1432,7 @@
       "CompositeOperationDefinition": {
         "$anchor": "#v1/CompositeOperationDefinition",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the operation.",
@@ -1469,6 +1499,7 @@
       "BlockExpression": {
         "$anchor": "#v1/BlockExpression",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "expressions": {
             "type": "array",
@@ -1484,6 +1515,7 @@
       "ConnectionDefinition": {
         "$anchor": "#v1/ConnectionDefinition",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "from": {
             "description": "The upstream operation port.",
@@ -1502,6 +1534,7 @@
       "ConnectionTargetDefinition": {
         "$anchor": "#v1/ConnectionTargetDefinition",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "instance": {
             "description": "The instance ID of the operation.",
@@ -1524,6 +1557,7 @@
       "OperationDefinition": {
         "$anchor": "#v1/OperationDefinition",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the operation.",
@@ -1559,6 +1593,7 @@
       "InstanceBinding": {
         "$anchor": "#v1/InstanceBinding",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the binding.",
@@ -1566,7 +1601,14 @@
           },
           "operation": {
             "description": "The operation to bind to.",
-            "$ref": "#/$defs/v1/ComponentOperationExpression"
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/v1/ComponentOperationExpression"
+              }
+            ]
           },
           "with": {
             "description": "Data to associate with the reference, if any.",
@@ -1581,6 +1623,7 @@
       "TestDefinition": {
         "$anchor": "#v1/TestDefinition",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the test.",
@@ -1588,7 +1631,14 @@
           },
           "operation": {
             "description": "The operaton to test.",
-            "type": "string"
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "inherent": {
             "description": "Inherent data to use for the test.",
@@ -1618,6 +1668,7 @@
       "InherentData": {
         "$anchor": "#v1/InherentData",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "seed": {
             "description": "An RNG seed.",
@@ -1659,6 +1710,7 @@
       "PayloadData": {
         "$anchor": "#v1/PayloadData",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the port to send the data to.",
@@ -1681,6 +1733,7 @@
       "ErrorData": {
         "$anchor": "#v1/ErrorData",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the port to send the data to.",
@@ -1704,6 +1757,7 @@
       "PacketFlags": {
         "$anchor": "#v1/PacketFlags",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "done": {
             "description": "When set, indicates the port should be considered closed.",
@@ -1720,18 +1774,10 @@
         },
         "required": []
       },
-      "DatabaseKind": {
-        "$anchor": "#v1/DatabaseKind",
-        "enum": [
-          "MsSql",
-          "Postgres",
-          "Mysql",
-          "Sqlite"
-        ]
-      },
       "SqlComponent": {
         "$anchor": "#v1/SqlComponent",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -1761,6 +1807,7 @@
       "SqlOperationDefinition": {
         "$anchor": "#v1/SqlOperationDefinition",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the operation.",
@@ -1797,6 +1844,7 @@
       "HttpClientComponent": {
         "$anchor": "#v1/HttpClientComponent",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "kind": {
             "type": "string",
@@ -1827,6 +1875,7 @@
       "HttpClientOperationDefinition": {
         "$anchor": "#v1/HttpClientOperationDefinition",
         "additionalProperties": false,
+        "type": "object",
         "properties": {
           "name": {
             "description": "The name of the operation.",

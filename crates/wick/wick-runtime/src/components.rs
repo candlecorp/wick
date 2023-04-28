@@ -99,7 +99,7 @@ pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
           engine_id = %engine_id,
           "link_call"
         );
-        let invocation = compref.make_invocation(&op, inherent);
+        let invocation = compref.to_invocation(&op, inherent);
 
         // let target = Entity::from_str(&target_id).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
         // let origin = Entity::from_str(&origin_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;

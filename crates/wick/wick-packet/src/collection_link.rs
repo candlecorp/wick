@@ -18,7 +18,7 @@ impl ComponentReference {
 
   #[cfg(feature = "invocation")]
   /// Create an [crate::Invocation] for this component reference.
-  pub fn make_invocation(&self, operation: &str, inherent: Option<crate::InherentData>) -> crate::Invocation {
+  pub fn to_invocation(&self, operation: &str, inherent: Option<crate::InherentData>) -> crate::Invocation {
     let target = crate::Entity::operation(self.target.component_id(), operation);
 
     crate::Invocation::new(self.origin.clone(), target, inherent)

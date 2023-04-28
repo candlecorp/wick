@@ -831,12 +831,6 @@ impl From<v1::Codec> for config::components::Codec {
   }
 }
 
-impl From<config::components::Permissions> for v1::Permissions {
-  fn from(value: config::components::Permissions) -> Self {
-    Self { dirs: value.dirs }
-  }
-}
-
 impl TryFrom<config::FlowOperation> for v1::CompositeOperationDefinition {
   type Error = ManifestError;
 
@@ -956,12 +950,6 @@ impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
       }
     };
     Ok(res)
-  }
-}
-
-impl From<v1::Permissions> for config::components::Permissions {
-  fn from(def: crate::v1::Permissions) -> Self {
-    Self { dirs: def.dirs }
   }
 }
 
@@ -1480,27 +1468,5 @@ impl TryFrom<components::HttpClientOperationDefinition> for v1::HttpClientOperat
       codec: value.codec.map(Into::into),
       method: value.method.into(),
     })
-  }
-}
-
-impl From<v1::DatabaseKind> for config::components::DatabaseKind {
-  fn from(value: v1::DatabaseKind) -> Self {
-    match value {
-      v1::DatabaseKind::Postgres => Self::Postgres,
-      v1::DatabaseKind::MsSql => Self::MsSql,
-      v1::DatabaseKind::Mysql => Self::Mysql,
-      v1::DatabaseKind::Sqlite => Self::Sqlite,
-    }
-  }
-}
-
-impl From<config::components::DatabaseKind> for v1::DatabaseKind {
-  fn from(value: config::components::DatabaseKind) -> Self {
-    match value {
-      config::components::DatabaseKind::Postgres => Self::Postgres,
-      config::components::DatabaseKind::MsSql => Self::MsSql,
-      config::components::DatabaseKind::Mysql => Self::Mysql,
-      config::components::DatabaseKind::Sqlite => Self::Sqlite,
-    }
   }
 }

@@ -33,7 +33,7 @@ impl Operation for Op {
   type Config = SenderData;
   fn handle(
     &self,
-    _payload: wick_packet::StreamMap,
+    _payload: PacketStream,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let config = context.config;
@@ -41,7 +41,7 @@ impl Operation for Op {
     Box::pin(task)
   }
 
-  fn signature(&self, _config: Option<&Self::Config>) -> &OperationSignature {
+  fn get_signature(&self, _config: Option<&Self::Config>) -> &OperationSignature {
     &self.signature
   }
 

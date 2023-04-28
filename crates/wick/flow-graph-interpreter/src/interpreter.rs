@@ -86,7 +86,8 @@ impl Interpreter {
     let component_component = ComponentComponent::new(&handlers);
     handlers.add(NamespaceHandler::new(NS_COMPONENTS, Box::new(component_component)))?;
 
-    let signatures = handlers.component_signatures();
+    let mut signatures = handlers.component_signatures();
+    program::generate_self_signature(&network, &mut signatures).map_err(Error::EarlyError)?;
     let program = Program::new(network, signatures)?;
 
     program.validate()?;
@@ -126,6 +127,7 @@ impl Interpreter {
   fn get_callback(&self) -> Arc<RuntimeCallback> {
     let outside_callback = self.callback.clone();
     let internal_components = self.components.clone();
+    let self_component = self.self_component.clone();
 
     let cb_container = Arc::new(Mutex::new(None));
 
@@ -134,14 +136,18 @@ impl Interpreter {
       let internal_components = internal_components.clone();
       let inner_cb = inner_cb.clone();
       let outside_callback = outside_callback.clone();
+      let self_component = self_component.clone();
       Box::pin(async move {
         trace!(op, %compref, "invoke:component reference");
-        info!("internal components : {:#?}", internal_components);
-        info!("target component ID : {}", compref.get_target_id());
-        if let Some(handler) = internal_components.get(compref.get_target_id()) {
+        if compref.get_target_id() == NS_SELF {
+          trace!(op, %compref, "handling component invocation for self");
+          let cb = inner_cb.lock().clone().unwrap();
+          let invocation = compref.to_invocation(&op, inherent);
+          self_component.handle(invocation, stream, None, cb).await
+        } else if let Some(handler) = internal_components.get(compref.get_target_id()) {
           trace!(op, %compref, "handling component invocation internal to this interpreter");
           let cb = inner_cb.lock().clone().unwrap();
-          let invocation = compref.make_invocation(&op, inherent);
+          let invocation = compref.to_invocation(&op, inherent);
           handler.component().handle(invocation, stream, None, cb).await
         } else {
           outside_callback(compref, op, stream, inherent).await

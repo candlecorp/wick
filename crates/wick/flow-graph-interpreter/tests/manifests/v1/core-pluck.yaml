@@ -12,12 +12,6 @@ component:
           operation: core::pluck
           with:
             field: 'to_pluck'
-      inputs:
-        - name: object
-          type: object
-      outputs:
-        - name: output
-          type: string
       flow:
         - <> -> p.input
         - p.output -> <>

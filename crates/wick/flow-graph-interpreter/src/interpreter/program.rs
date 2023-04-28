@@ -19,10 +19,8 @@ pub(crate) struct Program {
 }
 
 impl Program {
-  pub(crate) fn new(network: Network, mut collections: ComponentMap) -> Result<Self, Error> {
+  pub(crate) fn new(network: Network, collections: ComponentMap) -> Result<Self, Error> {
     trace!("initializing graph program");
-    generate_self_signature(&network, &mut collections).map_err(Error::EarlyError)?;
-
     let program = Self {
       state: ProgramState::new(network, collections),
     };
@@ -98,7 +96,10 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
   }
 }
 
-fn generate_self_signature(network: &Network, collections: &mut ComponentMap) -> Result<(), ValidationError> {
+pub(super) fn generate_self_signature(
+  network: &Network,
+  collections: &mut ComponentMap,
+) -> Result<(), ValidationError> {
   let map = ComponentSignature::new(NS_SELF);
   collections.insert(NS_SELF.to_owned(), map);
   let resolution_order = get_resolution_order(network)?;

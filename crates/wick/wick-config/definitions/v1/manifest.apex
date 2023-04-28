@@ -76,14 +76,14 @@ union TriggerDefinition = CliTrigger | HttpTrigger | TimeTrigger
 "A trigger called with a CLI context."
 type CliTrigger @tagged("wick/trigger/cli@v1") {
   "The operation that will act as the main entrypoint for this trigger."
-  operation: ComponentOperationExpression @required
+  operation: ComponentOperationExpression @required @shortform
 }
 
 "A trigger called with a Time context."
 type TimeTrigger @tagged("wick/trigger/time@v1") {
   schedule: Schedule @required
   "The operation that will act as the main entrypoint for this trigger."
-  operation: ComponentOperationExpression @required
+  operation: ComponentOperationExpression @required @shortform
   "Values passed to the operation as inputs"
   payload: [OperationInput] @required
 }
@@ -355,12 +355,6 @@ type HttpConfig {
   ca: LocationReference?,
 }
 
-"Per-component permissions configuration."
-type Permissions @default {
-  "A map of from internal directory to external directory that this component should be able to access."
-  dirs: {string: string}
-}
-
 "A component hosted as an independent microservice."
 type GrpcUrlComponent @tagged("wick/component/grpc@v1") {
   "The GRPC URL to connect to."
@@ -459,7 +453,7 @@ type InstanceBinding {
   "The name of the binding."
   name: string @required
   "The operation to bind to."
-  operation: ComponentOperationExpression @required
+  operation: ComponentOperationExpression @required @shortform
   "Data to associate with the reference, if any."
   with: any?,
 }
@@ -470,7 +464,7 @@ type TestDefinition {
   name: string @required
 
   "The operaton to test."
-  operation: string @required
+  operation: string @required @shortform
 
   "Inherent data to use for the test."
   inherent: InherentData?
@@ -520,14 +514,6 @@ type PacketFlags {
   open: bool
   "When set, indicates the closing of a substream context within the parent stream."
   close: bool
-}
-
-
-enum DatabaseKind {
-  MsSql = 0 as "mssql",
-  Postgres = 1 as "postgres",
-  Mysql = 2 as "mysql",
-  Sqlite = 3 as "sqlite",
 }
 
 "A component made out of other components"
