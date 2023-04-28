@@ -70,8 +70,7 @@ async fn test_merge() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
-// #[ignore]
-async fn test_private() -> Result<()> {
+async fn test_subflows() -> Result<()> {
   let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v1/private-flows.yaml",
     "test",
@@ -85,6 +84,69 @@ async fn test_private() -> Result<()> {
   let wrapper = outputs.pop().unwrap().unwrap();
   let actual: String = wrapper.deserialize()?;
   let expected = "DLROW OLLEH";
+  assert_eq!(actual, expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_switch_1() -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(
+    "./tests/manifests/v1/core-switch.yaml",
+    "test",
+    packets!(("command", "want_reverse"), ("input", "hello WORLD")),
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _ = outputs.pop();
+  let wrapper = outputs.pop().unwrap().unwrap();
+  let actual: String = wrapper.deserialize()?;
+  let expected = "DLROW olleh";
+  assert_eq!(actual, expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_switch_2() -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(
+    "./tests/manifests/v1/core-switch.yaml",
+    "test",
+    packets!(("command", "want_uppercase"), ("input", "hello WORLD")),
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _ = outputs.pop();
+  let wrapper = outputs.pop().unwrap().unwrap();
+  let actual: String = wrapper.deserialize()?;
+  let expected = "HELLO WORLD";
+  assert_eq!(actual, expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_switch_default() -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(
+    "./tests/manifests/v1/core-switch.yaml",
+    "test",
+    packets!(("command", "nomatch"), ("input", "hello WORLD")),
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _ = outputs.pop();
+  let wrapper = outputs.pop().unwrap().unwrap();
+  let actual: String = wrapper.deserialize()?;
+  let expected = "hello WORLD";
   assert_eq!(actual, expected);
   interpreter.shutdown().await?;
 

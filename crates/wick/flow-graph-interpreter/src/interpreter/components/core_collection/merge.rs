@@ -4,7 +4,7 @@ use flow_component::{ComponentError, Context, Operation};
 use futures::FutureExt;
 use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, StructSignature, TypeSignature};
-use wick_packet::{Packet, PacketStream};
+use wick_packet::{Packet, PacketStream, StreamMap};
 
 use crate::BoxFuture;
 pub(crate) struct Op {}
@@ -48,14 +48,14 @@ impl Operation for Op {
   type Config = Config;
   fn handle(
     &self,
-    mut payload: wick_packet::StreamMap,
-    _context: Context<Self::Config>,
+    stream: PacketStream,
+    context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
+    let mut map = StreamMap::from_stream(stream, self.input_names(&context.config));
     let (tx, rx) = PacketStream::new_channels();
     tokio::spawn(async move {
-      while let Ok(next) = payload.next_set().await {
+      while let Ok(next) = map.next_set().await {
         if next.is_none() {
-          // let _ = tx.send(Packet::done("output"));
           break;
         }
         let next = next.unwrap();
@@ -76,7 +76,7 @@ impl Operation for Op {
     async move { Ok(rx) }.boxed()
   }
 
-  fn signature(&self, _config: Option<&Self::Config>) -> &OperationSignature {
+  fn get_signature(&self, _config: Option<&Self::Config>) -> &OperationSignature {
     panic!("Merge component has a dynamic signature");
   }
 
@@ -85,40 +85,45 @@ impl Operation for Op {
   }
 
   fn decode_config(data: Option<flow_component::Value>) -> Result<Self::Config, ComponentError> {
-    serde_json::from_value(data.ok_or_else(|| ComponentError::message("Empty configuration passed"))?)
-      .map_err(ComponentError::new)
+    serde_json::from_value(data.ok_or_else(|| {
+      ComponentError::message("Merge component requires configuration, please specify configuration.")
+    })?)
+    .map_err(ComponentError::new)
   }
 }
 
-// #[cfg(test)]
-// mod test {
-//   use anyhow::Result;
-//   use wick_packet::{packet_stream, StreamMap};
+#[cfg(test)]
+mod test {
+  use anyhow::Result;
+  use flow_component::panic_callback;
+  use serde_json::json;
+  use tokio_stream::StreamExt;
+  use wick_packet::packet_stream;
 
-//   use super::*;
+  use super::*;
 
-//   #[tokio::test]
-//   async fn test_basic() -> Result<()> {
-//     let operation = operation!({"test"=>{inputs: {"input"=>"object"}, outputs: {"output"=>"object"}}}}})
-//     let op = Op::new();
-//     let config = serde_json::json!({
-//       "field": "pluck_this"
-//     });
-//     let config = Op::decode_config(Some(config))?;
-//     let stream = packet_stream!((
-//       "input",
-//       serde_json::json!({
-//         "pluck_this": "hello",
-//         "dont_pluck_this": "unused",
-//       })
-//     ));
-//     let map = StreamMap::from_stream(stream, ["input".to_owned()].iter());
-//     let mut packets = op.handle(map, Context::new(config)).await?.collect::<Vec<_>>().await;
-//     println!("{:?}", packets);
-//     let _ = packets.pop().unwrap()?;
-//     let packet = packets.pop().unwrap()?;
-//     assert_eq!(packet.deserialize::<String>()?, "hello");
+  #[tokio::test]
+  async fn test_basic() -> Result<()> {
+    let inputs = vec![
+      Field::new("input_a", TypeSignature::String),
+      Field::new("input_b", TypeSignature::U32),
+    ];
+    let op = Op::new();
+    let config = serde_json::json!({ "inputs": inputs });
+    let config = Op::decode_config(Some(config))?;
+    let stream = packet_stream!(("input_a", "hello"), ("input_b", 1000));
+    let mut packets = op
+      .handle(stream, Context::new(config, panic_callback()))
+      .await?
+      .collect::<Vec<_>>()
+      .await;
+    println!("{:?}", packets);
+    let _ = packets.pop().unwrap()?;
+    let packet = packets.pop().unwrap()?;
+    let actual = packet.deserialize_generic()?;
+    let expected = json!({"input_a":"hello", "input_b": 1000});
+    assert_eq!(actual, expected);
 
-//     Ok(())
-//   }
-// }
+    Ok(())
+  }
+}

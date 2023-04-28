@@ -7,25 +7,34 @@ component:
   operations:
     - name: test
       uses:
-        - name: branch
-          operation: core::switch
-          with:
-            true: self::branch1
-            false: self::branch2
         - name: s
           operation: core::switch
           with:
-            inputs:
-              - name: a
+            context:
+              - name: message
                 type: string
-              - name: b
-                type: i32
-              - name: c
-                type: list
-                element:
-                  type: string
+            outputs:
+              - name: output
+                type: string
+            cases:
+              - case: want_reverse
+                do: self::test::reverse
+              - case: want_uppercase
+                do: self::test::uppercase
+            default: self::test::default
       flow:
-        - <>.input_a -> m.a
-        - <>.input_b -> m.b
-        - <>.input_c -> m.c
-        - m.output -> <>
+        - <>.command -> s.match
+        - <>.input -> s.message
+        - s.output -> <>
+      operations:
+        - name: reverse
+          flow:
+            - <>.message -> test::reverse[A].input
+            - A.output -> <>
+        - name: uppercase
+          flow:
+            - <>.message -> test::uppercase[B].input
+            - B.output -> <>
+        - name: default
+          flow:
+            - <>.message -> <>.output

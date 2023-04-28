@@ -48,7 +48,9 @@ fn register_operation(
     let scope = scope.clone();
     register_operation(scope, network, flow)?;
   }
-  let mut schematic = Schematic::new(scope.join("::"));
+  let name = scope.join("::");
+  debug!(%name, "registering operation");
+  let mut schematic = Schematic::new(name);
 
   let index = schematic.add_inherent(CORE_ID, NodeReference::new(NS_INTERNAL, INTERNAL_ID_INHERENT), None);
 

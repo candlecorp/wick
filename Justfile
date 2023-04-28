@@ -1,6 +1,5 @@
 
-nextest := `command -v cargo-nextest &>/dev/null && echo true || echo false`
-noexist := `command -v cargo-nextsest &>/dev/null && echo true || echo false`
+nextest := `command -v cargo-nextest >/dev/null && echo true || echo false`
 
 set dotenv-load
 set export

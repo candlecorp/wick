@@ -728,18 +728,6 @@ pub(crate) struct HttpConfig {
   pub(crate) ca: Option<crate::v1::helpers::LocationReference>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-/// Per-component permissions configuration.
-pub(crate) struct Permissions {
-  /// A map of from internal directory to external directory that this component should be able to access.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "HashMap::is_empty")]
-  #[serde(deserialize_with = "crate::helpers::kv_deserializer")]
-  pub(crate) dirs: HashMap<String, String>,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A component hosted as an independent microservice.
@@ -1028,47 +1016,6 @@ pub(crate) struct PacketFlags {
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) close: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
-#[serde(deny_unknown_fields)]
-pub(crate) enum DatabaseKind {
-  MsSql = 0,
-  Postgres = 1,
-  Mysql = 2,
-  Sqlite = 3,
-}
-
-impl Default for DatabaseKind {
-  fn default() -> Self {
-    Self::from_u16(0).unwrap()
-  }
-}
-
-impl FromPrimitive for DatabaseKind {
-  fn from_i64(n: i64) -> Option<Self> {
-    Some(match n {
-      0 => Self::MsSql,
-      1 => Self::Postgres,
-      2 => Self::Mysql,
-      3 => Self::Sqlite,
-      _ => {
-        return None;
-      }
-    })
-  }
-
-  fn from_u64(n: u64) -> Option<Self> {
-    Some(match n {
-      0 => Self::MsSql,
-      1 => Self::Postgres,
-      2 => Self::Mysql,
-      3 => Self::Sqlite,
-      _ => {
-        return None;
-      }
-    })
-  }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

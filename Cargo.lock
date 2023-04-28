@@ -1475,7 +1475,6 @@ dependencies = [
  "wasmrs-codec",
  "wasmrs-rx",
  "wick-component",
- "wick-component-codegen",
  "wick-config",
  "wick-interface-types",
  "wick-logger",

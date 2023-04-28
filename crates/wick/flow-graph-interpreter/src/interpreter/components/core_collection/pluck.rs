@@ -1,7 +1,7 @@
 use flow_component::{ComponentError, Context, Operation};
 use futures::{FutureExt, StreamExt};
 use wick_interface_types::{operation, OperationSignature};
-use wick_packet::{Packet, PacketStream};
+use wick_packet::{Packet, PacketStream, StreamMap};
 
 use crate::BoxFuture;
 pub(crate) struct Op {
@@ -39,10 +39,11 @@ impl Operation for Op {
   type Config = Config;
   fn handle(
     &self,
-    mut payload: wick_packet::StreamMap,
+    stream: PacketStream,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let mapped = payload.take("input").map_err(ComponentError::new).map(|input| {
+    let mut map = StreamMap::from_stream(stream, self.input_names(&context.config));
+    let mapped = map.take("input").map_err(ComponentError::new).map(|input| {
       input
         .map(move |next| {
           let field = context.config.field.clone();
@@ -66,7 +67,7 @@ impl Operation for Op {
     async move { mapped }.boxed()
   }
 
-  fn signature(&self, _config: Option<&Self::Config>) -> &OperationSignature {
+  fn get_signature(&self, _config: Option<&Self::Config>) -> &OperationSignature {
     &self.signature
   }
 
@@ -83,7 +84,8 @@ impl Operation for Op {
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use wick_packet::{packet_stream, StreamMap};
+  use flow_component::panic_callback;
+  use wick_packet::packet_stream;
 
   use super::*;
 
@@ -101,8 +103,11 @@ mod test {
         "dont_pluck_this": "unused",
       })
     ));
-    let map = StreamMap::from_stream(stream, ["input".to_owned()]);
-    let mut packets = op.handle(map, Context::new(config)).await?.collect::<Vec<_>>().await;
+    let mut packets = op
+      .handle(stream, Context::new(config, panic_callback()))
+      .await?
+      .collect::<Vec<_>>()
+      .await;
     println!("{:?}", packets);
     let _ = packets.pop().unwrap()?;
     let packet = packets.pop().unwrap()?;

@@ -3,7 +3,7 @@ mod wasm;
 use std::collections::HashMap;
 
 use asset_container::{AssetManager, Assets};
-pub use composite::CompositeComponentImplementation;
+pub use composite::*;
 use config::{ComponentImplementation, ComponentKind};
 pub use wasm::*;
 use wick_asset_reference::{AssetReference, FetchOptions};
