@@ -1,0 +1,76 @@
+{
+  "name": "wick-development-framework",
+  "publisher": "CandleCorp",
+  "displayName": "Wick Development Framework",
+  "description": "VSCode extension for Wick files.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/candlecorp/wick/tools/wick-vscode-extension"
+  },
+  "icon": "./icons/wick-icon-128.png",
+  "version": "0.3.0",
+  "engines": {
+    "vscode": "^1.77.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "yaml",
+        "aliases": [
+          "Wick",
+          "wick"
+        ],
+        "extensions": [
+          ".wick"
+        ]
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "wick-icons",
+        "label": "Wick Icons",
+        "path": "./wick-icon-theme.json"
+      }
+    ],
+    "extensionDependencies": [
+      "redhat.vscode-yaml"
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Wick Extension Configuration",
+      "properties": {
+        "wick.yaml.schemaUrl": {
+          "type": "string",
+          "default": "https://github.com/candlecorp/wick/releases/download/nightly/schema.json",
+          "description": "The URL of the Wick YAML schema"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.77.0",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.59.1",
+    "@typescript-eslint/parser": "^5.59.1",
+    "eslint": "^8.39.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.0.4",
+    "@vscode/test-electron": "^2.3.0"
+  }
+}

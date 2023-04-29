@@ -1,15 +1,8 @@
 {
   "git.ignoreLimitWarning": true,
-  "yaml.schemas": {
-    "crates/wick/wick-config/json-schema/manifest.json": [
-      "crates/**/manifests/**/*.yaml",
-      "crates/bins/wick/tests/**/*.yaml",
-      "*.wick",
-      "component.yaml",
-      "app.yaml"
-    ]
-  },
-  "rust-analyzer.cargo.features": ["wick-rpc/client"],
+  "rust-analyzer.cargo.features": [
+    "wick-rpc/client"
+  ],
   "rust-analyzer.rustfmt.overrideCommand": [
     "rustup",
     "run",

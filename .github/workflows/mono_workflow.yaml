@@ -6,6 +6,8 @@ on:
   schedule:
     - cron: "0 1 * * *" # 1am UTC
   pull_request:
+    paths-ignore:
+      - "tools/**"
     branches:
       - main
 permissions:

@@ -1,0 +1,10 @@
+{
+    "iconDefinitions": {
+        "_file_wick": {
+            "iconPath": "./icons/wick-icon-32.png"
+        }
+    },
+    "fileExtensions": {
+        "wick": "_file_wick"
+    }
+}

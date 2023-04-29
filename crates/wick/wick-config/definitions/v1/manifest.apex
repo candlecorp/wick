@@ -197,7 +197,7 @@ type ComponentConfiguration @tagged("wick/component@v1") {
   host: HostConfig
 
   "Resources that the application can access."
-  resources: [ResourceBinding],
+  resources: [ResourceBinding]
 
   "Components or types to import into the application's scope."
   import: [ImportBinding]
