@@ -9,9 +9,10 @@ description = "An intepreter for flow-based programs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 wasmrs = { workspace = true }
+wick-component = { workspace = true }
 wasmrs-rx = { workspace = true }
 wasmrs-codec = { workspace = true }
-wick-packet = { workspace = true, features = ["invocation"] }
+wick-packet = { workspace = true, features = ["invocation", "rt-tokio"] }
 flow-graph = { workspace = true }
 flow-component = { workspace = true }
 wick-config = { workspace = true }

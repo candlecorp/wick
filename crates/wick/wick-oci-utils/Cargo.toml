@@ -22,6 +22,8 @@ sha256 = { workspace = true }
 bytes = { workspace = true }
 regex = { workspace = true }
 once_cell = { workspace = true }
+tar = { workspace = true }
+flate2 = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

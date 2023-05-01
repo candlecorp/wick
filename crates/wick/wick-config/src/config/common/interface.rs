@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
+use config::common::OperationSignature;
 use wick_interface_types::TypeDefinition;
 
-use crate::component_config::OperationSignature;
+use crate::config;
 
 #[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
 #[asset(crate::config::AssetReference)]

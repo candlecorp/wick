@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use wick_interface_types::Field;
+use asset_container::Asset;
 
-use crate::config;
+use crate::config::{self, OperationSignature};
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(config::AssetReference)]
@@ -22,18 +22,6 @@ impl WasmComponentImplementation {
   pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
     self.operations.values().cloned().map(Into::into).collect()
   }
-}
-
-#[derive(Debug, Clone)]
-pub struct OperationSignature {
-  /// The name of the schematic.
-  pub name: String,
-
-  /// A list of the input types for the operation.
-  pub inputs: Vec<Field>,
-
-  /// A list of the input types for the operation.
-  pub outputs: Vec<Field>,
 }
 
 impl WasmComponentImplementation {

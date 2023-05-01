@@ -18,7 +18,7 @@ pub(crate) struct TestCommand {
   pub(crate) logging: LoggingOptions,
 
   #[clap(flatten)]
-  pub(crate) fetch: super::FetchOptions,
+  pub(crate) oci: crate::oci::Options,
 
   #[clap(flatten)]
   wasi: crate::wasm::WasiOptions,
@@ -44,17 +44,17 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
   let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
 
   let fetch_options = wick_config::config::FetchOptions::new()
-    .allow_latest(opts.fetch.allow_latest)
-    .allow_insecure(&opts.fetch.insecure_registries);
+    .allow_latest(opts.oci.allow_latest)
+    .allow_insecure(&opts.oci.insecure_registries);
 
-  let config = WickConfiguration::fetch(&opts.location, fetch_options)
+  let config = WickConfiguration::fetch_all(&opts.location, fetch_options)
     .await?
     .try_component_config()?;
 
   let mut suite = TestSuite::from_test_cases(config.tests());
   let server_options = DefaultCliOptions { ..Default::default() };
 
-  let config = merge_config(&config, &opts.fetch, Some(server_options));
+  let config = merge_config(&config, &opts.oci, Some(server_options));
 
   let mut host = ComponentHostBuilder::from_definition(config).build();
   host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;

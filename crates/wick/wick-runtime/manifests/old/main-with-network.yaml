@@ -12,7 +12,7 @@ network:
       reference: *comp
   schematics:
     - name: inner-schematic
-      instances:
+      uses:
         COMPONENT: main::byte-count
       connections:
         - <>[input] => COMPONENT[input]

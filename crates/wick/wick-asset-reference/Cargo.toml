@@ -25,3 +25,4 @@ wick-logger = { workspace = true }
 test-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 asset-container = { workspace = true }
+rstest = { workspace = true }

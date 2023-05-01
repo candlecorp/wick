@@ -1,10 +1,9 @@
 use std::env;
 use std::path::PathBuf;
 
-use flow_expression_parser::{ConnectionTarget, InstanceTarget};
+use flow_expression_parser::ast::{ConnectionExpression, ConnectionTargetExpression, FlowExpression, InstanceTarget};
 use tracing::debug;
 use wick_config::component_config::CompositeComponentImplementation;
-use wick_config::config::{ComponentImplementation, ConnectionTargetDefinition};
 use wick_config::error::ManifestError;
 use wick_config::*;
 
@@ -71,15 +70,14 @@ async fn load_collections_yaml() -> Result<(), ManifestError> {
 async fn load_shortform_yaml() -> Result<(), ManifestError> {
   let manifest = load_component("./tests/manifests/v0/logger-shortform.yaml").await?;
 
-  let first_from = &manifest.flow("logger").unwrap().connections[0].from;
-  let first_to = &manifest.flow("logger").unwrap().connections[0].to;
+  let expr = &manifest.flow("logger").unwrap().expressions[0];
+
   assert_eq!(
-    first_from,
-    &ConnectionTargetDefinition::new(ConnectionTarget::new(InstanceTarget::Input, "input"))
-  );
-  assert_eq!(
-    first_to,
-    &ConnectionTargetDefinition::new(ConnectionTarget::new(InstanceTarget::named("logger"), "input"))
+    expr,
+    &FlowExpression::ConnectionExpression(ConnectionExpression::new(
+      ConnectionTargetExpression::new(InstanceTarget::Input, "input", None),
+      ConnectionTargetExpression::new(InstanceTarget::named("logger"), "input", None)
+    ))
   );
 
   Ok(())
@@ -103,9 +101,9 @@ async fn load_ns_link() -> Result<(), ManifestError> {
   let manifest = load_component("./tests/manifests/v0/ns.yaml").await?;
 
   let schematic = &manifest.flow("logger").unwrap();
-  let from = &schematic.connections[0].from;
+  let from = &schematic.expressions[0].as_connection().unwrap().from();
 
-  assert_eq!(from.get_instance(), &InstanceTarget::Link);
+  assert_eq!(from.instance(), &InstanceTarget::Link);
 
   Ok(())
 }

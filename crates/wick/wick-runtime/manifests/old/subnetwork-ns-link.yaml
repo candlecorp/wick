@@ -8,7 +8,7 @@ network:
     - name: test
       collections:
         - child
-      instances:
+      uses:
         child:
           id: child::test-child
       connections:

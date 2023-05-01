@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::Duration;
 
-use flow_expression_parser::{ConnectionTarget, InstanceTarget};
+use flow_expression_parser::ast::{self, InstanceTarget};
 
 // use flow_expression_parser::parse_id;
 use crate::app_config::{
@@ -21,12 +21,16 @@ use crate::app_config::{
   TriggerDefinition,
   UdpPort,
 };
-use crate::component_config::{CompositeComponentImplementation, OperationSignature, WasmComponentImplementation};
-use crate::config::common::component_definition::{ComponentDefinition, ComponentOperationExpression};
-use crate::config::common::flow_definition::SenderData;
-use crate::config::common::host_definition::HostConfig;
-use crate::config::common::test_case;
+use crate::component_config::{CompositeComponentImplementation, WasmComponentImplementation};
+use crate::config::common::{
+  test_case,
+  ComponentDefinition,
+  ComponentOperationExpression,
+  HostConfig,
+  OperationSignature,
+};
 use crate::config::components::{self, ComponentReference, GrpcUrlComponent, ManifestComponent};
+use crate::config::package_definition::{PackageConfig, RegistryConfig};
 use crate::config::{
   self,
   test_config,
@@ -70,6 +74,11 @@ impl TryFrom<v1::TypesConfiguration> for types_config::TypesConfiguration {
   fn try_from(value: v1::TypesConfiguration) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       types: value.types,
+      operations: value
+        .operations
+        .into_iter()
+        .map(|op| Ok((op.name.clone(), op.try_into()?)))
+        .collect::<Result<_>>()?,
       source: None,
     })
   }
@@ -104,6 +113,7 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
         .collect::<Result<_>>()?,
       cached_types: Default::default(),
       type_cache: Default::default(),
+      package: def.package.map(TryInto::try_into).transpose()?,
     })
   }
 }
@@ -127,6 +137,77 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
       resources: def.resources.into_values().map(|v| v.into()).collect(),
       tests: def.tests.into_iter().map(|v| v.into()).collect(),
       component: def.component.try_into()?,
+      package: def.package.map(TryInto::try_into).transpose()?,
+    })
+  }
+}
+
+impl TryFrom<v1::PackageDefinition> for PackageConfig {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::PackageDefinition) -> std::result::Result<Self, Self::Error> {
+    let registry_config = match value.registry {
+      Some(registry_def) => Some(RegistryConfig::try_from(registry_def)?),
+      None => None,
+    };
+
+    Ok(Self {
+      files: value.files.into_iter().map(TryInto::try_into).collect::<Result<_>>()?,
+      registry: registry_config,
+    })
+  }
+}
+
+impl TryFrom<PackageConfig> for v1::PackageDefinition {
+  type Error = ManifestError;
+
+  fn try_from(value: PackageConfig) -> std::result::Result<Self, Self::Error> {
+    let registry_def = match value.registry {
+      Some(registry_config) => Some(v1::RegistryDefinition::try_from(registry_config)?),
+      None => None,
+    };
+
+    Ok(v1::PackageDefinition {
+      files: value.files.into_iter().map(TryInto::try_into).collect::<Result<_>>()?,
+      registry: registry_def,
+    })
+  }
+}
+
+impl TryFrom<super::helpers::Glob> for config::Glob {
+  type Error = ManifestError;
+
+  fn try_from(value: super::helpers::Glob) -> std::result::Result<Self, Self::Error> {
+    Ok(Self::new(value.0))
+  }
+}
+
+impl TryFrom<config::Glob> for super::helpers::Glob {
+  type Error = ManifestError;
+
+  fn try_from(value: config::Glob) -> std::result::Result<Self, Self::Error> {
+    Ok(Self(value.glob))
+  }
+}
+
+impl TryFrom<v1::RegistryDefinition> for RegistryConfig {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::RegistryDefinition) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      registry: value.registry,
+      namespace: value.namespace,
+    })
+  }
+}
+
+impl TryFrom<RegistryConfig> for v1::RegistryDefinition {
+  type Error = ManifestError;
+
+  fn try_from(value: RegistryConfig) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      registry: value.registry,
+      namespace: value.namespace,
     })
   }
 }
@@ -269,6 +350,7 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
       triggers: def.triggers.into_iter().map(|v| v.try_into()).collect::<Result<_>>()?,
       cached_types: Default::default(),
       type_cache: Default::default(),
+      package: def.package.map(TryInto::try_into).transpose()?,
     })
   }
 }
@@ -292,6 +374,7 @@ impl TryFrom<AppConfiguration> for v1::AppConfiguration {
         .map(|v| v.try_into())
         .collect::<Result<_>>()?,
       host: value.host.try_into()?,
+      package: value.package.map(TryInto::try_into).transpose()?,
     })
   }
 }
@@ -492,19 +575,79 @@ impl TryFrom<crate::v1::CompositeOperationDefinition> for config::FlowOperation 
 
   fn try_from(op: crate::v1::CompositeOperationDefinition) -> Result<Self> {
     let instances: Result<HashMap<String, config::InstanceReference>> = op
-      .instances
+      .uses
       .into_iter()
       .map(|v| Ok((v.name.clone(), v.try_into()?)))
       .collect();
-    let connections: Result<Vec<config::ConnectionDefinition>> = op.flow.iter().map(|def| def.try_into()).collect();
+    let expressions: Result<Vec<ast::FlowExpression>> = op.flow.into_iter().map(TryInto::try_into).collect();
     Ok(Self {
       name: op.name,
       inputs: op.inputs,
       outputs: op.outputs,
       instances: instances?,
-      connections: connections?,
+      expressions: expressions?,
       components: op.components,
+      flows: op
+        .operations
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_>>()?,
     })
+  }
+}
+
+// impl TryFrom<crate::v1::PrivateCompositeOperation> for config::FlowOperation {
+//   type Error = ManifestError;
+
+//   fn try_from(op: crate::v1::PrivateCompositeOperation) -> Result<Self> {
+//     let instances: Result<HashMap<String, config::InstanceReference>> = op
+//       .uses
+//       .into_iter()
+//       .map(|v| Ok((v.name.clone(), v.try_into()?)))
+//       .collect();
+//     let expressions: Result<Vec<ast::FlowExpression>> = op.flow.into_iter().map(TryInto::try_into).collect();
+//     Ok(Self {
+//       name: op.name,
+//       inputs: op.inputs,
+//       outputs: op.outputs,
+//       instances: instances?,
+//       expressions: expressions?,
+//       components: op.components,
+//       private: Default::default(),
+//     })
+//   }
+// }
+
+impl TryFrom<v1::FlowExpression> for ast::FlowExpression {
+  type Error = ManifestError;
+
+  fn try_from(expr: v1::FlowExpression) -> Result<Self> {
+    Ok(match expr {
+      v1::FlowExpression::ConnectionDefinition(v) => ast::FlowExpression::ConnectionExpression(v.try_into()?),
+      v1::FlowExpression::BlockExpression(v) => ast::FlowExpression::BlockExpression(v.try_into()?),
+    })
+  }
+}
+
+impl TryFrom<v1::ConnectionDefinition> for ast::ConnectionExpression {
+  type Error = ManifestError;
+
+  fn try_from(expr: v1::ConnectionDefinition) -> Result<Self> {
+    Ok(Self::new(expr.from.try_into()?, expr.to.try_into()?))
+  }
+}
+
+impl TryFrom<v1::BlockExpression> for ast::BlockExpression {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::BlockExpression) -> std::result::Result<Self, Self::Error> {
+    Ok(Self::new(
+      value
+        .expressions
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<Vec<_>>>()?,
+    ))
   }
 }
 
@@ -538,6 +681,7 @@ impl TryFrom<crate::v1::OperationDefinition> for OperationSignature {
   fn try_from(op: crate::v1::OperationDefinition) -> Result<Self> {
     Ok(Self {
       name: op.name,
+      config: op.with,
       inputs: op.inputs,
       outputs: op.outputs,
     })
@@ -550,6 +694,7 @@ impl TryFrom<OperationSignature> for crate::v1::OperationDefinition {
   fn try_from(op: OperationSignature) -> Result<Self> {
     Ok(Self {
       name: op.name,
+      with: op.config,
       inputs: op.inputs,
       outputs: op.outputs,
     })
@@ -632,7 +777,7 @@ impl TryFrom<ManifestComponent> for v1::ManifestComponent {
   fn try_from(def: ManifestComponent) -> Result<Self> {
     Ok(Self {
       reference: def.reference.try_into()?,
-      config: def.config,
+      with: def.config,
       provide: def.provide,
     })
   }
@@ -648,7 +793,7 @@ impl From<GrpcUrlComponent> for v1::GrpcUrlComponent {
   fn from(def: GrpcUrlComponent) -> Self {
     Self {
       url: def.url,
-      config: def.config,
+      with: def.config,
     }
   }
 }
@@ -686,49 +831,84 @@ impl From<v1::Codec> for config::components::Codec {
   }
 }
 
-impl From<config::components::Permissions> for v1::Permissions {
-  fn from(value: config::components::Permissions) -> Self {
-    Self { dirs: value.dirs }
-  }
-}
-
 impl TryFrom<config::FlowOperation> for v1::CompositeOperationDefinition {
   type Error = ManifestError;
 
   fn try_from(value: config::FlowOperation) -> std::result::Result<Self, Self::Error> {
     let instances: Vec<v1::InstanceBinding> = value.instances.into_iter().map(|(id, val)| (id, val).into()).collect();
-    let connections: Result<Vec<v1::ConnectionDefinition>> =
-      value.connections.into_iter().map(|def| def.try_into()).collect();
+    let connections: Result<Vec<v1::FlowExpression>> = value.expressions.into_iter().map(TryInto::try_into).collect();
     Ok(Self {
       name: value.name,
       inputs: value.inputs,
       outputs: value.outputs,
-      instances,
+      uses: instances,
       flow: connections?,
       components: value.components,
+      operations: value.flows.into_iter().map(TryInto::try_into).collect::<Result<_>>()?,
     })
   }
 }
 
-impl TryFrom<config::ConnectionDefinition> for v1::ConnectionDefinition {
+// impl TryFrom<config::FlowOperation> for v1::PrivateCompositeOperation {
+//   type Error = ManifestError;
+
+//   fn try_from(value: config::FlowOperation) -> std::result::Result<Self, Self::Error> {
+//     let instances: Vec<v1::InstanceBinding> = value.instances.into_iter().map(|(id, val)| (id, val).into()).collect();
+//     let connections: Result<Vec<v1::FlowExpression>> = value.expressions.into_iter().map(TryInto::try_into).collect();
+//     Ok(Self {
+//       name: value.name,
+//       inputs: value.inputs,
+//       outputs: value.outputs,
+//       uses: instances,
+//       flow: connections?,
+//       components: value.components,
+//     })
+//   }
+// }
+
+impl TryFrom<ast::FlowExpression> for v1::FlowExpression {
   type Error = ManifestError;
 
-  fn try_from(value: config::ConnectionDefinition) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: ast::FlowExpression) -> std::result::Result<Self, Self::Error> {
+    match value {
+      ast::FlowExpression::ConnectionExpression(c) => Ok(Self::ConnectionDefinition(c.try_into()?)),
+      ast::FlowExpression::BlockExpression(c) => Ok(Self::BlockExpression(c.try_into()?)),
+    }
+  }
+}
+
+impl TryFrom<ast::BlockExpression> for v1::BlockExpression {
+  type Error = ManifestError;
+
+  fn try_from(value: ast::BlockExpression) -> std::result::Result<Self, Self::Error> {
+    let expressions = value.into_parts();
     Ok(Self {
-      from: value.from.try_into()?,
-      to: value.to.try_into()?,
+      expressions: expressions.into_iter().map(TryInto::try_into).collect::<Result<_>>()?,
     })
   }
 }
 
-impl TryFrom<config::ConnectionTargetDefinition> for v1::ConnectionTargetDefinition {
+impl TryFrom<ast::ConnectionExpression> for v1::ConnectionDefinition {
   type Error = ManifestError;
 
-  fn try_from(value: config::ConnectionTargetDefinition) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: ast::ConnectionExpression) -> std::result::Result<Self, Self::Error> {
+    let (from, to) = value.into_parts();
     Ok(Self {
-      data: value.data.map(|v| v.inner),
-      instance: value.target.target().to_string(),
-      port: value.target.port().to_owned(),
+      from: from.try_into()?,
+      to: to.try_into()?,
+    })
+  }
+}
+
+impl TryFrom<ast::ConnectionTargetExpression> for v1::ConnectionTargetDefinition {
+  type Error = ManifestError;
+
+  fn try_from(value: ast::ConnectionTargetExpression) -> std::result::Result<Self, Self::Error> {
+    let (instance, port, data) = value.into_parts();
+    Ok(Self {
+      data,
+      instance: instance.to_string(),
+      port,
     })
   }
 }
@@ -743,7 +923,7 @@ impl From<(String, config::InstanceReference)> for v1::InstanceBinding {
         name: value.name,
         component: v1::ComponentDefinition::ComponentReference(v1::ComponentReference { id: value.component_id }),
       },
-      config: value.data,
+      with: value.data,
     }
   }
 }
@@ -754,11 +934,11 @@ impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
     let res = match def {
       v1::ComponentDefinition::GrpcUrlComponent(v) => ComponentDefinition::GrpcUrl(GrpcUrlComponent {
         url: v.url,
-        config: v.config,
+        config: v.with,
       }),
       v1::ComponentDefinition::ManifestComponent(v) => ComponentDefinition::Manifest(ManifestComponent {
         reference: v.reference.try_into()?,
-        config: v.config,
+        config: v.with,
         provide: v.provide,
       }),
       v1::ComponentDefinition::ComponentReference(v) => ComponentDefinition::Reference(ComponentReference { id: v.id }),
@@ -773,12 +953,6 @@ impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
   }
 }
 
-impl From<v1::Permissions> for config::components::Permissions {
-  fn from(def: crate::v1::Permissions) -> Self {
-    Self { dirs: def.dirs }
-  }
-}
-
 impl TryFrom<crate::v1::InstanceBinding> for config::InstanceReference {
   type Error = ManifestError;
   fn try_from(def: crate::v1::InstanceBinding) -> Result<Self> {
@@ -787,18 +961,18 @@ impl TryFrom<crate::v1::InstanceBinding> for config::InstanceReference {
     Ok(config::InstanceReference {
       component_id: ns.to_owned(),
       name,
-      data: def.config,
+      data: def.with,
     })
   }
 }
 
-impl TryFrom<&crate::v1::ConnectionDefinition> for config::ConnectionDefinition {
+impl TryFrom<&crate::v1::ConnectionDefinition> for ast::ConnectionExpression {
   type Error = ManifestError;
 
   fn try_from(def: &crate::v1::ConnectionDefinition) -> Result<Self> {
-    let from: config::ConnectionTargetDefinition = def.from.clone().try_into()?;
-    let to: config::ConnectionTargetDefinition = def.to.clone().try_into()?;
-    Ok(config::ConnectionDefinition { from, to })
+    let from: ast::ConnectionTargetExpression = def.from.clone().try_into()?;
+    let to: ast::ConnectionTargetExpression = def.to.clone().try_into()?;
+    Ok(ast::ConnectionExpression::new(from, to))
   }
 }
 
@@ -863,15 +1037,15 @@ impl TryFrom<config::HttpConfig> for crate::v1::HttpConfig {
   }
 }
 
-impl TryFrom<crate::v1::ConnectionTargetDefinition> for config::ConnectionTargetDefinition {
+impl TryFrom<crate::v1::ConnectionTargetDefinition> for ast::ConnectionTargetExpression {
   type Error = ManifestError;
 
   fn try_from(def: crate::v1::ConnectionTargetDefinition) -> Result<Self> {
-    let data = def.data.map(|json| SenderData { inner: json });
-    Ok(config::ConnectionTargetDefinition {
-      target: ConnectionTarget::new(InstanceTarget::from_str(&def.instance)?, def.port),
-      data,
-    })
+    Ok(ast::ConnectionTargetExpression::new(
+      InstanceTarget::from_str(&def.instance)?,
+      def.port,
+      def.data,
+    ))
   }
 }
 
@@ -1294,27 +1468,5 @@ impl TryFrom<components::HttpClientOperationDefinition> for v1::HttpClientOperat
       codec: value.codec.map(Into::into),
       method: value.method.into(),
     })
-  }
-}
-
-impl From<v1::DatabaseKind> for config::components::DatabaseKind {
-  fn from(value: v1::DatabaseKind) -> Self {
-    match value {
-      v1::DatabaseKind::Postgres => Self::Postgres,
-      v1::DatabaseKind::MsSql => Self::MsSql,
-      v1::DatabaseKind::Mysql => Self::Mysql,
-      v1::DatabaseKind::Sqlite => Self::Sqlite,
-    }
-  }
-}
-
-impl From<config::components::DatabaseKind> for v1::DatabaseKind {
-  fn from(value: config::components::DatabaseKind) -> Self {
-    match value {
-      config::components::DatabaseKind::Postgres => Self::Postgres,
-      config::components::DatabaseKind::MsSql => Self::MsSql,
-      config::components::DatabaseKind::Mysql => Self::Mysql,
-      config::components::DatabaseKind::Sqlite => Self::Sqlite,
-    }
   }
 }

@@ -6,6 +6,14 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 /// Crate error.
 pub enum OciError {
+  /// No version found in annotations
+  #[error("No version found in annotations")]
+  NoVersion(),
+
+  /// No manifest found in package
+  #[error("No manifest found in package")]
+  NoManifest,
+
   /// Returned when reading an invalid manifest.
   #[error("Invalid manifest found at {}. Try deleting your cache directory.",.0.display())]
   InvalidManifest(PathBuf),
@@ -17,6 +25,10 @@ pub enum OciError {
   /// General fetch failure.
   #[error("Could not fetch '{0}': {1}")]
   OciFetchFailure(String, String),
+
+  /// untar failure failure.
+  #[error("Could not untar '{0}': {1}")]
+  UntarFile(String, String),
 
   /// Failure during OCI push.
   #[error("Could not push '{0}': {1}")]

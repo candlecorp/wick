@@ -1,7 +1,13 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::fs::File;
+use std::path::Path;
 
-use wick_config::config::Metadata;
+use asset_container::Asset;
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use tar::Builder;
+use tokio::fs::{self};
+use wick_config::config::{AssetReference, Metadata};
 use wick_oci_utils::package::annotations::{self, Annotations};
 
 use crate::Error;
@@ -39,28 +45,35 @@ pub(crate) fn metadata_to_annotations(metadata: Metadata) -> Annotations {
   Annotations::new(map)
 }
 
-pub(crate) fn get_relative_path(base_dir: &PathBuf, path: &str) -> Result<PathBuf, Error> {
-  let path = PathBuf::from(path);
-  // Get the prefix of the path that matches the base directory
-  let relative_part = path
-    .strip_prefix(base_dir)
-    .map_err(|_| Error::InvalidFileLocation(path.display().to_string()))?;
+pub(crate) async fn create_tar_gz(extra_files: Vec<AssetReference>, parent_dir: &Path) -> Result<Vec<u8>, Error> {
+  let mut tar_bytes = Vec::new();
+  let mut tar = Builder::new(GzEncoder::new(&mut tar_bytes, Compression::default()));
 
-  // Return the relative path
-  Ok(relative_part.to_path_buf())
-}
+  for file_path in extra_files {
+    let absolute_path = file_path
+      .path()
+      .map_err(|_e| Error::NotFound(file_path.location().to_owned()))?;
+    file_path.update_baseurl(parent_dir.to_str().unwrap());
 
-#[cfg(test)]
-mod tests {
-  use super::*;
+    let relative_path = file_path.get_relative_part()?;
 
-  #[test]
-  fn test_ensure_relative_path() {
-    let parent_dir = PathBuf::from("/candlecorp/wick/crates/wick/wick-package/tests/files");
-    let path = "/candlecorp/wick/crates/wick/wick-package/tests/files/assets/test.fake.wasm";
+    let metadata = fs::metadata(&absolute_path)
+      .await
+      .map_err(|e| Error::TarFile(absolute_path.clone(), e))?;
 
-    let result = get_relative_path(&parent_dir, path);
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), PathBuf::from("assets/test.fake.wasm"));
+    if metadata.is_file() {
+      let mut file = File::open(&absolute_path).map_err(|e| Error::TarFile(absolute_path.clone(), e))?;
+      tar
+        .append_file(relative_path, &mut file)
+        .map_err(|e| Error::TarFile(absolute_path.clone(), e))?;
+    } else if metadata.is_dir() {
+      tar
+        .append_dir_all(relative_path, &absolute_path)
+        .map_err(|e| Error::TarFile(absolute_path.clone(), e))?;
+    }
   }
+
+  drop(tar);
+
+  Ok(tar_bytes)
 }

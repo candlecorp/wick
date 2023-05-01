@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 pub(super) mod component_component;
 pub(super) mod core_collection;
+// pub(super) mod dynamic_core_collection;
 pub(crate) mod internal_collection;
 pub(super) mod schematic_component;
 
@@ -49,7 +50,7 @@ impl HandlerMap {
     Ok(map)
   }
 
-  pub fn add_core(&mut self, network: &Network) -> Result<(), InterpreterError> {
+  pub(crate) fn add_core(&mut self, network: &Network) -> Result<(), InterpreterError> {
     self.add(NamespaceHandler::new(NS_CORE, Box::new(CoreCollection::new(network))))
   }
 

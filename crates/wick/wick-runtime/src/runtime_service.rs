@@ -162,36 +162,6 @@ impl RuntimeService {
     let mut components = HandlerMap::default();
     let ns = init.namespace.clone().unwrap_or_else(|| init.id.to_string());
 
-    // if let ComponentImplementation::Wasm(comp) = init.manifest.component() {
-    //   let component_init = init.component_init();
-    //   let component = config::ImportBinding::wasm(
-    //     &ns,
-    //     #[allow(deprecated)]
-    //     config::components::WasmComponent {
-    //       reference: comp.reference().clone(),
-    //       config: Default::default(),
-    //       permissions: Default::default(),
-    //       provide: Default::default(),
-    //     },
-    //   );
-    //   if let Some(main_component) = instantiate_import(&component, component_init).await? {
-    //     let signed_sig = main_component.component().list();
-    //     let manifest_sig = init.manifest.signature()?;
-
-    //     expect_signature_match(
-    //       comp.reference().location(),
-    //       signed_sig,
-    //       init.manifest.source().clone().unwrap_or_else(|| "<Unknown>".to_owned()),
-    //       &manifest_sig,
-    //     )?;
-    //     main_component.expose();
-
-    //     debug!("Adding main component: {}", main_component.namespace());
-    //     components
-    //       .add(main_component)
-    //       .map_err(|e| EngineError::InterpreterInit(init.manifest.source().clone(), Box::new(e)))?;
-    //   }
-    // } else
     if init.manifest.component().kind() == ComponentKind::Composite {
       for native_comp in init.native_components.inner() {
         components

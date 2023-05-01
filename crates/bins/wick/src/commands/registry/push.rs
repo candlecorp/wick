@@ -10,13 +10,13 @@ pub(crate) struct RegistryPushCommand {
   #[clap(flatten)]
   pub(crate) logging: wick_logger::LoggingOptions,
 
-  /// OCI reference to push to.
-  #[clap(action)]
-  pub(crate) reference: String,
-
   /// OCI artifact to push.
   #[clap(action)]
   pub(crate) source: PathBuf,
+
+  /// OCI reference to push to.
+  #[clap(action, required = false)]
+  pub(crate) reference: Option<String>,
 
   #[clap(short, long = "rev", action)]
   pub(crate) rev: Option<u32>,
@@ -42,12 +42,23 @@ pub(crate) async fn handle(opts: RegistryPushCommand) -> Result<()> {
     .allow_latest(true)
     .username(opts.oci_opts.username)
     .password(opts.oci_opts.password);
+
+  let reference = match opts.reference {
+    Some(reference) => reference,
+    None => match package.registry_reference() {
+      Some(reference) => reference,
+      None => {
+        error!("No reference provided and no reference found in package");
+        return Err(anyhow!("No reference provided and no reference found in package"));
+      }
+    },
+  };
+
   info!("Pushing artifact...");
-  debug!(options=?oci_opts, reference= opts.reference, "pushing reference");
+  debug!(options=?oci_opts, reference= &reference, "pushing reference");
 
-  let result = package.push(&opts.reference, &oci_opts).await?;
-
-  println!("Manifest URL: {}", result);
+  let url = package.push(&reference, &oci_opts).await?;
+  info!(%url, "Artifact pushed");
 
   Ok(())
 }

@@ -95,7 +95,7 @@ mod options;
 pub mod package;
 mod pull;
 mod push;
-mod utils;
+pub mod utils;
 
 pub use error::OciError as Error;
 pub use manifest::*;

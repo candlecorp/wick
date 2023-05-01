@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::Duration;
 
-use flow_expression_parser::{parse_id, ConnectionTarget, InstanceTarget};
+use flow_expression_parser::ast::{self, InstanceTarget};
+use flow_expression_parser::parse_id;
 use serde_json::Value;
 
 use crate::error::ManifestError;
@@ -44,6 +45,7 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
       resources: Default::default(),
       cached_types: Default::default(),
       type_cache: Default::default(),
+      package: Default::default(),
     })
   }
 }
@@ -104,15 +106,19 @@ impl TryFrom<&crate::v0::SchematicManifest> for config::FlowOperation {
       .iter()
       .map(|(key, val)| Ok((key.clone(), val.try_into()?)))
       .collect();
-    let connections: Result<Vec<config::ConnectionDefinition>> =
-      manifest.connections.iter().map(|def| def.try_into()).collect();
+    let connections: Result<Vec<ast::FlowExpression>> = manifest
+      .connections
+      .iter()
+      .map(|def| Ok(ast::FlowExpression::ConnectionExpression(def.try_into()?)))
+      .collect();
     Ok(Self {
       name: manifest.name.clone(),
+      instances: instances?,
+      expressions: connections?,
+      components: manifest.collections.clone(),
       inputs: Default::default(),
       outputs: Default::default(),
-      instances: instances?,
-      connections: connections?,
-      components: manifest.collections.clone(),
+      flows: Default::default(),
     })
   }
 }
@@ -141,25 +147,25 @@ impl TryFrom<&crate::v0::ComponentDefinition> for config::InstanceReference {
   }
 }
 
-impl TryFrom<&crate::v0::ConnectionDefinition> for config::ConnectionDefinition {
+impl TryFrom<&crate::v0::ConnectionDefinition> for ast::ConnectionExpression {
   type Error = ManifestError;
 
   fn try_from(def: &crate::v0::ConnectionDefinition) -> Result<Self> {
-    let from: config::ConnectionTargetDefinition = def.from.clone().try_into()?;
-    let to: config::ConnectionTargetDefinition = def.to.clone().try_into()?;
-    Ok(config::ConnectionDefinition { from, to })
+    let from: ast::ConnectionTargetExpression = def.from.clone().try_into()?;
+    let to: ast::ConnectionTargetExpression = def.to.clone().try_into()?;
+    Ok(ast::ConnectionExpression::new(from, to))
   }
 }
 
-impl TryFrom<crate::v0::ConnectionTargetDefinition> for config::ConnectionTargetDefinition {
+impl TryFrom<crate::v0::ConnectionTargetDefinition> for ast::ConnectionTargetExpression {
   type Error = ManifestError;
 
   fn try_from(def: crate::v0::ConnectionTargetDefinition) -> Result<Self> {
-    let data = def.data.map(|json| config::SenderData { inner: json });
-    Ok(config::ConnectionTargetDefinition {
-      target: ConnectionTarget::new(InstanceTarget::from_str(&def.instance)?, def.port),
-      data,
-    })
+    Ok(ast::ConnectionTargetExpression::new(
+      InstanceTarget::from_str(&def.instance)?,
+      def.port,
+      def.data,
+    ))
   }
 }
 

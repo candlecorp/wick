@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 pub use app_config::*;
-use asset_container::Asset;
+use asset_container::{Asset, AssetManager};
 pub use common::*;
 pub use component_config::*;
 pub use test_config::*;
@@ -41,6 +41,16 @@ impl std::fmt::Display for ConfigurationKind {
   }
 }
 
+async fn fetch_all(
+  asset_manager: &(dyn AssetManager<Asset = AssetReference> + Send + Sync),
+  options: FetchOptions,
+) -> Result<(), Error> {
+  for asset in asset_manager.assets().iter() {
+    asset.fetch(options.clone()).await?;
+  }
+  Ok(())
+}
+
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(AssetReference)]
 
@@ -52,9 +62,16 @@ pub enum WickConfiguration {
 }
 
 impl WickConfiguration {
+  pub async fn fetch_all(path: impl AsRef<str> + Send, options: FetchOptions) -> Result<Self, Error> {
+    let config = Self::fetch(path, options.clone()).await?;
+    config.fetch_assets(options).await?;
+    Ok(config)
+  }
+
   pub async fn fetch(path: impl AsRef<str> + Send, options: FetchOptions) -> Result<Self, Error> {
     let path = path.as_ref();
     let location = AssetReference::new(path);
+
     let bytes = location
       .fetch(options.clone())
       .await
@@ -72,6 +89,15 @@ impl WickConfiguration {
       WickConfiguration::Tests(_) => {}
     }
     Ok(config)
+  }
+
+  async fn fetch_assets(&self, options: FetchOptions) -> Result<(), Error> {
+    match self {
+      WickConfiguration::Component(c) => fetch_all(c, options).await,
+      WickConfiguration::App(c) => fetch_all(c, options).await,
+      WickConfiguration::Types(c) => fetch_all(c, options).await,
+      WickConfiguration::Tests(c) => fetch_all(c, options).await,
+    }
   }
 
   pub fn load_from_bytes(bytes: &[u8], source: &Option<String>) -> Result<Self, Error> {

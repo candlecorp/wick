@@ -23,7 +23,7 @@ pub(crate) struct InvokeCommand {
   wasi: crate::wasm::WasiOptions,
 
   #[clap(flatten)]
-  pub(crate) fetch: super::FetchOptions,
+  pub(crate) oci: crate::oci::Options,
 
   /// Turn on info logging.
   #[clap(long = "info", action)]
@@ -80,16 +80,16 @@ pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
     wick_config::config::FetchOptions::new().artifact_dir(wick_xdg::Directories::GlobalCache.basedir()?)
   };
   let fetch_options = fetch_options
-    .allow_latest(opts.fetch.allow_latest)
-    .allow_insecure(&opts.fetch.insecure_registries);
+    .allow_latest(opts.oci.allow_latest)
+    .allow_insecure(&opts.oci.insecure_registries);
 
-  let manifest = WickConfiguration::fetch(&opts.location, fetch_options)
+  let manifest = WickConfiguration::fetch_all(&opts.location, fetch_options)
     .await?
     .try_component_config()?;
 
   let server_options = DefaultCliOptions { ..Default::default() };
 
-  let config = merge_config(&manifest, &opts.fetch, Some(server_options));
+  let config = merge_config(&manifest, &opts.oci, Some(server_options));
 
   let component = opts.operation;
 

@@ -1,0 +1,14 @@
+kind: wick/tests@v1
+tests:
+  - name: test
+    operation: test-component
+    input:
+      - name: input
+        message: 'test'
+      - name: input
+        data: 2
+      - name: input
+        data: hey
+    # outputs:
+    #   - port: output
+    #     data: test

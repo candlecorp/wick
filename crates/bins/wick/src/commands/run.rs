@@ -10,7 +10,7 @@ pub(crate) struct RunCommand {
   pub(crate) logging: super::LoggingOptions,
 
   #[clap(flatten)]
-  pub(crate) fetch: super::FetchOptions,
+  pub(crate) oci: crate::oci::Options,
 
   /// The path or OCI URL to a wick manifest or wasm file.
   #[clap(action)]
@@ -29,8 +29,10 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
   let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
 
   debug!(args = ?opts.args, "rest args");
+  let app_config = WickConfiguration::fetch_all(&opts.path, opts.oci.into())
+    .await?
+    .try_app_config()?;
 
-  let app_config = WickConfiguration::load_from_file(&opts.path).await?.try_app_config()?;
   let mut host = AppHostBuilder::from_definition(app_config.clone()).build();
   host.start(opts.seed)?;
   debug!("Waiting on triggers to finish or interrupt...");

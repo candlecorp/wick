@@ -3,11 +3,11 @@ use wasmrs_guest::StreamExt;
 // mod generated;
 // use generated as wick;
 mod wick {
+  #![allow(unused_imports, missing_debug_implementations, clippy::needless_pass_by_value)]
   wick_component::wick_import!();
 }
-use wick::*;
-
 use wick::types::http::{HttpRequest, HttpResponse, HttpVersion, StatusCode};
+use wick::*;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 struct Request {

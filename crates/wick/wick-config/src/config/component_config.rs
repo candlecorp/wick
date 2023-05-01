@@ -2,13 +2,14 @@ mod composite;
 mod wasm;
 use std::collections::HashMap;
 
-use asset_container::AssetManager;
-pub use composite::CompositeComponentImplementation;
+use asset_container::{AssetManager, Assets};
+pub use composite::*;
 use config::{ComponentImplementation, ComponentKind};
-pub use wasm::{OperationSignature, WasmComponentImplementation};
+pub use wasm::*;
 use wick_asset_reference::{AssetReference, FetchOptions};
-use wick_interface_types::{ComponentMetadata, ComponentSignature, TypeDefinition};
+use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeDefinition};
 
+use super::common::package_definition::PackageConfig;
 use super::{make_resolver, ImportBinding};
 use crate::app_config::ResourceBinding;
 use crate::common::BoundInterface;
@@ -59,6 +60,8 @@ pub struct ComponentConfiguration {
   #[asset(skip)]
   #[builder(setter(skip))]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
+  #[builder(default)]
+  pub package: Option<PackageConfig>,
 }
 
 impl ComponentConfiguration {
@@ -69,6 +72,22 @@ impl ComponentConfiguration {
         ComponentKind::Composite,
         self.component.kind(),
       )),
+    }
+  }
+
+  /// Get the package files
+  #[must_use]
+  pub fn package_files(&self) -> Option<Assets<AssetReference>> {
+    // should return empty vec if package is None
+    self.package.as_ref().map(|p| p.assets())
+  }
+
+  #[must_use]
+  pub fn operation_signatures(&self) -> Vec<OperationSignature> {
+    match &self.component {
+      ComponentImplementation::Composite(c) => c.operation_signatures(),
+      ComponentImplementation::Wasm(c) => c.operation_signatures(),
+      _ => unimplemented!(),
     }
   }
 
@@ -295,8 +314,8 @@ impl From<config::Metadata> for ComponentMetadata {
   }
 }
 
-impl From<OperationSignature> for wick_interface_types::OperationSignature {
-  fn from(value: OperationSignature) -> Self {
+impl From<config::OperationSignature> for OperationSignature {
+  fn from(value: config::OperationSignature) -> Self {
     Self {
       name: value.name,
       inputs: value.inputs,

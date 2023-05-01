@@ -12,7 +12,7 @@ pub(crate) struct ServeCommand {
   pub(crate) cli: DefaultCliOptions,
 
   #[clap(flatten)]
-  pub(crate) fetch: super::FetchOptions,
+  pub(crate) oci: crate::oci::Options,
 
   #[clap(flatten)]
   wasi: crate::wasm::WasiOptions,
@@ -26,14 +26,14 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
   let _guard = wick_logger::init(&opts.cli.logging.name(crate::BIN_NAME));
 
   let fetch_options = wick_config::config::FetchOptions::new()
-    .allow_latest(opts.fetch.allow_latest)
-    .allow_insecure(&opts.fetch.insecure_registries);
+    .allow_latest(opts.oci.allow_latest)
+    .allow_insecure(&opts.oci.insecure_registries);
 
-  let manifest = WickConfiguration::fetch(&opts.location, fetch_options)
+  let manifest = WickConfiguration::fetch_all(&opts.location, fetch_options)
     .await?
     .try_component_config()?;
 
-  let config = merge_config(&manifest, &opts.fetch, Some(opts.cli));
+  let config = merge_config(&manifest, &opts.oci, Some(opts.cli));
 
   let host_builder = ComponentHostBuilder::from_definition(config);
 

@@ -87,8 +87,8 @@
 
 use std::sync::Arc;
 
-use wick_interface_types::ComponentSignature;
-use wick_packet::{ComponentReference, InherentData, Invocation, PacketStream, StreamMap};
+use wick_interface_types::{ComponentSignature, OperationSignature};
+use wick_packet::{ComponentReference, InherentData, Invocation, PacketStream};
 
 pub type SharedComponent = Arc<dyn Component + Send + Sync>;
 
@@ -179,6 +179,48 @@ pub trait Component {
   }
 }
 
+#[derive()]
+pub struct Context<T>
+where
+  T: std::fmt::Debug,
+{
+  pub config: Arc<T>,
+  pub callback: Arc<RuntimeCallback>,
+}
+
+impl<T> std::fmt::Debug for Context<T>
+where
+  T: std::fmt::Debug,
+{
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("Context").field("config", &self.config).finish()
+  }
+}
+
+impl<T> Context<T>
+where
+  T: std::fmt::Debug,
+{
+  pub fn new(config: T, callback: Arc<RuntimeCallback>) -> Self {
+    Self {
+      config: Arc::new(config),
+      callback,
+    }
+  }
+}
+
 pub trait Operation {
-  fn handle(&self, payload: StreamMap, data: Option<Value>) -> BoxFuture<Result<PacketStream, ComponentError>>;
+  const ID: &'static str;
+  type Config: std::fmt::Debug + Send + Sync + 'static;
+  fn handle(
+    &self,
+    payload: PacketStream,
+    context: Context<Self::Config>,
+  ) -> BoxFuture<Result<PacketStream, ComponentError>>;
+
+  fn get_signature(&self, config: Option<&Self::Config>) -> &OperationSignature;
+
+  fn input_names(&self, config: &Self::Config) -> Vec<String>;
+
+  fn decode_config(data: Option<Value>) -> Result<Self::Config, ComponentError>;
 }

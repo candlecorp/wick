@@ -1,0 +1,40 @@
+name: 'test'
+kind: wick/component@v1
+metadata:
+  version: '0.0.2'
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: test
+      uses:
+        - name: s
+          operation: core::switch
+          with:
+            context:
+              - name: message
+                type: string
+            outputs:
+              - name: output
+                type: string
+            cases:
+              - case: want_reverse
+                do: self::test::reverse
+              - case: want_uppercase
+                do: self::test::uppercase
+            default: self::test::default
+      flow:
+        - <>.command -> s.match
+        - <>.input -> s.message
+        - s.output -> <>
+      operations:
+        - name: reverse
+          flow:
+            - <>.message -> test::reverse[A].input
+            - A.output -> <>
+        - name: uppercase
+          flow:
+            - <>.message -> test::uppercase[B].input
+            - B.output -> <>
+        - name: default
+          flow:
+            - <>.message -> <>.output

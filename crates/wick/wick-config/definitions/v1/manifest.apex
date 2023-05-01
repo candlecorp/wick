@@ -9,6 +9,9 @@ alias LocationReference = string @skip
 "A liquid JSON template."
 alias LiquidJsonValue = string @skip
 
+"A glob pattern, ex: **/*.html"
+alias Glob = string @skip
+
 "The Application configuration defines a standalone Wick application."
 type AppConfiguration @default @tagged("wick/app@v1") {
   "Associated metadata for this component."
@@ -28,6 +31,25 @@ type AppConfiguration @default @tagged("wick/app@v1") {
 
   "Configured triggers that drive the application's behavior."
   triggers: [TriggerDefinition],
+
+  "Details about the package for this application."
+  package: PackageDefinition?,
+}
+
+
+"The package details for an application or component."
+type PackageDefinition @default {
+  "The list of files and folders to be included with the package."
+  files: [Glob]
+  "Configuration for publishing the package to a registry. This will be used if the package is published without any additional arguments on the command line. If a tag is specified on the command line, that tag will be used instead. "
+  registry: RegistryDefinition?
+}
+
+type RegistryDefinition @default {
+  "The registry to publish to."
+  registry: string = "registry.candle.dev"
+  "The namespace on the registry. ex: registry.candle.dev/<namespace>/<myWickApp>"
+  namespace: string
 }
 
 "Metadata for the component or application."
@@ -54,14 +76,14 @@ union TriggerDefinition = CliTrigger | HttpTrigger | TimeTrigger
 "A trigger called with a CLI context."
 type CliTrigger @tagged("wick/trigger/cli@v1") {
   "The operation that will act as the main entrypoint for this trigger."
-  operation: ComponentOperationExpression @required
+  operation: ComponentOperationExpression @required @shortform
 }
 
 "A trigger called with a Time context."
 type TimeTrigger @tagged("wick/trigger/time@v1") {
   schedule: Schedule @required
   "The operation that will act as the main entrypoint for this trigger."
-  operation: ComponentOperationExpression @required
+  operation: ComponentOperationExpression @required @shortform
   "Values passed to the operation as inputs"
   payload: [OperationInput] @required
 }
@@ -166,13 +188,16 @@ type Url @tagged("wick/resource/url@v1") {
   url: string @required
 }
 
-"A configuration for a Wick Component"
+"A type definition for a Wick Components and Operations"
 type TypesConfiguration @tagged("wick/types@v1") {
   "The name of this component."
   name: string?
 
   "Additional types to export and make available to the component."
   types: [TypeDefinition]
+
+  "A list of operation signatures."
+  operations: [OperationDefinition]
 }
 
 "A configuration for a Wick Component"
@@ -216,6 +241,9 @@ type ComponentConfiguration @tagged("wick/component@v1") {
 
   "Assertions that can be run against the component to validate its behavior."
   tests: [TestDefinition]
+
+  "Details about the package for this component."
+  package: PackageDefinition?,
 }
 
 "An interface bound to an ID."
@@ -327,19 +355,13 @@ type HttpConfig {
   ca: LocationReference?,
 }
 
-"Per-component permissions configuration."
-type Permissions @default {
-  "A map of from internal directory to external directory that this component should be able to access."
-  dirs: {string: string}
-}
-
 "A component hosted as an independent microservice."
 type GrpcUrlComponent @tagged("wick/component/grpc@v1") {
   "The GRPC URL to connect to."
   url: string @required
 
   "Any configuration necessary for the component."
-  config: any
+  with: any
 }
 
 "A native component that can be extracted and run as a microservice."
@@ -347,12 +369,12 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
   "The URL (and optional tag) or local file path to find the manifest."
   ref: LocationReference @rename("reference")  @required
   "Any configuration necessary for the component."
-  config: any
+  with: any
   "External components to provide to the referenced component."
   provide: {string:string}
 }
 
-"A definition for an single composite operation."
+"A definition for a single composite operation."
 type CompositeOperationDefinition {
   "The name of the operation."
   name: string,
@@ -366,39 +388,22 @@ type CompositeOperationDefinition {
   "A list of components the schematic can use."
   components: [string],
 
-  "A map of IDs to specific operation."
-  instances: [InstanceBinding]
+  "A map of IDs to specific operations."
+  uses: [InstanceBinding]
 
   "A list of connections from operation to operation."
-  flow: [ConnectionDefinition],
+  flow: [FlowExpression],
+
+  "Additional flow operations scoped to this operation."
+  operations: [CompositeOperationDefinition]
 }
 
-"An operation name and its input and output signatures"
-type OperationDefinition {
-  "The name of the operation."
-  name: string,
+"A flow operation, i.e. a connection from one operation to another."
+union FlowExpression @shortform = ConnectionDefinition | BlockExpression
 
-  "Types of the inputs to the operation."
-  inputs: [Field],
-
-  "Types of the outputs to the operation."
-  outputs: [Field],
-}
-
-"Field definition. This is not technically an any type, it is a wick interface type field."
-alias Field = any
-
-"Type definition. This is not technically an any type, it is a wick interface type definition."
-alias TypeDefinition = any
-
-"An identifier bound to a component's operation."
-type InstanceBinding {
-  "The name of the binding."
-  name: string @required
-  "The operation to bind to."
-  operation: ComponentOperationExpression @required
-  "Data to associate with the reference, if any."
-  config: any?,
+"A list of FlowExpressions"
+type BlockExpression {
+  expressions: [FlowExpression] @required
 }
 
 "A connection between Operations and their ports. This can be specified in short-form syntax (where applicable)."
@@ -422,13 +427,44 @@ type ConnectionTargetDefinition {
   data: any?,
 }
 
+"An operation name and its input and output signatures"
+type OperationDefinition {
+  "The name of the operation."
+  name: string,
+
+  "Any configuration required by the operation."
+  with: any?,
+
+  "Types of the inputs to the operation."
+  inputs: [Field],
+
+  "Types of the outputs to the operation."
+  outputs: [Field],
+}
+
+"Field definition. This is not technically an any type, it is a wick interface type field."
+alias Field = any
+
+"Type definition. This is not technically an any type, it is a wick interface type definition."
+alias TypeDefinition = any
+
+"An identifier bound to a component's operation."
+type InstanceBinding {
+  "The name of the binding."
+  name: string @required
+  "The operation to bind to."
+  operation: ComponentOperationExpression @required @shortform
+  "Data to associate with the reference, if any."
+  with: any?,
+}
+
 "A test case for a component."
 type TestDefinition {
   "The name of the test."
   name: string @required
 
   "The operaton to test."
-  operation: string @required
+  operation: string @required @shortform
 
   "Inherent data to use for the test."
   inherent: InherentData?
@@ -478,14 +514,6 @@ type PacketFlags {
   open: bool
   "When set, indicates the closing of a substream context within the parent stream."
   close: bool
-}
-
-
-enum DatabaseKind {
-  MsSql = 0 as "mssql",
-  Postgres = 1 as "postgres",
-  Mysql = 2 as "mysql",
-  Sqlite = 3 as "sqlite",
 }
 
 "A component made out of other components"

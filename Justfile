@@ -1,4 +1,6 @@
 
+nextest := `command -v cargo-nextest >/dev/null && echo true || echo false`
+
 set dotenv-load
 set export
 
@@ -38,8 +40,11 @@ licenses:
 	cargo deny --workspace check licenses  --config etc/deny.toml --hide-inclusion-graph
 
 unit-tests:
-	cargo test --workspace -- --skip integration_test --skip slow_test --test-threads=6
-	# cargo nextest run -E 'not (test(slow_test) | test(integration_test))'
+	if {{nextest}} = "true"; then \
+	  cargo nextest run -E 'not (test(slow_test) | test(integration_test))'; \
+	else \
+	  cargo test --workspace -- --skip integration_test --skip slow_test --test-threads=6; \
+	fi
 
 ci-tests: wasm
   just unit-tests
@@ -48,13 +53,19 @@ integration: integration-setup && integration-teardown
 	just integration-tests
 
 integration-tests:
-	cargo nextest run -E 'not test(slow_test)'
-	# cargo test --workspace -- --skip slow_test --test-threads=6
+	if {{nextest}} = "true"; then \
+	  cargo nextest run -E 'not (test(slow_test))'; \
+	else \
+	  cargo test --workspace -- --skip slow_test --test-threads=6; \
+	fi
 	cargo test --manifest-path tests/template/Cargo.toml
 
 all-tests:
-	# cargo test --workspace -- --test-threads=6
-	cargo nextest run
+	if {{nextest}} = "true"; then \
+	  cargo nextest run; \
+	else \
+	  cargo test --workspace -- --test-threads=6; \
+	fi
 
 integration-setup:
 	rm -rf ~/.cache/wick

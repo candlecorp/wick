@@ -6,11 +6,9 @@ use wick_config::config::{AssetReference, ComponentConfiguration, HttpConfig};
 use wick_logger::{LoggingGuard, LoggingOptions};
 use wick_packet::PacketStream;
 
-use crate::commands::FetchOptions;
-
 pub(crate) fn merge_config(
   def: &ComponentConfiguration,
-  local_cli_opts: &FetchOptions,
+  local_cli_opts: &crate::oci::Options,
   server_cli_opts: Option<DefaultCliOptions>,
 ) -> ComponentConfiguration {
   debug!("local_cli_opts.allow_latest {:?}", local_cli_opts.allow_latest);

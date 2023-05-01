@@ -6,7 +6,7 @@ import:
     component:
       kind: wick/component/manifest@v1
       ref: $CARGO_MANIFEST_DIR/Cargo.toml
-      config:
+      with:
         pwd: $CARGO_MANIFEST_DIR
 component:
   kind: wick/component/composite@v1

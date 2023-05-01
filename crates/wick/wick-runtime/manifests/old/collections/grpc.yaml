@@ -9,7 +9,7 @@ network:
     - name: grpc
       collections:
         - test-namespace
-      instances:
+      uses:
         external:
           id: test-namespace::test-component
       connections:

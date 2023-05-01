@@ -51,7 +51,7 @@ pub(crate) struct {{name.value}} {
       {{/case}}
       {{#case "ListType"}}
       #[serde(skip_serializing_if = "Vec::is_empty")]
-        {{#ifCond type.type.name.value "==" "ConnectionDefinition"}}
+        {{#ifCond type.type.name.value "==" "FlowExpression"}}
           #[serde(deserialize_with = "crate::v1::parse::vec_connection")]
         {{/ifCond}}
       {{/case}}

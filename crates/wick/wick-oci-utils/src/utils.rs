@@ -88,13 +88,13 @@ mod tests {
   fn test_directory_structure() {
     let input = "localhost:5555/test/integration:0.0.3";
 
-    let expected_dir = Path::new("/remote/localhost/test/integration/0.0.3");
-    let result = get_cache_directory(input, Some("/".into())).unwrap();
+    let expected_dir = Path::new(".wick/remote/localhost/test/integration/0.0.3");
+    let result = get_cache_directory(input, Some("".into())).unwrap();
     assert_eq!(result, expected_dir);
 
     let input = "example.com/myorg/myrepo:1.0.0";
-    let expected_dir = Path::new("/remote/example.com/myorg/myrepo/1.0.0");
-    let result = get_cache_directory(input, Some("/".into())).unwrap();
+    let expected_dir = Path::new("/foo/bar/.wick/remote/example.com/myorg/myrepo/1.0.0");
+    let result = get_cache_directory(input, Some("/foo/bar".into())).unwrap();
     assert_eq!(result, expected_dir);
   }
 

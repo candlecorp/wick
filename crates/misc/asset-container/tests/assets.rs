@@ -13,6 +13,7 @@ struct TestConfig {
   that: LocationReference,
 }
 
+#[derive(Clone)]
 struct LocationReference {
   path: PathBuf,
   baseurl: Arc<Mutex<Option<String>>>,
@@ -143,6 +144,8 @@ impl Asset for LocationReference {
 impl AssetManager for TestConfig {
   type Asset = LocationReference;
 
+  fn set_baseurl(&self, _baseurl: &str) {}
+
   fn assets(&self) -> Assets<Self::Asset> {
     let mut assets = Assets::default();
     assets.push(&self.this);
@@ -157,7 +160,7 @@ async fn test_basics() -> Result<()> {
     this: LocationReference::new("../Cargo.toml"),
     that: LocationReference::new("../README.md"),
   };
-  let assets = config.assets();
+  let mut assets = config.assets();
   assets.set_baseurl("tests");
   assert_eq!(assets.len(), 2);
   let mut progress = assets.pull_with_progress(());
