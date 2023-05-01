@@ -47,7 +47,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);
 
-  let config = WickConfiguration::fetch(&opts.location, fetch_options)
+  let config = WickConfiguration::fetch_all(&opts.location, fetch_options)
     .await?
     .try_component_config()?;
 

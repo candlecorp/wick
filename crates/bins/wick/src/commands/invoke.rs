@@ -83,7 +83,7 @@ pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);
 
-  let manifest = WickConfiguration::fetch(&opts.location, fetch_options)
+  let manifest = WickConfiguration::fetch_all(&opts.location, fetch_options)
     .await?
     .try_component_config()?;
 

@@ -11,9 +11,9 @@ pub enum Error {
   #[error("Could not read file {0}: {1}")]
   LoadError(String, String),
 
-  /// Path normalization failed.
-  #[error("Could not normalize path {0}: {1}")]
-  BaseUrlFailure(String, String),
+  /// Could not find file during path normalization.
+  #[error("Could not read file at path {0}: {1}")]
+  NormalizationFailure(String, String),
 
   /// Could not find file or directory.
   #[error("File or directory {0} not found")]
