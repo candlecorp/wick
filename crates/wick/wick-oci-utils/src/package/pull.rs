@@ -82,13 +82,16 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
     }
   };
 
-  let version = image_data
-    .manifest
-    .unwrap()
-    .annotations
-    .as_ref()
-    .and_then(|v| v.get(annotations::VERSION).cloned())
-    .ok_or(Error::NoVersion())?;
+  let version = match image_data.manifest {
+    Some(manifest) => manifest
+      .annotations
+      .as_ref()
+      .and_then(|v| v.get(annotations::VERSION).cloned())
+      .ok_or(Error::NoVersion())?,
+    None => {
+      return Err(Error::NoManifest);
+    }
+  };
 
   let download_dir = create_directory_structure(download_dir).await?;
 

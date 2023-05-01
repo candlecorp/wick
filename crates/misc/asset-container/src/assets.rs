@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::pin::Pin;
 use std::sync::atomic::AtomicBool;
 use std::task::Poll;
@@ -10,14 +11,14 @@ use crate::Error;
 #[must_use]
 pub struct Assets<'a, T>
 where
-  T: Asset,
+  T: Asset + Clone,
 {
-  list: Vec<&'a T>,
+  list: Vec<Cow<'a, T>>,
 }
 
 impl<'a, T> Default for Assets<'a, T>
 where
-  T: Asset,
+  T: Asset + Clone,
 {
   fn default() -> Self {
     Self { list: Vec::new() }
@@ -26,22 +27,27 @@ where
 
 impl<'a, T> Assets<'a, T>
 where
-  T: Asset,
+  T: Asset + Clone,
 {
-  pub fn new(list: Vec<&'a T>) -> Self {
+  pub fn new(list: Vec<Cow<'a, T>>) -> Self {
     Self { list }
   }
 
   #[must_use]
-  pub fn list(&self) -> &[&'a T] {
+  pub fn list(&self) -> &[Cow<'a, T>] {
     &self.list
+  }
+
+  #[must_use]
+  pub fn to_owned(self) -> Vec<T> {
+    self.list.into_iter().map(|asset| asset.into_owned()).collect()
   }
 
   pub fn set_baseurl(&self, baseurl: &str) {
     self.list.iter().for_each(|asset| asset.update_baseurl(baseurl));
   }
 
-  pub fn iter(&mut self) -> impl Iterator<Item = &&'a T> {
+  pub fn iter(&mut self) -> impl Iterator<Item = &Cow<'a, T>> {
     self.list.iter()
   }
 
@@ -56,17 +62,21 @@ where
   }
 
   pub fn push(&mut self, asset: &'a T) {
-    self.list.push(asset);
+    self.list.push(Cow::Borrowed(asset));
+  }
+
+  pub fn push_owned(&mut self, asset: T) {
+    self.list.push(Cow::Owned(asset));
   }
 
   #[allow(clippy::needless_pass_by_value)]
-  pub fn pull(mut self, options: T::Options) -> AssetPull<'a> {
-    AssetPull::new(&mut self, &options)
+  pub fn pull(&'a mut self, options: T::Options) -> AssetPull<'a> {
+    AssetPull::new(self, &options)
   }
 
   #[allow(clippy::needless_pass_by_value)]
-  pub fn pull_with_progress(mut self, options: T::Options) -> AssetPullWithProgress<'a> {
-    AssetPullWithProgress::new(&mut self, &options)
+  pub fn pull_with_progress(&'a mut self, options: T::Options) -> AssetPullWithProgress<'a> {
+    AssetPullWithProgress::new(self, &options)
   }
 
   pub fn extend(&mut self, other: &mut Self) {
@@ -134,9 +144,9 @@ pub struct AssetPull<'a> {
 }
 
 impl<'a> AssetPull<'a> {
-  pub fn new<T>(assets: &mut Assets<'a, T>, options: &T::Options) -> Self
+  pub fn new<T>(assets: &'a mut Assets<'a, T>, options: &T::Options) -> Self
   where
-    T: Asset,
+    T: Asset + Clone,
   {
     let assets = assets
       .iter()
@@ -198,9 +208,9 @@ pub struct AssetPullWithProgress<'a> {
 }
 
 impl<'a> AssetPullWithProgress<'a> {
-  pub fn new<T>(assets: &mut Assets<'a, T>, options: &T::Options) -> Self
+  pub fn new<T>(assets: &'a mut Assets<'a, T>, options: &T::Options) -> Self
   where
-    T: Asset,
+    T: Asset + Clone,
   {
     let assets = assets
       .iter()
@@ -285,22 +295,58 @@ pub enum Status {
 }
 
 pub trait AssetManager {
-  type Asset: Asset;
+  type Asset: Asset + Clone;
   fn assets(&self) -> Assets<Self::Asset>;
-  fn set_baseurl(&self, baseurl: &str) {
-    let mut assets = self.assets();
-    for asset in assets.iter() {
-      asset.update_baseurl(baseurl);
-    }
-  }
+  fn set_baseurl(&self, baseurl: &str);
 }
 
 pub trait Asset {
   type Options: Clone;
   fn fetch_with_progress(&self, options: Self::Options) -> Pin<Box<dyn Stream<Item = Progress> + Send + '_>>;
-  fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + Sync>>;
+  fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + Sync + '_>>;
   fn name(&self) -> &str;
   fn update_baseurl(&self, baseurl: &str);
+}
+
+impl<T, O> Asset for Option<T>
+where
+  T: Asset<Options = O> + Send + Sync + 'static,
+  O: Clone + Send + Sync + 'static,
+{
+  type Options = T::Options;
+
+  fn fetch_with_progress(&self, options: Self::Options) -> Pin<Box<dyn Stream<Item = Progress> + Send + '_>> {
+    self.as_ref().map_or_else(
+      || {
+        let stream = futures::stream::once(async move { Progress::new("None", Status::Error("None".to_owned())) });
+        let a = stream.boxed();
+        a
+      },
+      |a| {
+        let a = a.fetch_with_progress(options);
+        a
+      },
+    )
+  }
+
+  fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + Sync + '_>> {
+    Box::pin(async move {
+      match self {
+        Some(a) => a.fetch(options).await,
+        None => Err(Error::FileNotFound("None".to_owned())),
+      }
+    })
+  }
+
+  fn name(&self) -> &str {
+    self.as_ref().map_or("", |a| a.name())
+  }
+
+  fn update_baseurl(&self, baseurl: &str) {
+    if let Some(asset) = self.as_ref() {
+      asset.update_baseurl(baseurl);
+    }
+  }
 }
 
 impl<T> AssetManager for Option<T>
@@ -308,6 +354,12 @@ where
   T: AssetManager,
 {
   type Asset = T::Asset;
+
+  fn set_baseurl(&self, baseurl: &str) {
+    if let Some(asset) = self.as_ref() {
+      asset.set_baseurl(baseurl);
+    }
+  }
 
   fn assets(&self) -> Assets<Self::Asset> {
     self.as_ref().map(|a| a.assets()).unwrap_or_default()
@@ -319,6 +371,12 @@ where
   T: AssetManager,
 {
   type Asset = T::Asset;
+
+  fn set_baseurl(&self, baseurl: &str) {
+    for asset in self.values() {
+      asset.set_baseurl(baseurl);
+    }
+  }
 
   fn assets(&self) -> Assets<Self::Asset> {
     let mut assets = Assets::default();
@@ -334,6 +392,12 @@ where
   T: AssetManager,
 {
   type Asset = T::Asset;
+
+  fn set_baseurl(&self, baseurl: &str) {
+    for asset in self.iter() {
+      asset.set_baseurl(baseurl);
+    }
+  }
 
   fn assets(&self) -> Assets<Self::Asset> {
     let mut assets = Assets::default();

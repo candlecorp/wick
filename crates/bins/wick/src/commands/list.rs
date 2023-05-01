@@ -10,7 +10,7 @@ use crate::utils::merge_config;
 #[derive(Debug, Clone, Args)]
 pub(crate) struct ListCommand {
   #[clap(flatten)]
-  pub(crate) fetch: super::FetchOptions,
+  pub(crate) oci: crate::oci::Options,
 
   /// The path or OCI URL to a wick manifest or wasm file.
   #[clap(action)]
@@ -27,8 +27,8 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
   let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
 
   let fetch_options = wick_config::config::FetchOptions::new()
-    .allow_latest(opts.fetch.allow_latest)
-    .allow_insecure(&opts.fetch.insecure_registries);
+    .allow_latest(opts.oci.allow_latest)
+    .allow_insecure(&opts.oci.insecure_registries);
 
   let manifest = WickConfiguration::fetch(&opts.location, fetch_options)
     .await?
@@ -36,7 +36,7 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
 
   let server_options = DefaultCliOptions { ..Default::default() };
 
-  let mut config = merge_config(&manifest, &opts.fetch, Some(server_options));
+  let mut config = merge_config(&manifest, &opts.oci, Some(server_options));
   // Disable everything but the mesh
   config.host_mut().rpc = None;
 

@@ -12,7 +12,7 @@ async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
 }
 
 async fn load_component(path: &str) -> Result<ComponentConfiguration, ManifestError> {
-  Ok(load(path).await?.try_component_config()?.clone())
+  load(path).await?.try_component_config()
 }
 
 async fn load_composite(path: &str) -> Result<CompositeComponentImplementation, ManifestError> {

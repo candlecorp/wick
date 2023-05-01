@@ -99,7 +99,7 @@ pub(crate) struct PackageDefinition {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) files: Vec<String>,
+  pub(crate) files: Vec<crate::v1::helpers::Glob>,
   /// Configuration for publishing the package to a registry. This will be used if the package is published without any additional arguments on the command line. If a tag is specified on the command line, that tag will be used instead.
 
   #[serde(default)]

@@ -73,6 +73,12 @@ fn impl_struct(name: &Ident, data: &DataStruct, asset_type: Option<Type>) -> Tok
   let output = quote! {
       impl asset_container::AssetManager for #name {
           type Asset = #asset_type;
+
+          fn set_baseurl(&self, baseurl: &str) {
+            #(self.#asset_fields.update_baseurl(baseurl);)*
+            #(self.#inner_managers.set_baseurl(baseurl);)*
+          }
+
           fn assets(&self) -> asset_container::Assets<#asset_type> {
             let mut assets = asset_container::Assets::default();
             #(assets.push(&self.#asset_fields);)*
@@ -109,6 +115,19 @@ fn impl_enum(name: &Ident, data: &DataEnum, asset_type: Option<Type>) -> TokenSt
   let output = quote! {
       impl asset_container::AssetManager for #name {
           type Asset = #asset_type;
+
+          fn set_baseurl(&self, baseurl: &str) {
+            match self {
+              #(Self::#asset_variants(v) => {
+                v.update_baseurl(baseurl);
+              })*
+              #(Self::#inner_managers(v) => {
+                v.set_baseurl(baseurl);
+              })*
+              _ => {}
+            }
+          }
+
           fn assets(&self) -> asset_container::Assets<#asset_type> {
             let mut assets = asset_container::Assets::default();
             match self {

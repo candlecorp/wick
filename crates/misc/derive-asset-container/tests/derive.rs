@@ -7,20 +7,20 @@ use bytes::BytesMut;
 use futures::StreamExt;
 use tokio::io::AsyncReadExt;
 
-#[derive(derive_asset_container::AssetManager)]
+#[derive(Clone, derive_asset_container::AssetManager)]
 #[asset(TestAsset)]
 struct Struct {
   field: TestAsset,
   inner: InnerStruct,
 }
 
-#[derive(derive_asset_container::AssetManager)]
+#[derive(Clone, derive_asset_container::AssetManager)]
 #[asset(TestAsset)]
 struct InnerStruct {
   field: TestAsset,
 }
 
-#[derive(derive_asset_container::AssetManager)]
+#[derive(Clone, derive_asset_container::AssetManager)]
 #[asset(TestAsset)]
 struct Struct2 {
   one: TestAsset,
@@ -52,7 +52,7 @@ async fn test_progress() -> Result<()> {
       field: TestAsset::new("Cargo.toml"),
     },
   };
-  let assets = s.assets();
+  let mut assets = s.assets();
   assert_eq!(assets.len(), 2);
   let mut progress = assets.pull_with_progress(());
   let mut asset_done = 0;
@@ -82,7 +82,7 @@ async fn test_progress() -> Result<()> {
 #[tokio::test]
 async fn test_enums() -> Result<()> {
   let s = TestEnum::One(TestAsset::new("Cargo.toml"));
-  let assets = s.assets();
+  let mut assets = s.assets();
   assert_eq!(assets.len(), 1);
   let mut progress = assets.pull_with_progress(());
   let mut num_progress = 0;
@@ -136,6 +136,7 @@ async fn test_enums_2() -> Result<()> {
   Ok(())
 }
 
+#[derive(Clone)]
 struct TestAsset {
   path: PathBuf,
 }

@@ -10,7 +10,7 @@ pub(crate) struct RunCommand {
   pub(crate) logging: super::LoggingOptions,
 
   #[clap(flatten)]
-  pub(crate) fetch: super::FetchOptions,
+  pub(crate) oci: crate::oci::Options,
 
   /// The path or OCI URL to a wick manifest or wasm file.
   #[clap(action)]
@@ -23,37 +23,15 @@ pub(crate) struct RunCommand {
   /// Arguments to pass as inputs to a CLI trigger in the application.
   #[clap(last(true), action)]
   args: Vec<String>,
-
-  #[clap(flatten)]
-  pub(crate) oci_opts: crate::oci::Options,
 }
 
 pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
   let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
 
   debug!(args = ?opts.args, "rest args");
-
-  let wick_config = WickConfiguration::load_from_file(&opts.path).await;
-
-  let app_config = match wick_config {
-    Ok(app_config) => app_config.try_app_config().unwrap(),
-    Err(_) => {
-      let oci_opts = wick_oci_utils::OciOptions::default()
-        .allow_insecure(opts.oci_opts.insecure_oci_registries)
-        .allow_latest(true)
-        .username(opts.oci_opts.username)
-        .password(opts.oci_opts.password)
-        .overwrite(true);
-      let app_pull = crate::commands::registry::pull::pull(opts.path, oci_opts)
-        .await
-        .unwrap();
-
-      WickConfiguration::load_from_file(app_pull.path())
-        .await?
-        .try_app_config()
-        .unwrap()
-    }
-  };
+  let app_config = WickConfiguration::fetch(&opts.path, opts.oci.into())
+    .await?
+    .try_app_config()?;
 
   let mut host = AppHostBuilder::from_definition(app_config.clone()).build();
   host.start(opts.seed)?;

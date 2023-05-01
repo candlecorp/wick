@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use asset_container::AssetManager;
+use asset_container::{Asset, AssetManager};
 use sha256::digest;
 use tokio::fs;
 use wick_config::WickConfiguration;
@@ -8,7 +8,7 @@ use wick_oci_utils::package::annotations::Annotations;
 use wick_oci_utils::package::{media_types, PackageFile};
 use wick_oci_utils::OciOptions;
 
-use crate::utils::{create_tar_gz, get_relative_path, metadata_to_annotations};
+use crate::utils::{create_tar_gz, metadata_to_annotations};
 use crate::{Error, WickPackageKind};
 
 /// Represents a Wick package, including its files and metadata.
@@ -54,49 +54,41 @@ impl WickPackage {
     let parent_dir = full_path
       .parent()
       .map_or_else(|| PathBuf::from("/"), |v| v.to_path_buf());
-    let extra_files: Vec<String>;
+    let extra_files;
 
     let (kind, name, version, annotations, parent_dir, media_type) = match &config {
-      WickConfiguration::App(app_config) => {
-        let name = app_config.name();
-        let version = app_config.version();
-        let annotations = metadata_to_annotations(app_config.metadata());
+      WickConfiguration::App(config) => {
+        let name = config.name();
+        let version = config.version();
+        let annotations = metadata_to_annotations(config.metadata());
         let media_type = media_types::APPLICATION;
         let kind = WickPackageKind::APPLICATION;
 
-        extra_files = app_config
-          .package_files()
-          .map_or_else(|| Vec::new(), |files| files.clone());
+        extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
 
-        registry_reference = app_config.package.as_ref().map_or(None, |package| {
-          package.registry.as_ref().map_or(None, |registry| {
-            Some(format!(
-              "{}/{}/{}:{}",
-              registry.registry, registry.namespace, name, version
-            ))
-          })
+        registry_reference = config.package.as_ref().and_then(|package| {
+          package
+            .registry
+            .as_ref()
+            .map(|registry| format!("{}/{}/{}:{}", registry.registry, registry.namespace, name, version))
         });
 
         (kind, name, version, annotations, parent_dir, media_type)
       }
-      WickConfiguration::Component(component_config) => {
-        let name = component_config.name().clone().ok_or(Error::NoName)?;
-        let version = component_config.version();
-        let annotations = metadata_to_annotations(component_config.metadata());
+      WickConfiguration::Component(config) => {
+        let name = config.name().clone().ok_or(Error::NoName)?;
+        let version = config.version();
+        let annotations = metadata_to_annotations(config.metadata());
         let media_type = media_types::COMPONENT;
         let kind = WickPackageKind::COMPONENT;
 
-        extra_files = component_config
-          .package_files()
-          .map_or_else(|| Vec::new(), |files| files.clone());
+        extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
 
-        registry_reference = component_config.package.as_ref().map_or(None, |package| {
-          package.registry.as_ref().map_or(None, |registry| {
-            Some(format!(
-              "{}/{}/{}:{}",
-              registry.registry, registry.namespace, name, version
-            ))
-          })
+        registry_reference = config.package.as_ref().and_then(|package| {
+          package
+            .registry
+            .as_ref()
+            .map(|registry| format!("{}/{}/{}:{}", registry.registry, registry.namespace, name, version))
         });
         (kind, name, version, annotations, parent_dir, media_type)
       }
@@ -139,8 +131,10 @@ impl WickPackage {
     for asset in assets.iter() {
       let location = asset.location(); // the path specified in the config
       let asset_path = asset.path()?; // the resolved, abolute path relative to the config location.
+      asset.update_baseurl(&parent_dir.to_string_lossy());
 
-      let path = get_relative_path(&parent_dir, &asset_path)?;
+      let path = asset.get_relative_part()?;
+      let path = PathBuf::from(path);
 
       let options = wick_config::FetchOptions::default();
       let media_type: &str;

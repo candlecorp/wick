@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use asset_container::Asset;
 use wick_interface_types::Field;
 
 use crate::config;

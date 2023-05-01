@@ -144,7 +144,7 @@ impl TryFrom<v1::PackageDefinition> for PackageConfig {
     };
 
     Ok(Self {
-      files: value.files,
+      files: value.files.into_iter().map(TryInto::try_into).collect::<Result<_>>()?,
       registry: registry_config,
     })
   }
@@ -160,9 +160,25 @@ impl TryFrom<PackageConfig> for v1::PackageDefinition {
     };
 
     Ok(v1::PackageDefinition {
-      files: value.files,
+      files: value.files.into_iter().map(TryInto::try_into).collect::<Result<_>>()?,
       registry: registry_def,
     })
+  }
+}
+
+impl TryFrom<super::helpers::Glob> for config::Glob {
+  type Error = ManifestError;
+
+  fn try_from(value: super::helpers::Glob) -> std::result::Result<Self, Self::Error> {
+    Ok(Self::new(value.0))
+  }
+}
+
+impl TryFrom<config::Glob> for super::helpers::Glob {
+  type Error = ManifestError;
+
+  fn try_from(value: config::Glob) -> std::result::Result<Self, Self::Error> {
+    Ok(Self(value.glob))
   }
 }
 

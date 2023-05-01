@@ -1,12 +1,18 @@
-#[derive(Debug, Default, Builder, Clone, PartialEq)]
+use wick_asset_reference::AssetReference;
+
+use super::Glob;
+
+#[derive(Debug, Clone, Default, Builder, derive_asset_container::AssetManager)]
+#[asset(AssetReference)]
 /// The package details for an application or component.
 pub struct PackageConfig {
   /// The list of files and folders to be included with the package.
   #[builder(default)]
-  pub files: Vec<String>,
+  pub files: Vec<Glob>,
 
   /// Configuration for publishing the package to a registry. This will be used if the package is published without any additional arguments on the command line. If a tag is specified on the command line, that tag will be used instead.
   #[builder(default)]
+  #[asset(skip)]
   pub registry: Option<RegistryConfig>,
 }
 
