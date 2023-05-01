@@ -28,6 +28,7 @@ derive-asset-container = { workspace = true }
 derive_builder = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
 url = { workspace = true }
+glob = { workspace = true }
 parking_lot = { workspace = true }
 liquid-json = { workspace = true, features = ["serde"] }
 

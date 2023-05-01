@@ -10,6 +10,10 @@ pub enum OciError {
   #[error("No version found in annotations")]
   NoVersion(),
 
+  /// No manifest found in package
+  #[error("No manifest found in package")]
+  NoManifest,
+
   /// Returned when reading an invalid manifest.
   #[error("Invalid manifest found at {}. Try deleting your cache directory.",.0.display())]
   InvalidManifest(PathBuf),

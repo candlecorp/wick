@@ -17,6 +17,10 @@
       "type": "object"
     },
 
+    "Glob": {
+      "type": "object"
+    },
+
     "AppConfiguration": {
       "$anchor": "#v1/AppConfiguration",
       "additionalProperties": false,

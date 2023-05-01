@@ -48,7 +48,7 @@ pub(crate) async fn pull(reference: String, oci_opts: OciOptions) -> Result<wick
 pub(crate) async fn handle(opts: RegistryPullCommand) -> Result<()> {
   let _guard = crate::utils::init_logger(&opts.logging)?;
   let oci_opts = wick_oci_utils::OciOptions::default()
-    .allow_insecure(opts.oci_opts.insecure_oci_registries)
+    .allow_insecure(opts.oci_opts.insecure_registries)
     .allow_latest(true)
     .username(opts.oci_opts.username)
     .password(opts.oci_opts.password)
@@ -59,7 +59,7 @@ pub(crate) async fn handle(opts: RegistryPullCommand) -> Result<()> {
 
   let pull_result = pull(opts.reference, oci_opts).await;
 
-  for file in pull_result.unwrap().list_files() {
+  for file in pull_result?.list_files() {
     info!("Pulled file: {}", file.path().display());
   }
   Ok(())

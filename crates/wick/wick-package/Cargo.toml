@@ -27,3 +27,4 @@ clap = { workspace = true, features = ["derive", "env"] }
 async-recursion = { workspace = true }
 env_logger = { workspace = true }
 anyhow = { workspace = true }
+tracing = { workspace = true }

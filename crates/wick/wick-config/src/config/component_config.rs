@@ -2,7 +2,7 @@ mod composite;
 mod wasm;
 use std::collections::HashMap;
 
-use asset_container::AssetManager;
+use asset_container::{AssetManager, Assets};
 pub use composite::CompositeComponentImplementation;
 use config::{ComponentImplementation, ComponentKind};
 pub use wasm::{OperationSignature, WasmComponentImplementation};
@@ -60,7 +60,6 @@ pub struct ComponentConfiguration {
   #[asset(skip)]
   #[builder(setter(skip))]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
-  #[asset(skip)]
   #[builder(default)]
   pub package: Option<PackageConfig>,
 }
@@ -78,9 +77,9 @@ impl ComponentConfiguration {
 
   /// Get the package files
   #[must_use]
-  pub fn package_files(&self) -> Option<&Vec<String>> {
+  pub fn package_files(&self) -> Option<Assets<AssetReference>> {
     // should return empty vec if package is None
-    self.package.as_ref().map(|p| &p.files)
+    self.package.as_ref().map(|p| p.assets())
   }
 
   pub fn try_wasm(&self) -> Result<&WasmComponentImplementation> {

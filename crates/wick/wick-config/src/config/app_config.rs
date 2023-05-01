@@ -2,8 +2,8 @@ use std::collections::HashMap;
 pub(super) mod resources;
 pub(super) mod triggers;
 
-use asset_container::AssetManager;
-use wick_asset_reference::FetchOptions;
+use asset_container::{AssetManager, Assets};
+use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::TypeDefinition;
 
 pub use self::resources::*;
@@ -18,7 +18,7 @@ use crate::utils::RwOption;
 use crate::{config, v1, Resolver, Result};
 
 #[derive(Debug, Clone, Default, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(AssetReference)]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct AppConfiguration {
@@ -37,7 +37,6 @@ pub struct AppConfiguration {
   pub(crate) type_cache: ImportCache,
   #[asset(skip)]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
-  #[asset(skip)]
   pub package: Option<PackageConfig>,
 }
 
@@ -56,8 +55,8 @@ impl AppConfiguration {
 
   /// Get the package files
   #[must_use]
-  pub fn package_files(&self) -> Option<&Vec<String>> {
-    self.package.as_ref().map(|p| &p.files)
+  pub fn package_files(&self) -> Option<Assets<AssetReference>> {
+    self.package.as_ref().map(|p| p.assets())
   }
 
   /// Get the configuration item a binding points to.

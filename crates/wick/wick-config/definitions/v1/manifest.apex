@@ -9,6 +9,9 @@ alias LocationReference = string @skip
 "A liquid JSON template."
 alias LiquidJsonValue = string @skip
 
+"A glob pattern, ex: **/*.html"
+alias Glob = string @skip
+
 "The Application configuration defines a standalone Wick application."
 type AppConfiguration @default @tagged("wick/app@v1") {
   "Associated metadata for this component."
@@ -33,10 +36,11 @@ type AppConfiguration @default @tagged("wick/app@v1") {
   package: PackageDefinition?,
 }
 
+
 "The package details for an application or component."
 type PackageDefinition @default {
   "The list of files and folders to be included with the package."
-  files: [string]
+  files: [Glob]
   "Configuration for publishing the package to a registry. This will be used if the package is published without any additional arguments on the command line. If a tag is specified on the command line, that tag will be used instead. "
   registry: RegistryDefinition?
 }

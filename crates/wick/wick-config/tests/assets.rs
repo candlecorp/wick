@@ -2,7 +2,7 @@ mod integration_test {
   use std::path::PathBuf;
 
   use anyhow::Result;
-  use asset_container::{AssetManager, Status};
+  use asset_container::{Asset, AssetManager, Status};
   use tokio_stream::StreamExt;
   use wick_config::config::FetchOptions;
   use wick_config::error::ManifestError;
@@ -16,7 +16,7 @@ mod integration_test {
   #[test_logger::test(tokio::test)]
   async fn test_fetch_with_progress() -> Result<()> {
     let config = load("./tests/manifests/v1/logger.yaml").await?;
-    let assets = config.assets();
+    let mut assets = config.assets();
     assert_eq!(assets.len(), 2);
     let mut progress = assets.pull_with_progress(FetchOptions::default());
     let mut num_progress = 0;
@@ -43,6 +43,23 @@ mod integration_test {
 
     Ok(())
   }
+
+  #[test_logger::test(tokio::test)]
+  async fn test_package_assets() -> Result<()> {
+    let opts = FetchOptions::default();
+    let crate_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
+    let asset_dir = crate_dir.join("tests/assets/test-application/");
+
+    let config = WickConfiguration::fetch("./tests/assets/test-application/app.wick", opts.clone()).await?;
+    for asset in config.assets().iter() {
+      let bytes = asset.fetch(opts.clone()).await?;
+      let expected_bytes = tokio::fs::read(asset_dir.join(asset.location())).await?;
+      assert_eq!(bytes, expected_bytes);
+    }
+
+    Ok(())
+  }
+
   // TODO: move to wick-package
   // Commenting out to remove dependency on wick-package for now.
   // fn get_relative_path(path: &str) -> PathBuf {

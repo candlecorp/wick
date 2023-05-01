@@ -9,17 +9,15 @@ mod integration_test {
 
   #[test_logger::test(tokio::test)]
   async fn test_push_and_pull_wick_package() -> Result<()> {
-    let crate_dir = format!("{}/./tests/files", env!("CARGO_MANIFEST_DIR"));
-
     let host = std::env::var("DOCKER_REGISTRY").unwrap();
     let tempdir = std::env::temp_dir().join("test_push_and_pull_wick_package");
-    let _ = tokio::fs::remove_dir_all(&tempdir).await;
     tokio::fs::create_dir_all(&tempdir).await.unwrap();
 
     println!("Using tempdir: {:?}", tempdir);
     let options = OciOptions::default()
       .overwrite(true)
-      .base_dir(Some(tempdir.clone()))
+      .base_dir(Some(tempdir))
+      //.base_dir(Some(PathBuf::from("./wick_components")))
       .allow_insecure(vec![host.to_owned()]);
 
     // Run the push operation
@@ -59,13 +57,7 @@ mod integration_test {
     pulled_files_sorted.sort_by_key(|file| file.path());
 
     for (pushed_file, pulled_file) in pushed_files_sorted.iter().zip(pulled_files_sorted.iter()) {
-      let pushed_file_path = pushed_file.path().to_str().unwrap().trim_start_matches(&crate_dir);
-      let pulled_file_path = pulled_file
-        .path()
-        .to_str()
-        .unwrap()
-        .trim_start_matches(tempdir.to_str().unwrap());
-      assert_eq!(pushed_file_path, pulled_file_path, "Mismatch in file paths");
+      assert_eq!(pushed_file.path(), pulled_file.path(), "Mismatch in file paths");
       //if pushed_file.path() ends with .tar.gz, don't compare hashes
       if pushed_file.path().to_str().unwrap().ends_with(".tar.gz") {
         continue;

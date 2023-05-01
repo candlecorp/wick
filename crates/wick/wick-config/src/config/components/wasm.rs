@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use asset_container::Asset;
 use serde_json::Value;
 
 use crate::config;

@@ -10,7 +10,7 @@ pub(crate) mod serve;
 pub(crate) mod test;
 pub(crate) mod wasm;
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use wick_logger::LoggingOptions;
 
 #[derive(Parser, Debug, Clone)]
@@ -66,17 +66,6 @@ pub(crate) enum CliCommand {
   /// Command to query JSON, YAML, or TOML file.
   #[clap(name = "query")]
   Query(query::QueryCommand),
-}
-
-#[derive(Debug, Clone, Args)]
-pub(crate) struct FetchOptions {
-  /// Allows the use of "latest" artifact tag.
-  #[clap(long = "latest", action)]
-  pub(crate) allow_latest: bool,
-
-  /// Allows the use of HTTP registry connections to these registries.
-  #[clap(long = "insecure", action)]
-  pub(crate) insecure_registries: Vec<String>,
 }
 
 #[cfg(test)]
