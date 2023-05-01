@@ -29,7 +29,7 @@ pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
   let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
 
   debug!(args = ?opts.args, "rest args");
-  let app_config = WickConfiguration::fetch(&opts.path, opts.oci.into())
+  let app_config = WickConfiguration::fetch_all(&opts.path, opts.oci.into())
     .await?
     .try_app_config()?;
 

@@ -62,6 +62,12 @@ pub enum WickConfiguration {
 }
 
 impl WickConfiguration {
+  pub async fn fetch_all(path: impl AsRef<str> + Send, options: FetchOptions) -> Result<Self, Error> {
+    let config = Self::fetch(path, options.clone()).await?;
+    config.fetch_assets(options).await?;
+    Ok(config)
+  }
+
   pub async fn fetch(path: impl AsRef<str> + Send, options: FetchOptions) -> Result<Self, Error> {
     let path = path.as_ref();
     let location = AssetReference::new(path);
@@ -72,7 +78,6 @@ impl WickConfiguration {
       .map_err(|e| Error::LoadError(path.to_owned(), e.to_string()))?;
     let source = location.path().unwrap_or_else(|e| format!("<ERROR:{}>", e));
     let config = WickConfiguration::load_from_bytes(&bytes, &Some(source))?;
-    config.fetch_assets(options.clone()).await?;
     match &config {
       WickConfiguration::Component(c) => {
         c.setup_cache(options).await?;
