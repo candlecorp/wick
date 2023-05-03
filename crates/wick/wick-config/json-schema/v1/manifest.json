@@ -84,6 +84,7 @@
     "PackageDefinition": {
       "$anchor": "#v1/PackageDefinition",
       "additionalProperties": false,
+      "type": "object",
       "properties": {
         "files": {
           "description": "The list of files and folders to be included with the package.",
@@ -106,6 +107,7 @@
     "RegistryDefinition": {
       "$anchor": "#v1/RegistryDefinition",
       "additionalProperties": false,
+      "type": "object",
       "properties": {
         "registry": {
           "description": "The registry to publish to.",
@@ -987,7 +989,13 @@
           "type": "string"
         },
         "with": {
-          "description": "Any configuration necessary for the component."
+          "description": "Any configuration necessary for the component.",
+          "required": false,
+
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+          }
         }
       },
       "required": ["url"]
@@ -1009,7 +1017,13 @@
           "type": "string"
         },
         "with": {
-          "description": "Any configuration necessary for the component."
+          "description": "Any configuration necessary for the component.",
+          "required": false,
+
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+          }
         },
         "provide": {
           "description": "External components to provide to the referenced component.",
@@ -1034,6 +1048,14 @@
           "description": "The name of the operation.",
 
           "type": "string"
+        },
+        "with": {
+          "description": "Any configuration required by the operation.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/Field"
+          }
         },
         "inputs": {
           "description": "Types of the inputs to the operation.",
@@ -1146,7 +1168,12 @@
         },
         "data": {
           "description": "The default value to provide on this connection in the event of an error.",
-          "required": false
+          "required": false,
+
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+          }
         }
       },
       "required": ["instance", "port"]
@@ -1164,7 +1191,11 @@
         },
         "with": {
           "description": "Any configuration required by the operation.",
-          "required": false
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/Field"
+          }
         },
         "inputs": {
           "description": "Types of the inputs to the operation.",
@@ -1215,7 +1246,12 @@
         },
         "with": {
           "description": "Data to associate with the reference, if any.",
-          "required": false
+          "required": false,
+
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+          }
         }
       },
       "required": ["name", "operation"]

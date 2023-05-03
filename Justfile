@@ -20,6 +20,11 @@ clean:
 	cargo clean
 	rm -rf node_modules
 	just crates/wick/wick-config/clean
+	just crates/integration/test-baseline-component/clean
+	just crates/integration/test-http-trigger-component/clean
+	just crates/integration/test-cli-trigger-component/clean
+	just crates/integration/test-cli-with-db/clean
+
 
 codegen:
 	just crates/wick/wick-config/codegen
@@ -39,12 +44,16 @@ early-errors: licenses
 licenses:
 	cargo deny --workspace check licenses  --config etc/deny.toml --hide-inclusion-graph
 
-unit-tests:
+unit-tests: codegen-tests
 	if {{nextest}} = "true"; then \
 	  cargo nextest run -E 'not (test(slow_test) | test(integration_test))'; \
 	else \
-	  cargo test --workspace -- --skip integration_test --skip slow_test --test-threads=6; \
+	  cargo test --workspace -- --skip integration_test --skip slow_test --skip codegen-test --test-threads=6; \
 	fi
+
+codegen-tests:
+  just tests/codegen-tests/codegen
+  just tests/codegen-tests/test
 
 ci-tests: wasm
   just unit-tests
@@ -52,7 +61,7 @@ ci-tests: wasm
 integration: integration-setup && integration-teardown
 	just integration-tests
 
-integration-tests:
+integration-tests: codegen-tests
 	if {{nextest}} = "true"; then \
 	  cargo nextest run -E 'not (test(slow_test))'; \
 	else \
@@ -84,7 +93,7 @@ integration-teardown:
 
 deps:
 	npm install -g apex-template prettier ts-node commitlint conventional-changelog-conventionalcommits
-	cargo install cargo-deny
+	cargo install cargo-deny cargo-nextest
 
 update-lints:
   ts-node ./etc/update-lints.ts

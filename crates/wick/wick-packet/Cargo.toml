@@ -37,13 +37,13 @@ parking_lot = { workspace = true }
 url = { workspace = true }
 # for features that require an async runtime
 tokio = { workspace = true, optional = true, features = ["rt"] }
-# TODO make these feature flags
-wasmrs-guest = { workspace = true }
-wasmrs-runtime = { workspace = true }
 seeded-random = { workspace = true, optional = true }
 pin-project-lite = "0.2"
 base64-serde = "0.7.0"
 base64 = { workspace = true, default-features = false, features = ["alloc"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+wasmrs-guest = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

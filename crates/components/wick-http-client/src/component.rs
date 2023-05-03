@@ -11,7 +11,7 @@ use wick_config::config::components::{Codec, HttpClientComponentConfig, HttpClie
 use wick_config::config::{Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Base64Bytes, FluxChannel, Invocation, Observer, Packet, PacketStream};
+use wick_packet::{Base64Bytes, FluxChannel, Invocation, Observer, OperationConfig, Packet, PacketStream};
 
 use crate::error::Error;
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
@@ -97,7 +97,7 @@ async fn handle(
       Ok(Some(inputs)) => inputs,
       Ok(None) => break 'outer,
       Err(e) => {
-        let _ = tx.send(Packet::component_error(e.to_string()));
+        let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
         break 'outer;
       }
     };
@@ -112,7 +112,7 @@ async fn handle(
       Some(body) => match body.render(&inputs) {
         Ok(p) => Some(p),
         Err(e) => {
-          let _ = tx.send(Packet::component_error(e.to_string()));
+          let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
           break 'outer;
         }
       },
@@ -124,7 +124,7 @@ async fn handle(
     {
       Ok(p) => p,
       Err(e) => {
-        let _ = tx.send(Packet::component_error(e.to_string()));
+        let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
         break 'outer;
       }
     };
@@ -150,14 +150,14 @@ async fn handle(
     let response = match request_builder.send().await {
       Ok(r) => r,
       Err(e) => {
-        let _ = tx.send(Packet::component_error(e.to_string()));
+        let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
         break 'outer;
       }
     };
     let (our_response, body_stream) = match crate::conversions::to_wick_response(response) {
       Ok(r) => r,
       Err(e) => {
-        let _ = tx.send(Packet::component_error(e.to_string()));
+        let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
         break 'outer;
       }
     };
@@ -173,7 +173,7 @@ impl Component for HttpClientComponent {
     &self,
     invocation: Invocation,
     stream: PacketStream,
-    _data: Option<Value>,
+    _data: Option<OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let ctx = self.ctx.clone();
@@ -203,7 +203,7 @@ impl Component for HttpClientComponent {
       );
       tokio::spawn(async move {
         if let Err(e) = fut.await {
-          let _ = tx.send(Packet::component_error(e.to_string()));
+          let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
         }
       });
       Ok(rx)
@@ -249,7 +249,7 @@ fn output_task(
         let bytes: Vec<Base64Bytes> = match body_stream.try_collect().await {
           Ok(r) => r,
           Err(e) => {
-            let _ = tx.send(Packet::component_error(e.to_string()));
+            let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
             return;
           }
         };
@@ -258,7 +258,7 @@ fn output_task(
         let json: Value = match serde_json::from_slice(&bytes) {
           Ok(r) => r,
           Err(e) => {
-            let _ = tx.send(Packet::component_error(e.to_string()));
+            let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
             return;
           }
         };

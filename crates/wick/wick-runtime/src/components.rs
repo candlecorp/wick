@@ -14,7 +14,7 @@ use wick_component_wasm::error::LinkError;
 use wick_config::config::components::{ManifestComponent, WasmComponent};
 use wick_config::config::{BoundInterface, FetchOptions, Metadata, WasmComponentImplementation};
 use wick_config::{Resolver, WickConfiguration};
-use wick_packet::{Entity, Invocation, PacketStream};
+use wick_packet::{Entity, Invocation, OperationConfig, PacketStream};
 
 use self::component_service::NativeComponentService;
 use crate::dev::prelude::*;
@@ -24,7 +24,12 @@ use crate::BoxFuture;
 
 pub(crate) trait InvocationHandler {
   fn get_signature(&self) -> Result<ComponentSignature>;
-  fn invoke(&self, msg: Invocation, stream: PacketStream) -> Result<BoxFuture<Result<InvocationResponse>>>;
+  fn invoke(
+    &self,
+    msg: Invocation,
+    stream: PacketStream,
+    config: Option<OperationConfig>,
+  ) -> Result<BoxFuture<Result<InvocationResponse>>>;
 }
 
 type Result<T> = std::result::Result<T, ComponentError>;
@@ -89,7 +94,7 @@ pub(crate) async fn init_wasmrs_component<'a, 'b>(
   Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
-  Arc::new(move |compref, op, stream, inherent| {
+  Arc::new(move |compref, op, stream, inherent, config| {
     let origin_url = compref.get_origin_url();
     let target_id = compref.get_target_id().to_owned();
     Box::pin(async move {
@@ -112,7 +117,7 @@ pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
         //   }
         // }
 
-        let result = engine_invoke_async(engine_id, invocation, stream)
+        let result = engine_invoke_async(engine_id, invocation, stream, config)
           .await
           .map_err(|e| flow_component::ComponentError::new(LinkError::CallFailure(e.to_string())))?;
         Ok(result)
@@ -192,8 +197,10 @@ pub(crate) fn expect_signature_match(
 ) -> std::result::Result<(), EngineError> {
   if actual != expected {
     error!(
-      expected = serde_json::to_string(expected).unwrap(),
-      actual = serde_json::to_string(actual).unwrap(),
+      // expected = serde_json::to_string(expected).unwrap(),
+      ?expected,
+      // actual = serde_json::to_string(actual).unwrap(),
+      ?actual,
       "signature mismatch"
     );
     return Err(EngineError::ComponentSignature(

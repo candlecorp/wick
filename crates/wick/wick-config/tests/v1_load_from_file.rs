@@ -93,7 +93,7 @@ async fn regression_issue_42() -> Result<(), ManifestError> {
   let coll = component.get_import("test").unwrap();
   #[allow(deprecated)]
   if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = &coll.kind {
-    let value = module.config.get("pwd").unwrap().as_str().unwrap();
+    let value = module.config.as_ref().unwrap().get("pwd").unwrap().as_str().unwrap();
     let expected = std::env::var("CARGO_MANIFEST_DIR").unwrap();
 
     assert_eq!(value, expected);

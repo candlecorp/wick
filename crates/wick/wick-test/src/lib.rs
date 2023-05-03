@@ -202,7 +202,7 @@ pub(crate) fn get_payload(test: &UnitTest) -> (PacketStream, Option<InherentData
     debug!("Test input for port {:?}", packet);
     tx.send(
       gen_packet(packet)
-        .map_err(|e| wick_packet::Error::General(format!("could not convert test packet to real packet: {}", e))),
+        .map_err(|e| wick_packet::Error::Component(format!("could not convert test packet to real packet: {}", e))),
     )
     .unwrap();
   }
@@ -269,7 +269,7 @@ async fn run_unit<'a>(
 
   trace!(i, %entity, "invoke");
   let invocation = Invocation::new(Entity::test(&test_name), entity, inherent);
-  let fut = collection.handle(invocation, stream, None, std::sync::Arc::new(|_, _, _, _| panic!()));
+  let fut = collection.handle(invocation, stream, None, std::sync::Arc::new(|_, _, _, _, _| panic!()));
   let fut = tokio::time::timeout(Duration::from_secs(5), fut);
   let result = fut
     .await

@@ -1,5 +1,4 @@
 use flow_component::{Component, ComponentError, RuntimeCallback};
-use serde_json::Value;
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::{ComponentSignature, Field, OperationSignature};
 use wick_packet::{ComponentReference, Entity, Invocation, Packet, PacketStream};
@@ -39,7 +38,7 @@ impl Component for ComponentComponent {
     &self,
     invocation: Invocation,
     _stream: PacketStream,
-    _config: Option<Value>,
+    _config: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, namespace = NS_COMPONENTS);

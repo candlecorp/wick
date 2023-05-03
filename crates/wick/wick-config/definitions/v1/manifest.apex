@@ -361,7 +361,7 @@ type GrpcUrlComponent @tagged("wick/component/grpc@v1") {
   url: string @required
 
   "Any configuration necessary for the component."
-  with: any
+  with: {string: any}?,
 }
 
 "A native component that can be extracted and run as a microservice."
@@ -369,7 +369,7 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
   "The URL (and optional tag) or local file path to find the manifest."
   ref: LocationReference @rename("reference")  @required
   "Any configuration necessary for the component."
-  with: any
+  with: {string: any}?,
   "External components to provide to the referenced component."
   provide: {string:string}
 }
@@ -378,6 +378,9 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
 type CompositeOperationDefinition {
   "The name of the operation."
   name: string,
+
+  "Any configuration required by the operation."
+  with: [Field],
 
   "Types of the inputs to the operation."
   inputs: [Field],
@@ -424,7 +427,7 @@ type ConnectionTargetDefinition {
   port: string @required,
 
   "The default value to provide on this connection in the event of an error."
-  data: any?,
+  data: {string: any}?,
 }
 
 "An operation name and its input and output signatures"
@@ -433,7 +436,7 @@ type OperationDefinition {
   name: string,
 
   "Any configuration required by the operation."
-  with: any?,
+  with: [Field],
 
   "Types of the inputs to the operation."
   inputs: [Field],
@@ -455,7 +458,7 @@ type InstanceBinding {
   "The operation to bind to."
   operation: ComponentOperationExpression @required @shortform
   "Data to associate with the reference, if any."
-  with: any?,
+  with: {string: any}?,
 }
 
 "A test case for a component."

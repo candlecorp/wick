@@ -161,6 +161,7 @@ async fn test_external_direct() -> Result<()> {
     "./tests/manifests/v0/external.yaml",
     Entity::operation("test", "echo"),
     packets!(("input", "hello world")),
+    None,
   )
   .await?;
 

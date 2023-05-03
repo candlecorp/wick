@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use serde_json::Value;
@@ -225,12 +226,12 @@ impl FlowProgram {
 pub struct ConnectionTargetExpression {
   instance: InstanceTarget,
   port: String,
-  data: Option<Value>,
+  data: Option<HashMap<String, Value>>,
 }
 
 impl ConnectionTargetExpression {
   /// Create a new [ConnectionTargetExpression]
-  pub fn new(instance: InstanceTarget, port: impl AsRef<str>, data: Option<Value>) -> Self {
+  pub fn new(instance: InstanceTarget, port: impl AsRef<str>, data: Option<HashMap<String, Value>>) -> Self {
     Self {
       instance,
       port: port.as_ref().to_owned(),
@@ -251,12 +252,12 @@ impl ConnectionTargetExpression {
 
   /// Get the data.
   #[must_use]
-  pub fn data(&self) -> Option<&Value> {
+  pub fn data(&self) -> Option<&HashMap<String, Value>> {
     self.data.as_ref()
   }
 
   /// Get the owned parts of the connection target.
-  pub fn into_parts(self) -> (InstanceTarget, String, Option<Value>) {
+  pub fn into_parts(self) -> (InstanceTarget, String, Option<HashMap<String, Value>>) {
     (self.instance, self.port, self.data)
   }
 }

@@ -75,8 +75,8 @@ async fn load_shortform_yaml() -> Result<(), ManifestError> {
   assert_eq!(
     expr,
     &FlowExpression::ConnectionExpression(ConnectionExpression::new(
-      ConnectionTargetExpression::new(InstanceTarget::Input, "input", None),
-      ConnectionTargetExpression::new(InstanceTarget::named("logger"), "input", None)
+      ConnectionTargetExpression::new(InstanceTarget::Input, "input", Default::default()),
+      ConnectionTargetExpression::new(InstanceTarget::named("logger"), "input", Default::default())
     ))
   );
 

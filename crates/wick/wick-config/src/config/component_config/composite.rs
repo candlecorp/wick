@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use flow_expression_parser::ast::{self};
-use serde_json::Value;
 use wick_interface_types::Field;
+use wick_packet::OperationConfig;
 
 use crate::config::{self};
 
@@ -59,6 +59,9 @@ pub struct FlowOperation {
   /// A list of the input types for the operation.
   pub outputs: Vec<Field>,
 
+  /// Any configuration required for the component to operate.
+  pub config: Vec<Field>,
+
   /// A mapping of instance names to the components they refer to.
   pub instances: HashMap<String, InstanceReference>,
 
@@ -97,7 +100,7 @@ impl From<FlowOperation> for config::OperationSignature {
       name: value.name,
       inputs: value.inputs,
       outputs: value.outputs,
-      config: None,
+      config: value.config,
     }
   }
 }
@@ -112,7 +115,7 @@ pub struct InstanceReference {
   /// The id of the component.
   pub component_id: String,
   /// Data associated with the component instance.
-  pub data: Option<Value>,
+  pub data: Option<OperationConfig>,
 }
 
 impl InstanceReference {

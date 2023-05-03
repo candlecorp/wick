@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use asset_container::Asset;
-use serde_json::Value;
 
 use crate::config;
 
@@ -13,7 +12,7 @@ pub struct WasmComponent {
   pub reference: config::AssetReference,
   /// The configuration for the collection
   #[asset(skip)]
-  pub config: Value,
+  pub config: Option<wick_packet::OperationConfig>,
   /// Permissions for this collection
   #[asset(skip)]
   pub permissions: Permissions,

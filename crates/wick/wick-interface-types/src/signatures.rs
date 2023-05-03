@@ -25,7 +25,7 @@ pub struct Field {
 
   /// Whether the field is required.
   #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub default: Option<serde_yaml::Value>,
+  pub default: Option<serde_json::Value>,
 
   /// Whether the field is required.
   #[serde(default, skip_serializing_if = "is_false")]
@@ -45,6 +45,35 @@ impl Field {
       required: false,
       ty,
     }
+  }
+
+  /// Get the name of the field
+  #[must_use]
+  pub fn name(&self) -> &str {
+    &self.name
+  }
+
+  /// Get the type of the field
+  pub fn ty(&self) -> &TypeSignature {
+    &self.ty
+  }
+
+  /// Get the description of the field
+  #[must_use]
+  pub fn description(&self) -> Option<&str> {
+    self.description.as_deref()
+  }
+
+  /// Get the default value of the field
+  #[must_use]
+  pub fn default(&self) -> Option<&serde_json::Value> {
+    self.default.as_ref()
+  }
+
+  /// Get whether the field is required
+  #[must_use]
+  pub fn required(&self) -> bool {
+    self.required
   }
 }
 

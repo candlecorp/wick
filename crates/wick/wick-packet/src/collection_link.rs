@@ -77,11 +77,15 @@ fn link_call(
   };
 
   let _ = tx.send_result(Packet::encode("", first).into());
-  wasmrs_runtime::spawn(async move {
-    while let Some(payload) = stream.next().await {
-      if let Err(_e) = tx.send_result(payload) {
-        // Error sending payload, channel probably closed.
-      };
+  let _ = wasmrs_guest::runtime::spawn("comp_ref", async move {
+    loop {
+      if let Some(payload) = stream.next().await {
+        if let Err(_e) = tx.send_result(payload) {
+          // Error sending payload, channel probably closed.
+        };
+      } else {
+        break;
+      }
     }
   });
 

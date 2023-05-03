@@ -14,7 +14,7 @@ wasmrs-rx = { workspace = true }
 wasmrs-codec = { workspace = true }
 wick-packet = { workspace = true, features = ["invocation", "rt-tokio"] }
 flow-graph = { workspace = true }
-flow-component = { workspace = true }
+flow-component = { workspace = true, features = ["traits"] }
 wick-config = { workspace = true }
 flow-expression-parser = { workspace = true }
 wick-interface-types = { workspace = true }

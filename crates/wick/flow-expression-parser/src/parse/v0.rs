@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use regex::Regex;
 
 use crate::{parse, Error};
@@ -48,7 +50,7 @@ pub fn parse_connection_target(s: &str) -> Result<(&str, &str)> {
   Ok((t_ref.unwrap_or(DEFAULT_ID), t_port.unwrap_or(DEFAULT_ID)))
 }
 
-type ConnectionDefinitionParts = (String, String, Option<serde_json::Value>);
+type ConnectionDefinitionParts = (String, String, Option<HashMap<String, serde_json::Value>>);
 
 fn parse_from_or_sender(from: &str, default_port: Option<&str>) -> Result<ConnectionDefinitionParts> {
   match parse_target(from) {
@@ -63,14 +65,16 @@ fn parse_from_or_sender(from: &str, default_port: Option<&str>) -> Result<Connec
         .or(default_port)
         .ok_or_else(|| Error::NoDefaultPort(from.to_owned()))?
         .to_owned(),
-      None,
+      Default::default(),
     )),
     // Validating JSON by parsing into a serde_json::Value is recommended by the docs
     Err(_e) => match serde_json::from_str::<serde_json::Value>(from) {
       Ok(_) => Ok((
         parse::SENDER_ID.to_owned(),
         parse::SENDER_PORT.to_owned(),
-        Some(serde_json::from_str(from.trim()).map_err(|e| Error::InvalidSenderData(e.to_string()))?),
+        serde_json::from_str::<serde_json::Value>(from.trim())
+          .map(|v| Some(HashMap::from([("default".to_owned(), v)])))
+          .map_err(|e| Error::InvalidSenderData(e.to_string()))?,
       )),
       Err(e) => Err(Error::ConnectionTargetSyntax(from.to_owned(), e.to_string())),
     },
@@ -96,7 +100,7 @@ pub fn parse_connection(s: &str) -> Result<(ConnectionDefinitionParts, Connectio
           .map(|s| s.to_owned())
           .or_else(|| Some(from.1.clone()))
           .ok_or_else(|| Error::NoDefaultPort(s.to_owned()))?,
-        None,
+        Default::default(),
       );
       Ok((from, to))
     },
@@ -105,11 +109,9 @@ pub fn parse_connection(s: &str) -> Result<(ConnectionDefinitionParts, Connectio
 
 #[cfg(test)]
 mod tests {
-  use std::str::FromStr;
 
   use anyhow::Result;
   use pretty_assertions::assert_eq;
-  use serde_json::Value;
 
   use super::*;
   #[test_logger::test]
@@ -146,8 +148,8 @@ mod tests {
     assert_eq!(
       parsed,
       (
-        ("ref1".to_owned(), "in".to_owned(), None,),
-        ("ref2".to_owned(), "out".to_owned(), None,),
+        ("ref1".to_owned(), "in".to_owned(), Default::default(),),
+        ("ref2".to_owned(), "out".to_owned(), Default::default(),),
       )
     );
     Ok(())
@@ -164,9 +166,9 @@ mod tests {
         (
           parse::SENDER_ID.to_owned(),
           parse::SENDER_PORT.to_owned(),
-          Some(num.into()),
+          Some(HashMap::from([("default".into(), num.into())])),
         ),
-        ("ref2".to_owned(), "out".to_owned(), None,),
+        ("ref2".to_owned(), "out".to_owned(), Default::default(),),
       )
     );
     Ok(())
@@ -178,8 +180,8 @@ mod tests {
     assert_eq!(
       parsed,
       (
-        (parse::SCHEMATIC_INPUT.to_owned(), "in".to_owned(), None,),
-        ("ref2".to_owned(), "out".to_owned(), None,),
+        (parse::SCHEMATIC_INPUT.to_owned(), "in".to_owned(), Default::default(),),
+        ("ref2".to_owned(), "out".to_owned(), Default::default(),),
       )
     );
     Ok(())
@@ -191,8 +193,8 @@ mod tests {
     assert_eq!(
       parsed,
       (
-        ("ref1".to_owned(), "in".to_owned(), None,),
-        (parse::SCHEMATIC_OUTPUT.to_owned(), "out".to_owned(), None,),
+        ("ref1".to_owned(), "in".to_owned(), Default::default(),),
+        (parse::SCHEMATIC_OUTPUT.to_owned(), "out".to_owned(), Default::default(),),
       )
     );
     Ok(())
@@ -204,8 +206,12 @@ mod tests {
     assert_eq!(
       parsed,
       (
-        ("ref1".to_owned(), "port".to_owned(), None,),
-        (parse::SCHEMATIC_OUTPUT.to_owned(), "port".to_owned(), None,),
+        ("ref1".to_owned(), "port".to_owned(), Default::default(),),
+        (
+          parse::SCHEMATIC_OUTPUT.to_owned(),
+          "port".to_owned(),
+          Default::default(),
+        ),
       )
     );
     Ok(())
@@ -217,8 +223,8 @@ mod tests {
     assert_eq!(
       parsed,
       (
-        (parse::SCHEMATIC_INPUT.to_owned(), "port".to_owned(), None,),
-        ("ref1".to_owned(), "port".to_owned(), None,),
+        (parse::SCHEMATIC_INPUT.to_owned(), "port".to_owned(), Default::default(),),
+        ("ref1".to_owned(), "port".to_owned(), Default::default(),),
       )
     );
     Ok(())
@@ -233,9 +239,9 @@ mod tests {
         (
           parse::SENDER_ID.to_owned(),
           parse::SENDER_PORT.to_owned(),
-          Some(Value::from_str(r#""default""#)?),
+          Some(HashMap::from([("default".into(), "default".into())])),
         ),
-        ("ref1".to_owned(), "port".to_owned(), None,),
+        ("ref1".to_owned(), "port".to_owned(), Default::default(),),
       )
     );
     Ok(())
@@ -250,9 +256,13 @@ mod tests {
         (
           parse::SENDER_ID.to_owned(),
           parse::SENDER_PORT.to_owned(),
-          Some(Value::from_str(r#""1234512345""#)?),
+          Some(HashMap::from([("default".into(), "1234512345".into())])),
         ),
-        (parse::SCHEMATIC_OUTPUT.to_owned(), "output".to_owned(), None,),
+        (
+          parse::SCHEMATIC_OUTPUT.to_owned(),
+          "output".to_owned(),
+          Default::default(),
+        ),
       )
     );
     Ok(())

@@ -38,6 +38,7 @@ impl PartialEq for Packet {
 }
 
 impl Packet {
+  pub const FATAL_ERROR: &str = "<component>";
   pub fn new_raw(payload: PacketPayload, wasmrs: Metadata, metadata: WickMetadata) -> Self {
     Self {
       payload,
@@ -65,7 +66,7 @@ impl Packet {
   }
 
   pub fn component_error(err: impl AsRef<str>) -> Self {
-    Self::new_for_port("<component>", PacketPayload::fatal_error(err), 0)
+    Self::new_for_port(Self::FATAL_ERROR, PacketPayload::fatal_error(err), 0)
   }
 
   pub fn ok(port: impl AsRef<str>, payload: RawPayload) -> Self {
@@ -90,6 +91,14 @@ impl Packet {
 
   pub fn close_bracket(port: impl AsRef<str>) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(None), CLOSE_BRACKET)
+  }
+
+  pub fn context(&self) -> Option<Base64Bytes> {
+    self.extra.context.clone()
+  }
+
+  pub fn set_context(&mut self, context: Base64Bytes) {
+    self.extra.context = Some(context);
   }
 
   pub fn encode<T: Serialize>(port: impl AsRef<str>, data: T) -> Self {
@@ -128,6 +137,10 @@ impl Packet {
 
   pub fn port(&self) -> &str {
     &self.extra.port
+  }
+
+  pub fn is_fatal_error(&self) -> bool {
+    self.port() == Self::FATAL_ERROR
   }
 
   pub fn payload(&self) -> &PacketPayload {
@@ -172,7 +185,7 @@ impl Packet {
             serde_json::from_str(value).map_err(|e| crate::Error::Decode(value.as_bytes().to_vec(), e.to_string()))?;
           packets.push(Packet::encode(port, val));
         }
-        None => return Err(Error::General(format!("Invalid port=value pair: '{}'", input))),
+        None => return Err(Error::Component(format!("Invalid port=value pair: '{}'", input))),
       }
     }
     Ok(packets)
@@ -373,6 +386,7 @@ pub fn from_wasmrs(stream: BoxFlux<Payload, PayloadError>) -> PacketStream {
 impl From<Payload> for Packet {
   fn from(mut value: Payload) -> Self {
     let ex = value.metadata.extra.take();
+
     Self {
       extra: WickMetadata::decode(ex.unwrap()).unwrap(),
       metadata: value.metadata,

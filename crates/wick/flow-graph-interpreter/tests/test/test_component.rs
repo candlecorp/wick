@@ -6,7 +6,6 @@ type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use futures::{Future, StreamExt};
 use seeded_random::{Random, Seed};
-use serde_json::Value;
 use tokio::spawn;
 use tokio::task::JoinHandle;
 use tracing::trace;
@@ -62,6 +61,16 @@ impl TestComponent {
         OperationSignature::new("concat")
           .add_input("left", TypeSignature::String)
           .add_input("right", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_operation(
+        OperationSignature::new("noimpl")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_operation(
+        OperationSignature::new("component_error")
+          .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
       .add_operation(
@@ -179,7 +188,7 @@ impl Component for TestComponent {
     &self,
     invocation: Invocation,
     stream: PacketStream,
-    _config: Option<Value>,
+    _config: Option<wick_packet::OperationConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let operation = invocation.target.operation_id();
@@ -224,7 +233,7 @@ fn handler(
           let link: ComponentReference = component.deserialize().unwrap();
           let message: String = message.deserialize().unwrap();
           let packets = packet_stream!(("input", message));
-          let mut response = callback(link, "reverse".to_owned(), packets, None).await.unwrap();
+          let mut response = callback(link, "reverse".to_owned(), packets, None, None).await.unwrap();
           while let Some(Ok(res)) = response.next().await {
             defer(vec![send(res.set_port("output"))]);
           }
@@ -333,6 +342,15 @@ fn handler(
       panic!();
     }
     "error" => Err(anyhow!("This operation always errors")),
+    "noimpl" => {
+      let (_send, stream) = stream(1);
+      Ok(stream)
+    }
+    "component_error" => {
+      let (mut send, stream) = stream(1);
+      send(Packet::component_error("Oh no"));
+      Ok(stream)
+    }
     "timeout-nodone" => {
       let mut input = fan_out!(payload_stream, "input");
       let (mut send, stream) = stream(1);

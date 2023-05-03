@@ -3,10 +3,11 @@ build: setup
     cp ./target/wasm32-wasi/release/*.wasm ./build/
     cargo run --manifest-path ../../bins/wick/Cargo.toml -- wasm sign ./build/test_cli_trigger_component.wasm component.yaml
 debug: setup
-    cargo build --target=wasm32-wasi
+    cargo +nightly build --target=wasm32-wasi --features localgen
     cp ./target/wasm32-wasi/debug/*.wasm ./build/
     cargo run --manifest-path ../../bins/wick/Cargo.toml -- wasm sign ./build/test_cli_trigger_component.wasm component.yaml
 setup:
     mkdir -p build
 clean:
   cargo clean
+  rm -rf build/*

@@ -18,7 +18,7 @@ async fn good_wasm_component_v0() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn good_wasm_component_v1() -> Result<()> {
   common_test(
-    "./manifests/v1/good-wasmrs-component.yaml",
+    "../../integration/test-baseline-component/component.yaml",
     packet_stream!(("left", 10), ("right", 1001)),
     "add",
     vec![Packet::encode("output", 1011), Packet::done("output")],

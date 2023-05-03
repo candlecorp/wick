@@ -85,7 +85,9 @@
 // Add exceptions here
 #![allow(missing_docs, clippy::expect_used)]
 
+mod dependency;
 mod generate;
 mod module;
+
 pub use generate::config::Config;
 pub use generate::{async_build, build, configure};

@@ -177,8 +177,7 @@ pub(crate) struct EntrypointDefinition {
   pub(crate) component: String,
   /// Data or configuration used to initialize the collection.
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
-  pub(crate) data: Value,
+  pub(crate) data: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -198,8 +197,7 @@ pub(crate) struct CollectionDefinition {
   pub(crate) reference: String,
   /// Data or configuration used to initialize the collection.
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
-  pub(crate) data: Value,
+  pub(crate) data: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
@@ -284,7 +282,7 @@ pub(crate) struct ComponentDefinition {
   pub(crate) id: String,
   /// Data to associate with the reference.
   #[serde(default)]
-  pub(crate) data: Option<Value>,
+  pub(crate) data: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -313,7 +311,7 @@ pub(crate) struct ConnectionTargetDefinition {
   pub(crate) port: String,
   /// Data to associate with a connection.
   #[serde(default)]
-  pub(crate) data: Option<Value>,
+  pub(crate) data: Option<HashMap<String, Value>>,
 }
 
 impl FromStr for ComponentDefinition {
@@ -322,7 +320,7 @@ impl FromStr for ComponentDefinition {
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     Ok(Self {
       id: s.to_owned(),
-      data: None,
+      data: Default::default(),
     })
   }
 }

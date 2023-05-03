@@ -1,5 +1,4 @@
 use flow_component::{Component, ComponentError, Context, Operation, RuntimeCallback};
-use serde_json::Value;
 use wick_interface_types::{ComponentSignature, TypeDefinition};
 use wick_packet::{Invocation, PacketStream};
 
@@ -95,7 +94,7 @@ impl Component for CoreCollection {
     &self,
     invocation: Invocation,
     stream: PacketStream,
-    data: Option<Value>,
+    data: Option<wick_packet::OperationConfig>,
     callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, namespace = NS_CORE);

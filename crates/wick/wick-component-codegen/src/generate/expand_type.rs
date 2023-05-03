@@ -2,7 +2,8 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
 use super::{config, Direction};
-use crate::generate::{get_typename_parts, Dependency};
+use crate::dependency::Dependency;
+use crate::generate::ids::get_typename_parts;
 
 pub(super) fn expand_type(
   config: &mut config::Config,

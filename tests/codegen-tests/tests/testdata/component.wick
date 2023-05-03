@@ -1,5 +1,3 @@
-# yaml-language-server: $schema=../../../wick-config/json-schema/manifest.json
----
 name: test-component
 kind: wick/component@v1
 metadata:

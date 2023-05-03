@@ -87,6 +87,7 @@
 
 mod macros;
 mod operations;
+
 use flow_component::{Component, RuntimeCallback};
 use seeded_random::Seed;
 use wick_interface_types::{component, ComponentSignature};
@@ -160,7 +161,7 @@ impl Component for Collection {
     &self,
     invocation: Invocation,
     stream: PacketStream,
-    _data: Option<flow_component::Value>,
+    _data: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target = invocation.target_url();

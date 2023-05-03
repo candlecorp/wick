@@ -114,8 +114,8 @@ fn connection_expression(input: &str) -> IResult<&str, ConnectionExpression> {
   Ok((
     i,
     ConnectionExpression::new(
-      ConnectionTargetExpression::new(from.0, from.1, None),
-      ConnectionTargetExpression::new(to.0, to.1, None),
+      ConnectionTargetExpression::new(from.0, from.1, Default::default()),
+      ConnectionTargetExpression::new(to.0, to.1, Default::default()),
     ),
   ))
 }
@@ -235,8 +235,8 @@ mod tests {
   ) -> Result<()> {
     let (i, t) = connection_expression(input)?;
     let conn = ConnectionExpression::new(
-      ConnectionTargetExpression::new(expected.0 .0, expected.0 .1, None),
-      ConnectionTargetExpression::new(expected.1 .0, expected.1 .1, None),
+      ConnectionTargetExpression::new(expected.0 .0, expected.0 .1, Default::default()),
+      ConnectionTargetExpression::new(expected.1 .0, expected.1 .1, Default::default()),
     );
 
     assert_eq!(t, conn);

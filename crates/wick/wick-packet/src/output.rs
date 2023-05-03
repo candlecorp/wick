@@ -1,6 +1,6 @@
 use tracing::warn;
 use wasmrs::{PayloadError, RawPayload};
-use wasmrs_guest::{FluxChannel, Observer};
+use wasmrs_rx::{FluxChannel, Observer};
 
 use crate::Packet;
 

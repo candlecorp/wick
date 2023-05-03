@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use asset_container::Asset;
-use serde_json::Value;
 
 use crate::config;
 
@@ -13,7 +12,7 @@ pub struct ManifestComponent {
   pub reference: config::AssetReference,
   /// The configuration for the collection
   #[asset(skip)]
-  pub config: Value,
+  pub config: Option<wick_packet::OperationConfig>,
   /// The components to provide to the referenced component.
   #[asset(skip)]
   pub provide: HashMap<String, String>,

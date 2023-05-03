@@ -17,6 +17,9 @@ proc-macro2 = { workspace = true }
 heck = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "fs"] }
 derive_builder = { workspace = true }
+serde_json = { workspace = true }
+bitflags = { workspace = true }
+itertools = { workspace = true }
 
 [dev-dependencies]
 wick-logger = { workspace = true }

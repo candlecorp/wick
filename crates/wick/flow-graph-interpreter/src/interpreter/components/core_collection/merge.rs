@@ -15,7 +15,7 @@ impl std::fmt::Debug for Op {
   }
 }
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub(crate) struct Config {
   inputs: Vec<Field>,
 }
@@ -84,11 +84,13 @@ impl Operation for Op {
     config.inputs.iter().map(|n| n.name.clone()).collect()
   }
 
-  fn decode_config(data: Option<flow_component::Value>) -> Result<Self::Config, ComponentError> {
-    serde_json::from_value(data.ok_or_else(|| {
+  fn decode_config(data: Option<wick_packet::OperationConfig>) -> Result<Self::Config, ComponentError> {
+    let config = data.ok_or_else(|| {
       ComponentError::message("Merge component requires configuration, please specify configuration.")
-    })?)
-    .map_err(ComponentError::new)
+    })?;
+    Ok(Self::Config {
+      inputs: config.get_into("inputs").map_err(ComponentError::new)?,
+    })
   }
 }
 
@@ -110,7 +112,7 @@ mod test {
     ];
     let op = Op::new();
     let config = serde_json::json!({ "inputs": inputs });
-    let config = Op::decode_config(Some(config))?;
+    let config = Op::decode_config(Some(config.try_into()?))?;
     let stream = packet_stream!(("input_a", "hello"), ("input_b", 1000));
     let mut packets = op
       .handle(stream, Context::new(config, panic_callback()))

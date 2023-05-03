@@ -589,6 +589,7 @@ impl TryFrom<crate::v1::CompositeOperationDefinition> for config::FlowOperation 
       instances: instances?,
       expressions: expressions?,
       components: op.components,
+      config: op.with,
       flows: op
         .operations
         .into_iter()
@@ -779,7 +780,7 @@ impl TryFrom<ManifestComponent> for v1::ManifestComponent {
   fn try_from(def: ManifestComponent) -> Result<Self> {
     Ok(Self {
       reference: def.reference.try_into()?,
-      with: def.config,
+      with: def.config.map(Into::into),
       provide: def.provide,
     })
   }
@@ -795,7 +796,7 @@ impl From<GrpcUrlComponent> for v1::GrpcUrlComponent {
   fn from(def: GrpcUrlComponent) -> Self {
     Self {
       url: def.url,
-      with: def.config,
+      with: def.config.map(Into::into),
     }
   }
 }
@@ -843,6 +844,7 @@ impl TryFrom<config::FlowOperation> for v1::CompositeOperationDefinition {
       name: value.name,
       inputs: value.inputs,
       outputs: value.outputs,
+      with: value.config,
       uses: instances,
       flow: connections?,
       components: value.components,
@@ -850,23 +852,6 @@ impl TryFrom<config::FlowOperation> for v1::CompositeOperationDefinition {
     })
   }
 }
-
-// impl TryFrom<config::FlowOperation> for v1::PrivateCompositeOperation {
-//   type Error = ManifestError;
-
-//   fn try_from(value: config::FlowOperation) -> std::result::Result<Self, Self::Error> {
-//     let instances: Vec<v1::InstanceBinding> = value.instances.into_iter().map(|(id, val)| (id, val).into()).collect();
-//     let connections: Result<Vec<v1::FlowExpression>> = value.expressions.into_iter().map(TryInto::try_into).collect();
-//     Ok(Self {
-//       name: value.name,
-//       inputs: value.inputs,
-//       outputs: value.outputs,
-//       uses: instances,
-//       flow: connections?,
-//       components: value.components,
-//     })
-//   }
-// }
 
 impl TryFrom<ast::FlowExpression> for v1::FlowExpression {
   type Error = ManifestError;
@@ -925,7 +910,7 @@ impl From<(String, config::InstanceReference)> for v1::InstanceBinding {
         name: value.name,
         component: v1::ComponentDefinition::ComponentReference(v1::ComponentReference { id: value.component_id }),
       },
-      with: value.data,
+      with: value.data.map(Into::into),
     }
   }
 }
@@ -936,11 +921,11 @@ impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
     let res = match def {
       v1::ComponentDefinition::GrpcUrlComponent(v) => ComponentDefinition::GrpcUrl(GrpcUrlComponent {
         url: v.url,
-        config: v.with,
+        config: v.with.map(Into::into),
       }),
       v1::ComponentDefinition::ManifestComponent(v) => ComponentDefinition::Manifest(ManifestComponent {
         reference: v.reference.try_into()?,
-        config: v.with,
+        config: v.with.map(Into::into),
         provide: v.provide,
       }),
       v1::ComponentDefinition::ComponentReference(v) => ComponentDefinition::Reference(ComponentReference { id: v.id }),
@@ -963,7 +948,7 @@ impl TryFrom<crate::v1::InstanceBinding> for config::InstanceReference {
     Ok(config::InstanceReference {
       component_id: ns.to_owned(),
       name,
-      data: def.with,
+      data: def.with.map(Into::into),
     })
   }
 }

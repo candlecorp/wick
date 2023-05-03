@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+use serde_json::Value;
+
 use crate::{v0, Error};
 
 /// The reserved identifier representing an as-of-yet-undetermined default value.
@@ -14,7 +18,7 @@ pub(crate) fn parse_connection_target(s: &str) -> Result<v0::ConnectionTargetDef
   Ok(v0::ConnectionTargetDefinition {
     instance: t_ref.unwrap_or(DEFAULT_ID).to_owned(),
     port: t_port.unwrap_or(DEFAULT_ID).to_owned(),
-    data: None,
+    data: Default::default(),
   })
 }
 
@@ -26,10 +30,10 @@ pub(crate) fn parse_connection(s: &str) -> Result<v0::ConnectionDefinition> {
   })
 }
 
-impl TryFrom<(String, String, Option<serde_json::Value>)> for v0::ConnectionTargetDefinition {
+impl TryFrom<(String, String, Option<HashMap<String, Value>>)> for v0::ConnectionTargetDefinition {
   type Error = Error;
 
-  fn try_from(value: (String, String, Option<serde_json::Value>)) -> Result<Self> {
+  fn try_from(value: (String, String, Option<HashMap<String, Value>>)) -> Result<Self> {
     Ok(Self {
       instance: value.0,
       port: value.1,
@@ -40,12 +44,10 @@ impl TryFrom<(String, String, Option<serde_json::Value>)> for v0::ConnectionTarg
 
 #[cfg(test)]
 mod tests {
-  use std::str::FromStr;
 
   use anyhow::Result;
   use flow_expression_parser::parse;
   use pretty_assertions::assert_eq;
-  use serde_json::Value;
 
   use super::*;
   #[test_logger::test]
@@ -85,12 +87,12 @@ mod tests {
         from: v0::ConnectionTargetDefinition {
           instance: "ref1".to_owned(),
           port: "in".to_owned(),
-          data: None,
+          data: Default::default(),
         },
         to: v0::ConnectionTargetDefinition {
           instance: "ref2".to_owned(),
           port: "out".to_owned(),
-          data: None,
+          data: Default::default(),
         },
       }
     );
@@ -107,12 +109,12 @@ mod tests {
         from: v0::ConnectionTargetDefinition {
           instance: parse::SENDER_ID.to_owned(),
           port: parse::SENDER_PORT.to_owned(),
-          data: Some(num.into()),
+          data: Some(HashMap::from([("default".into(), num.into())])),
         },
         to: v0::ConnectionTargetDefinition {
           instance: "ref2".to_owned(),
           port: "out".to_owned(),
-          data: None,
+          data: Default::default(),
         },
       }
     );
@@ -128,12 +130,12 @@ mod tests {
         from: v0::ConnectionTargetDefinition {
           instance: parse::SCHEMATIC_INPUT.to_owned(),
           port: "in".to_owned(),
-          data: None,
+          data: Default::default(),
         },
         to: v0::ConnectionTargetDefinition {
           instance: "ref2".to_owned(),
           port: "out".to_owned(),
-          data: None,
+          data: Default::default(),
         },
       }
     );
@@ -149,12 +151,12 @@ mod tests {
         from: v0::ConnectionTargetDefinition {
           instance: "ref1".to_owned(),
           port: "in".to_owned(),
-          data: None,
+          data: Default::default(),
         },
         to: v0::ConnectionTargetDefinition {
           instance: parse::SCHEMATIC_OUTPUT.to_owned(),
           port: "out".to_owned(),
-          data: None,
+          data: Default::default(),
         },
       }
     );
@@ -170,12 +172,12 @@ mod tests {
         from: v0::ConnectionTargetDefinition {
           instance: "ref1".to_owned(),
           port: "port".to_owned(),
-          data: None,
+          data: Default::default(),
         },
         to: v0::ConnectionTargetDefinition {
           instance: parse::SCHEMATIC_OUTPUT.to_owned(),
           port: "port".to_owned(),
-          data: None,
+          data: Default::default(),
         },
       }
     );
@@ -191,12 +193,12 @@ mod tests {
         from: v0::ConnectionTargetDefinition {
           instance: parse::SCHEMATIC_INPUT.to_owned(),
           port: "port".to_owned(),
-          data: None,
+          data: Default::default(),
         },
         to: v0::ConnectionTargetDefinition {
           instance: "ref1".to_owned(),
           port: "port".to_owned(),
-          data: None,
+          data: Default::default(),
         },
       }
     );
@@ -212,12 +214,12 @@ mod tests {
         from: v0::ConnectionTargetDefinition {
           instance: parse::SENDER_ID.to_owned(),
           port: parse::SENDER_PORT.to_owned(),
-          data: Some(Value::from_str(r#""default""#)?),
+          data: Some(HashMap::from([("default".into(), "default".into())])),
         },
         to: v0::ConnectionTargetDefinition {
           instance: "ref1".to_owned(),
           port: "port".to_owned(),
-          data: None,
+          data: Default::default(),
         },
       }
     );
@@ -233,12 +235,12 @@ mod tests {
         from: v0::ConnectionTargetDefinition {
           instance: parse::SENDER_ID.to_owned(),
           port: parse::SENDER_PORT.to_owned(),
-          data: Some(Value::from_str(r#""1234512345""#)?),
+          data: Some(HashMap::from([("default".into(), "1234512345".into())])),
         },
         to: v0::ConnectionTargetDefinition {
           instance: parse::SCHEMATIC_OUTPUT.to_owned(),
           port: "output".to_owned(),
-          data: None,
+          data: Default::default(),
         },
       }
     );

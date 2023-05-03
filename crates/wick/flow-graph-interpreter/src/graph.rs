@@ -1,10 +1,12 @@
 pub mod types {
+  use wick_packet::OperationConfig;
+
   pub(crate) static INHERENT_COMPONENT: usize = 2;
-  pub(crate) type Network = flow_graph::Network<serde_json::Value>;
-  pub(crate) type Operation = flow_graph::Node<serde_json::Value>;
+  pub(crate) type Network = flow_graph::Network<OperationConfig>;
+  pub(crate) type Operation = flow_graph::Node<OperationConfig>;
   pub(crate) type OperationPort = flow_graph::NodePort;
-  pub(crate) type Schematic = flow_graph::Schematic<serde_json::Value>;
-  pub(crate) type Port<'a> = flow_graph::iterators::Port<'a, serde_json::Value>;
+  pub(crate) type Schematic = flow_graph::Schematic<OperationConfig>;
+  pub(crate) type Port<'a> = flow_graph::iterators::Port<'a, OperationConfig>;
 }
 
 use flow_expression_parser::ast::{FlowExpression, InstanceTarget};

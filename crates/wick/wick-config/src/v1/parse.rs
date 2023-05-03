@@ -1,7 +1,9 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use flow_expression_parser::ast;
 use serde::Deserialize;
+use serde_json::Value;
 
 use crate::error::ManifestError;
 use crate::{v1, Error};
@@ -20,7 +22,7 @@ pub(crate) fn parse_connection_target(s: &str) -> Result<v1::ConnectionTargetDef
   Ok(v1::ConnectionTargetDefinition {
     instance: t_ref,
     port: t_port.unwrap_or(DEFAULT_ID).to_owned(),
-    data: None,
+    data: Default::default(),
   })
 }
 
@@ -41,10 +43,10 @@ pub(crate) fn parse_connection(s: &str) -> Result<v1::ConnectionDefinition> {
   })
 }
 
-impl TryFrom<(String, String, Option<serde_json::Value>)> for v1::ConnectionTargetDefinition {
+impl TryFrom<(String, String, Option<HashMap<String, Value>>)> for v1::ConnectionTargetDefinition {
   type Error = Error;
 
-  fn try_from(value: (String, String, Option<serde_json::Value>)) -> Result<Self> {
+  fn try_from(value: (String, String, Option<HashMap<String, Value>>)) -> Result<Self> {
     Ok(Self {
       instance: value.0,
       port: value.1,

@@ -1,6 +1,5 @@
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use flow_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
-use serde_json::Value;
 use wick_interface_types::{ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
 
@@ -33,7 +32,7 @@ impl Component for InternalCollection {
     &self,
     invocation: Invocation,
     stream: PacketStream,
-    _config: Option<Value>,
+    _config: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL);

@@ -69,7 +69,7 @@ impl RpcPacket {
 impl From<RpcPacket> for Packet {
   fn from(v: RpcPacket) -> Self {
     let (op, port, done) = v.metadata.map_or_else(
-      || (0, "<component>".to_owned(), 0_u8),
+      || (0, Packet::FATAL_ERROR.to_owned(), 0_u8),
       |m| (m.index, m.port, m.flags.try_into().unwrap()),
     );
     Self::new_raw(

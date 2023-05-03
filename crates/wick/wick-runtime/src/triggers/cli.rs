@@ -73,7 +73,7 @@ impl Cli {
 
     let packet_stream = packet_stream!(("args", args), ("isInteractive", is_interactive));
 
-    let mut response = runtime.invoke(invocation, packet_stream).await?;
+    let mut response = runtime.invoke(invocation, packet_stream, None).await?;
     while let Some(packet) = response.next().await {
       trace!(?packet, "trigger:cli:response");
     }
