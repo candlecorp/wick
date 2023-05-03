@@ -170,7 +170,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
 
   let app_name = opts.app_name.clone();
 
-  let (log_dir, logfile_writer, logfile_guard) = get_logfile_writer(opts)?;
+  let (_log_dir, logfile_writer, _logfile_guard) = get_logfile_writer(opts)?;
   let file_layer = BunyanFormattingLayer::new(app_name, logfile_writer).with_filter(wick_filter(opts));
 
   let needs_simple_tracer = tokio::runtime::Handle::try_current().is_err() || environment == &Environment::Test;
@@ -220,7 +220,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
           None,
           Some(JsonStorageLayer),
           Some(file_layer),
-          Some(logfile_guard),
+          None,
           Some(otel_layer),
           None,
         )
@@ -239,7 +239,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
           ),
           Some(JsonStorageLayer),
           Some(file_layer),
-          Some(logfile_guard),
+          None,
           Some(otel_layer),
           None,
         )
@@ -250,7 +250,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
       None,
       Some(JsonStorageLayer),
       Some(file_layer),
-      Some(logfile_guard),
+      None,
       Some(otel_layer),
       Some(
         tracing_subscriber::fmt::layer()
@@ -275,6 +275,6 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
   tracing::subscriber::set_global_default(subscriber)?;
 
   trace!("Logger initialized");
-  debug!("Writing logs to {}", log_dir.to_string_lossy());
+  // debug!("Writing logs to {}", log_dir.to_string_lossy());
   Ok(LoggingGuard::new(logfile_guard, console_guard, tracer_provider))
 }

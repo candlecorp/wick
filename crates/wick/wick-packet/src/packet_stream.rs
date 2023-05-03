@@ -1,12 +1,12 @@
 use std::pin::Pin;
 use std::task::Poll;
 
-use futures::stream::BoxStream;
+use futures::stream::{BoxStream, FusedStream};
 use futures::Stream;
 use pin_project_lite::pin_project;
-use wasmrs_rx::{FluxChannel, Observer};
+use wasmrs_rx::FluxChannel;
 
-use crate::Packet;
+use crate::{ContextTransport, OperationConfig, Packet};
 
 pub type PacketSender = FluxChannel<Packet, crate::Error>;
 
@@ -16,7 +16,8 @@ pin_project! {
   #[must_use]
   pub struct PacketStream {
     #[pin]
-    inner: std::sync::Arc<parking_lot::Mutex<dyn Stream<Item = Result<Packet, crate::Error>> + Unpin>>,
+    inner: std::sync::Arc<parking_lot::Mutex<dyn FusedStream<Item = Result<Packet, crate::Error>> + Unpin>>,
+    config: std::sync::Arc<parking_lot::Mutex<Option<OperationConfig>>>
   }
 }
 
@@ -26,7 +27,8 @@ pin_project! {
   #[must_use]
   pub struct PacketStream {
     #[pin]
-    inner: std::sync::Arc<parking_lot::Mutex<dyn Stream<Item = Result<Packet, crate::Error>> + Send + Unpin>>,
+    inner: std::sync::Arc<parking_lot::Mutex<dyn FusedStream<Item = Result<Packet, crate::Error>> + Send + Unpin>>,
+    config: std::sync::Arc<parking_lot::Mutex<Option<OperationConfig>>>
   }
 }
 
@@ -46,28 +48,31 @@ impl PacketStream {
   #[cfg(target_family = "wasm")]
   pub fn new(rx: impl Stream<Item = Result<Packet, crate::Error>> + Unpin + 'static) -> Self {
     Self {
-      inner: std::sync::Arc::new(parking_lot::Mutex::new(rx)),
+      inner: std::sync::Arc::new(parking_lot::Mutex::new(futures::StreamExt::fuse(rx))),
+      config: Default::default(),
     }
   }
   #[cfg(not(target_family = "wasm"))]
   pub fn new(rx: impl Stream<Item = Result<Packet, crate::Error>> + Unpin + Send + 'static) -> Self {
+    use futures::StreamExt;
+
     Self {
-      inner: std::sync::Arc::new(parking_lot::Mutex::new(rx)),
+      inner: std::sync::Arc::new(parking_lot::Mutex::new(rx.fuse())),
+      config: Default::default(),
     }
   }
 
+  pub fn set_context(&self, context: OperationConfig) {
+    self.config.lock().replace(context);
+  }
+
   pub fn new_channels() -> (PacketSender, Self) {
-    let flux = FluxChannel::new();
-    let rx = flux.take_rx().unwrap();
+    let (flux, rx) = FluxChannel::new_parts();
     (flux, Self::new(Box::new(rx)))
   }
-}
 
-impl Default for PacketStream {
-  fn default() -> Self {
-    let flux = FluxChannel::new();
-    flux.complete();
-    Self::new(Box::new(flux.take_rx().unwrap()))
+  pub fn empty() -> Self {
+    Self::new(Box::new(futures::stream::empty()))
   }
 }
 
@@ -81,9 +86,28 @@ impl Stream for PacketStream {
   type Item = Result<Packet, crate::Error>;
 
   fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
-    let mut stream = self.inner.lock();
+    let config = self.config.lock().take();
+    let poll = {
+      let mut stream = self.inner.lock();
+      Pin::new(&mut *stream).poll_next(cx)
+    };
 
-    Pin::new(&mut *stream).poll_next(cx)
+    if let Some(config) = config {
+      match poll {
+        Poll::Ready(Some(Ok(mut packet))) => {
+          packet.set_context(
+            wasmrs_codec::messagepack::serialize(&ContextTransport::new(config))
+              .unwrap()
+              .into(),
+          );
+          tracing::trace!("attached context to packet : {:?}", packet);
+          Poll::Ready(Some(Ok(packet)))
+        }
+        x => x,
+      }
+    } else {
+      poll
+    }
   }
 }
 

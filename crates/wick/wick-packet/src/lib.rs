@@ -76,6 +76,7 @@
 
 mod b64_bytes;
 mod collection_link;
+mod context;
 mod entity;
 mod error;
 mod inherent;
@@ -90,6 +91,7 @@ mod stream_map;
 mod wrapped_type;
 
 pub use collection_link::ComponentReference;
+pub use context::{ContextTransport, OperationConfig};
 pub use entity::Entity;
 pub use error::{Error, ParseError};
 pub use inherent::InherentData;

@@ -14,7 +14,7 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Entity, Invocation, PacketStream};
+use wick_packet::{Entity, Invocation, OperationConfig, PacketStream};
 
 use self::channel::InterpreterDispatchChannel;
 use self::components::HandlerMap;
@@ -132,7 +132,7 @@ impl Interpreter {
     let cb_container = Arc::new(Mutex::new(None));
 
     let inner_cb = cb_container.clone();
-    let local_first_callback: Arc<RuntimeCallback> = Arc::new(move |compref, op, stream, inherent| {
+    let local_first_callback: Arc<RuntimeCallback> = Arc::new(move |compref, op, stream, inherent, config| {
       let internal_components = internal_components.clone();
       let inner_cb = inner_cb.clone();
       let outside_callback = outside_callback.clone();
@@ -150,7 +150,7 @@ impl Interpreter {
           let invocation = compref.to_invocation(&op, inherent);
           handler.component().handle(invocation, stream, None, cb).await
         } else {
-          outside_callback(compref, op, stream, inherent).await
+          outside_callback(compref, op, stream, inherent, config).await
         }
       })
     });
@@ -189,7 +189,12 @@ impl Interpreter {
     )
   }
 
-  pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
+  pub async fn invoke(
+    &self,
+    invocation: Invocation,
+    stream: PacketStream,
+    config: Option<OperationConfig>,
+  ) -> Result<PacketStream, Error> {
     let known_targets = || {
       let mut hosted: Vec<_> = self.components.inner().keys().cloned().collect();
       if let Some(ns) = &self.namespace {
@@ -207,7 +212,7 @@ impl Interpreter {
             trace!(entity=%invocation.target, "invoke::exposed::operation");
             return Ok(
               component
-                .handle(invocation, stream, None, cb)
+                .handle(invocation, stream, config, cb)
                 .instrument(span)
                 .await
                 .map_err(ExecutionError::ComponentError)?,
@@ -222,7 +227,7 @@ impl Interpreter {
             .get(ns)
             .ok_or_else(|| Error::TargetNotFound(invocation.target.clone(), known_targets()))?
             .component
-            .handle(invocation, stream, None, cb)
+            .handle(invocation, stream, config, cb)
             .instrument(span)
             .await
             .map_err(ExecutionError::ComponentError)?

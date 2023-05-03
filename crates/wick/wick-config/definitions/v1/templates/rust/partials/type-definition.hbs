@@ -59,6 +59,13 @@ pub(crate) struct {{name.value}} {
         {{#ifCond type.type.name.value "==" "ConnectionTargetDefinition"}}
           #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
         {{/ifCond}}
+        {{#ifCond type.type.kind "==" "MapType"}}
+          {{#switch type.type.valueType.name.value}}
+            {{#case "any"}}
+              #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+            {{/case}}
+          {{/switch}}
+        {{/ifCond}}
       {{/case}}
       {{#case "Named"}}
         {{#switch type.name.value}}

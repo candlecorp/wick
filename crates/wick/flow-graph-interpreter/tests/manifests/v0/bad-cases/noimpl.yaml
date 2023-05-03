@@ -1,0 +1,11 @@
+---
+format: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        CCC:
+          id: test::noimpl
+      connections:
+        - <> => CCC[input]
+        - CCC[output] => <>

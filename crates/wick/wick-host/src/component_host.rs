@@ -143,7 +143,7 @@ impl ComponentHost {
     match &self.engine {
       Some(engine) => {
         let invocation = Invocation::new(Entity::server(&self.id), Entity::operation(&self.id, operation), data);
-        Ok(engine.invoke(invocation, stream).await?)
+        Ok(engine.invoke(invocation, stream, None).await?)
       }
       None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }
@@ -151,7 +151,7 @@ impl ComponentHost {
 
   pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream> {
     match &self.engine {
-      Some(engine) => Ok(engine.invoke(invocation, stream).await?),
+      Some(engine) => Ok(engine.invoke(invocation, stream, None).await?),
       None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }
   }

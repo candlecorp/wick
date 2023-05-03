@@ -14,7 +14,7 @@ impl std::fmt::Debug for Op {
   }
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub(crate) struct Config {
   field: String,
 }
@@ -75,9 +75,13 @@ impl Operation for Op {
     self.signature.inputs.iter().map(|n| n.name.clone()).collect()
   }
 
-  fn decode_config(data: Option<flow_component::Value>) -> Result<Self::Config, ComponentError> {
-    serde_json::from_value(data.ok_or_else(|| ComponentError::message("Empty configuration passed"))?)
-      .map_err(ComponentError::new)
+  fn decode_config(data: Option<wick_packet::OperationConfig>) -> Result<Self::Config, ComponentError> {
+    let config = data.ok_or_else(|| {
+      ComponentError::message("Merge component requires configuration, please specify configuration.")
+    })?;
+    Ok(Self::Config {
+      field: config.get_into("field").map_err(ComponentError::new)?,
+    })
   }
 }
 
@@ -95,7 +99,7 @@ mod test {
     let config = serde_json::json!({
       "field": "pluck_this"
     });
-    let config = Op::decode_config(Some(config))?;
+    let config = Op::decode_config(Some(config.try_into()?))?;
     let stream = packet_stream!((
       "input",
       serde_json::json!({

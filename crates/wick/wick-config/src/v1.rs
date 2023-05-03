@@ -739,8 +739,8 @@ pub(crate) struct GrpcUrlComponent {
   /// Any configuration necessary for the component.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
-  pub(crate) with: Value,
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) with: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -754,8 +754,8 @@ pub(crate) struct ManifestComponent {
   /// Any configuration necessary for the component.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
-  pub(crate) with: Value,
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) with: Option<HashMap<String, Value>>,
   /// External components to provide to the referenced component.
 
   #[serde(default)]
@@ -773,6 +773,11 @@ pub(crate) struct CompositeOperationDefinition {
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
+  /// Any configuration required by the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<wick_interface_types::Field>,
   /// Types of the inputs to the operation.
 
   #[serde(default)]
@@ -855,7 +860,8 @@ pub(crate) struct ConnectionTargetDefinition {
   /// The default value to provide on this connection in the event of an error.
 
   #[serde(default)]
-  pub(crate) data: Option<Value>,
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) data: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -870,7 +876,8 @@ pub(crate) struct OperationDefinition {
   /// Any configuration required by the operation.
 
   #[serde(default)]
-  pub(crate) with: Option<Value>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<wick_interface_types::Field>,
   /// Types of the inputs to the operation.
 
   #[serde(default)]
@@ -906,7 +913,8 @@ pub(crate) struct InstanceBinding {
   /// Data to associate with the reference, if any.
 
   #[serde(default)]
-  pub(crate) with: Option<Value>,
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) with: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

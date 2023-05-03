@@ -4,15 +4,12 @@ use std::sync::Arc;
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use wasmrs_host::WasiParams;
 use wick_config::config::components::Permissions;
-use wick_packet::{Entity, Invocation, PacketStream};
+use wick_packet::{Entity, Invocation, OperationConfig, PacketStream};
 use wick_rpc::RpcHandler;
 
 use crate::helpers::WickWasmModule;
 use crate::wasm_host::{SetupPayload, WasmHost, WasmHostBuilder};
 use crate::Error;
-
-// pub type BoxedFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'static>>;
-// pub type BoxFuture<'a, T> = Pin<alloc::boxed::Box<dyn Future<Output = T> + Send + 'a>>;
 
 #[derive(Debug, Default)]
 pub struct Context {
@@ -81,13 +78,13 @@ impl Component for WasmComponent {
     &self,
     invocation: Invocation,
     stream: PacketStream,
-    _data: Option<serde_json::Value>,
+    data: Option<OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    trace!(target = %invocation.target, "wasm invoke");
+    trace!(target = %invocation.target, config=?data, "wasm invoke");
     let operation = invocation.target.operation_id();
 
-    let outputs = self.host.call(operation, stream, None);
+    let outputs = self.host.call(operation, stream, data);
 
     Box::pin(async move { outputs.map_err(ComponentError::new) })
   }
@@ -115,40 +112,67 @@ mod tests {
   use std::path::PathBuf;
   use std::str::FromStr;
 
-  use anyhow::Result as TestResult;
+  use anyhow::Result;
   use flow_component::panic_callback;
   use futures::StreamExt;
+  use serde_json::json;
   use wick_packet::{packet_stream, packets, Entity, Packet};
 
   use super::*;
 
-  #[test_logger::test(tokio::test)]
-  async fn test_component() -> TestResult<()> {
+  async fn load_component() -> Result<WasmComponent> {
     let component = crate::helpers::load_wasm_from_file(&PathBuf::from_str(
       "../../integration/test-baseline-component/build/baseline.signed.wasm",
     )?)
     .await?;
 
-    let collection = WasmComponent::try_load(
+    let c = WasmComponent::try_load(
       &component,
       2,
       None,
       None,
-      Some(Arc::new(|_, _, _, _| {
+      Some(Arc::new(|_, _, _, _, _| {
         Box::pin(async { Ok(packet_stream!(("test", "test"))) })
       })),
       Default::default(),
     )
     .await?;
+    Ok(c)
+  }
 
+  #[test_logger::test(tokio::test)]
+  #[ignore = "TODO: fix this from hanging. It works when run via the interpreter but not the test harness."]
+  async fn test_component_error() -> Result<()> {
+    let component = load_component().await?;
+    let stream = packets!(("input", "10"));
+    println!("{:#?}", stream);
+    let invocation = Invocation::test(file!(), Entity::local("error"), None)?;
+    let config = json!({});
+    let outputs = component
+      .handle(invocation, stream.into(), Some(config.try_into()?), panic_callback())
+      .await?;
+    debug!("Got stream");
+    let mut packets: Vec<_> = outputs.collect().await;
+    debug!("Output packets: {:?}", packets);
+
+    let output = packets.pop().unwrap().unwrap();
+
+    println!("output: {:?}", output);
+    assert_eq!(output, Packet::component_error("Component sent invalid context"));
+    Ok(())
+  }
+
+  #[test_logger::test(tokio::test)]
+  async fn test_component_add() -> Result<()> {
+    let component = load_component().await?;
     let stream = packets!(("left", 10), ("right", 20));
     println!("{:#?}", stream);
-    let entity = Entity::local("add");
-    let invocation = Invocation::new(Entity::test(file!()), entity, None);
-    let outputs = collection
-      .handle(invocation, stream.into(), None, panic_callback())
+    let invocation = Invocation::test(file!(), Entity::local("add"), None)?;
+    let config = json!({});
+    let outputs = component
+      .handle(invocation, stream.into(), Some(config.try_into()?), panic_callback())
       .await?;
-    debug!("Invocation complete");
+    debug!("Got stream");
     let mut packets: Vec<_> = outputs.collect().await;
     debug!("Output packets: {:?}", packets);
 
@@ -157,6 +181,29 @@ mod tests {
 
     println!("output: {:?}", output);
     assert_eq!(output, Packet::encode("output", 30));
+    Ok(())
+  }
+
+  #[test_logger::test(tokio::test)]
+  async fn test_component_power() -> Result<()> {
+    let component = load_component().await?;
+    let stream = packets!(("input", 44));
+    println!("{:#?}", stream);
+    let invocation = Invocation::test(file!(), Entity::local("power"), None)?;
+    let config = json!({
+      "exponent": 2
+    });
+    let outputs = component
+      .handle(invocation, stream.into(), Some(config.try_into()?), panic_callback())
+      .await?;
+    let mut packets: Vec<_> = outputs.collect().await;
+    debug!("Output packets: {:?}", packets);
+
+    let _ = packets.pop();
+    let output = packets.pop().unwrap().unwrap();
+
+    println!("output: {:?}", output);
+    assert_eq!(output, Packet::encode("output", 1936));
     Ok(())
   }
 }

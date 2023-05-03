@@ -55,22 +55,14 @@ wick-interface-http = { path = "./crates/interfaces/wick-interface-http", versio
 wick-sqlx = { path = "./crates/components/wick-sqlx", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
 # wasmrs
-wasmrs = { version = "0.10" }
-wasmrs-codec = { version = "0.10" }
-wasmrs-frames = { version = "0.10" }
-wasmrs-guest = { version = "0.10" }
-wasmrs-host = { version = "0.10" }
-wasmrs-runtime = { version = "0.10" }
-wasmrs-rx = { version = "0.10" }
-wasmrs-wasmtime = { version = "0.10" }
-# wasmrs = { path = "../wasmrs-rust/crates/wasmrs" }
-# wasmrs-rx = { path = "../wasmrs-rust/crates/wasmrs-rx" }
-# wasmrs-frames = { path = "../wasmrs-rust/crates/wasmrs-frames" }
-# wasmrs-codec = { path = "../wasmrs-rust/crates/wasmrs-codec" }
-# wasmrs-wasmtime = { path = "../wasmrs-rust/crates/wasmrs-wasmtime" }
-# wasmrs-host = { path = "../wasmrs-rust/crates/wasmrs-host" }
-# wasmrs-runtime = { path = "../wasmrs-rust/crates/wasmrs-runtime" }
-# wasmrs-guest = { path = "../wasmrs-rust/crates/wasmrs-guest" }
+wasmrs = { version = "0.11" }
+wasmrs-codec = { version = "0.11" }
+wasmrs-frames = { version = "0.11" }
+wasmrs-guest = { version = "0.11" }
+wasmrs-host = { version = "0.11" }
+wasmrs-runtime = { version = "0.11" }
+wasmrs-rx = { version = "0.11" }
+wasmrs-wasmtime = { version = "0.11" }
 #
 # Other
 anyhow = "1.0"
@@ -78,6 +70,7 @@ async-recursion = "1.0"
 async-stream = "0.3"
 async-trait = "0.1"
 atty = "0.2"
+bitflags = "2.2"
 bytes = "1.4"
 base64 = "0.21"
 bitflags = "2.2"
@@ -94,6 +87,7 @@ glob = "0.3"
 heck = "0.4"
 http = "0.2"
 hyper = "0.14"
+itertools = "0.10"
 jaq-core = "0.10"
 lazy_static = "1.4"
 liquid = "0.26"

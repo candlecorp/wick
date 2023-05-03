@@ -12,6 +12,7 @@ use tracing::{Instrument, Span};
 use uuid::Uuid;
 use wick_config::config::{ComponentConfiguration, ComponentKind, Metadata};
 use wick_config::Resolver;
+use wick_packet::OperationConfig;
 
 use crate::components::{
   expect_signature_match,
@@ -273,12 +274,13 @@ impl InvocationHandler for RuntimeService {
 
   fn invoke(
     &self,
-    msg: Invocation,
+    invocation: Invocation,
     stream: PacketStream,
+    config: Option<OperationConfig>,
   ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, ComponentError>>, ComponentError> {
-    let tx_id = msg.tx_id;
+    let tx_id = invocation.tx_id;
 
-    let fut = self.interpreter.invoke(msg, stream);
+    let fut = self.interpreter.invoke(invocation, stream, config);
     let task = async move {
       match fut.await {
         Ok(response) => Ok(InvocationResponse::Stream { tx_id, rx: response }),

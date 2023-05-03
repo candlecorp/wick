@@ -61,9 +61,9 @@ pub(crate) async fn handle(opts: WasmSignCommand) -> Result<()> {
   .await?;
 
   debug!(
-    "Signing module (orig: {} bytes) with interface : {:?}",
+    "Signing module (orig: {} bytes) with interface : {:#?}",
     buf.len(),
-    interface
+    interface.signature()?
   );
 
   let signed = sign_buffer_with_claims(

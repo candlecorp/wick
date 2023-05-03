@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback, Value};
+use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use futures::StreamExt;
 use wick_interface_types::{component, ComponentSignature};
 use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream};
@@ -44,7 +44,7 @@ impl Component for NativeComponent {
     &self,
     invocation: Invocation,
     stream: PacketStream,
-    _data: Option<Value>,
+    _data: Option<wick_packet::OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let target = invocation.target_url();

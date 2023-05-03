@@ -12,7 +12,7 @@ request_response!(job, minijob => {
 
 #[allow(clippy::needless_pass_by_value)]
 pub(crate) fn minijob(_input: String) -> Result<String, wick_packet::Error> {
-  Err(wick_packet::Error::General(
+  Err(wick_packet::Error::Component(
     "This component will always error".to_owned(),
   ))
 }

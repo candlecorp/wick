@@ -87,7 +87,7 @@ fn convert_invocation_stream(mut streaming: tonic::Streaming<InvocationRequest>)
   let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
   tokio::spawn(async move {
     while let Some(p) = streaming.next().await {
-      let result = p.map_err(|e| wick_packet::Error::General(e.to_string())).map(|p| {
+      let result = p.map_err(|e| wick_packet::Error::Component(e.to_string())).map(|p| {
         p.data.map_or_else(
           || unreachable!(),
           |p| match p {

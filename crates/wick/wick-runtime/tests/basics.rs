@@ -30,7 +30,7 @@ async fn echo() -> Result<()> {
 async fn senders() -> Result<()> {
   common_test(
     "./manifests/v0/senders.yaml",
-    PacketStream::default(),
+    PacketStream::empty(),
     "senders",
     vec![Packet::encode("output", "1234512345"), Packet::done("output")],
   )
@@ -41,7 +41,7 @@ async fn senders() -> Result<()> {
 async fn no_inputs() -> Result<()> {
   common_test(
     "./manifests/v0/no-inputs.yaml",
-    PacketStream::default(),
+    PacketStream::empty(),
     "uuid",
     vec![
       Packet::encode("output", "611830d3-641a-68f9-4a69-0dcc25d1f4b0"),

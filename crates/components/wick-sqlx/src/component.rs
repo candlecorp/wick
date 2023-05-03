@@ -11,7 +11,7 @@ use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition
 use wick_config::config::{Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{component, ComponentSignature, Field, TypeSignature};
-use wick_packet::{FluxChannel, Invocation, Observer, Packet, PacketStream, TypeWrapper};
+use wick_packet::{FluxChannel, Invocation, Observer, OperationConfig, Packet, PacketStream, TypeWrapper};
 use wick_rpc::RpcHandler;
 
 use crate::error::Error;
@@ -118,7 +118,7 @@ impl Component for SqlXComponent {
     &self,
     invocation: Invocation,
     stream: PacketStream,
-    _data: Option<Value>,
+    _data: Option<OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let ctx = self.context.clone();
@@ -151,13 +151,13 @@ impl Component for SqlXComponent {
             let num_done = inputs.iter().filter(|r| r.is_none()).count();
             if num_done > 0 {
               if num_done != opdef.inputs.len() {
-                let _ = tx.send(Packet::component_error("Missing input"));
+                let _ = tx.error(wick_packet::Error::component_error("Missing input"));
               }
               break 'outer;
             }
             let results = inputs.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
             if let Some(Err(e)) = results.iter().find(|r| r.is_err()) {
-              let _ = tx.send(Packet::component_error(e.to_string()));
+              let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
               break 'outer;
             }
             let results = results
@@ -273,7 +273,7 @@ async fn exec(
     .collect::<Result<Vec<TypeWrapper>, wick_packet::Error>>();
 
   if let Err(e) = values {
-    let _ = tx.send(Packet::component_error(e.to_string()));
+    let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
     return Err(Error::Prepare(e.to_string()));
   }
   let values = values.unwrap();
@@ -289,7 +289,7 @@ async fn exec(
 
   while let Some(row) = result.next().await {
     if let Err(e) = row {
-      let _ = tx.send(Packet::component_error(e.to_string()));
+      let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
       return Err(Error::Fetch(e.to_string()));
     }
     let row = row.unwrap();

@@ -2,6 +2,8 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use serde::{Deserialize, Serialize};
 use wasmrs_frames::ex_err;
 
+use crate::Base64Bytes;
+
 pub const DONE_FLAG: u8 = /******/ 0b1000_0000;
 pub const OPEN_BRACKET: u8 = /***/ 0b0100_0000;
 pub const CLOSE_BRACKET: u8 = /**/ 0b0010_0000;
@@ -16,13 +18,15 @@ pub enum Flags {
 pub struct WickMetadata {
   pub(crate) flags: u8,
   pub(crate) port: String,
+  pub(crate) context: Option<Base64Bytes>,
 }
 
 impl Default for WickMetadata {
   fn default() -> Self {
     Self {
       flags: 0,
-      port: "<component>".to_owned(),
+      port: crate::Packet::FATAL_ERROR.to_owned(),
+      context: None,
     }
   }
 }
@@ -32,12 +36,17 @@ impl WickMetadata {
     Self {
       flags,
       port: port.as_ref().to_owned(),
+      context: None,
     }
   }
 
   #[must_use]
   pub fn flags(&self) -> u8 {
     self.flags
+  }
+
+  pub fn set_context(&mut self, config: Base64Bytes) {
+    self.context = Some(config);
   }
 
   #[must_use]
@@ -67,7 +76,18 @@ impl WickMetadata {
       .get(0..(name_len as _))
       .ok_or_else(|| ex_err("Could not read port name bytes"))?;
     let port_name = String::from_utf8(name_bytes.to_vec()).map_err(|_| ex_err("Could not parse port name"))?;
-    Ok(WickMetadata::new(port_name, flags))
+    bytes.advance(name_len.into());
+    let config_len = bytes.get_u16();
+    let config_bytes = if config_len > 0 {
+      bytes.get(0..(config_len as _)).map(|v| v.to_vec())
+    } else {
+      None
+    };
+    Ok(WickMetadata {
+      flags,
+      port: port_name,
+      context: config_bytes.map(Into::into),
+    })
   }
 
   #[must_use]
@@ -76,6 +96,9 @@ impl WickMetadata {
     bytes.put_u8(self.flags);
     bytes.put_u16(self.port.len() as _);
     bytes.put(self.port.as_bytes());
+    let config = self.context.unwrap_or_default();
+    bytes.put_u16(config.len() as _);
+    bytes.put(config);
     bytes.freeze()
   }
 }
@@ -89,7 +112,8 @@ mod test {
 
   #[test]
   fn test_metadata_decode() -> Result<()> {
-    let md = WickMetadata::new("left", DONE_FLAG | CLOSE_BRACKET);
+    let mut md = WickMetadata::new("left", DONE_FLAG | CLOSE_BRACKET);
+    md.set_context(b"hello".to_vec().into());
     println!("md: {:?}", md);
     let bytes = md.encode();
     println!("bytes: {:02x?}", bytes.to_vec());
@@ -97,6 +121,7 @@ mod test {
     assert_eq!(meta.port, "left");
     assert!(meta.is_done());
     assert!(meta.is_close_bracket());
+    assert_eq!(meta.context.unwrap(), b"hello".to_vec());
     Ok(())
   }
 }

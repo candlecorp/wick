@@ -171,7 +171,7 @@ fn handle_component_router(
       None,
     );
     let stream = engine
-      .invoke(invocation, rx)
+      .invoke(invocation, rx, None)
       .await
       .map_err(|e| HttpError::OperationError(e.to_string()));
     match request_to_wick(req) {

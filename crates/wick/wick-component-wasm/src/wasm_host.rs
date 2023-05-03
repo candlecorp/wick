@@ -6,12 +6,12 @@ use std::time::Instant;
 use flow_component::RuntimeCallback;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use wasmrs::{GenericError, ProcessFactory, RSocket, RawPayload};
+use wasmrs::{GenericError, OperationHandler, RSocket, RawPayload};
 use wasmrs_codec::messagepack::serialize;
 use wasmrs_host::{CallContext, Host, WasiParams};
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::ComponentSignature;
-use wick_packet::{from_raw_wasmrs, from_wasmrs, into_wasmrs, ComponentReference, Entity, Packet, PacketStream};
+use wick_packet::{from_raw_wasmrs, from_wasmrs, into_wasmrs, ComponentReference, Entity, PacketStream};
 use wick_wascap::{Claims, CollectionClaims};
 
 use crate::error::WasmCollectionError;
@@ -145,7 +145,12 @@ impl WasmHost {
     })
   }
 
-  pub fn call(&self, component_name: &str, stream: PacketStream, _config: Option<&[u8]>) -> Result<PacketStream> {
+  pub fn call(
+    &self,
+    component_name: &str,
+    stream: PacketStream,
+    config: Option<wick_packet::OperationConfig>,
+  ) -> Result<PacketStream> {
     debug!(component = component_name, "wasm invoke");
 
     let now = Instant::now();
@@ -153,6 +158,10 @@ impl WasmHost {
     let index = ctx
       .get_export("wick", component_name)
       .map_err(|_| crate::Error::OperationNotFound(component_name.to_owned(), ctx.get_exports()))?;
+    if let Some(config) = config {
+      stream.set_context(config);
+    }
+
     let s = into_wasmrs(index, stream);
     let out = ctx.request_channel(Box::pin(s));
     trace!(
@@ -200,7 +209,9 @@ struct InvocationPayload {
   operation: String,
 }
 
-fn make_host_callback(rt_cb: &Arc<RuntimeCallback>) -> ProcessFactory<wasmrs::IncomingStream, wasmrs::OutgoingStream> {
+fn make_host_callback(
+  rt_cb: &Arc<RuntimeCallback>,
+) -> OperationHandler<wasmrs::IncomingStream, wasmrs::OutgoingStream> {
   let cb = rt_cb.clone();
   let func = move |mut incoming: wasmrs::IncomingStream| -> std::result::Result<wasmrs::OutgoingStream, GenericError> {
     use tokio_stream::StreamExt;
@@ -213,17 +224,17 @@ fn make_host_callback(rt_cb: &Arc<RuntimeCallback>) -> ProcessFactory<wasmrs::In
           Ok(p) => p,
           Err(e) => {
             error!("bad component ref invocation: {}", e);
-            let _ = tx.send(Packet::component_error(e.to_string()));
+            let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
             return;
           }
         }
       } else {
         error!("bad component ref invocation: no payload");
-        let _ = tx.send(Packet::component_error("no payload"));
+        let _ = tx.error(wick_packet::Error::component_error("no payload"));
         return;
       };
       let stream = from_wasmrs(incoming);
-      match cb(meta.reference, meta.operation, stream, None).await {
+      match cb(meta.reference, meta.operation, stream, None, None).await {
         Ok(mut response) => {
           while let Some(p) = response.next().await {
             let _ = tx.send_result(p);
@@ -231,7 +242,7 @@ fn make_host_callback(rt_cb: &Arc<RuntimeCallback>) -> ProcessFactory<wasmrs::In
         }
         Err(e) => {
           error!("bad component ref invocation: {}", e);
-          let _ = tx.send(Packet::component_error(e.to_string()));
+          let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
         }
       }
     });

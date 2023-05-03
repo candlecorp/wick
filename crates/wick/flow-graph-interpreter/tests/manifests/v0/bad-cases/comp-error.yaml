@@ -1,0 +1,11 @@
+---
+format: 0
+network:
+  schematics:
+    - name: test
+      instances:
+        CCC:
+          id: test::component_error
+      connections:
+        - <> => CCC[input]
+        - CCC[output] => <>

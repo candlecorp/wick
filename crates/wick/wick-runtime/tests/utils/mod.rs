@@ -37,6 +37,8 @@ pub async fn base_test(
   target: Entity,
   mut expected: Vec<Packet>,
 ) -> anyhow::Result<()> {
+  let cwd = std::env::current_dir()?;
+  println!("Working from path: {}", cwd.display());
   let (engine, _) = init_engine_from_yaml(path, Duration::from_secs(1)).await?;
   let inherent = InherentData::new(1, 1000);
 
@@ -50,6 +52,7 @@ pub async fn base_test(
     .invoke(
       Invocation::new(Entity::test("simple schematic"), target, Some(inherent)),
       stream,
+      None,
     )
     .await?;
 

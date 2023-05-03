@@ -109,7 +109,7 @@ type EntrypointDefinition {
   component: string,
 
   "Data or configuration used to initialize the collection."
-  data: any,
+  data: {string: any}?,
 }
 
 "A collection definition."
@@ -124,7 +124,7 @@ type CollectionDefinition {
   reference: string,
 
   "Data or configuration used to initialize the collection."
-  data: any,
+  data: {string: any}?,
 }
 
 "Kind of collection."
@@ -165,7 +165,7 @@ type ComponentDefinition {
   id: string @required,
 
   "Data to associate with the reference."
-  data: any?,
+  data: {string: any}?,
 }
 
 "A connection between components. This can be specified in short-form syntax (where applicable)."
@@ -185,5 +185,5 @@ type ConnectionTargetDefinition {
   "The component's port."
   port: string @required,
   "Data to associate with a connection."
-  data: any?,
+  data: {string: any}?,
 }

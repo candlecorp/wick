@@ -1,6 +1,5 @@
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
-use serde_json::Value;
 
 use crate::config;
 
@@ -103,12 +102,12 @@ impl ComponentDefinition {
 
   /// Returns the component config, if it exists
   #[must_use]
-  pub fn config(&self) -> Option<&Value> {
+  pub fn config(&self) -> Option<&wick_packet::OperationConfig> {
     match self {
       #[allow(deprecated)]
-      ComponentDefinition::Wasm(c) => Some(&c.config),
-      ComponentDefinition::GrpcUrl(c) => Some(&c.config),
-      ComponentDefinition::Manifest(c) => Some(&c.config),
+      ComponentDefinition::Wasm(c) => c.config.as_ref(),
+      ComponentDefinition::GrpcUrl(c) => c.config.as_ref(),
+      ComponentDefinition::Manifest(c) => c.config.as_ref(),
       ComponentDefinition::Native(_) => None,
       ComponentDefinition::Reference(_) => None,
       ComponentDefinition::HighLevelComponent(_) => None,

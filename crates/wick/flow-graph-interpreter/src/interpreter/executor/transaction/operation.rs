@@ -326,8 +326,14 @@ async fn output_handler(
           break CompletionStatus::Error;
         }
         let message = message.unwrap();
+        if message.is_fatal_error() {
+          warn!(error=?message,"component-wide error");
+          channel.dispatch_op_err(tx_id, instance.index(), message.payload).await;
+          break CompletionStatus::Error;
+        }
 
         let port = instance.find_output(message.port())?;
+
         if message.is_done() {
           hanging.remove(&port);
         } else {

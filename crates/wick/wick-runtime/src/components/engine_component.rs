@@ -31,7 +31,7 @@ impl Component for EngineComponent {
     &self,
     invocation: Invocation,
     stream: PacketStream,
-    _data: Option<flow_component::Value>,
+    config: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target_url = invocation.target_url();
@@ -49,7 +49,7 @@ impl Component for EngineComponent {
       trace!(target = %target_url, "invoking");
 
       let result: InvocationResponse = engine
-        .invoke(invocation, stream)
+        .invoke(invocation, stream, config)
         .map_err(flow_component::ComponentError::new)?
         .instrument(span)
         .await

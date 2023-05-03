@@ -4,10 +4,9 @@ use std::sync::Arc;
 use flow_component::{ComponentError, Context, Operation};
 use futures::{FutureExt, StreamExt};
 use parking_lot::Mutex;
-use serde_json::Value;
 use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, TypeSignature};
-use wick_packet::{ComponentReference, Entity, Packet, PacketSender, PacketStream};
+use wick_packet::{ComponentReference, Entity, PacketSender, PacketStream};
 
 use crate::constants::NS_CORE;
 use crate::graph::types::Network;
@@ -25,7 +24,7 @@ impl std::fmt::Debug for Op {
   }
 }
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub(crate) struct Config {
   context: Vec<Field>,
   outputs: Vec<Field>,
@@ -33,7 +32,7 @@ pub(crate) struct Config {
   default: String,
 }
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub(crate) struct SwitchCase {
   case: String,
   #[serde(rename = "do")]
@@ -161,14 +160,14 @@ impl Operation for Op {
           let tx = tx.clone();
           let callback = callback.clone();
           tokio::spawn(async move {
-            match callback(link, op_id, route_rx, None).await {
+            match callback(link, op_id, route_rx, None, None).await {
               Ok(mut call_rx) => {
                 while let Some(packet) = call_rx.next().await {
                   let _ = tx.send_result(packet);
                 }
               }
               Err(e) => {
-                let _ = tx.send(Packet::component_error(e.to_string()));
+                let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
               }
             };
           });
@@ -191,8 +190,15 @@ impl Operation for Op {
     context
   }
 
-  fn decode_config(data: Option<Value>) -> Result<Self::Config, ComponentError> {
-    serde_json::from_value(data.ok_or_else(|| ComponentError::message("Empty configuration passed"))?)
-      .map_err(ComponentError::new)
+  fn decode_config(data: Option<wick_packet::OperationConfig>) -> Result<Self::Config, ComponentError> {
+    let config = data.ok_or_else(|| {
+      ComponentError::message("Merge component requires configuration, please specify configuration.")
+    })?;
+    Ok(Self::Config {
+      context: config.get_into("context").map_err(ComponentError::new)?,
+      outputs: config.get_into("outputs").map_err(ComponentError::new)?,
+      cases: config.get_into("cases").map_err(ComponentError::new)?,
+      default: config.get_into("default").map_err(ComponentError::new)?,
+    })
   }
 }

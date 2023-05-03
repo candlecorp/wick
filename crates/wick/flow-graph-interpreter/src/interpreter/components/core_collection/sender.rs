@@ -23,7 +23,7 @@ impl Op {
   }
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub(crate) struct SenderData {
   output: Value,
 }
@@ -49,8 +49,12 @@ impl Operation for Op {
     self.signature.inputs.iter().map(|n| n.name.clone()).collect()
   }
 
-  fn decode_config(data: Option<Value>) -> Result<Self::Config, ComponentError> {
-    serde_json::from_value(data.ok_or_else(|| ComponentError::message("Empty configuration passed"))?)
-      .map_err(ComponentError::new)
+  fn decode_config(data: Option<wick_packet::OperationConfig>) -> Result<Self::Config, ComponentError> {
+    let config = data.ok_or_else(|| {
+      ComponentError::message("Merge component requires configuration, please specify configuration.")
+    })?;
+    Ok(Self::Config {
+      output: config.get_into("output").map_err(ComponentError::new)?,
+    })
   }
 }

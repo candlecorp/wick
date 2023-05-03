@@ -1,5 +1,3 @@
-use serde_json::Value;
-
 use super::{ComponentDefinition, ComponentImplementation, HighLevelComponent, ImportDefinition, InterfaceDefinition};
 use crate::config::components::WasmComponent;
 use crate::config::{self};
@@ -48,7 +46,7 @@ impl ImportBinding {
 
   /// Get the configuration object for the collection.
   #[must_use]
-  pub fn config(&self) -> Option<&Value> {
+  pub fn config(&self) -> Option<&wick_packet::OperationConfig> {
     match &self.kind {
       ImportDefinition::Component(c) => c.config(),
       ImportDefinition::Types(_) => None,

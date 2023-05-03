@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use seeded_random::Seed;
 use uuid::Uuid;
+use wick_packet::OperationConfig;
 
 use crate::dev::prelude::*;
 use crate::runtime_service::{ComponentFactory, ComponentRegistry, Initialize};
@@ -53,11 +54,16 @@ impl Runtime {
     })
   }
 
-  pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream> {
+  pub async fn invoke(
+    &self,
+    invocation: Invocation,
+    stream: PacketStream,
+    config: Option<OperationConfig>,
+  ) -> Result<PacketStream> {
     let time = std::time::SystemTime::now();
     trace!(start_time=%time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() ,"invocation start");
 
-    let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation, stream)?)
+    let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation, stream, config)?)
       .await
       .map_err(|_| RuntimeError::Timeout)??;
     trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"invocation complete");

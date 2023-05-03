@@ -3,7 +3,6 @@ use std::sync::Arc;
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
-use serde_json::Value;
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream};
@@ -73,7 +72,7 @@ impl Component for SchematicComponent {
     &self,
     invocation: Invocation,
     stream: PacketStream,
-    _config: Option<Value>,
+    _config: Option<wick_packet::OperationConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, namespace = NS_SELF);
