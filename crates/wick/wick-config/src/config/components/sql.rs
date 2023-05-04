@@ -1,7 +1,7 @@
 use crate::config;
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 /// A component made out of other components
 pub struct SqlComponentConfig {
   /// The TcpPort reference to listen on for connections.
@@ -36,7 +36,7 @@ impl From<SqlOperationDefinition> for wick_interface_types::OperationSignature {
 }
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 
 pub struct SqlOperationDefinition {
   /// The name of the operation.
@@ -61,7 +61,7 @@ pub struct SqlOperationDefinition {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 pub enum DatabaseKind {
   MsSql = 0,
   Postgres = 1,

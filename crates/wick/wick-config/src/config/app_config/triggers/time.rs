@@ -4,7 +4,7 @@ use super::OperationInputConfig;
 use crate::config::{ComponentDefinition, ComponentOperationExpression};
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 /// Normalized representation of a Time trigger configuration.
 pub struct TimeTriggerConfig {
   pub(crate) schedule: ScheduleConfig,
@@ -36,7 +36,7 @@ impl TimeTriggerConfig {
 }
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 #[must_use]
 pub struct ScheduleConfig {
   #[asset(skip)]

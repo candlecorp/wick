@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::path::PathBuf;
 
 use futures::future::BoxFuture;
 use hyper::{Body, Request, Response};
@@ -13,7 +14,7 @@ pub(super) struct StaticComponent {
 }
 
 impl StaticComponent {
-  pub(super) fn new(root: String) -> Self {
+  pub(super) fn new(root: PathBuf) -> Self {
     let handler = hyper_staticfile::Static::new(root);
     Self { handler }
   }

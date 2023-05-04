@@ -3,7 +3,7 @@ use wick_asset_reference::AssetReference;
 use super::Glob;
 
 #[derive(Debug, Clone, Default, Builder, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference), lazy)]
 /// The package details for an application or component.
 pub struct PackageConfig {
   /// The list of files and folders to be included with the package.

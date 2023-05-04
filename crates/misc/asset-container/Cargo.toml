@@ -10,6 +10,7 @@ version = "0.2.0"
 [dependencies]
 thiserror = { workspace = true }
 futures = { workspace = true }
+bitflags = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

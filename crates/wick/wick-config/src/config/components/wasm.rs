@@ -7,7 +7,7 @@ use crate::config;
 
 /// A WebAssembly collection.
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 pub struct WasmComponent {
   /// The OCI reference/local path of the collection.
   pub reference: config::AssetReference,

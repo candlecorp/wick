@@ -14,7 +14,7 @@ use crate::types_config::TypesConfiguration;
 use crate::WickConfiguration;
 
 #[derive(Default, Clone, Debug, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 pub(crate) struct ImportCache {
   #[asset(skip)]
   pub(crate) cached_types: Arc<RwLock<HashMap<String, TypesConfiguration>>>,

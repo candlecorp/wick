@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 pub(super) mod resources;
 pub(super) mod triggers;
 
@@ -18,14 +19,14 @@ use crate::utils::RwOption;
 use crate::{config, v1, Resolver, Result};
 
 #[derive(Debug, Clone, Default, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct AppConfiguration {
   #[asset(skip)]
   pub name: String,
   #[asset(skip)]
-  pub(crate) source: Option<String>,
+  pub(crate) source: Option<PathBuf>,
   pub(crate) metadata: Option<config::Metadata>,
   pub(crate) import: HashMap<String, ImportBinding>,
   #[asset(skip)]
@@ -54,9 +55,8 @@ impl AppConfiguration {
   }
 
   /// Get the package files
-  #[must_use]
-  pub fn package_files(&self) -> Option<Assets<AssetReference>> {
-    self.package.as_ref().map(|p| p.assets())
+  pub fn package_files(&self) -> Assets<AssetReference> {
+    self.package.assets()
   }
 
   /// Get the configuration item a binding points to.
@@ -81,22 +81,23 @@ impl AppConfiguration {
 
   /// Return the underlying version of the source manifest.
   #[must_use]
-  pub fn source(&self) -> &Option<String> {
-    &self.source
+  pub fn source(&self) -> Option<&Path> {
+    self.source.as_deref()
   }
 
   /// Set the source location of the configuration.
-  pub fn set_source(&mut self, source: String) {
+  pub fn set_source(&mut self, source: &Path) {
     // Source is a file, so our baseurl needs to be the parent directory.
     // Remove the trailing filename from source.
-    if source.ends_with(std::path::MAIN_SEPARATOR) {
-      self.set_baseurl(&source);
-      self.source = Some(source);
+    if source.is_dir() {
+      self.set_baseurl(source);
+      self.source = Some(source.to_path_buf());
     } else {
-      let s = source.rfind('/').map_or(source.as_str(), |index| &source[..index]);
+      let mut s = source.to_path_buf();
+      s.pop();
 
-      self.set_baseurl(s);
-      self.source = Some(s.to_owned());
+      self.set_baseurl(&s);
+      self.source = Some(s);
     }
   }
 

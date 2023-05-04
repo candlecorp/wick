@@ -1,7 +1,7 @@
 use crate::config;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 #[must_use]
 pub enum ComponentImplementation {
   Wasm(config::WasmComponentImplementation),

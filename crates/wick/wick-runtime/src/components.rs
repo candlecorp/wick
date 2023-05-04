@@ -3,6 +3,7 @@ pub(crate) mod engine_component;
 pub(crate) mod error;
 
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use flow_component::{Component, RuntimeCallback};
@@ -130,7 +131,7 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
   let options = FetchOptions::new()
     .allow_latest(opts.allow_latest)
     .allow_insecure(&opts.allowed_insecure);
-  let manifest = WickConfiguration::fetch(kind.reference.path()?, options)
+  let manifest = WickConfiguration::fetch(kind.reference.path()?.to_string_lossy(), options)
     .await?
     .try_component_config()?;
 
@@ -147,7 +148,12 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
       let comp = init_wasmrs_component(wasmimpl, id.clone(), opts, provided).await?;
       let signed_sig = comp.component().list();
       let manifest_sig = manifest.signature()?;
-      expect_signature_match(&id, signed_sig, wasmimpl.reference().location(), &manifest_sig)?;
+      expect_signature_match(
+        Some(&PathBuf::from(&id)),
+        signed_sig,
+        Some(&PathBuf::from(wasmimpl.reference().location())),
+        &manifest_sig,
+      )?;
       Ok(comp)
     }
     config::ComponentImplementation::Composite(_) => {
@@ -179,9 +185,9 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
 }
 
 pub(crate) fn expect_signature_match(
-  actual_src: impl AsRef<str>,
+  actual_src: Option<&Path>,
   actual: &ComponentSignature,
-  expected_src: impl AsRef<str>,
+  expected_src: Option<&Path>,
   expected: &ComponentSignature,
 ) -> std::result::Result<(), EngineError> {
   if actual != expected {
@@ -191,8 +197,8 @@ pub(crate) fn expect_signature_match(
       "signature mismatch"
     );
     return Err(EngineError::ComponentSignature(
-      expected_src.as_ref().to_owned(),
-      actual_src.as_ref().to_owned(),
+      expected_src.map_or_else(|| PathBuf::from("unknown"), Into::into),
+      actual_src.map_or_else(|| PathBuf::from("unknown"), Into::into),
     ));
   }
   Ok(())

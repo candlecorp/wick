@@ -1,13 +1,15 @@
+use std::path::{Path, PathBuf};
+
 use asset_container::AssetManager;
 
 use crate::config;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
-#[asset(crate::config::AssetReference)]
+#[asset(asset(crate::config::AssetReference))]
 #[must_use]
 pub struct TestConfiguration {
   #[asset(skip)]
-  pub(crate) source: Option<String>,
+  pub(crate) source: Option<PathBuf>,
   #[asset(skip)]
   pub(crate) tests: Vec<config::TestCase>,
 }
@@ -20,17 +22,18 @@ impl TestConfiguration {
   }
 
   /// Set the source location of the configuration.
-  pub fn set_source(&mut self, source: String) {
+  pub fn set_source(&mut self, source: &Path) {
     // Source is a file, so our baseurl needs to be the parent directory.
     // Remove the trailing filename from source.
-    if source.ends_with(std::path::MAIN_SEPARATOR) {
-      self.set_baseurl(&source);
-      self.source = Some(source);
+    if source.is_dir() {
+      self.set_baseurl(source);
+      self.source = Some(source.to_path_buf());
     } else {
-      let s = source.rfind('/').map_or(source.as_str(), |index| &source[..index]);
+      let mut s = source.to_path_buf();
+      s.pop();
 
-      self.set_baseurl(s);
-      self.source = Some(s.to_owned());
+      self.set_baseurl(&s);
+      self.source = Some(s);
     }
   }
 }

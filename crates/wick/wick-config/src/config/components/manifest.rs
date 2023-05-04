@@ -7,7 +7,7 @@ use crate::config;
 
 /// A separate Wick manifest to use as a collection.
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 pub struct ManifestComponent {
   /// The OCI reference/local path of the manifest to use as a collection.
   pub reference: config::AssetReference,

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use asset_container::{Asset, AssetManager};
+use asset_container::{Asset, AssetFlags, AssetManager};
 use sha256::digest;
 use tokio::fs;
 use wick_config::WickConfiguration;
@@ -64,7 +64,7 @@ impl WickPackage {
         let media_type = media_types::APPLICATION;
         let kind = WickPackageKind::APPLICATION;
 
-        extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
+        extra_files = config.package_files().to_owned();
 
         registry_reference = config.package.as_ref().and_then(|package| {
           package
@@ -95,7 +95,7 @@ impl WickPackage {
       _ => return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string())),
     };
 
-    let mut assets = config.assets();
+    let assets = config.assets();
     let mut wick_files: Vec<PackageFile> = Vec::new();
 
     let root_bytes = fs::read(path)
@@ -129,19 +129,20 @@ impl WickPackage {
 
     //populate wick_files
     for asset in assets.iter() {
-      let location = asset.location(); // the path specified in the config
+      if asset.get_asset_flags() == AssetFlags::Lazy {
+        continue;
+      }
+      asset.update_baseurl(&parent_dir);
       let asset_path = asset.path()?; // the resolved, abolute path relative to the config location.
-      asset.update_baseurl(&parent_dir.to_string_lossy());
 
       let path = asset.get_relative_part()?;
-      let path = PathBuf::from(path);
 
       let options = wick_config::FetchOptions::default();
       let media_type: &str;
 
       match path.extension().and_then(|os_str| os_str.to_str()) {
         Some("yaml" | "yml" | "wick") => {
-          let config = WickConfiguration::fetch(asset_path, options.clone()).await;
+          let config = WickConfiguration::fetch(asset_path.to_string_lossy(), options.clone()).await;
           match config {
             Ok(WickConfiguration::App(_)) => {
               media_type = media_types::APPLICATION;
@@ -170,7 +171,7 @@ impl WickPackage {
 
       let file_bytes = asset.bytes(&options).await?;
       let hash = format!("sha256:{}", digest(file_bytes.as_ref()));
-      let wick_file = PackageFile::new(PathBuf::from(location), hash, media_type.to_owned(), file_bytes);
+      let wick_file = PackageFile::new(path, hash, media_type.to_owned(), file_bytes);
       wick_files.push(wick_file);
     }
 

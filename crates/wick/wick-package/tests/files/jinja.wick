@@ -9,8 +9,7 @@ component:
   ref: ./assets/test.fake.wasm
 package:
   files:
-    - ./assets/test.js
-    - ./assets/static/**/*
+    - ./assets/**/*
   registry:
     registry: $DOCKER_REGISTRY
     namespace: default

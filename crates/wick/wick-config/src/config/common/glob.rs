@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use asset_container::{Asset, AssetManager};
@@ -11,7 +11,7 @@ use wick_asset_reference::AssetReference;
 pub struct Glob {
   pub(crate) glob: String,
   pub(crate) assets: Arc<RwLock<Vec<AssetReference>>>,
-  pub(crate) baseurl: Arc<RwLock<Option<String>>>,
+  pub(crate) baseurl: Arc<RwLock<Option<PathBuf>>>,
 }
 
 impl Glob {
@@ -26,10 +26,10 @@ impl Glob {
 impl AssetManager for Glob {
   type Asset = AssetReference;
 
-  fn set_baseurl(&self, baseurl: &str) {
+  fn set_baseurl(&self, baseurl: &Path) {
     *self.baseurl.write() = Some(baseurl.to_owned());
 
-    let mut assets = self.assets();
+    let assets = self.assets();
     for asset in assets.iter() {
       asset.update_baseurl(baseurl);
     }
@@ -52,7 +52,7 @@ impl AssetManager for Glob {
 
     *self.assets.write() = asset_refs.clone();
 
-    let mut assets: asset_container::Assets<Self::Asset> = asset_container::Assets::default();
+    let mut assets: asset_container::Assets<Self::Asset> = asset_container::Assets::new(vec![], self.get_asset_flags());
 
     for asset in asset_refs {
       assets.push_owned(asset);

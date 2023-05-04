@@ -6,7 +6,7 @@ use wick_interface_types::TypeDefinition;
 use crate::config;
 
 #[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
-#[asset(crate::config::AssetReference)]
+#[asset(asset(crate::config::AssetReference))]
 #[must_use]
 /// The Wick representation of an interface.
 pub struct InterfaceDefinition {

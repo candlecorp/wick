@@ -28,3 +28,4 @@ async-recursion = { workspace = true }
 env_logger = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
+walkdir = "2.3"

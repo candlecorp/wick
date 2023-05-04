@@ -2,26 +2,26 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use asset_container::{Asset, AssetManager, Progress, Status};
+use asset_container::{Asset, AssetFlags, AssetManager, Assets, Progress, Status};
 use bytes::BytesMut;
 use futures::StreamExt;
 use tokio::io::AsyncReadExt;
 
 #[derive(Clone, derive_asset_container::AssetManager)]
-#[asset(TestAsset)]
+#[asset(asset(TestAsset))]
 struct Struct {
   field: TestAsset,
   inner: InnerStruct,
 }
 
 #[derive(Clone, derive_asset_container::AssetManager)]
-#[asset(TestAsset)]
+#[asset(asset(TestAsset), lazy)]
 struct InnerStruct {
   field: TestAsset,
 }
 
 #[derive(Clone, derive_asset_container::AssetManager)]
-#[asset(TestAsset)]
+#[asset(asset(TestAsset))]
 struct Struct2 {
   one: TestAsset,
   #[asset(skip)]
@@ -32,108 +32,12 @@ struct Struct2 {
   three: String,
 }
 
-#[tokio::test]
-async fn test_skip() -> Result<()> {
-  let s = Struct2 {
-    one: TestAsset::new("Cargo.toml"),
-    two: TestAsset::new("Cargo.toml"),
-    three: "hello".to_owned(),
-  };
-  let assets = s.assets();
-  assert_eq!(assets.len(), 1);
-  Ok(())
-}
-
-#[tokio::test]
-async fn test_progress() -> Result<()> {
-  let s = Struct {
-    field: TestAsset::new("Cargo.toml"),
-    inner: InnerStruct {
-      field: TestAsset::new("Cargo.toml"),
-    },
-  };
-  let mut assets = s.assets();
-  assert_eq!(assets.len(), 2);
-  let mut progress = assets.pull_with_progress(());
-  let mut asset_done = 0;
-  let mut num_progress = 0;
-  while let Some(progress) = progress.next().await {
-    println!("Progress {:?}", progress);
-    num_progress += 1;
-    assert_eq!(progress.len(), 2);
-    for progress in progress {
-      match progress.status {
-        Status::AssetComplete(_) => {
-          asset_done += 1;
-        }
-        Status::PullFinished => {}
-        Status::Progress { .. } => {}
-        Status::Error(e) => {
-          panic!("error:{}", e);
-        }
-      }
-    }
-  }
-  assert_eq!(asset_done, 2);
-  assert!(num_progress > 0);
-  Ok(())
-}
-
-#[tokio::test]
-async fn test_enums() -> Result<()> {
-  let s = TestEnum::One(TestAsset::new("Cargo.toml"));
-  let mut assets = s.assets();
-  assert_eq!(assets.len(), 1);
-  let mut progress = assets.pull_with_progress(());
-  let mut num_progress = 0;
-  let mut asset_done = 0;
-  while let Some(progress) = progress.next().await {
-    println!("Progress {:?}", progress);
-    num_progress += 1;
-    assert_eq!(progress.len(), 1);
-    for progress in progress {
-      match progress.status {
-        Status::AssetComplete(_) => {
-          asset_done += 1;
-        }
-        Status::PullFinished => {}
-        Status::Progress { .. } => {}
-        Status::Error(e) => {
-          panic!("error:{}", e);
-        }
-      }
-    }
-  }
-  assert_eq!(asset_done, 1);
-  assert!(num_progress > 0);
-  Ok(())
-}
-
 #[derive(derive_asset_container::AssetManager)]
-#[asset(TestAsset)]
+#[asset(asset(TestAsset))]
 enum TestEnum {
   One(TestAsset),
   Two(Struct),
   Three(InnerStruct),
-}
-
-#[tokio::test]
-async fn test_enums_2() -> Result<()> {
-  let s = TestEnum::Two(Struct {
-    field: TestAsset::new("Cargo.toml"),
-    inner: InnerStruct {
-      field: TestAsset::new("Cargo.toml"),
-    },
-  });
-  let assets = s.assets();
-  assert_eq!(assets.len(), 2);
-  let s = TestEnum::Three(InnerStruct {
-    field: TestAsset::new("Cargo.toml"),
-  });
-  let assets = s.assets();
-  assert_eq!(assets.len(), 1);
-
-  Ok(())
 }
 
 #[derive(Clone)]
@@ -149,10 +53,22 @@ impl TestAsset {
   }
 }
 
+impl AssetManager for TestAsset {
+  type Asset = Self;
+
+  fn assets(&self) -> Assets<Self::Asset> {
+    Assets::new(vec![std::borrow::Cow::Borrowed(self)], self.get_asset_flags())
+  }
+
+  fn set_baseurl(&self, baseurl: &Path) {
+    self.update_baseurl(baseurl);
+  }
+}
+
 impl Asset for TestAsset {
   type Options = ();
 
-  fn update_baseurl(&self, _baseurl: &str) {
+  fn update_baseurl(&self, _baseurl: &Path) {
     unimplemented!()
   }
 
@@ -237,7 +153,7 @@ impl Asset for TestAsset {
     Box::pin(async move {
       let mut file = tokio::fs::File::open(&path)
         .await
-        .map_err(|err| asset_container::Error::FileOpen(path.to_string_lossy().to_string(), err.to_string()))?;
+        .map_err(|err| asset_container::Error::FileOpen(path, err.to_string()))?;
       let mut bytes = Vec::new();
       file.read_to_end(&mut bytes).await?;
       Ok(bytes)
@@ -247,4 +163,120 @@ impl Asset for TestAsset {
   fn name(&self) -> &str {
     self.path.to_str().unwrap()
   }
+}
+
+#[tokio::test]
+async fn test_skip() -> Result<()> {
+  let s = Struct2 {
+    one: TestAsset::new("Cargo.toml"),
+    two: TestAsset::new("Cargo.toml"),
+    three: "hello".to_owned(),
+  };
+  let assets = s.assets();
+  assert_eq!(assets.len(), 1);
+  Ok(())
+}
+
+#[tokio::test]
+async fn test_progress() -> Result<()> {
+  let s = Struct {
+    field: TestAsset::new("Cargo.toml"),
+    inner: InnerStruct {
+      field: TestAsset::new("Cargo.toml"),
+    },
+  };
+  let mut assets = s.assets();
+  assert_eq!(assets.len(), 2);
+  let mut progress = assets.pull_with_progress(());
+  let mut asset_done = 0;
+  let mut num_progress = 0;
+  while let Some(progress) = progress.next().await {
+    println!("Progress {:?}", progress);
+    num_progress += 1;
+    assert_eq!(progress.len(), 2);
+    for progress in progress {
+      match progress.status {
+        Status::AssetComplete(_) => {
+          asset_done += 1;
+        }
+        Status::PullFinished => {}
+        Status::Progress { .. } => {}
+        Status::Error(e) => {
+          panic!("error:{}", e);
+        }
+      }
+    }
+  }
+  assert_eq!(asset_done, 2);
+  assert!(num_progress > 0);
+  Ok(())
+}
+
+#[tokio::test]
+async fn test_enums_2() -> Result<()> {
+  let s = TestEnum::Two(Struct {
+    field: TestAsset::new("Cargo.toml"),
+    inner: InnerStruct {
+      field: TestAsset::new("Cargo.toml"),
+    },
+  });
+  let assets = s.assets();
+  assert_eq!(assets.len(), 2);
+  let s = TestEnum::Three(InnerStruct {
+    field: TestAsset::new("Cargo.toml"),
+  });
+  let assets = s.assets();
+  assert_eq!(assets.len(), 1);
+
+  Ok(())
+}
+
+#[tokio::test]
+async fn test_enums() -> Result<()> {
+  let s = TestEnum::One(TestAsset::new("Cargo.toml"));
+  let mut assets = s.assets();
+  assert_eq!(assets.len(), 1);
+  let mut progress = assets.pull_with_progress(());
+  let mut num_progress = 0;
+  let mut asset_done = 0;
+  while let Some(progress) = progress.next().await {
+    println!("Progress {:?}", progress);
+    num_progress += 1;
+    assert_eq!(progress.len(), 1);
+    for progress in progress {
+      match progress.status {
+        Status::AssetComplete(_) => {
+          asset_done += 1;
+        }
+        Status::PullFinished => {}
+        Status::Progress { .. } => {}
+        Status::Error(e) => {
+          panic!("error:{}", e);
+        }
+      }
+    }
+  }
+  assert_eq!(asset_done, 1);
+  assert!(num_progress > 0);
+  Ok(())
+}
+
+#[test]
+fn test_flags() -> Result<()> {
+  let s = Struct {
+    field: TestAsset::new("Cargo.toml"),
+    inner: InnerStruct {
+      field: TestAsset::new("Cargo.toml"),
+    },
+  };
+  let assets = s.assets();
+  assert_eq!(assets.len(), 2);
+  let mut num_lazy = 0;
+  for asset in assets.iter() {
+    if asset.get_asset_flags() == AssetFlags::Lazy {
+      num_lazy += 1;
+    }
+  }
+  assert_eq!(num_lazy, 1);
+  Ok(())
 }
