@@ -6,28 +6,25 @@ use crate::Error;
 
 type Result<T> = std::result::Result<T, Error>;
 
-pub fn normalize_path(path: &std::path::Path, base: Option<String>) -> Result<String> {
-  let pathstr = path.to_string_lossy().to_string();
-  normalize_path_str(&pathstr, base)
+pub fn normalize_path(path: &std::path::Path, base: Option<PathBuf>) -> Result<PathBuf> {
+  normalize_path_str(path, base)
 }
 
 #[allow(clippy::option_if_let_else)]
-pub fn normalize_path_str(path: &str, base: Option<String>) -> Result<String> {
+pub fn normalize_path_str(path: &std::path::Path, base: Option<PathBuf>) -> Result<PathBuf> {
   let url = match base {
     Some(full_url) => {
       let p = PathBuf::from(&full_url).join(path);
       p.normalize()
         .map_err(|e| Error::NormalizationFailure(p.to_string_lossy().to_string(), e.to_string()))?
         .as_path()
-        .to_string_lossy()
-        .to_string()
+        .to_owned()
     }
     None => {
-      if !path.starts_with(std::path::MAIN_SEPARATOR) {
-        let absolute = std::env::current_dir().unwrap().join(path);
-        absolute.display().to_string()
+      if !path.is_absolute() {
+        std::env::current_dir().unwrap().join(path)
       } else {
-        path.to_owned()
+        PathBuf::from(path)
       }
     }
   };

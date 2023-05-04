@@ -34,8 +34,8 @@ pub enum Error {
   ReadFile(PathBuf, #[source] std::io::Error),
 
   /// Error returned when working with tar files
-  #[error("Failed to read file '{0}': {1}")]
-  TarFile(String, #[source] std::io::Error),
+  #[error("Failed to read file '{}': {1}", .0.display())]
+  TarFile(PathBuf, #[source] std::io::Error),
 
   /// Error returned when working with gz files
   #[error("Failed to read file '{0}': {1}")]

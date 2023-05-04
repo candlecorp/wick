@@ -1,7 +1,7 @@
 use crate::config;
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 #[must_use]
 /// A component made out of other components
 pub struct HttpClientComponentConfig {

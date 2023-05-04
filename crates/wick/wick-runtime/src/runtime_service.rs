@@ -166,7 +166,7 @@ impl RuntimeService {
       for native_comp in init.native_components.inner() {
         components
           .add(native_comp(init.seed())?)
-          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().clone(), Box::new(e)))?;
+          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
       }
     } else {
       let component_init = init.component_init();
@@ -178,9 +178,9 @@ impl RuntimeService {
         debug!("manifest_sig: {:?}", init.manifest);
 
         expect_signature_match(
-          init.manifest.source().clone().unwrap_or_else(|| "<Unknown>".to_owned()),
+          init.manifest.source(),
           reported_sig,
-          init.manifest.source().clone().unwrap_or_else(|| "<Unknown>".to_owned()),
+          init.manifest.source(),
           &manifest_sig,
         )?;
         main_component.expose();
@@ -188,7 +188,7 @@ impl RuntimeService {
         debug!("Adding main component: {}", main_component.namespace());
         components
           .add(main_component)
-          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().clone(), Box::new(e)))?;
+          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
       }
     }
 
@@ -197,16 +197,16 @@ impl RuntimeService {
       if let Some(p) = instantiate_import(component, component_init).await? {
         components
           .add(p)
-          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().clone(), Box::new(e)))?;
+          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
       }
     }
 
-    let source = init.manifest.source().clone();
+    let source = init.manifest.source();
     let callback = make_link_callback(init.id);
 
     let mut interpreter =
       flow_graph_interpreter::Interpreter::new(Some(init.seed()), graph, Some(ns.clone()), Some(components), callback)
-        .map_err(|e| EngineError::InterpreterInit(source, Box::new(e)))?;
+        .map_err(|e| EngineError::InterpreterInit(source.map(Into::into), Box::new(e)))?;
 
     let options = InterpreterOptions {
       output_timeout: init.timeout,

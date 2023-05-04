@@ -548,7 +548,9 @@ impl From<config::UrlResource> for v1::Url {
 
 impl From<config::Volume> for v1::Volume {
   fn from(value: config::Volume) -> Self {
-    Self { path: value.path }
+    Self {
+      path: value.path.to_string(),
+    }
   }
 }
 
@@ -1063,7 +1065,7 @@ impl TryFrom<v1::ResourceDefinition> for ResourceDefinition {
 
 impl From<v1::Volume> for config::Volume {
   fn from(value: v1::Volume) -> Self {
-    Self { path: value.path }
+    config::Volume::new(value.path)
   }
 }
 

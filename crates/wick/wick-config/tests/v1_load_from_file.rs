@@ -73,7 +73,7 @@ async fn regression_issue_180() -> Result<(), ManifestError> {
   if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = &coll.kind {
     let value = module.reference.path()?;
     println!("value: {:?}", value);
-    let actual = PathBuf::from(value);
+    let actual = value;
 
     let mut expected = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
 

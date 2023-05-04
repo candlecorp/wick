@@ -3,7 +3,7 @@ use wick_asset_reference::AssetReference;
 use crate::config::{ComponentDefinition, ComponentOperationExpression};
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 #[must_use]
 pub struct HttpTriggerConfig {
   #[asset(skip)]
@@ -22,7 +22,7 @@ impl HttpTriggerConfig {
 }
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 #[must_use]
 pub struct RawRouterConfig {
   #[asset(skip)]
@@ -42,7 +42,7 @@ impl RawRouterConfig {
 }
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 #[must_use]
 pub struct RestRouterConfig {
   #[asset(skip)]
@@ -61,7 +61,7 @@ impl RestRouterConfig {
 }
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 #[must_use]
 pub struct StaticRouterConfig {
   #[asset(skip)]
@@ -84,7 +84,7 @@ impl StaticRouterConfig {
 }
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 #[must_use]
 pub enum HttpRouterConfig {
   RawRouter(RawRouterConfig),
@@ -94,7 +94,7 @@ pub enum HttpRouterConfig {
 }
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 pub struct ProxyRouterConfig {
   /// The path to start serving this router from.
   #[asset(skip)]

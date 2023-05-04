@@ -39,7 +39,10 @@ pub(crate) fn metadata_to_annotations(metadata: Metadata) -> Annotations {
 
   map.insert(
     annotations::ICON.to_owned(),
-    metadata.icon.map(|v| v.path().unwrap_or_default()).unwrap_or_default(),
+    metadata
+      .icon
+      .map(|v| v.path().unwrap_or_default().to_string_lossy().to_string())
+      .unwrap_or_default(),
   );
 
   Annotations::new(map)
@@ -53,7 +56,7 @@ pub(crate) async fn create_tar_gz(extra_files: Vec<AssetReference>, parent_dir: 
     let absolute_path = file_path
       .path()
       .map_err(|_e| Error::NotFound(file_path.location().to_owned()))?;
-    file_path.update_baseurl(parent_dir.to_str().unwrap());
+    file_path.update_baseurl(parent_dir);
 
     let relative_path = file_path.get_relative_part()?;
 

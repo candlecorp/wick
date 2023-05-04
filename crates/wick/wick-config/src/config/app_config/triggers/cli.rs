@@ -3,7 +3,7 @@ use wick_asset_reference::AssetReference;
 use crate::config::{ComponentDefinition, ComponentOperationExpression};
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 
 /// Normalized representation of a CLI trigger configuration.
 pub struct CliConfig {

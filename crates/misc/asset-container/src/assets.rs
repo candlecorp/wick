@@ -1,41 +1,130 @@
 use std::borrow::Cow;
+use std::ops::Deref;
+use std::path::Path;
 use std::pin::Pin;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::task::Poll;
 
 use futures::{Future, FutureExt, Stream, StreamExt};
 
+pub use self::flags::AssetFlags;
 use crate::Error;
+mod flags;
+
+#[derive(Debug)]
+pub struct AssetRef<'a, T>
+where
+  T: Asset + Clone,
+{
+  parent_flags: AtomicU32,
+  asset: Cow<'a, T>,
+}
+
+impl<'a, T> Clone for AssetRef<'a, T>
+where
+  T: Asset + Clone,
+  T: AssetManager<Asset = T>,
+{
+  fn clone(&self) -> Self {
+    Self::new(self.asset.clone(), self.get_asset_flags())
+  }
+}
+
+impl<'a, T> Asset for AssetRef<'a, T>
+where
+  T: Asset + Clone,
+  T: AssetManager<Asset = T>,
+{
+  type Options = T::Options;
+
+  fn fetch_with_progress(&self, options: Self::Options) -> Pin<Box<dyn Stream<Item = Progress> + Send + '_>> {
+    self.asset.fetch_with_progress(options)
+  }
+
+  fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + Sync + '_>> {
+    self.asset.fetch(options)
+  }
+
+  fn name(&self) -> &str {
+    self.asset.name()
+  }
+
+  fn update_baseurl(&self, baseurl: &Path) {
+    self.asset.update_baseurl(baseurl);
+  }
+}
+
+impl<'a, T> Deref for AssetRef<'a, T>
+where
+  T: Asset + Clone,
+  T: AssetManager<Asset = T>,
+{
+  type Target = T;
+
+  fn deref(&self) -> &Self::Target {
+    &self.asset
+  }
+}
+
+impl<'a, T> AssetManager for AssetRef<'a, T>
+where
+  T: Asset + AssetManager<Asset = T> + Clone,
+{
+  type Asset = T;
+
+  fn assets(&self) -> Assets<Self::Asset> {
+    self.asset.assets()
+  }
+
+  fn set_baseurl(&self, baseurl: &Path) {
+    self.asset.set_baseurl(baseurl);
+  }
+
+  fn get_asset_flags(&self) -> u32 {
+    self.parent_flags.load(Ordering::Relaxed) | self.asset.get_asset_flags()
+  }
+}
+
+impl<'a, T> AssetRef<'a, T>
+where
+  T: Asset + Clone,
+{
+  pub fn new(asset: Cow<'a, T>, flags: u32) -> Self {
+    Self {
+      parent_flags: AtomicU32::new(flags),
+      asset,
+    }
+  }
+
+  pub fn into_owned(self) -> T {
+    self.asset.into_owned()
+  }
+}
 
 #[derive(Debug)]
 #[must_use]
 pub struct Assets<'a, T>
 where
   T: Asset + Clone,
+  T: AssetManager<Asset = T>,
 {
-  list: Vec<Cow<'a, T>>,
-}
-
-impl<'a, T> Default for Assets<'a, T>
-where
-  T: Asset + Clone,
-{
-  fn default() -> Self {
-    Self { list: Vec::new() }
-  }
+  list: Vec<AssetRef<'a, T>>,
+  flags: u32,
 }
 
 impl<'a, T> Assets<'a, T>
 where
   T: Asset + Clone,
+  T: AssetManager<Asset = T>,
 {
-  pub fn new(list: Vec<Cow<'a, T>>) -> Self {
-    Self { list }
-  }
-
-  #[must_use]
-  pub fn list(&self) -> &[Cow<'a, T>] {
-    &self.list
+  pub fn new(list: Vec<Cow<'a, T>>, parent_flags: u32) -> Self {
+    Self {
+      list: list
+        .into_iter()
+        .map(|asset| AssetRef::new(asset, parent_flags))
+        .collect(),
+      flags: parent_flags,
+    }
   }
 
   #[must_use]
@@ -43,12 +132,15 @@ where
     self.list.into_iter().map(|asset| asset.into_owned()).collect()
   }
 
-  pub fn set_baseurl(&self, baseurl: &str) {
+  pub fn set_baseurl(&self, baseurl: &Path) {
     self.list.iter().for_each(|asset| asset.update_baseurl(baseurl));
   }
 
-  pub fn iter(&mut self) -> impl Iterator<Item = &Cow<'a, T>> {
-    self.list.iter()
+  pub fn iter(&self) -> impl Iterator<Item = &AssetRef<T>> {
+    self.list.iter().map(|r| {
+      r.parent_flags.fetch_or(self.flags, Ordering::Relaxed);
+      r
+    })
   }
 
   #[must_use]
@@ -62,11 +154,11 @@ where
   }
 
   pub fn push(&mut self, asset: &'a T) {
-    self.list.push(Cow::Borrowed(asset));
+    self.list.push(AssetRef::new(Cow::Borrowed(asset), self.flags));
   }
 
   pub fn push_owned(&mut self, asset: T) {
-    self.list.push(Cow::Owned(asset));
+    self.list.push(AssetRef::new(Cow::Owned(asset), self.flags));
   }
 
   #[allow(clippy::needless_pass_by_value)]
@@ -79,8 +171,11 @@ where
     AssetPullWithProgress::new(self, &options)
   }
 
-  pub fn extend(&mut self, other: &mut Self) {
-    self.list.append(&mut other.list);
+  pub fn extend(&mut self, other: Self) {
+    for asset in other.list {
+      asset.parent_flags.fetch_or(self.flags, Ordering::Relaxed);
+      self.list.push(asset);
+    }
   }
 }
 
@@ -147,6 +242,7 @@ impl<'a> AssetPull<'a> {
   pub fn new<T>(assets: &'a mut Assets<'a, T>, options: &T::Options) -> Self
   where
     T: Asset + Clone,
+    T: AssetManager<Asset = T>,
   {
     let assets = assets
       .iter()
@@ -211,6 +307,7 @@ impl<'a> AssetPullWithProgress<'a> {
   pub fn new<T>(assets: &'a mut Assets<'a, T>, options: &T::Options) -> Self
   where
     T: Asset + Clone,
+    T: AssetManager<Asset = T>,
   {
     let assets = assets
       .iter()
@@ -295,17 +392,20 @@ pub enum Status {
 }
 
 pub trait AssetManager {
-  type Asset: Asset + Clone;
+  type Asset: AssetManager<Asset = Self::Asset> + Asset + Clone;
   fn assets(&self) -> Assets<Self::Asset>;
-  fn set_baseurl(&self, baseurl: &str);
+  fn set_baseurl(&self, baseurl: &Path);
+  fn get_asset_flags(&self) -> u32 {
+    AssetFlags::empty().bits()
+  }
 }
 
-pub trait Asset {
+pub trait Asset: AssetManager {
   type Options: Clone;
   fn fetch_with_progress(&self, options: Self::Options) -> Pin<Box<dyn Stream<Item = Progress> + Send + '_>>;
   fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + Sync + '_>>;
   fn name(&self) -> &str;
-  fn update_baseurl(&self, baseurl: &str);
+  fn update_baseurl(&self, baseurl: &Path);
 }
 
 impl<T, O> Asset for Option<T>
@@ -342,7 +442,7 @@ where
     self.as_ref().map_or("", |a| a.name())
   }
 
-  fn update_baseurl(&self, baseurl: &str) {
+  fn update_baseurl(&self, baseurl: &Path) {
     if let Some(asset) = self.as_ref() {
       asset.update_baseurl(baseurl);
     }
@@ -355,14 +455,20 @@ where
 {
   type Asset = T::Asset;
 
-  fn set_baseurl(&self, baseurl: &str) {
+  fn set_baseurl(&self, baseurl: &Path) {
     if let Some(asset) = self.as_ref() {
       asset.set_baseurl(baseurl);
     }
   }
 
   fn assets(&self) -> Assets<Self::Asset> {
-    self.as_ref().map(|a| a.assets()).unwrap_or_default()
+    self
+      .as_ref()
+      .map_or_else(|| Assets::new(vec![], self.get_asset_flags()), |a| a.assets())
+  }
+
+  fn get_asset_flags(&self) -> u32 {
+    self.as_ref().map_or(0, |a| a.get_asset_flags())
   }
 }
 
@@ -372,18 +478,22 @@ where
 {
   type Asset = T::Asset;
 
-  fn set_baseurl(&self, baseurl: &str) {
+  fn set_baseurl(&self, baseurl: &Path) {
     for asset in self.values() {
       asset.set_baseurl(baseurl);
     }
   }
 
   fn assets(&self) -> Assets<Self::Asset> {
-    let mut assets = Assets::default();
+    let mut assets = Assets::new(vec![], self.get_asset_flags());
     for (_, asset) in self.iter() {
-      assets.extend(&mut asset.assets());
+      assets.extend(asset.assets());
     }
     assets
+  }
+
+  fn get_asset_flags(&self) -> u32 {
+    self.values().fold(0, |flags, asset| flags | asset.get_asset_flags())
   }
 }
 
@@ -393,17 +503,21 @@ where
 {
   type Asset = T::Asset;
 
-  fn set_baseurl(&self, baseurl: &str) {
+  fn set_baseurl(&self, baseurl: &Path) {
     for asset in self.iter() {
       asset.set_baseurl(baseurl);
     }
   }
 
   fn assets(&self) -> Assets<Self::Asset> {
-    let mut assets = Assets::default();
+    let mut assets = Assets::new(vec![], self.get_asset_flags());
     for asset in self.iter() {
-      assets.extend(&mut asset.assets());
+      assets.extend(asset.assets());
     }
     assets
+  }
+
+  fn get_asset_flags(&self) -> u32 {
+    self.iter().fold(0, |flags, asset| flags | asset.get_asset_flags())
   }
 }

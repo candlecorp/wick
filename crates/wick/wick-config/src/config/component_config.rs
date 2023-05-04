@@ -1,6 +1,7 @@
 mod composite;
 mod wasm;
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 use asset_container::{AssetManager, Assets};
 pub use composite::*;
@@ -19,7 +20,7 @@ use crate::{config, v1, Error, Resolver, Result};
 
 #[derive(Debug, Default, Clone, Builder, derive_asset_container::AssetManager)]
 #[builder(derive(Debug))]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct ComponentConfiguration {
@@ -30,7 +31,7 @@ pub struct ComponentConfiguration {
   pub name: Option<String>,
   #[asset(skip)]
   #[builder(setter(into, strip_option), default)]
-  pub(crate) source: Option<String>,
+  pub(crate) source: Option<PathBuf>,
   #[asset(skip)]
   #[builder(default)]
   pub(crate) types: Vec<TypeDefinition>,
@@ -102,17 +103,18 @@ impl ComponentConfiguration {
   }
 
   /// Set the source location of the configuration.
-  pub fn set_source(&mut self, source: String) {
+  pub fn set_source(&mut self, source: &Path) {
     // Source is a file, so our baseurl needs to be the parent directory.
     // Remove the trailing filename from source.
-    if source.ends_with(std::path::MAIN_SEPARATOR) {
-      self.set_baseurl(&source);
-      self.source = Some(source);
+    if source.is_dir() {
+      self.set_baseurl(source);
+      self.source = Some(source.to_path_buf());
     } else {
-      let s = source.rfind('/').map_or(source.as_str(), |index| &source[..index]);
+      let mut s = source.to_path_buf();
+      s.pop();
 
-      self.set_baseurl(s);
-      self.source = Some(s.to_owned());
+      self.set_baseurl(&s);
+      self.source = Some(s);
     }
   }
 
@@ -189,8 +191,8 @@ impl ComponentConfiguration {
 
   /// Return the underlying version of the source manifest.
   #[must_use]
-  pub fn source(&self) -> &Option<String> {
-    &self.source
+  pub fn source(&self) -> Option<&Path> {
+    self.source.as_deref()
   }
 
   /// Return the types defined in this component.

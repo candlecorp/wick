@@ -1,7 +1,7 @@
 use crate::config::AssetReference;
 
 #[derive(Debug, Default, Builder, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 /// Metadata for the component or application.
 pub struct Metadata {
   /// The version of the component or application.

@@ -6,7 +6,7 @@ use crate::config;
 
 /// A reference to an operation.
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 
 pub struct ComponentOperationExpression {
   /// The operation ID.
@@ -60,7 +60,7 @@ impl std::str::FromStr for ComponentOperationExpression {
 }
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
 pub enum HighLevelComponent {
@@ -71,7 +71,7 @@ pub enum HighLevelComponent {
 }
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 /// The kinds of collections that can operate in a flow.
 #[must_use]
 pub enum ComponentDefinition {

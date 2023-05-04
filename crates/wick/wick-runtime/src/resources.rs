@@ -1,4 +1,5 @@
 use std::net::{IpAddr, SocketAddr};
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use wick_config::config::{ResourceDefinition, TcpPort, UdpPort, UrlResource, Volume};
@@ -7,6 +8,8 @@ use wick_config::config::{ResourceDefinition, TcpPort, UdpPort, UrlResource, Vol
 pub enum ResourceError {
   #[error("Invalid IP address '{0}': {1}")]
   InvalidIpAddress(String, String),
+  #[error("Invalid path: {0}")]
+  InvalidPath(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -15,7 +18,7 @@ pub enum Resource {
   TcpPort(SocketAddr),
   UdpPort(SocketAddr),
   Url(UrlResource),
-  Volume(String),
+  Volume(PathBuf),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -68,7 +71,9 @@ impl Resource {
   }
 
   pub fn new_volume(config: &Volume) -> Result<Self, ResourceError> {
-    Ok(Self::Volume(config.path().to_owned()))
+    Ok(Self::Volume(
+      config.path().map_err(|e| ResourceError::InvalidPath(e.to_string()))?,
+    ))
   }
 
   pub fn kind(&self) -> ResourceKind {

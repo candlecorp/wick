@@ -5,7 +5,7 @@ use crate::config::components::WasmComponent;
 use crate::config::{self};
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
 pub struct ImportBinding {
@@ -93,7 +93,7 @@ impl ImportBinding {
 }
 
 #[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
-#[asset(crate::config::AssetReference)]
+#[asset(asset(crate::config::AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct BoundInterface {

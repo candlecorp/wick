@@ -1,4 +1,5 @@
 use std::net::Ipv4Addr;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -15,7 +16,7 @@ pub(crate) fn opt_str_to_ipv4addr(v: &Option<String>) -> Result<Option<Ipv4Addr>
   })
 }
 
-pub(crate) fn from_yaml<T>(src: &str, path: &Option<String>) -> Result<T>
+pub(crate) fn from_yaml<T>(src: &str, path: &Option<PathBuf>) -> Result<T>
 where
   T: DeserializeOwned,
 {
@@ -23,7 +24,7 @@ where
   Ok(result)
 }
 
-pub(crate) fn from_bytes<T>(src: &[u8], path: &Option<String>) -> Result<T>
+pub(crate) fn from_bytes<T>(src: &[u8], path: &Option<PathBuf>) -> Result<T>
 where
   T: DeserializeOwned,
 {

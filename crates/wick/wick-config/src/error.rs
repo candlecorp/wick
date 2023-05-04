@@ -48,8 +48,8 @@ pub enum ManifestError {
   UnexpectedComponentType(config::ComponentKind, config::ComponentKind),
 
   /// Error deserializing YAML manifest.
-  #[error("Could not parse manifest {} as YAML: {1}", .0.as_ref().unwrap_or(&"<raw>".to_owned()))]
-  YamlError(Option<String>, String),
+  #[error("Could not parse manifest {} as YAML: {1}", .0.as_ref().map_or("<raw>".to_owned(), |v|v.display().to_string()))]
+  YamlError(Option<std::path::PathBuf>, String),
 
   /// Error parsing or serializing Sender data.
   #[error("Error parsing or serializing Sender data: {0}")]

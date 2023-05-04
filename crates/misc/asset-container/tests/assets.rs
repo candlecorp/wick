@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
-use asset_container::{Asset, AssetManager, Assets, Progress, Status};
+use asset_container::{Asset, AssetFlags, AssetManager, Assets, Progress, Status};
 use bytes::BytesMut;
 use futures::StreamExt;
 use tokio::io::AsyncReadExt;
@@ -16,7 +16,7 @@ struct TestConfig {
 #[derive(Clone)]
 struct LocationReference {
   path: PathBuf,
-  baseurl: Arc<Mutex<Option<String>>>,
+  baseurl: Arc<Mutex<Option<PathBuf>>>,
 }
 
 impl LocationReference {
@@ -26,13 +26,28 @@ impl LocationReference {
       baseurl: Default::default(),
     }
   }
+  fn echo<'a>(&self, msg: &'a str) -> &'a str {
+    msg
+  }
+}
+
+impl AssetManager for LocationReference {
+  type Asset = Self;
+
+  fn assets(&self) -> Assets<Self::Asset> {
+    Assets::new(vec![std::borrow::Cow::Borrowed(self)], self.get_asset_flags())
+  }
+
+  fn set_baseurl(&self, baseurl: &Path) {
+    self.update_baseurl(baseurl)
+  }
 }
 
 impl Asset for LocationReference {
   type Options = ();
 
-  fn update_baseurl(&self, baseurl: &str) {
-    self.baseurl.lock().unwrap().replace(baseurl.to_owned());
+  fn update_baseurl(&self, baseurl: &Path) {
+    self.baseurl.lock().unwrap().replace(baseurl.to_path_buf());
   }
 
   fn fetch_with_progress(
@@ -133,7 +148,7 @@ impl Asset for LocationReference {
     Box::pin(async move {
       let mut file = tokio::fs::File::open(&path)
         .await
-        .map_err(|err| asset_container::Error::FileOpen(path.to_string_lossy().to_string(), err.to_string()))?;
+        .map_err(|err| asset_container::Error::FileOpen(path, err.to_string()))?;
       let mut bytes = Vec::new();
       file.read_to_end(&mut bytes).await?;
       Ok(bytes)
@@ -144,13 +159,17 @@ impl Asset for LocationReference {
 impl AssetManager for TestConfig {
   type Asset = LocationReference;
 
-  fn set_baseurl(&self, _baseurl: &str) {}
+  fn set_baseurl(&self, _baseurl: &Path) {}
 
   fn assets(&self) -> Assets<Self::Asset> {
-    let mut assets = Assets::default();
+    let mut assets = Assets::new(vec![], self.get_asset_flags());
     assets.push(&self.this);
     assets.push(&self.that);
     assets
+  }
+
+  fn get_asset_flags(&self) -> u32 {
+    AssetFlags::Lazy.bits()
   }
 }
 
@@ -161,7 +180,7 @@ async fn test_basics() -> Result<()> {
     that: LocationReference::new("../README.md"),
   };
   let mut assets = config.assets();
-  assets.set_baseurl("tests");
+  assets.set_baseurl("tests".as_ref());
   assert_eq!(assets.len(), 2);
   let mut progress = assets.pull_with_progress(());
   let mut num_progress = 0;
@@ -200,8 +219,38 @@ async fn test_extend() -> Result<()> {
     that: LocationReference::new("README.md"),
   };
   let mut assets = config.assets();
-  assets.extend(&mut config2.assets());
+  assets.extend(config2.assets());
   assert_eq!(assets.len(), 4);
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_flag_inheritance() -> Result<()> {
+  let config = TestConfig {
+    this: LocationReference::new("Cargo.toml"),
+    that: LocationReference::new("README.md"),
+  };
+
+  let assets = config.assets();
+  for asset in assets.iter() {
+    assert_eq!(asset.get_asset_flags(), 1)
+  }
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_deref() -> Result<()> {
+  let config = TestConfig {
+    this: LocationReference::new("Cargo.toml"),
+    that: LocationReference::new("README.md"),
+  };
+
+  let assets = config.assets();
+  for asset in assets.iter() {
+    assert_eq!(asset.echo("hello"), "hello")
+  }
 
   Ok(())
 }
