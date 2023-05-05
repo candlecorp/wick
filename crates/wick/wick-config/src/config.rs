@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 pub use app_config::*;
-use asset_container::{Asset, AssetManager};
+use asset_container::{Asset, AssetFlags, AssetManager};
 pub use common::*;
 pub use component_config::*;
 pub use test_config::*;
@@ -48,9 +48,8 @@ async fn fetch_all(
   for asset in asset_manager.assets().iter() {
     if asset.get_asset_flags() == AssetFlags::Lazy {
       continue;
-    } else {
-      asset.fetch(options.clone()).await?;
     }
+    asset.fetch(options.clone()).await?;
   }
   Ok(())
 }
