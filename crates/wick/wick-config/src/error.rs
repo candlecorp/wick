@@ -48,8 +48,8 @@ pub enum ManifestError {
   UnexpectedComponentType(config::ComponentKind, config::ComponentKind),
 
   /// Error deserializing YAML manifest.
-  #[error("Could not parse manifest {} as YAML: {1}", .0.as_ref().map_or("<raw>".to_owned(), |v|v.display().to_string()))]
-  YamlError(Option<std::path::PathBuf>, String),
+  #[error("Could not parse manifest {} as YAML: {1} at line {}, column {}", .0.as_ref().map_or("<raw>".to_owned(), |v|v.display().to_string()), .2.as_ref().map_or("unknown".to_owned(),|l|l.line().to_string()), .2.as_ref().map_or("unknown".to_owned(),|l|l.column().to_string()))]
+  YamlError(Option<std::path::PathBuf>, String, Option<serde_yaml::Location>),
 
   /// Error parsing or serializing Sender data.
   #[error("Error parsing or serializing Sender data: {0}")]
@@ -70,6 +70,14 @@ pub enum ManifestError {
   /// Parser error.
   #[error(transparent)]
   Parser(#[from] flow_expression_parser::Error),
+
+  /// Type Parser error.
+  #[error(transparent)]
+  TypeParser(#[from] wick_interface_types::ParserError),
+
+  /// Error parsing YAML as a string.
+  #[error("Error parsing YAML as a string")]
+  Utf8,
 
   /// Invalid authority format
   #[error("Invalid authority: {0}")]

@@ -4,10 +4,7 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-#[allow(clippy::trivially_copy_pass_by_ref)]
-fn is_false(b: &bool) -> bool {
-  !(*b)
-}
+use crate::{contents_equal, is_false, TypeDefinition};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Field {
@@ -206,19 +203,6 @@ pub struct ComponentSignature {
   pub config: Vec<TypeDefinition>,
 }
 
-/// Assert that two lists are equal, regardless of sort order.
-fn contents_equal<T: Eq + std::fmt::Debug>(a: &[T], b: &[T]) -> bool {
-  if a.len() != b.len() {
-    return false;
-  }
-  for i in a {
-    if !b.contains(i) {
-      return false;
-    }
-  }
-  true
-}
-
 impl PartialEq for ComponentSignature {
   fn eq(&self, other: &Self) -> bool {
     let types_equal = contents_equal(&self.types, &other.types);
@@ -285,117 +269,6 @@ pub struct WellKnownSchema {
   pub url: String,
   /// The schema itself.
   pub schema: ComponentSignature,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[must_use]
-/// A valid type definition.
-#[serde(tag = "type")]
-pub enum TypeDefinition {
-  /// A struct definition.
-  #[serde(rename = "struct")]
-  Struct(StructSignature),
-  /// An enum definition.
-  #[serde(rename = "enum")]
-  Enum(EnumSignature),
-}
-
-impl TypeDefinition {
-  /// Get the name of the type.
-  #[must_use]
-  pub fn name(&self) -> &str {
-    match self {
-      TypeDefinition::Struct(s) => &s.name,
-      TypeDefinition::Enum(e) => &e.name,
-    }
-  }
-}
-
-/// Signatures of enum type definitions.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
-#[must_use]
-pub struct EnumSignature {
-  /// The name of the enum.
-  pub name: String,
-  /// The variants in the enum.
-  #[serde(default, skip_serializing_if = "Vec::is_empty")]
-  pub variants: Vec<EnumVariant>,
-  /// Whether this type is imported.
-  #[serde(default, skip_serializing_if = "is_false")]
-  pub imported: bool,
-}
-
-impl EnumSignature {
-  /// Constructor for [EnumSignature]
-  pub fn new<T: AsRef<str>>(name: T, variants: Vec<EnumVariant>) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      variants,
-      imported: false,
-    }
-  }
-}
-
-impl PartialEq for EnumSignature {
-  fn eq(&self, other: &Self) -> bool {
-    self.name == other.name && self.variants == other.variants
-  }
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
-#[must_use]
-/// An enum variant definition
-pub struct EnumVariant {
-  /// The name of the variant.
-  pub name: String,
-  /// The index of the variant.
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub index: Option<u32>,
-  /// The optional value of the variant.
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub value: Option<String>,
-}
-
-impl EnumVariant {
-  /// Constructor for [EnumVariant]
-  pub fn new<T: AsRef<str>>(name: T, index: Option<u32>, value: Option<String>) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      index,
-      value,
-    }
-  }
-}
-
-/// Signatures of struct-like type definitions.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
-#[must_use]
-pub struct StructSignature {
-  /// The name of the struct.
-  pub name: String,
-  /// The fields in this struct.
-  #[serde(default, skip_serializing_if = "Vec::is_empty")]
-  pub fields: Vec<Field>,
-  /// Whether this type is imported.
-  #[serde(default, skip_serializing_if = "is_false")]
-  pub imported: bool,
-}
-
-impl PartialEq for StructSignature {
-  fn eq(&self, other: &Self) -> bool {
-    self.name == other.name && contents_equal(&self.fields, &other.fields)
-  }
-}
-
-impl StructSignature {
-  /// Constructor for [StructSignature]
-  pub fn new<T: AsRef<str>>(name: T, fields: Vec<Field>) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      fields,
-      imported: false,
-    }
-  }
 }
 
 /// An enum representing the types of components that can be hosted.
@@ -596,12 +469,12 @@ impl std::fmt::Display for TypeSignature {
       TypeSignature::String => f.write_str("string"),
       TypeSignature::Datetime => f.write_str("datetime"),
       TypeSignature::Bytes => f.write_str("bytes"),
-      TypeSignature::Custom(_) => todo!(),
+      TypeSignature::Custom(v) => f.write_str(v),
       TypeSignature::Ref { reference } => todo!(),
       TypeSignature::Stream { ty } => todo!(),
-      TypeSignature::List { ty } => todo!(),
-      TypeSignature::Optional { ty } => todo!(),
-      TypeSignature::Map { key, value } => todo!(),
+      TypeSignature::List { ty } => write!(f, "{}[]", ty),
+      TypeSignature::Optional { ty } => write!(f, "{}?", ty),
+      TypeSignature::Map { key, value } => write!(f, "{{{}:{}}}", key, value),
       TypeSignature::Link { schemas } => todo!(),
       TypeSignature::Object => f.write_str("object"),
       TypeSignature::AnonymousStruct(_) => todo!(),

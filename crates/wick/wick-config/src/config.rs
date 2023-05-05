@@ -18,7 +18,7 @@ use tracing::debug;
 pub use types_config::*;
 pub use wick_asset_reference::{AssetReference, FetchOptions};
 
-use crate::utils::{from_bytes, from_yaml};
+use crate::utils::from_yaml;
 use crate::{v0, v1, Error, Resolver};
 
 #[derive(Debug, Clone, Copy)]
@@ -107,14 +107,14 @@ impl WickConfiguration {
 
   pub fn load_from_bytes(bytes: &[u8], source: &Option<PathBuf>) -> Result<Self, Error> {
     debug!(source=?source,"Trying to parse manifest bytes as yaml");
-    let raw: serde_yaml::Value = from_bytes(bytes, source)?;
-    resolve_configuration(raw, source)
+    let string = &String::from_utf8(bytes.to_vec()).map_err(|_| Error::Utf8)?;
+
+    resolve_configuration(string, source)
   }
 
   pub fn from_yaml(src: &str, source: &Option<PathBuf>) -> Result<Self, Error> {
     debug!(source=?source,"Trying to parse manifest as yaml");
-    let raw: serde_yaml::Value = from_yaml(src, source)?;
-    resolve_configuration(raw, source)
+    resolve_configuration(src, source)
   }
 
   pub fn kind(&self) -> ConfigurationKind {
@@ -221,7 +221,9 @@ impl WickConfiguration {
   }
 }
 
-fn resolve_configuration(raw: serde_yaml::Value, source: &Option<PathBuf>) -> Result<WickConfiguration, Error> {
+fn resolve_configuration(src: &str, source: &Option<PathBuf>) -> Result<WickConfiguration, Error> {
+  let raw: serde_yaml::Value = from_yaml(src, source)?;
+
   debug!("Yaml parsed successfully");
   let raw_version = raw.get("format");
   let raw_kind = raw.get("kind");
@@ -233,16 +235,16 @@ fn resolve_configuration(raw: serde_yaml::Value, source: &Option<PathBuf>) -> Re
       .as_i64()
       .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) })
   };
-
+  // re-parse the yaml into the correct version from string again for location info.
   let manifest = match version {
     0 => {
-      let host_config =
-        serde_yaml::from_value::<v0::HostManifest>(raw).map_err(|e| Error::YamlError(source.clone(), e.to_string()))?;
+      let host_config = serde_yaml::from_str::<v0::HostManifest>(src)
+        .map_err(|e| Error::YamlError(source.clone(), e.to_string(), e.location()))?;
       Ok(WickConfiguration::Component(host_config.try_into()?))
     }
     1 => {
-      let base_config =
-        serde_yaml::from_value::<v1::WickConfig>(raw).map_err(|e| Error::YamlError(source.clone(), e.to_string()))?;
+      let base_config = serde_yaml::from_str::<v1::WickConfig>(src)
+        .map_err(|e| Error::YamlError(source.clone(), e.to_string(), e.location()))?;
       let mut config: WickConfiguration = base_config.try_into()?;
       if let Some(src) = source {
         config.set_source(src);

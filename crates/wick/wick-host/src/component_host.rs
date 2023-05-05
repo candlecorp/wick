@@ -98,8 +98,10 @@ impl ComponentHost {
       engine_builder = engine_builder.with_seed(seed);
     }
     engine_builder = engine_builder.namespace(self.get_host_id());
-    engine_builder = engine_builder.allow_latest(self.manifest.host().allow_latest);
-    engine_builder = engine_builder.allow_insecure(self.manifest.host().insecure_registries.clone());
+    engine_builder = engine_builder.allow_latest(self.manifest.allow_latest());
+    if let Some(insecure) = self.manifest.insecure_registries() {
+      engine_builder = engine_builder.allow_insecure(insecure.to_vec());
+    }
 
     let engine = engine_builder.build().await?;
 
@@ -110,9 +112,11 @@ impl ComponentHost {
   async fn start_servers(&mut self) -> Result<ServerState> {
     let nuid = self.get_engine_uid()?;
 
+    let host_config = self.manifest.host().cloned().unwrap_or_default();
+
     #[allow(clippy::manual_map)]
     let options = HostOptions {
-      rpc: self.manifest.host().rpc.as_ref().map(|config| ServerOptions {
+      rpc: host_config.rpc.as_ref().map(|config| ServerOptions {
         port: config.port,
         address: config.address,
         pem: config.pem.clone(),
@@ -121,7 +125,7 @@ impl ComponentHost {
         enabled: config.enabled,
       }),
       id: self.get_host_id().to_owned(),
-      timeout: self.manifest.host().timeout,
+      timeout: host_config.timeout,
     };
 
     let collection = from_registry(nuid);
@@ -284,6 +288,7 @@ mod test {
   async fn request_rpc_server() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
     let mut def = WickConfiguration::load_from_file(&file).await?.try_component_config()?;
+
     def.host_mut().rpc = Some(HttpConfig {
       enabled: true,
       port: None,

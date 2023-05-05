@@ -16,14 +16,16 @@ import:
       ref: ./types-config.wick
 types:
   - name: LocalStruct
-    type: struct
+    kind: wick/type/struct@v1
+
+    description: 'hey'
     fields:
       - name: field1
         type: string
       - name: inner
         type: LocalStructInner
   - name: LocalStructInner
-    type: struct
+    kind: wick/type/struct@v1
     fields:
       - name: field1
         type: string

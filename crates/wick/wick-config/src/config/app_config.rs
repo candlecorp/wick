@@ -32,7 +32,7 @@ pub struct AppConfiguration {
   pub(crate) resources: HashMap<String, ResourceBinding>,
   pub(crate) triggers: Vec<TriggerDefinition>,
   #[asset(skip)]
-  pub(crate) host: HostConfig,
+  pub(crate) host: Option<HostConfig>,
   #[asset(skip)]
   pub(crate) type_cache: ImportCache,
   #[asset(skip)]

@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use flow_expression_parser::ast::{self, InstanceTarget};
 use flow_expression_parser::parse_id;
+use option_utils::OptionUtils;
 use serde_json::Value;
 
 use crate::error::ManifestError;
@@ -37,7 +38,7 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
         })
         .collect::<Result<HashMap<_, _>>>()?,
       component: config::ComponentImplementation::Composite(composite),
-      host: def.host.try_into()?,
+      host: def.host.try_map_into()?,
       name: def.network.name,
       tests: Vec::new(),
       labels: def.network.labels,

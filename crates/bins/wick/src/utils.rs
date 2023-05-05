@@ -11,14 +11,11 @@ pub(crate) fn merge_config(
   local_cli_opts: &crate::oci::Options,
   server_cli_opts: Option<DefaultCliOptions>,
 ) -> ComponentConfiguration {
-  debug!("local_cli_opts.allow_latest {:?}", local_cli_opts.allow_latest);
-  debug!("def.host.allow_latest {:?}", def.host().allow_latest);
-
   let mut merged_manifest = def.clone();
-  let mut host_config = merged_manifest.host_mut();
+  let host_config = merged_manifest.host_mut();
   host_config.allow_latest = local_cli_opts.allow_latest || host_config.allow_latest;
   host_config.insecure_registries = vec![
-    def.host().insecure_registries.clone(),
+    host_config.insecure_registries.clone(),
     local_cli_opts.insecure_registries.clone(),
   ]
   .concat();
@@ -58,6 +55,7 @@ pub(crate) fn merge_config(
       });
     };
   }
+
   merged_manifest
 }
 

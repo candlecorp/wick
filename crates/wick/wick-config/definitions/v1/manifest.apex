@@ -21,7 +21,7 @@ type AppConfiguration @default @tagged("wick/app@v1") {
   name: string,
 
   "Configuration that controls how this application runs within a host."
-  host: HostConfig,
+  host: HostConfig?,
 
   "Components to import into the application's scope."
   import: [ImportBinding],
@@ -219,7 +219,7 @@ type ComponentConfiguration @tagged("wick/component@v1") {
   metadata: Metadata?
 
   "Configuration for when wick hosts this component as a service."
-  host: HostConfig
+  host: HostConfig?
 
   "Resources that the application can access."
   resources: [ResourceBinding],
@@ -445,11 +445,79 @@ type OperationDefinition {
   outputs: [Field],
 }
 
-"Field definition. This is not technically an any type, it is a wick interface type field."
-alias Field = any
+"Field definition with a name and type signature"
+type Field {
+  "The name of the field."
+  name: string @required
+  "The type signature of the field."
+  type: TypeSignature @rename("ty") @required
+  "The description of the field."
+  description: string?,
+}
 
-"Type definition. This is not technically an any type, it is a wick interface type definition."
-alias TypeDefinition = any
+union TypeSignature @shortform @shortformonly = I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | Bool | StringType | Optional | Datetime | Bytes | Custom | List | Map | Object
+
+type I8 @nameonly("i8") {}
+type I16 @nameonly("i16") {}
+type I32 @nameonly("i32") {}
+type I64 @nameonly("i64") {}
+type U8 @nameonly("u8") {}
+type U16 @nameonly("u16") {}
+type U32 @nameonly("u32") {}
+type U64 @nameonly("u64") {}
+type F32 @nameonly("f32") {}
+type F64 @nameonly("f64") {}
+type Bool @nameonly("i8") {}
+type StringType @nameonly("string") {}
+type Datetime @nameonly("datetime") {}
+type Bytes @nameonly("bytes") {}
+type Custom {
+  "The name of the custom type."
+  name: string
+}
+type Optional  {
+  type: TypeSignature @rename("ty") @required @recursive
+}
+type List {
+  type: TypeSignature @rename("ty") @required @recursive
+}
+type Map {
+  key: TypeSignature @required @recursive
+  value: TypeSignature @required @recursive
+}
+type Object @nameonly("object") {}
+
+"Struct or Enum type definition."
+union TypeDefinition = StructSignature | EnumSignature
+
+type StructSignature @tagged("wick/type/struct@v1") {
+  "The name of the struct."
+   name: string,
+  "The fields in this struct."
+   fields: [Field],
+  "The description of the struct."
+  description: string?,
+}
+
+type EnumSignature @tagged("wick/type/enum@v1") {
+  "The name of the enum."
+  name: string,
+  "The variants in the enum."
+  variants: [EnumVariant],
+  "The description of the enum."
+  description: string?,
+}
+
+type EnumVariant {
+  "The name of the variant."
+  name: string,
+  "The index of the variant."
+  index: u32?,
+  "The optional value of the variant."
+  value: string?,
+  "The description of the variant."
+  description: string?,
+}
 
 "An identifier bound to a component's operation."
 type InstanceBinding {

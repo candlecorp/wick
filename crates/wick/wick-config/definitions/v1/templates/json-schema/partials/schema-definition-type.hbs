@@ -1,3 +1,16 @@
+
+{{#withAnnotation "nameonly"}}
+"{{../name.value}}": {
+  "$anchor": "#v1/{{../name.value}}",
+  "additionalProperties": false,
+  "type":"string",
+{{#if arguments.0.value.value}}
+  "enum": ["{{arguments.0.value.value}}"]
+{{else}}
+  "enum": ["{{../name.value}}"]
+{{/if}}
+},
+{{else}}
 "{{name.value}}": {
   "$anchor": "#v1/{{name.value}}",
   "additionalProperties": false,
@@ -43,3 +56,4 @@
       {{~/each~}}
   ]
 },
+{{/withAnnotation}}

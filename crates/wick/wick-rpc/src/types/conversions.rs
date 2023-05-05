@@ -409,13 +409,6 @@ impl From<rpc::simple_type::PrimitiveType> for rpc::type_signature::Signature {
   }
 }
 
-// impl TryFrom<rpc::Field> for wick::Field {
-//   type Error = RpcError;
-//   fn try_from(t: rpc::Field) -> std::result::Result<Self, Self::Error> {
-//     Ok(Self::new(t.name, t.r#type.try_into()?))
-//   }
-// }
-
 impl TryFrom<rpc::StructSignature> for wick::StructSignature {
   type Error = RpcError;
   fn try_from(v: rpc::StructSignature) -> Result<Self> {
@@ -423,6 +416,7 @@ impl TryFrom<rpc::StructSignature> for wick::StructSignature {
       name: v.name,
       fields: convert_list(v.fields)?,
       imported: false,
+      description: Some(v.description),
     })
   }
 }
@@ -480,6 +474,7 @@ impl TryFrom<wick::Field> for rpc::Field {
     Ok(rpc::Field {
       name: v.name,
       r#type: Some(v.ty.try_into()?),
+      description: v.description.unwrap_or_default(),
     })
   }
 }
@@ -497,6 +492,7 @@ impl TryFrom<wick::StructSignature> for rpc::StructSignature {
     Ok(Self {
       name: v.name,
       fields: convert_list(v.fields)?,
+      description: v.description.unwrap_or_default(),
     })
   }
 }
@@ -506,6 +502,7 @@ impl TryFrom<wick::EnumSignature> for rpc::EnumSignature {
   fn try_from(v: wick::EnumSignature) -> Result<Self> {
     Ok(Self {
       name: v.name,
+      description: v.description.unwrap_or_default(),
       values: v
         .variants
         .into_iter()
@@ -522,6 +519,7 @@ impl TryFrom<wick::EnumVariant> for rpc::EnumVariant {
       name: v.name,
       index: v.index,
       value: v.value,
+      description: v.description.unwrap_or_default(),
     })
   }
 }

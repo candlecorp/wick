@@ -78,7 +78,9 @@
 #[macro_use]
 mod parser;
 #[cfg(feature = "parser")]
-pub use parser::parse;
+pub use parser::{parse, ParserError};
+mod type_definition;
+pub use type_definition::{EnumSignature, EnumVariant, StructSignature, TypeDefinition};
 
 /// Signatures of Wick types.
 mod signatures;
@@ -87,16 +89,30 @@ pub use signatures::{
   ComponentMetadata,
   ComponentSignature,
   ComponentVersion,
-  EnumSignature,
-  EnumVariant,
   Field,
   HostedType,
   OperationSignature,
-  StructSignature,
-  TypeDefinition,
   TypeSignature,
   WellKnownSchema,
 };
 
 #[macro_use]
 mod macros;
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_false(b: &bool) -> bool {
+  !(*b)
+}
+
+/// Assert that two lists are equal, regardless of sort order.
+fn contents_equal<T: Eq + std::fmt::Debug>(a: &[T], b: &[T]) -> bool {
+  if a.len() != b.len() {
+    return false;
+  }
+  for i in a {
+    if !b.contains(i) {
+      return false;
+    }
+  }
+  true
+}

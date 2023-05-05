@@ -1,7 +1,10 @@
 
 
-
+{{#ifCond name.value "==" "TypeSignature"}}
+#[derive(Debug, Clone, serde_with::DeserializeFromStr, Serialize, PartialEq)]
+{{else}}
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+{{/ifCond}}
 #[serde(deny_unknown_fields)]
 {{#withAnnotation "untagged"}}
 #[serde(untagged)]
