@@ -23,6 +23,11 @@ impl OperationConfig {
   pub fn get(&self, key: &str) -> Option<&Value> {
     self.0.get(key)
   }
+
+  /// Get an iterator over the keys and values in the configuration.
+  pub fn iter(&self) -> impl Iterator<Item = (&String, &Value)> {
+    self.0.iter()
+  }
 }
 
 impl From<HashMap<String, Value>> for OperationConfig {

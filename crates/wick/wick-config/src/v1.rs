@@ -1315,6 +1315,11 @@ pub(crate) struct SqlOperationDefinition {
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
+  /// Any configuration required by the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
   /// Types of the inputs to the operation.
 
   #[serde(default)]
@@ -1366,6 +1371,11 @@ pub(crate) struct HttpClientOperationDefinition {
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
+  /// Any configuration required by the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
   /// Types of the inputs to the operation.
 
   #[serde(default)]
@@ -1380,6 +1390,11 @@ pub(crate) struct HttpClientOperationDefinition {
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) codec: Option<Codec>,
+  /// Any headers to add to the request.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
+  pub(crate) headers: HashMap<String, Vec<String>>,
   /// The body to send, processed as a structured JSON liquid template.
 
   #[serde(default)]

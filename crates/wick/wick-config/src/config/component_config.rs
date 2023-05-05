@@ -19,7 +19,7 @@ use crate::utils::RwOption;
 use crate::{config, v1, Error, Resolver, Result};
 
 #[derive(Debug, Default, Clone, Builder, derive_asset_container::AssetManager)]
-#[builder(derive(Debug))]
+#[builder(derive(Debug), setter(into))]
 #[asset(asset(AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
@@ -27,10 +27,10 @@ pub struct ComponentConfiguration {
   #[builder(default = "ComponentImplementation::Composite(CompositeComponentImplementation::default())")]
   pub(crate) component: ComponentImplementation,
   #[asset(skip)]
-  #[builder(setter(into, strip_option), default)]
+  #[builder(setter(strip_option), default)]
   pub name: Option<String>,
   #[asset(skip)]
-  #[builder(setter(into, strip_option), default)]
+  #[builder(setter(strip_option), default)]
   pub(crate) source: Option<PathBuf>,
   #[asset(skip)]
   #[builder(default)]

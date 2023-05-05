@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use crate::config;
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager)]
 #[asset(asset(config::AssetReference))]
+#[builder(setter(into))]
 #[must_use]
 /// A component made out of other components
 pub struct HttpClientComponentConfig {
@@ -57,11 +60,16 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Builder, PartialEq)]
+#[builder(setter(into))]
 #[must_use]
 pub struct HttpClientOperationDefinition {
   /// The name of the operation.
   pub name: String,
+
+  /// The configuration the operation needs.
+  #[builder(default)]
+  pub config: Vec<wick_interface_types::Field>,
 
   /// Types of the inputs to the operation.
   pub inputs: Vec<wick_interface_types::Field>,
@@ -70,9 +78,16 @@ pub struct HttpClientOperationDefinition {
   pub path: String,
 
   /// The codec to use when encoding/decoding data.
+  #[builder(default)]
   pub codec: Option<Codec>,
 
+  /// The body to send with the request.
+  #[builder(default)]
   pub body: Option<liquid_json::LiquidJsonValue>,
+
+  /// The headers to send with the request.
+  #[builder(default)]
+  pub headers: HashMap<String, Vec<String>>,
 
   /// The HTTP method to use.
   pub method: HttpMethod,
@@ -80,15 +95,18 @@ pub struct HttpClientOperationDefinition {
 
 impl HttpClientOperationDefinition {
   /// Create a new GET operation.
-  pub fn new_get(name: impl AsRef<str>, path: impl AsRef<str>, inputs: Vec<wick_interface_types::Field>) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      inputs,
-      path: path.as_ref().to_owned(),
-      method: HttpMethod::Get,
-      body: Default::default(),
-      codec: Default::default(),
-    }
+  pub fn new_get(
+    name: impl AsRef<str>,
+    path: impl AsRef<str>,
+    inputs: Vec<wick_interface_types::Field>,
+  ) -> HttpClientOperationDefinitionBuilder {
+    let mut builder = HttpClientOperationDefinitionBuilder::default();
+    builder
+      .name(name.as_ref())
+      .inputs(inputs)
+      .path(path.as_ref())
+      .method(HttpMethod::Get);
+    builder
   }
 
   /// Create a new POST operation.
@@ -97,15 +115,15 @@ impl HttpClientOperationDefinition {
     path: impl AsRef<str>,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
-  ) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      inputs,
-      path: path.as_ref().to_owned(),
-      method: HttpMethod::Post,
-      body,
-      codec: Default::default(),
-    }
+  ) -> HttpClientOperationDefinitionBuilder {
+    let mut builder = HttpClientOperationDefinitionBuilder::default();
+    builder
+      .name(name.as_ref())
+      .inputs(inputs)
+      .path(path.as_ref())
+      .body(body)
+      .method(HttpMethod::Post);
+    builder
   }
 
   /// Create a new PUT operation.
@@ -114,15 +132,15 @@ impl HttpClientOperationDefinition {
     path: impl AsRef<str>,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
-  ) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      inputs,
-      path: path.as_ref().to_owned(),
-      method: HttpMethod::Put,
-      body,
-      codec: Default::default(),
-    }
+  ) -> HttpClientOperationDefinitionBuilder {
+    let mut builder = HttpClientOperationDefinitionBuilder::default();
+    builder
+      .name(name.as_ref())
+      .inputs(inputs)
+      .path(path.as_ref())
+      .body(body)
+      .method(HttpMethod::Put);
+    builder
   }
 
   /// Create a new DELETE operation.
@@ -131,15 +149,15 @@ impl HttpClientOperationDefinition {
     path: impl AsRef<str>,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
-  ) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      inputs,
-      path: path.as_ref().to_owned(),
-      method: HttpMethod::Delete,
-      body,
-      codec: Default::default(),
-    }
+  ) -> HttpClientOperationDefinitionBuilder {
+    let mut builder = HttpClientOperationDefinitionBuilder::default();
+    builder
+      .name(name.as_ref())
+      .inputs(inputs)
+      .path(path.as_ref())
+      .body(body)
+      .method(HttpMethod::Delete);
+    builder
   }
 }
 

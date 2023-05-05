@@ -606,6 +606,9 @@ type SqlOperationDefinition {
   "The name of the operation."
   name: string
 
+  "Any configuration required by the operation."
+  with: [Field],
+
   "Types of the inputs to the operation."
   inputs: [Field],
 
@@ -636,6 +639,9 @@ type HttpClientOperationDefinition {
   "The name of the operation."
   name: string
 
+  "Any configuration required by the operation."
+  with: [Field],
+
   "Types of the inputs to the operation."
   inputs: [Field],
 
@@ -644,6 +650,9 @@ type HttpClientOperationDefinition {
 
   "The codec to use when encoding/decoding data."
   codec: Codec?
+
+  "Any headers to add to the request."
+  headers: {string: [string]}
 
   "The body to send, processed as a structured JSON liquid template."
   body: LiquidJsonValue?

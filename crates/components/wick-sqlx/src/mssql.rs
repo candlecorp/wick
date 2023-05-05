@@ -25,7 +25,7 @@ mod integration_test {
   use flow_component::{panic_callback, Component};
   use futures::StreamExt;
   use serde_json::json;
-  use wick_config::config::components::SqlOperationDefinition;
+  use wick_config::config::components::SqlOperationDefinitionBuilder;
   use wick_config::config::{Metadata, ResourceDefinition};
   use wick_interface_types::{Field, TypeSignature};
   use wick_packet::{packet_stream, Invocation, Packet};
@@ -46,13 +46,15 @@ mod integration_test {
       tls: false,
       operations: vec![],
     };
-    let op = SqlOperationDefinition {
-      name: "test".to_owned(),
-      query: "select id,name from users where id=$1;".to_owned(),
-      inputs: vec![Field::new("input", TypeSignature::I32)],
-      outputs: vec![Field::new("output", TypeSignature::Object)],
-      arguments: vec!["input".to_owned()],
-    };
+    let op = SqlOperationDefinitionBuilder::default()
+      .name("test")
+      .query("select id,name from users where id=$1;")
+      .inputs([Field::new("input", TypeSignature::I32)])
+      .outputs([Field::new("output", TypeSignature::Object)])
+      .arguments(["input".to_owned()])
+      .build()
+      .unwrap();
+
     config.operations.push(op);
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource(

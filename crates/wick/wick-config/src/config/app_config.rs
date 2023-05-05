@@ -18,25 +18,35 @@ use crate::import_cache::{setup_cache, ImportCache};
 use crate::utils::RwOption;
 use crate::{config, v1, Resolver, Result};
 
-#[derive(Debug, Clone, Default, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, Default, Builder, derive_asset_container::AssetManager)]
 #[asset(asset(AssetReference))]
+#[builder(setter(into))]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct AppConfiguration {
   #[asset(skip)]
   pub name: String,
   #[asset(skip)]
+  #[builder(setter(strip_option), default)]
   pub(crate) source: Option<PathBuf>,
+  #[builder(setter(strip_option), default)]
   pub(crate) metadata: Option<config::Metadata>,
+  #[builder(default)]
   pub(crate) import: HashMap<String, ImportBinding>,
+  #[builder(default)]
   pub(crate) resources: HashMap<String, ResourceBinding>,
+  #[builder(default)]
   pub(crate) triggers: Vec<TriggerDefinition>,
   #[asset(skip)]
+  #[builder(setter(strip_option), default)]
   pub(crate) host: Option<HostConfig>,
   #[asset(skip)]
+  #[builder(setter(skip))]
   pub(crate) type_cache: ImportCache,
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
+  #[builder(setter(strip_option), default)]
   pub package: Option<PackageConfig>,
 }
 

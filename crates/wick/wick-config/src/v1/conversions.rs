@@ -1322,6 +1322,7 @@ impl TryFrom<v1::SqlOperationDefinition> for components::SqlOperationDefinition 
       outputs: value.outputs.try_map_into()?,
       query: value.query,
       arguments: value.arguments,
+      config: value.with.try_map_into()?,
     })
   }
 }
@@ -1336,6 +1337,8 @@ impl TryFrom<v1::HttpClientOperationDefinition> for components::HttpClientOperat
       path: value.path,
       body: value.body,
       method: value.method.into(),
+      config: value.with.try_map_into()?,
+      headers: value.headers,
     })
   }
 }
@@ -1393,6 +1396,7 @@ impl TryFrom<components::SqlOperationDefinition> for v1::SqlOperationDefinition 
       outputs: value.outputs.try_map_into()?,
       query: value.query,
       arguments: value.arguments,
+      with: value.config.try_map_into()?,
     })
   }
 }
@@ -1407,6 +1411,8 @@ impl TryFrom<components::HttpClientOperationDefinition> for v1::HttpClientOperat
       body: value.body,
       codec: value.codec.map_into(),
       method: value.method.into(),
+      with: value.config.try_map_into()?,
+      headers: value.headers,
     })
   }
 }
