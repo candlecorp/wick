@@ -20,7 +20,8 @@ RUN tar -xzf wick.tar.gz
 FROM ubuntu:latest
 LABEL org.opencontainers.image.source="https://github.com/candlecorp/wick"
 
-COPY --from=builder /usr/share/ca-certificates /usr/share/ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates
+
 COPY --from=builder /opt/wick /usr/bin/wick
 RUN chmod +x /usr/bin/wick
 WORKDIR /app
