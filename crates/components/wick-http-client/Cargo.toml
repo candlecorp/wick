@@ -10,9 +10,9 @@ description = "SQL Database component for the wick project."
 [features]
 
 [dependencies]
-wick-packet = { workspace = true, features = ["rt-tokio"] }
+wick-packet = { workspace = true, features = ["rt-tokio", "invocation"] }
 wick-interface-http = { workspace = true }
-flow-component = { workspace = true }
+flow-component = { workspace = true, features = ["traits"] }
 wick-config = { workspace = true }
 wick-interface-types = { workspace = true }
 #

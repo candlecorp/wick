@@ -6,7 +6,7 @@ use wick_interface_types::TypeDefinition;
 
 use super::OperationSignature;
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager)]
 #[asset(asset(crate::config::AssetReference))]
 #[must_use]
 pub struct TypesConfiguration {

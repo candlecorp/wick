@@ -5,7 +5,7 @@ use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use futures::{Stream, StreamExt, TryStreamExt};
 use parking_lot::Mutex;
 use reqwest::{ClientBuilder, Method, Request, RequestBuilder};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use url::Url;
 use wick_config::config::components::{Codec, HttpClientComponentConfig, HttpClientOperationDefinition, HttpMethod};
 use wick_config::config::{Metadata, UrlResource};
@@ -73,6 +73,7 @@ async fn handle(
   opdef: Option<HttpClientOperationDefinition>,
   tx: FluxChannel<Packet, wick_packet::Error>,
   invocation: Invocation,
+  config: Option<OperationConfig>,
   codec: Option<Codec>,
   path_template: Option<Arc<(String, String)>>,
   stream: PacketStream,
@@ -102,10 +103,16 @@ async fn handle(
       }
     };
     trace!(inputs = ?inputs, "http:inputs");
-    let inputs: Value = inputs
+    let mut inputs: Map<String, Value> = inputs
       .into_iter()
       .map(|(k, v)| (k, v.deserialize_generic().unwrap()))
       .collect();
+    if let Some(config) = &config {
+      for (k, v) in config.iter() {
+        inputs.insert(k.clone(), v.clone());
+      }
+    }
+    let inputs = Value::Object(inputs);
     trace!(inputs = ?inputs, "http:inputs");
 
     let body = match &opdef.body {
@@ -138,7 +145,7 @@ async fn handle(
       HttpMethod::Delete => Request::new(Method::DELETE, request_url),
     };
     let request_builder = RequestBuilder::from_parts(client.clone(), request);
-    let request_builder = if let Some(body) = body {
+    let mut request_builder = if let Some(body) = body {
       if codec == Codec::Json {
         request_builder.json(&body)
       } else {
@@ -147,6 +154,15 @@ async fn handle(
     } else {
       request_builder
     };
+    for (header, values) in &opdef.headers {
+      for value in values {
+        let Ok(value) =  liquid_json::render_string(value, &inputs) else {
+          let _ = tx.error(wick_packet::Error::component_error(format!("Can't render template {}", value)));
+          break 'outer;
+        };
+        request_builder = request_builder.header(header, value);
+      }
+    }
     let response = match request_builder.send().await {
       Ok(r) => r,
       Err(e) => {
@@ -173,7 +189,7 @@ impl Component for HttpClientComponent {
     &self,
     invocation: Invocation,
     stream: PacketStream,
-    _data: Option<OperationConfig>,
+    data: Option<OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let ctx = self.ctx.clone();
@@ -195,6 +211,7 @@ impl Component for HttpClientComponent {
         opdef,
         tx.clone(),
         invocation,
+        data,
         codec,
         path_template,
         stream,
@@ -320,20 +337,29 @@ mod test {
       codec: Default::default(),
       operations: vec![],
     };
-    config.operations.push(HttpClientOperationDefinition::new_get(
-      GET_OP,
-      "/get?query1={{input}}",
-      vec![Field::new("input", TypeSignature::String)],
-    ));
-    config.operations.push(HttpClientOperationDefinition::new_post(
-      POST_OP,
-      "/post?query1={{input}}",
-      vec![
-        Field::new("input", TypeSignature::String),
-        Field::new("number", TypeSignature::I64),
-      ],
-      Some(json!({"key": "{{input}}","other":"{{number}}"}).into()),
-    ));
+    config.operations.push(
+      HttpClientOperationDefinition::new_get(
+        GET_OP,
+        "/get?query1={{input}}&query2={{secret}}",
+        vec![Field::new("input", TypeSignature::String)],
+      )
+      .config([Field::new("secret", TypeSignature::String)])
+      .build()
+      .unwrap(),
+    );
+    config.operations.push(
+      HttpClientOperationDefinition::new_post(
+        POST_OP,
+        "/post?query1={{input}}",
+        vec![
+          Field::new("input", TypeSignature::String),
+          Field::new("number", TypeSignature::I64),
+        ],
+        Some(json!({"key": "{{input}}","other":"{{number}}"}).into()),
+      )
+      .build()
+      .unwrap(),
+    );
 
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource(
@@ -377,8 +403,9 @@ mod test {
       let comp = get_component(app_config, component_config).await;
       let invocation = Invocation::test("test_get_request", Entity::local(GET_OP), Default::default())?;
       let packets = packet_stream!(("input", "SENTINEL"));
+      let config = json!({"secret":"0xDEADBEEF"});
       let mut stream = comp
-        .handle(invocation, packets, None, panic_callback())
+        .handle(invocation, packets, Some(config.try_into()?), panic_callback())
         .await?
         .collect::<Vec<_>>()
         .await;
@@ -386,7 +413,7 @@ mod test {
       assert_eq!(stream.pop().unwrap(), Ok(Packet::done("body")));
       let response = stream.pop().unwrap().unwrap().deserialize_generic().unwrap();
       let response = response.get("args").unwrap();
-      assert_eq!(response, &json!( {"query1": "SENTINEL"}));
+      assert_eq!(response, &json!( {"query1": "SENTINEL","query2": "0xDEADBEEF"}));
       assert_eq!(stream.pop().unwrap(), Ok(Packet::done("response")));
       let response: HttpResponse = stream.pop().unwrap().unwrap().deserialize().unwrap();
       assert_eq!(response.version, HttpVersion::Http11);

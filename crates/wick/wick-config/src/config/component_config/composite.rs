@@ -45,7 +45,7 @@ impl From<FlowOperation> for wick_interface_types::OperationSignature {
   }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Builder, Default)]
 /// The SchematicDefinition struct is a normalized representation of a Wick [SchematicManifest].
 /// It handles the job of translating manifest versions into a consistent data structure.
 #[must_use]

@@ -1,7 +1,8 @@
 use crate::config;
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager)]
 #[asset(asset(config::AssetReference))]
+#[builder(setter(into))]
 /// A component made out of other components
 pub struct SqlComponentConfig {
   /// The TcpPort reference to listen on for connections.
@@ -35,9 +36,9 @@ impl From<SqlOperationDefinition> for wick_interface_types::OperationSignature {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager)]
 #[asset(asset(config::AssetReference))]
-
+#[builder(setter(into))]
 pub struct SqlOperationDefinition {
   /// The name of the operation.
   #[asset(skip)]
@@ -50,6 +51,11 @@ pub struct SqlOperationDefinition {
   /// Types of the outputs to the operation.
   #[asset(skip)]
   pub outputs: Vec<wick_interface_types::Field>,
+
+  /// The configuration the operation needs.
+  #[asset(skip)]
+  #[builder(default)]
+  pub config: Vec<wick_interface_types::Field>,
 
   /// The query to execute.
   #[asset(skip)]

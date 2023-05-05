@@ -2175,6 +2175,13 @@
             "description": "The name of the operation.",
             "type": "string"
           },
+          "with": {
+            "description": "Any configuration required by the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
           "inputs": {
             "description": "Types of the inputs to the operation.",
             "type": "array",
@@ -2243,6 +2250,13 @@
             "description": "The name of the operation.",
             "type": "string"
           },
+          "with": {
+            "description": "Any configuration required by the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
           "inputs": {
             "description": "Types of the inputs to the operation.",
             "type": "array",
@@ -2258,6 +2272,18 @@
             "description": "The codec to use when encoding/decoding data.",
             "required": false,
             "$ref": "#/$defs/v1/Codec"
+          },
+          "headers": {
+            "description": "Any headers to add to the request.",
+            "type": "object",
+            "patternProperties": {
+              "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "body": {
             "description": "The body to send, processed as a structured JSON liquid template.",
