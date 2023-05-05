@@ -61,7 +61,7 @@ pub(crate) fn trait_signature(config: &mut config::Config, op: &OperationSignatu
       #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
       pub trait #trait_name {
         #[allow(unused)]
-        async fn #impl_name(#(#inputs),*, outputs: #outputs_name, ctx: wick_component::flow_component::Context<#config_id>) -> Result<()> {unimplemented!()}
+        async fn #impl_name(#(#inputs,)* outputs: #outputs_name, ctx: wick_component::flow_component::Context<#config_id>) -> Result<()> {unimplemented!()}
       }
     },
   );

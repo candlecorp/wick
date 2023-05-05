@@ -82,9 +82,8 @@ impl Component for WasmComponent {
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, config=?data, "wasm invoke");
-    let operation = invocation.target.operation_id();
 
-    let outputs = self.host.call(operation, stream, data);
+    let outputs = self.host.call(invocation, stream, data);
 
     Box::pin(async move { outputs.map_err(ComponentError::new) })
   }

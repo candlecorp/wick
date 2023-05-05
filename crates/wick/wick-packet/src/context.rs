@@ -60,13 +60,14 @@ where
   T: std::fmt::Debug + Serialize,
 {
   pub config: T,
+  pub seed: Option<u64>,
 }
 
 impl<T> ContextTransport<T>
 where
   T: std::fmt::Debug + Serialize,
 {
-  pub fn new(config: T) -> Self {
-    Self { config }
+  pub fn new(config: T, seed: Option<u64>) -> Self {
+    Self { config, seed }
   }
 }
