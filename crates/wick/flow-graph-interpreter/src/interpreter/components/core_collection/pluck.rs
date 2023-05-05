@@ -108,7 +108,7 @@ mod test {
       })
     ));
     let mut packets = op
-      .handle(stream, Context::new(config, panic_callback()))
+      .handle(stream, Context::new(config, None, panic_callback()))
       .await?
       .collect::<Vec<_>>()
       .await;

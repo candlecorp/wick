@@ -45,7 +45,7 @@ mod test1 {
       let packets = tokio_stream::iter(vec![Ok(response)]).boxed();
       let tx = FluxChannel::new();
       let outputs = OpTestopOutputs::new(tx);
-      let ctx = Context::new(OpTestopConfig::default(), panic_callback());
+      let ctx = Context::new(OpTestopConfig::default(), None, panic_callback());
 
       Component::testop(packets, outputs, ctx).await?;
       Ok(())
@@ -58,7 +58,7 @@ mod test1 {
         a: "value".to_owned(),
         b: 2,
       };
-      let expected = ContextTransport::new(config);
+      let expected = ContextTransport::new(config, None);
       let bytes = wasmrs_codec::messagepack::serialize(&expected).unwrap();
       let actual: ContextTransport<OpTestopConfig> = wasmrs_codec::messagepack::deserialize(&bytes).unwrap();
       assert_eq!(actual, expected);

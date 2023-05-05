@@ -17,7 +17,7 @@ pin_project! {
   pub struct PacketStream {
     #[pin]
     inner: std::sync::Arc<parking_lot::Mutex<dyn FusedStream<Item = Result<Packet, crate::Error>> + Unpin>>,
-    config: std::sync::Arc<parking_lot::Mutex<Option<OperationConfig>>>
+    config: std::sync::Arc<parking_lot::Mutex<Option<(OperationConfig,Option<u64>)>>>
   }
 }
 
@@ -28,7 +28,7 @@ pin_project! {
   pub struct PacketStream {
     #[pin]
     inner: std::sync::Arc<parking_lot::Mutex<dyn FusedStream<Item = Result<Packet, crate::Error>> + Send + Unpin>>,
-    config: std::sync::Arc<parking_lot::Mutex<Option<OperationConfig>>>
+    config: std::sync::Arc<parking_lot::Mutex<Option<(OperationConfig,Option<u64>)>>>
   }
 }
 
@@ -62,8 +62,8 @@ impl PacketStream {
     }
   }
 
-  pub fn set_context(&self, context: OperationConfig) {
-    self.config.lock().replace(context);
+  pub fn set_context(&self, context: OperationConfig, seed: Option<u64>) {
+    self.config.lock().replace((context, seed));
   }
 
   pub fn new_channels() -> (PacketSender, Self) {
@@ -96,7 +96,7 @@ impl Stream for PacketStream {
       match poll {
         Poll::Ready(Some(Ok(mut packet))) => {
           packet.set_context(
-            wasmrs_codec::messagepack::serialize(&ContextTransport::new(config))
+            wasmrs_codec::messagepack::serialize(&ContextTransport::new(config.0, config.1))
               .unwrap()
               .into(),
           );

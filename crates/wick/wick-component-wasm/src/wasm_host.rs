@@ -11,7 +11,7 @@ use wasmrs_codec::messagepack::serialize;
 use wasmrs_host::{CallContext, Host, WasiParams};
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::ComponentSignature;
-use wick_packet::{from_raw_wasmrs, from_wasmrs, into_wasmrs, ComponentReference, Entity, PacketStream};
+use wick_packet::{from_raw_wasmrs, from_wasmrs, into_wasmrs, ComponentReference, Entity, Invocation, PacketStream};
 use wick_wascap::{Claims, CollectionClaims};
 
 use crate::error::WasmCollectionError;
@@ -145,21 +145,23 @@ impl WasmHost {
     })
   }
 
+  #[allow(clippy::needless_pass_by_value)]
   pub fn call(
     &self,
-    component_name: &str,
+    invocation: Invocation,
     stream: PacketStream,
     config: Option<wick_packet::OperationConfig>,
   ) -> Result<PacketStream> {
+    let component_name = invocation.target.operation_id();
     debug!(component = component_name, "wasm invoke");
-
+    let seed = invocation.seed();
     let now = Instant::now();
     let ctx = self.ctx.clone();
     let index = ctx
       .get_export("wick", component_name)
       .map_err(|_| crate::Error::OperationNotFound(component_name.to_owned(), ctx.get_exports()))?;
     if let Some(config) = config {
-      stream.set_context(config);
+      stream.set_context(config, seed);
     }
 
     let s = into_wasmrs(index, stream);

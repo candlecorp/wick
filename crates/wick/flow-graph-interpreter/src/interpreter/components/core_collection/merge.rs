@@ -115,7 +115,7 @@ mod test {
     let config = Op::decode_config(Some(config.try_into()?))?;
     let stream = packet_stream!(("input_a", "hello"), ("input_b", 1000));
     let mut packets = op
-      .handle(stream, Context::new(config, panic_callback()))
+      .handle(stream, Context::new(config, None, panic_callback()))
       .await?
       .collect::<Vec<_>>()
       .await;

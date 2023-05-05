@@ -10,6 +10,7 @@ where
   T: std::fmt::Debug,
 {
   pub config: Arc<T>,
+  pub seed: Option<u64>,
   #[cfg(feature = "traits")]
   pub callback: Arc<crate::RuntimeCallback>,
 }
@@ -29,6 +30,7 @@ where
 {
   fn from(value: ContextTransport<T>) -> Self {
     Self {
+      seed: value.seed,
       config: Arc::new(value.config),
       #[cfg(feature = "traits")]
       callback: crate::panic_callback(),
@@ -41,16 +43,18 @@ where
   T: std::fmt::Debug,
 {
   #[cfg(feature = "traits")]
-  pub fn new(config: T, callback: Arc<crate::RuntimeCallback>) -> Self {
+  pub fn new(config: T, seed: Option<u64>, callback: Arc<crate::RuntimeCallback>) -> Self {
     Self {
+      seed,
       config: Arc::new(config),
       callback,
     }
   }
 
   #[cfg(not(feature = "traits"))]
-  pub fn new(config: T) -> Self {
+  pub fn new(config: T, seed: Option<u64>) -> Self {
     Self {
+      seed,
       config: Arc::new(config),
     }
   }

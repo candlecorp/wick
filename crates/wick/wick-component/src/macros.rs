@@ -116,7 +116,7 @@ macro_rules! payload_fan_out {
                   let config: Result<$crate::packet::ContextTransport<$config>, _> = $crate::wasmrs_codec::messagepack::deserialize(&context).map_err(|_e|$crate::flow_component::ComponentError::message("Cound not deserialize Context"));
                   let _ = config_tx.send(config.map($crate::flow_component::Context::from));
                 } else {
-                  let _ = config_tx.send(Ok($crate::packet::ContextTransport::new(<$config>::default()).into()));
+                  let _ = config_tx.send(Ok($crate::packet::ContextTransport::new(<$config>::default(),None).into()));
                 }
               }
 

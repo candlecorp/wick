@@ -6,9 +6,14 @@ license = "Apache-2.0"
 description = "A utility library for deterministic randomness."
 repository = "https://github.com/candlecorp/wick"
 
+[features]
+default = ["rng"]
+rng = ["rand/rand_chacha", "rand/small_rng"]
+uuid = ["uuid/v4"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-rand = { workspace = true }
-rand_chacha = { workspace = true }
+rand = { workspace = true, default-features = false, features = [] }
+rand_chacha = { workspace = true, default-features = false }
 parking_lot = { workspace = true }
-uuid = { workspace = true, features = ["v4"] }
+uuid = { workspace = true, features = ["v4"], optional = true }
