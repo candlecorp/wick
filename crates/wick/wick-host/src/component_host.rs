@@ -12,7 +12,7 @@ use wick_component_cli::ServerState;
 use wick_config::config::ComponentConfiguration;
 use wick_config::WickConfiguration;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Entity, InherentData, Invocation, PacketStream};
+use wick_packet::{Entity, InherentData, Invocation, OperationConfig, PacketStream};
 use wick_runtime::{EngineComponent, Runtime, RuntimeBuilder};
 
 use crate::{Error, Result};
@@ -31,7 +31,7 @@ fn from_registry(id: Uuid) -> SharedComponent {
 #[derive(Debug)]
 pub struct ComponentHost {
   id: String,
-  engine: Option<Runtime>,
+  runtime: Option<Runtime>,
   manifest: ComponentConfiguration,
   server_metadata: Option<ServerState>,
 }
@@ -60,7 +60,7 @@ impl ComponentHost {
   }
 
   pub fn get_signature(&self) -> Result<ComponentSignature> {
-    match &self.engine {
+    match &self.runtime {
       Some(engine) => Ok(engine.get_signature()?),
       None => Err(Error::NoEngine),
     }
@@ -74,22 +74,22 @@ impl ComponentHost {
   /// Stops a running host.
   pub async fn stop(self) {
     debug!("host stopping");
-    if let Some(engine) = self.engine {
+    if let Some(engine) = self.runtime {
       let _ = engine.shutdown().await;
     }
   }
 
   pub fn get_engine(&self) -> Result<&Runtime> {
-    self.engine.as_ref().ok_or(Error::NoEngine)
+    self.runtime.as_ref().ok_or(Error::NoEngine)
   }
 
   pub fn get_engine_uid(&self) -> Result<Uuid> {
-    self.engine.as_ref().ok_or(Error::NoEngine).map(|engine| engine.uid)
+    self.runtime.as_ref().ok_or(Error::NoEngine).map(|engine| engine.uid)
   }
 
   pub async fn start_engine(&mut self, seed: Option<Seed>) -> Result<()> {
     ensure!(
-      self.engine.is_none(),
+      self.runtime.is_none(),
       crate::Error::InvalidHostState("Host already has a engine running".into())
     );
 
@@ -103,7 +103,7 @@ impl ComponentHost {
 
     let engine = engine_builder.build().await?;
 
-    self.engine = Some(engine);
+    self.runtime = Some(engine);
     Ok(())
   }
 
@@ -140,18 +140,23 @@ impl ComponentHost {
     stream: PacketStream,
     data: Option<InherentData>,
   ) -> Result<PacketStream> {
-    match &self.engine {
-      Some(engine) => {
+    match &self.runtime {
+      Some(runtime) => {
         let invocation = Invocation::new(Entity::server(&self.id), Entity::operation(&self.id, operation), data);
-        Ok(engine.invoke(invocation, stream, None).await?)
+        Ok(runtime.invoke(invocation, stream, None).await?)
       }
       None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }
   }
 
-  pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream> {
-    match &self.engine {
-      Some(engine) => Ok(engine.invoke(invocation, stream, None).await?),
+  pub async fn invoke(
+    &self,
+    invocation: Invocation,
+    stream: PacketStream,
+    data: Option<OperationConfig>,
+  ) -> Result<PacketStream> {
+    match &self.runtime {
+      Some(runtime) => Ok(runtime.invoke(invocation, stream, data).await?),
       None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }
   }
@@ -169,7 +174,7 @@ impl ComponentHost {
 
   #[must_use]
   pub fn is_started(&self) -> bool {
-    self.engine.is_some()
+    self.runtime.is_some()
   }
 }
 
@@ -215,29 +220,12 @@ impl ComponentHostBuilder {
 
     ComponentHost {
       id: host_id,
-      engine: None,
+      runtime: None,
       manifest: self.manifest,
       server_metadata: None,
     }
   }
 }
-
-// impl TryFrom<PathBuf> for ComponentHostBuilder {
-//   type Error = Error;
-
-//   fn try_from(file: PathBuf) -> Result<Self> {
-//     let manifest = WickConfiguration::load_from_file(file)?.try_component_config()?;
-//     Ok(ComponentHostBuilder::from_definition(manifest))
-//   }
-// }
-
-// impl TryFrom<&str> for ComponentHostBuilder {
-//   type Error = Error;
-
-//   fn try_from(value: &str) -> Result<Self> {
-//     ComponentHostBuilder::try_from(PathBuf::from(value))
-//   }
-// }
 
 #[cfg(test)]
 mod test {

@@ -467,10 +467,13 @@ type TestDefinition {
   name: string @required
 
   "The operaton to test."
-  operation: string @required @shortform
+  operation: string @required
 
   "Inherent data to use for the test."
   inherent: InherentData?
+
+  "The configuration for the operation, if any."
+  with: {string: any}?
 
   "The inputs to the test."
   input: [PacketData]
@@ -506,7 +509,7 @@ type ErrorData {
   "Any flags set on the packet."
   flags: PacketFlags?
   "The error message."
-  message: string @required
+  error: string @required
 }
 
 "Flags set on a packet."

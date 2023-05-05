@@ -1683,19 +1683,20 @@
           },
           "operation": {
             "description": "The operaton to test.",
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
+            "type": "string"
           },
           "inherent": {
             "description": "Inherent data to use for the test.",
             "required": false,
             "$ref": "#/$defs/v1/InherentData"
+          },
+          "with": {
+            "description": "The configuration for the operation, if any.",
+            "required": false,
+            "type": "object",
+            "patternProperties": {
+              "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+            }
           },
           "input": {
             "description": "The inputs to the test.",
@@ -1796,14 +1797,14 @@
             "required": false,
             "$ref": "#/$defs/v1/PacketFlags"
           },
-          "message": {
+          "error": {
             "description": "The error message.",
             "type": "string"
           }
         },
         "required": [
           "name",
-          "message"
+          "error"
         ]
       },
       "PacketFlags": {

@@ -143,12 +143,12 @@ impl Interpreter {
           trace!(op, %compref, "handling component invocation for self");
           let cb = inner_cb.lock().clone().unwrap();
           let invocation = compref.to_invocation(&op, inherent);
-          self_component.handle(invocation, stream, None, cb).await
+          self_component.handle(invocation, stream, config, cb).await
         } else if let Some(handler) = internal_components.get(compref.get_target_id()) {
           trace!(op, %compref, "handling component invocation internal to this interpreter");
           let cb = inner_cb.lock().clone().unwrap();
           let invocation = compref.to_invocation(&op, inherent);
-          handler.component().handle(invocation, stream, None, cb).await
+          handler.component().handle(invocation, stream, config, cb).await
         } else {
           outside_callback(compref, op, stream, inherent, config).await
         }

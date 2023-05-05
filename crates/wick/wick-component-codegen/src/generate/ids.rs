@@ -1,3 +1,4 @@
+use check_keyword::CheckKeyword;
 use heck::{AsPascalCase, AsSnakeCase};
 use itertools::Itertools;
 use proc_macro2::{Ident, Span};
@@ -5,7 +6,11 @@ use wick_config::config::{BoundInterface, OperationSignature};
 use wick_interface_types::EnumVariant;
 
 pub(crate) fn id(name: &str) -> Ident {
-  Ident::new(name, Span::call_site())
+  if name.is_keyword() {
+    Ident::new(&format!("{}_", name), Span::call_site())
+  } else {
+    Ident::new(name, Span::call_site())
+  }
 }
 
 pub(crate) fn component_id(r: &BoundInterface) -> String {

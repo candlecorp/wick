@@ -33,3 +33,112 @@ where
 }
 
 pub(crate) type RwOption<T> = Arc<RwLock<Option<T>>>;
+
+pub(crate) trait VecTryMapInto<I> {
+  fn try_map_into<R>(self) -> Result<Vec<R>>
+  where
+    Self: Sized,
+    I: TryInto<R, Error = ManifestError>;
+}
+
+impl<I> VecTryMapInto<I> for Vec<I> {
+  fn try_map_into<R>(self) -> Result<Vec<R>>
+  where
+    Self: Sized,
+    I: TryInto<R, Error = ManifestError>,
+  {
+    self.into_iter().map(TryInto::try_into).collect::<Result<Vec<_>>>()
+  }
+}
+
+pub(crate) trait VecMapInto<I> {
+  fn map_into<R>(self) -> Vec<R>
+  where
+    Self: Sized,
+    I: Into<R>;
+}
+
+impl<I> VecMapInto<I> for Vec<I> {
+  fn map_into<R>(self) -> Vec<R>
+  where
+    Self: Sized,
+    I: Into<R>,
+  {
+    self.into_iter().map(Into::into).collect::<Vec<_>>()
+  }
+}
+
+pub(crate) trait OptMapInto<I> {
+  fn map_into<R>(self) -> Option<R>
+  where
+    Self: Sized,
+    I: Into<R>;
+}
+
+impl<I> OptMapInto<I> for Option<I> {
+  fn map_into<R>(self) -> Option<R>
+  where
+    Self: Sized,
+    I: Into<R>,
+  {
+    self.map(Into::into)
+  }
+}
+
+pub(crate) trait OptMapTryInto<I> {
+  fn map_try_into<R>(self) -> Result<Option<R>>
+  where
+    Self: Sized,
+    I: TryInto<R, Error = ManifestError>;
+}
+
+impl<I> OptMapTryInto<I> for Option<I> {
+  fn map_try_into<R>(self) -> Result<Option<R>>
+  where
+    Self: Sized,
+    I: TryInto<R, Error = ManifestError>,
+  {
+    self.map(TryInto::try_into).transpose()
+  }
+}
+
+// pub(crate) trait IterTryMapInto<I, ITER, O> {
+//   fn try_map_into<R>(self) -> Result<O>
+//   where
+//     Self: Sized,
+//     I: TryInto<R, Error = ManifestError>,
+//     O: FromIterator<R>,
+//     ITER: Iterator<Item = I>;
+// }
+// pub(crate) trait IterMapInto<I, ITER, O> {
+//   fn map_into<R>(self) -> O
+//   where
+//     Self: Sized,
+//     I: Into<R>,
+//     O: FromIterator<R>,
+//     ITER: Iterator<Item = I>;
+// }
+
+// impl<I, ITER, O> IterTryMapInto<I, ITER, O> for ITER {
+//   fn try_map_into<R>(self) -> Result<O>
+//   where
+//     Self: Sized,
+//     I: TryInto<R, Error = ManifestError>,
+//     O: FromIterator<R>,
+//     ITER: Iterator<Item = I>,
+//   {
+//     self.into_iter().map(TryInto::try_into).collect::<Result<O>>()
+//   }
+// }
+
+// impl<I, ITER, O> IterMapInto<I, ITER, O> for ITER {
+//   fn map_into<R>(self) -> O
+//   where
+//     Self: Sized,
+//     I: Into<R>,
+//     O: FromIterator<R>,
+//     ITER: Iterator<Item = I>,
+//   {
+//     self.into_iter().map(Into::into).collect::<O>()
+//   }
+// }

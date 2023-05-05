@@ -100,10 +100,13 @@ impl Stream for PacketStream {
               .unwrap()
               .into(),
           );
-          tracing::trace!("attached context to packet : {:?}", packet);
+          tracing::trace!("attached context to packet on port '{}'", packet.port());
           Poll::Ready(Some(Ok(packet)))
         }
-        x => x,
+        x => {
+          self.config.lock().replace(config);
+          x
+        }
       }
     } else {
       poll

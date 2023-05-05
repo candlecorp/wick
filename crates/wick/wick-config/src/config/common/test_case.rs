@@ -7,6 +7,8 @@ pub struct TestCase {
   pub name: String,
   /// The operaton to test.
   pub operation: String,
+  /// The configuration for the operation being tested, if any.
+  pub config: Option<wick_packet::OperationConfig>,
   /// Inherent data to use for the test.
   pub inherent: Option<InherentConfig>,
   /// The inputs to the test.
@@ -80,7 +82,7 @@ pub struct ErrorPayload {
   /// Any flags set on the packet.
   pub flags: Option<PacketFlags>,
   /// The error message.
-  pub message: String,
+  pub error: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

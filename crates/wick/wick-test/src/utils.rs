@@ -21,7 +21,7 @@ pub(crate) fn gen_packet(p: &TestPacket) -> Result<Packet, TestError> {
     ),
     TestPacket::ErrorData(data) => Packet::new_for_port(
       &data.port,
-      PacketPayload::Err(PacketError::new(&data.message)),
+      PacketPayload::Err(PacketError::new(&data.error)),
       convert_flags(data.flags),
     ),
   };

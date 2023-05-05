@@ -933,6 +933,11 @@ pub(crate) struct TestDefinition {
 
   #[serde(default)]
   pub(crate) inherent: Option<InherentData>,
+  /// The configuration for the operation, if any.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) with: Option<HashMap<String, Value>>,
   /// The inputs to the test.
 
   #[serde(default)]
@@ -1002,7 +1007,7 @@ pub(crate) struct ErrorData {
   /// The error message.
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) message: String,
+  pub(crate) error: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

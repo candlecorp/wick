@@ -40,8 +40,8 @@ impl SchematicExecutor {
     invocation: Invocation,
     stream: PacketStream,
     seed: Seed,
-    collections: Arc<HandlerMap>,
-    self_collection: Arc<dyn Component + Send + Sync>,
+    components: Arc<HandlerMap>,
+    self_component: Arc<dyn Component + Send + Sync>,
     callback: Arc<RuntimeCallback>,
   ) -> Result<PacketStream> {
     debug!(schematic = self.name(), ?invocation,);
@@ -53,8 +53,8 @@ impl SchematicExecutor {
       invocation,
       stream,
       self.channel.clone(),
-      &collections,
-      &self_collection,
+      &components,
+      &self_component,
       callback,
       seed,
     );
