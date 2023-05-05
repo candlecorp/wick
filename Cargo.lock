@@ -467,6 +467,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "check_keyword"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4d532198271d4fb82f944bd25527e760a6cfc966c7d592525e092d4c6a4f787"
+
+[[package]]
 name = "chrono"
 version = "0.4.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5968,6 +5974,7 @@ version = "0.4.0"
 dependencies = [
  "anyhow",
  "bitflags 2.2.1",
+ "check_keyword",
  "derive_builder",
  "heck 0.4.1",
  "itertools",
@@ -6022,6 +6029,7 @@ dependencies = [
  "flow-component",
  "flow-expression-parser",
  "glob",
+ "itertools",
  "liquid-json",
  "num-traits",
  "parking_lot 0.12.1",

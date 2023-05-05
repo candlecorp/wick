@@ -197,10 +197,8 @@ pub(crate) fn expect_signature_match(
 ) -> std::result::Result<(), EngineError> {
   if actual != expected {
     error!(
-      // expected = serde_json::to_string(expected).unwrap(),
-      ?expected,
-      // actual = serde_json::to_string(actual).unwrap(),
-      ?actual,
+      expected = serde_json::to_string(expected).unwrap(),
+      actual = serde_json::to_string(actual).unwrap(),
       "signature mismatch"
     );
     return Err(EngineError::ComponentSignature(

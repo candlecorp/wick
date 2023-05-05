@@ -20,6 +20,7 @@ derive_builder = { workspace = true }
 serde_json = { workspace = true }
 bitflags = { workspace = true }
 itertools = { workspace = true }
+check_keyword = { workspace = true }
 
 [dev-dependencies]
 wick-logger = { workspace = true }

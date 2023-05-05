@@ -4,7 +4,7 @@ tests:
     operation: test-component
     input:
       - name: input
-        message: 'test'
+        error: 'test'
       - name: input
         data: 2
       - name: input

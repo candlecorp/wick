@@ -50,6 +50,7 @@ impl OpPower for Component {
     mut outputs: OpPowerOutputs,
     ctx: Context<OpPowerConfig>,
   ) -> wick::Result<()> {
+    println!("op:power: received exponent {}", ctx.config.exponent);
     while let Some(Ok(input)) = input.next().await {
       let output = input.pow(ctx.config.exponent);
       outputs.output.send(&output);

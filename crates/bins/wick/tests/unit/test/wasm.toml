@@ -1,7 +1,7 @@
 bin.name = "wick"
 args = ["test", "../../integration/test-baseline-component/component.yaml"]
 stdout = """
-1..13 # Test
+1..18 # Test
 # add 1 and 2: test operation 'add'
 ok 1 add 1 and 2: test operation 'add': correct port? ('output' == 'output')
 ok 2 add 1 and 2: test operation 'add': actual deserialized payload == expected deserialized payload?
@@ -14,8 +14,14 @@ ok 7 add 2000 and 3292982: test operation 'add': actual deserialized payload == 
 ok 8 add 2000 and 3292982: test operation 'add': correct port? ('output' == 'output')
 ok 9 add 2000 and 3292982: test operation 'add': actual raw packet == expected raw packet?
 ok 10 add 2000 and 3292982: test operation 'add': total_outputs
+# 2^5: test operation 'power'
+ok 11 2^5: test operation 'power': correct port? ('output' == 'output')
+ok 12 2^5: test operation 'power': actual deserialized payload == expected deserialized payload?
+ok 13 2^5: test operation 'power': correct port? ('output' == 'output')
+ok 14 2^5: test operation 'power': actual raw packet == expected raw packet?
+ok 15 2^5: test operation 'power': total_outputs
 # validate: test operation 'validate'
-ok 11 validate: test operation 'validate': correct port? ('output' == 'output')
-ok 12 validate: test operation 'validate': actual deserialized payload == expected deserialized payload?
-ok 13 validate: test operation 'validate': total_outputs
+ok 16 validate: test operation 'validate': correct port? ('output' == 'output')
+ok 17 validate: test operation 'validate': actual deserialized payload == expected deserialized payload?
+ok 18 validate: test operation 'validate': total_outputs
 """

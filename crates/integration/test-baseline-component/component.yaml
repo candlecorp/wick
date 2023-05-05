@@ -67,6 +67,19 @@ tests:
       - name: output
         flags:
           done: true
+  - name: 2^5
+    operation: power
+    with:
+      exponent: 5
+    input:
+      - name: input
+        data: 2
+    output:
+      - name: output
+        data: 32
+      - name: output
+        flags:
+          done: true
   - name: validate
     operation: validate
     input:
@@ -74,4 +87,4 @@ tests:
         data: 'hello'
     output:
       - name: output
-        message: Needs to be longer than 8 characters
+        error: Needs to be longer than 8 characters
