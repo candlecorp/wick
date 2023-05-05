@@ -110,13 +110,6 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-${{ matrix.config.target }}-rust-toolchain-${{ env.RUST_VERSION }}
-      - name: build cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            target/
-            crates/**/target
-          key: ${{ runner.os }}-${{ matrix.config.target }}-cargo-build-test-${{ hashFiles('**/Cargo.lock') }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
