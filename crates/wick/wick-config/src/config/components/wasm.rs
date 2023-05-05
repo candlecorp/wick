@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use asset_container::Asset;
-
 use crate::config;
 
 /// A WebAssembly collection.

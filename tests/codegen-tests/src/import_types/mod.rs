@@ -63,109 +63,6 @@ pub mod types {
     pub field1: String,
     pub field2: String,
   }
-  pub mod AAA {
-    #[allow(unused)]
-    use super::AAA;
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    pub enum HttpVersion {
-      Http10,
-      Http11,
-      Http20,
-    }
-    impl HttpVersion {
-      #[allow(unused)]
-      pub fn value(&self) -> Option<&'static str> {
-        #[allow(clippy::match_single_binding)]
-        match self {
-          Self::Http10 => Some("1.0"),
-          Self::Http11 => Some("1.1"),
-          Self::Http20 => Some("2.0"),
-        }
-      }
-    }
-    impl TryFrom<u32> for HttpVersion {
-      type Error = u32;
-      fn try_from(i: u32) -> Result<Self, Self::Error> {
-        #[allow(clippy::match_single_binding)]
-        match i {
-          _ => Err(i),
-        }
-      }
-    }
-    impl std::str::FromStr for HttpVersion {
-      type Err = String;
-      fn from_str(s: &str) -> Result<Self, Self::Err> {
-        #[allow(clippy::match_single_binding)]
-        match s {
-          "1.0" => Ok(Self::Http10),
-          "1.1" => Ok(Self::Http11),
-          "2.0" => Ok(Self::Http20),
-          _ => Err(s.to_owned()),
-        }
-      }
-    }
-    impl std::fmt::Display for HttpVersion {
-      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[allow(clippy::match_single_binding)]
-        match self {
-          Self::Http10 => f.write_str("HTTP_1_0"),
-          Self::Http11 => f.write_str("HTTP_1_1"),
-          Self::Http20 => f.write_str("HTTP_2_0"),
-        }
-      }
-    }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    pub enum StatusCode {
-      Ok,
-      Created,
-    }
-    impl StatusCode {
-      #[allow(unused)]
-      pub fn value(&self) -> Option<&'static str> {
-        #[allow(clippy::match_single_binding)]
-        match self {
-          Self::Ok => Some("200"),
-          Self::Created => Some("201"),
-        }
-      }
-    }
-    impl TryFrom<u32> for StatusCode {
-      type Error = u32;
-      fn try_from(i: u32) -> Result<Self, Self::Error> {
-        #[allow(clippy::match_single_binding)]
-        match i {
-          _ => Err(i),
-        }
-      }
-    }
-    impl std::str::FromStr for StatusCode {
-      type Err = String;
-      fn from_str(s: &str) -> Result<Self, Self::Err> {
-        #[allow(clippy::match_single_binding)]
-        match s {
-          "200" => Ok(Self::Ok),
-          "201" => Ok(Self::Created),
-          _ => Err(s.to_owned()),
-        }
-      }
-    }
-    impl std::fmt::Display for StatusCode {
-      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[allow(clippy::match_single_binding)]
-        match self {
-          Self::Ok => f.write_str("OK"),
-          Self::Created => f.write_str("Created"),
-        }
-      }
-    }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    pub struct HttpResponse {
-      pub version: HttpVersion,
-      pub status: StatusCode,
-      pub headers: std::collections::HashMap<String, Vec<String>>,
-      pub body: bytes::Bytes,
-    }
-  }
   pub mod ZZZ {
     #[allow(unused)]
     use super::ZZZ;
@@ -272,6 +169,109 @@ pub mod types {
   pub mod http {
     #[allow(unused)]
     use super::http;
+    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
+    pub enum HttpVersion {
+      Http10,
+      Http11,
+      Http20,
+    }
+    impl HttpVersion {
+      #[allow(unused)]
+      pub fn value(&self) -> Option<&'static str> {
+        #[allow(clippy::match_single_binding)]
+        match self {
+          Self::Http10 => Some("1.0"),
+          Self::Http11 => Some("1.1"),
+          Self::Http20 => Some("2.0"),
+        }
+      }
+    }
+    impl TryFrom<u32> for HttpVersion {
+      type Error = u32;
+      fn try_from(i: u32) -> Result<Self, Self::Error> {
+        #[allow(clippy::match_single_binding)]
+        match i {
+          _ => Err(i),
+        }
+      }
+    }
+    impl std::str::FromStr for HttpVersion {
+      type Err = String;
+      fn from_str(s: &str) -> Result<Self, Self::Err> {
+        #[allow(clippy::match_single_binding)]
+        match s {
+          "1.0" => Ok(Self::Http10),
+          "1.1" => Ok(Self::Http11),
+          "2.0" => Ok(Self::Http20),
+          _ => Err(s.to_owned()),
+        }
+      }
+    }
+    impl std::fmt::Display for HttpVersion {
+      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[allow(clippy::match_single_binding)]
+        match self {
+          Self::Http10 => f.write_str("HTTP_1_0"),
+          Self::Http11 => f.write_str("HTTP_1_1"),
+          Self::Http20 => f.write_str("HTTP_2_0"),
+        }
+      }
+    }
+    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
+    pub enum StatusCode {
+      Ok,
+      Created,
+    }
+    impl StatusCode {
+      #[allow(unused)]
+      pub fn value(&self) -> Option<&'static str> {
+        #[allow(clippy::match_single_binding)]
+        match self {
+          Self::Ok => Some("200"),
+          Self::Created => Some("201"),
+        }
+      }
+    }
+    impl TryFrom<u32> for StatusCode {
+      type Error = u32;
+      fn try_from(i: u32) -> Result<Self, Self::Error> {
+        #[allow(clippy::match_single_binding)]
+        match i {
+          _ => Err(i),
+        }
+      }
+    }
+    impl std::str::FromStr for StatusCode {
+      type Err = String;
+      fn from_str(s: &str) -> Result<Self, Self::Err> {
+        #[allow(clippy::match_single_binding)]
+        match s {
+          "200" => Ok(Self::Ok),
+          "201" => Ok(Self::Created),
+          _ => Err(s.to_owned()),
+        }
+      }
+    }
+    impl std::fmt::Display for StatusCode {
+      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[allow(clippy::match_single_binding)]
+        match self {
+          Self::Ok => f.write_str("OK"),
+          Self::Created => f.write_str("Created"),
+        }
+      }
+    }
+    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
+    pub struct HttpResponse {
+      pub version: HttpVersion,
+      pub status: StatusCode,
+      pub headers: std::collections::HashMap<String, Vec<String>>,
+      pub body: bytes::Bytes,
+    }
+  }
+  pub mod AAA {
+    #[allow(unused)]
+    use super::AAA;
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     pub enum HttpVersion {
       Http10,

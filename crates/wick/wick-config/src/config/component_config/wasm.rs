@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use asset_container::Asset;
-
 use crate::config::{self, OperationSignature};
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]

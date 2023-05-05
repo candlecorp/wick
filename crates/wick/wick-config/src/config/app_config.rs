@@ -29,7 +29,6 @@ pub struct AppConfiguration {
   pub(crate) source: Option<PathBuf>,
   pub(crate) metadata: Option<config::Metadata>,
   pub(crate) import: HashMap<String, ImportBinding>,
-  #[asset(skip)]
   pub(crate) resources: HashMap<String, ResourceBinding>,
   pub(crate) triggers: Vec<TriggerDefinition>,
   #[asset(skip)]
