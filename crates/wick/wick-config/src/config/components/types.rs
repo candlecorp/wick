@@ -1,5 +1,3 @@
-use asset_container::Asset;
-
 use crate::config;
 
 /// A Wick types manifest to import types from.

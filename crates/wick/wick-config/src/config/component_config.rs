@@ -40,7 +40,6 @@ pub struct ComponentConfiguration {
   #[asset(skip)]
   #[builder(default)]
   pub(crate) requires: HashMap<String, BoundInterface>,
-  #[asset(skip)]
   #[builder(default)]
   pub(crate) resources: HashMap<String, ResourceBinding>,
   #[asset(skip)]

@@ -3,10 +3,12 @@ use std::path::PathBuf;
 use url::Url;
 use wick_asset_reference::AssetReference;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager)]
+#[asset(asset(AssetReference))]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
 pub struct ResourceBinding {
+  #[asset(skip)]
   /// The id to bind the resource to.
   pub id: String,
   /// The bound resource.
@@ -23,14 +25,18 @@ impl ResourceBinding {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[asset(asset(AssetReference))]
 /// Normalized representation of a resource definition.
 pub enum ResourceDefinition {
   /// A TCP port.
+  #[asset(skip)]
   TcpPort(TcpPort),
   /// A UDP port.
+  #[asset(skip)]
   UdpPort(UdpPort),
   /// A URL resource.
+  #[asset(skip)]
   Url(UrlResource),
   /// A filesystem or network volume.
   Volume(Volume),
@@ -72,7 +78,9 @@ impl TryFrom<String> for UrlResource {
       .map(Self::new)
   }
 }
-#[derive(Debug, Clone, PartialEq)]
+
+#[derive(Debug, Clone, PartialEq, Builder, derive_asset_container::AssetManager)]
+#[asset(asset(AssetReference), lazy)]
 /// A filesystem or network volume.
 #[must_use]
 pub struct Volume {

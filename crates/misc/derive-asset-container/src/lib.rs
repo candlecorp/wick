@@ -90,6 +90,7 @@ fn impl_struct(name: &Ident, data: &DataStruct, opts: TypeOpts) -> TokenStream {
           type Asset = #asset_type;
 
           fn set_baseurl(&self, baseurl: &std::path::Path) {
+            use asset_container::Asset;
             #(self.#asset_fields.update_baseurl(baseurl);)*
             #(self.#inner_managers.set_baseurl(baseurl);)*
           }
@@ -141,6 +142,7 @@ fn impl_enum(name: &Ident, data: &DataEnum, opts: TypeOpts) -> TokenStream {
           type Asset = #asset_type;
 
           fn set_baseurl(&self, baseurl: &std::path::Path) {
+            use asset_container::Asset;
             match self {
               #(Self::#asset_variants(v) => {
                 v.update_baseurl(baseurl);
