@@ -46,7 +46,7 @@ pub(crate) struct HostManifest {
   pub(crate) version: String,
   /// Additional host configuration.
   #[serde(default)]
-  pub(crate) host: HostConfig,
+  pub(crate) host: Option<HostConfig>,
   /// The configuration for a Wick network.
   #[serde(default)]
   pub(crate) network: NetworkManifest,

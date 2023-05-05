@@ -10,15 +10,15 @@
     },
 
     "LocationReference": {
-      "type": "object"
+      "type": "string"
     },
 
     "LiquidJsonValue": {
-      "type": "object"
+      "type": "string"
     },
 
     "Glob": {
-      "type": "object"
+      "type": "string"
     },
 
     "AppConfiguration": {
@@ -44,6 +44,7 @@
         },
         "host": {
           "description": "Configuration that controls how this application runs within a host.",
+          "required": false,
 
           "$ref": "#/$defs/v1/HostConfig"
         },
@@ -623,6 +624,7 @@
         },
         "host": {
           "description": "Configuration for when wick hosts this component as a service.",
+          "required": false,
 
           "$ref": "#/$defs/v1/HostConfig"
         },
@@ -1218,11 +1220,295 @@
     },
 
     "Field": {
-      "type": "object"
+      "$anchor": "#v1/Field",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the field.",
+
+          "type": "string"
+        },
+        "type": {
+          "description": "The type signature of the field.",
+
+          "$ref": "#/$defs/v1/TypeSignature"
+        },
+        "description": {
+          "description": "The description of the field.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": ["name", "type"]
+    },
+
+    "TypeSignature": {
+      "oneOf": [{ "type": "string" }]
+    },
+
+    "I8": {
+      "$anchor": "#v1/I8",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["i8"]
+    },
+
+    "I16": {
+      "$anchor": "#v1/I16",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["i16"]
+    },
+
+    "I32": {
+      "$anchor": "#v1/I32",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["i32"]
+    },
+
+    "I64": {
+      "$anchor": "#v1/I64",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["i64"]
+    },
+
+    "U8": {
+      "$anchor": "#v1/U8",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["u8"]
+    },
+
+    "U16": {
+      "$anchor": "#v1/U16",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["u16"]
+    },
+
+    "U32": {
+      "$anchor": "#v1/U32",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["u32"]
+    },
+
+    "U64": {
+      "$anchor": "#v1/U64",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["u64"]
+    },
+
+    "F32": {
+      "$anchor": "#v1/F32",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["f32"]
+    },
+
+    "F64": {
+      "$anchor": "#v1/F64",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["f64"]
+    },
+
+    "Bool": {
+      "$anchor": "#v1/Bool",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["i8"]
+    },
+
+    "StringType": {
+      "$anchor": "#v1/StringType",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["string"]
+    },
+
+    "Datetime": {
+      "$anchor": "#v1/Datetime",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["datetime"]
+    },
+
+    "Bytes": {
+      "$anchor": "#v1/Bytes",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["bytes"]
+    },
+
+    "Custom": {
+      "$anchor": "#v1/Custom",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the custom type.",
+
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "Optional": {
+      "$anchor": "#v1/Optional",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/v1/TypeSignature"
+        }
+      },
+      "required": ["type"]
+    },
+
+    "List": {
+      "$anchor": "#v1/List",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/v1/TypeSignature"
+        }
+      },
+      "required": ["type"]
+    },
+
+    "Map": {
+      "$anchor": "#v1/Map",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/v1/TypeSignature"
+        },
+        "value": {
+          "$ref": "#/$defs/v1/TypeSignature"
+        }
+      },
+      "required": ["key", "value"]
+    },
+
+    "Object": {
+      "$anchor": "#v1/Object",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": ["object"]
     },
 
     "TypeDefinition": {
-      "type": "object"
+      "oneOf": [
+        { "$ref": "#/$defs/v1/StructSignature" },
+        { "$ref": "#/$defs/v1/EnumSignature" }
+      ]
+    },
+
+    "StructSignature": {
+      "$anchor": "#v1/StructSignature",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/type/struct@v1"]
+        },
+        "name": {
+          "description": "The name of the struct.",
+
+          "type": "string"
+        },
+        "fields": {
+          "description": "The fields in this struct.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/Field"
+          }
+        },
+        "description": {
+          "description": "The description of the struct.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "EnumSignature": {
+      "$anchor": "#v1/EnumSignature",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/type/enum@v1"]
+        },
+        "name": {
+          "description": "The name of the enum.",
+
+          "type": "string"
+        },
+        "variants": {
+          "description": "The variants in the enum.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/EnumVariant"
+          }
+        },
+        "description": {
+          "description": "The description of the enum.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "EnumVariant": {
+      "$anchor": "#v1/EnumVariant",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the variant.",
+
+          "type": "string"
+        },
+        "index": {
+          "description": "The index of the variant.",
+          "required": false,
+
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
+        },
+        "value": {
+          "description": "The optional value of the variant.",
+          "required": false,
+
+          "type": "string"
+        },
+        "description": {
+          "description": "The description of the variant.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": []
     },
 
     "InstanceBinding": {

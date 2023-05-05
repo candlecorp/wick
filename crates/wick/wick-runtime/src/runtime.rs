@@ -129,7 +129,7 @@ impl RuntimeBuilder {
   pub fn from_definition(definition: config::ComponentConfiguration) -> Result<Self> {
     Ok(Self {
       allow_latest: definition.allow_latest(),
-      allowed_insecure: definition.insecure_registries().clone(),
+      allowed_insecure: definition.insecure_registries().map(|v| v.to_vec()).unwrap_or_default(),
       manifest_builder: config::ComponentConfigurationBuilder::from_base(definition),
       timeout: Duration::from_secs(5),
       native_components: ComponentRegistry::default(),

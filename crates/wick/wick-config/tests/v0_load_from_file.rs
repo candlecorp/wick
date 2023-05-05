@@ -45,7 +45,7 @@ async fn load_noversion_yaml() -> Result<(), ManifestError> {
 #[test_logger::test(tokio::test)]
 async fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
   let manifest = load("./tests/manifests/v0/bad-yaml.yaml").await;
-  if let Err(Error::YamlError(p, e)) = manifest {
+  if let Err(Error::YamlError(p, e, _)) = manifest {
     debug!("{:?}, {:?}", p, e);
   } else {
     panic!("Should have failed with YamlError but got : {:?}", manifest);

@@ -35,9 +35,7 @@ impl CoreCollection {
 
     // scour program for dynamic components
     for schematic in graph.schematics() {
-      warn!("schematic: {}", schematic.name());
       for operation in schematic.nodes() {
-        warn!("operation: {}", operation.name);
         // only handle core:: components
         if operation.cref().component_id() != NS_CORE {
           continue;

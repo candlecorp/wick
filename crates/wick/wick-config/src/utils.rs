@@ -20,15 +20,8 @@ pub(crate) fn from_yaml<T>(src: &str, path: &Option<PathBuf>) -> Result<T>
 where
   T: DeserializeOwned,
 {
-  let result = serde_yaml::from_str(src).map_err(|e| Error::YamlError(path.as_ref().cloned(), e.to_string()))?;
-  Ok(result)
-}
-
-pub(crate) fn from_bytes<T>(src: &[u8], path: &Option<PathBuf>) -> Result<T>
-where
-  T: DeserializeOwned,
-{
-  let result = serde_yaml::from_slice(src).map_err(|e| Error::YamlError(path.as_ref().cloned(), e.to_string()))?;
+  let result =
+    serde_yaml::from_str(src).map_err(|e| Error::YamlError(path.as_ref().cloned(), e.to_string(), e.location()))?;
   Ok(result)
 }
 
@@ -65,40 +58,6 @@ impl<I> VecMapInto<I> for Vec<I> {
     I: Into<R>,
   {
     self.into_iter().map(Into::into).collect::<Vec<_>>()
-  }
-}
-
-pub(crate) trait OptMapInto<I> {
-  fn map_into<R>(self) -> Option<R>
-  where
-    Self: Sized,
-    I: Into<R>;
-}
-
-impl<I> OptMapInto<I> for Option<I> {
-  fn map_into<R>(self) -> Option<R>
-  where
-    Self: Sized,
-    I: Into<R>,
-  {
-    self.map(Into::into)
-  }
-}
-
-pub(crate) trait OptMapTryInto<I> {
-  fn map_try_into<R>(self) -> Result<Option<R>>
-  where
-    Self: Sized,
-    I: TryInto<R, Error = ManifestError>;
-}
-
-impl<I> OptMapTryInto<I> for Option<I> {
-  fn map_try_into<R>(self) -> Result<Option<R>>
-  where
-    Self: Sized,
-    I: TryInto<R, Error = ManifestError>,
-  {
-    self.map(TryInto::try_into).transpose()
   }
 }
 

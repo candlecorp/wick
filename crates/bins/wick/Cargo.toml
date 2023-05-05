@@ -38,6 +38,7 @@ atty = { workspace = true }
 jaq-core = { workspace = true }
 markup-converter = { workspace = true }
 openssl = { workspace = true, features = ["vendored"], optional = true }
+option-utils = { workspace = true }
 
 [dev-dependencies]
 test_bin = { workspace = true }

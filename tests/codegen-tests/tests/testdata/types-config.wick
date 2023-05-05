@@ -2,7 +2,7 @@
 kind: wick/types@v1
 types:
   - name: HttpVersion
-    type: enum
+    kind: wick/type/enum@v1
     variants:
       - name: HTTP_1_0
         value: '1.0'
@@ -11,27 +11,23 @@ types:
       - name: HTTP_2_0
         value: '2.0'
   - name: StatusCode
-    type: enum
+    kind: wick/type/enum@v1
     variants:
       - name: OK
         value: '200'
       - name: Created
         value: '201'
   - name: HttpResponse
-    type: struct
+    kind: wick/type/struct@v1
     fields:
       - name: version
         type: HttpVersion
         description: HTTP version enum
       - name: status
         type: StatusCode
-        default: OK
         description: status code enum
       - name: headers
-        type:
-          map:
-            key: string
-            value: { list: { type: string } }
+        type: '{string: string[]}'
         description: All response headers. Supports duplicates.
       - name: body
         type: bytes

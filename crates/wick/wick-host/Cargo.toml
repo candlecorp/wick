@@ -28,6 +28,7 @@ once_cell = { workspace = true }
 parking_lot = { workspace = true }
 uuid = { workspace = true }
 futures = { workspace = true }
+option-utils = { workspace = true }
 
 [dev-dependencies]
 wick-logger = { workspace = true }

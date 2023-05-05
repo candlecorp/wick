@@ -18,6 +18,9 @@ pub(crate) fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}()
 {{#if description}}
 /// {{{description.value}}}
 {{/if}}
+{{#withAnnotation "nameonly"}}
+pub(crate) struct {{../name.value}}();
+{{else}}
 pub(crate) struct {{name.value}} {
   {{#each fields}}
     {{#if description}}
@@ -56,6 +59,7 @@ pub(crate) struct {{name.value}} {
         {{/ifCond}}
       {{/case}}
       {{#case "Optional"}}
+        #[serde(skip_serializing_if = "Option::is_none")]
         {{#ifCond type.type.name.value "==" "ConnectionTargetDefinition"}}
           #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
         {{/ifCond}}
@@ -104,7 +108,12 @@ pub(crate) struct {{name.value}} {
     {{#ifCond ../name.value '==' 'MapType'}}
     Box<{{> expand-type type}}>,
     {{else}}
-    {{> expand-type type}},
+      {{#withAnnotation "recursive"}}
+        Box<{{> expand-type ../type}}>,
+      {{else}}
+        {{> expand-type type}},
+      {{/withAnnotation}}
     {{/ifCond}}
   {{/each}}
 }
+{{/withAnnotation}}

@@ -44,7 +44,7 @@ pub struct ComponentConfiguration {
   pub(crate) resources: HashMap<String, ResourceBinding>,
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) host: config::HostConfig,
+  pub(crate) host: Option<config::HostConfig>,
   #[asset(skip)]
   #[builder(default)]
   pub(crate) labels: HashMap<String, String>,
@@ -138,14 +138,19 @@ impl ComponentConfiguration {
     self.import.get(name)
   }
 
-  /// Determine if the configuration allows for fetching artifacts with the :latest tag.
-  pub fn host(&self) -> &config::HostConfig {
-    &self.host
+  /// Retrieve the host configuration if it's set.
+  #[must_use]
+  pub fn host(&self) -> Option<&config::HostConfig> {
+    self.host.as_ref()
   }
 
-  /// Determine if the configuration allows for fetching artifacts with the :latest tag.
+  /// Retrieve a mutable host configuration. This will create a default host configuration if one
+  /// does not exist.
   pub fn host_mut(&mut self) -> &mut config::HostConfig {
-    &mut self.host
+    if self.host.is_none() {
+      self.host = Some(config::HostConfig::default());
+    }
+    self.host.as_mut().unwrap()
   }
 
   /// Get the configuration related to the specific [ComponentKind].
@@ -161,13 +166,13 @@ impl ComponentConfiguration {
   /// Determine if the configuration allows for fetching artifacts with the :latest tag.
   #[must_use]
   pub fn allow_latest(&self) -> bool {
-    self.host.allow_latest
+    self.host.as_ref().map_or(false, |v| v.allow_latest)
   }
 
   /// Return the list of insecure registries defined in the manifest
   #[must_use]
-  pub fn insecure_registries(&self) -> &Vec<String> {
-    &self.host.insecure_registries
+  pub fn insecure_registries(&self) -> Option<&[String]> {
+    self.host.as_ref().map(|v| v.insecure_registries.as_ref())
   }
 
   /// Return the list of tests defined in the manifest.

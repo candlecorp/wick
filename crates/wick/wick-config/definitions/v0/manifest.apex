@@ -9,7 +9,7 @@ type HostManifest {
   version: string,
 
   "Additional host configuration."
-  host: HostConfig,
+  host: HostConfig?,
 
   "The configuration for a Wick network."
   network: NetworkManifest,

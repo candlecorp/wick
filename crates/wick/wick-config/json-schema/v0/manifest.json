@@ -15,6 +15,7 @@
         },
         "host": {
           "description": "Additional host configuration.",
+          "required": false,
 
           "$ref": "#/$defs/v0/HostConfig"
         },

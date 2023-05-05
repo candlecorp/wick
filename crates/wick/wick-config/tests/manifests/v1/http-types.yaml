@@ -1,8 +1,9 @@
 ---
+name: http
 kind: wick/types@v1
 types:
   - name: HttpMethod
-    type: enum
+    kind: wick/type/enum@v1
     variants:
       - name: GET
       - name: POST
@@ -13,12 +14,12 @@ types:
       - name: OPTIONS
       - name: TRACE
   - name: HttpScheme
-    type: enum
+    kind: wick/type/enum@v1
     variants:
       - name: HTTP
       - name: HTTPS
   - name: HttpVersion
-    type: enum
+    kind: wick/type/enum@v1
     variants:
       - name: HTTP_1_0
         value: '1.0'
@@ -27,7 +28,7 @@ types:
       - name: HTTP_2_0
         value: '2.0'
   - name: StatusCode
-    type: enum
+    kind: wick/type/enum@v1
     variants:
       - name: Continue
         value: '100'
@@ -119,30 +120,22 @@ types:
         value: '504'
       - name: HTTPVersionNotSupported
         value: '505'
+      - name: Unknown
+        value: '-1'
   - name: HttpResponse
-    type: struct
+    kind: wick/type/struct@v1
     fields:
       - name: version
         type: HttpVersion
         description: HTTP version enum
       - name: status
         type: StatusCode
-        default: OK
         description: status code enum
       - name: headers
-        type:
-          map:
-            key: string
-            value: { list: { type: string } }
+        type: '{string: string[]}'
         description: All response headers. Supports duplicates.
-      - name: headersRaw
-        type: string
-        description: All response headers, as a single string in case duplicate headers exist.
-      - name: body
-        type: bytes
-        description: Response body in bytes. optional.
   - name: HttpRequest
-    type: struct
+    kind: wick/type/struct@v1
     fields:
       - name: method
         type: HttpMethod
@@ -152,14 +145,9 @@ types:
         description: scheme from request line enum
       - name: authority
         type: string
-        required: false
         description: domain/port and any authentication from request line. optional
       - name: queryParameters
-        type:
-          map:
-            key: string
-            value: { list: { type: string } }
-        required: false
+        type: '{string: string[]}'
         description: query parameters from request line. optional
       - name: path
         type: string
@@ -171,15 +159,5 @@ types:
         type: HttpVersion
         description: HTTP version enum
       - name: headers
-        type:
-          map:
-            key: string
-            value: { list: { type: string } }
+        type: '{string: string[]}'
         description: All request headers. Duplicates are comma separated.
-      - name: headersRaw
-        type: string
-        description: All request headers, as a single string.
-      - name: body
-        type: bytes
-        required: false
-        description: Request body. optional
