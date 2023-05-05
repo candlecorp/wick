@@ -46,7 +46,11 @@ async fn fetch_all(
   options: FetchOptions,
 ) -> Result<(), Error> {
   for asset in asset_manager.assets().iter() {
-    asset.fetch(options.clone()).await?;
+    if asset.get_asset_flags() == AssetFlags::Lazy {
+      continue;
+    } else {
+      asset.fetch(options.clone()).await?;
+    }
   }
   Ok(())
 }

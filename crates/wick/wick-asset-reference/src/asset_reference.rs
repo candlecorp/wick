@@ -326,7 +326,9 @@ async fn retrieve_remote(location: &str, options: FetchOptions) -> Result<(PathB
   let oci_opts = wick_oci_utils::OciOptions::default()
     .cache_dir(options.get_artifact_dir().cloned())
     .allow_insecure(options.allow_insecure)
-    .allow_latest(options.allow_latest);
+    .allow_latest(options.allow_latest)
+    .username(options.oci_username)
+    .password(options.oci_password);
   let result = wick_oci_utils::package::pull(location, &oci_opts)
     .await
     .map_err(|e| Error::LoadError(PathBuf::from(location), e.to_string()))?;
