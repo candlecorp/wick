@@ -158,6 +158,11 @@ impl ComponentConfiguration {
     &self.component
   }
 
+  /// Get the configuration related to the specific [ComponentKind].
+  pub fn component_mut(&mut self) -> &mut ComponentImplementation {
+    &mut self.component
+  }
+
   /// Get the kind of this component implementation.
   pub fn kind(&self) -> ComponentKind {
     self.component.kind()

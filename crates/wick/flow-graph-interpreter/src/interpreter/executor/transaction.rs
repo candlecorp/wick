@@ -186,8 +186,11 @@ impl Transaction {
 
     tokio::spawn(async move {
       while let Some(Ok(packet)) = payloads.next().await {
-        let port = input.find_input(packet.port()).unwrap();
-        accept_input(tx_id, port, &input, &channel, packet).await;
+        if let Ok(port) = input.find_input(packet.port()) {
+          accept_input(tx_id, port, &input, &channel, packet).await;
+        } else {
+          warn!(port = packet.port(), "dropping packet for unconnected port");
+        }
       }
     });
     Ok(())

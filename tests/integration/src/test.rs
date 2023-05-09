@@ -7,6 +7,7 @@ use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream};
 use wick_rpc::{dispatch, RpcHandler};
 
 mod wick_component_cli;
+mod wick_host_run;
 mod wick_invocation_server;
 mod wick_packet_test;
 mod wick_test;

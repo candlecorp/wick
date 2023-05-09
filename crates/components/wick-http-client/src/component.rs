@@ -68,7 +68,7 @@ fn get_op_by_name(config: &HttpClientComponentConfig, name: &str) -> Option<Http
   config.operations.iter().find(|op| op.name == name).cloned()
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
 async fn handle(
   opdef: Option<HttpClientOperationDefinition>,
   tx: FluxChannel<Packet, wick_packet::Error>,
@@ -103,9 +103,21 @@ async fn handle(
       }
     };
     trace!(inputs = ?inputs, "http:inputs");
+    if inputs.values().all(|v| v.is_done()) {
+      break 'outer;
+    }
     let mut inputs: Map<String, Value> = inputs
       .into_iter()
-      .map(|(k, v)| (k, v.deserialize_generic().unwrap()))
+      .map(|(k, v)| {
+        let v = v
+          .deserialize_generic()
+          .map_err(|e| {
+            warn!(port=%k,error=%e, "http:input:deserialize");
+            e
+          })
+          .unwrap_or(Value::Null);
+        (k, v)
+      })
       .collect();
     if let Some(config) = &config {
       for (k, v) in config.iter() {
@@ -289,6 +301,7 @@ fn output_task(
           let _ = tx.send(Packet::encode("body", bytes));
         }
         let _ = tx.send(Packet::close_bracket("body"));
+        let _ = tx.send(Packet::done("body"));
       }
     }
   };

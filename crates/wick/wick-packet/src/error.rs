@@ -8,11 +8,11 @@ pub enum Error {
   PortMissing(String),
 
   /// Error serializing payload.
-  #[error("Error serializing payload: {1} (payload was: {:?}",.0)]
+  #[error("Error serializing payload: {1} (payload was: {:?})",.0)]
   Encode(Vec<u8>, String),
 
   /// Error deserializing payload.
-  #[error("Error deserializing  payload: {1} (payload was: {:?}",.0)]
+  #[error("Error deserializing  payload: {1} (payload was: {:?})",.0)]
   Decode(Vec<u8>, String),
 
   /// Error converting payload into JSON.

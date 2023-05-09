@@ -26,6 +26,7 @@ use crate::constants::*;
 use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterChannel;
 use crate::interpreter::components::component_component::ComponentComponent;
+use crate::interpreter::components::null_component::NullComponent;
 use crate::interpreter::components::schematic_component::SchematicComponent;
 use crate::interpreter::executor::error::ExecutionError;
 use crate::{NamespaceHandler, Observer, SharedHandler};
@@ -81,6 +82,7 @@ impl Interpreter {
       }
     }
     handlers.add_core(&network)?;
+    handlers.add(NamespaceHandler::new(NS_NULL, Box::new(NullComponent::new())))?;
 
     // Add the component:: component
     let component_component = ComponentComponent::new(&handlers);

@@ -92,13 +92,13 @@ pub fn from_manifest(network_def: &wick_config::config::ComponentConfiguration) 
         println!("{:?}", connection);
         let from = connection.from();
         let to = connection.to();
-        let to_port = if let Some(node) = schematic.find_mut(to.instance().id()) {
+        let to_port = if let Some(node) = schematic.find_mut(to.instance().id().unwrap()) {
           println!("{:?}", node);
           node.add_input(to.port())
         } else {
           panic!();
         };
-        if let Some(node) = schematic.find_mut(from.instance().id()) {
+        if let Some(node) = schematic.find_mut(from.instance().id().unwrap()) {
           println!("{:?}", node);
           let from_port = node.add_output(from.port());
           schematic.connect(from_port, to_port, None)?;

@@ -45,6 +45,7 @@ fn component_id(input: &str) -> IResult<&str, InstanceTarget> {
   let t = match t {
     super::SCHEMATIC_INPUT => InstanceTarget::Input,
     super::SCHEMATIC_OUTPUT => InstanceTarget::Output,
+    super::SCHEMATIC_NULL | "drop" => InstanceTarget::Null(None),
     super::CORE_ID => InstanceTarget::Core,
     DEFAULT_ID => InstanceTarget::Default,
     super::NS_LINK => InstanceTarget::Link,
@@ -61,6 +62,8 @@ fn reserved_component_id(input: &str) -> IResult<&str, &str> {
   alt((
     tag(super::SCHEMATIC_INPUT),
     tag(super::SCHEMATIC_OUTPUT),
+    tag(super::SCHEMATIC_NULL),
+    tag("drop"),
     tag(super::CORE_ID),
     tag(super::NS_LINK),
     tag(DEFAULT_ID),
@@ -92,6 +95,13 @@ fn portless_target_expression(input: &str) -> IResult<&str, (InstanceTarget, Opt
   instance(input).map(|(i, v)| (i, (v, None)))
 }
 
+// fn port_or(instance: &InstanceTarget, port: Option<&str>, or: &str) -> &str {
+//   match (instance, port) {
+//     (InstanceTarget::Null, _) => "input",
+//     (InstanceTarget::Input, Some()) => "input",
+//   }
+// }
+
 fn connection_expression(input: &str) -> IResult<&str, ConnectionExpression> {
   let (i, (from, to)) = pair(
     terminated(
@@ -100,16 +110,22 @@ fn connection_expression(input: &str) -> IResult<&str, ConnectionExpression> {
     ),
     ws(alt((connection_target_expression, portless_target_expression))),
   )(input)?;
-  let (i, (from, to)) = match (from.1, to.1) {
-    (None, Some(to_port)) => (i, ((from.0, to_port), (to.0, to_port))),
-    (Some(from_port), None) => (i, ((from.0, from_port), (to.0, from_port))),
-    (None, None) => {
+  let (i, (from, to)) = match (from.1, to) {
+    // if no port on the upstream but there's a port on the downstream, use the downstream port
+    (None, (to, Some(to_port))) => (i, ((from.0, to_port), (to, to_port))),
+    // if there's a port on the upstream and the downstream is the Null entity, use the port 'input'
+    (Some(from_port), to @ (InstanceTarget::Null(_), _)) => (i, ((from.0, from_port), (to.0, "input"))),
+    // if there's a port on the upstream and the downstream is anything else, adopt the upstream port.
+    (Some(from_port), (to, None)) => (i, ((from.0, from_port), (to, from_port))),
+    // if there's no port on the upstream and no port on the downstream, error
+    (None, (_, None)) => {
       return Err(nom::Err::Error(nom::error::Error::new(
         input,
         nom::error::ErrorKind::Verify,
       )))
     }
-    _ => (i, ((from.0, from.1.unwrap()), (to.0, to.1.unwrap()))),
+    // Otherwise we've got ports so let's use em.
+    x => (i, ((from.0, from.1.unwrap()), (x.1 .0, x.1 .1.unwrap()))),
   };
   Ok((
     i,
@@ -229,6 +245,7 @@ mod tests {
   #[case("ref1.port-><>", ((InstanceTarget::named("ref1"), "port"),(InstanceTarget::Default, "port")))]
   #[case("<> -> ref1.port", ((InstanceTarget::Default, "port"),(InstanceTarget::named("ref1"), "port")))]
   #[case("<> -> test::reverse[A].input",((InstanceTarget::Default, "input"),(InstanceTarget::path("test::reverse","A"), "input")))]
+  #[case("<>.anything -> drop",((InstanceTarget::Default, "anything"),(InstanceTarget::Null(None), "input")))]
   fn connection_parts(
     #[case] input: &'static str,
     #[case] expected: ((InstanceTarget, &str), (InstanceTarget, &str)),

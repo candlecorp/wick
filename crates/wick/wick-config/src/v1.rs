@@ -344,6 +344,11 @@ pub(crate) struct RawRouter {
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
+  /// The codec to use when encoding/decoding data.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) codec: Option<Codec>,
   /// The operation that handles HTTP requests.
 
   #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]

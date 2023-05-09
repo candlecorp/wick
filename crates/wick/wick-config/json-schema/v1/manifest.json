@@ -432,6 +432,12 @@
 
           "type": "string"
         },
+        "codec": {
+          "description": "The codec to use when encoding/decoding data.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/Codec"
+        },
         "operation": {
           "description": "The operation that handles HTTP requests.",
 

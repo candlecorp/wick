@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use seeded_random::Seed;
 use uuid::Uuid;
-use wick_packet::OperationConfig;
+use wick_packet::{Entity, OperationConfig};
 
 use crate::dev::prelude::*;
 use crate::runtime_service::{ComponentFactory, ComponentRegistry, Initialize};
@@ -27,6 +27,7 @@ pub struct RuntimeInit {
   namespace: Option<String>,
   rng_seed: Seed,
   native_components: ComponentRegistry,
+  constraints: Vec<RuntimeConstraint>,
 }
 
 impl Runtime {
@@ -41,6 +42,7 @@ impl Runtime {
       config.timeout,
       config.native_components,
       config.namespace,
+      config.constraints,
       debug_span!("runtime:new"),
     );
 
@@ -97,6 +99,7 @@ pub struct RuntimeBuilder {
   allow_latest: bool,
   allowed_insecure: Vec<String>,
   manifest_builder: config::ComponentConfigurationBuilder,
+  constraints: Vec<RuntimeConstraint>,
   timeout: Duration,
   rng_seed: Option<Seed>,
   namespace: Option<String>,
@@ -114,6 +117,24 @@ impl std::fmt::Debug for RuntimeBuilder {
       .field("namespace", &self.namespace)
       .field("native_components", &self.native_components)
       .finish()
+  }
+}
+
+#[derive(Debug, Clone)]
+pub enum RuntimeConstraint {
+  Operation {
+    entity: Entity,
+    signature: OperationSignature,
+  },
+}
+
+impl std::fmt::Display for RuntimeConstraint {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      RuntimeConstraint::Operation { entity, .. } => {
+        write!(f, "Operation signature for {}", entity)
+      }
+    }
   }
 }
 
@@ -135,7 +156,13 @@ impl RuntimeBuilder {
       native_components: ComponentRegistry::default(),
       namespace: None,
       rng_seed: None,
+      constraints: Vec::new(),
     })
+  }
+
+  pub fn add_constraint(&mut self, constraint: RuntimeConstraint) -> &mut Self {
+    self.constraints.push(constraint);
+    self
   }
 
   pub fn add_import(&mut self, component: config::ImportBinding) -> &mut Self {
@@ -195,6 +222,7 @@ impl RuntimeBuilder {
       timeout: self.timeout,
       namespace: self.namespace,
       rng_seed: self.rng_seed.unwrap_or_else(new_seed),
+      constraints: self.constraints,
     })
     .await
   }

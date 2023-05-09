@@ -6,13 +6,17 @@ use std::task::{Context, Poll};
 
 use bytes::Bytes;
 use futures::future::BoxFuture;
-use futures::Future;
+use futures::{Future, TryStreamExt};
+use hyper::header::CONTENT_LENGTH;
 use hyper::http::response::Builder;
 use hyper::http::uri::InvalidUri;
+use hyper::http::{HeaderName, HeaderValue};
 use hyper::server::conn::AddrStream;
 use hyper::service::Service;
-use hyper::{Body, Request, Response, StatusCode};
+use hyper::{Body, HeaderMap, Request, Response, StatusCode};
 use tokio_stream::StreamExt;
+use wick_config::config::components::Codec;
+use wick_interface_http::wasmrs::PayloadError;
 use wick_packet::{packets, Entity, Invocation, Observer, Packet, PacketStream};
 
 use super::{ComponentRouterHandler, HttpError, HttpRouter};
@@ -70,7 +74,7 @@ impl ResponseService {
   }
 }
 
-async fn respond(stream: Result<PacketStream, RuntimeError>) -> Result<Response<Body>, HttpError> {
+async fn respond(codec: Codec, stream: Result<PacketStream, RuntimeError>) -> Result<Response<Body>, HttpError> {
   if let Err(e) = stream {
     return Ok(
       Builder::new()
@@ -94,17 +98,39 @@ async fn respond(stream: Result<PacketStream, RuntimeError>) -> Result<Response<
             .map_err(|e| HttpError::Deserialize("response".to_owned(), e.to_string()))?;
           builder = convert_response(builder, response)?;
         } else if p.port() == "body" {
-          if p.is_done() {
+          if !p.has_data() {
             continue;
           }
-          let response: Bytes = p.deserialize().map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
-          body.extend_from_slice(&response);
+          if codec == Codec::Json {
+            let response: serde_json::Value = p.deserialize().map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
+            let as_str = response.to_string();
+            let bytes = as_str.as_bytes();
+            body.extend_from_slice(bytes);
+          } else {
+            let response: Bytes = p.deserialize().map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
+            body.extend_from_slice(&response);
+          }
         }
       }
       Err(e) => return Err(HttpError::InvalidResponse(e.to_string())),
     }
   }
+  builder = reset_header(builder, CONTENT_LENGTH, body.len());
   Ok(builder.body(body.freeze().into()).unwrap())
+}
+
+fn reset_header(mut builder: Builder, header: HeaderName, value: impl Into<HeaderValue>) -> Builder {
+  #[allow(clippy::option_if_let_else)]
+  if let Some(headers) = builder.headers_mut() {
+    if let Some(cl) = headers.get_mut(&header) {
+      *cl = value.into();
+    } else {
+      headers.insert(header, value.into());
+    }
+  } else {
+    builder = builder.header(header, value.into());
+  };
+  builder
 }
 
 impl Service<Request<Body>> for ResponseService {
@@ -129,10 +155,16 @@ impl Service<Request<Body>> for ResponseService {
       match router {
         Some(h) => match h {
           HttpRouter::Component(h) => {
+            let codec = h.codec;
             let handler = handle_component_router(h, engine, req);
             match handler {
               Ok(handler) => {
-                match respond(handler.await.map_err(|e| RuntimeError::TriggerFailed(e.to_string()))).await {
+                match respond(
+                  codec,
+                  handler.await.map_err(|e| RuntimeError::TriggerFailed(e.to_string())),
+                )
+                .await
+                {
                   Ok(r) => Ok(r),
                   Err(e) => Ok(make_ise(e)),
                 }
@@ -181,16 +213,36 @@ fn handle_component_router(
           let _ = tx.send(packet);
         }
         tokio::spawn(async move {
-          while let Some(bytes) = body.next().await {
+          if h.codec == Codec::Json {
+            let bytes: Result<Vec<Bytes>, _> = body.try_collect().await;
             match bytes {
               Ok(b) => {
-                let _ = tx.send(Packet::encode("body", b));
+                let bytes = b.join(&0);
+                trace!(?bytes, "http:codec:json:bytes");
+                let Ok(value) : Result<serde_json::Value,_> = serde_json::from_slice(&bytes) else {
+                  let _ = tx.error(wick_packet::Error::component_error("Could not decode body as JSON"));
+                  return;
+                };
+                let _ = tx.send(Packet::encode("body", value));
               }
               Err(e) => {
                 let _ = tx.send(Packet::err("body", e.to_string()));
               }
             }
+          } else {
+            while let Some(bytes) = body.next().await {
+              trace!(?bytes, "http:codec:raw:bytes");
+              match bytes {
+                Ok(b) => {
+                  let _ = tx.send(Packet::encode("body", b));
+                }
+                Err(e) => {
+                  let _ = tx.send(Packet::err("body", e.to_string()));
+                }
+              }
+            }
           }
+          trace!("http:request:done");
           let _ = tx.send(Packet::done("body"));
         });
         stream

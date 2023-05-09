@@ -44,6 +44,26 @@ async fn test_pluck() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn test_drop() -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(
+    "./tests/manifests/v1/core-drop.yaml",
+    "test",
+    packets!(("first", "first"), ("second", "second"), ("third", "third")),
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _ = outputs.pop();
+  let wrapper = outputs.pop().unwrap().unwrap();
+  let expected = Packet::encode("output", "second");
+  assert_eq!(wrapper, expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
 // #[ignore]
 async fn test_merge() -> Result<()> {
   let (interpreter, mut outputs) = test::common_setup(

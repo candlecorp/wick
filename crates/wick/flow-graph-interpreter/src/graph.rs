@@ -15,7 +15,7 @@ use flow_graph::NodeReference;
 use types::*;
 use wick_config::config::{ComponentImplementation, FlowOperation};
 
-use crate::constants::{INTERNAL_ID_INHERENT, NS_CORE, NS_INTERNAL};
+use crate::constants::{INTERNAL_ID_INHERENT, NS_CORE, NS_INTERNAL, NS_NULL};
 
 #[derive(Debug)]
 #[must_use]
@@ -43,10 +43,10 @@ impl Reference {
 fn register_operation(
   mut scope: Vec<String>,
   network: &mut Network,
-  flow: &FlowOperation,
+  flow: &mut FlowOperation,
 ) -> Result<(), flow_graph::error::Error> {
   scope.push(flow.name.clone());
-  for flow in &flow.flows {
+  for flow in &mut flow.flows {
     let scope = scope.clone();
     register_operation(scope, network, flow)?;
   }
@@ -62,40 +62,52 @@ fn register_operation(
     schematic.add_external(name, NodeReference::new(&def.component_id, &def.name), def.data.clone());
   }
 
+  let mut drop_id = 0;
+
   // inline instances
-  for expression in &flow.expressions {
+  for expression in &mut flow.expressions {
     match expression {
       FlowExpression::ConnectionExpression(expr) => {
         if let InstanceTarget::Path(path, id) = expr.from().instance() {
           let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
           schematic.add_external(id, NodeReference::new(component_id, op), None);
         }
-        if let InstanceTarget::Path(path, id) = expr.to().instance() {
-          let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
-          schematic.add_external(id, NodeReference::new(component_id, op), None);
+        match expr.to_mut().instance_mut() {
+          InstanceTarget::Path(path, id) => {
+            let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
+            schematic.add_external(id, NodeReference::new(component_id, op), None);
+          }
+          InstanceTarget::Null(id) => {
+            drop_id += 1;
+            let id_str = format!("drop_{}", drop_id);
+            id.replace(id_str.clone());
+            schematic.add_external(id_str, NodeReference::new(NS_NULL, "drop"), None);
+          }
+          _ => {}
         }
       }
       FlowExpression::BlockExpression(_) => todo!(),
     }
   }
 
-  for connection in &flow.expressions {
-    match connection {
-      FlowExpression::ConnectionExpression(connection) => {
-        let from = connection.from();
-        let to = connection.to();
+  for expression in &flow.expressions {
+    match expression {
+      FlowExpression::ConnectionExpression(expr) => {
+        let from = expr.from();
+        let to = expr.to();
         let to_port = schematic
-          .find_mut(to.instance().id())
+          .find_mut(to.instance().id().unwrap())
           .map(|component| component.add_input(to.port()));
 
         if to_port.is_none() {
+          println!("Missing downstream: instance {:?}", to);
           return Err(flow_graph::error::Error::MissingDownstream(
-            to.instance().id().to_owned(),
+            to.instance().id().unwrap().to_owned(),
           ));
         }
         let to_port = to_port.unwrap();
 
-        if let Some(component) = schematic.find_mut(from.instance().id()) {
+        if let Some(component) = schematic.find_mut(from.instance().id().unwrap()) {
           let from_port = component.add_output(from.port());
           schematic.connect(from_port, to_port, None)?;
         } else {
@@ -109,11 +121,13 @@ fn register_operation(
   Ok(())
 }
 
-pub fn from_def(manifest: &wick_config::config::ComponentConfiguration) -> Result<Network, flow_graph::error::Error> {
+pub fn from_def(
+  manifest: &mut wick_config::config::ComponentConfiguration,
+) -> Result<Network, flow_graph::error::Error> {
   let mut network = Network::new(manifest.name().clone().unwrap_or_default());
 
-  if let ComponentImplementation::Composite(composite) = manifest.component() {
-    for flow in composite.operations().values() {
+  if let ComponentImplementation::Composite(composite) = manifest.component_mut() {
+    for flow in composite.operations_mut().values_mut() {
       register_operation(vec![], &mut network, flow)?;
     }
   }

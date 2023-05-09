@@ -817,6 +817,11 @@
             "description": "The path to start serving this router from.",
             "type": "string"
           },
+          "codec": {
+            "description": "The codec to use when encoding/decoding data.",
+            "required": false,
+            "$ref": "#/$defs/v1/Codec"
+          },
           "operation": {
             "description": "The operation that handles HTTP requests.",
             "$ref": "#/$defs/v1/ComponentOperationExpression"

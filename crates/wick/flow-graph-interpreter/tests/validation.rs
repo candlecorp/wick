@@ -41,7 +41,7 @@ fn collections(sig: ComponentSignature) -> HandlerMap {
 }
 
 fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interpreter, InterpreterError> {
-  let network = from_def(&load(path).unwrap()).unwrap();
+  let network = from_def(&mut load(path).unwrap()).unwrap();
 
   Interpreter::new(
     Some(Seed::unsafe_new(1)),
@@ -54,8 +54,8 @@ fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interprete
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_collections() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/external.yaml")?;
-  let network = from_def(&manifest)?;
+  let mut manifest = load("./tests/manifests/v0/external.yaml")?;
+  let network = from_def(&mut manifest)?;
   let result: std::result::Result<Interpreter, _> =
     Interpreter::new(Some(Seed::unsafe_new(1)), network, None, None, panic_callback());
   let validation_errors = ValidationError::ComponentIdNotFound("test".to_owned());

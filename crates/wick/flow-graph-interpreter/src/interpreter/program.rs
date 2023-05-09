@@ -137,6 +137,7 @@ fn get_schematic_signature(
         _ => continue,
       };
       schematic_signature.inputs.push(Field::new(port.name(), signature));
+      break;
     }
   }
 
@@ -157,6 +158,7 @@ fn get_schematic_signature(
         _ => continue,
       };
       schematic_signature.outputs.push(Field::new(port.name(), signature));
+      break;
     }
   }
   Ok(schematic_signature)

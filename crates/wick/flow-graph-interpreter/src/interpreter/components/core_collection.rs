@@ -104,7 +104,6 @@ impl Component for CoreCollection {
         pluck::Op::ID => core_op! {pluck::Op, self.pluck, stream, callback, data, seed},
         merge::Op::ID => core_op! {merge::Op, self.merge, stream, callback, data, seed},
         switch::Op::ID => core_op! {switch::Op, self.switch, stream, callback, data, seed},
-
         _ => {
           panic!("Core operation {} not handled.", invocation.target.operation_id());
         }
