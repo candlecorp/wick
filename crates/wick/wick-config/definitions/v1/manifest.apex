@@ -670,6 +670,8 @@ enum Codec {
   Json = 0 as "json",
   "Raw"
   Raw = 1 as "raw",
+  "Form Data"
+  FormData = 2 as "form-data",
 }
 
 "Supported HTTP methods"

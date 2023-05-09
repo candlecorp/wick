@@ -1883,7 +1883,7 @@
 
     "Codec": {
       "$anchor": "#v1/Codec",
-      "enum": ["Json", "Raw"]
+      "enum": ["Json", "Raw", "FormData"]
     },
 
     "HttpMethod": {

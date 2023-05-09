@@ -52,6 +52,7 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
           match operation.codec {
             Some(Codec::Json) => wick_interface_types::TypeSignature::Object,
             Some(Codec::Raw) => wick_interface_types::TypeSignature::Bytes,
+            Some(Codec::FormData) => wick_interface_types::TypeSignature::Object,
             None => wick_interface_types::TypeSignature::Object,
           },
         ),
@@ -177,6 +178,8 @@ pub enum Codec {
   Json = 0,
   /// Raw
   Raw = 1,
+  /// Form Data
+  FormData = 2,
 }
 
 impl Default for Codec {

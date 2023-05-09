@@ -785,6 +785,7 @@ impl From<config::components::Codec> for v1::Codec {
     match value {
       config::components::Codec::Json => Self::Json,
       config::components::Codec::Raw => Self::Raw,
+      config::components::Codec::FormData => Self::FormData,
     }
   }
 }
@@ -794,6 +795,7 @@ impl From<v1::Codec> for config::components::Codec {
     match value {
       v1::Codec::Json => Self::Json,
       v1::Codec::Raw => Self::Raw,
+      v1::Codec::FormData => Self::FormData,
     }
   }
 }

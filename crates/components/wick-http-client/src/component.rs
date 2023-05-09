@@ -4,6 +4,7 @@ use std::sync::Arc;
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use futures::{Stream, StreamExt, TryStreamExt};
 use parking_lot::Mutex;
+use reqwest::header::CONTENT_TYPE;
 use reqwest::{ClientBuilder, Method, Request, RequestBuilder};
 use serde_json::{Map, Value};
 use url::Url;
@@ -158,10 +159,12 @@ async fn handle(
     };
     let request_builder = RequestBuilder::from_parts(client.clone(), request);
     let mut request_builder = if let Some(body) = body {
-      if codec == Codec::Json {
-        request_builder.json(&body)
-      } else {
-        unimplemented!("http: non-json body not implemented yet");
+      match codec {
+        Codec::Json => request_builder.json(&body),
+        Codec::Raw => {
+          unimplemented!("raw bodies not supported yet")
+        }
+        Codec::FormData => request_builder.form(&body),
       }
     } else {
       request_builder
@@ -175,13 +178,27 @@ async fn handle(
         request_builder = request_builder.header(header, value);
       }
     }
-    let response = match request_builder.send().await {
+    let (client, request) = request_builder.build_split();
+    let request = request.unwrap();
+
+    trace!(?request,body=?request.body().map(|b|b.as_bytes()), "http:client:request");
+
+    let response = match client.execute(request).await {
       Ok(r) => r,
       Err(e) => {
         let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
         break 'outer;
       }
     };
+    let codec = response.headers().get(CONTENT_TYPE).map_or(Codec::Raw, |value| {
+      let value = value.to_str().unwrap();
+      let (value, _other) = value.split_once(';').unwrap_or((value, ""));
+      match value {
+        "application/json" => Codec::Json,
+        "application/x-www-form-urlencoded" => Codec::FormData,
+        _ => Codec::Raw,
+      }
+    });
     let (our_response, body_stream) = match crate::conversions::to_wick_response(response) {
       Ok(r) => r,
       Err(e) => {
@@ -303,6 +320,7 @@ fn output_task(
         let _ = tx.send(Packet::close_bracket("body"));
         let _ = tx.send(Packet::done("body"));
       }
+      Codec::FormData => unreachable!("Form data on the response is not supported."),
     }
   };
   Box::pin(task)
