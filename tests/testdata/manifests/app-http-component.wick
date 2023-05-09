@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../wick/crates/wick/wick-config/json-schema/manifest.json
+# yaml-language-server: $schema=../../../../wick/crates/wick/wick-config/json-schema/manifest.json
 ---
 kind: wick/app@v1
 name: candle_website

@@ -1420,6 +1420,8 @@ pub(crate) enum Codec {
   Json = 0,
   /// Raw
   Raw = 1,
+  /// Form Data
+  FormData = 2,
 }
 
 impl Default for Codec {
@@ -1433,6 +1435,7 @@ impl FromPrimitive for Codec {
     Some(match n {
       0 => Self::Json,
       1 => Self::Raw,
+      2 => Self::FormData,
       _ => {
         return None;
       }
@@ -1443,6 +1446,7 @@ impl FromPrimitive for Codec {
     Some(match n {
       0 => Self::Json,
       1 => Self::Raw,
+      2 => Self::FormData,
       _ => {
         return None;
       }

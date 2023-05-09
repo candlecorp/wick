@@ -2306,7 +2306,8 @@
         "$anchor": "#v1/Codec",
         "enum": [
           "Json",
-          "Raw"
+          "Raw",
+          "FormData"
         ]
       },
       "HttpMethod": {
