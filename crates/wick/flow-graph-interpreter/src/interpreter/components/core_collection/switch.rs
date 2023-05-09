@@ -102,6 +102,7 @@ impl Op {
 impl Operation for Op {
   const ID: &'static str = "switch";
   type Config = Config;
+  #[allow(clippy::too_many_lines)]
   fn handle(
     &self,
     mut stream: PacketStream,
@@ -116,20 +117,34 @@ impl Operation for Op {
       let mut held_packets = VecDeque::new();
       let mut router: HashMap<String, PacketSender> = HashMap::new();
       let origin = Entity::operation(NS_CORE, Op::ID);
-      loop {
-        let packet = match held_packets.pop_front() {
-          Some(p) => p,
-          None => match stream.next().await {
+      'outer: loop {
+        let packet = if condition.is_some() {
+          match held_packets.pop_front() {
+            Some(p) => p,
+            None => match stream.next().await {
+              Some(Ok(p)) => p,
+              Some(Err(e)) => {
+                let _ = tx.error(e);
+                continue;
+              }
+              None => {
+                break 'outer;
+              }
+            },
+          }
+        } else {
+          match stream.next().await {
             Some(Ok(p)) => p,
             Some(Err(e)) => {
               let _ = tx.error(e);
               continue;
             }
             None => {
-              break;
+              break 'outer;
             }
-          },
+          }
         };
+
         if packet.port() == DISCRIMINANT {
           if packet.has_data() {
             condition = Some(packet.deserialize_generic().unwrap());
@@ -138,6 +153,7 @@ impl Operation for Op {
         }
         let Some(condition) = &condition else {
           held_packets.push_back(packet);
+          tokio::task::yield_now().await;
           continue;
         };
         let case = context.config.cases.iter().find(|case| case.case == *condition);
@@ -152,6 +168,7 @@ impl Operation for Op {
             &case.case_do
           },
         );
+        trace!(operation = op, "core:switch:route");
         let stream = router.entry(op.clone()).or_insert_with(|| {
           let target = path_to_entity(op).unwrap(); // unwrap ok because the config has been pre-validated.
           let op_id = target.operation_id().to_owned();
