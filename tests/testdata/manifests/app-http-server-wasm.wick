@@ -1,0 +1,20 @@
+---
+kind: wick/app@v1
+resources:
+  - name: http
+    resource:
+      kind: wick/resource/tcpport@v1
+      port: 8999
+      address: 0.0.0.0
+triggers:
+  - kind: wick/trigger/http@v1
+    resource: http
+    routers:
+      - kind: wick/router/raw@v1
+        path: /
+        codec: Raw
+        operation:
+          name: http_handler
+          component:
+            kind: wick/component/manifest@v1
+            ref: ../../../crates/integration/test-http-trigger-component/component.yaml

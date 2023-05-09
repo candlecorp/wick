@@ -14,6 +14,7 @@ use wick_config::config::{ComponentConfiguration, ComponentKind, Metadata};
 use wick_config::Resolver;
 use wick_packet::OperationConfig;
 
+use self::error::ConstraintFailure;
 use crate::components::{
   expect_signature_match,
   init_hlc_component,
@@ -23,7 +24,7 @@ use crate::components::{
   make_link_callback,
 };
 use crate::dev::prelude::*;
-use crate::runtime_service::error::InternalError;
+use crate::runtime::RuntimeConstraint;
 use crate::{BoxFuture, V0_NAMESPACE};
 
 type Result<T> = std::result::Result<T, EngineError>;
@@ -37,6 +38,7 @@ pub(crate) struct Initialize {
   pub(crate) native_components: ComponentRegistry,
   pub(crate) namespace: Option<String>,
   pub(crate) span: Span,
+  pub(crate) constraints: Vec<RuntimeConstraint>,
   rng: Random,
 }
 
@@ -50,6 +52,7 @@ impl Initialize {
     timeout: Duration,
     native_components: ComponentRegistry,
     namespace: Option<String>,
+    constraints: Vec<RuntimeConstraint>,
     span: Span,
   ) -> Self {
     let rng = Random::from_seed(rng_seed);
@@ -62,6 +65,7 @@ impl Initialize {
       native_components,
       namespace,
       span,
+      constraints,
       rng,
     }
   }
@@ -76,6 +80,7 @@ impl Initialize {
     timeout: Duration,
     native_components: ComponentRegistry,
     namespace: Option<String>,
+    constraints: Vec<RuntimeConstraint>,
     span: Span,
   ) -> Self {
     let rng = Random::from_seed(rng_seed);
@@ -88,6 +93,7 @@ impl Initialize {
       native_components,
       namespace,
       span,
+      constraints,
       rng,
     }
   }
@@ -157,9 +163,9 @@ type ServiceMap = HashMap<Uuid, Arc<RuntimeService>>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 impl RuntimeService {
-  pub(crate) async fn new(init: Initialize) -> Result<Arc<Self>> {
+  pub(crate) async fn new(mut init: Initialize) -> Result<Arc<Self>> {
     debug!("initializing engine service");
-    let graph = flow_graph_interpreter::graph::from_def(&init.manifest)?;
+    let graph = flow_graph_interpreter::graph::from_def(&mut init.manifest)?;
     let mut components = HandlerMap::default();
     let ns = init.namespace.clone().unwrap_or_else(|| init.id.to_string());
 
@@ -204,6 +210,7 @@ impl RuntimeService {
 
     let source = init.manifest.source();
     let callback = make_link_callback(init.id);
+    assert_constraints(&init.constraints, &components)?;
 
     let mut interpreter =
       flow_graph_interpreter::Interpreter::new(Some(init.seed()), graph, Some(ns.clone()), Some(components), callback)
@@ -246,6 +253,7 @@ impl RuntimeService {
       opts.timeout,
       ComponentRegistry::default(),
       namespace,
+      vec![],
       debug_span!("engine:new"),
     );
 
@@ -262,6 +270,38 @@ impl RuntimeService {
     let _ = self.interpreter.shutdown().await;
     Ok(())
   }
+}
+
+fn assert_constraints(constraints: &[RuntimeConstraint], components: &HandlerMap) -> Result<()> {
+  for constraint in constraints {
+    #[allow(irrefutable_let_patterns)]
+    if let RuntimeConstraint::Operation { entity, signature } = constraint {
+      let handler = components
+        .get(entity.component_id())
+        .ok_or_else(|| EngineError::InvalidConstraint(ConstraintFailure::ComponentNotFound(entity.clone())))?;
+      let sig = handler.component().list();
+      let op = sig
+        .get_operation(entity.operation_id())
+        .ok_or_else(|| EngineError::InvalidConstraint(ConstraintFailure::OperationNotFound(entity.clone())))?;
+      for field in &signature.inputs {
+        op.inputs
+          .iter()
+          .find(|sig_field| sig_field.name == field.name)
+          .ok_or_else(|| {
+            EngineError::InvalidConstraint(ConstraintFailure::InputNotFound(entity.clone(), field.name.clone()))
+          })?;
+      }
+      for field in &signature.outputs {
+        op.outputs
+          .iter()
+          .find(|sig_field| sig_field.name == field.name)
+          .ok_or_else(|| {
+            EngineError::InvalidConstraint(ConstraintFailure::OutputNotFound(entity.clone(), field.name.clone()))
+          })?;
+      }
+    }
+  }
+  Ok(())
 }
 
 impl InvocationHandler for RuntimeService {
@@ -350,11 +390,100 @@ pub(crate) async fn instantiate_import<'a, 'b>(
         config::ComponentDefinition::Native(_) => Ok(None),
       }
     }
-    config::ImportDefinition::Types(_) => Err(EngineError::InternalError(InternalError::InitTypeImport)),
+    config::ImportDefinition::Types(_) => Ok(None),
   }
 }
 
 #[cfg(test)]
 mod test {
   // You can find many of the engine tests in the integration tests
+
+  use anyhow::Result;
+  use wick_packet::Entity;
+
+  use super::*;
+
+  struct TestComponent {
+    signature: ComponentSignature,
+  }
+
+  impl TestComponent {
+    fn new() -> Self {
+      Self {
+        signature: component! {
+          name: "test",
+          version: "0.0.1",
+          operations: {
+            "testop" => {
+              inputs: {
+                "in" => "object",
+              },
+              outputs: {
+                "out" => "object",
+              },
+            },
+          }
+        },
+      }
+    }
+  }
+
+  impl flow_component::Component for TestComponent {
+    fn handle(
+      &self,
+      _invocation: Invocation,
+      _stream: PacketStream,
+      _data: Option<OperationConfig>,
+      _callback: Arc<flow_component::RuntimeCallback>,
+    ) -> flow_component::BoxFuture<std::result::Result<PacketStream, flow_component::ComponentError>> {
+      todo!()
+    }
+
+    fn list(&self) -> &ComponentSignature {
+      &self.signature
+    }
+  }
+
+  #[test]
+  fn test_constraints() -> Result<()> {
+    let mut components = HandlerMap::default();
+
+    components.add(NamespaceHandler::new("test", Box::new(TestComponent::new())))?;
+
+    let constraints = vec![RuntimeConstraint::Operation {
+      entity: Entity::operation("test", "testop"),
+      signature: operation!(
+        "testop" => {
+          inputs: {
+            "in" => "object",
+          },
+          outputs: {
+            "out" => "object",
+          },
+        }
+      ),
+    }];
+
+    assert_constraints(&constraints, &components)?;
+
+    let constraints = vec![RuntimeConstraint::Operation {
+      entity: Entity::operation("test", "testop"),
+      signature: operation!(
+        "testop" => {
+          inputs: {
+            "otherin" => "object",
+          },
+          outputs: {
+            "otherout" => "object",
+          },
+        }
+      ),
+    }];
+
+    let result = assert_constraints(&constraints, &components);
+
+    assert!(result.is_err());
+
+    Ok(())
+  }
 }

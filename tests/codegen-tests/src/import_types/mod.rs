@@ -63,9 +63,9 @@ pub mod types {
     pub field1: String,
     pub field2: String,
   }
-  pub mod http {
+  pub mod AAA {
     #[allow(unused)]
-    use super::http;
+    use super::AAA;
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     pub enum HttpVersion {
       Http10,
@@ -269,9 +269,9 @@ pub mod types {
       pub body: bytes::Bytes,
     }
   }
-  pub mod AAA {
+  pub mod http {
     #[allow(unused)]
-    use super::AAA;
+    use super::http;
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     pub enum HttpVersion {
       Http10,

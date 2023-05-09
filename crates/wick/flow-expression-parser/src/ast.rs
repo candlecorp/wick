@@ -13,6 +13,8 @@ pub enum InstanceTarget {
   Input,
   /// A flow output node.
   Output,
+  /// A black hole for inputs.
+  Null(Option<String>),
   /// A reserved namespace for built-in nodes.
   Core,
   /// An unspecified node.
@@ -36,15 +38,16 @@ impl InstanceTarget {
 
   /// Get the id of the instance target.
   #[must_use]
-  pub fn id(&self) -> &str {
+  pub fn id(&self) -> Option<&str> {
     match self {
-      InstanceTarget::Input => parse::SCHEMATIC_INPUT,
-      InstanceTarget::Output => parse::SCHEMATIC_OUTPUT,
-      InstanceTarget::Core => parse::CORE_ID,
+      InstanceTarget::Input => Some(parse::SCHEMATIC_INPUT),
+      InstanceTarget::Output => Some(parse::SCHEMATIC_OUTPUT),
+      InstanceTarget::Null(id) => id.as_deref(),
+      InstanceTarget::Core => Some(parse::CORE_ID),
       InstanceTarget::Default => panic!("Cannot get id of default instance"),
-      InstanceTarget::Link => parse::NS_LINK,
-      InstanceTarget::Named(name) => name,
-      InstanceTarget::Path(_, id) => id,
+      InstanceTarget::Link => Some(parse::NS_LINK),
+      InstanceTarget::Named(name) => Some(name),
+      InstanceTarget::Path(_, id) => Some(id),
     }
   }
 
@@ -72,6 +75,7 @@ impl std::fmt::Display for InstanceTarget {
     match self {
       InstanceTarget::Input => f.write_str(parse::SCHEMATIC_INPUT),
       InstanceTarget::Output => f.write_str(parse::SCHEMATIC_OUTPUT),
+      InstanceTarget::Null(id) => f.write_str(id.as_deref().unwrap_or(parse::SCHEMATIC_NULL)),
       InstanceTarget::Core => f.write_str(parse::CORE_ID),
       InstanceTarget::Default => f.write_str("<>"),
       InstanceTarget::Link => f.write_str(parse::NS_LINK),
@@ -145,10 +149,22 @@ impl ConnectionExpression {
     &self.from
   }
 
+  /// Get the from target.
+  #[must_use]
+  pub fn from_mut(&mut self) -> &mut ConnectionTargetExpression {
+    &mut self.from
+  }
+
   /// Get the to target.
   #[must_use]
   pub fn to(&self) -> &ConnectionTargetExpression {
     &self.to
+  }
+
+  /// Get the to target.
+  #[must_use]
+  pub fn to_mut(&mut self) -> &mut ConnectionTargetExpression {
+    &mut self.to
   }
 }
 
@@ -222,7 +238,7 @@ impl FlowProgram {
 }
 
 /// A connection target, specified by an instance and a port.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnectionTargetExpression {
   instance: InstanceTarget,
   port: String,
@@ -242,6 +258,11 @@ impl ConnectionTargetExpression {
   /// Get the instance target.
   pub fn instance(&self) -> &InstanceTarget {
     &self.instance
+  }
+
+  /// Get the instance target.
+  pub fn instance_mut(&mut self) -> &mut InstanceTarget {
+    &mut self.instance
   }
 
   /// Get the port.

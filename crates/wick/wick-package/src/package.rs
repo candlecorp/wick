@@ -44,7 +44,7 @@ impl WickPackage {
     let registry_reference;
 
     let options = wick_config::FetchOptions::default();
-    let config = WickConfiguration::fetch(&path.to_string_lossy(), options).await?;
+    let config = WickConfiguration::fetch(path.to_string_lossy(), options).await?;
     if !matches!(config, WickConfiguration::App(_) | WickConfiguration::Component(_)) {
       return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string()));
     }

@@ -65,7 +65,7 @@ impl AppHost {
           let resources = resources.clone();
           let task = tokio::spawn(async move {
             if let Err(e) = inner.run(name, app_config, config, resources).await {
-              error!("trigger failed: {}", e);
+              error!("trigger failed to start: {}", e);
             };
             Ok(())
           });

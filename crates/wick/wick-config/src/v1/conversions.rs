@@ -503,6 +503,7 @@ impl TryFrom<RawRouterConfig> for v1::RawRouter {
   fn try_from(value: RawRouterConfig) -> Result<Self> {
     Ok(Self {
       path: value.path,
+      codec: value.codec.map_into(),
       operation: value.operation.try_into()?,
     })
   }
@@ -1062,6 +1063,7 @@ impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
     let rv = match router {
       v1::HttpRouter::RawRouter(v) => Self::RawRouter(RawRouterConfig {
         path: v.path,
+        codec: v.codec.map_into(),
         operation: v.operation.try_into()?,
       }),
       v1::HttpRouter::RestRouter(v) => Self::RestRouter(RestRouterConfig {

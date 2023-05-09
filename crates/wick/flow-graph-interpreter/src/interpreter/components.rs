@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 pub(super) mod component_component;
 pub(super) mod core_collection;
-// pub(super) mod dynamic_core_collection;
 pub(crate) mod internal_collection;
+pub(super) mod null_component;
 pub(super) mod schematic_component;
 
 use flow_component::Component;

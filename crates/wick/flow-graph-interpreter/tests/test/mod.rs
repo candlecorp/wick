@@ -37,8 +37,8 @@ pub(crate) async fn base_setup(
     error_on_missing: false,
     ..Default::default()
   });
-  let def = wick_config::WickConfiguration::load_from_file_sync(manifest)?.try_component_config()?;
-  let network = from_def(&def)?;
+  let mut def = wick_config::WickConfiguration::load_from_file_sync(manifest)?.try_component_config()?;
+  let network = from_def(&mut def)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new(
     "test",
     Box::new(test::TestComponent::new()),

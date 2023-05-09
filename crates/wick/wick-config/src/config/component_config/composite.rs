@@ -22,6 +22,12 @@ impl CompositeComponentImplementation {
     &self.operations
   }
 
+  #[must_use]
+  /// Get a map of [FlowOperation]s from the [CompositeComponentConfiguration]
+  pub fn operations_mut(&mut self) -> &mut HashMap<String, FlowOperation> {
+    &mut self.operations
+  }
+
   /// Get a [FlowOperation] by name.
   #[must_use]
   pub fn flow(&self, name: &str) -> Option<&FlowOperation> {

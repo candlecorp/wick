@@ -153,6 +153,9 @@ type RawRouter @tagged("wick/router/raw@v1") {
   "The path to start serving this router from."
   path: string @required
 
+  "The codec to use when encoding/decoding data."
+  codec: Codec?
+
   "The operation that handles HTTP requests."
   operation: ComponentOperationExpression @required
 }
