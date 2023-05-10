@@ -514,7 +514,155 @@ impl TryFrom<RestRouterConfig> for v1::RestRouter {
   fn try_from(value: RestRouterConfig) -> Result<Self> {
     Ok(Self {
       path: value.path,
-      component: value.component.try_into()?,
+      tools: value.tools.try_map_into()?,
+      routes: value.routes.try_map_into()?,
+      info: value.info.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<config::Tools> for v1::Tools {
+  type Error = ManifestError;
+
+  fn try_from(value: config::Tools) -> std::result::Result<Self, Self::Error> {
+    Ok(Self { openapi: value.openapi })
+  }
+}
+
+impl TryFrom<v1::Tools> for config::Tools {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::Tools) -> std::result::Result<Self, Self::Error> {
+    Ok(Self { openapi: value.openapi })
+  }
+}
+
+impl TryFrom<v1::Route> for config::Route {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::Route) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      name: value.name,
+      methods: value.methods,
+      uri: value.uri,
+      operation: value.operation.try_into()?,
+      description: value.description,
+      summary: value.summary,
+    })
+  }
+}
+
+impl TryFrom<config::Route> for v1::Route {
+  type Error = ManifestError;
+
+  fn try_from(value: config::Route) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      name: value.name,
+      methods: value.methods,
+      uri: value.uri,
+      operation: value.operation.try_into()?,
+      description: value.description,
+      summary: value.summary,
+    })
+  }
+}
+
+impl TryFrom<v1::Info> for config::Info {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::Info) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      title: value.title,
+      description: value.description,
+      tos: value.tos,
+      contact: value.contact.try_map_into()?,
+      license: value.license.try_map_into()?,
+      version: value.version,
+      documentation: value.documentation.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<config::Info> for v1::Info {
+  type Error = ManifestError;
+
+  fn try_from(value: config::Info) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      title: value.title,
+      description: value.description,
+      tos: value.tos,
+      contact: value.contact.try_map_into()?,
+      license: value.license.try_map_into()?,
+      version: value.version,
+      documentation: value.documentation.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<v1::Documentation> for config::Documentation {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::Documentation) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      description: value.description,
+      url: value.url,
+    })
+  }
+}
+
+impl TryFrom<config::Documentation> for v1::Documentation {
+  type Error = ManifestError;
+
+  fn try_from(value: config::Documentation) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      description: value.description,
+      url: value.url,
+    })
+  }
+}
+
+impl TryFrom<v1::Contact> for config::Contact {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::Contact) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      name: value.name,
+      url: value.url,
+      email: value.email,
+    })
+  }
+}
+
+impl TryFrom<config::Contact> for v1::Contact {
+  type Error = ManifestError;
+
+  fn try_from(value: config::Contact) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      name: value.name,
+      url: value.url,
+      email: value.email,
+    })
+  }
+}
+
+impl TryFrom<v1::License> for config::License {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::License) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      name: value.name,
+      url: value.url,
+    })
+  }
+}
+
+impl TryFrom<config::License> for v1::License {
+  type Error = ManifestError;
+
+  fn try_from(value: config::License) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      name: value.name,
+      url: value.url,
     })
   }
 }
@@ -1070,7 +1218,9 @@ impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
       }),
       v1::HttpRouter::RestRouter(v) => Self::RestRouter(RestRouterConfig {
         path: v.path,
-        component: v.component.try_into()?,
+        tools: v.tools.try_map_into()?,
+        routes: v.routes.try_map_into()?,
+        info: v.info.try_map_into()?,
       }),
       v1::HttpRouter::StaticRouter(v) => Self::StaticRouter(StaticRouterConfig {
         path: v.path,

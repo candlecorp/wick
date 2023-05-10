@@ -317,10 +317,160 @@ pub(crate) struct RestRouter {
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
-  /// The component to expose as a Rest API.
+  /// Additional tools and services to enable.
 
-  #[serde(deserialize_with = "crate::v1::parse::component_shortform")]
-  pub(crate) component: ComponentDefinition,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) tools: Option<Tools>,
+  /// The routes to serve and operations that handle them.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) routes: Vec<Route>,
+  /// Information about the router to use when generating documentation and other tools.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) info: Option<Info>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Tools {
+  /// The path to serve the OpenAPI spec from
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) openapi: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Information about the router to use when generating documentation and other tools.
+pub(crate) struct Info {
+  /// The title of the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) title: Option<String>,
+  /// A short description of the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) description: Option<String>,
+  /// The terms of service for the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) tos: Option<String>,
+  /// The contact information for the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) contact: Option<Contact>,
+  /// The license information for the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) license: Option<License>,
+  /// The version of the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) version: Option<String>,
+  /// The URL to the API&#x27;s terms of service.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) documentation: Option<Documentation>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Documentation information for the API.
+pub(crate) struct Documentation {
+  /// The URL to the API&#x27;s documentation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) url: Option<String>,
+  /// A short description of the documentation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// The license information for the API.
+pub(crate) struct License {
+  /// The name of the license.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) name: Option<String>,
+  /// The URL to the license.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// The contact information for the API.
+pub(crate) struct Contact {
+  /// The name of the contact.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) name: Option<String>,
+  /// The URL to the contact.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) url: Option<String>,
+  /// The email address of the contact.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) email: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A route to serve and the operation that handles it.
+pub(crate) struct Route {
+  /// The name of the route, used for documentation and tooling.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) name: Option<String>,
+  /// The HTTP methods to serve this route for.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) methods: Vec<String>,
+  /// The path to serve this route from.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) uri: String,
+  /// The operation that will act as the main entrypoint for this route.
+
+  #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
+  pub(crate) operation: ComponentOperationExpression,
+  /// A short description of the route.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) description: Option<String>,
+  /// A longer description of the route.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) summary: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

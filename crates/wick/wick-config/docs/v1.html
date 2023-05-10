@@ -566,15 +566,379 @@
 </div><div class=field>
 
 <h3 class=field-name>
-  <a name="component">component</a>
+  <a name="tools">tools</a>
 </h3>
 
-<span class="description field-description">The component to expose as a Rest API.</span>
+<span class="description field-description">Additional tools and services to enable.</span>
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentDefinition">ComponentDefinition</a></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#Tools">Tools</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="routes">routes</a>
+</h3>
+
+<span class="description field-description">The routes to serve and operations that handle them.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Route">Route</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="info">info</a>
+</h3>
+
+<span class="description field-description">Information about the router to use when generating documentation and other tools.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Info">Info</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Tools">Tools</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="openapi">openapi</a>
+</h3>
+
+<span class="description field-description">The path to serve the OpenAPI spec from</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Info">Info</a>
+</h2>
+
+<span class="description type-description">Information about the router to use when generating documentation and other tools.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="title">title</a>
+</h3>
+
+<span class="description field-description">The title of the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="description">description</a>
+</h3>
+
+<span class="description field-description">A short description of the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="tos">tos</a>
+</h3>
+
+<span class="description field-description">The terms of service for the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="contact">contact</a>
+</h3>
+
+<span class="description field-description">The contact information for the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Contact">Contact</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="license">license</a>
+</h3>
+
+<span class="description field-description">The license information for the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#License">License</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="version">version</a>
+</h3>
+
+<span class="description field-description">The version of the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="documentation">documentation</a>
+</h3>
+
+<span class="description field-description">The URL to the API's terms of service.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Documentation">Documentation</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Documentation">Documentation</a>
+</h2>
+
+<span class="description type-description">Documentation information for the API.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="url">url</a>
+</h3>
+
+<span class="description field-description">The URL to the API's documentation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="description">description</a>
+</h3>
+
+<span class="description field-description">A short description of the documentation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="License">License</a>
+</h2>
+
+<span class="description type-description">The license information for the API.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the license.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="url">url</a>
+</h3>
+
+<span class="description field-description">The URL to the license.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Contact">Contact</a>
+</h2>
+
+<span class="description type-description">The contact information for the API.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the contact.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="url">url</a>
+</h3>
+
+<span class="description field-description">The URL to the contact.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="email">email</a>
+</h3>
+
+<span class="description field-description">The email address of the contact.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Route">Route</a>
+</h2>
+
+<span class="description type-description">A route to serve and the operation that handles it.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the route, used for documentation and tooling.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="methods">methods</a>
+</h3>
+
+<span class="description field-description">The HTTP methods to serve this route for.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="uri">uri</a>
+</h3>
+
+<span class="description field-description">The path to serve this route from.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="handler">handler</a>
+</h3>
+
+<span class="description field-description">The operation that will act as the main entrypoint for this route.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentOperationExpression">ComponentOperationExpression</a></span></span></li>
 <li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="description">description</a>
+</h3>
+
+<span class="description field-description">A short description of the route.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="summary">summary</a>
+</h3>
+
+<span class="description field-description">A longer description of the route.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
 
 </ul>
 </div></div></div><div class="definition">

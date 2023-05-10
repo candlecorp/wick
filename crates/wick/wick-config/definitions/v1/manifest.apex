@@ -136,8 +136,79 @@ type RestRouter @tagged("wick/router/rest@v1") {
   "The path to start serving this router from."
   path: string @required
 
-  "The component to expose as a Rest API."
-  component: ComponentDefinition @required
+  "Additional tools and services to enable."
+  tools: Tools?
+
+  "The routes to serve and operations that handle them."
+  routes: [Route]
+
+  "Information about the router to use when generating documentation and other tools."
+  info: Info?
+}
+
+type Tools {
+  "The path to serve the OpenAPI spec from"
+  openapi: string?
+}
+
+"Information about the router to use when generating documentation and other tools."
+type Info {
+  "The title of the API."
+  title:        string?
+  "A short description of the API."
+	description:  string?
+  "The terms of service for the API."
+	tos:          string?
+  "The contact information for the API."
+	contact:      Contact?
+  "The license information for the API."
+	license:      License?
+  "The version of the API."
+	version:      string?
+  "The URL to the API's terms of service."
+  documentation: Documentation?
+}
+
+"Documentation information for the API."
+type Documentation {
+  "The URL to the API's documentation."
+  url:         string?
+  "A short description of the documentation."
+  description: string?
+}
+
+"The license information for the API."
+type License {
+  "The name of the license."
+	name: string?
+  "The URL to the license."
+	url:  string?
+}
+
+"The contact information for the API."
+type Contact {
+  "The name of the contact."
+	name: string?
+  "The URL to the contact."
+	url:  string?
+  "The email address of the contact."
+	email:  string?
+}
+
+"A route to serve and the operation that handles it."
+type Route {
+  "The name of the route, used for documentation and tooling."
+  name: string?
+  "The HTTP methods to serve this route for."
+  methods: [string]
+  "The path to serve this route from."
+  uri: string
+  "The operation that will act as the main entrypoint for this route."
+  operation: ComponentOperationExpression @required @shortform
+  "A short description of the route."
+  description: string?
+  "A longer description of the route."
+  summary: string?
 }
 
 type StaticRouter @tagged("wick/router/static@v1") {
