@@ -2,95 +2,101 @@ use wick_asset_reference::AssetReference;
 
 use crate::config::ComponentOperationExpression;
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
 #[asset(asset(AssetReference))]
+#[property(get(public), set(private), mut(disable))]
 pub struct RestRouterConfig {
   /// The path to start serving this router from.
   #[asset(skip)]
-  pub path: String,
+  pub(crate) path: String,
   /// Additional tools and services to enable.
   #[asset(skip)]
-  pub tools: Option<Tools>,
+  pub(crate) tools: Option<Tools>,
   /// The routes to serve and operations that handle them.
-  pub routes: Vec<Route>,
+  pub(crate) routes: Vec<Route>,
   /// Information about the router to use when generating documentation and other tools.
   #[asset(skip)]
-  pub info: Option<Info>,
+  pub(crate) info: Option<Info>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, property::Property)]
 pub struct Tools {
   /// The path to serve the OpenAPI spec from
-  pub openapi: Option<String>,
+  pub(crate) openapi: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 /// Information about the router to use when generating documentation and other tools.
 pub struct Info {
   /// The title of the API.
-  pub title: Option<String>,
+  pub(crate) title: Option<String>,
   /// A short description of the API.
-  pub description: Option<String>,
+  pub(crate) description: Option<String>,
   /// The terms of service for the API.
-  pub tos: Option<String>,
+  pub(crate) tos: Option<String>,
   /// The contact information for the API.
-  pub contact: Option<Contact>,
+  pub(crate) contact: Option<Contact>,
   /// The license information for the API.
-  pub license: Option<License>,
+  pub(crate) license: Option<License>,
   /// The version of the API.
-  pub version: Option<String>,
+  pub(crate) version: Option<String>,
   /// The URL to the API&#x27;s terms of service.
-  pub documentation: Option<Documentation>,
+  pub(crate) documentation: Option<Documentation>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 /// Documentation information for the API.
 pub struct Documentation {
   /// The URL to the API&#x27;s documentation.
-  pub url: Option<String>,
+  pub(crate) url: Option<String>,
   /// A short description of the documentation.
-  pub description: Option<String>,
+  pub(crate) description: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 /// The license information for the API.
 pub struct License {
   /// The name of the license.
-  pub name: Option<String>,
+  pub(crate) name: Option<String>,
   /// The URL to the license.
-  pub url: Option<String>,
+  pub(crate) url: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 /// The contact information for the API.
 pub struct Contact {
   /// The name of the contact.
-  pub name: Option<String>,
+  pub(crate) name: Option<String>,
   /// The URL to the contact.
-  pub url: Option<String>,
+  pub(crate) url: Option<String>,
   /// The email address of the contact.
-  pub email: Option<String>,
+  pub(crate) email: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
 #[asset(asset(AssetReference))]
+#[property(get(public), set(private), mut(disable))]
 /// A route to serve and the operation that handles it.
 pub struct Route {
   /// The name of the route, used for documentation and tooling.
   #[asset(skip)]
-  pub name: Option<String>,
+  pub(crate) name: Option<String>,
   /// The HTTP methods to serve this route for.
   #[asset(skip)]
-  pub methods: Vec<String>,
+  pub(crate) methods: Vec<String>,
   /// The path to serve this route from.
   #[asset(skip)]
-  pub uri: String,
+  pub(crate) uri: String,
   /// The operation that will act as the main entrypoint for this route.
-  pub operation: ComponentOperationExpression,
+  pub(crate) operation: ComponentOperationExpression,
   /// A short description of the route.
   #[asset(skip)]
-  pub description: Option<String>,
+  pub(crate) description: Option<String>,
   /// A longer description of the route.
   #[asset(skip)]
-  pub summary: Option<String>,
+  pub(crate) summary: Option<String>,
 }

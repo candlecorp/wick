@@ -45,14 +45,14 @@ pub(crate) async fn init_wasm_component<'a, 'b>(
   trace!(namespace = %namespace, ?opts, "registering wasm component");
 
   let component =
-    wick_component_wasm::helpers::load_wasm(&kind.reference, opts.allow_latest, &opts.allowed_insecure).await?;
+    wick_component_wasm::helpers::load_wasm(kind.reference(), opts.allow_latest, &opts.allowed_insecure).await?;
 
   // TODO take max threads from configuration
   let collection = Arc::new(
     wick_component_wasm::component::WasmComponent::try_load(
       &component,
       5,
-      Some(kind.permissions.clone()),
+      Some(kind.permissions().clone()),
       None,
       Some(make_link_callback(opts.runtime_id)),
       provided,
@@ -136,7 +136,7 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
   let options = FetchOptions::new()
     .allow_latest(opts.allow_latest)
     .allow_insecure(&opts.allowed_insecure);
-  let manifest = WickConfiguration::fetch(kind.reference.path()?.to_string_lossy(), options)
+  let manifest = WickConfiguration::fetch(kind.reference().path()?.to_string_lossy(), options)
     .await?
     .try_component_config()?;
 
@@ -146,7 +146,7 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
   let requires = manifest.requires();
   let metadata = manifest.metadata();
   let provided =
-    generate_provides(requires, &kind.provide).map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
+    generate_provides(requires, kind.provide()).map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
 
   match manifest.component() {
     config::ComponentImplementation::Wasm(wasmimpl) => {

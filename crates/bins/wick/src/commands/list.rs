@@ -38,7 +38,7 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
 
   let mut config = merge_config(&manifest, &opts.oci, Some(server_options));
   // Disable everything but the mesh
-  config.host_mut().rpc = None;
+  config.host_mut().set_rpc(None);
 
   let host_builder = ComponentHostBuilder::from_definition(config);
 

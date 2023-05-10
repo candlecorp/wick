@@ -41,19 +41,20 @@ pub struct HttpClientComponent {
 }
 
 impl HttpClientComponent {
+  #[allow(clippy::needless_pass_by_value)]
   pub fn new(
     config: HttpClientComponentConfig,
     metadata: Metadata,
     resolver: &Resolver,
   ) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
-    let addr: UrlResource = resolver(&config.resource)
-      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource)))
+    let addr: UrlResource = resolver(config.resource())
+      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))
       .and_then(|r| r.try_resource().map_err(ComponentError::new))?
       .into();
 
     let mut sig = ComponentSignature::new("wick/component/http");
-    sig.metadata.version = Some(metadata.version);
+    sig.metadata.version = Some(metadata.version().to_owned());
     sig.operations = config.operation_signatures();
 
     Ok(Self {
@@ -66,7 +67,7 @@ impl HttpClientComponent {
 }
 
 fn get_op_by_name(config: &HttpClientComponentConfig, name: &str) -> Option<HttpClientOperationDefinition> {
-  config.operations.iter().find(|op| op.name == name).cloned()
+  config.operations().iter().find(|op| op.name() == name).cloned()
 }
 
 #[allow(clippy::too_many_arguments, clippy::too_many_lines)]
@@ -88,10 +89,10 @@ async fn handle(
     }
   };
   // Defer to operation codec, then to client codec, then to default.
-  let codec = opdef.codec.unwrap_or(codec.unwrap_or_default());
+  let codec = opdef.codec().copied().unwrap_or(codec.unwrap_or_default());
   let template = path_template.unwrap();
 
-  let input_list: Vec<_> = opdef.inputs.iter().map(|i| i.name.clone()).collect();
+  let input_list: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
   let mut inputs = wick_packet::StreamMap::from_stream(stream, input_list);
 
   'outer: loop {
@@ -128,7 +129,7 @@ async fn handle(
     let inputs = Value::Object(inputs);
     trace!(inputs = ?inputs, "http:inputs");
 
-    let body = match &opdef.body {
+    let body = match opdef.body() {
       Some(body) => match body.render(&inputs) {
         Ok(p) => Some(p),
         Err(e) => {
@@ -151,7 +152,7 @@ async fn handle(
     let request_url = baseurl.join(&append_path).unwrap();
     trace!(url= %request_url, "http:sending request");
 
-    let request = match opdef.method {
+    let request = match opdef.method() {
       HttpMethod::Get => Request::new(Method::GET, request_url),
       HttpMethod::Post => Request::new(Method::POST, request_url),
       HttpMethod::Put => Request::new(Method::PUT, request_url),
@@ -169,7 +170,7 @@ async fn handle(
     } else {
       request_builder
     };
-    for (header, values) in &opdef.headers {
+    for (header, values) in opdef.headers() {
       for value in values {
         let Ok(value) =  liquid_json::render_string(value, &inputs) else {
           let _ = tx.error(wick_packet::Error::component_error(format!("Can't render template {}", value)));
@@ -224,13 +225,13 @@ impl Component for HttpClientComponent {
     let ctx = self.ctx.clone();
     let config = self.config.clone();
     let baseurl = self.base.clone();
-    let codec = config.codec;
+    let codec = config.codec().copied();
 
     Box::pin(async move {
       let (opdef, path_template, client) = match ctx.lock().as_ref() {
         Some(ctx) => {
           let opdef = get_op_by_name(&config, invocation.target.operation_id());
-          let template = opdef.as_ref().and_then(|op| ctx.path_templates.get(&op.name).cloned());
+          let template = opdef.as_ref().and_then(|op| ctx.path_templates.get(op.name()).cloned());
           (opdef, template, ctx.client.clone())
         }
         None => return Err(ComponentError::message("Http client component not initialized")),
@@ -266,8 +267,11 @@ impl Component for HttpClientComponent {
 
     Box::pin(async move {
       let mut path_templates = HashMap::new();
-      for ops in &config.operations {
-        path_templates.insert(ops.name.clone(), Arc::new((ops.path.clone(), ops.path.clone())));
+      for ops in config.operations() {
+        path_templates.insert(
+          ops.name().to_owned(),
+          Arc::new((ops.path().to_owned(), ops.path().to_owned())),
+        );
       }
       let ctx = Context {
         path_templates,
@@ -346,7 +350,11 @@ mod test {
   use flow_component::panic_callback;
   use futures::StreamExt;
   use serde_json::json;
-  use wick_config::config::components::{HttpClientComponentConfig, HttpClientOperationDefinition};
+  use wick_config::config::components::{
+    HttpClientComponentConfig,
+    HttpClientComponentConfigBuilder,
+    HttpClientOperationDefinition,
+  };
   use wick_config::config::{AppConfiguration, ResourceDefinition};
   use wick_interface_types::{Field, TypeSignature};
   use wick_packet::{packet_stream, Entity};
@@ -363,12 +371,11 @@ mod test {
   static POST_OP: &str = "post";
 
   fn get_config() -> (AppConfiguration, HttpClientComponentConfig) {
-    let mut config = HttpClientComponentConfig {
-      resource: "base".to_owned(),
-      codec: Default::default(),
-      operations: vec![],
-    };
-    config.operations.push(
+    let mut config = HttpClientComponentConfigBuilder::default()
+      .resource("base")
+      .build()
+      .unwrap();
+    config.operations_mut().push(
       HttpClientOperationDefinition::new_get(
         GET_OP,
         "/get?query1={{input}}&query2={{secret}}",
@@ -378,7 +385,7 @@ mod test {
       .build()
       .unwrap(),
     );
-    config.operations.push(
+    config.operations_mut().push(
       HttpClientOperationDefinition::new_post(
         POST_OP,
         "/post?query1={{input}}",

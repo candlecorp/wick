@@ -1,21 +1,23 @@
 use crate::config;
 
-#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
 /// A component made out of other components
 pub struct SqlComponentConfig {
   /// The TcpPort reference to listen on for connections.
   #[asset(skip)]
-  pub resource: String,
+  pub(crate) resource: String,
 
   /// Whether or not to use TLS.
   #[asset(skip)]
-  pub tls: bool,
+  pub(crate) tls: bool,
 
   /// A list of operations to expose on this component.
   #[asset(skip)]
-  pub operations: Vec<SqlOperationDefinition>,
+  #[builder(default)]
+  pub(crate) operations: Vec<SqlOperationDefinition>,
 }
 
 impl SqlComponentConfig {
@@ -36,34 +38,35 @@ impl From<SqlOperationDefinition> for wick_interface_types::OperationSignature {
   }
 }
 
-#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
 pub struct SqlOperationDefinition {
   /// The name of the operation.
   #[asset(skip)]
-  pub name: String,
+  pub(crate) name: String,
 
   /// Types of the inputs to the operation.
   #[asset(skip)]
-  pub inputs: Vec<wick_interface_types::Field>,
+  pub(crate) inputs: Vec<wick_interface_types::Field>,
 
   /// Types of the outputs to the operation.
   #[asset(skip)]
-  pub outputs: Vec<wick_interface_types::Field>,
+  pub(crate) outputs: Vec<wick_interface_types::Field>,
 
   /// The configuration the operation needs.
   #[asset(skip)]
   #[builder(default)]
-  pub config: Vec<wick_interface_types::Field>,
+  pub(crate) config: Vec<wick_interface_types::Field>,
 
   /// The query to execute.
   #[asset(skip)]
-  pub query: String,
+  pub(crate) query: String,
 
   /// The arguments to the query, defined as a list of input names.
   #[asset(skip)]
-  pub arguments: Vec<String>,
+  pub(crate) arguments: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, derive_asset_container::AssetManager)]

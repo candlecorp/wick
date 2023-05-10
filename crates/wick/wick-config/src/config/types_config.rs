@@ -6,11 +6,13 @@ use wick_interface_types::TypeDefinition;
 
 use super::OperationSignature;
 
-#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 #[asset(asset(crate::config::AssetReference))]
 #[must_use]
 pub struct TypesConfiguration {
   #[asset(skip)]
+  #[property(skip)]
   pub(crate) source: Option<PathBuf>,
   #[asset(skip)]
   pub(crate) types: Vec<TypeDefinition>,
@@ -19,11 +21,6 @@ pub struct TypesConfiguration {
 }
 
 impl TypesConfiguration {
-  /// Get the types defined in this configuration.
-  pub fn types(&self) -> &[TypeDefinition] {
-    &self.types
-  }
-
   /// Get the inner definitions, consuming the [TypesConfiguration].
   #[must_use]
   pub fn into_parts(self) -> (Vec<TypeDefinition>, HashMap<String, OperationSignature>) {
@@ -34,12 +31,6 @@ impl TypesConfiguration {
   #[must_use]
   pub fn into_types(self) -> Vec<TypeDefinition> {
     self.types
-  }
-
-  /// Get the operations defined in this configuration.
-  #[must_use]
-  pub fn operations(&self) -> &HashMap<String, OperationSignature> {
-    &self.operations
   }
 
   /// Get the operations defined in this configuration, consuming the [TypesConfiguration].

@@ -10,23 +10,14 @@ mod raw_router;
 mod rest_router;
 mod static_router;
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 #[asset(asset(AssetReference))]
 #[must_use]
 pub struct HttpTriggerConfig {
   #[asset(skip)]
   pub(crate) resource: String,
   pub(crate) routers: Vec<HttpRouterConfig>,
-}
-
-impl HttpTriggerConfig {
-  #[must_use]
-  pub fn resource_id(&self) -> &str {
-    &self.resource
-  }
-  pub fn routers(&self) -> &[HttpRouterConfig] {
-    &self.routers
-  }
 }
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]

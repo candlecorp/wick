@@ -1,13 +1,6 @@
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 /// A reference to a component by id.
 pub struct ComponentReference {
   pub(crate) id: String,
-}
-
-impl ComponentReference {
-  /// Get the id of the referenced component.
-  #[must_use]
-  pub fn id(&self) -> &str {
-    &self.id
-  }
 }

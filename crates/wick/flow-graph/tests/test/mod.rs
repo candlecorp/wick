@@ -77,17 +77,21 @@ pub fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentCon
 }
 
 pub fn from_manifest(network_def: &wick_config::config::ComponentConfiguration) -> Result<Network<OperationConfig>> {
-  let mut network = Network::new(network_def.name().clone().unwrap_or_default());
+  let mut network: Network<OperationConfig> = Network::new(network_def.name().cloned().unwrap_or_default());
   let network_def = network_def.try_composite()?;
 
   for flow in network_def.operations().values() {
-    let mut schematic = Schematic::new(flow.name.clone());
+    let mut schematic: Schematic<OperationConfig> = Schematic::new(flow.name().to_owned());
 
-    for (name, def) in flow.instances.iter() {
-      schematic.add_external(name, NodeReference::new(&def.component_id, &def.name), def.data.clone());
+    for (name, def) in flow.instances().iter() {
+      schematic.add_external(
+        name,
+        NodeReference::new(def.component_id(), def.name()),
+        def.data().cloned(),
+      );
     }
 
-    for connection in &flow.expressions {
+    for connection in flow.expressions() {
       if let FlowExpression::ConnectionExpression(connection) = connection {
         println!("{:?}", connection);
         let from = connection.from();

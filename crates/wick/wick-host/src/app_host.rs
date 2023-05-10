@@ -42,7 +42,7 @@ impl AppHost {
   fn init_resources(&mut self) -> Result<HashMap<String, Resource>> {
     let mut resources = HashMap::new();
     for (id, def) in self.manifest.resources() {
-      let resource = Resource::new(def.kind.clone())?;
+      let resource = Resource::new(def.kind().clone())?;
       resources.insert(id.clone(), resource);
     }
     Ok(resources)
@@ -55,7 +55,7 @@ impl AppHost {
     for trigger_config in self.manifest.triggers() {
       debug!(?trigger_config, "loading trigger");
       let config = trigger_config.clone();
-      let name = self.manifest.name().clone();
+      let name = self.manifest.name().to_owned();
       let app_config = self.manifest.clone();
 
       match wick_runtime::get_trigger_loader(&trigger_config.kind()) {

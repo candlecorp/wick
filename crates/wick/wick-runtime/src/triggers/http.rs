@@ -2,6 +2,7 @@
 
 mod conversions;
 mod proxy_component;
+mod rest_component;
 mod service_factory;
 mod static_component;
 use std::collections::HashMap;
@@ -17,7 +18,14 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use tokio::task::JoinHandle;
 use wick_config::config::components::Codec;
-use wick_config::config::{AppConfiguration, ImportBinding, ProxyRouterConfig, RawRouterConfig, StaticRouterConfig};
+use wick_config::config::{
+  AppConfiguration,
+  ImportBinding,
+  ProxyRouterConfig,
+  RawRouterConfig,
+  RestRouterConfig,
+  StaticRouterConfig,
+};
 use wick_packet::Entity;
 
 use self::static_component::StaticComponent;
@@ -26,6 +34,7 @@ use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
 use crate::runtime::RuntimeConstraint;
 use crate::triggers::http::proxy_component::ProxyComponent;
+use crate::triggers::http::rest_component::RestRouter;
 use crate::triggers::http::service_factory::ServiceFactory;
 use crate::Runtime;
 
@@ -174,7 +183,7 @@ impl Http {
         config::HttpRouterConfig::RawRouter(r) => register_raw_router(i, &app_config, r)?,
         config::HttpRouterConfig::StaticRouter(r) => register_static_router(i, resources.clone(), &app_config, r)?,
         config::HttpRouterConfig::ProxyRouter(r) => register_proxy_router(i, resources.clone(), &app_config, r)?,
-        config::HttpRouterConfig::RestRouter(_) => unimplemented!("Rest router not implemented yet"),
+        config::HttpRouterConfig::RestRouter(r) => register_rest_router(i, resources.clone(), &app_config, r)?,
       };
       if let HttpRouter::Component(router) = &router {
         rt.add_constraint(RuntimeConstraint::Operation {
@@ -210,7 +219,7 @@ fn register_raw_router(
     path: router_config.path().to_owned(),
     operation: router_config.operation().operation().to_owned(),
     component: index_to_router_id(index),
-    codec: router_config.codec().unwrap_or_default(),
+    codec: router_config.codec().copied().unwrap_or_default(),
   };
   Ok((router_binding, HttpRouter::Component(router)))
 }
@@ -239,6 +248,25 @@ fn register_static_router(
     }
   };
   let router = StaticComponent::new(volume, Some(router_config.path().to_owned()));
+  let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
+  let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
+  Ok((
+    router_binding,
+    HttpRouter::Raw(RawRouterHandler {
+      path: router_config.path().to_owned(),
+      component: Arc::new(router),
+    }),
+  ))
+}
+
+fn register_rest_router(
+  index: usize,
+  _resources: Arc<HashMap<String, Resource>>,
+  _app_config: &AppConfiguration,
+  router_config: &RestRouterConfig,
+) -> Result<(ImportBinding, HttpRouter), RuntimeError> {
+  trace!(index, "registering static router");
+  let router = RestRouter::new(router_config.clone());
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
   let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
   Ok((
@@ -305,7 +333,7 @@ impl Trigger for Http {
     } else {
       return Err(RuntimeError::InvalidTriggerConfig(TriggerKind::Http));
     };
-    let resource_name = config.resource_id();
+    let resource_name = config.resource();
     let resource = resources
       .get(resource_name)
       .ok_or_else(|| RuntimeError::ResourceNotFound(TriggerKind::Http, resource_name.to_owned()))?;
@@ -376,7 +404,7 @@ mod test {
     let yaml = tokio::fs::read_to_string(manifest_dir.join("app-http-server-wasm.wick")).await?;
     let app_config = config::WickConfiguration::from_yaml(&yaml, &None)?.try_app_config()?;
     let trigger = Http::load_impl()?;
-    let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind.clone())?;
+    let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
     let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
     let trigger_config = app_config.triggers()[0].clone();
     trigger

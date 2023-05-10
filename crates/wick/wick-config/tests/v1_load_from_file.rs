@@ -70,8 +70,8 @@ async fn regression_issue_180() -> Result<(), ManifestError> {
   println!("{:?}", component);
   let coll = component.get_import("test").unwrap();
   #[allow(deprecated)]
-  if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = &coll.kind {
-    let value = module.reference.path()?;
+  if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = coll.kind() {
+    let value = module.reference().path()?;
     println!("value: {:?}", value);
     let actual = value;
 
@@ -92,8 +92,8 @@ async fn regression_issue_42() -> Result<(), ManifestError> {
   println!("{:?}", component);
   let coll = component.get_import("test").unwrap();
   #[allow(deprecated)]
-  if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = &coll.kind {
-    let value = module.config.as_ref().unwrap().get("pwd").unwrap().as_str().unwrap();
+  if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = coll.kind() {
+    let value = module.config().as_ref().unwrap().get("pwd").unwrap().as_str().unwrap();
     let expected = std::env::var("CARGO_MANIFEST_DIR").unwrap();
 
     assert_eq!(value, expected);

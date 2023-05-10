@@ -51,7 +51,7 @@ async fn create_schedule(
 ) -> tokio::task::JoinHandle<()> {
   // Create a scheduler loop
   tokio::spawn(async move {
-    let schedule_component = match resolve_ref(&app_config, config.component()) {
+    let schedule_component = match resolve_ref(&app_config, config.operation().component()) {
       Ok(component) => component,
       Err(err) => panic!("Unable to resolve component: {}", err),
     };
@@ -63,8 +63,8 @@ async fn create_schedule(
     let runtime = runtime.build().await.unwrap();
 
     let runtime = Arc::new(runtime);
-    let operation = Arc::new(config.operation().to_owned());
-    let payload = Arc::new(config.payload().clone());
+    let operation = Arc::new(config.operation().operation().to_owned());
+    let payload = Arc::new(config.payload().to_vec());
 
     let mut current_count: u16 = 0;
 
@@ -125,7 +125,7 @@ impl Time {
     config: TimeTriggerConfig,
   ) -> Result<StructuredOutput, RuntimeError> {
     debug!("Self: {:?}", self);
-    let cron = config.schedule().cron().clone();
+    let cron = config.schedule().cron().to_owned();
 
     // Create a new cron schedule that runs every minute
     let schedule = Schedule::from_str(&cron);

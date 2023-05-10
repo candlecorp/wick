@@ -199,7 +199,7 @@ impl RuntimeService {
       }
     }
 
-    for component in init.manifest.imports().values() {
+    for component in init.manifest.import().values() {
       let component_init = init.component_init();
       if let Some(p) = instantiate_import(component, component_init).await? {
         components
@@ -366,9 +366,9 @@ pub(crate) async fn instantiate_import<'a, 'b>(
   opts: ComponentInitOptions<'b>,
 ) -> Result<Option<NamespaceHandler>> {
   debug!(?binding, ?opts, "initializing component");
-  let id = binding.id.clone();
+  let id = binding.id().to_owned();
   let span = opts.span.clone();
-  match &binding.kind {
+  match binding.kind() {
     config::ImportDefinition::Component(c) => {
       match c {
         #[allow(deprecated)]

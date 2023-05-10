@@ -60,8 +60,8 @@ async fn load_collections_yaml() -> Result<(), ManifestError> {
     .await?
     .try_component_config()?;
 
-  assert_eq!(manifest.name(), &Some("collections".to_owned()));
-  assert_eq!(manifest.imports().len(), 3);
+  assert_eq!(manifest.name(), Some(&"collections".to_owned()));
+  assert_eq!(manifest.import().len(), 3);
 
   Ok(())
 }
@@ -70,7 +70,7 @@ async fn load_collections_yaml() -> Result<(), ManifestError> {
 async fn load_shortform_yaml() -> Result<(), ManifestError> {
   let manifest = load_component("./tests/manifests/v0/logger-shortform.yaml").await?;
 
-  let expr = &manifest.flow("logger").unwrap().expressions[0];
+  let expr = &manifest.flow("logger").unwrap().expressions()[0];
 
   assert_eq!(
     expr,
@@ -89,7 +89,7 @@ async fn load_env() -> Result<(), ManifestError> {
   let manifest = load_component("./tests/manifests/v0/env.yaml").await?;
 
   assert_eq!(
-    manifest.flow("name_load_manifest_yaml_with_env").unwrap().name,
+    manifest.flow("name_load_manifest_yaml_with_env").unwrap().name(),
     "name_load_manifest_yaml_with_env"
   );
 
@@ -101,7 +101,7 @@ async fn load_ns_link() -> Result<(), ManifestError> {
   let manifest = load_component("./tests/manifests/v0/ns.yaml").await?;
 
   let schematic = &manifest.flow("logger").unwrap();
-  let from = &schematic.expressions[0].as_connection().unwrap().from();
+  let from = &schematic.expressions()[0].as_connection().unwrap().from();
 
   assert_eq!(from.instance(), &InstanceTarget::Link);
 

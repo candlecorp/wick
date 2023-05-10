@@ -12,35 +12,35 @@ use wick_oci_utils::package::annotations::{self, Annotations};
 
 use crate::Error;
 
-pub(crate) fn metadata_to_annotations(metadata: Metadata) -> Annotations {
+pub(crate) fn metadata_to_annotations(metadata: &Metadata) -> Annotations {
   let mut map = HashMap::new();
 
-  map.insert(annotations::VERSION.to_owned(), metadata.version.clone());
+  map.insert(annotations::VERSION.to_owned(), metadata.version().to_owned());
 
-  if !metadata.authors.is_empty() {
-    map.insert(annotations::AUTHORS.to_owned(), metadata.authors.join(", "));
+  if !metadata.authors().is_empty() {
+    map.insert(annotations::AUTHORS.to_owned(), metadata.authors().join(", "));
   }
 
-  if !metadata.vendors.is_empty() {
-    map.insert(annotations::VENDORS.to_owned(), metadata.vendors.join(", "));
+  if !metadata.vendors().is_empty() {
+    map.insert(annotations::VENDORS.to_owned(), metadata.vendors().join(", "));
   }
 
-  if let Some(description) = &metadata.description {
+  if let Some(description) = metadata.description() {
     map.insert(annotations::DESCRIPTION.to_owned(), description.clone());
   }
 
-  if let Some(documentation) = &metadata.documentation {
+  if let Some(documentation) = metadata.documentation() {
     map.insert(annotations::DOCUMENTATION.to_owned(), documentation.clone());
   }
 
-  if !metadata.licenses.is_empty() {
-    map.insert(annotations::LICENSES.to_owned(), metadata.licenses.join(", "));
+  if !metadata.licenses().is_empty() {
+    map.insert(annotations::LICENSES.to_owned(), metadata.licenses().join(", "));
   }
 
   map.insert(
     annotations::ICON.to_owned(),
     metadata
-      .icon
+      .icon()
       .map(|v| v.path().unwrap_or_default().to_string_lossy().to_string())
       .unwrap_or_default(),
   );

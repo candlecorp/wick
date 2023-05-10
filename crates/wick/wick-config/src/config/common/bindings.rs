@@ -2,16 +2,17 @@ use super::{ComponentDefinition, ComponentImplementation, HighLevelComponent, Im
 use crate::config::components::WasmComponent;
 use crate::config::{self};
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 #[asset(asset(config::AssetReference))]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
 pub struct ImportBinding {
   /// The namespace to reference the collection's components on.
   #[asset(skip)]
-  pub id: String,
+  pub(crate) id: String,
   /// The kind/type of the collection.
-  pub kind: ImportDefinition,
+  pub(crate) kind: ImportDefinition,
 }
 
 impl From<ComponentImplementation> for ImportDefinition {
@@ -90,14 +91,15 @@ impl ImportBinding {
   }
 }
 
-#[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
+#[derive(Debug, Default, Clone, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 #[asset(asset(crate::config::AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct BoundInterface {
   /// The namespace to reference the collection's components on.
   #[asset(skip)]
-  pub id: String,
+  pub(crate) id: String,
   /// The kind/type of the collection.
-  pub kind: InterfaceDefinition,
+  pub(crate) kind: InterfaceDefinition,
 }

@@ -1,29 +1,31 @@
 use serde_json::Value;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 /// A test case for a component.
 pub struct TestCase {
   /// The name of the test.
-  pub name: String,
+  pub(crate) name: String,
   /// The operaton to test.
-  pub operation: String,
+  pub(crate) operation: String,
   /// The configuration for the operation being tested, if any.
-  pub config: Option<wick_packet::OperationConfig>,
+  pub(crate) config: Option<wick_packet::OperationConfig>,
   /// Inherent data to use for the test.
-  pub inherent: Option<InherentConfig>,
+  pub(crate) inherent: Option<InherentConfig>,
   /// The inputs to the test.
-  pub inputs: Vec<TestPacket>,
+  pub(crate) inputs: Vec<TestPacket>,
   /// The expected outputs of the operation.
-  pub outputs: Vec<TestPacket>,
+  pub(crate) outputs: Vec<TestPacket>,
 }
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, PartialEq, Copy, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 /// Data inherent to transactions.
 pub struct InherentConfig {
   /// An RNG seed.
-  pub seed: Option<u64>,
+  pub(crate) seed: Option<u64>,
   /// A timestamp.
-  pub timestamp: Option<u64>,
+  pub(crate) timestamp: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -64,34 +66,37 @@ impl TestPacket {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 /// A simplified representation of a Wick data packet & payload, used to write tests.
 pub struct SuccessPayload {
   /// The name of the port to send the data to.
-  pub port: String,
+  pub(crate) port: String,
   /// Any flags set on the packet.
-  pub flags: Option<PacketFlags>,
+  pub(crate) flags: Option<PacketFlags>,
   /// The data to send.
-  pub data: Option<Value>,
+  pub(crate) data: Option<Value>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 pub struct ErrorPayload {
   /// The name of the port to send the data to.
-  pub port: String,
+  pub(crate) port: String,
   /// Any flags set on the packet.
-  pub flags: Option<PacketFlags>,
+  pub(crate) flags: Option<PacketFlags>,
   /// The error message.
-  pub error: String,
+  pub(crate) error: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 /// Flags set on a packet.
 pub struct PacketFlags {
   /// When set, indicates the port should be considered closed.
-  pub done: bool,
+  pub(crate) done: bool,
   /// When set, indicates the opening of a new substream context within the parent stream.
-  pub open: bool,
+  pub(crate) open: bool,
   /// When set, indicates the closing of a substream context within the parent stream.
-  pub close: bool,
+  pub(crate) close: bool,
 }

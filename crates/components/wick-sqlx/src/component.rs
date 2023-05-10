@@ -93,15 +93,16 @@ pub struct SqlXComponent {
 }
 
 impl SqlXComponent {
+  #[allow(clippy::needless_pass_by_value)]
   pub fn new(config: SqlComponentConfig, metadata: Metadata, resolver: &Resolver) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
     let sig = component! {
       name: "wick/component/sql",
-      version: metadata.version,
+      version: metadata.version(),
       operations: config.operation_signatures(),
     };
-    let addr = resolver(&config.resource)
-      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource)))
+    let addr = resolver(config.resource())
+      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))
       .and_then(|r| r.try_resource().map_err(ComponentError::new))?;
 
     Ok(Self {
@@ -128,9 +129,9 @@ impl Component for SqlXComponent {
         Some(ctx) => {
           let opdef = ctx
             .config
-            .operations
+            .operations()
             .iter()
-            .find(|op| op.name == invocation.target.operation_id())
+            .find(|op| op.name() == invocation.target.operation_id())
             .unwrap()
             .clone();
           let client = ctx.db.clone();
@@ -140,7 +141,7 @@ impl Component for SqlXComponent {
         None => return Err(ComponentError::message("DB not initialized")),
       };
 
-      let input_list: Vec<_> = opdef.inputs.iter().map(|i| i.name.clone()).collect();
+      let input_list: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
       let mut input_streams = wick_packet::split_stream(stream, input_list);
       let (tx, rx) = PacketStream::new_channels();
       tokio::spawn(async move {
@@ -150,7 +151,7 @@ impl Component for SqlXComponent {
             inputs.push(input.next().await);
             let num_done = inputs.iter().filter(|r| r.is_none()).count();
             if num_done > 0 {
-              if num_done != opdef.inputs.len() {
+              if num_done != opdef.inputs().len() {
                 let _ = tx.error(wick_packet::Error::component_error("Missing input"));
               }
               break 'outer;
@@ -164,12 +165,11 @@ impl Component for SqlXComponent {
           let results = results
             .into_iter()
             .enumerate()
-            .map(|(i, r)| (opdef.inputs[i].ty.clone(), r.unwrap()))
+            .map(|(i, r)| (opdef.inputs()[i].ty.clone(), r.unwrap()))
             .collect::<Vec<_>>();
           if results.iter().any(|(_, r)| r.is_done()) {
             break 'outer;
           }
-
           if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), results, stmt.clone()).await {
             error!(error = %e, "error executing query");
           }
@@ -208,12 +208,13 @@ impl ConfigValidation for SqlXComponent {
 
 fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Error> {
   let bad_ops: Vec<_> = config
-    .operations
+    .operations()
     .iter()
     .filter(|op| {
-      op.outputs.len() > 1 || op.outputs.len() == 1 && op.outputs[0] != Field::new("output", TypeSignature::Object)
+      let outputs = op.outputs();
+      outputs.len() > 1 || outputs.len() == 1 && outputs[0] != Field::new("output", TypeSignature::Object)
     })
-    .map(|op| op.name.clone())
+    .map(|op| op.name().to_owned())
     .collect();
 
   if !bad_ops.is_empty() {
@@ -238,12 +239,15 @@ async fn init_client(config: SqlComponentConfig, addr: UrlResource) -> Result<Ct
 async fn init_context(config: SqlComponentConfig, addr: UrlResource) -> Result<Context, Error> {
   let client = init_client(config.clone(), addr).await?;
   let mut queries = HashMap::new();
-  trace!(count=%config.operations.len(), "preparing queries");
-  for op in &config.operations {
+  trace!(count=%config.operations().len(), "preparing queries");
+  for op in config.operations() {
     // let query: Query<Postgres, _> = sqlx::query(&op.query);
     // TODO: this is a hack to during the sqlx transition and this needs to support prepared queries properly.
-    queries.insert(op.name.clone(), Arc::new((op.query.clone(), op.query.clone())));
-    trace!(query=%op.query, "prepared query");
+    queries.insert(
+      op.name().to_owned(),
+      Arc::new((op.query().to_owned(), op.query().to_owned())),
+    );
+    trace!(query=%op.query(), "prepared query");
   }
 
   let db = client;
@@ -265,7 +269,7 @@ async fn exec(
   stmt: Arc<(String, String)>,
 ) -> Result<(), Error> {
   debug!(stmt = %stmt.0, "executing  query");
-  let input_list: Vec<_> = def.inputs.iter().map(|i| i.name.clone()).collect();
+  let input_list: Vec<_> = def.inputs().iter().map(|i| i.name.clone()).collect();
 
   let values = args
     .into_iter()
@@ -279,7 +283,7 @@ async fn exec(
   let values = values.unwrap();
   #[allow(trivial_casts)]
   let args = def
-    .arguments
+    .arguments()
     .iter()
     .map(|a| input_list.iter().position(|i| i == a).unwrap())
     .map(|i| SqlWrapper(values[i].clone()))
@@ -304,7 +308,7 @@ async fn exec(
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use wick_config::config::components::SqlOperationDefinitionBuilder;
+  use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
   use wick_config::config::{ResourceDefinition, TcpPort};
   use wick_interface_types::{Field, TypeSignature};
 
@@ -318,11 +322,11 @@ mod test {
 
   #[test_logger::test(test)]
   fn test_validate() -> Result<()> {
-    let mut config = SqlComponentConfig {
-      resource: "db".to_owned(),
-      tls: false,
-      operations: vec![],
-    };
+    let mut config = SqlComponentConfigBuilder::default()
+      .resource("db")
+      .tls(false)
+      .build()
+      .unwrap();
     let op = SqlOperationDefinitionBuilder::default()
       .name("test")
       .query("select * from users where user_id = $1;")
@@ -332,7 +336,7 @@ mod test {
       .build()
       .unwrap();
 
-    config.operations.push(op);
+    config.operations_mut().push(op);
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource("db", ResourceDefinition::TcpPort(TcpPort::new("0.0.0.0", 11111)));
 
