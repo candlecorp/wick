@@ -9,7 +9,7 @@ use wick_component_cli::options::DefaultCliOptions;
 use wick_component_cli::parse_args;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
-use wick_packet::{InherentData, Observer, Packet, PacketStream};
+use wick_packet::{InherentData, Packet, PacketStream};
 
 use crate::utils::{self, merge_config};
 
@@ -144,19 +144,21 @@ pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
 
     let args = parse_args(&opts.args)?;
     trace!(args= ?args, "parsed CLI arguments");
-    let (tx, stream) = PacketStream::new_channels();
+    let mut packets = Vec::new();
     let mut seen_ports = HashSet::new();
     for packet in args {
       seen_ports.insert(packet.port().to_owned());
-      tx.send(packet)?;
+      packets.push(Ok(packet));
     }
     for packet in data {
       seen_ports.insert(packet.port().to_owned());
-      tx.send(packet)?;
+      packets.push(Ok(packet));
     }
     for port in seen_ports {
-      tx.send(Packet::done(port))?;
+      packets.push(Ok(Packet::done(port)));
     }
+    debug!(args= ?packets, "wick:invoke");
+    let stream = PacketStream::new(futures::stream::iter(packets));
 
     let stream = host.request(&component, stream, inherent_data).await?;
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;

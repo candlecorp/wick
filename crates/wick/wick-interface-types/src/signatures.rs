@@ -39,7 +39,7 @@ impl Field {
       name: name.as_ref().to_owned(),
       description: None,
       default: None,
-      required: false,
+      required: true,
       ty,
     }
   }
@@ -210,8 +210,7 @@ impl PartialEq for ComponentSignature {
     let config_equal = contents_equal(&self.config, &other.config);
     let wellknown_equal = contents_equal(&self.wellknown, &other.wellknown);
 
-    self.name == other.name
-      && self.format == other.format
+    self.format == other.format
       && self.metadata == other.metadata
       && types_equal
       && operations_equal

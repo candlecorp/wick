@@ -141,12 +141,12 @@ impl Component for SqlXComponent {
       };
 
       let input_list: Vec<_> = opdef.inputs.iter().map(|i| i.name.clone()).collect();
-      let mut inputs = wick_packet::split_stream(stream, input_list);
+      let mut input_streams = wick_packet::split_stream(stream, input_list);
       let (tx, rx) = PacketStream::new_channels();
       tokio::spawn(async move {
         'outer: loop {
-          for input in &mut inputs {
-            let mut inputs = Vec::new();
+          let mut inputs = Vec::new();
+          for input in &mut input_streams {
             inputs.push(input.next().await);
             let num_done = inputs.iter().filter(|r| r.is_none()).count();
             if num_done > 0 {
@@ -155,23 +155,23 @@ impl Component for SqlXComponent {
               }
               break 'outer;
             }
-            let results = inputs.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
-            if let Some(Err(e)) = results.iter().find(|r| r.is_err()) {
-              let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
-              break 'outer;
-            }
-            let results = results
-              .into_iter()
-              .enumerate()
-              .map(|(i, r)| (opdef.inputs[i].ty.clone(), r.unwrap()))
-              .collect::<Vec<_>>();
-            if results.iter().any(|(_, r)| r.is_done()) {
-              break 'outer;
-            }
+          }
+          let results = inputs.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
+          if let Some(Err(e)) = results.iter().find(|r| r.is_err()) {
+            let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
+            break 'outer;
+          }
+          let results = results
+            .into_iter()
+            .enumerate()
+            .map(|(i, r)| (opdef.inputs[i].ty.clone(), r.unwrap()))
+            .collect::<Vec<_>>();
+          if results.iter().any(|(_, r)| r.is_done()) {
+            break 'outer;
+          }
 
-            if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), results, stmt.clone()).await {
-              error!(error = %e, "error executing query");
-            }
+          if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), results, stmt.clone()).await {
+            error!(error = %e, "error executing query");
           }
         }
       });
