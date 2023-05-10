@@ -34,6 +34,7 @@ parking_lot = { workspace = true }
 liquid-json = { workspace = true, features = ["serde"] }
 itertools = { workspace = true }
 option-utils = { workspace = true }
+property = { workspace = true }
 
 [dev-dependencies]
 wick-xdg = { workspace = true }

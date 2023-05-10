@@ -2,8 +2,9 @@ use wick_asset_reference::AssetReference;
 
 use crate::config::{self, ComponentOperationExpression};
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property)]
 #[asset(asset(AssetReference))]
+#[property(get(public), set(private), mut(disable))]
 #[must_use]
 pub struct RawRouterConfig {
   #[asset(skip)]
@@ -11,21 +12,4 @@ pub struct RawRouterConfig {
   #[asset(skip)]
   pub(crate) codec: Option<config::components::Codec>,
   pub(crate) operation: ComponentOperationExpression,
-}
-
-impl RawRouterConfig {
-  #[must_use]
-  pub fn path(&self) -> &str {
-    &self.path
-  }
-
-  #[must_use]
-  pub fn operation(&self) -> &ComponentOperationExpression {
-    &self.operation
-  }
-
-  #[must_use]
-  pub fn codec(&self) -> &Option<config::components::Codec> {
-    &self.codec
-  }
 }

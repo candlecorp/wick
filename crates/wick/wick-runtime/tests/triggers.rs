@@ -17,7 +17,7 @@ pub async fn load_app_yaml(path: &str) -> anyhow::Result<AppConfiguration> {
 fn init_resources(config: &AppConfiguration) -> Result<HashMap<String, Resource>> {
   let mut resources = HashMap::new();
   for (id, def) in config.resources() {
-    let resource = Resource::new(def.kind.clone())?;
+    let resource = Resource::new(def.kind().clone())?;
     resources.insert(id.clone(), resource);
   }
   Ok(resources)
@@ -31,7 +31,7 @@ async fn basic_cli() -> Result<()> {
   let trigger_config = &manifest.triggers()[0];
   debug!(?trigger_config, "loading trigger");
   let config = trigger_config.clone();
-  let name = manifest.name();
+  let name = manifest.name().to_owned();
   let app_config = manifest.clone();
 
   match wick_runtime::get_trigger_loader(&trigger_config.kind()) {
@@ -59,7 +59,7 @@ mod integration_test {
     let trigger_config = &manifest.triggers()[0];
     debug!(?trigger_config, "loading trigger");
     let config = trigger_config.clone();
-    let name = manifest.name();
+    let name = manifest.name().to_owned();
     let app_config = manifest.clone();
 
     let task = match wick_runtime::get_trigger_loader(&trigger_config.kind()) {

@@ -11,7 +11,7 @@ use crate::{get_payload, TestError, UnitTest};
 
 #[must_use]
 pub fn get_description(test: &UnitTest) -> String {
-  format!("{}: test operation '{}'", test.test.name, test.test.operation)
+  format!("{}: test operation '{}'", test.test.name(), test.test.operation())
 }
 
 pub async fn run_test<'a, 'b>(
@@ -24,8 +24,8 @@ pub async fn run_test<'a, 'b>(
 
   for (i, def) in defs.into_iter().enumerate() {
     let entity = id.map_or_else(
-      || Entity::local(&def.test.operation),
-      |id| Entity::operation(id, &def.test.operation),
+      || Entity::local(def.test.operation()),
+      |id| Entity::operation(id, def.test.operation()),
     );
     let block = run_unit(i, def, entity, component.clone()).await?;
     harness.add_block(block);
@@ -52,7 +52,7 @@ async fn run_unit<'a>(
   let fut = component.handle(
     invocation,
     stream,
-    def.test.config.clone(),
+    def.test.config().cloned(),
     std::sync::Arc::new(|_, _, _, _, _| panic!()),
   );
   let fut = tokio::time::timeout(Duration::from_secs(5), fut);
@@ -79,7 +79,7 @@ async fn run_unit<'a>(
   diagnostics.append(&mut output_lines);
   test_block.add_diagnostic_messages(diagnostics);
 
-  for (j, expected) in def.test.outputs.iter().cloned().enumerate() {
+  for (j, expected) in def.test.outputs().iter().cloned().enumerate() {
     if j >= def.actual.len() {
       let diag = Some(vec![
         format!("Trying to test output {:?}", expected),
@@ -139,7 +139,7 @@ async fn run_unit<'a>(
     }
   }
 
-  let num_tested = def.test.outputs.len();
+  let num_tested = def.test.outputs().len();
   let mut missed = vec![];
 
   for i in num_tested..def.actual.len() {

@@ -1,6 +1,7 @@
 use wick_interface_types::Field;
 
-#[derive(Debug, Builder, Clone)]
+#[derive(Debug, Builder, Clone, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 pub struct OperationSignature {
   /// The name of the schematic.
   pub(crate) name: String,
@@ -13,30 +14,4 @@ pub struct OperationSignature {
 
   /// A list of the input types for the operation.
   pub(crate) outputs: Vec<Field>,
-}
-
-impl OperationSignature {
-  #[must_use]
-  /// Get the name of the operation.
-  pub fn name(&self) -> &str {
-    &self.name
-  }
-
-  #[must_use]
-  /// Get the inputs of the operation.
-  pub fn inputs(&self) -> &[Field] {
-    &self.inputs
-  }
-
-  #[must_use]
-  /// Get the outputs of the operation.
-  pub fn outputs(&self) -> &[Field] {
-    &self.outputs
-  }
-
-  #[must_use]
-  /// Get the configuration of the operation.
-  pub fn config(&self) -> &[Field] {
-    &self.config
-  }
 }

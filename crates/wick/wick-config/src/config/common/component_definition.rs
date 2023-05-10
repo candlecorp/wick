@@ -4,7 +4,8 @@ use serde::Deserializer;
 use crate::config;
 
 /// A reference to an operation.
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 #[asset(asset(config::AssetReference))]
 
 pub struct ComponentOperationExpression {
@@ -22,17 +23,6 @@ impl ComponentOperationExpression {
       operation: operation.as_ref().to_owned(),
       component,
     }
-  }
-
-  /// Returns the operation ID.
-  #[must_use]
-  pub fn operation(&self) -> &str {
-    &self.operation
-  }
-
-  /// Returns the component definition.
-  pub fn component(&self) -> &ComponentDefinition {
-    &self.component
   }
 }
 

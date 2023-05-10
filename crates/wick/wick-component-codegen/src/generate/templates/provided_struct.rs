@@ -10,8 +10,8 @@ pub(crate) fn provided_struct(_config: &Config, required: &[BoundInterface]) -> 
   let required_names = required
     .iter()
     .map(|r: &BoundInterface| {
-      let name = id(&snake(&r.id));
-      let orig_name = &r.id;
+      let name = id(&snake(r.id()));
+      let orig_name = r.id();
       let response_name = id(&component_id(r));
       quote! { #name : #response_name::new(config.provided.get(#orig_name).cloned().unwrap()) }
     })
@@ -19,7 +19,7 @@ pub(crate) fn provided_struct(_config: &Config, required: &[BoundInterface]) -> 
   let fields = required
     .iter()
     .map(|v| {
-      let name = id(&snake(&v.id));
+      let name = id(&snake(v.id()));
       let uc_name = id(&component_id(v));
       quote! {pub #name: #uc_name}
     })

@@ -22,10 +22,10 @@ pub struct WasmComponent {
   host: Arc<WasmHost>,
 }
 
-fn permissions_to_wasi_params(perms: Permissions) -> WasiParams {
+fn permissions_to_wasi_params(perms: &Permissions) -> WasiParams {
   debug!(params=?perms, "Collection permissions");
-  let preopened_dirs = perms.dirs.values().cloned().collect();
-  let map_dirs = perms.dirs.into_iter().collect();
+  let preopened_dirs = perms.dirs().values().cloned().collect();
+  let map_dirs = perms.dirs().clone().into_iter().collect();
   let params = WasiParams {
     map_dirs,
     preopened_dirs,
@@ -51,12 +51,12 @@ impl WasmComponent {
     // If we're passed a "wasi" field in the config map...
     if let Some(config) = config {
       debug!(id=%name, config=?config, "wasi enabled");
-      builder = builder.wasi_params(permissions_to_wasi_params(config));
+      builder = builder.wasi_params(permissions_to_wasi_params(&config));
     } else if let Some(opts) = additional_config {
       // if we were passed wasi params, use those.
       debug!(id=%name, config=?opts, "wasi enabled");
 
-      builder = builder.wasi_params(permissions_to_wasi_params(opts));
+      builder = builder.wasi_params(permissions_to_wasi_params(&opts));
     } else {
       debug!(id = %name, "wasi disabled");
     }

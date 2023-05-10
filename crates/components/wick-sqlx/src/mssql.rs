@@ -25,12 +25,11 @@ mod integration_test {
   use flow_component::{panic_callback, Component};
   use futures::StreamExt;
   use serde_json::json;
-  use wick_config::config::components::SqlOperationDefinitionBuilder;
+  use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
   use wick_config::config::{Metadata, ResourceDefinition};
   use wick_interface_types::{Field, TypeSignature};
   use wick_packet::{packet_stream, Invocation, Packet};
 
-  use super::*;
   use crate::SqlXComponent;
 
   async fn init_mssql_component() -> Result<SqlXComponent> {
@@ -41,11 +40,11 @@ mod integration_test {
     let user = "SA";
     let db_name = "wick_test";
 
-    let mut config = SqlComponentConfig {
-      resource: "db".to_owned(),
-      tls: false,
-      operations: vec![],
-    };
+    let mut config = SqlComponentConfigBuilder::default()
+      .resource("db")
+      .tls(false)
+      .build()
+      .unwrap();
     let op = SqlOperationDefinitionBuilder::default()
       .name("test")
       .query("select id,name from users where id=$1;")
@@ -55,7 +54,7 @@ mod integration_test {
       .build()
       .unwrap();
 
-    config.operations.push(op);
+    config.operations_mut().push(op);
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource(
       "db",

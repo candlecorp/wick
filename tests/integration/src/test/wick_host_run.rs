@@ -1,4 +1,4 @@
-mod integration_test {
+mod slow_test {
 
   use std::path::PathBuf;
   use std::time::Duration;

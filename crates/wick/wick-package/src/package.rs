@@ -58,37 +58,35 @@ impl WickPackage {
 
     let (kind, name, version, annotations, parent_dir, media_type) = match &config {
       WickConfiguration::App(config) => {
-        let name = config.name();
+        let name = config.name().to_owned();
         let version = config.version();
-        let annotations = metadata_to_annotations(config.metadata());
+        let annotations = metadata_to_annotations(&config.metadata());
         let media_type = media_types::APPLICATION;
         let kind = WickPackageKind::APPLICATION;
 
         extra_files = config.package_files().to_owned();
 
-        registry_reference = config.package.as_ref().and_then(|package| {
+        registry_reference = config.package().and_then(|package| {
           package
-            .registry
-            .as_ref()
-            .map(|registry| format!("{}/{}/{}:{}", registry.registry, registry.namespace, name, version))
+            .registry()
+            .map(|registry| format!("{}/{}/{}:{}", registry.registry(), registry.namespace(), name, version))
         });
 
         (kind, name, version, annotations, parent_dir, media_type)
       }
       WickConfiguration::Component(config) => {
-        let name = config.name().clone().ok_or(Error::NoName)?;
+        let name = config.name().cloned().ok_or(Error::NoName)?;
         let version = config.version();
-        let annotations = metadata_to_annotations(config.metadata());
+        let annotations = metadata_to_annotations(&config.metadata());
         let media_type = media_types::COMPONENT;
         let kind = WickPackageKind::COMPONENT;
 
         extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
 
-        registry_reference = config.package.as_ref().and_then(|package| {
+        registry_reference = config.package().and_then(|package| {
           package
-            .registry
-            .as_ref()
-            .map(|registry| format!("{}/{}/{}:{}", registry.registry, registry.namespace, name, version))
+            .registry()
+            .map(|registry| format!("{}/{}/{}:{}", registry.registry(), registry.namespace(), name, version))
         });
         (kind, name, version, annotations, parent_dir, media_type)
       }

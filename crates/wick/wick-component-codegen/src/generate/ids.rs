@@ -14,7 +14,7 @@ pub(crate) fn id(name: &str) -> Ident {
 }
 
 pub(crate) fn component_id(r: &BoundInterface) -> String {
-  format!("{}Component", &pascal(&r.id))
+  format!("{}Component", &pascal(r.id()))
 }
 
 pub(crate) fn config_id(name: &str) -> String {

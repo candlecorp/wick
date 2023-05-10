@@ -18,8 +18,9 @@ use crate::import_cache::{setup_cache, ImportCache};
 use crate::utils::RwOption;
 use crate::{config, v1, Error, Resolver, Result};
 
-#[derive(Debug, Default, Clone, Builder, derive_asset_container::AssetManager)]
+#[derive(Debug, Default, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
 #[builder(derive(Debug), setter(into))]
+#[property(get(public), set(disable), mut(disable))]
 #[asset(asset(AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
@@ -28,12 +29,14 @@ pub struct ComponentConfiguration {
   pub(crate) component: ComponentImplementation,
   #[asset(skip)]
   #[builder(setter(strip_option), default)]
-  pub name: Option<String>,
+  pub(crate) name: Option<String>,
   #[asset(skip)]
   #[builder(setter(strip_option), default)]
+  #[property(skip)]
   pub(crate) source: Option<PathBuf>,
   #[asset(skip)]
   #[builder(default)]
+  #[property(skip)]
   pub(crate) types: Vec<TypeDefinition>,
   #[builder(default)]
   pub(crate) import: HashMap<String, ImportBinding>,
@@ -53,15 +56,18 @@ pub struct ComponentConfiguration {
   pub(crate) tests: Vec<config::TestCase>,
   #[asset(skip)]
   #[builder(default)]
+  #[property(skip)]
   pub(crate) metadata: Option<config::Metadata>,
   #[asset(skip)]
   #[builder(setter(skip))]
+  #[property(skip)]
   pub(crate) type_cache: ImportCache,
   #[asset(skip)]
   #[builder(setter(skip))]
+  #[property(skip)]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
   #[builder(default)]
-  pub package: Option<PackageConfig>,
+  pub(crate) package: Option<PackageConfig>,
 }
 
 impl ComponentConfiguration {
@@ -73,6 +79,11 @@ impl ComponentConfiguration {
         self.component.kind(),
       )),
     }
+  }
+
+  /// Set the name of the component
+  pub fn set_name(&mut self, name: String) {
+    self.name = Some(name);
   }
 
   /// Get the package files
@@ -126,22 +137,10 @@ impl ComponentConfiguration {
     make_resolver(imports, resources)
   }
 
-  /// Get the imports defined in this component.
-  #[must_use]
-  pub fn imports(&self) -> &HashMap<String, ImportBinding> {
-    &self.import
-  }
-
   /// Returns an [ImportBinding] if it exists in the configuration.
   #[must_use]
   pub fn get_import(&self, name: &str) -> Option<&ImportBinding> {
     self.import.get(name)
-  }
-
-  /// Retrieve the host configuration if it's set.
-  #[must_use]
-  pub fn host(&self) -> Option<&config::HostConfig> {
-    self.host.as_ref()
   }
 
   /// Retrieve a mutable host configuration. This will create a default host configuration if one
@@ -151,11 +150,6 @@ impl ComponentConfiguration {
       self.host = Some(config::HostConfig::default());
     }
     self.host.as_mut().unwrap()
-  }
-
-  /// Get the configuration related to the specific [ComponentKind].
-  pub fn component(&self) -> &ComponentImplementation {
-    &self.component
   }
 
   /// Get the configuration related to the specific [ComponentKind].
@@ -178,12 +172,6 @@ impl ComponentConfiguration {
   #[must_use]
   pub fn insecure_registries(&self) -> Option<&[String]> {
     self.host.as_ref().map(|v| v.insecure_registries.as_ref())
-  }
-
-  /// Return the list of tests defined in the manifest.
-  #[must_use]
-  pub fn tests(&self) -> &[config::TestCase] {
-    &self.tests
   }
 
   /// Return the version of the component.
@@ -218,12 +206,6 @@ impl ComponentConfiguration {
     )
   }
 
-  /// Return the requirements defined in this component.
-  #[must_use]
-  pub fn requires(&self) -> &HashMap<String, BoundInterface> {
-    &self.requires
-  }
-
   /// Fetch/cache anything critical to the first use of this configuration.
   pub(crate) async fn setup_cache(&self, options: FetchOptions) -> Result<()> {
     setup_cache(
@@ -236,28 +218,10 @@ impl ComponentConfiguration {
     .await
   }
 
-  /// Return the resources defined in this component.
-  #[must_use]
-  pub fn resources(&self) -> &HashMap<String, ResourceBinding> {
-    &self.resources
-  }
-
-  #[must_use]
-  /// Get the name for this manifest.
-  pub fn name(&self) -> &Option<String> {
-    &self.name
-  }
-
-  #[must_use]
-  /// Get the name for this manifest.
-  pub fn labels(&self) -> &HashMap<String, String> {
-    &self.labels
-  }
-
   /// Get the component signature for this configuration.
   pub fn signature(&self) -> Result<ComponentSignature> {
     let mut sig = wick_interface_types::component! {
-      name: self.name().clone().unwrap_or_else(||self.component.default_name().to_owned()),
+      name: self.name().cloned().unwrap_or_else(||self.component.default_name().to_owned()),
       version: self.version(),
       operations: self.component.operation_signatures(),
     };

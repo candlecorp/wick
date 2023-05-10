@@ -45,8 +45,8 @@ fn register_operation(
   network: &mut Network,
   flow: &mut FlowOperation,
 ) -> Result<(), flow_graph::error::Error> {
-  scope.push(flow.name.clone());
-  for flow in &mut flow.flows {
+  scope.push(flow.name().to_owned());
+  for flow in flow.flows_mut() {
     let scope = scope.clone();
     register_operation(scope, network, flow)?;
   }
@@ -58,14 +58,18 @@ fn register_operation(
 
   trace!(index, name = INTERNAL_ID_INHERENT, "added inherent component");
 
-  for (name, def) in flow.instances.iter() {
-    schematic.add_external(name, NodeReference::new(&def.component_id, &def.name), def.data.clone());
+  for (name, def) in flow.instances().iter() {
+    schematic.add_external(
+      name,
+      NodeReference::new(def.component_id(), def.name()),
+      def.data().cloned(),
+    );
   }
 
   let mut drop_id = 0;
 
   // inline instances
-  for expression in &mut flow.expressions {
+  for expression in flow.expressions_mut() {
     match expression {
       FlowExpression::ConnectionExpression(expr) => {
         if let InstanceTarget::Path(path, id) = expr.from().instance() {
@@ -90,7 +94,7 @@ fn register_operation(
     }
   }
 
-  for expression in &flow.expressions {
+  for expression in flow.expressions() {
     match expression {
       FlowExpression::ConnectionExpression(expr) => {
         let from = expr.from();
@@ -124,7 +128,7 @@ fn register_operation(
 pub fn from_def(
   manifest: &mut wick_config::config::ComponentConfiguration,
 ) -> Result<Network, flow_graph::error::Error> {
-  let mut network = Network::new(manifest.name().clone().unwrap_or_default());
+  let mut network = Network::new(manifest.name().cloned().unwrap_or_default());
 
   if let ComponentImplementation::Composite(composite) = manifest.component_mut() {
     for flow in composite.operations_mut().values_mut() {

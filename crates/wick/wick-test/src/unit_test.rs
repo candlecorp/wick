@@ -16,8 +16,8 @@ pub struct UnitTest<'a> {
 pub(crate) fn get_payload(test: &UnitTest) -> (PacketStream, Option<InherentData>) {
   let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
   let mut not_done = HashSet::new();
-  for packet in &test.test.inputs {
-    let done = packet.flags().map_or(false, |f| f.done);
+  for packet in test.test.inputs() {
+    let done = packet.flags().map_or(false, |f| f.done());
     if done {
       not_done.remove(packet.port());
     } else {
@@ -34,8 +34,8 @@ pub(crate) fn get_payload(test: &UnitTest) -> (PacketStream, Option<InherentData
     tx.send(Ok(Packet::done(port))).unwrap();
   }
   let stream = PacketStream::new(Box::new(UnboundedReceiverStream::new(rx)));
-  if let Some(inherent) = test.test.inherent {
-    if let Some(seed) = inherent.seed {
+  if let Some(inherent) = test.test.inherent() {
+    if let Some(seed) = inherent.seed() {
       return (
         stream,
         Some(InherentData::new(

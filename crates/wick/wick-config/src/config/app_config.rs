@@ -18,18 +18,21 @@ use crate::import_cache::{setup_cache, ImportCache};
 use crate::utils::RwOption;
 use crate::{config, v1, Resolver, Result};
 
-#[derive(Debug, Clone, Default, Builder, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(disable), mut(disable))]
 #[asset(asset(AssetReference))]
 #[builder(setter(into))]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct AppConfiguration {
   #[asset(skip)]
-  pub name: String,
+  pub(crate) name: String,
   #[asset(skip)]
   #[builder(setter(strip_option), default)]
+  #[property(skip)]
   pub(crate) source: Option<PathBuf>,
   #[builder(setter(strip_option), default)]
+  #[property(skip)]
   pub(crate) metadata: Option<config::Metadata>,
   #[builder(default)]
   pub(crate) import: HashMap<String, ImportBinding>,
@@ -42,12 +45,14 @@ pub struct AppConfiguration {
   pub(crate) host: Option<HostConfig>,
   #[asset(skip)]
   #[builder(setter(skip))]
+  #[property(skip)]
   pub(crate) type_cache: ImportCache,
   #[asset(skip)]
   #[builder(default)]
+  #[property(skip)]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
   #[builder(setter(strip_option), default)]
-  pub package: Option<PackageConfig>,
+  pub(crate) package: Option<PackageConfig>,
 }
 
 impl AppConfiguration {
@@ -61,6 +66,11 @@ impl AppConfiguration {
       options,
     )
     .await
+  }
+
+  /// Set the name of the component
+  pub fn set_name(&mut self, name: String) {
+    self.name = name;
   }
 
   /// Get the package files
@@ -110,12 +120,6 @@ impl AppConfiguration {
     }
   }
 
-  #[must_use]
-  /// Get the name for this manifest.
-  pub fn name(&self) -> String {
-    self.name.clone()
-  }
-
   /// Return the version of the application.
   #[must_use]
   pub fn version(&self) -> String {
@@ -134,12 +138,6 @@ impl AppConfiguration {
     &self.import
   }
 
-  #[must_use]
-  /// Get the application's resources.
-  pub fn resources(&self) -> &HashMap<String, ResourceBinding> {
-    &self.resources
-  }
-
   /// Add a resource to the application configuration.
   pub fn add_resource(&mut self, name: impl AsRef<str>, resource: ResourceDefinition) {
     self
@@ -152,12 +150,6 @@ impl AppConfiguration {
     self
       .import
       .insert(name.as_ref().to_owned(), ImportBinding::new(name.as_ref(), import));
-  }
-
-  #[must_use]
-  /// Get the application's triggers.
-  pub fn triggers(&self) -> &Vec<TriggerDefinition> {
-    &self.triggers
   }
 
   pub fn into_v1_yaml(self) -> Result<String> {

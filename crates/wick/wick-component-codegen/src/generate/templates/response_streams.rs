@@ -13,9 +13,9 @@ pub(crate) fn response_streams(config: &mut Config, required: Vec<BoundInterface
   let fields = required
     .into_iter()
     .map(|v| {
-      let name = id(&format!("{}Component", &pascal(&v.id)));
+      let name = id(&format!("{}Component", &pascal(v.id())));
       let ops = v
-        .kind
+        .kind()
         .operations()
         .values()
         .map(|op| {

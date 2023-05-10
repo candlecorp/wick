@@ -26,6 +26,6 @@ pub(crate) struct WasiOptions {
 impl From<WasiOptions> for Permissions {
   fn from(opts: WasiOptions) -> Self {
     let dirs = opts.wasi_dir.into_iter().map(|v| (v.0, v.1)).collect();
-    Self { dirs }
+    Self::new(dirs)
   }
 }

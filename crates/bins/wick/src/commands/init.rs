@@ -27,12 +27,12 @@ pub(crate) async fn handle_command(mut opts: InitCommand) -> Result<()> {
   let files: Vec<(PathBuf, String)> = if opts.component {
     info!("Initializing wick component project: {}", opts.name);
     let mut config = ComponentConfiguration::default();
-    config.name = Some(opts.name);
+    config.set_name(opts.name);
     vec![("component.wick".into(), config.into_v1_yaml()?)]
   } else {
     info!("Initializing wick application: {}", opts.name);
     let mut config = AppConfiguration::default();
-    config.name = opts.name;
+    config.set_name(opts.name);
     vec![("app.wick".into(), config.into_v1_yaml()?)]
   };
 

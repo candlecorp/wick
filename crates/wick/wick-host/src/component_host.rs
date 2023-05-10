@@ -116,16 +116,16 @@ impl ComponentHost {
 
     #[allow(clippy::manual_map)]
     let options = HostOptions {
-      rpc: host_config.rpc.as_ref().map(|config| ServerOptions {
-        port: config.port,
-        address: config.address,
-        pem: config.pem.clone(),
-        key: config.key.clone(),
-        ca: config.ca.clone(),
-        enabled: config.enabled,
+      rpc: host_config.rpc().map(|config| ServerOptions {
+        port: config.port(),
+        address: config.address().copied(),
+        pem: config.pem().cloned(),
+        key: config.key().cloned(),
+        ca: config.ca().cloned(),
+        enabled: config.enabled(),
       }),
       id: self.get_host_id().to_owned(),
-      timeout: host_config.timeout,
+      timeout: *host_config.timeout(),
     };
 
     let collection = from_registry(nuid);
@@ -240,7 +240,7 @@ mod test {
   use anyhow::Result;
   use futures::StreamExt;
   use http::Uri;
-  use wick_config::config::HttpConfig;
+  use wick_config::config::HttpConfigBuilder;
   use wick_invocation_server::connect_rpc_client;
   use wick_packet::{packet_stream, packets, Entity, Packet};
 
@@ -289,12 +289,12 @@ mod test {
     let file = PathBuf::from("manifests/logger.yaml");
     let mut def = WickConfiguration::load_from_file(&file).await?.try_component_config()?;
 
-    def.host_mut().rpc = Some(HttpConfig {
-      enabled: true,
-      port: None,
-      address: Some(Ipv4Addr::from_str("127.0.0.1").unwrap()),
-      ..Default::default()
-    });
+    def.host_mut().rpc_mut().replace(
+      HttpConfigBuilder::default()
+        .enabled(true)
+        .address(Ipv4Addr::from_str("127.0.0.1").unwrap())
+        .build()?,
+    );
 
     let mut host = ComponentHostBuilder::from_definition(def).build();
     host.start(None).await?;

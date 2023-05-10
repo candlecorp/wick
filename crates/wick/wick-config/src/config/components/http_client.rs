@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use crate::config;
 
-#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
 #[must_use]
@@ -10,15 +11,17 @@ use crate::config;
 pub struct HttpClientComponentConfig {
   /// The URL base to use.
   #[asset(skip)]
-  pub resource: String,
+  pub(crate) resource: String,
 
   /// The codec to use when encoding/decoding data.
   #[asset(skip)]
-  pub codec: Option<Codec>,
+  #[builder(default)]
+  pub(crate) codec: Option<Codec>,
 
   /// A list of operations to expose on this component.
   #[asset(skip)]
-  pub operations: Vec<HttpClientOperationDefinition>,
+  #[builder(default)]
+  pub(crate) operations: Vec<HttpClientOperationDefinition>,
 }
 
 impl HttpClientComponentConfig {
@@ -61,37 +64,38 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
   }
 }
 
-#[derive(Debug, Clone, Builder, PartialEq)]
+#[derive(Debug, Clone, Builder, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 #[builder(setter(into))]
 #[must_use]
 pub struct HttpClientOperationDefinition {
   /// The name of the operation.
-  pub name: String,
+  pub(crate) name: String,
 
   /// The configuration the operation needs.
   #[builder(default)]
-  pub config: Vec<wick_interface_types::Field>,
+  pub(crate) config: Vec<wick_interface_types::Field>,
 
   /// Types of the inputs to the operation.
-  pub inputs: Vec<wick_interface_types::Field>,
+  pub(crate) inputs: Vec<wick_interface_types::Field>,
 
   /// The path to append to our base URL, processed as a liquid template with each input as part of the template data.
-  pub path: String,
+  pub(crate) path: String,
 
   /// The codec to use when encoding/decoding data.
   #[builder(default)]
-  pub codec: Option<Codec>,
+  pub(crate) codec: Option<Codec>,
 
   /// The body to send with the request.
   #[builder(default)]
-  pub body: Option<liquid_json::LiquidJsonValue>,
+  pub(crate) body: Option<liquid_json::LiquidJsonValue>,
 
   /// The headers to send with the request.
   #[builder(default)]
-  pub headers: HashMap<String, Vec<String>>,
+  pub(crate) headers: HashMap<String, Vec<String>>,
 
   /// The HTTP method to use.
-  pub method: HttpMethod,
+  pub(crate) method: HttpMethod,
 }
 
 impl HttpClientOperationDefinition {

@@ -3,16 +3,19 @@ use std::path::PathBuf;
 use url::Url;
 use wick_asset_reference::AssetReference;
 
-#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager)]
+use crate::error::ManifestError;
+
+#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
 #[asset(asset(AssetReference))]
+#[property(get(public), set(private), mut(disable))]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
 pub struct ResourceBinding {
   #[asset(skip)]
   /// The id to bind the resource to.
-  pub id: String,
+  pub(crate) id: String,
   /// The bound resource.
-  pub kind: ResourceDefinition,
+  pub(crate) kind: ResourceDefinition,
 }
 
 impl ResourceBinding {
@@ -95,15 +98,15 @@ impl Volume {
     }
   }
 
-  /// Get the path.
-  pub fn path(&self) -> Result<PathBuf, crate::Error> {
+  pub fn path(&self) -> Result<PathBuf, ManifestError> {
     Ok(self.path.path()?)
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, property::Property)]
 /// A URL resource.
 #[must_use]
+#[property(get(public), set(private), mut(disable))]
 pub struct UrlResource {
   /// The URL
   pub(crate) url: Url,
@@ -178,8 +181,9 @@ impl std::fmt::Display for UrlResource {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, property::Property)]
 /// Normalized representation of a TCP port configuration.
+#[property(get(public), set(private), mut(disable))]
 pub struct TcpPort {
   /// The port number.
   pub(crate) port: u16,
@@ -196,18 +200,6 @@ impl TcpPort {
     }
   }
 
-  /// Get the port number.
-  #[must_use]
-  pub fn port(&self) -> u16 {
-    self.port
-  }
-
-  /// Get the host address.
-  #[must_use]
-  pub fn host(&self) -> &str {
-    &self.host
-  }
-
   /// Get the address and port as a string.
   #[must_use]
   pub fn address(&self) -> String {
@@ -215,8 +207,9 @@ impl TcpPort {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, property::Property)]
 /// Normalized representation of a UDP port configuration.
+#[property(get(public), set(private), mut(disable))]
 pub struct UdpPort {
   /// The port number.
   pub(crate) port: u16,
@@ -231,18 +224,6 @@ impl UdpPort {
       port,
       host: host.as_ref().to_owned(),
     }
-  }
-
-  /// Get the port number.
-  #[must_use]
-  pub fn port(&self) -> u16 {
-    self.port
-  }
-
-  /// Get the host address.
-  #[must_use]
-  pub fn host(&self) -> &str {
-    &self.host
   }
 
   /// Get the address and port as a string.

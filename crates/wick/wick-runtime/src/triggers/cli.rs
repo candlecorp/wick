@@ -48,12 +48,12 @@ impl Cli {
     config: CliConfig,
     args: Vec<String>,
   ) -> Result<StructuredOutput, RuntimeError> {
-    let cli_component = resolve_ref(&app_config, config.component())?;
+    let cli_component = resolve_ref(&app_config, config.operation().component())?;
     let cli_binding = ImportBinding::component("cli", cli_component);
 
     let invocation = Invocation::new(
       Entity::server("cli_channel"),
-      Entity::operation(&cli_binding.id, config.operation()),
+      Entity::operation(cli_binding.id(), config.operation().operation()),
       None,
     );
 
