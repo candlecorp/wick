@@ -1,7 +1,13 @@
 use std::env;
 use std::path::PathBuf;
 
-use flow_expression_parser::ast::{ConnectionExpression, ConnectionTargetExpression, FlowExpression, InstanceTarget};
+use flow_expression_parser::ast::{
+  ConnectionExpression,
+  ConnectionTargetExpression,
+  FlowExpression,
+  InstancePort,
+  InstanceTarget,
+};
 use tracing::debug;
 use wick_config::component_config::CompositeComponentImplementation;
 use wick_config::error::ManifestError;
@@ -74,10 +80,10 @@ async fn load_shortform_yaml() -> Result<(), ManifestError> {
 
   assert_eq!(
     expr,
-    &FlowExpression::ConnectionExpression(Box::new(ConnectionExpression::new(
-      ConnectionTargetExpression::new(InstanceTarget::Input, "input", Default::default()),
-      ConnectionTargetExpression::new(InstanceTarget::named("logger"), "input", Default::default())
-    )))
+    &FlowExpression::connection(ConnectionExpression::new(
+      ConnectionTargetExpression::new(InstanceTarget::Input, InstancePort::named("input")),
+      ConnectionTargetExpression::new(InstanceTarget::named("logger"), InstancePort::named("input"))
+    ))
   );
 
   Ok(())

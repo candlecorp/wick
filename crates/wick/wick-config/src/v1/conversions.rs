@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::time::Duration;
 mod types;
 
-use flow_expression_parser::ast::{self, InstanceTarget};
+use flow_expression_parser::ast::{self, InstancePort, InstanceTarget};
 use option_utils::OptionUtils;
 
 // use flow_expression_parser::parse_id;
@@ -752,8 +752,8 @@ impl TryFrom<v1::FlowExpression> for ast::FlowExpression {
 
   fn try_from(expr: v1::FlowExpression) -> Result<Self> {
     Ok(match expr {
-      v1::FlowExpression::ConnectionDefinition(v) => ast::FlowExpression::ConnectionExpression(Box::new(v.try_into()?)),
-      v1::FlowExpression::BlockExpression(v) => ast::FlowExpression::BlockExpression(v.try_into()?),
+      v1::FlowExpression::ConnectionDefinition(v) => ast::FlowExpression::connection(v.try_into()?),
+      v1::FlowExpression::BlockExpression(v) => ast::FlowExpression::block(v.try_into()?),
     })
   }
 }
@@ -1013,7 +1013,7 @@ impl TryFrom<ast::ConnectionTargetExpression> for v1::ConnectionTargetDefinition
     Ok(Self {
       data,
       instance: instance.to_string(),
-      port,
+      port: port.to_string(),
     })
   }
 }
@@ -1146,9 +1146,9 @@ impl TryFrom<crate::v1::ConnectionTargetDefinition> for ast::ConnectionTargetExp
   type Error = ManifestError;
 
   fn try_from(def: crate::v1::ConnectionTargetDefinition) -> Result<Self> {
-    Ok(ast::ConnectionTargetExpression::new(
+    Ok(ast::ConnectionTargetExpression::new_default(
       InstanceTarget::from_str(&def.instance)?,
-      def.port,
+      InstancePort::from_str(&def.port)?,
       def.data,
     ))
   }

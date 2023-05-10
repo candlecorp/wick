@@ -17,6 +17,10 @@ pub enum ParserError {
   #[error("Invalid connection definition syntax: '{0}'")]
   ConnectionDefinitionSyntax(String),
 
+  /// Whatever was passed in as an operation's port isn't valid.
+  #[error("Invalid input/output port syntax: '{0}'")]
+  PortSyntax(String),
+
   /// Ambiguous reference in connection shorthand.
   #[error("No suitable default found for port in : {0}")]
   NoDefaultPort(String),
