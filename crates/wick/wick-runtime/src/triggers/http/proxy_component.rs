@@ -17,6 +17,7 @@ impl ProxyComponent {
   pub(super) fn new(url: UrlResource, strip: Option<String>) -> Self {
     let url = url.to_string();
     let url = url.trim_end_matches('/').to_owned();
+    debug!(url = %url, "wick:http:proxy: proxying");
     Self { url, strip }
   }
 }

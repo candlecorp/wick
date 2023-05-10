@@ -13,6 +13,8 @@ use async_trait::async_trait;
 use futures::future::BoxFuture;
 use hyper::{Body, Request, Response, Server};
 use parking_lot::Mutex;
+use serde_json::json;
+use structured_output::StructuredOutput;
 use tokio::task::JoinHandle;
 use wick_config::config::components::Codec;
 use wick_config::config::{AppConfiguration, ImportBinding, ProxyRouterConfig, RawRouterConfig, StaticRouterConfig};
@@ -51,6 +53,7 @@ struct HttpInstance {
   handle: JoinHandle<()>,
   shutdown_tx: tokio::sync::oneshot::Sender<()>,
   running_rx: Option<tokio::sync::oneshot::Receiver<()>>,
+  pub(super) addr: SocketAddr,
 }
 
 impl HttpInstance {
@@ -77,6 +80,7 @@ impl HttpInstance {
       handle,
       shutdown_tx: tx,
       running_rx: Some(running_rx),
+      addr: *socket,
     }
   }
 
@@ -234,7 +238,7 @@ fn register_static_router(
       ))
     }
   };
-  let router = StaticComponent::new(volume);
+  let router = StaticComponent::new(volume, Some(router_config.path().to_owned()));
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
   let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
   Ok((
@@ -294,7 +298,7 @@ impl Trigger for Http {
     app_config: AppConfiguration,
     config: config::TriggerDefinition,
     resources: Arc<HashMap<String, Resource>>,
-  ) -> Result<(), RuntimeError> {
+  ) -> Result<StructuredOutput, RuntimeError> {
     debug!(kind = %TriggerKind::Http, "trigger:run");
     let config = if let config::TriggerDefinition::Http(config) = config {
       config
@@ -317,9 +321,15 @@ impl Trigger for Http {
     };
 
     let instance = self.handle_command(app_config, config, resources, &socket).await?;
+    let output = StructuredOutput::new(
+      format!("HTTP Server started on {}", instance.addr),
+      json!({"ip": instance.addr.ip(),"port": instance.addr.port()}),
+    );
+    info!("{}", output.lines());
+
     self.instance.lock().replace(instance);
 
-    Ok(())
+    Ok(output)
   }
 
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError> {

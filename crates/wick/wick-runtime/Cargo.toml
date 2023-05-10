@@ -23,6 +23,7 @@ wick-stdlib = { workspace = true }
 wick-rpc = { workspace = true }
 wick-interface-http = { workspace = true }
 seeded-random = { workspace = true }
+structured-output = { workspace = true }
 # High level components
 wick-sqlx = { workspace = true }
 wick-http-client = { workspace = true }
