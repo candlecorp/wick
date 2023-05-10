@@ -4381,6 +4381,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "structured-output"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a0ae739d836841e2094a3a04e7706c2095d1e3fee66dcf00988ddd4e7751efe"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "strum"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6382,6 +6392,7 @@ dependencies = [
  "seeded-random",
  "serde",
  "serde_json",
+ "structured-output",
  "test-logger",
  "thiserror",
  "tokio",

@@ -143,13 +143,24 @@ impl Service<Request<Body>> for ResponseService {
   }
 
   fn call(&mut self, req: Request<Body>) -> Self::Future {
+    let remote_addr = self.remote_addr;
+    let time = chrono::Local::now().format("%d/%b/%Y:%H:%M:%S %z");
+    let path = req.uri().path().to_owned();
+
+    info!(
+      "{} - [{}] \"{} {} {:?}\"",
+      remote_addr,
+      time,
+      req.method(),
+      req.uri().path(),
+      req.version()
+    );
     let engine = self.engine.clone();
     let router = self
       .routers
       .iter()
       .find(|r| req.uri().path().starts_with(r.path()))
       .cloned();
-    let remote_addr = self.remote_addr;
 
     Box::pin(async move {
       match router {
@@ -172,10 +183,35 @@ impl Service<Request<Body>> for ResponseService {
               Err(e) => Ok(make_ise(e)),
             }
           }
-          HttpRouter::Raw(r) => match r.component.handle(remote_addr, req).await {
-            Ok(res) => Ok(res),
-            Err(e) => Ok(make_ise(e)),
-          },
+          HttpRouter::Raw(r) => {
+            let time = chrono::Local::now().format("%d/%b/%Y:%H:%M:%S %z");
+
+            match r.component.handle(remote_addr, req).await {
+              Ok(res) => {
+                let status: u16 = res.status().into();
+
+                if status >= 300 {
+                  error!(
+                    "[{}] [wick:http] [client {}] [{}] {}",
+                    time,
+                    remote_addr,
+                    path,
+                    res.status()
+                  );
+                };
+
+                Ok(res)
+              }
+              Err(e) => {
+                error!(
+                  "[{}] [wick:http] [client {}] [{}] Internal Server Error: {}",
+                  time, remote_addr, path, e
+                );
+
+                Ok(make_ise(e))
+              }
+            }
+          }
         },
         None => Ok(make_ise("")),
       }

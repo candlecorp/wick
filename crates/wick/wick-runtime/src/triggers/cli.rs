@@ -7,6 +7,8 @@ use config::{AppConfiguration, CliConfig, ImportBinding, TriggerDefinition};
 // use futures::StreamExt;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
+use structured_output::StructuredOutput;
 use tokio_stream::StreamExt;
 use wick_packet::{packet_stream, Entity, Invocation};
 
@@ -45,7 +47,7 @@ impl Cli {
     app_config: AppConfiguration,
     config: CliConfig,
     args: Vec<String>,
-  ) -> Result<(), RuntimeError> {
+  ) -> Result<StructuredOutput, RuntimeError> {
     let cli_component = resolve_ref(&app_config, config.component())?;
     let cli_binding = ImportBinding::component("cli", cli_component);
 
@@ -74,13 +76,34 @@ impl Cli {
     let packet_stream = packet_stream!(("args", args), ("isInteractive", is_interactive));
 
     let mut response = runtime.invoke(invocation, packet_stream, None).await?;
-    while let Some(packet) = response.next().await {
-      trace!(?packet, "trigger:cli:response");
-    }
+    let output = loop {
+      if let Some(packet) = response.next().await {
+        trace!(?packet, "rigger:cli:response");
+        match packet {
+          Ok(p) => {
+            if p.port() == "code" && p.has_data() {
+              let code: u32 = p.deserialize().unwrap();
+              break StructuredOutput::new(format!("Exit code: {}", code), json!({ "code": code }));
+            }
+          }
+          Err(e) => {
+            break StructuredOutput::new(
+              format!("CLI Trigger produced error: {}", e),
+              json!({ "error": e.to_string() }),
+            );
+          }
+        }
+      } else {
+        break StructuredOutput::new(
+          "CLI Trigger failed to return an exit code",
+          json!({ "error": "CLI Trigger failed to return an exit code" }),
+        );
+      }
+    };
 
     let _ = self.done_tx.lock().take().unwrap().send(());
 
-    Ok(())
+    Ok(output)
   }
 }
 
@@ -92,7 +115,7 @@ impl Trigger for Cli {
     app_config: AppConfiguration,
     config: TriggerDefinition,
     _resources: Arc<HashMap<String, Resource>>,
-  ) -> Result<(), RuntimeError> {
+  ) -> Result<StructuredOutput, RuntimeError> {
     let config = if let TriggerDefinition::Cli(config) = config {
       config
     } else {
@@ -113,7 +136,7 @@ impl Trigger for Cli {
 
     self.handle_command(app_config, config, args).await?;
 
-    Ok(())
+    Ok(StructuredOutput::default())
   }
 
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError> {

@@ -8,6 +8,8 @@ use chrono::Utc;
 use config::{AppConfiguration, TimeTriggerConfig, TriggerDefinition};
 use cron::Schedule;
 use parking_lot::Mutex;
+use serde_json::json;
+use structured_output::StructuredOutput;
 use tokio::time::Duration;
 use tokio_stream::StreamExt;
 use wick_packet::{Entity, Packet};
@@ -117,7 +119,11 @@ impl Time {
     Ok(Arc::new(Self::new()))
   }
 
-  async fn handle_command(&self, app_config: AppConfiguration, config: TimeTriggerConfig) -> Result<(), RuntimeError> {
+  async fn handle_command(
+    &self,
+    app_config: AppConfiguration,
+    config: TimeTriggerConfig,
+  ) -> Result<StructuredOutput, RuntimeError> {
     debug!("Self: {:?}", self);
     let cron = config.schedule().cron().clone();
 
@@ -137,7 +143,10 @@ impl Time {
 
     self.handler.lock().replace(scheduler_task);
 
-    Ok(())
+    Ok(StructuredOutput::new(
+      "Scheduler started",
+      json!({"scheduler": "started"}),
+    ))
   }
 }
 
@@ -149,7 +158,7 @@ impl Trigger for Time {
     app_config: AppConfiguration,
     config: TriggerDefinition,
     _resources: Arc<HashMap<String, Resource>>,
-  ) -> Result<(), RuntimeError> {
+  ) -> Result<StructuredOutput, RuntimeError> {
     let config = if let TriggerDefinition::Time(config) = config {
       config
     } else {

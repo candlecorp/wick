@@ -7,6 +7,7 @@ mod time;
 use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use structured_output::StructuredOutput;
 use wick_config::config::{AppConfiguration, ComponentDefinition, TriggerDefinition, TriggerKind};
 
 use crate::dev::prelude::*;
@@ -20,7 +21,7 @@ pub trait Trigger {
     app_config: AppConfiguration,
     config: TriggerDefinition,
     resources: Arc<HashMap<String, Resource>>,
-  ) -> Result<(), RuntimeError>;
+  ) -> Result<StructuredOutput, RuntimeError>;
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError>;
   async fn wait_for_done(&self);
 }
