@@ -4,10 +4,17 @@ use nom::character::complete::{alpha1, alphanumeric1, char, multispace0};
 use nom::combinator::{eof, recognize};
 use nom::error::ParseError;
 use nom::multi::{many0, many1};
-use nom::sequence::{delimited, pair, terminated};
+use nom::sequence::{delimited, pair, preceded, terminated};
 use nom::IResult;
 
-use crate::ast::{ConnectionExpression, ConnectionTargetExpression, FlowExpression, FlowProgram, InstanceTarget};
+use crate::ast::{
+  ConnectionExpression,
+  ConnectionTargetExpression,
+  FlowExpression,
+  FlowProgram,
+  InstancePort,
+  InstanceTarget,
+};
 use crate::Error;
 
 /// The separator in a connection between connection targets.
@@ -70,7 +77,7 @@ fn reserved_component_id(input: &str) -> IResult<&str, &str> {
   ))(input)
 }
 
-fn path(input: &str) -> IResult<&str, &str> {
+fn operation_path(input: &str) -> IResult<&str, &str> {
   recognize(pair(many1(terminated(identifier, tag("::"))), identifier))(input)
 }
 
@@ -79,19 +86,31 @@ fn inline_id(input: &str) -> IResult<&str, &str> {
 }
 
 fn component_path(input: &str) -> IResult<&str, InstanceTarget> {
-  let (i, (path_parts, id)) = pair(path, inline_id)(input)?;
-  Ok((i, InstanceTarget::Path(path_parts.to_owned(), id.to_owned())))
+  let (i, (path_parts, id)) = pair(operation_path, inline_id)(input)?;
+  Ok((i, InstanceTarget::path(path_parts, id)))
 }
 
 fn instance(input: &str) -> IResult<&str, InstanceTarget> {
   alt((component_path, component_id))(input)
 }
 
-fn connection_target_expression(input: &str) -> IResult<&str, (InstanceTarget, Option<&str>)> {
-  pair(terminated(instance, char('.')), identifier)(input).map(|(i, v)| (i, (v.0, Some(v.1))))
+pub(crate) fn instance_port(input: &str) -> IResult<&str, InstancePort> {
+  let (i, (name, parts)) = pair(identifier, many0(preceded(char('.'), identifier)))(input)?;
+  if parts.is_empty() {
+    Ok((i, InstancePort::Named(name.to_owned())))
+  } else {
+    Ok((
+      i,
+      InstancePort::Path(name.to_owned(), parts.into_iter().map(|x| x.to_owned()).collect()),
+    ))
+  }
 }
 
-fn portless_target_expression(input: &str) -> IResult<&str, (InstanceTarget, Option<&str>)> {
+fn connection_target_expression(input: &str) -> IResult<&str, (InstanceTarget, Option<InstancePort>)> {
+  pair(terminated(instance, char('.')), instance_port)(input).map(|(i, v)| (i, (v.0, Some(v.1))))
+}
+
+fn portless_target_expression(input: &str) -> IResult<&str, (InstanceTarget, Option<InstancePort>)> {
   instance(input).map(|(i, v)| (i, (v, None)))
 }
 
@@ -112,11 +131,26 @@ fn connection_expression(input: &str) -> IResult<&str, ConnectionExpression> {
   )(input)?;
   let (i, (from, to)) = match (from.1, to) {
     // if no port on the upstream but there's a port on the downstream, use the downstream port
-    (None, (to, Some(to_port))) => (i, ((from.0, to_port), (to, to_port))),
+    (None, (to, Some(InstancePort::Named(to_port)))) => (
+      i,
+      (
+        (from.0, InstancePort::Named(to_port.clone())),
+        (to, InstancePort::Named(to_port)),
+      ),
+    ),
     // if there's a port on the upstream and the downstream is the Null entity, use the port 'input'
-    (Some(from_port), to @ (InstanceTarget::Null(_), _)) => (i, ((from.0, from_port), (to.0, "input"))),
+    (Some(from_port), to @ (InstanceTarget::Null(_), _)) => (
+      i,
+      ((from.0, from_port), (to.0, InstancePort::Named("input".to_owned()))),
+    ),
     // if there's a port on the upstream and the downstream is anything else, adopt the upstream port.
-    (Some(from_port), (to, None)) => (i, ((from.0, from_port), (to, from_port))),
+    (Some(InstancePort::Named(from_port)), (to, None)) => (
+      i,
+      (
+        (from.0, InstancePort::Named(from_port.clone())),
+        (to, InstancePort::Named(from_port)),
+      ),
+    ),
     // if there's no port on the upstream and no port on the downstream, error
     (None, (_, None)) => {
       return Err(nom::Err::Error(nom::error::Error::new(
@@ -125,13 +159,13 @@ fn connection_expression(input: &str) -> IResult<&str, ConnectionExpression> {
       )))
     }
     // Otherwise we've got ports so let's use em.
-    x => (i, ((from.0, from.1.unwrap()), (x.1 .0, x.1 .1.unwrap()))),
+    (from_port, to) => (i, ((from.0, from_port.unwrap()), (to.0, to.1.unwrap()))),
   };
   Ok((
     i,
     ConnectionExpression::new(
-      ConnectionTargetExpression::new(from.0, from.1, Default::default()),
-      ConnectionTargetExpression::new(to.0, to.1, Default::default()),
+      ConnectionTargetExpression::new(from.0, from.1),
+      ConnectionTargetExpression::new(to.0, to.1),
     ),
   ))
 }
@@ -155,7 +189,7 @@ where
 }
 
 /// Parse a string as connection target pieces.
-pub fn parse_target(s: &str) -> Result<(String, Option<&str>), Error> {
+pub fn parse_target(s: &str) -> Result<(String, Option<InstancePort>), Error> {
   let (_, (c, o)) = alt((connection_target_expression, portless_target_expression))(s)
     .map_err(|e| Error::ConnectionTargetSyntax(s.to_owned(), e.to_string()))?;
   Ok((c.to_string(), o))
@@ -181,16 +215,24 @@ mod tests {
   use pretty_assertions::assert_eq;
   use rstest::rstest;
 
-  use super::*;
+  use super::{
+    ConnectionExpression as CE,
+    ConnectionTargetExpression as CTE,
+    FlowExpression as FE,
+    InstancePort as InstPort,
+    InstanceTarget as InstTgt,
+    *,
+  };
+  // use crate::ast::BlockExpression;
 
   #[rstest]
-  #[case("<>", InstanceTarget::Default)]
-  #[case("<input>", InstanceTarget::Input)]
-  #[case("<output>", InstanceTarget::Output)]
-  #[case("<core>", InstanceTarget::Core)]
-  #[case("heya", InstanceTarget::Named("heya".to_owned()))]
-  #[case("this::that[A]", InstanceTarget::Path("this::that".to_owned(),"A".to_owned()))]
-  fn test_component_id(#[case] input: &'static str, #[case] expected: InstanceTarget) -> Result<()> {
+  #[case("<>", InstTgt::Default)]
+  #[case("<input>", InstTgt::Input)]
+  #[case("<output>", InstTgt::Output)]
+  #[case("<core>", InstTgt::Core)]
+  #[case("heya", InstTgt::named("heya"))]
+  #[case("this::that[A]", InstTgt::path("this::that", "A"))]
+  fn test_component_id(#[case] input: &'static str, #[case] expected: InstTgt) -> Result<()> {
     let (i, t) = instance(input)?;
     assert_eq!(t, expected);
     assert_eq!(i, "");
@@ -201,7 +243,7 @@ mod tests {
   #[case("single")]
   #[case("<input>")]
   fn test_path_negative(#[case] input: &str) -> Result<()> {
-    assert_err(&path(input));
+    assert_err(&operation_path(input));
     Ok(())
   }
 
@@ -210,22 +252,22 @@ mod tests {
   #[case("THIS::That", "THIS::That")]
   #[allow(clippy::needless_pass_by_value)]
   fn path_tester(#[case] input: &'static str, #[case] expected: &str) -> Result<()> {
-    let (i, t) = path(input)?;
+    let (i, t) = operation_path(input)?;
     assert_eq!(t, expected);
     assert_eq!(i, "");
     Ok(())
   }
 
   #[rstest]
-  #[case("comp::op[FOO].foo", (InstanceTarget::path("comp::op","FOO"), Some("foo")))]
-  #[case("That.bar", (InstanceTarget::Named("That".to_owned()), Some("bar")))]
-  #[case("<>.input", (InstanceTarget::Default, Some("input")))]
-  #[case("input.foo", (InstanceTarget::named("input"), Some("foo")))]
-  #[case("ref.foo", (InstanceTarget::named("ref"), Some("foo")))]
-  #[case("<>.foo", (InstanceTarget::Default, Some("foo")))]
+  #[case("comp::op[FOO].foo", (InstTgt::path("comp::op","FOO"), Some(InstPort::named("foo"))))]
+  #[case("That.bar", (InstTgt::Named("That".to_owned()), Some(InstPort::named("bar"))))]
+  #[case("<>.input", (InstTgt::Default, Some(InstPort::named("input"))))]
+  #[case("input.foo", (InstTgt::named("input"), Some(InstPort::named("foo"))))]
+  #[case("ref.foo", (InstTgt::named("ref"), Some(InstPort::named("foo"))))]
+  #[case("<>.foo", (InstTgt::Default, Some(InstPort::named("foo"))))]
   fn connection_target_expression_tester(
     #[case] input: &'static str,
-    #[case] expected: (InstanceTarget, Option<&str>),
+    #[case] expected: (InstTgt, Option<InstancePort>),
   ) -> Result<()> {
     let (i, t) = connection_target_expression(input)?;
     assert_eq!(t, expected);
@@ -234,23 +276,20 @@ mod tests {
   }
 
   #[rstest]
-  #[case("comp::op[INLINE].foo -> <>.output", ((InstanceTarget::path("comp::op","INLINE"), "foo"),(InstanceTarget::Default, "output")))]
-  #[case("<> -> ref1.port", ((InstanceTarget::Default, "port"),(InstanceTarget::named("ref1"), "port")))]
-  #[case("ref1.in -> ref2.out", ((InstanceTarget::named("ref1"), "in"),(InstanceTarget::named("ref2"), "out")))]
-  #[case("<>.in->ref2.out", ((InstanceTarget::Default, "in"),(InstanceTarget::named("ref2"), "out")))]
-  #[case("ref1.in-><>.out", ((InstanceTarget::named("ref1"), "in"),(InstanceTarget::Default, "out")))]
-  #[case("ref1.port-><>", ((InstanceTarget::named("ref1"), "port"),(InstanceTarget::Default, "port")))]
-  #[case("<> -> ref1.port", ((InstanceTarget::Default, "port"),(InstanceTarget::named("ref1"), "port")))]
-  #[case("<> -> test::reverse[A].input",((InstanceTarget::Default, "input"),(InstanceTarget::path("test::reverse","A"), "input")))]
-  #[case("<>.anything -> drop",((InstanceTarget::Default, "anything"),(InstanceTarget::Null(None), "input")))]
-  fn connection_parts(
-    #[case] input: &'static str,
-    #[case] expected: ((InstanceTarget, &str), (InstanceTarget, &str)),
-  ) -> Result<()> {
+  #[case("comp::op[INLINE].foo -> <>.output", ((InstTgt::path("comp::op","INLINE"), "foo"),(InstTgt::Default, "output")))]
+  #[case("<> -> ref1.port", ((InstTgt::Default, "port"),(InstTgt::named("ref1"), "port")))]
+  #[case("ref1.in -> ref2.out", ((InstTgt::named("ref1"), "in"),(InstTgt::named("ref2"), "out")))]
+  #[case("<>.in->ref2.out", ((InstTgt::Default, "in"),(InstTgt::named("ref2"), "out")))]
+  #[case("ref1.in-><>.out", ((InstTgt::named("ref1"), "in"),(InstTgt::Default, "out")))]
+  #[case("ref1.port-><>", ((InstTgt::named("ref1"), "port"),(InstTgt::Default, "port")))]
+  #[case("<> -> ref1.port", ((InstTgt::Default, "port"),(InstTgt::named("ref1"), "port")))]
+  #[case("<> -> test::reverse[A].input",((InstTgt::Default, "input"),(InstTgt::path("test::reverse","A"), "input")))]
+  #[case("<>.anything -> drop",((InstTgt::Default, "anything"),(InstTgt::Null(None), "input")))]
+  fn connection_parts(#[case] input: &'static str, #[case] expected: ((InstTgt, &str), (InstTgt, &str))) -> Result<()> {
     let (i, t) = connection_expression(input)?;
-    let conn = ConnectionExpression::new(
-      ConnectionTargetExpression::new(expected.0 .0, expected.0 .1, Default::default()),
-      ConnectionTargetExpression::new(expected.1 .0, expected.1 .1, Default::default()),
+    let conn = CE::new(
+      CTE::new(expected.0 .0, InstPort::named(expected.0 .1)),
+      CTE::new(expected.1 .0, InstPort::named(expected.1 .1)),
     );
 
     assert_eq!(t, conn);
@@ -267,5 +306,41 @@ mod tests {
       panic!("Expected error, got {:?}", item);
     } else {
     }
+  }
+
+  fn flow_expr_conn(from_tgt: InstTgt, from_port: InstPort, to_tgt: InstTgt, to_port: InstPort) -> FE {
+    FE::connection(CE::new(CTE::new(from_tgt, from_port), CTE::new(to_tgt, to_port)))
+  }
+
+  // fn flow_block(exprs: &[FE]) -> FE {
+  //   FE::block(BlockExpression::new(exprs.to_vec()))
+  // }
+
+  #[rstest]
+  #[case(
+    "comp::op[INLINE].foo -> <>.output",
+    flow_expr_conn(
+      InstTgt::path("comp::op", "INLINE"),
+      InstPort::named("foo"),
+      InstTgt::Default,
+      InstPort::named("output")
+    )
+  )]
+  #[case(
+    "this.output.field -> <>.output",
+    flow_expr_conn(InstTgt::named("this"), InstPort::path("output",vec!["field".to_owned()]), InstTgt::Default, InstPort::named("output"))
+  )]
+  // #[case(
+  //   "this.output.field -> other.input",
+  //   flow_block(&[
+  //     flow_expr_conn(InstTgt::named("this"), "output", anon("core::pluck"), "input"),
+  //     flow_expr_conn(anon("core::pluck"), "output",named("other"), "input",)
+  //   ])
+  // )]
+  fn test_flow_expression(#[case] input: &'static str, #[case] expected: FE) -> Result<()> {
+    let (t, actual) = flow_expression(input)?;
+    assert_eq!(actual, expected);
+    assert_eq!(t, "");
+    Ok(())
   }
 }

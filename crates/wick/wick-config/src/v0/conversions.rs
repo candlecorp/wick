@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::Duration;
 
-use flow_expression_parser::ast::{self, InstanceTarget};
+use flow_expression_parser::ast::{self, InstancePort, InstanceTarget};
 use flow_expression_parser::parse_id;
 use option_utils::OptionUtils;
 use serde_json::Value;
@@ -110,7 +110,7 @@ impl TryFrom<crate::v0::SchematicManifest> for config::FlowOperation {
     let connections: Result<Vec<ast::FlowExpression>> = manifest
       .connections
       .into_iter()
-      .map(|def| Ok(ast::FlowExpression::ConnectionExpression(Box::new(def.try_into()?))))
+      .map(|def| Ok(ast::FlowExpression::connection(def.try_into()?)))
       .collect();
     Ok(Self {
       name: manifest.name.clone(),
@@ -151,9 +151,9 @@ impl TryFrom<crate::v0::ConnectionTargetDefinition> for ast::ConnectionTargetExp
   type Error = ManifestError;
 
   fn try_from(def: crate::v0::ConnectionTargetDefinition) -> Result<Self> {
-    Ok(ast::ConnectionTargetExpression::new(
+    Ok(ast::ConnectionTargetExpression::new_default(
       InstanceTarget::from_str(&def.instance)?,
-      def.port,
+      InstancePort::named(def.port),
       def.data,
     ))
   }

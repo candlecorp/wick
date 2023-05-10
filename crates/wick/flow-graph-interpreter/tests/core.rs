@@ -23,6 +23,16 @@ async fn test_pluck() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn test_pluck_shorthand() -> Result<()> {
+  first_packet_test(
+    "./tests/manifests/v1/core-pluck-shorthand.yaml",
+    packets!(("input", json!({ "to_pluck" :"Hello world!", "to_ignore": "ignore me" }))),
+    "Hello world!",
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
 async fn test_drop() -> Result<()> {
   first_packet_test(
     "./tests/manifests/v1/core-drop.yaml",
