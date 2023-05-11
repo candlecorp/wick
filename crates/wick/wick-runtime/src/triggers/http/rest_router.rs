@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use futures::future::BoxFuture;
+use hyper::body::to_bytes;
 use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
 use wick_config::config::{ComponentOperationExpression, ImportBinding, RestRouterConfig};
@@ -19,6 +20,7 @@ static ID: &str = "wick:http:rest";
 #[must_use]
 pub(super) struct RestRouter {
   routes: Arc<Vec<RestRoute>>,
+  root: String,
 }
 
 impl RestRouter {
@@ -27,10 +29,17 @@ impl RestRouter {
       .info()
       .and_then(|i| i.title().cloned())
       .unwrap_or_else(|| "Untitled API".to_owned());
-    debug!(api = %title, "{}: serving", ID);
+
+    debug!(api = %title, path=%config.path(), "{}: serving", ID);
+    for route in &routes {
+      debug!(route = ?route.route, "{}: route", ID);
+    }
     let routes = Arc::new(routes);
 
-    Self { routes }
+    Self {
+      routes,
+      root: config.path().to_owned(),
+    }
   }
 }
 
@@ -41,7 +50,7 @@ impl RawRouter for RestRouter {
     runtime: Arc<Runtime>,
     request: Request<Body>,
   ) -> BoxFuture<Result<Response<Body>, HttpError>> {
-    let handler = RestHandler::new(self.routes.clone(), runtime);
+    let handler = RestHandler::new(self.root.clone(), self.routes.clone(), runtime);
     let fut = async move {
       let response = handler
         .serve(request)
@@ -57,30 +66,44 @@ impl RawRouter for RestRouter {
 struct RestHandler {
   routes: Arc<Vec<RestRoute>>,
   runtime: Arc<Runtime>,
+  root: String,
 }
 
 impl RestHandler {
-  fn new(routes: Arc<Vec<RestRoute>>, runtime: Arc<Runtime>) -> Self {
-    RestHandler { runtime, routes }
+  fn new(root: String, routes: Arc<Vec<RestRoute>>, runtime: Arc<Runtime>) -> Self {
+    RestHandler { runtime, routes, root }
   }
 
   /// Serve a request.
   #[allow(clippy::unused_async)]
   async fn serve(self, request: Request<Body>) -> Result<Response<Body>, HttpError> {
-    let Self { routes, runtime, .. } = self;
+    let Self { routes, runtime, root } = self;
 
     for route in routes.iter() {
       if !route.config.methods().is_empty() && !route.config.methods().contains(&request.method().to_string()) {
         continue;
       }
-      let Some((path_params, query_params)) = route.route.compare(request.uri().path(), request.uri().query()) else {
+      let path = request.uri().path().trim_start_matches(root.as_str());
+      let Some((path_params, query_params)) = route.route.compare(path, request.uri().query())? else {
         continue
       };
+      debug!(route = %request.uri(), "{}: handling", ID);
       let mut packets: Vec<_> = path_params
         .iter()
         .chain(query_params.iter())
         .map(|f| Packet::encode(f.name(), f.value()))
         .collect();
+
+      let (_, body) = request.into_parts();
+
+      let body_bytes = to_bytes(body).await.unwrap_or_default();
+
+      let payload = match serde_json::from_slice(&body_bytes) {
+        Ok(json) => json,
+        Err(_e) => serde_json::json!({}),
+      };
+      packets.push(Packet::encode("input", payload));
+
       let mut port_names: Vec<_> = packets.iter().map(|p| p.port().to_owned()).collect();
       port_names.dedup();
       for port in port_names {
@@ -91,6 +114,7 @@ impl RestHandler {
         Entity::operation(route.component.id(), route.operation.operation()),
         None,
       );
+
       let stream = runtime
         .invoke(invocation, packets.into(), None)
         .await

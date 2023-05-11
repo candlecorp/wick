@@ -1,6 +1,8 @@
 use serde_json::Value;
 use wick_interface_types::{Field, FieldValue, TypeSignature};
 
+use crate::triggers::http::HttpError;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum PathPart {
   Literal(String),
@@ -60,7 +62,11 @@ impl Route {
     })
   }
 
-  pub(super) fn compare(&self, path: &str, query_string: Option<&str>) -> Option<(Vec<FieldValue>, Vec<FieldValue>)> {
+  pub(super) fn compare(
+    &self,
+    path: &str,
+    query_string: Option<&str>,
+  ) -> Result<Option<(Vec<FieldValue>, Vec<FieldValue>)>, HttpError> {
     let mut path_params = Vec::new();
     let mut query_params = Vec::new();
 
@@ -72,27 +78,32 @@ impl Route {
         PathPart::Literal(literal) => {
           if let Some(part) = path_parts.next() {
             if part != *literal {
-              return None;
+              return Ok(None);
             }
           } else {
-            return None;
+            return Ok(None);
           }
         }
         PathPart::Param(field) => {
           if let Some(part) = path_parts.next() {
             let Ok(value) = field.ty.coerce_str(part) else {
               warn!("Failed to coerce {:?} to {:?}", part, field.ty);
-              return None;
+              return Err(HttpError::InvalidParameter(field.name.clone()));
             };
             path_params.push(field.clone().with_value(value));
           } else {
-            return None;
+            return Ok(None);
           }
         }
       }
     }
 
     if let Some(query_string) = query_string {
+      if query_string.trim().is_empty() && !self.query_params.is_empty() {
+        return Err(HttpError::MissingQueryParameters(
+          self.query_params.iter().map(|p| p.name.clone()).collect(),
+        ));
+      }
       for param in &self.query_params {
         let params = query_string.split('&').peekable();
         for query_param in params {
@@ -110,7 +121,7 @@ impl Route {
           if let TypeSignature::List { ty } = &param.ty {
             let Ok(value) = ty.coerce_str(value) else {
               warn!("Failed to coerce {} to {} for query param {}", value, param.ty,name);
-              continue;
+              return Err(HttpError::InvalidParameter(param.name.clone()));
             };
             if let Some(field) = query_params
               .iter_mut()
@@ -128,7 +139,8 @@ impl Route {
 
           let Ok(value) = param.ty.coerce_str(value) else {
             warn!("Failed to coerce query param {} to {}", name, param.ty);
-            continue;
+            return Err(HttpError::InvalidParameter(param.name.clone()));
+
           };
 
           query_params.push(param.clone().with_value(value));
@@ -136,7 +148,7 @@ impl Route {
       }
     }
 
-    Some((path_params, query_params))
+    Ok(Some((path_params, query_params)))
   }
 }
 
@@ -183,7 +195,9 @@ mod test {
     let route = Route::parse("/api/v1/users/{id:u32}/posts/{post_id:string}?filter:string[]&sort:string")?;
 
     assert_eq!(
-      route.compare("/api/v1/users/123/posts/abc", Some("filter=foo&filter=bar&sort=asc")),
+      route
+        .compare("/api/v1/users/123/posts/abc", Some("filter=foo&filter=bar&sort=asc"))
+        .unwrap(),
       Some((
         vec![
           Field::new("id", TypeSignature::U32).with_value(123),
