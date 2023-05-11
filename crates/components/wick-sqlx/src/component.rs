@@ -11,7 +11,7 @@ use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition
 use wick_config::config::{Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{component, ComponentSignature, Field, TypeSignature};
-use wick_packet::{FluxChannel, Invocation, Observer, OperationConfig, Packet, PacketStream, TypeWrapper};
+use wick_packet::{FluxChannel, Invocation, Observer, OperationConfig, Packet, PacketStream};
 use wick_rpc::RpcHandler;
 
 use crate::error::Error;
@@ -141,36 +141,41 @@ impl Component for SqlXComponent {
         None => return Err(ComponentError::message("DB not initialized")),
       };
 
-      let input_list: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
-      let mut input_streams = wick_packet::split_stream(stream, input_list);
+      let input_names: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
+      let mut input_streams = wick_packet::split_stream(stream, input_names);
       let (tx, rx) = PacketStream::new_channels();
       tokio::spawn(async move {
         'outer: loop {
-          let mut inputs = Vec::new();
+          let mut incoming_packets = Vec::new();
           for input in &mut input_streams {
-            inputs.push(input.next().await);
-            let num_done = inputs.iter().filter(|r| r.is_none()).count();
-            if num_done > 0 {
-              if num_done != opdef.inputs().len() {
-                let _ = tx.error(wick_packet::Error::component_error("Missing input"));
-              }
-              break 'outer;
-            }
+            incoming_packets.push(input.next().await);
           }
-          let results = inputs.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
-          if let Some(Err(e)) = results.iter().find(|r| r.is_err()) {
+          let num_done = incoming_packets.iter().filter(|r| r.is_none()).count();
+          if num_done > 0 {
+            if num_done != opdef.inputs().len() {
+              let _ = tx.error(wick_packet::Error::component_error("Missing input"));
+            }
+            break 'outer;
+          }
+          let incoming_packets = incoming_packets.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
+
+          if let Some(Err(e)) = incoming_packets.iter().find(|r| r.is_err()) {
             let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
             break 'outer;
           }
-          let results = results
-            .into_iter()
-            .enumerate()
-            .map(|(i, r)| (opdef.inputs()[i].ty.clone(), r.unwrap()))
-            .collect::<Vec<_>>();
-          if results.iter().any(|(_, r)| r.is_done()) {
-            break 'outer;
+          let fields = opdef.inputs();
+          let mut type_wrappers = Vec::new();
+
+          for packet in incoming_packets {
+            let packet = packet.unwrap();
+            if packet.is_done() {
+              break 'outer;
+            }
+            let ty = fields.iter().find(|f| f.name() == packet.port()).unwrap().ty().clone();
+            type_wrappers.push((ty, packet));
           }
-          if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), results, stmt.clone()).await {
+
+          if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), type_wrappers, stmt.clone()).await {
             error!(error = %e, "error executing query");
           }
         }
@@ -269,27 +274,24 @@ async fn exec(
   stmt: Arc<(String, String)>,
 ) -> Result<(), Error> {
   debug!(stmt = %stmt.0, "executing  query");
-  let input_list: Vec<_> = def.inputs().iter().map(|i| i.name.clone()).collect();
 
-  let values = args
-    .into_iter()
-    .map(|(ty, r)| r.deserialize_into(ty))
-    .collect::<Result<Vec<TypeWrapper>, wick_packet::Error>>();
-
-  if let Err(e) = values {
-    let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
-    return Err(Error::Prepare(e.to_string()));
+  let mut bound_args = Vec::new();
+  for arg in def.arguments() {
+    let (ty, packet) = args.iter().find(|(_, p)| p.port() == arg).cloned().unwrap();
+    let wrapper = match packet
+      .deserialize_into(ty.clone())
+      .map_err(|e| Error::Prepare(e.to_string()))
+    {
+      Ok(type_wrapper) => SqlWrapper(type_wrapper),
+      Err(e) => {
+        let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
+        return Err(Error::Prepare(e.to_string()));
+      }
+    };
+    bound_args.push(wrapper);
   }
-  let values = values.unwrap();
-  #[allow(trivial_casts)]
-  let args = def
-    .arguments()
-    .iter()
-    .map(|a| input_list.iter().position(|i| i == a).unwrap())
-    .map(|i| SqlWrapper(values[i].clone()))
-    .collect::<Vec<_>>();
 
-  let mut result = client.fetch(&stmt.1, args);
+  let mut result = client.fetch(&stmt.1, bound_args);
 
   while let Some(row) = result.next().await {
     if let Err(e) = row {

@@ -50,10 +50,12 @@ enum HttpError {
   UnsupportedMethod(String),
   #[error("Unsupported HTTP version: {0}")]
   UnsupportedVersion(String),
+  #[error("Missing query parameters: {}", .0.join(", "))]
+  MissingQueryParameters(Vec<String>),
   #[error("Invalid status code: {0}")]
   InvalidStatusCode(String),
-  // #[error("Not found: {0}")]
-  // NotFound(String),
+  #[error("Invalid parameter value: {0}")]
+  InvalidParameter(String),
   #[error("Invalid response: {0}")]
   InvalidResponse(String),
   #[error("Error deserializing response on port {0}: {1}")]
