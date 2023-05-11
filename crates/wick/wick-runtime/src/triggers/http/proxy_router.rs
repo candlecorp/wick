@@ -1,19 +1,21 @@
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 use futures::future::BoxFuture;
 use hyper::{Body, Request, Response, StatusCode};
 use wick_config::config::UrlResource;
 
 use super::{HttpError, RawRouter};
+use crate::Runtime;
 
 #[derive()]
 #[must_use]
-pub(super) struct ProxyComponent {
+pub(super) struct ProxyRouter {
   url: String,
   strip: Option<String>,
 }
 
-impl ProxyComponent {
+impl ProxyRouter {
   pub(super) fn new(url: UrlResource, strip: Option<String>) -> Self {
     let url = url.to_string();
     let url = url.trim_end_matches('/').to_owned();
@@ -22,10 +24,11 @@ impl ProxyComponent {
   }
 }
 
-impl RawRouter for ProxyComponent {
+impl RawRouter for ProxyRouter {
   fn handle(
     &self,
     remote_addr: SocketAddr,
+    _runtime: Arc<Runtime>,
     mut request: Request<Body>,
   ) -> BoxFuture<Result<Response<Body>, HttpError>> {
     let url = self.url.clone();

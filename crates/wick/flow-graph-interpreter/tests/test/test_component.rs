@@ -85,27 +85,12 @@ impl TestComponent {
       .add_operation(
         OperationSignature::new("splitter")
           .add_input("input", TypeSignature::String)
-          .add_output(
-            "rest",
-            TypeSignature::Stream {
-              ty: Box::new(TypeSignature::String),
-            },
-          )
-          .add_output(
-            "vowels",
-            TypeSignature::Stream {
-              ty: Box::new(TypeSignature::String),
-            },
-          ),
+          .add_output("rest", TypeSignature::String)
+          .add_output("vowels", TypeSignature::String),
       )
       .add_operation(
         OperationSignature::new("join")
-          .add_input(
-            "input",
-            TypeSignature::Stream {
-              ty: Box::new(TypeSignature::String),
-            },
-          )
+          .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
       .add_operation(
@@ -132,12 +117,7 @@ impl TestComponent {
         OperationSignature::new("copy")
           .add_input("input", TypeSignature::String)
           .add_input("times", TypeSignature::U64)
-          .add_output(
-            "output",
-            TypeSignature::Stream {
-              ty: Box::new(TypeSignature::String),
-            },
-          ),
+          .add_output("output", TypeSignature::String),
       )
       .add_operation(OperationSignature::new("no-inputs").add_output("output", TypeSignature::String))
       .add_operation(

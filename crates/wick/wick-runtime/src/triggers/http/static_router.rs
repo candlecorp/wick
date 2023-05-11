@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use futures::future::BoxFuture;
@@ -8,16 +9,17 @@ use hyper::{Body, Method, Request, Response};
 use hyper_staticfile::{resolve_path, ResolveResult, ResponseBuilder};
 
 use super::{HttpError, RawRouter};
+use crate::Runtime;
 
 static ID: &str = "wick:http:static";
 
 #[derive()]
 #[must_use]
-pub(super) struct StaticComponent {
+pub(super) struct StaticRouter {
   handler: Static,
 }
 
-impl StaticComponent {
+impl StaticRouter {
   pub(super) fn new(root: PathBuf, strip: Option<String>) -> Self {
     debug!(directory = %root.display(), "{}: serving", ID);
     let handler = Static::new(root, strip);
@@ -25,8 +27,13 @@ impl StaticComponent {
   }
 }
 
-impl RawRouter for StaticComponent {
-  fn handle(&self, _remote_addr: SocketAddr, request: Request<Body>) -> BoxFuture<Result<Response<Body>, HttpError>> {
+impl RawRouter for StaticRouter {
+  fn handle(
+    &self,
+    _remote_addr: SocketAddr,
+    _runtime: Arc<Runtime>,
+    request: Request<Body>,
+  ) -> BoxFuture<Result<Response<Body>, HttpError>> {
     let handler = self.handler.clone();
     let fut = async move {
       let response = handler

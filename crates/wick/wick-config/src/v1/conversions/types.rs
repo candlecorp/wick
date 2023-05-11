@@ -205,7 +205,6 @@ impl TryFrom<wick::TypeSignature> for v1::TypeSignature {
       wick::TypeSignature::Link { .. } => unimplemented!(),
       wick::TypeSignature::Object => TS::Object(v1::Object {}),
       wick::TypeSignature::Ref { .. } => unimplemented!(),
-      wick::TypeSignature::Stream { .. } => unimplemented!(),
       wick::TypeSignature::AnonymousStruct(_) => unimplemented!(),
     };
     Ok(v)

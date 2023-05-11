@@ -13,7 +13,7 @@ pub struct RestRouterConfig {
   #[asset(skip)]
   pub(crate) tools: Option<Tools>,
   /// The routes to serve and operations that handle them.
-  pub(crate) routes: Vec<Route>,
+  pub(crate) routes: Vec<RestRoute>,
   /// Information about the router to use when generating documentation and other tools.
   #[asset(skip)]
   pub(crate) info: Option<Info>,
@@ -81,7 +81,7 @@ pub struct Contact {
 #[asset(asset(AssetReference))]
 #[property(get(public), set(private), mut(disable))]
 /// A route to serve and the operation that handles it.
-pub struct Route {
+pub struct RestRoute {
   /// The name of the route, used for documentation and tooling.
   #[asset(skip)]
   pub(crate) name: Option<String>,

@@ -1,10 +1,13 @@
 #![allow(clippy::needless_pass_by_value)]
 
+mod component_utils;
 mod conversions;
-mod proxy_component;
-mod rest_component;
+mod proxy_router;
+mod raw_router;
+mod rest_router;
 mod service_factory;
-mod static_component;
+
+mod static_router;
 use std::collections::HashMap;
 use std::fmt;
 use std::net::SocketAddr;
@@ -28,13 +31,14 @@ use wick_config::config::{
 };
 use wick_packet::Entity;
 
-use self::static_component::StaticComponent;
+use self::static_router::StaticRouter;
 use super::{resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
 use crate::runtime::RuntimeConstraint;
-use crate::triggers::http::proxy_component::ProxyComponent;
-use crate::triggers::http::rest_component::RestRouter;
+use crate::triggers::http::proxy_router::ProxyRouter;
+use crate::triggers::http::raw_router::RawComponentRouter;
+use crate::triggers::http::rest_router::{RestRoute, RestRouter};
 use crate::triggers::http::service_factory::ServiceFactory;
 use crate::Runtime;
 
@@ -114,14 +118,12 @@ impl HttpInstance {
 #[derive(Debug, Clone)]
 enum HttpRouter {
   Raw(RawRouterHandler),
-  Component(ComponentRouterHandler),
 }
 
 impl HttpRouter {
   fn path(&self) -> &str {
     match self {
       HttpRouter::Raw(r) => &r.path,
-      HttpRouter::Component(r) => &r.path,
     }
   }
 }
@@ -138,8 +140,7 @@ impl std::fmt::Debug for RawRouterHandler {
 }
 
 #[derive(Debug, Clone)]
-struct ComponentRouterHandler {
-  path: String,
+struct RouterOperation {
   operation: String,
   component: String,
   codec: Codec,
@@ -168,30 +169,20 @@ impl Http {
   ) -> Result<HttpInstance, RuntimeError> {
     let mut rt = crate::RuntimeBuilder::new();
     let mut routers = Vec::new();
-    let router_signature = operation! { "..." => {
-      inputs : {
-        "request" => "object",
-        "body" => "object",
-      },
-      outputs : {
-        "response" => "object",
-        "body" => "object",
-      },
-    }};
     for (i, router) in config.routers().iter().enumerate() {
-      let (router_binding, router) = match router {
+      let (router_bindings, router, constraints) = match router {
         config::HttpRouterConfig::RawRouter(r) => register_raw_router(i, &app_config, r)?,
         config::HttpRouterConfig::StaticRouter(r) => register_static_router(i, resources.clone(), &app_config, r)?,
         config::HttpRouterConfig::ProxyRouter(r) => register_proxy_router(i, resources.clone(), &app_config, r)?,
         config::HttpRouterConfig::RestRouter(r) => register_rest_router(i, resources.clone(), &app_config, r)?,
       };
-      if let HttpRouter::Component(router) = &router {
-        rt.add_constraint(RuntimeConstraint::Operation {
-          entity: Entity::operation(&router.component, &router.operation),
-          signature: router_signature.clone(),
-        });
+      for constraint in constraints {
+        rt.add_constraint(constraint);
       }
-      rt.add_import(router_binding);
+      for binding in router_bindings {
+        rt.add_import(binding);
+      }
+
       routers.push(router);
     }
     debug!(?routers, "http routers");
@@ -211,17 +202,40 @@ fn register_raw_router(
   index: usize,
   app_config: &AppConfiguration,
   router_config: &RawRouterConfig,
-) -> Result<(ImportBinding, HttpRouter), RuntimeError> {
+) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
   trace!(index, "registering raw router");
   let router_component = resolve_ref(app_config, router_config.operation().component())?;
   let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
-  let router = ComponentRouterHandler {
-    path: router_config.path().to_owned(),
+  let router = RouterOperation {
     operation: router_config.operation().operation().to_owned(),
     component: index_to_router_id(index),
     codec: router_config.codec().copied().unwrap_or_default(),
   };
-  Ok((router_binding, HttpRouter::Component(router)))
+
+  let constraint = RuntimeConstraint::Operation {
+    entity: Entity::operation(&router.component, &router.operation),
+    signature: operation! { "..." => {
+        inputs : {
+          "request" => "object",
+          "body" => "object",
+        },
+        outputs : {
+          "response" => "object",
+          "body" => "object",
+        },
+      }
+    },
+  };
+  let router = RawComponentRouter::new(router);
+
+  Ok((
+    vec![router_binding],
+    HttpRouter::Raw(RawRouterHandler {
+      path: router_config.path().to_owned(),
+      component: Arc::new(router),
+    }),
+    vec![constraint],
+  ))
 }
 
 fn register_static_router(
@@ -229,7 +243,7 @@ fn register_static_router(
   resources: Arc<HashMap<String, Resource>>,
   _app_config: &AppConfiguration,
   router_config: &StaticRouterConfig,
-) -> Result<(ImportBinding, HttpRouter), RuntimeError> {
+) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
   trace!(index, "registering static router");
   let volume = resources.get(router_config.volume()).ok_or_else(|| {
     RuntimeError::ResourceNotFound(
@@ -247,34 +261,54 @@ fn register_static_router(
       ))
     }
   };
-  let router = StaticComponent::new(volume, Some(router_config.path().to_owned()));
+  let router = StaticRouter::new(volume, Some(router_config.path().to_owned()));
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
   let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
   Ok((
-    router_binding,
+    vec![router_binding],
     HttpRouter::Raw(RawRouterHandler {
       path: router_config.path().to_owned(),
       component: Arc::new(router),
     }),
+    vec![],
   ))
 }
 
 fn register_rest_router(
   index: usize,
   _resources: Arc<HashMap<String, Resource>>,
-  _app_config: &AppConfiguration,
+  app_config: &AppConfiguration,
   router_config: &RestRouterConfig,
-) -> Result<(ImportBinding, HttpRouter), RuntimeError> {
-  trace!(index, "registering static router");
-  let router = RestRouter::new(router_config.clone());
+) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
+  trace!(index, "registering rest router");
+  let mut bindings = Vec::new();
+  let mut routes = Vec::new();
+  for (i, route) in router_config.routes().iter().enumerate() {
+    let route_component = resolve_ref(app_config, route.operation().component())?;
+    let route_binding =
+      config::ImportBinding::component(format!("{}_{}", index_to_router_id(index), i), route_component);
+    let route = RestRoute::new(route.clone(), route_binding.clone()).map_err(|e| {
+      RuntimeError::InitializationFailed(format!(
+        "could not intitialize rest router for route {}: {}",
+        route.uri(),
+        e
+      ))
+    })?;
+    bindings.push(route_binding);
+    routes.push(route);
+  }
+
+  let router = RestRouter::new(router_config.clone(), routes);
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
   let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
+  bindings.push(router_binding);
   Ok((
-    router_binding,
+    bindings,
     HttpRouter::Raw(RawRouterHandler {
       path: router_config.path().to_owned(),
       component: Arc::new(router),
     }),
+    vec![],
   ))
 }
 
@@ -283,7 +317,7 @@ fn register_proxy_router(
   resources: Arc<HashMap<String, Resource>>,
   _app_config: &AppConfiguration,
   router_config: &ProxyRouterConfig,
-) -> Result<(ImportBinding, HttpRouter), RuntimeError> {
+) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
   trace!(index, "registering proxy router");
   let url = resources.get(router_config.url()).ok_or_else(|| {
     RuntimeError::ResourceNotFound(
@@ -306,15 +340,16 @@ fn register_proxy_router(
   } else {
     None
   };
-  let router = ProxyComponent::new(url, strip_path);
+  let router = ProxyRouter::new(url, strip_path);
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
   let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
   Ok((
-    router_binding,
+    vec![router_binding],
     HttpRouter::Raw(RawRouterHandler {
       path: router_config.path().to_owned(),
       component: Arc::new(router),
     }),
+    vec![],
   ))
 }
 
@@ -389,6 +424,15 @@ impl fmt::Display for Http {
   }
 }
 
+trait RawRouter {
+  fn handle(
+    &self,
+    remote_addr: SocketAddr,
+    runtime: Arc<Runtime>,
+    request: Request<Body>,
+  ) -> BoxFuture<Result<Response<Body>, HttpError>>;
+}
+
 #[cfg(test)]
 mod test {
   use std::path::PathBuf;
@@ -398,11 +442,15 @@ mod test {
   use super::*;
 
   #[test_logger::test(tokio::test)]
-  async fn test_basic() -> Result<()> {
+  async fn test_raw_router() -> Result<()> {
     let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let manifest_dir = crate_dir.join("../../../tests/testdata/manifests");
-    let yaml = tokio::fs::read_to_string(manifest_dir.join("app-http-server-wasm.wick")).await?;
-    let app_config = config::WickConfiguration::from_yaml(&yaml, &None)?.try_app_config()?;
+    let yaml = manifest_dir.join("app-http-server-wasm.wick");
+
+    let app_config = config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default())
+      .await?
+      .try_app_config()?;
+
     let trigger = Http::load_impl()?;
     let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
     let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
@@ -425,8 +473,38 @@ mod test {
 
     Ok(())
   }
-}
 
-trait RawRouter {
-  fn handle(&self, remote_addr: SocketAddr, request: Request<Body>) -> BoxFuture<Result<Response<Body>, HttpError>>;
+  #[test_logger::test(tokio::test)]
+  async fn test_rest_router() -> Result<()> {
+    let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let manifest_dir = crate_dir.join("../../../examples/");
+
+    let yaml = manifest_dir.join("http-restapi.wick");
+    let app_config = config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default())
+      .await?
+      .try_app_config()?;
+    let trigger = Http::load_impl()?;
+    let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
+    let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
+    let trigger_config = app_config.triggers()[0].clone();
+    trigger
+      .run("test".to_owned(), app_config, trigger_config, resources)
+      .await?;
+    let client = reqwest::Client::new();
+    let res: serde_json::Value = client
+      .get("http://0.0.0.0:8999/this/FIRST_VALUE/some/222?third=third_a&third=third_b&fourth=true")
+      .send()
+      .await?
+      .json()
+      .await?;
+
+    println!("{:#?}", res);
+    assert_eq!(
+      res,
+      json!({"first":"FIRST_VALUE", "second": 222,"third":["third_a","third_b"], "fourth":true })
+    );
+    trigger.shutdown_gracefully().await?;
+
+    Ok(())
+  }
 }

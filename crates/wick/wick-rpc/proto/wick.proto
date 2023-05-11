@@ -147,7 +147,6 @@ message TypeSignature {
     InnerType optional = 4;
     RefType ref = 5;
     LinkType link = 6;
-    InnerType stream = 9;
     AnonymousStruct anonymous_struct = 10;
     string custom = 11;
   }

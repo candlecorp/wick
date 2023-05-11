@@ -567,7 +567,7 @@
 
           "type": "string"
         },
-        "handler": {
+        "operation": {
           "description": "The operation that will act as the main entrypoint for this route.",
           "oneOf": [
             { "type": "string" },
@@ -589,7 +589,7 @@
           "type": "string"
         }
       },
-      "required": ["handler"]
+      "required": ["operation"]
     },
 
     "StaticRouter": {

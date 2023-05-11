@@ -537,7 +537,7 @@ impl TryFrom<v1::Tools> for config::Tools {
   }
 }
 
-impl TryFrom<v1::Route> for config::Route {
+impl TryFrom<v1::Route> for config::RestRoute {
   type Error = ManifestError;
 
   fn try_from(value: v1::Route) -> std::result::Result<Self, Self::Error> {
@@ -552,10 +552,10 @@ impl TryFrom<v1::Route> for config::Route {
   }
 }
 
-impl TryFrom<config::Route> for v1::Route {
+impl TryFrom<config::RestRoute> for v1::Route {
   type Error = ManifestError;
 
-  fn try_from(value: config::Route) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: config::RestRoute) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       name: value.name,
       methods: value.methods,
