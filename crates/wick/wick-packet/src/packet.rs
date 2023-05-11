@@ -251,7 +251,6 @@ impl PacketPayload {
       TypeSignature::Bytes => TypeWrapper::new(sig, self.deserialize::<Vec<u8>>()?.into()),
       TypeSignature::Custom(_) => TypeWrapper::new(sig, self.deserialize::<serde_json::Value>()?),
       TypeSignature::Ref { .. } => unimplemented!(),
-      TypeSignature::Stream { .. } => unimplemented!(),
       TypeSignature::List { .. } => TypeWrapper::new(sig, self.deserialize::<Vec<serde_json::Value>>()?.into()),
       TypeSignature::Optional { .. } => TypeWrapper::new(sig, self.deserialize::<Option<serde_json::Value>>()?.into()),
       TypeSignature::Map { .. } => TypeWrapper::new(

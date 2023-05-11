@@ -285,7 +285,7 @@ pub struct EnumVariant {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TypeSignature {
-  #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 5, 6, 9, 10, 11")]
+  #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 5, 6, 10, 11")]
   pub signature: ::core::option::Option<type_signature::Signature>,
 }
 /// Nested message and enum types in `TypeSignature`.
@@ -305,8 +305,6 @@ pub mod type_signature {
     Ref(super::RefType),
     #[prost(message, tag = "6")]
     Link(super::LinkType),
-    #[prost(message, tag = "9")]
-    Stream(::prost::alloc::boxed::Box<super::InnerType>),
     #[prost(message, tag = "10")]
     AnonymousStruct(super::AnonymousStruct),
     #[prost(string, tag = "11")]

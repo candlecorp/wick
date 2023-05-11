@@ -270,9 +270,6 @@ impl TryFrom<wick::TypeSignature> for rpc::TypeSignature {
       wick::TypeSignature::Bytes => PrimitiveType::Bytes.into(),
       wick::TypeSignature::Object => PrimitiveType::Object.into(),
       wick::TypeSignature::Custom(v) => Signature::Custom(v),
-      wick::TypeSignature::Stream { ty } => Signature::Stream(Box::new(InnerType {
-        r#type: Some(ty.try_into()?),
-      })),
       wick::TypeSignature::Ref { reference } => Signature::Ref(RefType { r#ref: reference }),
       wick::TypeSignature::List { ty } => Signature::List(Box::new(InnerType {
         r#type: Some(ty.try_into()?),
@@ -342,12 +339,6 @@ impl TryFrom<rpc::TypeSignature> for wick::TypeSignature {
         },
         Signature::List(list) => DestType::List {
           ty: match list.r#type {
-            Some(v) => v.try_into()?,
-            None => return err,
-          },
-        },
-        Signature::Stream(t) => DestType::Stream {
-          ty: match t.r#type {
             Some(v) => v.try_into()?,
             None => return err,
           },

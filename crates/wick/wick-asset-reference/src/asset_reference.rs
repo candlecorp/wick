@@ -156,7 +156,7 @@ impl AssetReference {
   pub async fn bytes(&self, options: &FetchOptions) -> Result<Bytes, Error> {
     match self.fetch(options.clone()).await {
       Ok(bytes) => Ok(bytes.into()),
-      Err(err) => Err(Error::LoadError(self.path()?, err.to_string())),
+      Err(_err) => Err(Error::LoadError(self.path()?)),
     }
   }
 
@@ -331,11 +331,11 @@ async fn retrieve_remote(location: &str, options: FetchOptions) -> Result<(PathB
     .password(options.oci_password);
   let result = wick_oci_utils::package::pull(location, &oci_opts)
     .await
-    .map_err(|e| Error::LoadError(PathBuf::from(location), e.to_string()))?;
+    .map_err(|_| Error::LoadError(PathBuf::from(location)))?;
   let cache_location = result.base_dir.join(result.root_path);
   let bytes = tokio::fs::read(&cache_location)
     .await
-    .map_err(|e| Error::LoadError(cache_location.clone(), e.to_string()))?;
+    .map_err(|_| Error::LoadError(cache_location.clone()))?;
   Ok((cache_location, bytes))
 }
 

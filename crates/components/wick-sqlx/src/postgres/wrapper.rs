@@ -33,7 +33,6 @@ impl<'q> Encode<'q, Postgres> for SqlWrapper {
       TypeSignature::Datetime => todo!(),
       TypeSignature::Custom(_) => unimplemented!(),
       TypeSignature::Ref { .. } => unimplemented!(),
-      TypeSignature::Stream { .. } => unimplemented!(),
       TypeSignature::Bytes => encode_array(&TypeSignature::U8, v, buf),
       TypeSignature::List { ty } => encode_array(ty, v, buf),
       TypeSignature::Optional { .. } => {

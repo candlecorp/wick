@@ -3,84 +3,9 @@ use std::error::Error;
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-use crate::{contents_equal, is_false, TypeDefinition};
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Field {
-  /// The name of the field.
-  pub name: String,
-
-  /// The type of the field.
-  #[serde(rename = "type")]
-  #[cfg_attr(feature = "parser", serde(deserialize_with = "crate::signatures::type_signature"))]
-  #[cfg_attr(
-    feature = "yaml",
-    serde(serialize_with = "serde_yaml::with::singleton_map::serialize")
-  )]
-  pub ty: TypeSignature,
-
-  /// Whether the field is required.
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub default: Option<serde_json::Value>,
-
-  /// Whether the field is required.
-  #[serde(default, skip_serializing_if = "is_false")]
-  pub required: bool,
-
-  /// The description of the field.
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub description: Option<String>,
-}
-
-impl Field {
-  pub fn new(name: impl AsRef<str>, ty: TypeSignature) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      description: None,
-      default: None,
-      required: true,
-      ty,
-    }
-  }
-
-  /// Get the name of the field
-  #[must_use]
-  pub fn name(&self) -> &str {
-    &self.name
-  }
-
-  /// Get the type of the field
-  pub fn ty(&self) -> &TypeSignature {
-    &self.ty
-  }
-
-  /// Get the description of the field
-  #[must_use]
-  pub fn description(&self) -> Option<&str> {
-    self.description.as_deref()
-  }
-
-  /// Get the default value of the field
-  #[must_use]
-  pub fn default(&self) -> Option<&serde_json::Value> {
-    self.default.as_ref()
-  }
-
-  /// Get whether the field is required
-  #[must_use]
-  pub fn required(&self) -> bool {
-    self.required
-  }
-}
-
-impl std::fmt::Display for Field {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.write_str(&self.name);
-    f.write_str(": ")?;
-    self.ty.fmt(f)
-  }
-}
+use crate::{contents_equal, is_false, Field, TypeDefinition};
 
 /// The signature of a Wick component, including its input and output types.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
@@ -329,20 +254,6 @@ pub enum TypeSignature {
     /// The reference string
     reference: String,
   },
-  /// A stream type
-  Stream {
-    /// The inner type
-    #[serde(rename = "type")]
-    #[cfg_attr(
-      feature = "parser",
-      serde(deserialize_with = "crate::signatures::box_type_signature")
-    )]
-    #[cfg_attr(
-      feature = "yaml",
-      serde(serialize_with = "serde_yaml::with::singleton_map::serialize")
-    )]
-    ty: Box<TypeSignature>,
-  },
   /// A list type
   List {
     /// The type of the list's elements
@@ -436,18 +347,57 @@ impl TypeSignature {
       TypeSignature::String => TypeId::of::<String>(),
       TypeSignature::Datetime => TypeId::of::<String>(),
       TypeSignature::Bytes => TypeId::of::<Vec<u8>>(),
-      TypeSignature::Custom(_) => TypeId::of::<serde_json::Value>(),
+      TypeSignature::Custom(_) => TypeId::of::<Value>(),
       TypeSignature::Ref { reference } => unimplemented!(),
-      TypeSignature::Stream { ty } => unimplemented!(),
       TypeSignature::List { ty } => TypeId::of::<Vec<Box<dyn std::any::Any>>>(),
       TypeSignature::Optional { ty } => TypeId::of::<Option<Box<dyn std::any::Any>>>(),
       TypeSignature::Map { key, value } => {
         TypeId::of::<std::collections::HashMap<Box<dyn std::any::Any>, Box<dyn std::any::Any>>>()
       }
-      TypeSignature::Link { schemas } => TypeId::of::<serde_json::Value>(),
-      TypeSignature::Object => TypeId::of::<serde_json::Value>(),
+      TypeSignature::Link { schemas } => TypeId::of::<Value>(),
+      TypeSignature::Object => TypeId::of::<Value>(),
       TypeSignature::AnonymousStruct(_) => unimplemented!(),
     }
+  }
+
+  pub fn coerce_str<'a>(&self, value: &'a str) -> Result<Value, &'a str> {
+    let val = match self {
+      TypeSignature::String => Value::String(value.to_owned()),
+      TypeSignature::U8
+      | TypeSignature::U16
+      | TypeSignature::U32
+      | TypeSignature::U64
+      | TypeSignature::I8
+      | TypeSignature::I16
+      | TypeSignature::I32
+      | TypeSignature::I64
+      | TypeSignature::F32
+      | TypeSignature::F64 => Value::Number(value.parse().map_err(|_| value)?),
+      TypeSignature::Bool => Value::Bool(value.parse().map_err(|_| value)?),
+      TypeSignature::Object => match serde_json::from_str(value) {
+        Ok(v) => v,
+        Err(_) => serde_json::from_str(&format!("\"{}\"", value)).map_err(|_| value)?,
+      },
+      TypeSignature::List { ty } => {
+        let val: Value = serde_json::from_str(value).map_err(|_| value)?;
+        if val.is_array() {
+          val
+        } else {
+          Value::Array(vec![ty.coerce_str(value)?])
+        }
+      }
+      TypeSignature::Datetime => Value::String(value.to_owned()),
+      TypeSignature::Bytes => Value::String(value.to_owned()),
+      TypeSignature::Custom(_) => Value::Object(serde_json::from_str(value).map_err(|_| value)?),
+      TypeSignature::Ref { .. } => unimplemented!(),
+      TypeSignature::Optional { ty } => {
+        return Ok(ty.coerce_str(value).unwrap_or(Value::Null));
+      }
+      TypeSignature::Map { .. } => serde_json::from_str(value).map_err(|_| value)?,
+      TypeSignature::Link { schemas } => unimplemented!(),
+      TypeSignature::AnonymousStruct(_) => Value::Object(serde_json::from_str(value).map_err(|_| value)?),
+    };
+    Ok(val)
   }
 }
 
@@ -470,7 +420,6 @@ impl std::fmt::Display for TypeSignature {
       TypeSignature::Bytes => f.write_str("bytes"),
       TypeSignature::Custom(v) => f.write_str(v),
       TypeSignature::Ref { reference } => todo!(),
-      TypeSignature::Stream { ty } => todo!(),
       TypeSignature::List { ty } => write!(f, "{}[]", ty),
       TypeSignature::Optional { ty } => write!(f, "{}?", ty),
       TypeSignature::Map { key, value } => write!(f, "{{{}:{}}}", key, value),
@@ -573,8 +522,13 @@ where
 #[cfg(test)]
 mod test {
   use anyhow::Result;
+  use serde_json::json;
 
-  use super::*;
+  use super::{TypeSignature as TS, *};
+
+  fn b<T>(el: T) -> Box<T> {
+    Box::new(el)
+  }
 
   #[test]
   fn test_decode() -> Result<()> {
@@ -583,6 +537,18 @@ mod test {
     let ty: Field = serde_json::from_str(r#"{"name": "foo", "type": "object"}"#)?;
     assert_eq!(ty.name, "foo");
     assert_eq!(ty.ty, TypeSignature::Object);
+    Ok(())
+  }
+
+  #[rstest::rstest]
+  #[case(TS::String, "foo", json!("foo"))]
+  #[case(TS::U32, "48", json!(48))]
+  #[case(TS::List{ty:b(TS::U32)}, "48", json!([48]))]
+  #[case(TS::List{ty:b(TS::String)}, "48", json!(["48"]))]
+  fn test_coerce(#[case] ty: TypeSignature, #[case] string: &str, #[case] json: Value) -> Result<()> {
+    let val = ty.coerce_str(string).unwrap();
+
+    assert_eq!(val, json);
     Ok(())
   }
 }

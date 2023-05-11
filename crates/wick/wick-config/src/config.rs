@@ -78,7 +78,7 @@ impl WickConfiguration {
     let bytes = location
       .fetch(options.clone())
       .await
-      .map_err(|e| Error::LoadError(path, e.to_string()))?;
+      .map_err(|_| Error::LoadError(path))?;
     let source = location
       .path()
       .unwrap_or_else(|e| PathBuf::from(format!("<ERROR:{}>", e)));
@@ -171,11 +171,10 @@ impl WickConfiguration {
       return Err(Error::FileNotFound(pathstr.to_string()));
     }
     debug!("Reading manifest from {}", path.to_string_lossy());
-    let contents = read_to_string(path).await.map_err(|e| {
+    let contents = read_to_string(path).await.map_err(|_| {
       Error::LoadError(
         #[allow(clippy::expect_used)]
         path.display().to_string(),
-        e.to_string(),
       )
     })?;
     let manifest = Self::from_yaml(&contents, &Some(path.to_path_buf()))?;
@@ -190,11 +189,10 @@ impl WickConfiguration {
       return Err(Error::FileNotFound(path.to_string_lossy().into()));
     }
     debug!("Reading manifest from {}", path.to_string_lossy());
-    let contents = std::fs::read_to_string(path).map_err(|e| {
+    let contents = std::fs::read_to_string(path).map_err(|_| {
       Error::LoadError(
         #[allow(clippy::expect_used)]
         path.display().to_string(),
-        e.to_string(),
       )
     })?;
     let manifest = Self::from_yaml(&contents, &Some(path.to_path_buf()))?;

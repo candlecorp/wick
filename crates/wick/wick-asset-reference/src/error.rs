@@ -10,8 +10,8 @@ pub enum Error {
   BadUrl(String),
 
   /// Could not load file.
-  #[error("Could not read file {}: {1}", .0.display())]
-  LoadError(PathBuf, String),
+  #[error("Could not read file {}", .0.display())]
+  LoadError(PathBuf),
 
   /// Could not find file during path normalization.
   #[error("Could not read file at path {0}: {1}")]

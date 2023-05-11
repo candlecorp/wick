@@ -3,7 +3,6 @@ use wick_asset_reference::AssetReference;
 #[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property)]
 #[asset(asset(AssetReference))]
 #[property(get(public), set(private), mut(disable))]
-
 #[must_use]
 pub struct StaticRouterConfig {
   #[asset(skip)]

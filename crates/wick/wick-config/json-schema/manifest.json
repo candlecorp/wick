@@ -923,7 +923,7 @@
             "description": "The path to serve this route from.",
             "type": "string"
           },
-          "handler": {
+          "operation": {
             "description": "The operation that will act as the main entrypoint for this route.",
             "oneOf": [
               {
@@ -946,7 +946,7 @@
           }
         },
         "required": [
-          "handler"
+          "operation"
         ]
       },
       "StaticRouter": {

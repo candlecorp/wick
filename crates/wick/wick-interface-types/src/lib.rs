@@ -85,11 +85,13 @@ pub use type_definition::{EnumSignature, EnumVariant, StructSignature, TypeDefin
 /// Signatures of Wick types.
 mod signatures;
 
+mod field;
+
+pub use field::{Field, FieldValue};
 pub use signatures::{
   ComponentMetadata,
   ComponentSignature,
   ComponentVersion,
-  Field,
   HostedType,
   OperationSignature,
   TypeSignature,

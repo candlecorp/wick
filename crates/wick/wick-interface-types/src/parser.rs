@@ -12,8 +12,7 @@ use nom::multi::{many0, many0_count, separated_list1};
 use nom::sequence::{delimited, pair, terminated, tuple};
 use nom::IResult;
 
-use crate::signatures::Field;
-use crate::TypeSignature;
+use crate::{Field, TypeSignature};
 
 #[derive(Debug, Clone)]
 pub enum ParserError {
@@ -200,7 +199,7 @@ mod test {
   use anyhow::Result;
 
   use super::*;
-  use crate::signatures::Field;
+  use crate::Field;
 
   #[rstest::rstest]
   #[case("bool[]", TypeSignature::Bool)]
