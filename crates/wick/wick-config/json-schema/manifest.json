@@ -2387,7 +2387,9 @@
             }
           }
         },
-        "required": []
+        "required": [
+          "query"
+        ]
       },
       "HttpClientComponent": {
         "$anchor": "#v1/HttpClientComponent",

@@ -88,11 +88,10 @@ mod component;
 pub(crate) mod data;
 mod error;
 pub(crate) mod mssql;
-pub(crate) mod postgres;
 pub(crate) mod sql_wrapper;
 
 #[macro_use]
 extern crate tracing;
 
-pub use component::SqlXComponent;
+pub use component::AzureSqlComponent;
 pub use error::Error;

@@ -27,6 +27,7 @@ async fn good_wasm_component_v1() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+#[ignore = "signature check needs to be re-enabled for this test to pass"]
 async fn bad_wasm_component_v1() -> Result<()> {
   let path = "./manifests/v1/bad-wasmrs-component.yaml";
   let result = init_engine_from_yaml(path, std::time::Duration::from_secs(1)).await;

@@ -1487,7 +1487,6 @@ pub(crate) struct SqlOperationDefinition {
   pub(crate) outputs: Vec<Field>,
   /// The query to execute.
 
-  #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) query: String,
   /// The arguments to the query, defined as a list of input names.
