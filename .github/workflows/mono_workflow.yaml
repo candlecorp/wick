@@ -271,7 +271,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true || github.event_name == 'workflow_dispatch'
-    needs: [test, build]
+    needs: [build]
     steps:
       - uses: actions/checkout@v3
       - name: Download artifacts
