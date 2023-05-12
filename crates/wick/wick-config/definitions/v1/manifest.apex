@@ -690,7 +690,7 @@ type SqlOperationDefinition {
   outputs: [Field],
 
   "The query to execute."
-  query: string
+  query: string @required
 
   "The arguments to the query, defined as a list of input names."
   arguments: [string]

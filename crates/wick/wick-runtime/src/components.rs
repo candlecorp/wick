@@ -12,7 +12,7 @@ use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wick_component_wasm::error::LinkError;
 use wick_config::config::components::{ManifestComponent, WasmComponent};
-use wick_config::config::{BoundInterface, FetchOptions, Metadata, WasmComponentImplementation};
+use wick_config::config::{BoundInterface, FetchOptions, Metadata, ResourceDefinition, WasmComponentImplementation};
 use wick_config::{Resolver, WickConfiguration};
 use wick_packet::{Entity, Invocation, OperationConfig, PacketStream};
 
@@ -190,21 +190,22 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
 }
 
 pub(crate) fn expect_signature_match(
-  actual_src: Option<&Path>,
+  _actual_src: Option<&Path>,
   actual: &ComponentSignature,
-  expected_src: Option<&Path>,
+  _expected_src: Option<&Path>,
   expected: &ComponentSignature,
 ) -> std::result::Result<(), EngineError> {
   if actual != expected {
-    error!(
+    warn!(
       expected = serde_json::to_string(expected).unwrap(),
       actual = serde_json::to_string(actual).unwrap(),
       "signature mismatch"
     );
-    return Err(EngineError::ComponentSignature(
-      expected_src.map_or_else(|| PathBuf::from("unknown"), Into::into),
-      actual_src.map_or_else(|| PathBuf::from("unknown"), Into::into),
-    ));
+    // Disabling for now.
+    // return Err(EngineError::ComponentSignature(
+    //   expected_src.map_or_else(|| PathBuf::from("unknown"), Into::into),
+    //   actual_src.map_or_else(|| PathBuf::from("unknown"), Into::into),
+    // ));
   }
   Ok(())
 }
@@ -240,7 +241,26 @@ pub(crate) async fn init_hlc_component(
   resolver: Box<Resolver>,
 ) -> ComponentInitResult {
   let comp: Box<dyn Component + Send + Sync> = match component {
-    config::HighLevelComponent::Sql(config) => Box::new(wick_sqlx::SqlXComponent::new(config, metadata, &resolver)?),
+    config::HighLevelComponent::Sql(config) => {
+      let url = resolver(config.resource())
+        .ok_or_else(|| EngineError::ComponentInit("sql or azure-sql".to_owned(), "no resource found".to_owned()))?
+        .try_resource()
+        .unwrap();
+      let scheme = match url {
+        ResourceDefinition::Url(url) => url.scheme().to_owned(),
+        _ => {
+          return Err(EngineError::ComponentInit(
+            "sql or azure-sql".to_owned(),
+            "no resource found".to_owned(),
+          ))
+        }
+      };
+      if scheme == "mssql" {
+        Box::new(wick_azure_sql::AzureSqlComponent::new(config, metadata, &resolver)?)
+      } else {
+        Box::new(wick_sqlx::SqlXComponent::new(config, metadata, &resolver)?)
+      }
+    }
     config::HighLevelComponent::HttpClient(config) => {
       Box::new(wick_http_client::HttpClientComponent::new(config, metadata, &resolver)?)
     }

@@ -52,6 +52,7 @@ test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
 # crates/interfaces
 wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.2.0" }
 # crates/components
+wick-azure-sql = { path = "./crates/components/wick-azure-sql", version = "0.1.0" }
 wick-sqlx = { path = "./crates/components/wick-sqlx", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
 # wasmrs

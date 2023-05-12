@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use bb8::Pool;
+use bb8_tiberius::ConnectionManager;
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
-use futures::stream::BoxStream;
 use futures::StreamExt;
 use parking_lot::Mutex;
-use serde_json::Value;
-use sqlx::{MssqlPool, PgPool};
+use serde_json::{Map, Value};
+use tiberius::{Query, Row};
 use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition};
 use wick_config::config::{Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
@@ -15,59 +16,12 @@ use wick_packet::{FluxChannel, Invocation, Observer, OperationConfig, Packet, Pa
 use wick_rpc::RpcHandler;
 
 use crate::error::Error;
-use crate::mssql::SerMapMssqlRow;
-use crate::postgres::SerMapPgRow;
-use crate::sql_wrapper::SqlWrapper;
-use crate::{mssql, postgres};
-
-#[derive(Debug, Clone)]
-enum CtxPool {
-  Postgres(PgPool),
-  MsSql(MssqlPool),
-}
-
-impl CtxPool {
-  fn fetch<'a, 'q>(&'a self, query: &'q str, args: Vec<SqlWrapper>) -> BoxStream<'a, Result<Value, Error>>
-  where
-    'q: 'a,
-  {
-    match self {
-      CtxPool::Postgres(c) => {
-        let mut query = sqlx::query(query);
-        for arg in args {
-          trace!(?arg, "binding arg");
-          query = query.bind(arg);
-        }
-        let a = query.fetch(c);
-
-        let b = a.map(|a| a.map(SerMapPgRow::from));
-        let c = b.map(|a| {
-          a.map(|a| serde_json::to_value(a).unwrap())
-            .map_err(|e| Error::Fetch(e.to_string()))
-        });
-        c.boxed()
-      }
-      CtxPool::MsSql(c) => {
-        let mut query = sqlx::query(query);
-        for arg in args {
-          trace!(?arg, "binding arg");
-          query = query.bind(arg);
-        }
-        let a = query.fetch(c);
-        let b = a.map(|a| a.map(SerMapMssqlRow::from));
-        let c = b.map(|a| {
-          a.map(|a| serde_json::to_value(a).unwrap())
-            .map_err(|e| Error::Fetch(e.to_string()))
-        });
-        c.boxed()
-      }
-    }
-  }
-}
+use crate::mssql;
+use crate::sql_wrapper::{FromSqlWrapper, SqlWrapper};
 
 #[derive()]
 pub(crate) struct Context {
-  db: CtxPool,
+  db: Pool<ConnectionManager>,
   config: SqlComponentConfig,
   queries: HashMap<String, Arc<(String, String)>>,
 }
@@ -85,14 +39,14 @@ impl Context {}
 
 #[derive(Debug, Clone)]
 #[must_use]
-pub struct SqlXComponent {
+pub struct AzureSqlComponent {
   context: Arc<Mutex<Option<Context>>>,
   signature: Arc<ComponentSignature>,
   url_resource: UrlResource,
   config: SqlComponentConfig,
 }
 
-impl SqlXComponent {
+impl AzureSqlComponent {
   #[allow(clippy::needless_pass_by_value)]
   pub fn new(config: SqlComponentConfig, metadata: Metadata, resolver: &Resolver) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
@@ -114,7 +68,7 @@ impl SqlXComponent {
   }
 }
 
-impl Component for SqlXComponent {
+impl Component for AzureSqlComponent {
   fn handle(
     &self,
     invocation: Invocation,
@@ -125,7 +79,7 @@ impl Component for SqlXComponent {
     let ctx = self.context.clone();
 
     Box::pin(async move {
-      let (opdef, client, stmt) = match ctx.lock().as_ref() {
+      let (opdef, pool, stmt) = match ctx.lock().as_ref() {
         Some(ctx) => {
           let opdef = ctx
             .config
@@ -175,7 +129,7 @@ impl Component for SqlXComponent {
             type_wrappers.push((ty, packet));
           }
 
-          if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), type_wrappers, stmt.clone()).await {
+          if let Err(e) = exec(pool.clone(), tx.clone(), opdef.clone(), type_wrappers, stmt.clone()).await {
             error!(error = %e, "error executing query");
           }
         }
@@ -204,7 +158,7 @@ impl Component for SqlXComponent {
   }
 }
 
-impl ConfigValidation for SqlXComponent {
+impl ConfigValidation for AzureSqlComponent {
   type Config = SqlComponentConfig;
   fn validate(config: &Self::Config, resolver: &Resolver) -> Result<(), ComponentError> {
     Ok(validate(config, resolver)?)
@@ -229,12 +183,12 @@ fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Err
   Ok(())
 }
 
-async fn init_client(config: SqlComponentConfig, addr: UrlResource) -> Result<CtxPool, Error> {
+async fn init_client(config: SqlComponentConfig, addr: UrlResource) -> Result<Pool<ConnectionManager>, Error> {
   let pool = match addr.scheme() {
-    "mssql" => CtxPool::MsSql(mssql::connect(config, &addr).await?),
-    "postgres" => CtxPool::Postgres(postgres::connect(config, &addr).await?),
-    "mysql" => unimplemented!("MySql is not supported yet"),
-    "sqllite" => unimplemented!("Sqllite is not supported yet"),
+    "mssql" => mssql::connect(config, &addr).await?,
+    "postgres" => unimplemented!("Use the sql component instead"),
+    "mysql" => unimplemented!("Use the sql component instead"),
+    "sqllite" => unimplemented!("Use the sql component instead"),
     s => return Err(Error::InvalidScheme(s.to_owned())),
   };
   debug!(addr=%addr.address(), "connected to db");
@@ -246,8 +200,6 @@ async fn init_context(config: SqlComponentConfig, addr: UrlResource) -> Result<C
   let mut queries = HashMap::new();
   trace!(count=%config.operations().len(), "preparing queries");
   for op in config.operations() {
-    // let query: Query<Postgres, _> = sqlx::query(&op.query);
-    // TODO: this is a hack to during the sqlx transition and this needs to support prepared queries properly.
     queries.insert(
       op.name().to_owned(),
       Arc::new((op.query().to_owned(), op.query().to_owned())),
@@ -264,10 +216,10 @@ async fn init_context(config: SqlComponentConfig, addr: UrlResource) -> Result<C
   })
 }
 
-impl RpcHandler for SqlXComponent {}
+impl RpcHandler for AzureSqlComponent {}
 
 async fn exec(
-  client: CtxPool,
+  client: Pool<ConnectionManager>,
   tx: FluxChannel<Packet, wick_packet::Error>,
   def: SqlOperationDefinition,
   args: Vec<(TypeSignature, Packet)>,
@@ -275,7 +227,7 @@ async fn exec(
 ) -> Result<(), Error> {
   debug!(stmt = %stmt.0, "executing  query");
 
-  let mut bound_args = Vec::new();
+  let mut bound_args: Vec<SqlWrapper> = Vec::new();
   for arg in def.arguments() {
     let (ty, packet) = args.iter().find(|(_, p)| p.port() == arg).cloned().unwrap();
     let wrapper = match packet
@@ -291,7 +243,14 @@ async fn exec(
     bound_args.push(wrapper);
   }
 
-  let mut result = client.fetch(&stmt.1, bound_args);
+  let mut conn = client.get().await.map_err(|e| Error::PoolConnection(e.to_string()))?;
+  #[allow(trivial_casts)]
+  let mut query = Query::new(&stmt.1);
+  for param in bound_args {
+    query.bind(param);
+  }
+
+  let mut result = query.query(&mut conn).await.map_err(|e| Error::Failed(e.to_string()))?;
 
   while let Some(row) = result.next().await {
     if let Err(e) = row {
@@ -299,12 +258,23 @@ async fn exec(
       return Err(Error::Fetch(e.to_string()));
     }
     let row = row.unwrap();
-    let packet = Packet::encode("output", row);
-    let _ = tx.send(packet);
+    if let Some(row) = row.into_row() {
+      let packet = Packet::encode("output", row_to_json(&row));
+      let _ = tx.send(packet);
+    }
   }
   let _ = tx.send(Packet::done("output"));
 
   Ok(())
+}
+
+fn row_to_json(row: &Row) -> Value {
+  let mut map: Map<String, Value> = Map::new();
+  for col in row.columns() {
+    let v = row.get::<'_, FromSqlWrapper, _>(col.name()).unwrap();
+    map.insert(col.name().to_owned(), v.0);
+  }
+  Value::Object(map)
 }
 
 #[cfg(test)]
@@ -319,7 +289,7 @@ mod test {
   #[test]
   fn test_component() {
     fn is_send_sync<T: Sync>() {}
-    is_send_sync::<SqlXComponent>();
+    is_send_sync::<AzureSqlComponent>();
   }
 
   #[test_logger::test(test)]
