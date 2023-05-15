@@ -106,7 +106,5 @@ pub use utils::parse_args;
 /// The crate's error type;.
 pub type Error = error::CliError;
 
-pub use wick_logger::{init as init_logging, LoggingOptions};
-
 #[macro_use]
 extern crate tracing;

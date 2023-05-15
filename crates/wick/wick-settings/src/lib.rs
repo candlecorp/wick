@@ -1,4 +1,4 @@
-//! Cross-platform normalization of directories and other configuration related to Wick.
+//! Wick's Resource Configuration file data structures and normalization logic.
 
 // !!START_LINTS
 // Wick lints
@@ -90,10 +90,5 @@
 /// This crate's error module.
 pub mod error;
 
-mod directories;
-pub use directories::*;
-
-mod files;
-pub use files::*;
-
-const PROJECT_ID: &str = "wick";
+mod settings;
+pub use settings::*;

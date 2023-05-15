@@ -7,9 +7,6 @@ use wick_host::AppHostBuilder;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RunCommand {
   #[clap(flatten)]
-  pub(crate) logging: super::LoggingOptions,
-
-  #[clap(flatten)]
   pub(crate) oci: crate::oci::Options,
 
   /// The path or OCI URL to a wick manifest or wasm file.
@@ -25,9 +22,7 @@ pub(crate) struct RunCommand {
   args: Vec<String>,
 }
 
-pub(crate) async fn handle_command(opts: RunCommand) -> Result<()> {
-  let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
-
+pub(crate) async fn handle(opts: RunCommand, _settings: wick_settings::Settings) -> Result<()> {
   debug!(args = ?opts.args, "rest args");
   let app_config = WickConfiguration::fetch_all(&opts.path, opts.oci.into())
     .await?

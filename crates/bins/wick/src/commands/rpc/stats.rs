@@ -7,14 +7,10 @@ use wick_rpc::Statistics;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RpcStatsCommand {
   #[clap(flatten)]
-  pub(crate) logging: wick_logger::LoggingOptions,
-
-  #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,
 }
 
-pub(crate) async fn handle(opts: RpcStatsCommand) -> Result<()> {
-  let _guard = crate::utils::init_logger(&opts.logging)?;
+pub(crate) async fn handle(opts: RpcStatsCommand, _settings: wick_settings::Settings) -> Result<()> {
   let mut client = wick_rpc::make_rpc_client(
     format!("http://{}:{}", opts.connection.address, opts.connection.port),
     opts.connection.pem,

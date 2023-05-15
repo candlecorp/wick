@@ -15,7 +15,7 @@ import:
         - name: get_user
           inputs:
             - name: id
-              type: u32
+              type: i32
           outputs:
             - name: output
               type: object

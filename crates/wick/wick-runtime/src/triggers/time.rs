@@ -119,7 +119,7 @@ impl Time {
     Ok(Arc::new(Self::new()))
   }
 
-  async fn handle_command(
+  async fn handle(
     &self,
     app_config: AppConfiguration,
     config: TimeTriggerConfig,
@@ -165,7 +165,7 @@ impl Trigger for Time {
       return Err(RuntimeError::InvalidTriggerConfig(TriggerKind::Time));
     };
 
-    self.handle_command(app_config, config).await
+    self.handle(app_config, config).await
   }
 
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError> {

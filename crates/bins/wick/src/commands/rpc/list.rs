@@ -5,14 +5,10 @@ use clap::Args;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RpcListCommand {
   #[clap(flatten)]
-  pub(crate) logging: wick_logger::LoggingOptions,
-
-  #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,
 }
 
-pub(crate) async fn handle(opts: RpcListCommand) -> Result<()> {
-  let _guard = crate::utils::init_logger(&opts.logging)?;
+pub(crate) async fn handle(opts: RpcListCommand, _settings: wick_settings::Settings) -> Result<()> {
   let mut client = wick_rpc::make_rpc_client(
     format!("http://{}:{}", opts.connection.address, opts.connection.port),
     opts.connection.pem,

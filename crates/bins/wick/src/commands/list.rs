@@ -4,9 +4,9 @@ use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
 use wick_interface_types::Field;
-use wick_logger::LoggingOptions;
 
 use crate::utils::merge_config;
+
 #[derive(Debug, Clone, Args)]
 pub(crate) struct ListCommand {
   #[clap(flatten)]
@@ -16,16 +16,11 @@ pub(crate) struct ListCommand {
   #[clap(action)]
   pub(crate) location: String,
 
-  #[clap(flatten)]
-  pub(crate) logging: LoggingOptions,
-
   #[clap(long = "json", action)]
   pub(crate) json: bool,
 }
 
-pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
-  let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
-
+pub(crate) async fn handle(opts: ListCommand, _settings: wick_settings::Settings) -> Result<()> {
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);

@@ -6,9 +6,6 @@ use clap::Args;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct KeyGetCommand {
-  #[clap(flatten)]
-  pub(crate) logging: wick_logger::LoggingOptions,
-
   /// The filename to read (without path).
   #[clap(action)]
   path: PathBuf,
@@ -19,8 +16,7 @@ pub(crate) struct KeyGetCommand {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: KeyGetCommand) -> Result<()> {
-  let _guard = crate::utils::init_logger(&opts.logging)?;
+pub(crate) async fn handle(opts: KeyGetCommand, _settings: wick_settings::Settings) -> Result<()> {
   println!("Reading key: {}\n", opts.path.to_string_lossy());
   let kp = crate::keys::get_key(opts.directory, opts.path).await?;
 

@@ -10,4 +10,3 @@ publish = false
 [dev-dependencies]
 cargo-generate = "0.18"
 tokio = { version = "1", features = ["macros", "process", "rt"] }
-test_bin = { version = "0.4" }

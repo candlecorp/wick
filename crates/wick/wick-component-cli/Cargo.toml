@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
-description = "Generic implementation of a wick CLI component"
+description = "Simple implementation of a wick CLI interface for Rust components."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
@@ -15,7 +15,6 @@ grpc = ['wick-rpc', 'tonic/tls', 'wick-invocation-server', 'wick-config']
 mesh = ['wick-rpc', 'wick-config']
 
 [dependencies]
-wick-logger = { workspace = true }
 flow-component = { workspace = true }
 wick-rpc = { workspace = true, optional = true }
 wick-config = { workspace = true, optional = true }

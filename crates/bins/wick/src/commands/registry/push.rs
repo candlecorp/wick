@@ -3,62 +3,63 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Args;
 
-use crate::keys::GenerateCommon;
+use crate::options::get_auth_for_scope;
+
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RegistryPushCommand {
-  #[clap(flatten)]
-  pub(crate) logging: wick_logger::LoggingOptions,
-
   /// OCI artifact to push.
   #[clap(action)]
   pub(crate) source: PathBuf,
 
-  /// OCI reference to push to.
-  #[clap(action, required = false)]
-  pub(crate) reference: Option<String>,
-
-  #[clap(short, long = "rev", action)]
-  pub(crate) rev: Option<u32>,
-
-  #[clap(short, long = "ver", action)]
-  pub(crate) ver: Option<String>,
-
-  #[clap(flatten)]
-  common: GenerateCommon,
-
   #[clap(flatten)]
   pub(crate) oci_opts: crate::oci::Options,
+
+  #[clap(long = "latest", action)]
+  pub(crate) latest: bool,
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: RegistryPushCommand) -> Result<()> {
-  let _guard = crate::utils::init_logger(&opts.logging)?;
+pub(crate) async fn handle(opts: RegistryPushCommand, settings: wick_settings::Settings) -> Result<()> {
   debug!("Push artifact");
 
   let mut package = wick_package::WickPackage::from_path(&opts.source).await?;
+
+  let Some(registry) =  package.registry() else  {
+      error!("No registry provided in package");
+      return Err(anyhow!("No registry provided in package"));
+  };
+
+  let configured_creds = settings.credentials.iter().find(|c| c.scope == registry.host());
+
+  let (username, password) = get_auth_for_scope(
+    configured_creds,
+    opts.oci_opts.username.as_deref(),
+    opts.oci_opts.password.as_deref(),
+  );
+
   let oci_opts = wick_oci_utils::OciOptions::default()
     .allow_insecure(opts.oci_opts.insecure_registries)
     .allow_latest(true)
-    .username(opts.oci_opts.username)
-    .password(opts.oci_opts.password);
+    .username(username)
+    .password(password);
 
-  let reference = match opts.reference {
-    Some(reference) => reference,
-    None => match package.registry_reference() {
-      Some(reference) => reference,
-      None => {
-        error!("No reference provided and no reference found in package");
-        return Err(anyhow!("No reference provided and no reference found in package"));
-      }
-    },
-  };
+  let reference = package.registry_reference().unwrap(); // unwrap OK because we know we have a reg from above.
 
-  info!("Pushing artifact...");
+  info!(reference, "pushing artifact");
   debug!(options=?oci_opts, reference= &reference, "pushing reference");
 
   let url = package.push(&reference, &oci_opts).await?;
-  info!(%url, "Artifact pushed");
+  info!(%url, "artifact pushed");
+  if opts.latest {
+    let reference = package.tagged_reference("latest").unwrap();
+
+    info!(reference, "pushing artifact");
+    debug!(options=?oci_opts, reference= &reference, "pushing reference");
+
+    let url = package.push(&reference, &oci_opts).await?;
+    info!(%url, "artifact pushed");
+  }
 
   Ok(())
 }

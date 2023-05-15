@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use asset_container::{Asset, AssetFlags, AssetManager};
 use sha256::digest;
 use tokio::fs;
+use wick_config::config::RegistryConfig;
 use wick_config::WickConfiguration;
 use wick_oci_utils::package::annotations::Annotations;
 use wick_oci_utils::package::{media_types, PackageFile};
@@ -14,19 +15,13 @@ use crate::{Error, WickPackageKind};
 /// Represents a Wick package, including its files and metadata.
 #[derive(Debug, Clone)]
 pub struct WickPackage {
-  #[allow(unused)]
   kind: WickPackageKind,
-  #[allow(dead_code)]
   name: String,
-  #[allow(dead_code)]
   version: String,
   files: Vec<PackageFile>,
-  #[allow(unused)]
   annotations: Annotations,
-  #[allow(unused)]
   absolute_path: PathBuf,
-  #[allow(unused)]
-  registry_reference: Option<String>,
+  registry: Option<RegistryConfig>,
 }
 
 impl WickPackage {
@@ -41,8 +36,6 @@ impl WickPackage {
       return Err(Error::Directory(path.to_path_buf()));
     }
 
-    let registry_reference;
-
     let options = wick_config::FetchOptions::default();
     let config = WickConfiguration::fetch(path.to_string_lossy(), options).await?;
     if !matches!(config, WickConfiguration::App(_) | WickConfiguration::Component(_)) {
@@ -56,7 +49,7 @@ impl WickPackage {
       .map_or_else(|| PathBuf::from("/"), |v| v.to_path_buf());
     let extra_files;
 
-    let (kind, name, version, annotations, parent_dir, media_type) = match &config {
+    let (kind, name, version, annotations, parent_dir, media_type, registry) = match &config {
       WickConfiguration::App(config) => {
         let name = config.name().to_owned();
         let version = config.version();
@@ -66,13 +59,9 @@ impl WickPackage {
 
         extra_files = config.package_files().to_owned();
 
-        registry_reference = config.package().and_then(|package| {
-          package
-            .registry()
-            .map(|registry| format!("{}/{}/{}:{}", registry.registry(), registry.namespace(), name, version))
-        });
+        let registry = config.package().and_then(|package| package.registry().cloned());
 
-        (kind, name, version, annotations, parent_dir, media_type)
+        (kind, name, version, annotations, parent_dir, media_type, registry)
       }
       WickConfiguration::Component(config) => {
         let name = config.name().cloned().ok_or(Error::NoName)?;
@@ -83,12 +72,9 @@ impl WickPackage {
 
         extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
 
-        registry_reference = config.package().and_then(|package| {
-          package
-            .registry()
-            .map(|registry| format!("{}/{}/{}:{}", registry.registry(), registry.namespace(), name, version))
-        });
-        (kind, name, version, annotations, parent_dir, media_type)
+        let registry = config.package().and_then(|package| package.registry().cloned());
+
+        (kind, name, version, annotations, parent_dir, media_type, registry)
       }
       _ => return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string())),
     };
@@ -180,7 +166,7 @@ impl WickPackage {
       files: wick_files,
       annotations,
       absolute_path: full_path,
-      registry_reference,
+      registry,
     })
   }
 
@@ -199,13 +185,25 @@ impl WickPackage {
   #[must_use]
   /// Returns the reference.
   pub fn registry_reference(&self) -> Option<String> {
-    self.registry_reference.as_ref().and_then(|reference| {
-      if reference.is_empty() {
-        None
-      } else {
-        Some(reference.clone())
-      }
-    })
+    self
+      .registry
+      .as_ref()
+      .map(|r| format!("{}/{}/{}:{}", r.host(), r.namespace(), self.name, self.version))
+  }
+
+  #[must_use]
+  /// Returns an OCI URL with the specified tag.
+  pub fn tagged_reference(&self, tag: &str) -> Option<String> {
+    self
+      .registry
+      .as_ref()
+      .map(|r| format!("{}/{}/{}:{}", r.host(), r.namespace(), self.name, tag))
+  }
+
+  #[must_use]
+  /// Returns the registry.
+  pub fn registry(&self) -> Option<&RegistryConfig> {
+    self.registry.as_ref()
   }
 
   /// Pushes the WickPackage to a specified registry using the provided reference, username, and password.
@@ -225,9 +223,6 @@ impl WickPackage {
     )
     .await?;
 
-    println!("Image successfully pushed to the registry.");
-    println!("Config URL: {}", push_response.config_url);
-    println!("Manifest URL: {}", push_response.manifest_url);
     Ok(push_response.manifest_url)
   }
 

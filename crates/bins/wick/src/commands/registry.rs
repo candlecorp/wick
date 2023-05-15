@@ -1,5 +1,6 @@
 use clap::Subcommand;
 
+pub(crate) mod login;
 pub(crate) mod pull;
 pub(crate) mod push;
 
@@ -12,4 +13,8 @@ pub(crate) enum SubCommands {
   /// Pull an artifact from an OCI registry.
   #[clap(name = "pull")]
   Pull(pull::RegistryPullCommand),
+
+  /// Save the credentials for a registry.
+  #[clap(name = "login")]
+  Login(login::RegistryLoginCommand),
 }

@@ -147,14 +147,13 @@ fn get_logfile_writer(opts: &LoggingOptions) -> Result<(PathBuf, NonBlocking, Wo
 }
 
 fn get_levelfilter(opts: &LoggingOptions) -> tracing::level_filters::LevelFilter {
-  if opts.quiet {
-    filter::LevelFilter::ERROR
-  } else if opts.trace {
-    filter::LevelFilter::TRACE
-  } else if opts.debug {
-    filter::LevelFilter::DEBUG
-  } else {
-    filter::LevelFilter::INFO
+  match opts.level {
+    crate::LogLevel::Quiet => filter::LevelFilter::OFF,
+    crate::LogLevel::Error => filter::LevelFilter::ERROR,
+    crate::LogLevel::Warn => filter::LevelFilter::WARN,
+    crate::LogLevel::Info => filter::LevelFilter::INFO,
+    crate::LogLevel::Debug => filter::LevelFilter::DEBUG,
+    crate::LogLevel::Trace => filter::LevelFilter::TRACE,
   }
 }
 

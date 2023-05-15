@@ -22,9 +22,7 @@ pub(crate) struct ServeCommand {
   pub(crate) location: String,
 }
 
-pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
-  let _guard = wick_logger::init(&opts.cli.logging.name(crate::BIN_NAME));
-
+pub(crate) async fn handle(opts: ServeCommand, _settings: wick_settings::Settings) -> Result<()> {
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);

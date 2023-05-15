@@ -42,7 +42,7 @@ impl Cli {
     })
   }
 
-  async fn handle_command(
+  async fn handle(
     &self,
     app_config: AppConfiguration,
     config: CliConfig,
@@ -134,7 +134,7 @@ impl Trigger for Cli {
     // Insert app name as the first argument.
     args.insert(0, name);
 
-    self.handle_command(app_config, config, args).await?;
+    self.handle(app_config, config, args).await?;
 
     Ok(StructuredOutput::default())
   }

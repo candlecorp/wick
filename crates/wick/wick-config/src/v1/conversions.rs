@@ -198,7 +198,7 @@ impl TryFrom<v1::RegistryDefinition> for RegistryConfig {
 
   fn try_from(value: v1::RegistryDefinition) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      registry: value.registry,
+      host: value.registry,
       namespace: value.namespace,
     })
   }
@@ -209,7 +209,7 @@ impl TryFrom<RegistryConfig> for v1::RegistryDefinition {
 
   fn try_from(value: RegistryConfig) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      registry: value.registry,
+      registry: value.host,
       namespace: value.namespace,
     })
   }

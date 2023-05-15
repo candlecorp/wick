@@ -98,7 +98,7 @@ fn expand_logging_init() -> Tokens {
   match found_crate {
     FoundCrate::Itself => quote! {
       let __guard = crate::init_test(&crate::LoggingOptions {
-        trace: true,
+        level: crate::LogLevel::Trace,
         silly: true,
         app_name: "test".to_owned(),
         jaeger_endpoint: std::env::var("OTEL_EXPORTER_JAEGER_ENDPOINT").ok(),
@@ -111,7 +111,7 @@ fn expand_logging_init() -> Tokens {
       quote! {
         let __guard =
           #ident::init_test(&#ident::LoggingOptions {
-            trace: true,
+            level: #ident::LogLevel::Trace,
             silly: true,
             app_name: "test".to_owned(),
             jaeger_endpoint: std::env::var("OTEL_EXPORTER_JAEGER_ENDPOINT").ok(),

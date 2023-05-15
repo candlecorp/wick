@@ -93,7 +93,7 @@ pub mod error;
 /// Logger options.
 mod options;
 
-pub use options::LoggingOptions;
+pub use options::{LogLevel, LoggingOptions};
 
 /// The main Logger module.
 mod logger;
