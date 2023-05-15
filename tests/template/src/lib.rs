@@ -45,8 +45,9 @@ mod slow_test {
       panic!("stderr: {}", String::from_utf8_lossy(&cmd.stderr));
     }
 
-    let mut bin = tokio::process::Command::from(test_bin::get_test_bin("cargo"));
+    let mut bin = tokio::process::Command::new("cargo");
     bin.arg("run");
+    bin.arg("--manifest-path=../../Cargo.toml");
     bin.arg("-pwick-cli");
     bin.arg("--");
     bin.arg("invoke");

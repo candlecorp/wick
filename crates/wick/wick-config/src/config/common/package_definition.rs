@@ -22,7 +22,7 @@ pub struct PackageConfig {
 pub struct RegistryConfig {
   /// The registry to publish to.
   #[builder(default)]
-  pub(crate) registry: String,
+  pub(crate) host: String,
   /// The namespace on the registry. ex: registry.candle.dev/&lt;namespace&gt;/&lt;myWickApp&gt;
   #[builder(default)]
   pub(crate) namespace: String,

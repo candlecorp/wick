@@ -6,7 +6,7 @@ resources:
   - name: api-url
     resource:
       kind: wick/resource/url@v1
-      url: https://${HTTPBIN:-www.httpbin.org}/post
+      url: http://${HTTPBIN:-www.httpbin.org}/post
 import:
   - name: API_CLIENT
     component:

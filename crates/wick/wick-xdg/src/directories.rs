@@ -2,6 +2,7 @@
 use std::path::PathBuf;
 
 use crate::error::Error;
+use crate::PROJECT_ID;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Directories {
@@ -44,20 +45,20 @@ impl Cache {
 
 fn global_state_dir() -> Result<PathBuf, Error> {
   #[cfg(not(target_os = "windows"))]
-  return Ok(match xdg::BaseDirectories::with_prefix("wick") {
+  return Ok(match xdg::BaseDirectories::with_prefix(PROJECT_ID) {
     Ok(xdg) => xdg.get_state_home(),
     Err(_) => std::env::current_dir().map_err(|_| Error::Pwd)?,
   });
   #[cfg(target_os = "windows")]
   return Ok(match std::env::var("LOCALAPPDATA") {
-    Ok(var) => PathBuf::from(format!("{}/wick", var)),
+    Ok(var) => PathBuf::from(var).join(PROJECT_ID),
     Err(_) => std::env::current_dir().map_err(|_| Error::Pwd)?,
   });
 }
 
 fn global_cache_dir() -> Result<PathBuf, Error> {
   #[cfg(not(target_os = "windows"))]
-  return Ok(match xdg::BaseDirectories::with_prefix("wick") {
+  return Ok(match xdg::BaseDirectories::with_prefix(PROJECT_ID) {
     Ok(xdg) => xdg.get_cache_home(),
     Err(_) => std::env::temp_dir(),
   });

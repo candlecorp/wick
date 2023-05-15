@@ -98,42 +98,52 @@ use clap::Parser;
 mod io;
 mod keys;
 mod oci;
+mod options;
+
+pub(crate) use options::LoggingOptions;
 
 use self::commands::*;
+use self::options::apply_log_settings;
 
 static BIN_NAME: &str = "wick";
 static BIN_DESC: &str = "wick runtime executable";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-  let cli = Cli::parse();
+  human_panic::setup_panic!();
+
+  let mut cli = Cli::parse();
+  let _guard = wick_logger::init(&cli.logging.name(BIN_NAME).into());
+  let settings = wick_settings::Settings::new();
+  apply_log_settings(&settings, &mut cli.logging);
 
   let res = match cli.command {
-    CliCommand::Serve(cmd) => commands::serve::handle_command(cmd).await,
-    CliCommand::List(cmd) => commands::list::handle_command(cmd).await,
-    CliCommand::Run(cmd) => commands::run::handle_command(cmd).await,
-    CliCommand::Invoke(cmd) => commands::invoke::handle_command(cmd).await,
-    CliCommand::Test(cmd) => commands::test::handle_command(cmd).await,
-    CliCommand::Init(cmd) => commands::init::handle_command(cmd).await,
+    CliCommand::Serve(cmd) => commands::serve::handle(cmd, settings).await,
+    CliCommand::List(cmd) => commands::list::handle(cmd, settings).await,
+    CliCommand::Run(cmd) => commands::run::handle(cmd, settings).await,
+    CliCommand::Invoke(cmd) => commands::invoke::handle(cmd, settings).await,
+    CliCommand::Test(cmd) => commands::test::handle(cmd, settings).await,
+    CliCommand::Init(cmd) => commands::init::handle(cmd, settings).await,
     CliCommand::Wasm(cmd) => match cmd {
-      commands::wasm::SubCommands::Sign(cmd) => commands::wasm::sign::handle(cmd).await,
-      commands::wasm::SubCommands::Inspect(cmd) => commands::wasm::inspect::handle(cmd).await,
+      commands::wasm::SubCommands::Sign(cmd) => commands::wasm::sign::handle(cmd, settings).await,
+      commands::wasm::SubCommands::Inspect(cmd) => commands::wasm::inspect::handle(cmd, settings).await,
     },
     CliCommand::Key(cmd) => match cmd {
-      commands::key::SubCommands::Get(cmd) => commands::key::get::handle(cmd).await,
-      commands::key::SubCommands::Gen(cmd) => commands::key::gen::handle(cmd).await,
-      commands::key::SubCommands::List(cmd) => commands::key::list::handle(cmd).await,
+      commands::key::SubCommands::Get(cmd) => commands::key::get::handle(cmd, settings).await,
+      commands::key::SubCommands::Gen(cmd) => commands::key::gen::handle(cmd, settings).await,
+      commands::key::SubCommands::List(cmd) => commands::key::list::handle(cmd, settings).await,
     },
     CliCommand::Registry(cmd) => match cmd {
-      commands::registry::SubCommands::Push(cmd) => commands::registry::push::handle(cmd).await,
-      commands::registry::SubCommands::Pull(cmd) => commands::registry::pull::handle(cmd).await,
+      commands::registry::SubCommands::Push(cmd) => commands::registry::push::handle(cmd, settings).await,
+      commands::registry::SubCommands::Pull(cmd) => commands::registry::pull::handle(cmd, settings).await,
+      commands::registry::SubCommands::Login(cmd) => commands::registry::login::handle(cmd, settings).await,
     },
     CliCommand::Rpc(cmd) => match cmd {
-      commands::rpc::SubCommands::Invoke(cmd) => commands::rpc::invoke::handle(cmd).await,
-      commands::rpc::SubCommands::List(cmd) => commands::rpc::list::handle(cmd).await,
-      commands::rpc::SubCommands::Stats(cmd) => commands::rpc::stats::handle(cmd).await,
+      commands::rpc::SubCommands::Invoke(cmd) => commands::rpc::invoke::handle(cmd, settings).await,
+      commands::rpc::SubCommands::List(cmd) => commands::rpc::list::handle(cmd, settings).await,
+      commands::rpc::SubCommands::Stats(cmd) => commands::rpc::stats::handle(cmd, settings).await,
     },
-    CliCommand::Query(options) => commands::query::handle(options).await,
+    CliCommand::Query(cmd) => commands::query::handle(cmd, settings).await,
   };
 
   std::process::exit(match res {

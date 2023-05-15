@@ -7,9 +7,6 @@ use wick_config::config::{AppConfiguration, ComponentConfiguration};
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct InitCommand {
-  #[clap(flatten)]
-  pub(crate) logging: super::LoggingOptions,
-
   /// Name of the project.
   #[clap()]
   name: String,
@@ -20,10 +17,7 @@ pub(crate) struct InitCommand {
 }
 
 #[allow(clippy::field_reassign_with_default)]
-pub(crate) async fn handle_command(mut opts: InitCommand) -> Result<()> {
-  let logging = &mut opts.logging;
-  let _guard = wick_logger::init(&logging.name(crate::BIN_NAME));
-
+pub(crate) async fn handle(opts: InitCommand, _settings: wick_settings::Settings) -> Result<()> {
   let files: Vec<(PathBuf, String)> = if opts.component {
     info!("Initializing wick component project: {}", opts.name);
     let mut config = ComponentConfiguration::default();

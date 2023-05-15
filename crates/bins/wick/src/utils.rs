@@ -3,7 +3,6 @@ use std::time::Duration;
 use futures::StreamExt;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::config::{AssetReference, ComponentConfiguration, HttpConfigBuilder};
-use wick_logger::{LoggingGuard, LoggingOptions};
 use wick_packet::PacketStream;
 
 pub(crate) fn merge_config(
@@ -67,11 +66,6 @@ pub(crate) fn merge_config(
 fn log_override<T: std::fmt::Debug>(field: &str, from: &mut T, to: T) {
   debug!(%field, ?from, ?to, "overriding manifest value");
   *from = to;
-}
-
-#[allow(clippy::trivially_copy_pass_by_ref)]
-pub(crate) fn init_logger(opts: &LoggingOptions) -> crate::Result<LoggingGuard> {
-  Ok(wick_logger::init(&opts.name(crate::BIN_NAME)))
 }
 
 pub(crate) async fn print_stream_json(

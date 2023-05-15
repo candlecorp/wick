@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use clap::Args;
 use serde::{Deserialize, Serialize};
-use wick_logger::LoggingOptions;
 
 #[derive(Debug)]
 /// Server configuration options.
@@ -96,12 +95,6 @@ impl From<DefaultCliOptions> for Options {
   }
 }
 
-impl From<DefaultCliOptions> for LoggingOptions {
-  fn from(opts: DefaultCliOptions) -> Self {
-    opts.logging
-  }
-}
-
 /// Names of the environment variables used for fallback values.
 pub mod env {
   macro_rules! env_var {
@@ -136,10 +129,6 @@ pub struct DefaultCliOptions {
   /// The timeout for outbound requests in ms.
   #[clap(long = "timeout", env = env::WICK_TIMEOUT, action)]
   pub timeout: Option<u64>,
-
-  /// Logging options.
-  #[clap(flatten)]
-  pub logging: LoggingOptions,
 
   /// Enable the rpc server.
   #[clap(long = "rpc",  env = env::WICK_RPC_ENABLED, action)]

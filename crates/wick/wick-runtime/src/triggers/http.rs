@@ -162,7 +162,7 @@ impl Http {
     Ok(Self::default())
   }
 
-  async fn handle_command(
+  async fn handle(
     &self,
     app_config: AppConfiguration,
     config: config::HttpTriggerConfig,
@@ -385,7 +385,7 @@ impl Trigger for Http {
       }
     };
 
-    let instance = self.handle_command(app_config, config, resources, &socket).await?;
+    let instance = self.handle(app_config, config, resources, &socket).await?;
     let output = StructuredOutput::new(
       format!("HTTP Server started on {}", instance.addr),
       json!({"ip": instance.addr.ip(),"port": instance.addr.port()}),

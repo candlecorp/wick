@@ -1,0 +1,17 @@
+[package]
+name = "wick-settings"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "Wick's Resource Configuration file data structures and normalization logic."
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+wick-xdg = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tracing = { workspace = true }
+
+[dev-dependencies]

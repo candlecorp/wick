@@ -75,6 +75,7 @@ all-tests:
 	else \
 	  cargo test --workspace -- --test-threads=6; \
 	fi
+	cargo test --manifest-path tests/template/Cargo.toml
 
 integration-setup:
 	rm -rf ~/.cache/wick

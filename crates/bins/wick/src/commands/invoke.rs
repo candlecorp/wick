@@ -17,9 +17,6 @@ use crate::utils::{self, merge_config};
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct InvokeCommand {
   #[clap(flatten)]
-  pub(crate) logging: super::LoggingOptions,
-
-  #[clap(flatten)]
   wasi: crate::wasm::WasiOptions,
 
   #[clap(flatten)]
@@ -66,13 +63,13 @@ pub(crate) struct InvokeCommand {
   args: Vec<String>,
 }
 
-pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
-  let mut logging = &mut opts.logging;
-  if !(opts.info || logging.trace || logging.debug) {
-    logging.quiet = true;
-  }
+pub(crate) async fn handle(opts: InvokeCommand, _settings: wick_settings::Settings) -> Result<()> {
+  // let mut logging = &mut opts.logging;
+  // if !(opts.info || logging.trace || logging.debug) {
+  //   logging.quiet = true;
+  // }
 
-  let _guard = wick_logger::init(&logging.name(crate::BIN_NAME));
+  // let _guard = wick_logger::init(&logging.name(crate::BIN_NAME).into());
 
   let fetch_options = if PathBuf::from(&opts.location).exists() {
     wick_config::config::FetchOptions::new()

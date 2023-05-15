@@ -11,7 +11,8 @@ pub(crate) mod test;
 pub(crate) mod wasm;
 
 use clap::{Parser, Subcommand};
-use wick_logger::LoggingOptions;
+
+use crate::LoggingOptions;
 
 #[derive(Parser, Debug, Clone)]
 #[clap(
@@ -20,6 +21,8 @@ use wick_logger::LoggingOptions;
   version,
 )]
 pub(crate) struct Cli {
+  #[clap(flatten)]
+  pub(crate) logging: LoggingOptions,
   #[clap(subcommand)]
   pub(crate) command: CliCommand,
 }
