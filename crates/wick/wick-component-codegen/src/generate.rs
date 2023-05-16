@@ -73,7 +73,11 @@ fn gen_trait_fns<'a>(
 fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> Result<String> {
   let (ops, types, required): (_, _, _) = match &wick_config {
     wick_config::WickConfiguration::Component(config) => {
-      let types = config.types()?;
+      let types = config
+        .types()?
+        .into_iter()
+        .sorted_by(|a, b| a.name().cmp(b.name()))
+        .collect();
       let requires = config.requires().values().cloned().collect_vec();
       let ops = match config.component() {
         wick_config::config::ComponentImplementation::Wasm(c) => c.operations().clone(),
