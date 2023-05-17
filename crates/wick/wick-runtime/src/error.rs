@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use thiserror::Error;
 use wick_config::config::TriggerKind;
 
@@ -58,4 +60,10 @@ pub enum RuntimeError {
 
   #[error("Component not found: {0}")]
   ComponentNotFound(String),
+}
+
+impl From<Infallible> for RuntimeError {
+  fn from(_: Infallible) -> Self {
+    unreachable!()
+  }
 }

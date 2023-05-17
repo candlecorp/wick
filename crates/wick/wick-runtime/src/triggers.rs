@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::sync::Arc;
 mod cli;
 mod http;
@@ -12,6 +13,18 @@ use wick_config::config::{AppConfiguration, ComponentDefinition, TriggerDefiniti
 
 use crate::dev::prelude::*;
 use crate::resources::Resource;
+use crate::RuntimeBuilder;
+
+fn build_trigger_runtime(config: &AppConfiguration) -> Result<RuntimeBuilder, Infallible> {
+  let mut rt = RuntimeBuilder::default();
+  for import in config.imports().values() {
+    rt.add_import(import.clone());
+  }
+  for resource in config.resources().values() {
+    rt.add_resource(resource.clone());
+  }
+  Ok(rt)
+}
 
 #[async_trait]
 pub trait Trigger {
