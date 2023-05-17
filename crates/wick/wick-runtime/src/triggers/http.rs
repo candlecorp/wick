@@ -36,6 +36,7 @@ use super::{resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
 use crate::runtime::RuntimeConstraint;
+use crate::triggers::build_trigger_runtime;
 use crate::triggers::http::proxy_router::ProxyRouter;
 use crate::triggers::http::raw_router::RawComponentRouter;
 use crate::triggers::http::rest_router::{RestRoute, RestRouter};
@@ -169,8 +170,9 @@ impl Http {
     resources: Arc<HashMap<String, Resource>>,
     socket: &SocketAddr,
   ) -> Result<HttpInstance, RuntimeError> {
-    let mut rt = crate::RuntimeBuilder::new();
+    let mut rt = build_trigger_runtime(&app_config)?;
     let mut routers = Vec::new();
+
     for (i, router) in config.routers().iter().enumerate() {
       let (router_bindings, router, constraints) = match router {
         config::HttpRouterConfig::RawRouter(r) => register_raw_router(i, &app_config, r)?,
@@ -409,14 +411,15 @@ impl Trigger for Http {
 
   async fn wait_for_done(&self) {
     let rx = if let Some(instance) = self.instance.lock().as_mut() {
-      instance
-        .running_rx
-        .take()
-        .map_or_else(|| panic!("http trigger not running"), |running_rx| running_rx)
+      instance.running_rx.take()
     } else {
-      panic!("http trigger not running")
+      None
     };
-    let _ = rx.await;
+    if let Some(rx) = rx {
+      let _ = rx.await;
+    } else {
+      error!("http trigger not running");
+    }
   }
 }
 

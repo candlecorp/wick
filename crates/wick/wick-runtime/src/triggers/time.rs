@@ -14,7 +14,7 @@ use tokio::time::Duration;
 use tokio_stream::StreamExt;
 use wick_packet::{Entity, Packet};
 
-use super::{Trigger, TriggerKind};
+use super::{build_trigger_runtime, Trigger, TriggerKind};
 use crate::dev::prelude::*;
 use crate::resources::Resource;
 use crate::triggers::resolve_ref;
@@ -56,7 +56,7 @@ async fn create_schedule(
       Err(err) => panic!("Unable to resolve component: {}", err),
     };
 
-    let mut runtime = crate::RuntimeBuilder::new();
+    let mut runtime = build_trigger_runtime(&app_config).unwrap();
     let schedule_binding = config::ImportBinding::component("0", schedule_component);
     runtime.add_import(schedule_binding);
     // needed for invoke command

@@ -12,7 +12,7 @@ use structured_output::StructuredOutput;
 use tokio_stream::StreamExt;
 use wick_packet::{packet_stream, Entity, Invocation};
 
-use super::{resolve_ref, Trigger, TriggerKind};
+use super::{build_trigger_runtime, resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::*;
 use crate::resources::Resource;
 
@@ -56,15 +56,9 @@ impl Cli {
       Entity::operation(cli_binding.id(), config.operation().operation()),
       None,
     );
+    let mut runtime = build_trigger_runtime(&app_config)?;
 
-    let mut runtime = crate::RuntimeBuilder::new();
     runtime.add_import(cli_binding);
-    for import in app_config.imports().values() {
-      runtime.add_import(import.clone());
-    }
-    for resource in app_config.resources().values() {
-      runtime.add_resource(resource.clone());
-    }
     let runtime = runtime.build().await?;
 
     let is_interactive = IsInteractive {
