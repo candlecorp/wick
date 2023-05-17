@@ -31,7 +31,6 @@ pub struct RuntimeInit {
 }
 
 impl Runtime {
-  #[instrument(name = "runtime", skip_all)]
   pub async fn new(config: RuntimeInit) -> Result<Self> {
     trace!(?config, "init");
     let init = Initialize::new(
@@ -43,7 +42,7 @@ impl Runtime {
       config.native_components,
       config.namespace,
       config.constraints,
-      debug_span!("runtime:new"),
+      debug_span!("runtime"),
     );
 
     let service = RuntimeService::new(init)

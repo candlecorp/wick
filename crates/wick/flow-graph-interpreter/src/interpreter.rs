@@ -12,6 +12,7 @@ use std::time::Duration;
 use flow_component::{Component, RuntimeCallback};
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
+use tracing::{trace_span, Span};
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, Invocation, OperationConfig, PacketStream};
@@ -44,6 +45,7 @@ pub struct Interpreter {
   namespace: Option<String>,
   callback: Arc<RuntimeCallback>,
   exposed_ops: HashMap<String, SharedHandler>, // A map from op name to the ns of the handler that exposes it.
+  span: Span,
 }
 
 impl std::fmt::Debug for Interpreter {
@@ -59,15 +61,16 @@ impl std::fmt::Debug for Interpreter {
 }
 
 impl Interpreter {
-  #[instrument(name="interpreter-init", skip_all, fields(namespace = %namespace.as_ref().map_or("n/a", String::as_str)))]
   pub fn new(
     seed: Option<Seed>,
     network: Network,
     namespace: Option<String>,
     components: Option<HandlerMap>,
     callback: Arc<RuntimeCallback>,
+    span: &Span,
   ) -> Result<Self, Error> {
-    debug!("init");
+    let span = trace_span!(parent: span, "interpreter");
+    let _guard = span.enter();
     let rng = seed.map_or_else(Random::new, Random::from_seed);
     let mut handlers = components.unwrap_or_default();
     debug!(handlers = ?handlers.keys(), "initializing interpreter");
@@ -111,6 +114,7 @@ impl Interpreter {
       operations = ?handled_opts,
       "operations handled by this interpreter"
     );
+    drop(_guard);
 
     Ok(Self {
       rng,
@@ -123,6 +127,7 @@ impl Interpreter {
       namespace,
       exposed_ops,
       callback,
+      span,
     })
   }
 
@@ -174,6 +179,7 @@ impl Interpreter {
           self.program.operations().iter().map(|s| s.name().to_owned()).collect(),
         )
       })?;
+    let span = self.span.clone();
 
     let executor = SchematicExecutor::new(op.clone(), dispatcher.clone());
     Ok(
@@ -186,7 +192,7 @@ impl Interpreter {
           self.self_component.clone(),
           self.get_callback(),
         )
-        .instrument(tracing::span::Span::current())
+        .instrument(span)
         .await?,
     )
   }
@@ -204,7 +210,7 @@ impl Interpreter {
       }
       hosted
     };
-    let span = trace_span!("invoke");
+    let span = trace_span!(parent: self.span.clone(), "invoke");
     let cb = self.get_callback();
     trace!(?invocation, "invoking");
     let stream = match &invocation.target {

@@ -21,6 +21,40 @@ pub(crate) struct CoreCollection {
   switch: switch::Op,
 }
 
+struct OpInitError {
+  error: ComponentError,
+  kind: DynamicOperation,
+}
+
+impl OpInitError {
+  fn new(error: ComponentError, kind: DynamicOperation) -> Self {
+    Self { error, kind }
+  }
+}
+
+impl std::fmt::Display for OpInitError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str("dynamic ")?;
+    self.kind.fmt(f)?;
+    f.write_str(" component failed to initialize: ")?;
+    self.error.fmt(f)
+  }
+}
+
+enum DynamicOperation {
+  Merge,
+  Switch,
+}
+
+impl std::fmt::Display for DynamicOperation {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      DynamicOperation::Merge => f.write_str("merge"),
+      DynamicOperation::Switch => f.write_str("switch"),
+    }
+  }
+}
+
 impl CoreCollection {
   pub(crate) fn new(graph: &Network) -> Self {
     let mut this = Self {
@@ -41,35 +75,33 @@ impl CoreCollection {
           continue;
         }
 
-        match operation.cref().name() {
-          merge::Op::ID => {
-            let config = match merge::Op::decode_config(operation.data().clone()) {
-              Ok(c) => c,
-              Err(e) => {
-                error!("Configuration for dynamic merge component invalid: {}", e);
-                panic!()
-              }
-            };
-            let id = dyn_component_id(merge::Op::ID, schematic.name(), operation.id());
-            debug!(%id,"adding dynamic type signature for merge component");
-            let (op_sig, output_sig) = merge::Op::gen_signature(id, config);
+        let result = match operation.cref().name() {
+          merge::Op::ID => match merge::Op::decode_config(operation.data().clone()) {
+            Ok(config) => {
+              let id = dyn_component_id(merge::Op::ID, schematic.name(), operation.id());
+              debug!(%id,"adding dynamic type signature for merge component");
+              let (op_sig, output_sig) = merge::Op::gen_signature(id, config);
 
-            this.signature.types.push(TypeDefinition::Struct(output_sig));
-            this.signature.operations.push(op_sig);
-          }
-          switch::Op::ID => {
-            let config = match switch::Op::decode_config(operation.data().clone()) {
-              Ok(c) => c,
-              Err(e) => {
-                error!("Configuration for dynamic switch component invalid: {}", e);
-                panic!();
-              }
-            };
-            let op_sig = this.switch.gen_signature(graph, config);
+              this.signature.types.push(TypeDefinition::Struct(output_sig));
+              this.signature.operations.push(op_sig);
+              Ok(())
+            }
+            Err(e) => Err(OpInitError::new(e, DynamicOperation::Merge)),
+          },
+          switch::Op::ID => match switch::Op::decode_config(operation.data().clone()) {
+            Ok(config) => {
+              let op_sig = this.switch.gen_signature(graph, config);
 
-            this.signature.operations.push(op_sig);
-          }
-          _ => {}
+              this.signature.operations.push(op_sig);
+              Ok(())
+            }
+            Err(e) => Err(OpInitError::new(e, DynamicOperation::Switch)),
+          },
+          _ => Ok(()),
+        };
+        if let Err(error) = result {
+          error!(%error, "Failed to add dynamic signature");
+          panic!("Failed to add dynamic signature: {}", error);
         }
       }
     }

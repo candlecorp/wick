@@ -62,20 +62,23 @@ impl From<LoggingOptions> for wick_logger::LoggingOptions {
 }
 
 pub(crate) fn apply_log_settings(settings: &wick_settings::Settings, options: &mut LoggingOptions) {
-  if settings.logging.level == wick_settings::LogLevel::Debug {
+  if settings.trace.level == wick_settings::LogLevel::Debug {
     options.debug = true;
   }
-  if settings.logging.level == wick_settings::LogLevel::Trace {
+  if settings.trace.level == wick_settings::LogLevel::Trace {
     options.trace = true;
   }
-  if settings.logging.level == wick_settings::LogLevel::Off {
+  if settings.trace.level == wick_settings::LogLevel::Off {
     options.quiet = true;
   }
-  if settings.logging.modifier == wick_settings::LogModifier::Verbose {
+  if settings.trace.modifier == wick_settings::LogModifier::Verbose {
     options.verbose = 1;
   }
-  if settings.logging.modifier == wick_settings::LogModifier::Silly {
+  if settings.trace.modifier == wick_settings::LogModifier::Silly {
     options.verbose = 2;
+  }
+  if options.jaeger_endpoint.is_none() {
+    options.jaeger_endpoint = settings.trace.jaeger.clone();
   }
 }
 

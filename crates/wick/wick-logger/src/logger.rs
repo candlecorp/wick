@@ -1,9 +1,8 @@
-use std::path::PathBuf;
-
 use opentelemetry::trace::TracerProvider;
+use tracing::Subscriber;
 use tracing_appender::non_blocking::{NonBlocking, WorkerGuard};
-use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
-use tracing_subscriber::filter::FilterFn;
+use tracing_bunyan_formatter::JsonStorageLayer;
+use tracing_subscriber::filter::DynFilterFn;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{filter, Layer};
@@ -11,7 +10,7 @@ use tracing_subscriber::{filter, Layer};
 use crate::error::LoggerError;
 use crate::LoggingOptions;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 enum Environment {
   Prod,
   Test,
@@ -19,7 +18,7 @@ enum Environment {
 
 /// Initialize a logger or panic on failure
 pub fn init_defaults() -> LoggingGuard {
-  match try_init(&LoggingOptions::default(), &Environment::Prod) {
+  match try_init(&LoggingOptions::default(), Environment::Prod) {
     Ok(guard) => guard,
     Err(e) => panic!("Error initializing logger: {}", e),
   }
@@ -28,7 +27,7 @@ pub fn init_defaults() -> LoggingGuard {
 /// Initialize a logger or panic on failure
 pub fn init(opts: &LoggingOptions) -> LoggingGuard {
   #![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
-  match try_init(&opts, &Environment::Prod) {
+  match try_init(&opts, Environment::Prod) {
     Ok(guard) => guard,
     Err(e) => panic!("Error initializing logger: {}", e),
   }
@@ -38,7 +37,7 @@ pub fn init(opts: &LoggingOptions) -> LoggingGuard {
 #[must_use]
 pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
   #![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
-  try_init(&opts, &Environment::Test).map_or_else(|_e| None, Some)
+  try_init(&opts, Environment::Test).map_or_else(|_e| None, Some)
 }
 
 fn hushed_modules(module: &str) -> bool {
@@ -57,28 +56,51 @@ fn silly_modules(module: &str) -> bool {
 }
 
 #[must_use]
-fn wick_filter(opts: &LoggingOptions) -> FilterFn {
+fn wick_filter<S>(opts: &LoggingOptions) -> DynFilterFn<S>
+where
+  S: Subscriber + for<'lookup> tracing_subscriber::registry::LookupSpan<'lookup>,
+{
   // This is split up into an if/else because FilterFn needs an fn type.
   // If the closure captures opts.silly then it won't be coercable to an fn.
   if opts.silly {
-    FilterFn::new(move |e| {
-      let module = &e
-        .module_path()
-        .unwrap_or_default()
-        .split("::")
-        .next()
-        .unwrap_or_default();
-      !hushed_modules(module)
-    })
+    filter::dynamic_filter_fn(move |_metadata, _cx| true)
   } else {
-    FilterFn::new(move |e| {
-      let module = &e
-        .module_path()
-        .unwrap_or_default()
-        .split("::")
-        .next()
-        .unwrap_or_default();
-      !hushed_modules(module) && !silly_modules(module)
+    filter::dynamic_filter_fn(move |metadata, cx| {
+      #[allow(clippy::option_if_let_else)]
+      if let Some(_md) = cx.current_span().metadata() {
+        // println!(
+        //   "current span: {} at {}",
+        //   md.name(),
+        //   md.module_path().unwrap_or_default()
+        // );
+        true
+      } else {
+        // println!("no current span");
+        let module = &metadata
+          .module_path()
+          .unwrap_or_default()
+          .split("::")
+          .next()
+          .unwrap_or_default();
+        !hushed_modules(module) && !silly_modules(module)
+
+        // println!(
+        //   "log: {} : {} {}:{}",
+        //   should_log,
+        //   module,
+        //   metadata.file().unwrap_or_default(),
+        //   metadata.line().unwrap_or_default()
+        // );
+        // should_log
+      }
+
+      // let module = &metadata
+      //   .module_path()
+      //   .unwrap_or_default()
+      //   .split("::")
+      //   .next()
+      //   .unwrap_or_default();
+      // !hushed_modules(module) && !silly_modules(module)
     })
   }
 }
@@ -87,6 +109,8 @@ fn wick_filter(opts: &LoggingOptions) -> FilterFn {
 #[derive(Debug)]
 /// Guard that - when dropped - flushes all log messages and drop I/O handles.
 pub struct LoggingGuard {
+  #[allow(unused)]
+  env: Environment,
   #[allow(unused)]
   logfile: Option<WorkerGuard>,
   #[allow(unused)]
@@ -97,11 +121,13 @@ pub struct LoggingGuard {
 
 impl LoggingGuard {
   fn new(
+    env: Environment,
     logfile: Option<WorkerGuard>,
     console: WorkerGuard,
     tracer_provider: Option<opentelemetry::sdk::trace::TracerProvider>,
   ) -> Self {
     Self {
+      env,
       logfile,
       console,
       tracer_provider,
@@ -131,21 +157,6 @@ fn get_stderr_writer(_opts: &LoggingOptions) -> (NonBlocking, WorkerGuard) {
   (stderr_writer, console_guard)
 }
 
-fn get_logfile_writer(opts: &LoggingOptions) -> Result<(PathBuf, NonBlocking, WorkerGuard), LoggerError> {
-  let logfile_prefix = format!("{}.{}.log", opts.app_name, std::process::id());
-
-  let mut log_dir = match &opts.log_dir {
-    Some(dir) => dir.clone(),
-    None => wick_xdg::Directories::GlobalState.basedir()?,
-  };
-  log_dir.push("logs");
-
-  let (writer, guard) =
-    tracing_appender::non_blocking(tracing_appender::rolling::daily(log_dir.clone(), logfile_prefix));
-
-  Ok((log_dir, writer, guard))
-}
-
 fn get_levelfilter(opts: &LoggingOptions) -> tracing::level_filters::LevelFilter {
   match opts.level {
     crate::LogLevel::Quiet => filter::LevelFilter::OFF,
@@ -158,7 +169,7 @@ fn get_levelfilter(opts: &LoggingOptions) -> tracing::level_filters::LevelFilter
 }
 
 #[allow(clippy::too_many_lines)]
-fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingGuard, LoggerError> {
+fn try_init(opts: &LoggingOptions, environment: Environment) -> Result<LoggingGuard, LoggerError> {
   #[cfg(windows)]
   let with_color = ansi_term::enable_ansi_support().is_ok();
   #[cfg(not(windows))]
@@ -167,12 +178,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
   let timer = UtcTime::new(time::format_description::parse("[year]-[month]-[day]T[hour]:[minute]:[second]").unwrap());
   let (stderr_writer, console_guard) = get_stderr_writer(opts);
 
-  let app_name = opts.app_name.clone();
-
-  let (_log_dir, logfile_writer, _logfile_guard) = get_logfile_writer(opts)?;
-  let file_layer = BunyanFormattingLayer::new(app_name, logfile_writer).with_filter(wick_filter(opts));
-
-  let needs_simple_tracer = tokio::runtime::Handle::try_current().is_err() || environment == &Environment::Test;
+  let needs_simple_tracer = tokio::runtime::Handle::try_current().is_err() || environment == Environment::Test;
 
   // Configure a jaeger tracer if we have a configured endpoint.
   let (otel_layer, tracer_provider) = opts.jaeger_endpoint.as_ref().map_or_else(
@@ -189,6 +195,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
       };
 
       let tracer = tracer_provider.versioned_tracer("wick", Some(env!("CARGO_PKG_VERSION")), None);
+
       let _ = opentelemetry::global::set_tracer_provider(tracer_provider.clone());
 
       let layer = Some(
@@ -203,7 +210,7 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
 
   // This is ugly. If you can improve it, go for it, but
   // start here to understand why it's laid out like this: https://github.com/tokio-rs/tracing/issues/575
-  let (verbose_layer, normal_layer, json_layer, file_layer, logfile_guard, otel_layer, test_layer) = match environment {
+  let (verbose_layer, normal_layer, json_layer, logfile_guard, otel_layer, test_layer) = match environment {
     Environment::Prod => {
       if opts.verbose {
         (
@@ -218,7 +225,6 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
           ),
           None,
           Some(JsonStorageLayer),
-          Some(file_layer),
           None,
           Some(otel_layer),
           None,
@@ -237,7 +243,6 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
               .with_filter(wick_filter(opts)),
           ),
           Some(JsonStorageLayer),
-          Some(file_layer),
           None,
           Some(otel_layer),
           None,
@@ -248,7 +253,6 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
       None,
       None,
       Some(JsonStorageLayer),
-      Some(file_layer),
       None,
       Some(otel_layer),
       Some(
@@ -269,11 +273,16 @@ fn try_init(opts: &LoggingOptions, environment: &Environment) -> Result<LoggingG
     .with(verbose_layer)
     .with(normal_layer)
     .with(json_layer)
-    .with(otel_layer)
-    .with(file_layer);
+    .with(otel_layer);
+
   tracing::subscriber::set_global_default(subscriber)?;
 
   trace!("Logger initialized");
-  // debug!("Writing logs to {}", log_dir.to_string_lossy());
-  Ok(LoggingGuard::new(logfile_guard, console_guard, tracer_provider))
+
+  Ok(LoggingGuard::new(
+    environment,
+    logfile_guard,
+    console_guard,
+    tracer_provider,
+  ))
 }

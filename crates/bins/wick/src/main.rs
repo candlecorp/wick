@@ -99,6 +99,7 @@ mod io;
 mod keys;
 mod oci;
 mod options;
+mod panic;
 
 pub(crate) use options::LoggingOptions;
 
@@ -110,12 +111,15 @@ static BIN_DESC: &str = "wick runtime executable";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-  human_panic::setup_panic!();
+  #[cfg(debug_assertions)]
+  panic::setup(human_panic::PanicStyle::Debug);
+  #[cfg(not(debug_assertions))]
+  panic::setup(human_panic::PanicStyle::Human);
 
   let mut cli = Cli::parse();
-  let _guard = wick_logger::init(&cli.logging.name(BIN_NAME).into());
   let settings = wick_settings::Settings::new();
   apply_log_settings(&settings, &mut cli.logging);
+  let _guard = wick_logger::init(&cli.logging.name(BIN_NAME).into());
 
   let res = match cli.command {
     CliCommand::Serve(cmd) => commands::serve::handle(cmd, settings).await,
