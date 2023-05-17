@@ -46,10 +46,10 @@ impl From<LoggingOptions> for wick_logger::LoggingOptions {
       silly: value.verbose == 2,
       level: if value.quiet {
         wick_logger::LogLevel::Quiet
-      } else if value.debug {
-        wick_logger::LogLevel::Debug
       } else if value.trace {
         wick_logger::LogLevel::Trace
+      } else if value.debug {
+        wick_logger::LogLevel::Debug
       } else {
         wick_logger::LogLevel::Info
       },
