@@ -9,6 +9,7 @@ use flow_graph_interpreter::{HandlerMap, Interpreter, NamespaceHandler};
 use pretty_assertions::assert_eq;
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
 use seeded_random::Seed;
+use tracing::Span;
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
 fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentConfiguration> {
@@ -49,6 +50,7 @@ fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interprete
     None,
     Some(collections(sig)),
     panic_callback(),
+    &Span::current(),
   )
 }
 
@@ -56,8 +58,14 @@ fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interprete
 async fn test_missing_collections() -> Result<()> {
   let mut manifest = load("./tests/manifests/v0/external.yaml")?;
   let network = from_def(&mut manifest)?;
-  let result: std::result::Result<Interpreter, _> =
-    Interpreter::new(Some(Seed::unsafe_new(1)), network, None, None, panic_callback());
+  let result: std::result::Result<Interpreter, _> = Interpreter::new(
+    Some(Seed::unsafe_new(1)),
+    network,
+    None,
+    None,
+    panic_callback(),
+    &Span::current(),
+  );
   let validation_errors = ValidationError::ComponentIdNotFound("test".to_owned());
   if let Err(InterpreterError::EarlyError(e)) = result {
     assert_eq!(e, validation_errors);

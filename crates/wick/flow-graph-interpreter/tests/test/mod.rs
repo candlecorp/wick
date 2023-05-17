@@ -52,6 +52,7 @@ pub(crate) async fn base_setup(
     None,
     Some(collections),
     panic_callback(),
+    &tracing::Span::current(),
   )?;
   interpreter.start(options, None).await;
   let stream = wick_packet::PacketStream::new(Box::new(futures::stream::iter(packets.into_iter().map(Ok))));

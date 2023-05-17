@@ -273,7 +273,7 @@ async fn exec(
   args: Vec<(TypeSignature, Packet)>,
   stmt: Arc<(String, String)>,
 ) -> Result<(), Error> {
-  debug!(stmt = %stmt.0, "executing  query");
+  debug!(stmt = %stmt.0, "executing query");
 
   let mut bound_args = Vec::new();
   for arg in def.arguments() {

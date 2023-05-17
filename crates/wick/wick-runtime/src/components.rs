@@ -9,6 +9,7 @@ use std::sync::Arc;
 use flow_component::{Component, RuntimeCallback};
 use flow_graph_interpreter::NamespaceHandler;
 use seeded_random::{Random, Seed};
+use tracing::Span;
 use uuid::Uuid;
 use wick_component_wasm::error::LinkError;
 use wick_config::config::components::{ManifestComponent, WasmComponent};
@@ -130,6 +131,7 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
   kind: &'a ManifestComponent,
   id: String,
   mut opts: ComponentInitOptions<'b>,
+  span: &Span,
 ) -> ComponentInitResult {
   trace!(namespace = %id, ?opts, "registering composite component");
 
@@ -162,10 +164,10 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
       Ok(comp)
     }
     config::ComponentImplementation::Composite(_) => {
-      let _engine = RuntimeService::new_from_manifest(uuid, manifest, Some(id.clone()), opts).await?;
+      let _engine = RuntimeService::init_child(uuid, manifest, Some(id.clone()), opts, span).await?;
 
-      let collection = Arc::new(engine_component::EngineComponent::new(uuid));
-      let service = NativeComponentService::new(collection);
+      let component = Arc::new(engine_component::EngineComponent::new(uuid));
+      let service = NativeComponentService::new(component);
       Ok(NamespaceHandler::new(id, Box::new(service)))
     }
     config::ComponentImplementation::Sql(c) => {

@@ -8,7 +8,7 @@ use flow_graph_interpreter::{HandlerMap, InterpreterOptions, NamespaceHandler};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
-use tracing::{Instrument, Span};
+use tracing::{instrument, trace_span, Instrument, Span};
 use uuid::Uuid;
 use wick_config::config::{ComponentConfiguration, ComponentKind, Metadata};
 use wick_config::Resolver;
@@ -157,15 +157,19 @@ pub(crate) struct RuntimeService {
   pub(crate) id: Uuid,
   pub(super) namespace: String,
   interpreter: Arc<flow_graph_interpreter::Interpreter>,
+  span: Span,
 }
 
 type ServiceMap = HashMap<Uuid, Arc<RuntimeService>>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 impl RuntimeService {
+  #[instrument(skip(init), parent=&init.span)]
   pub(crate) async fn new(mut init: Initialize) -> Result<Arc<Self>> {
     debug!("initializing engine service");
-    let graph = flow_graph_interpreter::graph::from_def(&mut init.manifest)?;
+    let graph = trace_span!(parent:&init.span,"schematic")
+      .in_scope(|| flow_graph_interpreter::graph::from_def(&mut init.manifest))?;
+
     let mut components = HandlerMap::default();
     let ns = init.namespace.clone().unwrap_or_else(|| init.id.to_string());
 
@@ -212,9 +216,15 @@ impl RuntimeService {
     let callback = make_link_callback(init.id);
     assert_constraints(&init.constraints, &components)?;
 
-    let mut interpreter =
-      flow_graph_interpreter::Interpreter::new(Some(init.seed()), graph, Some(ns.clone()), Some(components), callback)
-        .map_err(|e| EngineError::InterpreterInit(source.map(Into::into), Box::new(e)))?;
+    let mut interpreter = flow_graph_interpreter::Interpreter::new(
+      Some(init.seed()),
+      graph,
+      Some(ns.clone()),
+      Some(components),
+      callback,
+      &init.span,
+    )
+    .map_err(|e| EngineError::InterpreterInit(source.map(Into::into), Box::new(e)))?;
 
     let options = InterpreterOptions {
       output_timeout: init.timeout,
@@ -227,6 +237,7 @@ impl RuntimeService {
       id: init.id,
       namespace: ns,
       interpreter: Arc::new(interpreter),
+      span: init.span,
     });
 
     let mut registry = HOST_REGISTRY.lock();
@@ -235,11 +246,12 @@ impl RuntimeService {
     Ok(engine)
   }
 
-  pub(crate) fn new_from_manifest<'a, 'b>(
+  pub(crate) fn init_child<'a, 'b>(
     uid: Uuid,
     manifest: ComponentConfiguration,
     namespace: Option<String>,
     opts: ComponentInitOptions<'b>,
+    span: &Span,
   ) -> BoxFuture<'b, Result<Arc<RuntimeService>>>
   where
     'a: 'b,
@@ -254,7 +266,7 @@ impl RuntimeService {
       ComponentRegistry::default(),
       namespace,
       vec![],
-      debug_span!("engine:new"),
+      debug_span!(parent: span, "child"),
     );
 
     Box::pin(async move { RuntimeService::new(init).await })
@@ -319,8 +331,9 @@ impl InvocationHandler for RuntimeService {
     config: Option<OperationConfig>,
   ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, ComponentError>>, ComponentError> {
     let tx_id = invocation.tx_id;
+    let span = debug_span!(parent: self.span.clone(), "invoke", tx_id = %tx_id);
 
-    let fut = self.interpreter.invoke(invocation, stream, config);
+    let fut = self.interpreter.invoke(invocation, stream, config).instrument(span);
     let task = async move {
       match fut.await {
         Ok(response) => Ok(InvocationResponse::Stream { tx_id, rx: response }),
@@ -377,9 +390,7 @@ pub(crate) async fn instantiate_import<'a, 'b>(
             .instrument(span)
             .await?,
         )),
-        config::ComponentDefinition::Manifest(def) => {
-          Ok(Some(init_manifest_component(def, id, opts).instrument(span).await?))
-        }
+        config::ComponentDefinition::Manifest(def) => Ok(Some(init_manifest_component(def, id, opts, &span).await?)),
         config::ComponentDefinition::Reference(_) => unreachable!(),
         config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
         config::ComponentDefinition::HighLevelComponent(hlc) => {

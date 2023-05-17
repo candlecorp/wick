@@ -13,20 +13,23 @@ use crate::error::Error;
 pub struct Settings {
   #[serde(default)]
   /// Logging configuration.
-  pub logging: Logging,
-  #[serde(default)]
+  pub trace: TraceSettings,
   /// Registry credentials.
+  #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub credentials: Vec<Credential>,
   #[serde(skip)]
   /// Where this configuration was loaded from.
   pub source: Option<PathBuf>,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize, Clone, Copy)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 /// Logging configuration.
-pub struct Logging {
+pub struct TraceSettings {
+  /// Jaeger Telemetry endpoint.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub jaeger: Option<String>,
   /// Logging level.
   #[serde(default)]
   pub level: LogLevel,
