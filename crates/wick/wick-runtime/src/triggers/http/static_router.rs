@@ -46,6 +46,19 @@ impl RawRouter for StaticRouter {
   }
 }
 
+async fn create_response<B>(request: &Request<B>, result: ResolveResult) -> Result<Response<Body>, std::io::Error>
+where
+  B: Send + Sync + 'static,
+{
+  #[allow(clippy::expect_used)]
+  Ok(
+    ResponseBuilder::new()
+      .request(request)
+      .build(result)
+      .expect("unable to build response"),
+  )
+}
+
 #[derive(Clone)]
 struct Static {
   root: PathBuf,
@@ -69,13 +82,7 @@ impl Static {
     match *request.method() {
       Method::HEAD | Method::GET => {}
       _ => {
-        #[allow(clippy::expect_used)]
-        return Ok(
-          ResponseBuilder::new()
-            .request(&request)
-            .build(ResolveResult::MethodNotMatched)
-            .expect("unable to build response"),
-        );
+        return create_response(&request, ResolveResult::MethodNotMatched).await;
       }
     }
 
@@ -87,34 +94,13 @@ impl Static {
     let result = resolve_path(root.clone(), path).await;
 
     match result {
-      Ok(ResolveResult::Found(_, _, _)) =>
-      {
-        #[allow(clippy::expect_used)]
-        Ok(
-          ResponseBuilder::new()
-            .request(&request)
-            .build(result?)
-            .expect("unable to build response"),
-        )
-      }
+      Ok(ResolveResult::Found(_, _, _)) => create_response(&request, result?).await,
       _ => {
         if let Some(fb) = &fallback {
           let fallback_result = resolve_path(root.clone(), fb).await;
-          #[allow(clippy::expect_used)]
-          Ok(
-            ResponseBuilder::new()
-              .request(&request)
-              .build(fallback_result?)
-              .expect("unable to build response"),
-          )
+          create_response(&request, fallback_result?).await
         } else {
-          #[allow(clippy::expect_used)]
-          Ok(
-            ResponseBuilder::new()
-              .request(&request)
-              .build(result?)
-              .expect("unable to build response"),
-          )
+          create_response(&request, result?).await
         }
       }
     }
