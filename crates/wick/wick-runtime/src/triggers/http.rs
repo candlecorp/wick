@@ -266,7 +266,7 @@ fn register_static_router(
     }
   };
 
-  let fallback = router_config.fallback().map(|s| s.to_owned());
+  let fallback = router_config.fallback().map(|s| s.clone());
 
   let router = StaticRouter::new(volume, Some(router_config.path().to_owned()), fallback);
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
