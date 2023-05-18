@@ -217,6 +217,9 @@ type StaticRouter @tagged("wick/router/static@v1") {
 
   "The volume to serve static files from."
   volume: string @required
+
+  "Fallback path (relative to `path`) for files to serve in case of a 404. Useful for SPA's. if path: /www and fallback: index.html, then a 404 will serve /www/index.html"
+  fallback: string?
 }
 
 "A RawHttpRouter delegates raw requests and bodies to operations based on the request path."

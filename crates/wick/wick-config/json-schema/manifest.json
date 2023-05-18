@@ -968,6 +968,11 @@
           "volume": {
             "description": "The volume to serve static files from.",
             "type": "string"
+          },
+          "fallback": {
+            "description": "Fallback path (relative to &#x60;path&#x60;) for files to serve in case of a 404. Useful for SPA&#x27;s. if path: /www and fallback: index.html, then a 404 will serve /www/index.html",
+            "required": false,
+            "type": "string"
           }
         },
         "required": [
