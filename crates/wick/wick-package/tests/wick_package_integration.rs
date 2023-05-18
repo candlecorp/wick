@@ -1,6 +1,7 @@
 mod integration_test {
 
   use std::path::Path;
+  use std::time::{SystemTime, UNIX_EPOCH};
 
   use anyhow::Result;
   use walkdir::WalkDir;
@@ -28,12 +29,16 @@ mod integration_test {
     println!("Package path: {:?}", package_path);
     let mut package = WickPackage::from_path(package_path).await.unwrap();
     let num_files = package.list_files().len();
-    assert_eq!(num_files, 3, "Mismatch in hard coded number of files");
+    assert_eq!(num_files, 4, "Mismatch in hard coded number of files");
 
     // necessary to clone our WickPackage because push() consumes our contents and we
     // want to test the original bytes post-push.
     let expected = package.clone();
-    let reference = expected.registry_reference().unwrap();
+    let test_timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+
+    let reference = expected
+      .tagged_reference(&test_timestamp.as_secs().to_string())
+      .unwrap();
     let push_result = package.push(&reference, &options).await;
     if push_result.is_err() {
       panic!("Failed to push WickPackage: {:?}", push_result);
@@ -54,7 +59,7 @@ mod integration_test {
     println!("Counting files in pulled directory: {}", root_dir.display());
     let num_files = WalkDir::new(root_dir).into_iter().count();
 
-    assert_eq!(num_files, 10, "Mismatch in number of files in the pulled package");
+    assert_eq!(num_files, 11, "Mismatch in number of files in the pulled package");
 
     let pushed_files: Vec<&PackageFile> = expected.list_files();
     let pulled_files: Vec<&PackageFile> = pulled_package.list_files();

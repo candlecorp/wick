@@ -1,8 +1,8 @@
 ---
 kind: wick/component@v1
-name: "include"
+name: 'include'
 metadata:
-  version: "3"
+  version: '3'
 component:
   kind: wick/component/wasmrs@v1
-  ref: ./assets/test.fake.wasm
+  ref: ./test.fake.wasm

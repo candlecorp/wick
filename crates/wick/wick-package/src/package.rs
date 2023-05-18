@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 use std::future::Future;
 use std::path::{Path, PathBuf};
-use std::pin::Pin;
 
 use asset_container::{Asset, AssetFlags, AssetManager, Assets};
 use sha256::digest;
 use tokio::fs;
+use tracing::trace;
 use wick_config::config::{AssetReference, RegistryConfig};
 use wick_config::WickConfiguration;
 use wick_oci_utils::package::annotations::Annotations;
@@ -15,11 +15,13 @@ use wick_oci_utils::OciOptions;
 use crate::utils::{create_tar_gz, metadata_to_annotations};
 use crate::{Error, WickPackageKind};
 
-fn process_assets<'a>(
+type BoxFuture<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+
+fn process_assets(
   mut seen_assets: HashSet<PathBuf>,
-  assets: Assets<'a, AssetReference>,
+  assets: Assets<AssetReference>,
   parent_dir: PathBuf,
-) -> Pin<Box<dyn Future<Output = Result<(HashSet<PathBuf>, Vec<PackageFile>), Error>> + Send + 'a>> {
+) -> BoxFuture<Result<(HashSet<PathBuf>, Vec<PackageFile>), Error>> {
   let task = async move {
     let mut wick_files: Vec<PackageFile> = Vec::new();
     for asset in assets.iter() {
@@ -31,9 +33,8 @@ fn process_assets<'a>(
       let asset_path = asset.path()?; // the resolved, abolute path relative to the config location.
       if seen_assets.contains(&asset_path) {
         continue;
-      } else {
-        seen_assets.insert(asset_path.clone());
       }
+      seen_assets.insert(asset_path.clone());
 
       let path = asset.get_relative_part()?;
 
@@ -44,17 +45,17 @@ fn process_assets<'a>(
         Some("yaml" | "yml" | "wick") => {
           let config = WickConfiguration::fetch(asset_path.to_string_lossy(), options.clone()).await;
           match config {
-            Ok(WickConfiguration::App(_)) => {
+            Ok(WickConfiguration::App(config)) => {
               media_type = media_types::APPLICATION;
-              let app_assets = asset.assets();
+              let app_assets = config.assets();
 
               let (newly_seen, app_files) = process_assets(seen_assets, app_assets, parent_dir.clone()).await?;
               seen_assets = newly_seen;
               wick_files.extend(app_files);
             }
-            Ok(WickConfiguration::Component(_)) => {
+            Ok(WickConfiguration::Component(config)) => {
               media_type = media_types::COMPONENT;
-              let component_assets = asset.assets();
+              let component_assets = config.assets();
               let (newly_seen, component_files) =
                 process_assets(seen_assets, component_assets, parent_dir.clone()).await?;
               seen_assets = newly_seen;
@@ -193,6 +194,9 @@ impl WickPackage {
     let (_, return_assets) = process_assets(Default::default(), assets, parent_dir.clone()).await?;
     //merge return assets  vector to wick_files
     wick_files.extend(return_assets);
+    trace!(files = ?wick_files.iter().map(|f| f.path()).collect::<Vec<_>>(),
+      "package files"
+    );
 
     Ok(Self {
       kind,
