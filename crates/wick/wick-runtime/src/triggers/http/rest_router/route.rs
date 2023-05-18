@@ -15,6 +15,8 @@ pub(super) struct Route {
   query_params: Vec<Field>,
 }
 
+pub(super) type MatchedValues = (Vec<FieldValue>, Vec<FieldValue>);
+
 impl Route {
   pub(super) fn parse(path: &str) -> Result<Self, wick_interface_types::ParserError> {
     let (path, query) = path.find('?').map_or((path, ""), |idx| {
@@ -62,11 +64,7 @@ impl Route {
     })
   }
 
-  pub(super) fn compare(
-    &self,
-    path: &str,
-    query_string: Option<&str>,
-  ) -> Result<Option<(Vec<FieldValue>, Vec<FieldValue>)>, HttpError> {
+  pub(super) fn compare(&self, path: &str, query_string: Option<&str>) -> Result<Option<MatchedValues>, HttpError> {
     let mut path_params = Vec::new();
     let mut query_params = Vec::new();
 

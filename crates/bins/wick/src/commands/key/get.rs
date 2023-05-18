@@ -16,7 +16,8 @@ pub(crate) struct KeyGetCommand {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: KeyGetCommand, _settings: wick_settings::Settings) -> Result<()> {
+pub(crate) async fn handle(opts: KeyGetCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
+  let _span = span.enter();
   println!("Reading key: {}\n", opts.path.to_string_lossy());
   let kp = crate::keys::get_key(opts.directory, opts.path).await?;
 

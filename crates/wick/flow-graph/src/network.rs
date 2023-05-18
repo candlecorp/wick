@@ -42,7 +42,7 @@ mod test {
   {
   }
 
-  #[test_logger::test]
+  #[test]
   fn test_sync_send() -> Result<()> {
     sync_send::<Network<Option<()>>>();
     Ok(())

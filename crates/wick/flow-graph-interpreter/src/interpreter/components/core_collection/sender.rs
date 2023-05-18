@@ -1,7 +1,7 @@
 use flow_component::{ComponentError, Context, Operation};
 use serde_json::Value;
 use wick_interface_types::{operation, OperationSignature};
-use wick_packet::{packet_stream, PacketStream};
+use wick_packet::{packet_stream, Invocation, PacketStream};
 
 use crate::BoxFuture;
 #[derive()]
@@ -33,6 +33,7 @@ impl Operation for Op {
   type Config = SenderData;
   fn handle(
     &self,
+    _invocation: Invocation,
     _payload: PacketStream,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {

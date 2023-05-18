@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use futures::future::BoxFuture;
 use hyper::{Body, Request, Response, StatusCode};
+use tracing::Span;
 use wick_config::config::UrlResource;
 
 use super::{HttpError, RawRouter};
@@ -13,14 +14,19 @@ use crate::Runtime;
 pub(super) struct ProxyRouter {
   url: String,
   strip: Option<String>,
+  span: Span,
 }
 
 impl ProxyRouter {
   pub(super) fn new(url: UrlResource, strip: Option<String>) -> Self {
     let url = url.to_string();
     let url = url.trim_end_matches('/').to_owned();
-    debug!(url = %url, "wick:http:proxy: proxying");
-    Self { url, strip }
+
+    Self {
+      strip,
+      span: debug_span!("http:proxy",url = %url),
+      url,
+    }
   }
 }
 
@@ -37,9 +43,13 @@ impl RawRouter for ProxyRouter {
       let orig_path = request.uri().path_and_query().unwrap().as_str().to_owned();
       let path = orig_path.trim_start_matches(to_strip);
       *request.uri_mut() = path.parse().unwrap();
-      trace!(to= url, orig = orig_path, uri = %request.uri(), "http:trigger:proxy proxying");
+      self
+        .span
+        .in_scope(|| trace!(to= url, orig = orig_path, uri = %request.uri(), "http:trigger:proxy proxying"));
     } else {
-      trace!(to= url, uri = %request.uri(), "http:trigger:proxy proxying");
+      self
+        .span
+        .in_scope(|| trace!(to= url, uri = %request.uri(), "http:trigger:proxy proxying"));
     }
     // the proxy library does not set the appropriate host header, but if we delete
     // the header, it will get made correctly for us.

@@ -102,7 +102,7 @@ mod tests {
     let input_stream = packet_stream!(("input", input));
 
     let entity = Entity::local("test-component");
-    let invocation = Invocation::new(Entity::test(file!()), entity, None);
+    let invocation = Invocation::test(file!(), entity, None)?;
 
     let outputs = collection
       .handle(invocation, input_stream, None, panic_callback())

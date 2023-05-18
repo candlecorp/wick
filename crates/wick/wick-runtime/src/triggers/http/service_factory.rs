@@ -8,6 +8,7 @@ use hyper::http::response::Builder;
 use hyper::server::conn::AddrStream;
 use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
+use tracing::Span;
 
 use super::HttpRouter;
 use crate::Runtime;
@@ -15,13 +16,15 @@ use crate::Runtime;
 pub(super) struct ServiceFactory {
   engine: Arc<Runtime>,
   routers: Arc<Vec<HttpRouter>>,
+  span: Span,
 }
 
 impl ServiceFactory {
-  pub(super) fn new(engine: Runtime, routers: Vec<HttpRouter>) -> Self {
+  pub(super) fn new(engine: Runtime, routers: Vec<HttpRouter>, span: Span) -> Self {
     Self {
       engine: Arc::new(engine),
       routers: Arc::new(routers),
+      span,
     }
   }
 }
@@ -40,8 +43,10 @@ impl Service<&AddrStream> for ServiceFactory {
     let routers = self.routers.clone();
 
     let remote_addr = conn.remote_addr();
+    let span = debug_span!("connection", remote = %remote_addr);
+    span.follows_from(&self.span);
 
-    let fut = async move { Ok(ResponseService::new(remote_addr, engine, routers)) };
+    let fut = async move { Ok(ResponseService::new(remote_addr, engine, routers, span)) };
     Box::pin(fut)
   }
 }
@@ -50,14 +55,16 @@ pub(super) struct ResponseService {
   remote_addr: SocketAddr,
   engine: Arc<Runtime>,
   routers: Arc<Vec<HttpRouter>>,
+  span: Span,
 }
 
 impl ResponseService {
-  fn new(remote_addr: SocketAddr, engine: Arc<Runtime>, routers: Arc<Vec<HttpRouter>>) -> Self {
+  fn new(remote_addr: SocketAddr, engine: Arc<Runtime>, routers: Arc<Vec<HttpRouter>>, span: Span) -> Self {
     Self {
       remote_addr,
       engine,
       routers,
+      span,
     }
   }
 }
@@ -75,15 +82,17 @@ impl Service<Request<Body>> for ResponseService {
     let remote_addr = self.remote_addr;
     let time = chrono::Local::now().format("%d/%b/%Y:%H:%M:%S %z");
     let path = req.uri().path().to_owned();
+    let span = info_span!("request");
+    span.follows_from(&self.span);
 
-    info!(
-      "{} - [{}] \"{} {} {:?}\"",
-      remote_addr,
-      time,
-      req.method(),
-      req.uri().path(),
-      req.version()
-    );
+    span.in_scope(|| {
+      info!(
+        time = %time,
+        method = %req.method(),
+        path = req.uri().path(),
+        version = ?req.version(),
+      );
+    });
     let engine = self.engine.clone();
     let router = self
       .routers
@@ -99,23 +108,28 @@ impl Service<Request<Body>> for ResponseService {
             Ok(res) => {
               let status: u16 = res.status().into();
 
-              if status >= 300 {
-                error!(
-                  "[{}] [wick:http] [client {}] [{}] {}",
-                  start,
-                  remote_addr,
-                  path,
-                  res.status()
-                );
+              if status >= 400 {
+                span.in_scope(|| {
+                  error!(
+                    time=%start,
+                    path,
+                    status=%res.status(),
+                    "error",
+                  );
+                });
               };
 
               Ok(res)
             }
             Err(e) => {
-              error!(
-                "[{}] [wick:http] [client {}] [{}] Internal Server Error: {}",
-                start, remote_addr, path, e
-              );
+              span.in_scope(|| {
+                error!(
+                  time=%start,
+                  path,
+                  error=%e,
+                  "internal error",
+                );
+              });
 
               Ok(make_ise(e))
             }

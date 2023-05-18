@@ -9,13 +9,14 @@ use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use structured_output::StructuredOutput;
+use tracing::Span;
 use wick_config::config::{AppConfiguration, ComponentDefinition, TriggerDefinition, TriggerKind};
 
 use crate::dev::prelude::*;
 use crate::resources::Resource;
 use crate::RuntimeBuilder;
 
-fn build_trigger_runtime(config: &AppConfiguration) -> Result<RuntimeBuilder, Infallible> {
+fn build_trigger_runtime(config: &AppConfiguration, span: Span) -> Result<RuntimeBuilder, Infallible> {
   let mut rt = RuntimeBuilder::default();
   for import in config.imports().values() {
     rt.add_import(import.clone());
@@ -23,6 +24,7 @@ fn build_trigger_runtime(config: &AppConfiguration) -> Result<RuntimeBuilder, In
   for resource in config.resources().values() {
     rt.add_resource(resource.clone());
   }
+  rt = rt.span(span);
   Ok(rt)
 }
 
@@ -34,6 +36,7 @@ pub trait Trigger {
     app_config: AppConfiguration,
     config: TriggerDefinition,
     resources: Arc<HashMap<String, Resource>>,
+    span: Span,
   ) -> Result<StructuredOutput, RuntimeError>;
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError>;
   async fn wait_for_done(&self);

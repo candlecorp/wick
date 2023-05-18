@@ -104,7 +104,7 @@ async fn handle(
         break 'outer;
       }
     };
-    trace!(inputs = ?inputs, "http:inputs");
+
     if inputs.values().all(|v| v.is_done()) {
       break 'outer;
     }
@@ -114,7 +114,7 @@ async fn handle(
         let v = v
           .deserialize_generic()
           .map_err(|e| {
-            warn!(port=%k,error=%e, "http:input:deserialize");
+            invocation.trace(|| warn!(port=%k,error=%e, "http:input:deserialize"));
             e
           })
           .unwrap_or(Value::Null);
@@ -127,7 +127,6 @@ async fn handle(
       }
     }
     let inputs = Value::Object(inputs);
-    trace!(inputs = ?inputs, "http:inputs");
 
     let body = match opdef.body() {
       Some(body) => match body.render(&inputs) {
@@ -150,7 +149,7 @@ async fn handle(
       }
     };
     let request_url = baseurl.join(&append_path).unwrap();
-    trace!(url= %request_url, "http:sending request");
+    invocation.trace(|| trace!(url= %request_url, "initiating request"));
 
     let request = match opdef.method() {
       HttpMethod::Get => Request::new(Method::GET, request_url),
@@ -181,8 +180,6 @@ async fn handle(
     }
     let (client, request) = request_builder.build_split();
     let request = request.unwrap();
-
-    trace!(?request,body=?request.body().map(|b|b.as_bytes()), "http:client:request");
 
     let response = match client.execute(request).await {
       Ok(r) => r,
@@ -312,7 +309,7 @@ fn output_task(
             return;
           }
         };
-        trace!(json = %json, "http:response");
+
         let _ = tx.send(Packet::encode("body", json));
         let _ = tx.send(Packet::done("body"));
       }

@@ -44,7 +44,7 @@ pub(crate) async fn base_setup(
     Box::new(test::TestComponent::new()),
   )])
   .unwrap();
-  let invocation = Invocation::new(Entity::test("test"), entity, None);
+  let invocation = Invocation::test("test", entity, None)?;
 
   let mut interpreter = Interpreter::new(
     Some(Seed::unsafe_new(1)),

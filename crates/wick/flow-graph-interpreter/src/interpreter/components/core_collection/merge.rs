@@ -4,7 +4,7 @@ use flow_component::{ComponentError, Context, Operation};
 use futures::FutureExt;
 use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, StructSignature, TypeSignature};
-use wick_packet::{Packet, PacketStream, StreamMap};
+use wick_packet::{Invocation, Packet, PacketStream, StreamMap};
 
 use crate::BoxFuture;
 pub(crate) struct Op {}
@@ -48,6 +48,7 @@ impl Operation for Op {
   type Config = Config;
   fn handle(
     &self,
+    _invocation: Invocation,
     stream: PacketStream,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
@@ -100,7 +101,7 @@ mod test {
   use flow_component::panic_callback;
   use serde_json::json;
   use tokio_stream::StreamExt;
-  use wick_packet::packet_stream;
+  use wick_packet::{packet_stream, Entity};
 
   use super::*;
 
@@ -114,8 +115,9 @@ mod test {
     let config = serde_json::json!({ "inputs": inputs });
     let config = Op::decode_config(Some(config.try_into()?))?;
     let stream = packet_stream!(("input_a", "hello"), ("input_b", 1000));
+    let inv = Invocation::test(file!(), Entity::test("noop"), None)?;
     let mut packets = op
-      .handle(stream, Context::new(config, None, panic_callback()))
+      .handle(inv, stream, Context::new(config, None, panic_callback()))
       .await?
       .collect::<Vec<_>>()
       .await;

@@ -47,7 +47,11 @@ pub(crate) struct RpcInvokeCommand {
   args: Vec<String>,
 }
 
-pub(crate) async fn handle(opts: RpcInvokeCommand, _settings: wick_settings::Settings) -> Result<()> {
+pub(crate) async fn handle(
+  opts: RpcInvokeCommand,
+  _settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<()> {
   let mut client = wick_rpc::make_rpc_client(
     format!("http://{}:{}", opts.connection.address, opts.connection.port),
     opts.connection.pem,
@@ -105,10 +109,10 @@ pub(crate) async fn handle(opts: RpcInvokeCommand, _settings: wick_settings::Set
       tx.send(Packet::done(port))?;
     }
 
-    let invocation = Invocation::new(origin, target, inherent_data);
-    trace!("issuing invocation");
+    let invocation = Invocation::new(origin, target, inherent_data, &span);
+    span.in_scope(|| trace!("issuing invocation"));
     let stream = client.invoke(invocation, stream).await?;
-    trace!("server responsed");
+    span.in_scope(|| trace!("server responsed"));
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
 

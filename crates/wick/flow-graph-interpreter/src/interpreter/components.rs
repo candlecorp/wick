@@ -51,7 +51,7 @@ impl HandlerMap {
   }
 
   pub(crate) fn add_core(&mut self, network: &Network) -> Result<(), InterpreterError> {
-    self.add(NamespaceHandler::new(NS_CORE, Box::new(CoreCollection::new(network))))
+    self.add(NamespaceHandler::new(NS_CORE, Box::new(CoreCollection::new(network)?)))
   }
 
   #[must_use]
@@ -74,7 +74,6 @@ impl HandlerMap {
   }
 
   pub fn add(&mut self, component: NamespaceHandler) -> Result<(), InterpreterError> {
-    trace!(namespace = %component.namespace, "adding component");
     if self.components.contains_key(&component.namespace) {
       return Err(InterpreterError::DuplicateNamespace(component.namespace));
     }

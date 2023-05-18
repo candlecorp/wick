@@ -243,6 +243,7 @@ impl TryFrom<rpc::Invocation> for wick_packet::Invocation {
         seed: d.seed,
         timestamp: d.timestamp,
       }),
+      span: tracing::Span::current(),
     })
   }
 }

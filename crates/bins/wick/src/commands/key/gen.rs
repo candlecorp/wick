@@ -16,7 +16,8 @@ pub(crate) struct KeyGenCommand {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: KeyGenCommand, _settings: wick_settings::Settings) -> Result<()> {
+pub(crate) async fn handle(opts: KeyGenCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
+  let _enter = span.enter();
   debug!("Generating {} key", crate::keys::keypair_type_to_string(&opts.keytype));
 
   let kp = KeyPair::new(opts.keytype);

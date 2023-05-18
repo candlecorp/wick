@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 mod utils;
-use tracing::debug;
+use tracing::{debug, Span};
 use wick_config::config::AppConfiguration;
 use wick_config::WickConfiguration;
 use wick_runtime::resources::Resource;
@@ -39,7 +39,9 @@ async fn basic_cli() -> Result<()> {
       let loader = loader()?;
       let inner = loader.clone();
       let resources = resources.clone();
-      inner.run(name, app_config, config, resources.clone()).await?;
+      inner
+        .run(name, app_config, config, resources.clone(), Span::current())
+        .await?;
     }
     _ => {
       panic!("could not find trigger {}", &trigger_config.kind());
@@ -49,6 +51,8 @@ async fn basic_cli() -> Result<()> {
 }
 
 mod integration_test {
+  use tracing::Span;
+
   use super::*;
   #[test_logger::test(tokio::test)]
   async fn cli_with_db() -> Result<()> {
@@ -68,7 +72,9 @@ mod integration_test {
         let inner = loader.clone();
         let resources = resources.clone();
         tokio::spawn(async move {
-          let _ = inner.run(name, app_config, config, resources.clone()).await;
+          let _ = inner
+            .run(name, app_config, config, resources.clone(), Span::current())
+            .await;
           inner.wait_for_done().await;
         })
       }

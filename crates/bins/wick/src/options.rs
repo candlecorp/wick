@@ -21,8 +21,8 @@ pub(crate) struct LoggingOptions {
   pub(crate) trace: bool,
 
   /// The endpoint to send jaeger-format traces.
-  #[clap(long = "jaeger-endpoint", short = 'j', env = "OTEL_EXPORTER_JAEGER_ENDPOINT", action)]
-  pub(crate) jaeger_endpoint: Option<String>,
+  #[clap(long = "otlp", env = "OTLP_ENDPOINT", action)]
+  pub(crate) otlp_endpoint: Option<String>,
 
   /// The application doing the logging.
   #[clap(skip)]
@@ -31,16 +31,14 @@ pub(crate) struct LoggingOptions {
 
 impl LoggingOptions {
   /// Set the name of the application doing the logging.
-  pub(crate) fn name(&self, name: impl AsRef<str>) -> Self {
-    Self {
-      app_name: name.as_ref().to_owned(),
-      ..self.clone()
-    }
+  pub(crate) fn name(&mut self, name: impl AsRef<str>) -> &mut Self {
+    self.app_name = name.as_ref().to_owned();
+    self
   }
 }
 
-impl From<LoggingOptions> for wick_logger::LoggingOptions {
-  fn from(value: LoggingOptions) -> Self {
+impl From<&LoggingOptions> for wick_logger::LoggingOptions {
+  fn from(value: &LoggingOptions) -> Self {
     Self {
       verbose: value.verbose == 1,
       silly: value.verbose == 2,
@@ -55,9 +53,17 @@ impl From<LoggingOptions> for wick_logger::LoggingOptions {
       },
       log_json: false,
       log_dir: None,
-      jaeger_endpoint: value.jaeger_endpoint,
-      app_name: value.app_name,
+      otlp_endpoint: value.otlp_endpoint.clone(),
+      app_name: value.app_name.clone(),
+      global: false,
     }
+  }
+}
+
+impl From<&mut LoggingOptions> for wick_logger::LoggingOptions {
+  fn from(value: &mut LoggingOptions) -> Self {
+    let v: &LoggingOptions = value;
+    v.into()
   }
 }
 
@@ -77,8 +83,8 @@ pub(crate) fn apply_log_settings(settings: &wick_settings::Settings, options: &m
   if settings.trace.modifier == wick_settings::LogModifier::Silly {
     options.verbose = 2;
   }
-  if options.jaeger_endpoint.is_none() {
-    options.jaeger_endpoint = settings.trace.jaeger.clone();
+  if options.otlp_endpoint.is_none() {
+    options.otlp_endpoint = settings.trace.otlp.clone();
   }
 }
 

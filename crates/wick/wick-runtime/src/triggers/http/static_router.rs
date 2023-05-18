@@ -7,23 +7,26 @@ use futures::future::BoxFuture;
 use hyper::service::Service;
 use hyper::{Body, Method, Request, Response};
 use hyper_staticfile::{resolve_path, ResolveResult, ResponseBuilder};
+use tracing::Span;
 
 use super::{HttpError, RawRouter};
 use crate::Runtime;
-
-static ID: &str = "wick:http:static";
 
 #[derive()]
 #[must_use]
 pub(super) struct StaticRouter {
   handler: Static,
+  #[allow(unused)]
+  span: Span,
 }
 
 impl StaticRouter {
   pub(super) fn new(root: PathBuf, strip: Option<String>, fallback: Option<String>) -> Self {
-    debug!(directory = %root.display(), "{}: serving", ID);
+    let span = debug_span!("http:static");
+
+    span.in_scope(|| debug!(directory = %root.display(), "serving"));
     let handler = Static::new(root, strip, fallback);
-    Self { handler }
+    Self { handler, span }
   }
 }
 
@@ -88,7 +91,13 @@ impl Static {
 
     let path = strip.map_or_else(
       || request.uri().path(),
-      |path| request.uri().path().trim_start_matches(&path),
+      |path| {
+        if path.len() > 1 {
+          request.uri().path().trim_start_matches(&path)
+        } else {
+          request.uri().path()
+        }
+      },
     );
 
     let result = resolve_path(root.clone(), path).await;

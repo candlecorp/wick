@@ -27,7 +27,7 @@ wick-oci-utils = { workspace = true }
 wick-package = { workspace = true }
 wick-logger = { workspace = true }
 seeded-random = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
 tracing = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }

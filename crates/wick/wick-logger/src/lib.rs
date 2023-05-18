@@ -98,7 +98,7 @@ pub use options::{LogLevel, LoggingOptions};
 /// The main Logger module.
 mod logger;
 
-pub use crate::logger::{init, init_defaults, init_test, LoggingGuard};
+pub use crate::logger::{init, init_test, with_default, LoggingGuard};
 
 #[macro_use]
 extern crate tracing;

@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use structured_output::StructuredOutput;
 use tokio_stream::StreamExt;
+use tracing::{Instrument, Span};
 use wick_packet::{packet_stream, Entity, Invocation};
 
 use super::{build_trigger_runtime, resolve_ref, Trigger, TriggerKind};
@@ -55,11 +56,11 @@ impl Cli {
       Entity::server("cli_channel"),
       Entity::operation(cli_binding.id(), config.operation().operation()),
       None,
+      &Span::current(),
     );
-    let mut runtime = build_trigger_runtime(&app_config)?;
-
+    let mut runtime = build_trigger_runtime(&app_config, Span::current())?;
     runtime.add_import(cli_binding);
-    let runtime = runtime.build().await?;
+    let runtime = runtime.build(None).await?;
 
     let is_interactive = IsInteractive {
       stdin: atty::is(atty::Stream::Stdin),
@@ -72,7 +73,7 @@ impl Cli {
     let mut response = runtime.invoke(invocation, packet_stream, None).await?;
     let output = loop {
       if let Some(packet) = response.next().await {
-        trace!(?packet, "rigger:cli:response");
+        trace!(?packet, "trigger:cli:response");
         match packet {
           Ok(p) => {
             if p.port() == "code" && p.has_data() {
@@ -109,6 +110,7 @@ impl Trigger for Cli {
     app_config: AppConfiguration,
     config: TriggerDefinition,
     _resources: Arc<HashMap<String, Resource>>,
+    span: Span,
   ) -> Result<StructuredOutput, RuntimeError> {
     let config = if let TriggerDefinition::Cli(config) = config {
       config
@@ -128,7 +130,7 @@ impl Trigger for Cli {
     // Insert app name as the first argument.
     args.insert(0, name);
 
-    self.handle(app_config, config, args).await?;
+    self.handle(app_config, config, args).instrument(span).await?;
 
     Ok(StructuredOutput::default())
   }

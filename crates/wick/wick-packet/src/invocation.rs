@@ -1,5 +1,6 @@
 use std::time::SystemTime;
 
+use tracing::{debug_span, Span};
 use uuid::Uuid;
 
 use crate::{Entity, InherentData, ParseError};
@@ -18,13 +19,22 @@ pub struct Invocation {
   pub tx_id: Uuid,
   /// Inherent data associated with the transaction.
   pub inherent: Option<InherentData>,
+  /// The trace span associated with the invocation.
+  pub span: Span,
 }
 
 impl Invocation {
   /// Creates an invocation with a new transaction id.
-  pub fn new(origin: impl Into<Entity>, target: impl Into<Entity>, inherent: Option<InherentData>) -> Invocation {
+  pub fn new(
+    origin: impl Into<Entity>,
+    target: impl Into<Entity>,
+    inherent: Option<InherentData>,
+    following_span: &Span,
+  ) -> Invocation {
     let tx_id = get_uuid();
     let invocation_id = get_uuid();
+    let span = debug_span!("invocation",id=%invocation_id,tx_id=%tx_id);
+    span.follows_from(following_span.id());
 
     Invocation {
       origin: origin.into(),
@@ -32,27 +42,29 @@ impl Invocation {
       id: invocation_id,
       tx_id,
       inherent,
+      span,
     }
   }
 
   /// Creates an invocation with a new transaction id.
-  pub fn try_new<O, T, OE, TE>(origin: O, target: T, inherent: Option<InherentData>) -> Result<Invocation, ParseError>
+  pub fn try_new<O, T, OE, TE>(
+    origin: O,
+    target: T,
+    inherent: Option<InherentData>,
+    following_span: &Span,
+  ) -> Result<Invocation, ParseError>
   where
     O: TryInto<Entity, Error = OE>,
     OE: std::error::Error + Send + Sync + 'static,
     T: TryInto<Entity, Error = TE>,
     TE: std::error::Error + Send + Sync + 'static,
   {
-    let tx_id = get_uuid();
-    let invocation_id = get_uuid();
-
-    Ok(Invocation {
-      origin: origin.try_into().map_err(|e| ParseError::Conversion(Box::new(e)))?,
-      target: target.try_into().map_err(|e| ParseError::Conversion(Box::new(e)))?,
-      id: invocation_id,
-      tx_id,
+    Ok(Invocation::new(
+      origin.try_into().map_err(|e| ParseError::Conversion(Box::new(e)))?,
+      target.try_into().map_err(|e| ParseError::Conversion(Box::new(e)))?,
       inherent,
-    })
+      following_span,
+    ))
   }
 
   /// Creates an invocation with a new transaction id.
@@ -61,22 +73,20 @@ impl Invocation {
     T: TryInto<Entity, Error = TE>,
     TE: std::error::Error + Send + Sync + 'static,
   {
-    let tx_id = get_uuid();
-    let invocation_id = get_uuid();
-
-    Ok(Invocation {
-      origin: Entity::test(name),
-      target: target.try_into().map_err(|e| ParseError::Conversion(Box::new(e)))?,
-      id: invocation_id,
-      tx_id,
+    Ok(Invocation::new(
+      Entity::test(name),
+      target.try_into().map_err(|e| ParseError::Conversion(Box::new(e)))?,
       inherent,
-    })
+      &Span::current(),
+    ))
   }
 
   /// Creates an invocation with a specific transaction id, to correlate a chain of
   /// invocations.
   pub fn next_tx(&self, origin: Entity, target: Entity) -> Invocation {
     let invocation_id = get_uuid();
+    let span = debug_span!("invocation",id=%invocation_id);
+    span.follows_from(&self.span);
 
     Invocation {
       origin,
@@ -90,6 +100,7 @@ impl Invocation {
           .unwrap()
           .as_millis() as u64,
       }),
+      span,
     }
   }
 
@@ -115,6 +126,11 @@ impl Invocation {
   #[must_use]
   pub fn origin_url(&self) -> String {
     self.origin.url()
+  }
+
+  /// Do work within this invocation's trace span.
+  pub fn trace<F: FnOnce() -> T, T>(&self, f: F) -> T {
+    self.span.in_scope(f)
   }
 }
 

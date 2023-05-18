@@ -53,7 +53,6 @@ impl std::fmt::Debug for Transaction {
 
 #[allow(clippy::too_many_arguments)]
 impl Transaction {
-  #[instrument(skip_all, name = "tx_new")]
   pub(crate) fn new(
     schematic: Arc<Schematic>,
     mut invocation: Invocation,
@@ -133,11 +132,11 @@ impl Transaction {
     outputs_done
   }
 
-  #[instrument(parent = &self.span, skip_all, name = "tx_start", fields(id = %self.id()))]
   pub(crate) async fn start(&mut self, options: &InterpreterOptions) -> Result<()> {
     self.stats.mark("start");
     self.stats.start("execution");
-    trace!("starting transaction");
+    self.span.in_scope(|| trace!("starting transaction"));
+
     self.start_time = Instant::now();
 
     for instance in self.instances.iter() {
@@ -237,7 +236,6 @@ impl Transaction {
 
   pub(crate) async fn emit_output_message(&self, packets: Vec<Packet>) -> Result<()> {
     for packet in packets {
-      trace!(?packet, "emitting tx output");
       self.output.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
     }
 
@@ -302,8 +300,6 @@ impl Transaction {
   }
 
   pub(crate) async fn handle_schematic_output(&self) -> Result<()> {
-    debug!("schematic output");
-
     self.emit_output_message(self.take_tx_output()?).await?;
 
     Ok(())

@@ -164,7 +164,7 @@ where
   }
 
   pub fn add_input<T: AsStr>(&mut self, port: T) -> PortReference {
-    let port_ref = match self.kind {
+    match self.kind {
       NodeKind::Output(_) => {
         self.outputs.add(&port, self.index);
         self.inputs.add(&port, self.index)
@@ -174,15 +174,7 @@ where
         panic!("You can not manually add inputs to {} nodes", self.kind);
       }
       NodeKind::External(_) => self.inputs.add(&port, self.index),
-    };
-    trace!(
-      index = self.index,
-      port = port.as_ref(),
-      node = self.id(),
-      r#ref = %port_ref,
-      "added input port"
-    );
-    port_ref
+    }
   }
 
   pub(crate) fn connect_input(&mut self, port: PortIndex, connection: ConnectionIndex) -> Result<(), Error> {
@@ -217,7 +209,7 @@ where
   }
 
   pub fn add_output<T: AsStr>(&mut self, port: T) -> PortReference {
-    let port_ref = match self.kind {
+    match self.kind {
       NodeKind::Input(_) | NodeKind::Inherent(_) => {
         self.inputs.add(&port, self.index);
         self.outputs.add(&port, self.index)
@@ -227,16 +219,7 @@ where
         panic!("You can not manually add outputs to {} nodes", self.kind);
       }
       NodeKind::External(_) => self.outputs.add(&port, self.index),
-    };
-    trace!(
-      index = self.index,
-      port = port.as_ref(),
-      node = self.id(),
-      r#ref = %port_ref,
-      "added output port"
-    );
-
-    port_ref
+    }
   }
 
   pub(crate) fn connect_output(&mut self, port: PortIndex, connection: ConnectionIndex) -> Result<(), Error> {

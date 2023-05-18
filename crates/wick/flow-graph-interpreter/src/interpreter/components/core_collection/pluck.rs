@@ -1,7 +1,7 @@
 use flow_component::{ComponentError, Context, Operation};
 use futures::{FutureExt, StreamExt};
 use wick_interface_types::{operation, OperationSignature};
-use wick_packet::{Packet, PacketStream, StreamMap};
+use wick_packet::{Invocation, Packet, PacketStream, StreamMap};
 
 use crate::BoxFuture;
 pub(crate) struct Op {
@@ -39,6 +39,7 @@ impl Operation for Op {
   type Config = Config;
   fn handle(
     &self,
+    _invocation: Invocation,
     stream: PacketStream,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
@@ -89,7 +90,7 @@ impl Operation for Op {
 mod test {
   use anyhow::Result;
   use flow_component::panic_callback;
-  use wick_packet::packet_stream;
+  use wick_packet::{packet_stream, Entity};
 
   use super::*;
 
@@ -107,8 +108,9 @@ mod test {
         "dont_pluck_this": "unused",
       })
     ));
+    let inv = Invocation::test(file!(), Entity::test("noop"), None)?;
     let mut packets = op
-      .handle(stream, Context::new(config, None, panic_callback()))
+      .handle(inv, stream, Context::new(config, None, panic_callback()))
       .await?
       .collect::<Vec<_>>()
       .await;

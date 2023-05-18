@@ -75,7 +75,7 @@ impl Component for SchematicComponent {
     _config: Option<wick_packet::OperationConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    trace!(target = %invocation.target, namespace = NS_SELF);
+    invocation.trace(|| trace!(target = %invocation.target, namespace = NS_SELF));
 
     let operation = invocation.target.operation_id().to_owned();
     let fut = self
@@ -93,7 +93,6 @@ impl Component for SchematicComponent {
         )
       })
       .ok_or_else(|| Error::SchematicNotFound(operation.clone()));
-    trace!(%operation, "operation");
 
     Box::pin(async move {
       let span = trace_span!("ns_self", name = %operation);

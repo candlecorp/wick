@@ -484,7 +484,7 @@ pub(crate) struct StaticRouter {
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) volume: String,
-  /// Fallback path (relative to &#x60;path&#x60;) for files to serve in case of a 404. Useful for SPA&#x27;s. if path: /www and fallback: index.html, then a 404 will serve /www/index.html
+  /// Fallback path (relative to volume &#x60;resource&#x60;) for files to serve in case of a 404. Useful for SPA&#x27;s. if volume resource is: /www and fallback: index.html, then a 404 will serve /www/index.html
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]

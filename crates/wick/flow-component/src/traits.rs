@@ -34,6 +34,7 @@ pub trait Operation {
   type Config: std::fmt::Debug + DeserializeOwned + Serialize + Send + Sync + 'static;
   fn handle(
     &self,
+    invocation: Invocation,
     payload: PacketStream,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>>;
@@ -51,13 +52,14 @@ pub type RuntimeCallback = dyn Fn(
     PacketStream,
     Option<InherentData>,
     Option<OperationConfig>,
+    &tracing::Span,
   ) -> BoxFuture<'static, Result<PacketStream, ComponentError>>
   + Send
   + Sync;
 
 #[must_use]
 pub fn panic_callback() -> Arc<RuntimeCallback> {
-  Arc::new(|_, _, _, _, _| {
+  Arc::new(|_, _, _, _, _, _| {
     Box::pin(async move {
       panic!("Panic callback invoked. This should never happen outside of tests.");
     })

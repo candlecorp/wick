@@ -10,11 +10,11 @@ pub async fn init_engine_from_yaml(path: &str, timeout: Duration) -> anyhow::Res
   let host_def = WickConfiguration::load_from_file(path).await?.try_component_config()?;
   debug!("Manifest loaded");
 
-  let builder = RuntimeBuilder::from_definition(host_def)?
+  let builder = RuntimeBuilder::from_definition(host_def)
     .namespace("__TEST__")
     .timeout(timeout);
 
-  let engine = builder.build().await?;
+  let engine = builder.build(None).await?;
 
   let nuid = engine.uid;
   Ok((engine, nuid))
@@ -50,7 +50,7 @@ pub async fn base_test(
 
   let result = engine
     .invoke(
-      Invocation::new(Entity::test("simple schematic"), target, Some(inherent)),
+      Invocation::test("simple schematic", target, Some(inherent))?,
       stream,
       None,
     )

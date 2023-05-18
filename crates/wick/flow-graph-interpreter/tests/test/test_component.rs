@@ -8,7 +8,7 @@ use futures::{Future, StreamExt};
 use seeded_random::{Random, Seed};
 use tokio::spawn;
 use tokio::task::JoinHandle;
-use tracing::trace;
+use tracing::{trace, Span};
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::{ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{fan_out, packet_stream, ComponentReference, Invocation, Packet, PacketStream};
@@ -213,7 +213,9 @@ fn handler(
           let link: ComponentReference = component.deserialize().unwrap();
           let message: String = message.deserialize().unwrap();
           let packets = packet_stream!(("input", message));
-          let mut response = callback(link, "reverse".to_owned(), packets, None, None).await.unwrap();
+          let mut response = callback(link, "reverse".to_owned(), packets, None, None, &Span::current())
+            .await
+            .unwrap();
           while let Some(Ok(res)) = response.next().await {
             defer(vec![send(res.set_port("output"))]);
           }
