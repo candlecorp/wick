@@ -106,14 +106,12 @@ impl WickConfiguration {
   }
 
   pub fn load_from_bytes(bytes: &[u8], source: &Option<PathBuf>) -> Result<Self, Error> {
-    debug!(source=?source,"Trying to parse manifest bytes as yaml");
     let string = &String::from_utf8(bytes.to_vec()).map_err(|_| Error::Utf8)?;
 
     resolve_configuration(string, source)
   }
 
   pub fn from_yaml(src: &str, source: &Option<PathBuf>) -> Result<Self, Error> {
-    debug!(source=?source,"Trying to parse manifest as yaml");
     resolve_configuration(src, source)
   }
 
@@ -222,7 +220,6 @@ impl WickConfiguration {
 fn resolve_configuration(src: &str, source: &Option<PathBuf>) -> Result<WickConfiguration, Error> {
   let raw: serde_yaml::Value = from_yaml(src, source)?;
 
-  debug!("Yaml parsed successfully");
   let raw_version = raw.get("format");
   let raw_kind = raw.get("kind");
   let version = if raw_kind.is_some() {
@@ -234,7 +231,7 @@ fn resolve_configuration(src: &str, source: &Option<PathBuf>) -> Result<WickConf
       .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) })
   };
   // re-parse the yaml into the correct version from string again for location info.
-  let manifest = match version {
+  match version {
     0 => {
       let host_config = serde_yaml::from_str::<v0::HostManifest>(src)
         .map_err(|e| Error::YamlError(source.clone(), e.to_string(), e.location()))?;
@@ -251,10 +248,7 @@ fn resolve_configuration(src: &str, source: &Option<PathBuf>) -> Result<WickConf
     }
     -1 => Err(Error::NoFormat),
     _ => Err(Error::VersionError(version.to_string())),
-  };
-
-  debug!("Manifest: {:?}", manifest);
-  manifest
+  }
 }
 
 pub(crate) fn make_resolver(

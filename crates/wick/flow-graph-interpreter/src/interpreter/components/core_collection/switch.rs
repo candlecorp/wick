@@ -4,9 +4,10 @@ use std::sync::Arc;
 use flow_component::{ComponentError, Context, Operation};
 use futures::{FutureExt, StreamExt};
 use parking_lot::Mutex;
+use serde_json::Value;
 use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, TypeSignature};
-use wick_packet::{ComponentReference, Entity, PacketSender, PacketStream};
+use wick_packet::{ComponentReference, Entity, Invocation, PacketSender, PacketStream};
 
 use crate::constants::NS_CORE;
 use crate::graph::types::Network;
@@ -34,7 +35,7 @@ pub(crate) struct Config {
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub(crate) struct SwitchCase {
-  case: String,
+  case: Value,
   #[serde(rename = "do")]
   case_do: String,
 }
@@ -48,7 +49,10 @@ fn gen_signature(id: &str, graph: &Network, config: Config) -> OperationSignatur
       "Invalid switch configuration: default operation '{}' not found.",
       default_op_path
     );
-    panic!();
+    panic!(
+      "Invalid switch configuration: default operation '{}' not found.",
+      default_op_path
+    );
   });
   let case_ops = config
     .cases
@@ -105,6 +109,7 @@ impl Operation for Op {
   #[allow(clippy::too_many_lines)]
   fn handle(
     &self,
+    invocation: Invocation,
     mut stream: PacketStream,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
@@ -164,11 +169,12 @@ impl Operation for Op {
             &default
           },
           |case| {
-            trace!(case = case.case, op = case.case_do, "switch:case");
+            trace!(case = %case.case, op = case.case_do, "switch:case");
             &case.case_do
           },
         );
         trace!(operation = op, "core:switch:route");
+        let span = invocation.span.clone();
         let stream = router.entry(op.clone()).or_insert_with(|| {
           let target = path_to_entity(op).unwrap(); // unwrap ok because the config has been pre-validated.
           let op_id = target.operation_id().to_owned();
@@ -177,7 +183,7 @@ impl Operation for Op {
           let tx = tx.clone();
           let callback = callback.clone();
           tokio::spawn(async move {
-            match callback(link, op_id, route_rx, None, None).await {
+            match callback(link, op_id, route_rx, None, None, &span).await {
               Ok(mut call_rx) => {
                 while let Some(packet) = call_rx.next().await {
                   let _ = tx.send_result(packet);

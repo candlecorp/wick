@@ -63,7 +63,7 @@ pub(crate) struct InvokeCommand {
   args: Vec<String>,
 }
 
-pub(crate) async fn handle(opts: InvokeCommand, _settings: wick_settings::Settings) -> Result<()> {
+pub(crate) async fn handle(opts: InvokeCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
   // let mut logging = &mut opts.logging;
   // if !(opts.info || logging.trace || logging.debug) {
   //   logging.quiet = true;
@@ -90,9 +90,8 @@ pub(crate) async fn handle(opts: InvokeCommand, _settings: wick_settings::Settin
 
   let component = opts.operation;
 
-  let host_builder = ComponentHostBuilder::from_definition(config);
+  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 
-  let mut host = host_builder.build();
   host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
@@ -154,7 +153,7 @@ pub(crate) async fn handle(opts: InvokeCommand, _settings: wick_settings::Settin
     for port in seen_ports {
       packets.push(Ok(Packet::done(port)));
     }
-    debug!(args= ?packets, "wick:invoke");
+    debug!(args= ?packets, "invoke");
     let stream = PacketStream::new(futures::stream::iter(packets));
 
     let stream = host.request(&component, stream, inherent_data).await?;

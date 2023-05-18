@@ -14,7 +14,12 @@ pub(crate) struct KeyListCommand {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: KeyListCommand, _settings: wick_settings::Settings) -> Result<()> {
+pub(crate) async fn handle(
+  opts: KeyListCommand,
+  _settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<()> {
+  let _enter = span.enter();
   debug!("Listing keys");
   let (dir, keys) = get_key_files(opts.directory)?;
   info!("Listing keys in {}", dir.to_string_lossy());

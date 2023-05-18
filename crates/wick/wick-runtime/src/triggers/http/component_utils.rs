@@ -9,6 +9,7 @@ use hyper::http::{HeaderName, HeaderValue};
 use hyper::{Body, Request, Response, StatusCode};
 use serde_json::{Map, Value};
 use tokio_stream::StreamExt;
+use tracing::Span;
 use wick_config::config::components::Codec;
 use wick_packet::{packets, Entity, Invocation, Observer, Packet, PacketStream};
 
@@ -24,7 +25,7 @@ pub(super) async fn handle(
   req: Request<Body>,
 ) -> Result<PacketStream, HttpError> {
   let (tx, rx) = PacketStream::new_channels();
-  let invocation = Invocation::new(Entity::server("http_client"), target, None);
+  let invocation = Invocation::new(Entity::server("http_client"), target, None, &Span::current());
   let stream = engine
     .invoke(invocation, rx, None)
     .await

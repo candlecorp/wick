@@ -4,7 +4,6 @@ use std::sync::Arc;
 use asset_container::Asset;
 use flow_component::BoxFuture;
 use parking_lot::RwLock;
-use tracing::trace;
 use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::TypeDefinition;
 
@@ -53,7 +52,6 @@ pub(crate) async fn setup_cache(
   mut init: Vec<TypeDefinition>,
   options: FetchOptions,
 ) -> Result<(), ManifestError> {
-  trace!("manifest:cache:setup");
   if cached_types.read().is_some() {
     return Ok(());
   }

@@ -2,7 +2,7 @@ use wick_host::{ComponentHostBuilder, Error};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-  let mut host = ComponentHostBuilder::new().build();
+  let mut host = ComponentHostBuilder::new().build().unwrap();
   host.start(None).await?;
 
   println!("Host started, waiting for ctrl-c / SIGINT");

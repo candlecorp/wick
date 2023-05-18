@@ -14,7 +14,7 @@ use crate::{Runtime, RuntimeBuilder};
 pub(crate) async fn init_engine_from_yaml(path: &str) -> Result<(Runtime, uuid::Uuid)> {
   let def = WickConfiguration::load_from_file(path).await?.try_component_config()?;
 
-  let engine = RuntimeBuilder::from_definition(def)?.build().await?;
+  let engine = RuntimeBuilder::from_definition(def).build(None).await?;
 
   let engine_id = engine.uid;
   trace!(engine_id = %engine_id, "engine uid");

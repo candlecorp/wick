@@ -27,9 +27,9 @@ pub struct Settings {
 #[serde(deny_unknown_fields)]
 /// Logging configuration.
 pub struct TraceSettings {
-  /// Jaeger Telemetry endpoint.
+  /// OTLP endpoint endpoint.
   #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub jaeger: Option<String>,
+  pub otlp: Option<String>,
   /// Logging level.
   #[serde(default)]
   pub level: LogLevel,
@@ -122,6 +122,7 @@ impl Default for LogModifier {
 
 impl Settings {
   pub fn new() -> Self {
+    let _span = tracing::debug_span!("settings").entered();
     let extensions = vec!["yaml", "yml"];
 
     let mut config_locations = Vec::new();
@@ -132,7 +133,7 @@ impl Settings {
 
     tracing::debug!(
       paths = ?config_locations.iter().map(|v| format!("{}.({})",v,extensions.join(","))).collect::<Vec<_>>(),
-      "wick:settings: searching for config files"
+      "searching for config files"
     );
 
     let mut files = Vec::new();
@@ -145,25 +146,25 @@ impl Settings {
           match std::fs::read_to_string(&path) {
             Ok(src) => match serde_yaml::from_str::<Settings>(&src) {
               Ok(mut settings) => {
-                debug!(file=%path.display(),"wick:settings: found config");
+                debug!(file=%path.display(),"found config");
                 settings.source = Some(path.clone());
                 files.push(settings);
 
                 break; // only load the first one, fix when merging is implemented.
               }
               Err(e) => {
-                warn!(error=%e,file=%path.display(),"wick:settings: failed to parse config");
+                warn!(error=%e,file=%path.display(),"failed to parse config");
               }
             },
             Err(e) => {
-              warn!(error=%e,file=%path.display(),"wick:settings: failed to read config");
+              warn!(error=%e,file=%path.display(),"failed to read config");
             }
           };
         }
       }
     }
 
-    debug!("wick:settings: loaded");
+    debug!("loaded");
 
     // You can deserialize (and thus freeze) the entire configuration as
     if !files.is_empty() {

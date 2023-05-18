@@ -48,12 +48,12 @@ async fn run_unit<'a>(
   let prefix = |msg: &str| format!("{}: {}", test_name, msg);
 
   trace!(i, %entity, "invoke");
-  let invocation = Invocation::new(Entity::test(&test_name), entity, inherent);
+  let invocation = Invocation::new(Entity::test(&test_name), entity, inherent, &tracing::Span::current());
   let fut = component.handle(
     invocation,
     stream,
     def.test.config().cloned(),
-    std::sync::Arc::new(|_, _, _, _, _| panic!()),
+    std::sync::Arc::new(|_, _, _, _, _, _| panic!()),
   );
   let fut = tokio::time::timeout(Duration::from_secs(5), fut);
   let result = fut

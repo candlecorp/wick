@@ -9,7 +9,7 @@ use std::sync::Arc;
 use flow_component::{Component, RuntimeCallback};
 use flow_graph_interpreter::NamespaceHandler;
 use seeded_random::{Random, Seed};
-use tracing::Span;
+use tracing::Instrument;
 use uuid::Uuid;
 use wick_component_wasm::error::LinkError;
 use wick_config::config::components::{ManifestComponent, WasmComponent};
@@ -37,16 +37,19 @@ type Result<T> = std::result::Result<T, ComponentError>;
 
 type ComponentInitResult = std::result::Result<NamespaceHandler, EngineError>;
 
-pub(crate) async fn init_wasm_component<'a, 'b>(
-  kind: &'a WasmComponent,
+pub(crate) async fn init_wasm_component(
+  kind: &WasmComponent,
   namespace: String,
-  opts: ComponentInitOptions<'b>,
+  opts: ComponentInitOptions,
   provided: HashMap<String, String>,
 ) -> ComponentInitResult {
-  trace!(namespace = %namespace, ?opts, "registering wasm component");
+  opts
+    .span
+    .in_scope(|| trace!(namespace = %namespace, ?opts, "registering wasm component"));
 
-  let component =
-    wick_component_wasm::helpers::load_wasm(kind.reference(), opts.allow_latest, &opts.allowed_insecure).await?;
+  let component = wick_component_wasm::helpers::load_wasm(kind.reference(), opts.allow_latest, &opts.allowed_insecure)
+    .instrument(opts.span.clone())
+    .await?;
 
   // TODO take max threads from configuration
   let collection = Arc::new(
@@ -57,6 +60,7 @@ pub(crate) async fn init_wasm_component<'a, 'b>(
       None,
       Some(make_link_callback(opts.runtime_id)),
       provided,
+      opts.span,
     )
     .await?,
   );
@@ -66,16 +70,19 @@ pub(crate) async fn init_wasm_component<'a, 'b>(
   Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
-pub(crate) async fn init_wasmrs_component<'a, 'b>(
-  kind: &'a WasmComponentImplementation,
+pub(crate) async fn init_wasmrs_component(
+  kind: &WasmComponentImplementation,
   namespace: String,
-  opts: ComponentInitOptions<'b>,
+  opts: ComponentInitOptions,
   provided: HashMap<String, String>,
 ) -> ComponentInitResult {
-  trace!(namespace = %namespace, ?opts, "registering wasmrs component");
+  opts
+    .span
+    .in_scope(|| trace!( namespace = %namespace, ?opts, "registering wasmrs component"));
 
-  let component =
-    wick_component_wasm::helpers::load_wasm(kind.reference(), opts.allow_latest, &opts.allowed_insecure).await?;
+  let component = wick_component_wasm::helpers::load_wasm(kind.reference(), opts.allow_latest, &opts.allowed_insecure)
+    .instrument(opts.span.clone())
+    .await?;
 
   // TODO take max threads from configuration
   let collection = Arc::new(
@@ -86,6 +93,7 @@ pub(crate) async fn init_wasmrs_component<'a, 'b>(
       None,
       Some(make_link_callback(opts.runtime_id)),
       provided,
+      opts.span,
     )
     .await?,
   );
@@ -94,30 +102,22 @@ pub(crate) async fn init_wasmrs_component<'a, 'b>(
 
   Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
+
 pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
-  Arc::new(move |compref, op, stream, inherent, config| {
+  Arc::new(move |compref, op, stream, inherent, config, span| {
     let origin_url = compref.get_origin_url();
     let target_id = compref.get_target_id().to_owned();
+    let invocation = compref.to_invocation(&op, inherent, span);
+    invocation.trace(|| {
+      debug!(
+        origin = %origin_url,
+        target = %target_id,
+        engine_id = %engine_id,
+        "link_call"
+      );
+    });
     Box::pin(async move {
       {
-        debug!(
-          origin = %origin_url,
-          target = %target_id,
-          engine_id = %engine_id,
-          "link_call"
-        );
-        let invocation = compref.to_invocation(&op, inherent);
-
-        // let target = Entity::from_str(&target_id).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
-        // let origin = Entity::from_str(&origin_url).map_err(|e| LinkError::EntityFailure(e.to_string()))?;
-        // if let Entity::Operation(origin_ns, _) = &origin {
-        //   if let Entity::Operation(target_ns, _) = &target {
-        //     if target_ns == origin_ns {
-        //       return Err(LinkError::Circular(target_ns.clone()));
-        //     }
-        //   }
-        // }
-
         let result = engine_invoke_async(engine_id, invocation, stream, config)
           .await
           .map_err(|e| flow_component::ComponentError::new(LinkError::CallFailure(e.to_string())))?;
@@ -127,18 +127,20 @@ pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
   })
 }
 
-pub(crate) async fn init_manifest_component<'a, 'b>(
-  kind: &'a ManifestComponent,
+pub(crate) async fn init_manifest_component(
+  kind: &ManifestComponent,
   id: String,
-  mut opts: ComponentInitOptions<'b>,
-  span: &Span,
+  mut opts: ComponentInitOptions,
 ) -> ComponentInitResult {
-  trace!(namespace = %id, ?opts, "registering composite component");
+  opts
+    .span
+    .in_scope(|| trace!(namespace = %id, ?opts, "registering composite component"));
 
   let options = FetchOptions::new()
     .allow_latest(opts.allow_latest)
     .allow_insecure(&opts.allowed_insecure);
   let manifest = WickConfiguration::fetch(kind.reference().path()?.to_string_lossy(), options)
+    .instrument(opts.span.clone())
     .await?
     .try_component_config()?;
 
@@ -164,7 +166,7 @@ pub(crate) async fn init_manifest_component<'a, 'b>(
       Ok(comp)
     }
     config::ComponentImplementation::Composite(_) => {
-      let _engine = RuntimeService::init_child(uuid, manifest, Some(id.clone()), opts, span).await?;
+      let _engine = RuntimeService::init_child(uuid, manifest, Some(id.clone()), opts).await?;
 
       let component = Arc::new(engine_component::EngineComponent::new(uuid));
       let service = NativeComponentService::new(component);

@@ -44,7 +44,7 @@ impl SchematicExecutor {
     self_component: Arc<dyn Component + Send + Sync>,
     callback: Arc<RuntimeCallback>,
   ) -> Result<PacketStream> {
-    debug!(schematic = self.name(), ?invocation,);
+    invocation.trace(|| debug!(schematic = self.name(), ?invocation,));
 
     let seed = invocation.seed().map_or(seed, Seed::unsafe_new);
 
@@ -58,7 +58,6 @@ impl SchematicExecutor {
       callback,
       seed,
     );
-    trace!(tx_id = %transaction.id(), "invoking schematic");
     let stream = transaction.take_stream().unwrap();
     self.channel.dispatch_start(Box::new(transaction)).await;
     Ok(stream)

@@ -20,7 +20,7 @@ mod slow_test {
       .await?
       .try_app_config()?;
 
-    let mut host = AppHostBuilder::from_definition(app_config.clone()).build();
+    let mut host = AppHostBuilder::default().manifest(app_config.clone()).build()?;
     host.start(None)?;
     debug!("Waiting on triggers to finish or interrupt...");
     // host.wait_for_done().await?;

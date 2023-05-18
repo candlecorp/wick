@@ -291,7 +291,6 @@ impl Asset for AssetReference {
     let path = self.path();
     let location = self.location().to_owned();
 
-    debug!(path = ?path, "fetching asset");
     let cache_location = self.cache_location.clone();
     Box::pin(async move {
       let path = path.map_err(|e| assets::Error::Parse(e.to_string()))?;
@@ -301,6 +300,7 @@ impl Asset for AssetReference {
       }
       let file = tokio::fs::File::open(&pb).await;
       if file.is_ok() {
+        debug!(path = ?path, "fetching local asset");
         let mut file = tokio::fs::File::open(&path)
           .await
           .map_err(|err| assets::Error::FileOpen(path.clone(), err.to_string()))?;
@@ -308,6 +308,7 @@ impl Asset for AssetReference {
         file.read_to_end(&mut bytes).await?;
         Ok(bytes)
       } else {
+        debug!(path = ?path, "fetching remote asset");
         let (cache_loc, bytes) = retrieve_remote(&location, options)
           .await
           .map_err(|err| assets::Error::FileOpen(path.clone(), err.to_string()))?;

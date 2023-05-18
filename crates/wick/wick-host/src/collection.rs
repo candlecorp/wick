@@ -72,6 +72,7 @@ mod tests {
   use anyhow::Result as TestResult;
   use flow_component::panic_callback;
   use tokio_stream::StreamExt;
+  use wick_config::WickConfiguration;
   use wick_packet::{packet_stream, Entity, Packet};
 
   use super::*;
@@ -79,15 +80,20 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
-    let builder = ComponentHostBuilder::from_manifest_url("./manifests/logger.yaml", false, &[]).await?;
-    let mut host = builder.build();
+    let manifest = WickConfiguration::fetch("./manifests/logger.yaml", Default::default())
+      .await?
+      .try_component_config()?;
+    let mut builder = ComponentHostBuilder::default();
+    builder.manifest(manifest);
+
+    let mut host = builder.build()?;
     host.start(Some(0)).await?;
     let collection = HostComponent::new(host);
     let input = "Hello world";
 
     let job_payload = packet_stream![("input", input)];
 
-    let invocation = Invocation::new(Entity::test(file!()), Entity::local("logger"), None);
+    let invocation = Invocation::test(file!(), Entity::local("logger"), None)?;
     let mut outputs = collection
       .handle(invocation, job_payload, None, panic_callback())
       .await?;

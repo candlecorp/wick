@@ -101,7 +101,8 @@ fn expand_logging_init() -> Tokens {
         level: crate::LogLevel::Trace,
         silly: true,
         app_name: "test".to_owned(),
-        jaeger_endpoint: std::env::var("OTEL_EXPORTER_JAEGER_ENDPOINT").ok(),
+        otlp_endpoint: std::env::var("OTLP_ENDPOINT").ok(),
+        global:true,
         ..Default::default()
       });
     },
@@ -114,7 +115,8 @@ fn expand_logging_init() -> Tokens {
             level: #ident::LogLevel::Trace,
             silly: true,
             app_name: "test".to_owned(),
-            jaeger_endpoint: std::env::var("OTEL_EXPORTER_JAEGER_ENDPOINT").ok(),
+            otlp_endpoint: std::env::var("OTLP_ENDPOINT").ok(),
+            global:true,
             ..Default::default()
           });
 

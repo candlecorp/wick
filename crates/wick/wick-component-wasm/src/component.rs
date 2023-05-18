@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
+use tracing::Span;
 use wasmrs_host::WasiParams;
 use wick_config::config::components::Permissions;
 use wick_packet::{Entity, Invocation, OperationConfig, PacketStream};
@@ -23,16 +24,13 @@ pub struct WasmComponent {
 }
 
 fn permissions_to_wasi_params(perms: &Permissions) -> WasiParams {
-  debug!(params=?perms, "Collection permissions");
   let preopened_dirs = perms.dirs().values().cloned().collect();
   let map_dirs = perms.dirs().clone().into_iter().collect();
-  let params = WasiParams {
+  WasiParams {
     map_dirs,
     preopened_dirs,
     ..Default::default()
-  };
-  debug!(?params, "WASI configuration");
-  params
+  }
 }
 
 impl WasmComponent {
@@ -43,22 +41,23 @@ impl WasmComponent {
     additional_config: Option<Permissions>,
     callback: Option<Arc<RuntimeCallback>>,
     provided: HashMap<String, String>,
+    span: Span,
   ) -> Result<Self, Error> {
-    let mut builder = WasmHostBuilder::new();
+    let mut builder = WasmHostBuilder::new(span.clone());
 
     let name = module.name().clone().unwrap_or_else(|| module.id().clone());
 
     // If we're passed a "wasi" field in the config map...
     if let Some(config) = config {
-      debug!(id=%name, config=?config, "wasi enabled");
+      span.in_scope(|| debug!(id=%name, config=?config, "wasi enabled"));
       builder = builder.wasi_params(permissions_to_wasi_params(&config));
     } else if let Some(opts) = additional_config {
       // if we were passed wasi params, use those.
-      debug!(id=%name, config=?opts, "wasi enabled");
+      span.in_scope(|| debug!(id=%name, config=?opts, "wasi enabled"));
 
       builder = builder.wasi_params(permissions_to_wasi_params(&opts));
     } else {
-      debug!(id = %name, "wasi disabled");
+      span.in_scope(|| debug!(id = %name, "wasi disabled"));
     }
     builder = builder.max_threads(max_threads);
 
@@ -81,7 +80,7 @@ impl Component for WasmComponent {
     data: Option<OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    trace!(target = %invocation.target, config=?data, "wasm invoke");
+    invocation.trace(|| trace!(target = %invocation.target, config=?data, "wasm invoke"));
 
     let outputs = self.host.call(invocation, stream, data);
 
@@ -89,18 +88,7 @@ impl Component for WasmComponent {
   }
 
   fn list(&self) -> &wick_interface_types::ComponentSignature {
-    let signature = self.host.get_operations();
-
-    trace!(
-      "WASM:COMPONENTS:[{}]",
-      signature
-        .operations
-        .iter()
-        .map(|op| op.name.clone())
-        .collect::<Vec<_>>()
-        .join(",")
-    );
-    signature
+    self.host.get_operations()
   }
 }
 
@@ -130,10 +118,11 @@ mod tests {
       2,
       None,
       None,
-      Some(Arc::new(|_, _, _, _, _| {
+      Some(Arc::new(|_, _, _, _, _, _| {
         Box::pin(async { Ok(packet_stream!(("test", "test"))) })
       })),
       Default::default(),
+      Span::current(),
     )
     .await?;
     Ok(c)

@@ -15,7 +15,12 @@ pub(crate) struct RegistryLoginCommand {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: RegistryLoginCommand, mut settings: wick_settings::Settings) -> Result<()> {
+pub(crate) async fn handle(
+  opts: RegistryLoginCommand,
+  mut settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<()> {
+  let _enter = span.enter();
   let creds = settings.credentials.iter_mut().find(|c| c.scope == opts.registry);
   println!(
     "Use your registry's UI (i.e. open {} in a browser) to retrieve a token and paste it below.\n",

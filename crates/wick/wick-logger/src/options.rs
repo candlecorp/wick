@@ -19,10 +19,13 @@ pub struct LoggingOptions {
   pub log_dir: Option<PathBuf>,
 
   /// The endpoint to send jaeger-format traces.
-  pub jaeger_endpoint: Option<String>,
+  pub otlp_endpoint: Option<String>,
 
   /// The application doing the logging.
   pub app_name: String,
+
+  /// Whether to install the global logger.
+  pub global: bool,
 }
 
 impl LoggingOptions {

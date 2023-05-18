@@ -47,7 +47,7 @@ impl FromStr for MarkupKind {
   }
 }
 
-pub(crate) async fn handle(opts: QueryCommand, _settings: wick_settings::Settings) -> Result<()> {
+pub(crate) async fn handle(opts: QueryCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
   let input = if let Some(path) = opts.path {
     match opts.kind {
       None => Transcoder::from_path(&path)?.to_json()?,
@@ -73,6 +73,7 @@ pub(crate) async fn handle(opts: QueryCommand, _settings: wick_settings::Setting
       Some(MarkupKind::Yaml) => Transcoder::new(Format::yaml(&markup)?)?.to_json()?,
     }
   };
+  let _enter = span.enter();
 
   let filter = &opts.query;
 

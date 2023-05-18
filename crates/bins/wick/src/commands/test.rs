@@ -36,7 +36,7 @@ pub(crate) struct TestCommand {
   filter: Vec<String>,
 }
 
-pub(crate) async fn handle(opts: TestCommand, _settings: wick_settings::Settings) -> Result<()> {
+pub(crate) async fn handle(opts: TestCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);
@@ -50,7 +50,7 @@ pub(crate) async fn handle(opts: TestCommand, _settings: wick_settings::Settings
 
   let config = merge_config(&config, &opts.oci, Some(server_options));
 
-  let mut host = ComponentHostBuilder::from_definition(config).build();
+  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
   host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;
 
   let component = Arc::new(wick_host::HostComponent::new(host));

@@ -20,6 +20,7 @@ use parking_lot::Mutex;
 use serde_json::json;
 use structured_output::StructuredOutput;
 use tokio::task::JoinHandle;
+use tracing::Span;
 use wick_config::config::components::Codec;
 use wick_config::config::{
   AppConfiguration,
@@ -73,24 +74,28 @@ struct HttpInstance {
 }
 
 impl HttpInstance {
-  async fn new(engine: Runtime, routers: Vec<HttpRouter>, socket: &SocketAddr) -> Self {
-    trace!(%socket,"http server starting");
+  async fn new(engine: Runtime, routers: Vec<HttpRouter>, initiating_span: &Span, socket: &SocketAddr) -> Self {
+    let span = debug_span!("http_server", %socket);
+    span.follows_from(initiating_span);
+
+    span.in_scope(|| trace!(%socket,"http server starting"));
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
     let (running_tx, running_rx) = tokio::sync::oneshot::channel::<()>();
-
-    let server = Server::bind(socket).serve(ServiceFactory::new(engine, routers));
+    let server = Server::bind(socket).serve(ServiceFactory::new(engine, routers, span.clone()));
+    let shutdown_span = span.clone();
     let handle = tokio::spawn(async move {
       let _ = server
         .with_graceful_shutdown(async move {
           match rx.await {
-            Ok(_) => trace!("http server received shutdown signal"),
-            Err(_) => trace!("http server shutdown signal dropped"),
+            Ok(_) => shutdown_span.in_scope(|| trace!("http server received shutdown signal")),
+            Err(_) => shutdown_span.in_scope(|| trace!("http server shutdown signal dropped")),
           }
-          trace!("http server shutting down");
+          shutdown_span.in_scope(|| trace!("http server shutting down"));
         })
         .await;
       let _ = running_tx.send(());
     });
+    span.in_scope(|| trace!(%socket,"http server started"));
 
     Self {
       handle,
@@ -152,15 +157,12 @@ struct RouterOperation {
 #[derive(Default)]
 pub(crate) struct Http {
   instance: Arc<Mutex<Option<HttpInstance>>>,
+  span: Option<Span>,
 }
 
 impl Http {
   pub(crate) fn load() -> Result<Arc<dyn Trigger + Send + Sync>, RuntimeError> {
-    Ok(Arc::new(Http::load_impl()?))
-  }
-
-  pub(crate) fn load_impl() -> Result<Http, RuntimeError> {
-    Ok(Self::default())
+    Ok(Arc::new(Self::default()))
   }
 
   async fn handle(
@@ -168,31 +170,36 @@ impl Http {
     app_config: AppConfiguration,
     config: config::HttpTriggerConfig,
     resources: Arc<HashMap<String, Resource>>,
+    span: Span,
     socket: &SocketAddr,
   ) -> Result<HttpInstance, RuntimeError> {
-    let mut rt = build_trigger_runtime(&app_config)?;
-    let mut routers = Vec::new();
+    let mut rt = build_trigger_runtime(&app_config, span.clone())?;
 
-    for (i, router) in config.routers().iter().enumerate() {
-      let (router_bindings, router, constraints) = match router {
-        config::HttpRouterConfig::RawRouter(r) => register_raw_router(i, &app_config, r)?,
-        config::HttpRouterConfig::StaticRouter(r) => register_static_router(i, resources.clone(), &app_config, r)?,
-        config::HttpRouterConfig::ProxyRouter(r) => register_proxy_router(i, resources.clone(), &app_config, r)?,
-        config::HttpRouterConfig::RestRouter(r) => register_rest_router(i, resources.clone(), &app_config, r)?,
-      };
-      for constraint in constraints {
-        rt.add_constraint(constraint);
+    let routers = span.in_scope(|| {
+      let mut routers = Vec::new();
+      for (i, router) in config.routers().iter().enumerate() {
+        let (router_bindings, router, constraints) = match router {
+          config::HttpRouterConfig::RawRouter(r) => register_raw_router(i, &app_config, r)?,
+          config::HttpRouterConfig::StaticRouter(r) => register_static_router(i, resources.clone(), &app_config, r)?,
+          config::HttpRouterConfig::ProxyRouter(r) => register_proxy_router(i, resources.clone(), &app_config, r)?,
+          config::HttpRouterConfig::RestRouter(r) => register_rest_router(i, resources.clone(), &app_config, r)?,
+        };
+        for constraint in constraints {
+          rt.add_constraint(constraint);
+        }
+        for binding in router_bindings {
+          rt.add_import(binding);
+        }
+
+        routers.push(router);
       }
-      for binding in router_bindings {
-        rt.add_import(binding);
-      }
+      debug!(?routers, "http routers");
+      Ok::<_, RuntimeError>(routers)
+    })?;
 
-      routers.push(router);
-    }
-    debug!(?routers, "http routers");
-    let engine = rt.build().await?;
+    let engine = rt.build(None).await?;
 
-    let instance = HttpInstance::new(engine, routers, socket).await;
+    let instance = HttpInstance::new(engine, routers, &span, socket).await;
 
     Ok(instance)
   }
@@ -368,8 +375,9 @@ impl Trigger for Http {
     app_config: AppConfiguration,
     config: config::TriggerDefinition,
     resources: Arc<HashMap<String, Resource>>,
+    span: Span,
   ) -> Result<StructuredOutput, RuntimeError> {
-    debug!(kind = %TriggerKind::Http, "trigger:run");
+    span.in_scope(|| debug!(kind = %TriggerKind::Http, "trigger:run"));
     let config = if let config::TriggerDefinition::Http(config) = config {
       config
     } else {
@@ -390,12 +398,11 @@ impl Trigger for Http {
       }
     };
 
-    let instance = self.handle(app_config, config, resources, &socket).await?;
+    let instance = self.handle(app_config, config, resources, span, &socket).await?;
     let output = StructuredOutput::new(
       format!("HTTP Server started on {}", instance.addr),
       json!({"ip": instance.addr.ip(),"port": instance.addr.port()}),
     );
-    info!("{}", output.lines());
 
     self.instance.lock().replace(instance);
 
@@ -403,7 +410,11 @@ impl Trigger for Http {
   }
 
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError> {
-    info!("HTTP server shutting down gracefully");
+    self
+      .span
+      .clone()
+      .unwrap_or_else(Span::current)
+      .in_scope(|| info!("HTTP server shutting down gracefully"));
     if self.instance.lock().is_none() {
       return Ok(());
     }
@@ -459,12 +470,18 @@ mod test {
       .await?
       .try_app_config()?;
 
-    let trigger = Http::load_impl()?;
+    let trigger = Http::default();
     let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
     let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
     let trigger_config = app_config.triggers()[0].clone();
     trigger
-      .run("test".to_owned(), app_config, trigger_config, resources)
+      .run(
+        "test".to_owned(),
+        app_config,
+        trigger_config,
+        resources,
+        Span::current(),
+      )
       .await?;
     let client = reqwest::Client::new();
     let res = client
@@ -491,12 +508,18 @@ mod test {
     let app_config = config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default())
       .await?
       .try_app_config()?;
-    let trigger = Http::load_impl()?;
+    let trigger = Http::default();
     let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
     let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
     let trigger_config = app_config.triggers()[0].clone();
     trigger
-      .run("test".to_owned(), app_config, trigger_config, resources)
+      .run(
+        "test".to_owned(),
+        app_config,
+        trigger_config,
+        resources,
+        Span::current(),
+      )
       .await?;
     let client = reqwest::Client::new();
     let res: serde_json::Value = client

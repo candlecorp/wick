@@ -20,7 +20,7 @@ pub(crate) struct ListCommand {
   pub(crate) json: bool,
 }
 
-pub(crate) async fn handle(opts: ListCommand, _settings: wick_settings::Settings) -> Result<()> {
+pub(crate) async fn handle(opts: ListCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);
@@ -35,10 +35,8 @@ pub(crate) async fn handle(opts: ListCommand, _settings: wick_settings::Settings
   // Disable everything but the mesh
   config.host_mut().set_rpc(None);
 
-  let host_builder = ComponentHostBuilder::from_definition(config);
+  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 
-  let mut host = host_builder.build();
-  // host.connect_to_mesh().await?;
   host.start_engine(None).await?;
   let signature = host.get_signature()?;
 

@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
+use tracing::Instrument;
 
 use crate::options::get_auth_for_scope;
 
@@ -20,13 +21,19 @@ pub(crate) struct RegistryPushCommand {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: RegistryPushCommand, settings: wick_settings::Settings) -> Result<()> {
-  debug!("Push artifact");
+pub(crate) async fn handle(
+  opts: RegistryPushCommand,
+  settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<()> {
+  span.in_scope(|| debug!("Push artifact"));
 
-  let mut package = wick_package::WickPackage::from_path(&opts.source).await?;
+  let mut package = wick_package::WickPackage::from_path(&opts.source)
+    .instrument(span.clone())
+    .await?;
 
   let Some(registry) =  package.registry() else  {
-      error!("No registry provided in package");
+      span.in_scope(||error!("No registry provided in package"));
       return Err(anyhow!("No registry provided in package"));
   };
 
@@ -46,19 +53,21 @@ pub(crate) async fn handle(opts: RegistryPushCommand, settings: wick_settings::S
 
   let reference = package.registry_reference().unwrap(); // unwrap OK because we know we have a reg from above.
 
-  info!(reference, "pushing artifact");
-  debug!(options=?oci_opts, reference= &reference, "pushing reference");
+  span.in_scope(|| info!(reference, "pushing artifact"));
+  span.in_scope(|| debug!(options=?oci_opts, reference= &reference, "pushing reference"));
 
   let url = package.push(&reference, &oci_opts).await?;
-  info!(%url, "artifact pushed");
+  span.in_scope(|| info!(%url, "artifact pushed"));
+
   if opts.latest {
     let reference = package.tagged_reference("latest").unwrap();
 
-    info!(reference, "pushing artifact");
-    debug!(options=?oci_opts, reference= &reference, "pushing reference");
+    span.in_scope(|| info!(reference, "pushing artifact"));
+
+    span.in_scope(|| debug!(options=?oci_opts, reference= &reference, "pushing reference"));
 
     let url = package.push(&reference, &oci_opts).await?;
-    info!(%url, "artifact pushed");
+    span.in_scope(|| info!(%url, "artifact pushed"));
   }
 
   Ok(())

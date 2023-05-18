@@ -52,6 +52,7 @@ url = { workspace = true }
 bytes = { workspace = true }
 hyper-staticfile = "0.9"
 hyper-reverse-proxy = "0.5"
+derive_builder = { workspace = true }
 
 [dev-dependencies]
 wick-invocation-server = { workspace = true }

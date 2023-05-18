@@ -104,7 +104,7 @@ fn register_operation(
           .map(|component| component.add_input(to.port()));
 
         if to_port.is_none() {
-          println!("Missing downstream: instance {:?}", to);
+          error!("Missing downstream: instance {:?}", to);
           return Err(flow_graph::error::Error::MissingDownstream(
             to.instance().id().unwrap().to_owned(),
           ));

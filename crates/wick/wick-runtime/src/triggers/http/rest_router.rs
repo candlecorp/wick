@@ -6,6 +6,7 @@ use futures::future::BoxFuture;
 use hyper::body::to_bytes;
 use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
+use tracing::{Instrument, Span};
 use wick_config::config::{ComponentOperationExpression, ImportBinding, RestRouterConfig};
 use wick_packet::{Entity, Invocation, Packet};
 mod route;
@@ -14,31 +15,35 @@ use super::{HttpError, RawRouter};
 use crate::triggers::http::component_utils::stream_to_json;
 use crate::Runtime;
 
-static ID: &str = "wick:http:rest";
-
 #[derive()]
 #[must_use]
 pub(super) struct RestRouter {
   routes: Arc<Vec<RestRoute>>,
   root: String,
+  span: Span,
 }
 
 impl RestRouter {
   pub(super) fn new(config: RestRouterConfig, routes: Vec<RestRoute>) -> Self {
+    let span = debug_span!("http:rest", path = %config.path());
+
     let title = config
       .info()
       .and_then(|i| i.title().cloned())
       .unwrap_or_else(|| "Untitled API".to_owned());
 
-    debug!(api = %title, path=%config.path(), "{}: serving", ID);
-    for route in &routes {
-      debug!(route = ?route.route, "{}: route", ID);
-    }
-    let routes = Arc::new(routes);
+    let routes = span.in_scope(|| {
+      debug!(api = %title, path=%config.path(), "serving");
+      for route in &routes {
+        debug!(route = ?route.route, "route");
+      }
+      Arc::new(routes)
+    });
 
     Self {
       routes,
       root: config.path().to_owned(),
+      span,
     }
   }
 }
@@ -50,7 +55,9 @@ impl RawRouter for RestRouter {
     runtime: Arc<Runtime>,
     request: Request<Body>,
   ) -> BoxFuture<Result<Response<Body>, HttpError>> {
-    let handler = RestHandler::new(self.root.clone(), self.routes.clone(), runtime);
+    let span = debug_span!("handling");
+    span.follows_from(&self.span);
+    let handler = RestHandler::new(self.root.clone(), self.routes.clone(), runtime, span);
     let fut = async move {
       let response = handler
         .serve(request)
@@ -67,17 +74,28 @@ struct RestHandler {
   routes: Arc<Vec<RestRoute>>,
   runtime: Arc<Runtime>,
   root: String,
+  span: Span,
 }
 
 impl RestHandler {
-  fn new(root: String, routes: Arc<Vec<RestRoute>>, runtime: Arc<Runtime>) -> Self {
-    RestHandler { runtime, routes, root }
+  fn new(root: String, routes: Arc<Vec<RestRoute>>, runtime: Arc<Runtime>, span: Span) -> Self {
+    RestHandler {
+      runtime,
+      routes,
+      root,
+      span,
+    }
   }
 
   /// Serve a request.
   #[allow(clippy::unused_async)]
   async fn serve(self, request: Request<Body>) -> Result<Response<Body>, HttpError> {
-    let Self { routes, runtime, root } = self;
+    let Self {
+      routes,
+      runtime,
+      root,
+      span,
+    } = self;
 
     for route in routes.iter() {
       if !route.config.methods().is_empty() && !route.config.methods().contains(&request.method().to_string()) {
@@ -87,7 +105,7 @@ impl RestHandler {
       let Some((path_params, query_params)) = route.route.compare(path, request.uri().query())? else {
         continue
       };
-      debug!(route = %request.uri(), "{}: handling", ID);
+      span.in_scope(|| debug!(route = %request.uri(), "handling"));
       let mut packets: Vec<_> = path_params
         .iter()
         .chain(query_params.iter())
@@ -109,14 +127,17 @@ impl RestHandler {
       for port in port_names {
         packets.push(Packet::done(port));
       }
+
       let invocation = Invocation::new(
         Entity::server("http_client"),
         Entity::operation(route.component.id(), route.operation.operation()),
         None,
+        &span,
       );
 
       let stream = runtime
         .invoke(invocation, packets.into(), None)
+        .instrument(span)
         .await
         .map_err(|e| HttpError::OperationError(e.to_string()))?;
       let json = stream_to_json(stream).await?;

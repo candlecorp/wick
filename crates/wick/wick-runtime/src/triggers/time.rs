@@ -12,6 +12,7 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use tokio::time::Duration;
 use tokio_stream::StreamExt;
+use tracing::Span;
 use wick_packet::{Entity, Packet};
 
 use super::{build_trigger_runtime, Trigger, TriggerKind};
@@ -35,6 +36,7 @@ async fn invoke_operation(
     Entity::server("schedule_client"),
     Entity::operation("0", operation.as_str()),
     None,
+    &Span::current(),
   );
 
   let mut response = runtime.invoke(invocation, packetstream, None).await?;
@@ -51,16 +53,17 @@ async fn create_schedule(
 ) -> tokio::task::JoinHandle<()> {
   // Create a scheduler loop
   tokio::spawn(async move {
+    let span = debug_span!("trigger:schedule", schedule = ?schedule);
     let schedule_component = match resolve_ref(&app_config, config.operation().component()) {
       Ok(component) => component,
       Err(err) => panic!("Unable to resolve component: {}", err),
     };
 
-    let mut runtime = build_trigger_runtime(&app_config).unwrap();
+    let mut runtime = build_trigger_runtime(&app_config, span.clone()).unwrap();
     let schedule_binding = config::ImportBinding::component("0", schedule_component);
     runtime.add_import(schedule_binding);
     // needed for invoke command
-    let runtime = runtime.build().await.unwrap();
+    let runtime = runtime.build(None).await.unwrap();
 
     let runtime = Arc::new(runtime);
     let operation = Arc::new(config.operation().operation().to_owned());
@@ -80,20 +83,21 @@ async fn create_schedule(
 
       // Calculate the duration until the next scheduled time
       let duration = next.signed_duration_since(Utc::now());
-      debug!("duration until next schedule: {:?}", duration);
+      span.in_scope(|| debug!("duration until next schedule: {:?}", duration));
 
       tokio::time::sleep(Duration::from_millis(duration.num_milliseconds() as u64)).await;
 
-      debug!("done sleeping");
+      span.in_scope(|| debug!("done sleeping"));
 
       let rt_clone = runtime.clone();
       let operation_clone = operation.clone();
       let payload_clone = payload.clone();
 
       let fut = invoke_operation(rt_clone, operation_clone, payload_clone);
+      let span = span.clone();
       tokio::spawn(async move {
         if let Err(e) = fut.await {
-          error!("Error invoking operation: {}", e);
+          span.in_scope(|| error!("Error invoking operation: {}", e));
         }
       });
     }
@@ -124,7 +128,6 @@ impl Time {
     app_config: AppConfiguration,
     config: TimeTriggerConfig,
   ) -> Result<StructuredOutput, RuntimeError> {
-    debug!("Self: {:?}", self);
     let cron = config.schedule().cron().to_owned();
 
     // Create a new cron schedule that runs every minute
@@ -158,6 +161,7 @@ impl Trigger for Time {
     app_config: AppConfiguration,
     config: TriggerDefinition,
     _resources: Arc<HashMap<String, Resource>>,
+    _span: Span,
   ) -> Result<StructuredOutput, RuntimeError> {
     let config = if let TriggerDefinition::Time(config) = config {
       config
@@ -206,7 +210,13 @@ mod test {
     let trigger = Time::load()?;
     let trigger_config = app_config.triggers()[0].clone();
     trigger
-      .run("test".to_owned(), app_config, trigger_config, Default::default())
+      .run(
+        "test".to_owned(),
+        app_config,
+        trigger_config,
+        Default::default(),
+        Span::current(),
+      )
       .await?;
     debug!("scheduler is running");
     trigger.wait_for_done().await;

@@ -35,7 +35,7 @@ impl Component for InternalCollection {
     _config: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL);
+    invocation.trace(|| trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL));
     let op = invocation.target.operation_id().to_owned();
 
     let is_oneshot = op == SCHEMATIC_INPUT || op == INTERNAL_ID_INHERENT;

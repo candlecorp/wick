@@ -8,7 +8,7 @@ use flow_graph_interpreter::{HandlerMap, InterpreterOptions, NamespaceHandler};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
-use tracing::{instrument, trace_span, Instrument, Span};
+use tracing::Span;
 use uuid::Uuid;
 use wick_config::config::{ComponentConfiguration, ComponentKind, Metadata};
 use wick_config::Resolver;
@@ -24,89 +24,41 @@ use crate::components::{
   make_link_callback,
 };
 use crate::dev::prelude::*;
-use crate::runtime::RuntimeConstraint;
+use crate::runtime::{RuntimeConstraint, RuntimeInit};
 use crate::{BoxFuture, V0_NAMESPACE};
 
 type Result<T> = std::result::Result<T, EngineError>;
 #[derive(Debug)]
 pub(crate) struct Initialize {
   pub(crate) id: Uuid,
-  pub(crate) manifest: ComponentConfiguration,
-  pub(crate) allowed_insecure: Vec<String>,
-  pub(crate) allow_latest: bool,
-  pub(crate) timeout: Duration,
-  pub(crate) native_components: ComponentRegistry,
-  pub(crate) namespace: Option<String>,
-  pub(crate) span: Span,
-  pub(crate) constraints: Vec<RuntimeConstraint>,
+  pub(crate) config: RuntimeInit,
   rng: Random,
 }
 
 impl Initialize {
-  #[allow(clippy::too_many_arguments)]
-  pub(crate) fn new(
-    rng_seed: Seed,
-    manifest: ComponentConfiguration,
-    allowed_insecure: Vec<String>,
-    allow_latest: bool,
-    timeout: Duration,
-    native_components: ComponentRegistry,
-    namespace: Option<String>,
-    constraints: Vec<RuntimeConstraint>,
-    span: Span,
-  ) -> Self {
-    let rng = Random::from_seed(rng_seed);
+  pub(crate) fn new(seed: Seed, config: RuntimeInit) -> Self {
+    let rng = Random::from_seed(seed);
     Self {
       id: rng.uuid(),
-      manifest,
-      allowed_insecure,
-      allow_latest,
-      timeout,
-      native_components,
-      namespace,
-      span,
-      constraints,
       rng,
+      config,
     }
   }
 
-  #[allow(clippy::too_many_arguments)]
-  pub(crate) fn new_with_id(
-    id: Uuid,
-    rng_seed: Seed,
-    manifest: ComponentConfiguration,
-    allowed_insecure: Vec<String>,
-    allow_latest: bool,
-    timeout: Duration,
-    native_components: ComponentRegistry,
-    namespace: Option<String>,
-    constraints: Vec<RuntimeConstraint>,
-    span: Span,
-  ) -> Self {
-    let rng = Random::from_seed(rng_seed);
-    Self {
-      id,
-      manifest,
-      allowed_insecure,
-      allow_latest,
-      timeout,
-      native_components,
-      namespace,
-      span,
-      constraints,
-      rng,
-    }
+  pub(crate) fn new_with_id(id: Uuid, seed: Seed, config: RuntimeInit) -> Self {
+    let rng = Random::from_seed(seed);
+    Self { id, config, rng }
   }
 
   fn component_init(&self) -> ComponentInitOptions {
     ComponentInitOptions {
       rng_seed: self.rng.seed(),
       runtime_id: self.id,
-      allow_latest: self.allow_latest,
-      allowed_insecure: self.allowed_insecure.clone(),
-      timeout: self.timeout,
-      resolver: self.manifest.resolver(),
-      span: &self.span,
+      allow_latest: self.config.allow_latest,
+      allowed_insecure: self.config.allowed_insecure.clone(),
+      timeout: self.config.timeout,
+      resolver: self.config.manifest.resolver(),
+      span: self.config.span.clone(),
     }
   }
 
@@ -116,7 +68,7 @@ impl Initialize {
 }
 
 #[must_use]
-pub type ComponentFactory = dyn Fn(Seed) -> Result<NamespaceHandler> + Send;
+pub type ComponentFactory = dyn Fn(Seed) -> Result<NamespaceHandler> + Send + Sync;
 
 #[derive()]
 pub(crate) struct ComponentRegistry(Vec<Box<ComponentFactory>>);
@@ -157,64 +109,66 @@ pub(crate) struct RuntimeService {
   pub(crate) id: Uuid,
   pub(super) namespace: String,
   interpreter: Arc<flow_graph_interpreter::Interpreter>,
-  span: Span,
 }
 
 type ServiceMap = HashMap<Uuid, Arc<RuntimeService>>;
 static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 impl RuntimeService {
-  #[instrument(skip(init), parent=&init.span)]
   pub(crate) async fn new(mut init: Initialize) -> Result<Arc<Self>> {
-    debug!("initializing engine service");
-    let graph = trace_span!(parent:&init.span,"schematic")
-      .in_scope(|| flow_graph_interpreter::graph::from_def(&mut init.manifest))?;
+    let span = init.config.span.clone();
+    let graph = init.config.span.in_scope(|| {
+      debug!("initializing engine service");
+      flow_graph_interpreter::graph::from_def(&mut init.config.manifest)
+    })?;
+
+    let config = &init.config;
 
     let mut components = HandlerMap::default();
-    let ns = init.namespace.clone().unwrap_or_else(|| init.id.to_string());
+    let ns = config.namespace.clone().unwrap_or_else(|| init.id.to_string());
 
-    if init.manifest.component().kind() == ComponentKind::Composite {
-      for native_comp in init.native_components.inner() {
+    if config.manifest.component().kind() == ComponentKind::Composite {
+      for native_comp in config.native_components.inner() {
         components
           .add(native_comp(init.seed())?)
-          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
+          .map_err(|e| EngineError::InterpreterInit(config.manifest.source().map(Into::into), Box::new(e)))?;
       }
     } else {
       let component_init = init.component_init();
-      let binding = config::ImportBinding::new(&ns, init.manifest.component().clone().into());
+      let binding = config::ImportBinding::new(&ns, config.manifest.component().clone().into());
 
       if let Some(main_component) = instantiate_import(&binding, component_init).await? {
         let reported_sig = main_component.component().list();
-        let manifest_sig = init.manifest.signature()?;
-        debug!("manifest_sig: {:?}", init.manifest);
+        let manifest_sig = config.manifest.signature()?;
+        span.in_scope(|| debug!("manifest_sig: {:?}", config.manifest));
 
         expect_signature_match(
-          init.manifest.source(),
+          config.manifest.source(),
           reported_sig,
-          init.manifest.source(),
+          config.manifest.source(),
           &manifest_sig,
         )?;
         main_component.expose();
 
-        debug!("Adding main component: {}", main_component.namespace());
+        span.in_scope(|| debug!("Adding main component: {}", main_component.namespace()));
         components
           .add(main_component)
-          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
+          .map_err(|e| EngineError::InterpreterInit(config.manifest.source().map(Into::into), Box::new(e)))?;
       }
     }
 
-    for component in init.manifest.import().values() {
+    for component in config.manifest.import().values() {
       let component_init = init.component_init();
       if let Some(p) = instantiate_import(component, component_init).await? {
         components
           .add(p)
-          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
+          .map_err(|e| EngineError::InterpreterInit(config.manifest.source().map(Into::into), Box::new(e)))?;
       }
     }
 
-    let source = init.manifest.source();
+    let source = config.manifest.source();
     let callback = make_link_callback(init.id);
-    assert_constraints(&init.constraints, &components)?;
+    assert_constraints(&config.constraints, &components)?;
 
     let mut interpreter = flow_graph_interpreter::Interpreter::new(
       Some(init.seed()),
@@ -222,12 +176,12 @@ impl RuntimeService {
       Some(ns.clone()),
       Some(components),
       callback,
-      &init.span,
+      &span,
     )
     .map_err(|e| EngineError::InterpreterInit(source.map(Into::into), Box::new(e)))?;
 
     let options = InterpreterOptions {
-      output_timeout: init.timeout,
+      output_timeout: config.timeout,
       ..Default::default()
     };
     interpreter.start(Some(options), None).await;
@@ -237,7 +191,6 @@ impl RuntimeService {
       id: init.id,
       namespace: ns,
       interpreter: Arc::new(interpreter),
-      span: init.span,
     });
 
     let mut registry = HOST_REGISTRY.lock();
@@ -246,34 +199,30 @@ impl RuntimeService {
     Ok(engine)
   }
 
-  pub(crate) fn init_child<'a, 'b>(
+  pub(crate) fn init_child(
     uid: Uuid,
     manifest: ComponentConfiguration,
     namespace: Option<String>,
-    opts: ComponentInitOptions<'b>,
-    span: &Span,
-  ) -> BoxFuture<'b, Result<Arc<RuntimeService>>>
-  where
-    'a: 'b,
-  {
-    let init = Initialize::new_with_id(
-      uid,
-      opts.rng_seed,
+    opts: ComponentInitOptions,
+  ) -> BoxFuture<'static, Result<Arc<RuntimeService>>> {
+    let child_span = debug_span!("child",id=%uid);
+    child_span.follows_from(opts.span);
+    let config = RuntimeInit {
       manifest,
-      opts.allowed_insecure,
-      opts.allow_latest,
-      opts.timeout,
-      ComponentRegistry::default(),
+      allow_latest: opts.allow_latest,
+      allowed_insecure: opts.allowed_insecure,
+      timeout: opts.timeout,
       namespace,
-      vec![],
-      debug_span!(parent: span, "child"),
-    );
+      constraints: Default::default(),
+      span: child_span,
+      native_components: ComponentRegistry::default(),
+    };
+    let init = Initialize::new_with_id(uid, opts.rng_seed, config);
 
     Box::pin(async move { RuntimeService::new(init).await })
   }
 
   pub(crate) fn for_id(id: &Uuid) -> Option<Arc<Self>> {
-    trace!(%id, "get engine service");
     let registry = HOST_REGISTRY.lock();
     registry.get(id).cloned()
   }
@@ -331,9 +280,8 @@ impl InvocationHandler for RuntimeService {
     config: Option<OperationConfig>,
   ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, ComponentError>>, ComponentError> {
     let tx_id = invocation.tx_id;
-    let span = debug_span!(parent: self.span.clone(), "invoke", tx_id = %tx_id);
 
-    let fut = self.interpreter.invoke(invocation, stream, config).instrument(span);
+    let fut = self.interpreter.invoke(invocation, stream, config);
     let task = async move {
       match fut.await {
         Ok(response) => Ok(InvocationResponse::Stream { tx_id, rx: response }),
@@ -351,7 +299,7 @@ impl InvocationHandler for RuntimeService {
 }
 
 #[derive()]
-pub(crate) struct ComponentInitOptions<'a> {
+pub(crate) struct ComponentInitOptions {
   pub(crate) rng_seed: Seed,
   pub(crate) runtime_id: Uuid,
   pub(crate) allow_latest: bool,
@@ -359,10 +307,10 @@ pub(crate) struct ComponentInitOptions<'a> {
   pub(crate) timeout: Duration,
   pub(crate) resolver: Box<Resolver>,
   #[allow(unused)]
-  pub(crate) span: &'a Span,
+  pub(crate) span: Span,
 }
 
-impl<'a> std::fmt::Debug for ComponentInitOptions<'a> {
+impl std::fmt::Debug for ComponentInitOptions {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("ComponentInitOptions")
       .field("rng_seed", &self.rng_seed)
@@ -374,23 +322,20 @@ impl<'a> std::fmt::Debug for ComponentInitOptions<'a> {
   }
 }
 
-pub(crate) async fn instantiate_import<'a, 'b>(
-  binding: &'a config::ImportBinding,
-  opts: ComponentInitOptions<'b>,
+pub(crate) async fn instantiate_import(
+  binding: &config::ImportBinding,
+  opts: ComponentInitOptions,
 ) -> Result<Option<NamespaceHandler>> {
-  debug!(?binding, ?opts, "initializing component");
+  opts.span.in_scope(|| debug!(?binding, ?opts, "initializing component"));
   let id = binding.id().to_owned();
-  let span = opts.span.clone();
   match binding.kind() {
     config::ImportDefinition::Component(c) => {
       match c {
         #[allow(deprecated)]
-        config::ComponentDefinition::Wasm(def) => Ok(Some(
-          init_wasm_component(def, id, opts, Default::default())
-            .instrument(span)
-            .await?,
-        )),
-        config::ComponentDefinition::Manifest(def) => Ok(Some(init_manifest_component(def, id, opts, &span).await?)),
+        config::ComponentDefinition::Wasm(def) => {
+          Ok(Some(init_wasm_component(def, id, opts, Default::default()).await?))
+        }
+        config::ComponentDefinition::Manifest(def) => Ok(Some(init_manifest_component(def, id, opts).await?)),
         config::ComponentDefinition::Reference(_) => unreachable!(),
         config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
         config::ComponentDefinition::HighLevelComponent(hlc) => {

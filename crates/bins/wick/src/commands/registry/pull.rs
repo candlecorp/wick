@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
+use tracing::Instrument;
 use wick_oci_utils::OciOptions;
 
 use crate::options::get_auth_for_scope;
@@ -44,7 +45,11 @@ pub(crate) async fn pull(reference: String, oci_opts: OciOptions) -> Result<wick
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: RegistryPullCommand, settings: wick_settings::Settings) -> Result<()> {
+pub(crate) async fn handle(
+  opts: RegistryPullCommand,
+  settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<()> {
   let configured_creds = settings
     .credentials
     .iter()
@@ -64,9 +69,9 @@ pub(crate) async fn handle(opts: RegistryPullCommand, settings: wick_settings::S
     .overwrite(opts.force)
     .base_dir(opts.output);
 
-  debug!(options=?oci_opts, reference= opts.reference, "pulling reference");
+  span.in_scope(|| debug!(options=?oci_opts, reference= opts.reference, "pulling reference"));
 
-  let pull_result = pull(opts.reference, oci_opts).await;
+  let pull_result = pull(opts.reference, oci_opts).instrument(span.clone()).await;
 
   for file in pull_result?.list_files() {
     info!("Pulled file: {}", file.path().display());

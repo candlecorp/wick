@@ -5,26 +5,27 @@ use std::task::{Context, Poll};
 use futures::future::BoxFuture;
 use hyper::service::Service;
 use hyper::{Body, Request, Response};
+use tracing::{Instrument, Span};
 use wick_packet::Entity;
 
 use super::component_utils::{handle, respond};
 use super::{HttpError, RawRouter, RouterOperation};
 use crate::Runtime;
 
-static ID: &str = "wick:http:raw";
-
 #[derive()]
 #[must_use]
 pub(super) struct RawComponentRouter {
   config: Arc<RouterOperation>,
+  span: Span,
 }
 
 impl RawComponentRouter {
   pub(super) fn new(config: RouterOperation) -> Self {
-    debug!(component = %config.operation, "{}: serving", ID);
+    let span = debug_span!("http:raw", component = %config.operation);
 
     Self {
       config: Arc::new(config),
+      span,
     }
   }
 }
@@ -37,9 +38,13 @@ impl RawRouter for RawComponentRouter {
     request: Request<Body>,
   ) -> BoxFuture<Result<Response<Body>, HttpError>> {
     let handler = RawHandler::new(self.config.clone(), runtime);
+    let span = debug_span!("handling");
+    span.follows_from(&self.span);
+
     let fut = async move {
       let response = handler
         .serve(request)
+        .instrument(span)
         .await
         .map_err(|e| HttpError::OperationError(e.to_string()))?;
       Ok(response)

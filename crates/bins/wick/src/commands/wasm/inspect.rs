@@ -13,7 +13,12 @@ pub(crate) struct WasmInspectCommand {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: WasmInspectCommand, _settings: wick_settings::Settings) -> Result<()> {
+pub(crate) async fn handle(
+  opts: WasmInspectCommand,
+  _settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<()> {
+  let _enter = span.enter();
   let mut file = File::open(opts.module)?;
   let mut buf = Vec::new();
   file.read_to_end(&mut buf)?;

@@ -18,7 +18,7 @@ pub struct Mesh(); // Dummy struct if "mesh" feature is not enabled
 #[cfg(feature = "reflection")]
 pub(crate) const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("../../wick-rpc/src/generated/descriptors.bin");
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[must_use]
 /// Metadata for the running server.
 pub struct ServerState {
@@ -30,6 +30,7 @@ pub struct ServerState {
 }
 
 /// Struct that holds control methods and metadata for a running service.
+#[derive(Clone)]
 pub struct ServerControl {
   /// The address of the RPC server.
   pub addr: SocketAddr,

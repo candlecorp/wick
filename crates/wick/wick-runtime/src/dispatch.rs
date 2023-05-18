@@ -75,7 +75,7 @@ mod tests {
 
     let target = Entity::operation("self", "echo");
     let stream = packet_stream![("input", "hello")];
-    let invocation = Invocation::new(Entity::test(file!()), target, None);
+    let invocation = Invocation::test(file!(), target, None)?;
 
     let packets = engine_invoke_async(nuid, invocation, stream, None).await?;
     let mut packets: Vec<_> = packets.collect().await;
@@ -87,16 +87,4 @@ mod tests {
 
     Ok(())
   }
-
-  // fn sync_send<T>()
-  // where
-  //   T: Sync + Send,
-  // {
-  // }
-
-  // #[test_logger::test]
-  // fn test_sync_send() -> Result<()> {
-  //   sync_send::<InvocationResponse>();
-  //   Ok(())
-  // }
 }

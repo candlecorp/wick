@@ -32,7 +32,7 @@ impl Component for NullComponent {
     _data: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    trace!(target = %invocation.target, namespace = NS_CORE);
+    invocation.trace(|| trace!(target = %invocation.target, namespace = NS_CORE));
     async move { Ok(PacketStream::empty()) }.boxed()
   }
 

@@ -54,7 +54,7 @@ impl std::fmt::Display for OperationInvalid {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,
-      "Schematic '{}' could not be validated: {}",
+      "Flow '{}' could not be validated: {}",
       self.schematic,
       self.errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", ")
     )

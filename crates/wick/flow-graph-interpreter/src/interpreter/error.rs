@@ -1,5 +1,6 @@
 use wick_packet::Entity;
 
+use super::components::core_collection::OpInitError;
 use super::executor::error::ExecutionError;
 use super::program::validator::error::{OperationInvalid, ValidationError};
 
@@ -21,6 +22,8 @@ pub enum Error {
   Shutdown(String),
   #[error("Namespace '{0}' already exists, can not overwrite")]
   DuplicateNamespace(String),
+  #[error(transparent)]
+  OperationInit(#[from] OpInitError),
 }
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
