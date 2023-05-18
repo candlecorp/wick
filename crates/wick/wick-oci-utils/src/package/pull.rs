@@ -146,7 +146,9 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
         .map_err(|e| Error::WriteFile(layer_path, e))?;
     }
 
-    if layer.media_type == media_types::APPLICATION || layer.media_type == media_types::COMPONENT {
+    if root_file.is_none()
+      && (layer.media_type == media_types::APPLICATION || layer.media_type == media_types::COMPONENT)
+    {
       root_file = Some(layer_title);
     }
   }
