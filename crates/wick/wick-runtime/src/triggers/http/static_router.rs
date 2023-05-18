@@ -46,7 +46,7 @@ impl RawRouter for StaticRouter {
   }
 }
 
-async fn create_response<B>(request: &Request<B>, result: ResolveResult) -> Result<Response<Body>, std::io::Error>
+fn create_response<B>(request: &Request<B>, result: ResolveResult) -> Result<Response<Body>, std::io::Error>
 where
   B: Send + Sync + 'static,
 {
@@ -82,7 +82,7 @@ impl Static {
     match *request.method() {
       Method::HEAD | Method::GET => {}
       _ => {
-        return create_response(&request, ResolveResult::MethodNotMatched).await;
+        return create_response(&request, ResolveResult::MethodNotMatched);
       }
     }
 
@@ -94,13 +94,13 @@ impl Static {
     let result = resolve_path(root.clone(), path).await;
 
     match result {
-      Ok(ResolveResult::Found(_, _, _)) => create_response(&request, result?).await,
+      Ok(ResolveResult::Found(_, _, _)) => create_response(&request, result?),
       _ => {
         if let Some(fb) = &fallback {
           let fallback_result = resolve_path(root.clone(), fb).await;
-          create_response(&request, fallback_result?).await
+          create_response(&request, fallback_result?)
         } else {
-          create_response(&request, result?).await
+          create_response(&request, result?)
         }
       }
     }
