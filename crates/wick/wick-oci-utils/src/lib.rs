@@ -103,6 +103,7 @@ pub use oci_distribution::client::ClientProtocol;
 pub use options::*;
 pub use pull::*;
 pub use push::*;
+use serde::{Deserialize, Serialize};
 pub use utils::{is_wick_package_reference, parse_reference, parse_reference_and_protocol};
 
 use crate::error::OciError;
@@ -118,6 +119,23 @@ pub const OCI_VAR_PASSWORD: &str = "OCI_PASSWORD";
 
 const WASM_MEDIA_TYPE: &str = oci_distribution::manifest::WASM_LAYER_MEDIA_TYPE;
 const LAYER_MEDIA_TYPE: &str = oci_distribution::manifest::IMAGE_LAYER_MEDIA_TYPE;
+
+/// This is the oci manifest config for Wick packages.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WickOciConfig {
+  pub kind: WickPackageKind,
+  pub root: String,
+}
+
+/// Represents the kind of Wick package.
+/// This is used to determine how to handle the package.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum WickPackageKind {
+  /// A Wick application package.
+  APPLICATION,
+  /// A Wick component package.
+  COMPONENT,
+}
 
 /// Retrieve a payload from an OCI url.
 pub async fn fetch_oci_bytes(img: &str, allow_latest: bool, allowed_insecure: &[String]) -> Result<Vec<u8>, OciError> {
