@@ -18,6 +18,7 @@ tokio = { workspace = true, features = ["fs"] }
 sha256 = { workspace = true }
 tar = { workspace = true }
 flate2 = { workspace = true }
+async-recursion = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

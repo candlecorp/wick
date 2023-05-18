@@ -41,10 +41,7 @@ mod integration_test {
     drop(package); // dropping it here to make sure tests use the clone `expected` instead.
 
     // Run the pull operation
-    let pulled_package_result = WickPackage::pull(&reference, &options).await;
-
-    assert!(pulled_package_result.is_ok(), "Failed to pull WickPackage");
-    let pulled_package = pulled_package_result.unwrap();
+    let pulled_package = WickPackage::pull(&reference, &options).await?;
 
     // Check if the pulled package is the same as the pushed one
     assert_eq!(

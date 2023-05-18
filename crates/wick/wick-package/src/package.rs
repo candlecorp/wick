@@ -1,9 +1,12 @@
+use std::collections::HashSet;
+use std::future::Future;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 
-use asset_container::{Asset, AssetFlags, AssetManager};
+use asset_container::{Asset, AssetFlags, AssetManager, Assets};
 use sha256::digest;
 use tokio::fs;
-use wick_config::config::RegistryConfig;
+use wick_config::config::{AssetReference, RegistryConfig};
 use wick_config::WickConfiguration;
 use wick_oci_utils::package::annotations::Annotations;
 use wick_oci_utils::package::{media_types, PackageFile};
@@ -11,6 +14,81 @@ use wick_oci_utils::OciOptions;
 
 use crate::utils::{create_tar_gz, metadata_to_annotations};
 use crate::{Error, WickPackageKind};
+
+fn process_assets<'a>(
+  mut seen_assets: HashSet<PathBuf>,
+  assets: Assets<'a, AssetReference>,
+  parent_dir: PathBuf,
+) -> Pin<Box<dyn Future<Output = Result<(HashSet<PathBuf>, Vec<PackageFile>), Error>> + Send + 'a>> {
+  let task = async move {
+    let mut wick_files: Vec<PackageFile> = Vec::new();
+    for asset in assets.iter() {
+      if asset.get_asset_flags() == AssetFlags::Lazy {
+        continue;
+      }
+      let pdir = parent_dir.clone();
+      asset.update_baseurl(&pdir);
+      let asset_path = asset.path()?; // the resolved, abolute path relative to the config location.
+      if seen_assets.contains(&asset_path) {
+        continue;
+      } else {
+        seen_assets.insert(asset_path.clone());
+      }
+
+      let path = asset.get_relative_part()?;
+
+      let options = wick_config::FetchOptions::default();
+      let media_type: &str;
+
+      match path.extension().and_then(|os_str| os_str.to_str()) {
+        Some("yaml" | "yml" | "wick") => {
+          let config = WickConfiguration::fetch(asset_path.to_string_lossy(), options.clone()).await;
+          match config {
+            Ok(WickConfiguration::App(_)) => {
+              media_type = media_types::APPLICATION;
+              let app_assets = asset.assets();
+
+              let (newly_seen, app_files) = process_assets(seen_assets, app_assets, parent_dir.clone()).await?;
+              seen_assets = newly_seen;
+              wick_files.extend(app_files);
+            }
+            Ok(WickConfiguration::Component(_)) => {
+              media_type = media_types::COMPONENT;
+              let component_assets = asset.assets();
+              let (newly_seen, component_files) =
+                process_assets(seen_assets, component_assets, parent_dir.clone()).await?;
+              seen_assets = newly_seen;
+              wick_files.extend(component_files);
+            }
+            Ok(WickConfiguration::Tests(_)) => {
+              media_type = media_types::TESTS;
+            }
+            Ok(WickConfiguration::Types(_)) => {
+              media_type = media_types::TYPES;
+            }
+            Err(_) => {
+              media_type = media_types::OTHER;
+            }
+          }
+        }
+        Some("wasm") => {
+          media_type = media_types::WASM;
+        }
+        _ => {
+          media_type = media_types::OTHER;
+        }
+      }
+
+      let file_bytes = asset.bytes(&options).await?;
+      let hash = format!("sha256:{}", digest(file_bytes.as_ref()));
+      let wick_file = PackageFile::new(path, hash, media_type.to_owned(), file_bytes);
+      wick_files.push(wick_file);
+    }
+
+    Ok((seen_assets, wick_files))
+  };
+  Box::pin(task)
+}
 
 /// Represents a Wick package, including its files and metadata.
 #[derive(Debug, Clone)]
@@ -112,52 +190,9 @@ impl WickPackage {
     }
 
     //populate wick_files
-    for asset in assets.iter() {
-      if asset.get_asset_flags() == AssetFlags::Lazy {
-        continue;
-      }
-      asset.update_baseurl(&parent_dir);
-      let asset_path = asset.path()?; // the resolved, abolute path relative to the config location.
-
-      let path = asset.get_relative_part()?;
-
-      let options = wick_config::FetchOptions::default();
-      let media_type: &str;
-
-      match path.extension().and_then(|os_str| os_str.to_str()) {
-        Some("yaml" | "yml" | "wick") => {
-          let config = WickConfiguration::fetch(asset_path.to_string_lossy(), options.clone()).await;
-          match config {
-            Ok(WickConfiguration::App(_)) => {
-              media_type = media_types::APPLICATION;
-            }
-            Ok(WickConfiguration::Component(_)) => {
-              media_type = media_types::COMPONENT;
-            }
-            Ok(WickConfiguration::Tests(_)) => {
-              media_type = media_types::TESTS;
-            }
-            Ok(WickConfiguration::Types(_)) => {
-              media_type = media_types::TYPES;
-            }
-            Err(_) => {
-              media_type = media_types::OTHER;
-            }
-          }
-        }
-        Some("wasm") => {
-          media_type = media_types::WASM;
-        }
-        _ => {
-          media_type = media_types::OTHER;
-        }
-      }
-
-      let file_bytes = asset.bytes(&options).await?;
-      let hash = format!("sha256:{}", digest(file_bytes.as_ref()));
-      let wick_file = PackageFile::new(path, hash, media_type.to_owned(), file_bytes);
-      wick_files.push(wick_file);
-    }
+    let (_, return_assets) = process_assets(Default::default(), assets, parent_dir.clone()).await?;
+    //merge return assets  vector to wick_files
+    wick_files.extend(return_assets);
 
     Ok(Self {
       kind,
