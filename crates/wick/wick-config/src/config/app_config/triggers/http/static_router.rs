@@ -9,4 +9,6 @@ pub struct StaticRouterConfig {
   pub(crate) path: String,
   #[asset(skip)]
   pub(crate) volume: String,
+  #[asset(skip)]
+  pub(crate) fallback: Option<String>,
 }

@@ -20,9 +20,9 @@ pub(super) struct StaticRouter {
 }
 
 impl StaticRouter {
-  pub(super) fn new(root: PathBuf, strip: Option<String>) -> Self {
+  pub(super) fn new(root: PathBuf, strip: Option<String>, fallback: Option<String>) -> Self {
     debug!(directory = %root.display(), "{}: serving", ID);
-    let handler = Static::new(root, strip);
+    let handler = Static::new(root, strip, fallback);
     Self { handler }
   }
 }
@@ -46,16 +46,30 @@ impl RawRouter for StaticRouter {
   }
 }
 
+fn create_response<B>(request: &Request<B>, result: ResolveResult) -> Result<Response<Body>, std::io::Error>
+where
+  B: Send + Sync + 'static,
+{
+  #[allow(clippy::expect_used)]
+  Ok(
+    ResponseBuilder::new()
+      .request(request)
+      .build(result)
+      .expect("unable to build response"),
+  )
+}
+
 #[derive(Clone)]
 struct Static {
   root: PathBuf,
   strip: Option<String>,
+  fallback: Option<String>,
 }
 
 impl Static {
-  fn new(root: impl Into<PathBuf>, strip: Option<String>) -> Self {
+  fn new(root: impl Into<PathBuf>, strip: Option<String>, fallback: Option<String>) -> Self {
     let root = root.into();
-    Static { root, strip }
+    Static { root, strip, fallback }
   }
 
   /// Serve a request.
@@ -63,18 +77,12 @@ impl Static {
   where
     B: Send + Sync + 'static,
   {
-    let Self { root, strip } = self;
+    let Self { root, strip, fallback } = self;
     // Handle only `GET`/`HEAD` and absolute paths.
     match *request.method() {
       Method::HEAD | Method::GET => {}
       _ => {
-        #[allow(clippy::expect_used)]
-        return Ok(
-          ResponseBuilder::new()
-            .request(&request)
-            .build(ResolveResult::MethodNotMatched)
-            .expect("unable to build response"),
-        );
+        return create_response(&request, ResolveResult::MethodNotMatched);
       }
     }
 
@@ -83,13 +91,19 @@ impl Static {
       |path| request.uri().path().trim_start_matches(&path),
     );
 
-    resolve_path(root, path).await.map(|result| {
-      #[allow(clippy::expect_used)]
-      ResponseBuilder::new()
-        .request(&request)
-        .build(result)
-        .expect("unable to build response")
-    })
+    let result = resolve_path(root.clone(), path).await;
+
+    match result {
+      Ok(ResolveResult::Found(_, _, _)) => create_response(&request, result?),
+      _ => {
+        if let Some(fb) = &fallback {
+          let fallback_result = resolve_path(root.clone(), fb).await;
+          create_response(&request, fallback_result?)
+        } else {
+          create_response(&request, result?)
+        }
+      }
+    }
   }
 }
 
