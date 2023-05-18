@@ -265,7 +265,10 @@ fn register_static_router(
       ))
     }
   };
-  let router = StaticRouter::new(volume, Some(router_config.path().to_owned()));
+
+  let fallback = router_config.fallback().cloned();
+
+  let router = StaticRouter::new(volume, Some(router_config.path().to_owned()), fallback);
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
   let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
   Ok((

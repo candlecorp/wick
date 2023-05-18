@@ -494,6 +494,7 @@ impl TryFrom<StaticRouterConfig> for v1::StaticRouter {
     Ok(Self {
       path: value.path,
       volume: value.volume,
+      fallback: value.fallback,
     })
   }
 }
@@ -1225,6 +1226,7 @@ impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
       v1::HttpRouter::StaticRouter(v) => Self::StaticRouter(StaticRouterConfig {
         path: v.path,
         volume: v.volume,
+        fallback: v.fallback,
       }),
       v1::HttpRouter::ProxyRouter(v) => Self::ProxyRouter(ProxyRouterConfig {
         path: v.path,
