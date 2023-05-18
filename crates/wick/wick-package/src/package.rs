@@ -13,13 +13,14 @@ use wick_oci_utils::package::{media_types, PackageFile};
 use wick_oci_utils::OciOptions;
 
 use crate::utils::{create_tar_gz, metadata_to_annotations};
-use crate::{Error, WickPackageKind};
+use crate::Error;
 
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 fn process_assets(
   mut seen_assets: HashSet<PathBuf>,
   assets: Assets<AssetReference>,
+  root_parent_dir: PathBuf,
   parent_dir: PathBuf,
 ) -> BoxFuture<Result<(HashSet<PathBuf>, Vec<PackageFile>), Error>> {
   let task = async move {
@@ -36,28 +37,37 @@ fn process_assets(
       }
       seen_assets.insert(asset_path.clone());
 
-      let path = asset.get_relative_part()?;
+      let relative_path = asset_path.strip_prefix(&root_parent_dir).unwrap_or(&asset_path);
 
       let options = wick_config::FetchOptions::default();
       let media_type: &str;
 
-      match path.extension().and_then(|os_str| os_str.to_str()) {
+      let new_parent_dir = asset_path
+        .parent()
+        .map_or_else(|| PathBuf::from("/"), |v| v.to_path_buf());
+
+      match relative_path.extension().and_then(|os_str| os_str.to_str()) {
         Some("yaml" | "yml" | "wick") => {
           let config = WickConfiguration::fetch(asset_path.to_string_lossy(), options.clone()).await;
           match config {
             Ok(WickConfiguration::App(config)) => {
               media_type = media_types::APPLICATION;
               let app_assets = config.assets();
-
-              let (newly_seen, app_files) = process_assets(seen_assets, app_assets, parent_dir.clone()).await?;
+              let (newly_seen, app_files) =
+                process_assets(seen_assets, app_assets, root_parent_dir.clone(), new_parent_dir.clone()).await?;
               seen_assets = newly_seen;
               wick_files.extend(app_files);
             }
             Ok(WickConfiguration::Component(config)) => {
               media_type = media_types::COMPONENT;
               let component_assets = config.assets();
-              let (newly_seen, component_files) =
-                process_assets(seen_assets, component_assets, parent_dir.clone()).await?;
+              let (newly_seen, component_files) = process_assets(
+                seen_assets,
+                component_assets,
+                root_parent_dir.clone(),
+                new_parent_dir.clone(),
+              )
+              .await?;
               seen_assets = newly_seen;
               wick_files.extend(component_files);
             }
@@ -82,7 +92,7 @@ fn process_assets(
 
       let file_bytes = asset.bytes(&options).await?;
       let hash = format!("sha256:{}", digest(file_bytes.as_ref()));
-      let wick_file = PackageFile::new(path, hash, media_type.to_owned(), file_bytes);
+      let wick_file = PackageFile::new(relative_path.to_path_buf(), hash, media_type.to_owned(), file_bytes);
       wick_files.push(wick_file);
     }
 
@@ -94,13 +104,14 @@ fn process_assets(
 /// Represents a Wick package, including its files and metadata.
 #[derive(Debug, Clone)]
 pub struct WickPackage {
-  kind: WickPackageKind,
+  kind: wick_oci_utils::WickPackageKind,
   name: String,
   version: String,
   files: Vec<PackageFile>,
   annotations: Annotations,
   absolute_path: PathBuf,
   registry: Option<RegistryConfig>,
+  root: String,
 }
 
 impl WickPackage {
@@ -134,7 +145,7 @@ impl WickPackage {
         let version = config.version();
         let annotations = metadata_to_annotations(&config.metadata());
         let media_type = media_types::APPLICATION;
-        let kind = WickPackageKind::APPLICATION;
+        let kind = wick_oci_utils::WickPackageKind::APPLICATION;
 
         extra_files = config.package_files().to_owned();
 
@@ -147,7 +158,7 @@ impl WickPackage {
         let version = config.version();
         let annotations = metadata_to_annotations(&config.metadata());
         let media_type = media_types::COMPONENT;
-        let kind = WickPackageKind::COMPONENT;
+        let kind = wick_oci_utils::WickPackageKind::COMPONENT;
 
         extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
 
@@ -173,6 +184,7 @@ impl WickPackage {
       root_bytes.into(),
     );
 
+    let root_file_path = path.file_name().unwrap().to_string_lossy().to_string();
     wick_files.push(root_file);
 
     //if length of extra_files is greater than 0, then we need create a tar of all the files
@@ -191,7 +203,7 @@ impl WickPackage {
     }
 
     //populate wick_files
-    let (_, return_assets) = process_assets(Default::default(), assets, parent_dir.clone()).await?;
+    let (_, return_assets) = process_assets(Default::default(), assets, parent_dir.clone(), parent_dir.clone()).await?;
     //merge return assets  vector to wick_files
     wick_files.extend(return_assets);
     trace!(files = ?wick_files.iter().map(|f| f.path()).collect::<Vec<_>>(),
@@ -206,6 +218,7 @@ impl WickPackage {
       annotations,
       absolute_path: full_path,
       registry,
+      root: root_file_path,
     })
   }
 
@@ -249,7 +262,10 @@ impl WickPackage {
   ///
   /// The username and password are optional. If not provided, the function falls back to anonymous authentication.
   pub async fn push(&mut self, reference: &str, options: &OciOptions) -> Result<String, Error> {
-    let config = crate::WickConfig { kind: self.kind };
+    let config = wick_oci_utils::WickOciConfig {
+      kind: self.kind,
+      root: self.root.clone(),
+    };
     let image_config_contents = serde_json::to_string(&config).unwrap();
     let files = self.files.drain(..).collect();
 
