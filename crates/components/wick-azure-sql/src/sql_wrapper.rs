@@ -83,34 +83,13 @@ impl<'a> FromSql<'a> for FromSqlWrapper {
         Value::Number(Number::from(v))
       }),
       ColumnData::Xml(_) => unimplemented!(),
-      ColumnData::DateTime(v) => v.map(|v| {
-        NaiveDateTime::new(
-          NaiveDate::from_num_days_from_ce_opt(v.days()).unwrap(),
-          NaiveTime::from_num_seconds_from_midnight_opt(v.seconds_fragments() / 300, 0).unwrap(),
-        )
-        .to_string()
-        .into()
-      }),
-      ColumnData::SmallDateTime(v) => v.map(|v| {
-        NaiveDateTime::new(
-          NaiveDate::from_num_days_from_ce_opt(v.days() as _).unwrap(),
-          NaiveTime::from_num_seconds_from_midnight_opt((v.seconds_fragments() / 300) as _, 0).unwrap(),
-        )
-        .to_string()
-        .into()
-      }),
+      ColumnData::DateTime(_)
+      | ColumnData::SmallDateTime(_)
+      | ColumnData::DateTime2(_)
+      | ColumnData::DateTimeOffset(_) => NaiveDateTime::from_sql(col)?.map(|d| Value::String(d.to_string())),
 
-      ColumnData::Time(_) => unimplemented!("time is not supported yet"),
-      ColumnData::Date(v) => v.map(|v| {
-        NaiveDateTime::new(
-          NaiveDate::from_num_days_from_ce_opt(v.days() as _).unwrap(),
-          NaiveTime::default(),
-        )
-        .to_string()
-        .into()
-      }),
-      ColumnData::DateTime2(_) => unimplemented!("DateTime2 is not supported yet"),
-      ColumnData::DateTimeOffset(_) => unimplemented!("DateTimeOffset is not supported yet"),
+      ColumnData::Time(_) => NaiveTime::from_sql(col)?.map(|d| Value::String(d.to_string())),
+      ColumnData::Date(_) => NaiveDate::from_sql(col)?.map(|d| Value::String(d.to_string())),
     };
     Ok(value.map(FromSqlWrapper))
   }
