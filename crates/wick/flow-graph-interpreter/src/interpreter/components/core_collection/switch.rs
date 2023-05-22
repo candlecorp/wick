@@ -109,8 +109,7 @@ impl Operation for Op {
   #[allow(clippy::too_many_lines)]
   fn handle(
     &self,
-    invocation: Invocation,
-    mut stream: PacketStream,
+    mut invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let (tx, rx) = PacketStream::new_channels();
@@ -126,7 +125,7 @@ impl Operation for Op {
         let packet = if condition.is_some() {
           match held_packets.pop_front() {
             Some(p) => p,
-            None => match stream.next().await {
+            None => match invocation.packets.next().await {
               Some(Ok(p)) => p,
               Some(Err(e)) => {
                 let _ = tx.error(e);
@@ -138,7 +137,7 @@ impl Operation for Op {
             },
           }
         } else {
-          match stream.next().await {
+          match invocation.packets.next().await {
             Some(Ok(p)) => p,
             Some(Err(e)) => {
               let _ = tx.error(e);

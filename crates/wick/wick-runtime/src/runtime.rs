@@ -55,16 +55,11 @@ impl Runtime {
     })
   }
 
-  pub async fn invoke(
-    &self,
-    invocation: Invocation,
-    stream: PacketStream,
-    config: Option<OperationConfig>,
-  ) -> Result<PacketStream> {
+  pub async fn invoke(&self, invocation: Invocation, config: Option<OperationConfig>) -> Result<PacketStream> {
     let time = std::time::SystemTime::now();
     trace!(start_time=%time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() ,"invocation start");
 
-    let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation, stream, config)?)
+    let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation, config)?)
       .await
       .map_err(|_| RuntimeError::Timeout)??;
     trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"invocation complete");

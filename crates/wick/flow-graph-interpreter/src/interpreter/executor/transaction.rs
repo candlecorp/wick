@@ -33,7 +33,6 @@ pub struct Transaction {
   output: FluxChannel<Packet, wick_packet::Error>,
   channel: InterpreterDispatchChannel,
   invocation: Invocation,
-  incoming: Option<PacketStream>,
   instances: Vec<Arc<InstanceHandler>>,
   id: Uuid,
   start_time: Instant,
@@ -56,7 +55,6 @@ impl Transaction {
   pub(crate) fn new(
     schematic: Arc<Schematic>,
     mut invocation: Invocation,
-    stream: PacketStream,
     channel: InterpreterDispatchChannel,
     collections: &Arc<HandlerMap>,
     self_collection: &Arc<dyn Component + Send + Sync>,
@@ -87,7 +85,6 @@ impl Transaction {
     Self {
       channel,
       invocation,
-      incoming: Some(stream),
       schematic,
       output: FluxChannel::new(),
       instances,
@@ -158,7 +155,7 @@ impl Transaction {
         .await?;
     }
 
-    let incoming = self.incoming.take().unwrap();
+    let incoming = self.invocation.eject_stream();
 
     self.prime_input_ports(self.schematic.input().index(), incoming)?;
 

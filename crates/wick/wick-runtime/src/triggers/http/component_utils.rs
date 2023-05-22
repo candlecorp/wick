@@ -25,9 +25,9 @@ pub(super) async fn handle(
   req: Request<Body>,
 ) -> Result<PacketStream, HttpError> {
   let (tx, rx) = PacketStream::new_channels();
-  let invocation = Invocation::new(Entity::server("http_client"), target, None, &Span::current());
+  let invocation = Invocation::new(Entity::server("http_client"), target, rx, None, &Span::current());
   let stream = engine
-    .invoke(invocation, rx, None)
+    .invoke(invocation, None)
     .await
     .map_err(|e| HttpError::OperationError(e.to_string()));
   match request_to_wick(req) {

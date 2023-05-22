@@ -75,11 +75,10 @@ fn get_op_by_name(config: &HttpClientComponentConfig, name: &str) -> Option<Http
 async fn handle(
   opdef: Option<HttpClientOperationDefinition>,
   tx: FluxChannel<Packet, wick_packet::Error>,
-  invocation: Invocation,
+  mut invocation: Invocation,
   config: Option<OperationConfig>,
   codec: Option<Codec>,
   path_template: Option<Arc<(String, String)>>,
-  stream: PacketStream,
   baseurl: Url,
   client: reqwest::Client,
 ) -> anyhow::Result<()> {
@@ -94,7 +93,7 @@ async fn handle(
   let template = path_template.unwrap();
 
   let input_list: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
-  let mut inputs = wick_packet::StreamMap::from_stream(stream, input_list);
+  let mut inputs = wick_packet::StreamMap::from_stream(invocation.eject_stream(), input_list);
 
   'outer: loop {
     let inputs = match inputs.next_set().await {
@@ -223,7 +222,6 @@ impl Component for HttpClientComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     data: Option<OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
@@ -249,7 +247,6 @@ impl Component for HttpClientComponent {
         data,
         codec,
         path_template,
-        stream,
         baseurl,
         client,
       );
@@ -446,11 +443,11 @@ mod test {
     async fn test_get_request() -> Result<()> {
       let (app_config, component_config) = get_config();
       let comp = get_component(app_config, component_config).await;
-      let invocation = Invocation::test("test_get_request", Entity::local(GET_OP), Default::default())?;
       let packets = packet_stream!(("input", "SENTINEL"));
+      let invocation = Invocation::test("test_get_request", Entity::local(GET_OP), packets, Default::default())?;
       let config = json!({"secret":"0xDEADBEEF"});
       let mut stream = comp
-        .handle(invocation, packets, Some(config.try_into()?), panic_callback())
+        .handle(invocation, Some(config.try_into()?), panic_callback())
         .await?
         .collect::<Vec<_>>()
         .await;
@@ -470,10 +467,10 @@ mod test {
     async fn test_post_request() -> Result<()> {
       let (app_config, component_config) = get_config();
       let comp = get_component(app_config, component_config).await;
-      let invocation = Invocation::test("test_post_request", Entity::local(POST_OP), Default::default())?;
       let packets = packet_stream!(("input", "SENTINEL"), ("number", 123));
+      let invocation = Invocation::test("test_post_request", Entity::local(POST_OP), packets, Default::default())?;
       let mut stream = comp
-        .handle(invocation, packets, None, panic_callback())
+        .handle(invocation, None, panic_callback())
         .await?
         .collect::<Vec<_>>()
         .await;

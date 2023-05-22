@@ -38,7 +38,6 @@ impl SchematicExecutor {
   pub(crate) async fn invoke(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     seed: Seed,
     components: Arc<HandlerMap>,
     self_component: Arc<dyn Component + Send + Sync>,
@@ -51,7 +50,6 @@ impl SchematicExecutor {
     let mut transaction = Transaction::new(
       self.schematic.clone(),
       invocation,
-      stream,
       self.channel.clone(),
       &components,
       &self_component,

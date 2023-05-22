@@ -14,7 +14,6 @@ pub trait Component {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     data: Option<OperationConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>>;
@@ -35,7 +34,6 @@ pub trait Operation {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>>;
 

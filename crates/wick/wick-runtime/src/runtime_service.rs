@@ -276,12 +276,11 @@ impl InvocationHandler for RuntimeService {
   fn invoke(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     config: Option<OperationConfig>,
   ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, ComponentError>>, ComponentError> {
     let tx_id = invocation.tx_id;
 
-    let fut = self.interpreter.invoke(invocation, stream, config);
+    let fut = self.interpreter.invoke(invocation, config);
     let task = async move {
       match fut.await {
         Ok(response) => Ok(InvocationResponse::Stream { tx_id, rx: response }),
@@ -388,7 +387,6 @@ mod test {
     fn handle(
       &self,
       _invocation: Invocation,
-      _stream: PacketStream,
       _data: Option<OperationConfig>,
       _callback: Arc<flow_component::RuntimeCallback>,
     ) -> flow_component::BoxFuture<std::result::Result<PacketStream, flow_component::ComponentError>> {

@@ -131,12 +131,13 @@ impl RestHandler {
       let invocation = Invocation::new(
         Entity::server("http_client"),
         Entity::operation(route.component.id(), route.operation.operation()),
+        packets,
         None,
         &span,
       );
 
       let stream = runtime
-        .invoke(invocation, packets.into(), None)
+        .invoke(invocation, None)
         .instrument(span)
         .await
         .map_err(|e| HttpError::OperationError(e.to_string()))?;

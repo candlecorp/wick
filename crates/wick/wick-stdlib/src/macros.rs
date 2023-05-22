@@ -4,9 +4,9 @@ macro_rules! request_response {
     inputs: {$($ikey:ident => $ity:ty),* $(,)?},
     output: $okey:expr,
   }) => {
-    pub(crate) async fn $name(mut stream: PacketStream) -> Result<PacketStream, Box<dyn std::error::Error + Send + Sync>> {
+    pub(crate) async fn $name(mut invocation: wick_packet::Invocation) -> Result<PacketStream, Box<dyn std::error::Error + Send + Sync>> {
       #[allow(unused_parens)]
-      let ($(mut $ikey),*) = fan_out!(stream, $(stringify!($ikey)),*);
+      let ($(mut $ikey),*) = fan_out!(invocation.packets, $(stringify!($ikey)),*);
       let (tx, rx) = PacketStream::new_channels();
       tokio::spawn(async move {
         let error = loop {

@@ -118,7 +118,6 @@ impl Component for SqlXComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     _data: Option<OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
@@ -142,7 +141,7 @@ impl Component for SqlXComponent {
       };
 
       let input_names: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
-      let mut input_streams = wick_packet::split_stream(stream, input_names);
+      let mut input_streams = wick_packet::split_stream(invocation.packets, input_names);
       let (tx, rx) = PacketStream::new_channels();
       tokio::spawn(async move {
         'outer: loop {

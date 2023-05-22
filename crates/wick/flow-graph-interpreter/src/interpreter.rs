@@ -151,13 +151,13 @@ impl Interpreter {
         if compref.get_target_id() == NS_SELF {
           span.in_scope(|| trace!(op, %compref, "handling component invocation for self"));
           let cb = inner_cb.lock().clone().unwrap();
-          let invocation = compref.to_invocation(&op, inherent, &span);
-          self_component.handle(invocation, stream, config, cb).await
+          let invocation = compref.to_invocation(&op, stream, inherent, &span);
+          self_component.handle(invocation, config, cb).await
         } else if let Some(handler) = internal_components.get(compref.get_target_id()) {
           span.in_scope(|| trace!(op, %compref, "handling component invocation internal to this interpreter"));
           let cb = inner_cb.lock().clone().unwrap();
-          let invocation = compref.to_invocation(&op, inherent, &span);
-          handler.component().handle(invocation, stream, config, cb).await
+          let invocation = compref.to_invocation(&op, stream, inherent, &span);
+          handler.component().handle(invocation, config, cb).await
         } else {
           outside_callback(compref, op, stream, inherent, config, &span).await
         }
@@ -167,7 +167,7 @@ impl Interpreter {
     local_first_callback
   }
 
-  async fn invoke_operation(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
+  async fn invoke_operation(&self, invocation: Invocation) -> Result<PacketStream, Error> {
     let dispatcher = self.dispatcher.clone();
     let name = invocation.target.operation_id().to_owned();
     let op = self
@@ -188,7 +188,6 @@ impl Interpreter {
       executor
         .invoke(
           invocation,
-          stream,
           self.rng.seed(),
           self.components.clone(),
           self.self_component.clone(),
@@ -199,12 +198,7 @@ impl Interpreter {
     )
   }
 
-  pub async fn invoke(
-    &self,
-    invocation: Invocation,
-    stream: PacketStream,
-    config: Option<OperationConfig>,
-  ) -> Result<PacketStream, Error> {
+  pub async fn invoke(&self, invocation: Invocation, config: Option<OperationConfig>) -> Result<PacketStream, Error> {
     let known_targets = || {
       let mut hosted: Vec<_> = self.components.inner().keys().cloned().collect();
       if let Some(ns) = &self.namespace {
@@ -222,14 +216,14 @@ impl Interpreter {
             span.in_scope(|| trace!(entity=%invocation.target, "invoke::exposed::operation"));
             return Ok(
               component
-                .handle(invocation, stream, config, cb)
+                .handle(invocation, config, cb)
                 .instrument(span)
                 .await
                 .map_err(ExecutionError::ComponentError)?,
             );
           }
           span.in_scope(|| trace!(entity=%invocation.target, "invoke::composite::operation"));
-          self.invoke_operation(invocation, stream).instrument(span).await?
+          self.invoke_operation(invocation).instrument(span).await?
         } else {
           span.in_scope(|| trace!(entity=%invocation.target, "invoke::instance::operation"));
           self
@@ -237,7 +231,7 @@ impl Interpreter {
             .get(ns)
             .ok_or_else(|| Error::TargetNotFound(invocation.target.clone(), known_targets()))?
             .component
-            .handle(invocation, stream, config, cb)
+            .handle(invocation, config, cb)
             .instrument(span)
             .await
             .map_err(ExecutionError::ComponentError)?

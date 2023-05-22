@@ -46,11 +46,10 @@ impl Component for HostComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     data: Option<wick_packet::OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, ComponentError>> {
-    let fut = self.host.invoke(invocation, stream, data);
+    let fut = self.host.invoke(invocation, data);
 
     Box::pin(async move {
       let outputs = fut.await.map_err(ComponentError::new)?;
@@ -93,10 +92,8 @@ mod tests {
 
     let job_payload = packet_stream![("input", input)];
 
-    let invocation = Invocation::test(file!(), Entity::local("logger"), None)?;
-    let mut outputs = collection
-      .handle(invocation, job_payload, None, panic_callback())
-      .await?;
+    let invocation = Invocation::test(file!(), Entity::local("logger"), job_payload, None)?;
+    let mut outputs = collection.handle(invocation, None, panic_callback()).await?;
     let output = outputs.next().await.unwrap().unwrap();
 
     println!("output: {:?}", output);

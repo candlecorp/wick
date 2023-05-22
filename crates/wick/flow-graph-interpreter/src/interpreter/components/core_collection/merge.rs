@@ -48,11 +48,10 @@ impl Operation for Op {
   type Config = Config;
   fn handle(
     &self,
-    _invocation: Invocation,
-    stream: PacketStream,
+    invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let mut map = StreamMap::from_stream(stream, self.input_names(&context.config));
+    let mut map = StreamMap::from_stream(invocation.packets, self.input_names(&context.config));
     let (tx, rx) = PacketStream::new_channels();
     tokio::spawn(async move {
       while let Ok(next) = map.next_set().await {
@@ -115,9 +114,9 @@ mod test {
     let config = serde_json::json!({ "inputs": inputs });
     let config = Op::decode_config(Some(config.try_into()?))?;
     let stream = packet_stream!(("input_a", "hello"), ("input_b", 1000));
-    let inv = Invocation::test(file!(), Entity::test("noop"), None)?;
+    let inv = Invocation::test(file!(), Entity::test("noop"), stream, None)?;
     let mut packets = op
-      .handle(inv, stream, Context::new(config, None, panic_callback()))
+      .handle(inv, Context::new(config, None, panic_callback()))
       .await?
       .collect::<Vec<_>>()
       .await;

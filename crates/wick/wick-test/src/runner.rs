@@ -48,10 +48,15 @@ async fn run_unit<'a>(
   let prefix = |msg: &str| format!("{}: {}", test_name, msg);
 
   trace!(i, %entity, "invoke");
-  let invocation = Invocation::new(Entity::test(&test_name), entity, inherent, &tracing::Span::current());
+  let invocation = Invocation::new(
+    Entity::test(&test_name),
+    entity,
+    stream,
+    inherent,
+    &tracing::Span::current(),
+  );
   let fut = component.handle(
     invocation,
-    stream,
     def.test.config().cloned(),
     std::sync::Arc::new(|_, _, _, _, _, _| panic!()),
   );

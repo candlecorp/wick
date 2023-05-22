@@ -109,9 +109,9 @@ pub(crate) async fn handle(
       tx.send(Packet::done(port))?;
     }
 
-    let invocation = Invocation::new(origin, target, inherent_data, &span);
+    let invocation = Invocation::new(origin, target, stream, inherent_data, &span);
     span.in_scope(|| trace!("issuing invocation"));
-    let stream = client.invoke(invocation, stream).await?;
+    let stream = client.invoke(invocation).await?;
     span.in_scope(|| trace!("server responsed"));
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
