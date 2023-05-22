@@ -47,7 +47,7 @@
   fi
 
   # Create the temp directory
-  TMP_ROOT=$(mktemp -dt ${ORG_NAME}-${PROJECT_NAME}-install)
+  TMP_ROOT=$(mktemp -dt ${ORG_NAME}-${PROJECT_NAME}-install.XXX)
   ARTIFACT_NAME="${PROJECT_NAME}-${OS}-${ARCH}.tar.gz"
   ARTIFACT_TMP_FILE="$TMP_ROOT/$ARTIFACT_NAME"
 
@@ -209,7 +209,7 @@
         echo "Updated PATH variable in $INIT_FILE"
         echo "Please open a new terminal to start using $PROJECT_NAME"
     fi
-    
+
   }
 
   cleanup() {
