@@ -32,10 +32,7 @@ pub(crate) async fn handle(
     .instrument(span.clone())
     .await?;
 
-  let mut package_clone: Option<wick_package::WickPackage> = None;
-  if opts.latest {
-    package_clone = Some(package.clone());
-  }
+  let mut package_clone = if opts.latest { Some(package.clone()) } else { None };
 
   let Some(registry) =  package.registry() else  {
       span.in_scope(||error!("No registry provided in package"));
