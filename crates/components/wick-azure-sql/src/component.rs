@@ -96,7 +96,7 @@ impl Component for AzureSqlComponent {
 
       let input_names: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
       let mut input_streams = wick_packet::split_stream(invocation.eject_stream(), input_names);
-      let (tx, rx) = PacketStream::new_channels();
+      let (tx, rx) = invocation.make_response();
       tokio::spawn(async move {
         'outer: loop {
           let mut incoming_packets = Vec::new();

@@ -1,0 +1,38 @@
+name: 'test'
+kind: wick/component@v1
+metadata:
+  version: '0.0.2'
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: test
+      uses:
+        - name: BOOL
+          operation: core::sender
+          with:
+            output: true
+        - name: STRING
+          operation: core::sender
+          with:
+            output: 'Hello world'
+        - name: NUM
+          operation: core::sender
+          with:
+            output: 123456
+        - name: m
+          operation: core::merge
+          with:
+            inputs:
+              - name: a
+                type: string
+              - name: b
+                type: i32
+              - name: c
+                type: list
+                element:
+                  type: string
+      flow:
+        - BOOL.output -> m.a
+        - STRING.output -> m.b
+        - NUM.output -> m.c
+        - m.output -> <>

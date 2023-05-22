@@ -26,6 +26,7 @@ pub(super) async fn handle(
 ) -> Result<PacketStream, HttpError> {
   let (tx, rx) = PacketStream::new_channels();
   let invocation = Invocation::new(Entity::server("http_client"), target, rx, None, &Span::current());
+
   let stream = engine
     .invoke(invocation, None)
     .await

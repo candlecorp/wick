@@ -51,8 +51,8 @@ impl Operation for Op {
     invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
+    let (tx, rx) = invocation.make_response();
     let mut map = StreamMap::from_stream(invocation.packets, self.input_names(&context.config));
-    let (tx, rx) = PacketStream::new_channels();
     tokio::spawn(async move {
       while let Ok(next) = map.next_set().await {
         if next.is_none() {

@@ -8,8 +8,8 @@ use futures::StreamExt;
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wasmrs_rx::{FluxChannel, Observer};
-use wick_packet::{InherentData, Invocation, Packet, PacketError, PacketStream};
+use wasmrs_rx::Observer;
+use wick_packet::{InherentData, Invocation, Packet, PacketError, PacketSender, PacketStream};
 
 use self::operation::InstanceHandler;
 use super::error::ExecutionError;
@@ -30,7 +30,8 @@ type Result<T> = std::result::Result<T, ExecutionError>;
 #[must_use]
 pub struct Transaction {
   schematic: Arc<Schematic>,
-  output: FluxChannel<Packet, wick_packet::Error>,
+  output_tx: PacketSender,
+  output_rx: Option<PacketStream>,
   channel: InterpreterDispatchChannel,
   invocation: Invocation,
   instances: Vec<Arc<InstanceHandler>>,
@@ -82,11 +83,14 @@ impl Transaction {
     let span = tracing::Span::current();
     span.record("tx_id", id.to_string());
 
+    let (tx, rx) = invocation.make_response();
+
     Self {
       channel,
       invocation,
       schematic,
-      output: FluxChannel::new(),
+      output_tx: tx,
+      output_rx: Some(rx),
       instances,
       start_time: Instant::now(),
       stats,
@@ -233,7 +237,7 @@ impl Transaction {
 
   pub(crate) async fn emit_output_message(&self, packets: Vec<Packet>) -> Result<()> {
     for packet in packets {
-      self.output.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
+      self.output_tx.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
     }
 
     if self.done() {
@@ -251,7 +255,7 @@ impl Transaction {
   }
 
   pub(crate) fn take_stream(&mut self) -> Option<PacketStream> {
-    self.output.take_rx().ok().map(|s| PacketStream::new(Box::new(s)))
+    self.output_rx.take()
   }
 
   pub(crate) fn take_tx_output(&self) -> Result<Vec<Packet>> {
