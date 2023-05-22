@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use wick_interface_types as wick;
-use wick_packet::{Entity, InherentData, Metadata, Packet, WickMetadata};
+use wick_packet::{Entity, InherentData, Metadata, Packet, PacketStream, WickMetadata};
 
 use crate::error::RpcError;
 use crate::{rpc, DurationStatistics};
@@ -244,6 +244,7 @@ impl TryFrom<rpc::Invocation> for wick_packet::Invocation {
         timestamp: d.timestamp,
       }),
       span: tracing::Span::current(),
+      packets: PacketStream::empty(),
     })
   }
 }

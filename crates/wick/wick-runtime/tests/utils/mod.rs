@@ -50,8 +50,7 @@ pub async fn base_test(
 
   let result = engine
     .invoke(
-      Invocation::test("simple schematic", target, Some(inherent))?,
-      stream,
+      Invocation::test("simple schematic", target, stream, Some(inherent))?,
       None,
     )
     .await?;

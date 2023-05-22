@@ -21,12 +21,13 @@ impl ComponentReference {
   pub fn to_invocation(
     &self,
     operation: &str,
+    packets: impl Into<PacketStream>,
     inherent: Option<crate::InherentData>,
     follows_from: &tracing::Span,
   ) -> crate::Invocation {
     let target = crate::Entity::operation(self.target.component_id(), operation);
 
-    crate::Invocation::new(self.origin.clone(), target, inherent, follows_from)
+    crate::Invocation::new(self.origin.clone(), target, packets, inherent, follows_from)
   }
 
   #[must_use]

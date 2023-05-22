@@ -49,12 +49,11 @@ impl From<ComponentError> for DispatchError {
 pub(crate) async fn engine_invoke_async(
   engine_id: Uuid,
   invocation: Invocation,
-  stream: PacketStream,
   config: Option<OperationConfig>,
 ) -> Result<PacketStream, DispatchError> {
   let engine = RuntimeService::for_id(&engine_id).ok_or(DispatchError::EntityNotAvailable(engine_id))?;
 
-  let response = engine.invoke(invocation, stream, config)?.await?;
+  let response = engine.invoke(invocation, config)?.await?;
   match response {
     InvocationResponse::Stream { rx, .. } => Ok(rx),
     InvocationResponse::Error { msg, .. } => Err(DispatchError::CallFailure(msg)),
@@ -75,9 +74,9 @@ mod tests {
 
     let target = Entity::operation("self", "echo");
     let stream = packet_stream![("input", "hello")];
-    let invocation = Invocation::test(file!(), target, None)?;
+    let invocation = Invocation::test(file!(), target, stream, None)?;
 
-    let packets = engine_invoke_async(nuid, invocation, stream, None).await?;
+    let packets = engine_invoke_async(nuid, invocation, None).await?;
     let mut packets: Vec<_> = packets.collect().await;
     debug!("{:?}", packets);
     assert_eq!(packets.len(), 2);

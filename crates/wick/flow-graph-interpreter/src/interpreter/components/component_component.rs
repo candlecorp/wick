@@ -37,7 +37,6 @@ impl Component for ComponentComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _stream: PacketStream,
     _config: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {

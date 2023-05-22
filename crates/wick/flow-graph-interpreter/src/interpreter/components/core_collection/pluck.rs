@@ -39,11 +39,10 @@ impl Operation for Op {
   type Config = Config;
   fn handle(
     &self,
-    _invocation: Invocation,
-    stream: PacketStream,
+    invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let mut map = StreamMap::from_stream(stream, self.input_names(&context.config));
+    let mut map = StreamMap::from_stream(invocation.packets, self.input_names(&context.config));
     let mapped = map.take("input").map_err(ComponentError::new).map(|input| {
       input
         .map(move |next| {
@@ -108,9 +107,9 @@ mod test {
         "dont_pluck_this": "unused",
       })
     ));
-    let inv = Invocation::test(file!(), Entity::test("noop"), None)?;
+    let inv = Invocation::test(file!(), Entity::test("noop"), stream, None)?;
     let mut packets = op
-      .handle(inv, stream, Context::new(config, None, panic_callback()))
+      .handle(inv, Context::new(config, None, panic_callback()))
       .await?
       .collect::<Vec<_>>()
       .await;

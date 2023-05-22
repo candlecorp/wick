@@ -28,13 +28,12 @@ impl Component for NativeComponentService {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     config: Option<OperationConfig>,
     callback: std::sync::Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<std::result::Result<PacketStream, flow_component::ComponentError>> {
     let component = self.component.clone();
 
-    let task = async move { component.handle(invocation, stream, config, callback).await };
+    let task = async move { component.handle(invocation, config, callback).await };
     Box::pin(task)
   }
 }
@@ -47,12 +46,11 @@ impl InvocationHandler for NativeComponentService {
   fn invoke(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     config: Option<OperationConfig>,
   ) -> Result<BoxFuture<Result<InvocationResponse>>> {
     let tx_id = invocation.tx_id;
     let span = debug_span!("invoke", target =  %invocation.target);
-    let fut = self.handle(invocation, stream, config, panic_callback());
+    let fut = self.handle(invocation, config, panic_callback());
 
     let task = async move {
       Ok(crate::dispatch::InvocationResponse::Stream {

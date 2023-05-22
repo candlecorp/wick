@@ -52,16 +52,6 @@ impl Cli {
     let cli_component = resolve_ref(&app_config, config.operation().component())?;
     let cli_binding = ImportBinding::component("cli", cli_component);
 
-    let invocation = Invocation::new(
-      Entity::server("cli_channel"),
-      Entity::operation(cli_binding.id(), config.operation().operation()),
-      None,
-      &Span::current(),
-    );
-    let mut runtime = build_trigger_runtime(&app_config, Span::current())?;
-    runtime.add_import(cli_binding);
-    let runtime = runtime.build(None).await?;
-
     let is_interactive = IsInteractive {
       stdin: atty::is(atty::Stream::Stdin),
       stdout: atty::is(atty::Stream::Stdout),
@@ -69,8 +59,18 @@ impl Cli {
     };
 
     let packet_stream = packet_stream!(("args", args), ("isInteractive", is_interactive));
+    let invocation = Invocation::new(
+      Entity::server("cli_channel"),
+      Entity::operation(cli_binding.id(), config.operation().operation()),
+      packet_stream,
+      None,
+      &Span::current(),
+    );
+    let mut runtime = build_trigger_runtime(&app_config, Span::current())?;
+    runtime.add_import(cli_binding);
+    let runtime = runtime.build(None).await?;
 
-    let mut response = runtime.invoke(invocation, packet_stream, None).await?;
+    let mut response = runtime.invoke(invocation, None).await?;
     let output = loop {
       if let Some(packet) = response.next().await {
         trace!(?packet, "trigger:cli:response");

@@ -44,7 +44,6 @@ pub(crate) async fn base_setup(
     Box::new(test::TestComponent::new()),
   )])
   .unwrap();
-  let invocation = Invocation::test("test", entity, None)?;
 
   let mut interpreter = Interpreter::new(
     Some(Seed::unsafe_new(1)),
@@ -56,7 +55,8 @@ pub(crate) async fn base_setup(
   )?;
   interpreter.start(options, None).await;
   let stream = wick_packet::PacketStream::new(Box::new(futures::stream::iter(packets.into_iter().map(Ok))));
-  let stream = interpreter.invoke(invocation, stream, config).await?;
+  let invocation = Invocation::test("test", entity, stream, None)?;
+  let stream = interpreter.invoke(invocation, config).await?;
   let outputs: Vec<_> = stream.collect().await;
   println!("{:#?}", outputs);
   Ok((interpreter, outputs))

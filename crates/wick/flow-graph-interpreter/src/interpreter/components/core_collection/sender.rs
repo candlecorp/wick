@@ -34,7 +34,6 @@ impl Operation for Op {
   fn handle(
     &self,
     _invocation: Invocation,
-    _payload: PacketStream,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let config = context.config;

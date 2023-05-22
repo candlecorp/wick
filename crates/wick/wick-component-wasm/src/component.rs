@@ -76,13 +76,12 @@ impl Component for WasmComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     data: Option<OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, config=?data, "wasm invoke"));
 
-    let outputs = self.host.call(invocation, stream, data);
+    let outputs = self.host.call(invocation, data);
 
     Box::pin(async move { outputs.map_err(ComponentError::new) })
   }
@@ -134,10 +133,10 @@ mod tests {
     let component = load_component().await?;
     let stream = packets!(("input", "10"));
     println!("{:#?}", stream);
-    let invocation = Invocation::test(file!(), Entity::local("error"), None)?;
+    let invocation = Invocation::test(file!(), Entity::local("error"), stream, None)?;
     let config = json!({});
     let outputs = component
-      .handle(invocation, stream.into(), Some(config.try_into()?), panic_callback())
+      .handle(invocation, Some(config.try_into()?), panic_callback())
       .await?;
     debug!("Got stream");
     let mut packets: Vec<_> = outputs.collect().await;
@@ -155,10 +154,10 @@ mod tests {
     let component = load_component().await?;
     let stream = packets!(("left", 10), ("right", 20));
     println!("{:#?}", stream);
-    let invocation = Invocation::test(file!(), Entity::local("add"), None)?;
+    let invocation = Invocation::test(file!(), Entity::local("add"), stream, None)?;
     let config = json!({});
     let outputs = component
-      .handle(invocation, stream.into(), Some(config.try_into()?), panic_callback())
+      .handle(invocation, Some(config.try_into()?), panic_callback())
       .await?;
     debug!("Got stream");
     let mut packets: Vec<_> = outputs.collect().await;
@@ -177,12 +176,12 @@ mod tests {
     let component = load_component().await?;
     let stream = packets!(("input", 44));
     println!("{:#?}", stream);
-    let invocation = Invocation::test(file!(), Entity::local("power"), None)?;
+    let invocation = Invocation::test(file!(), Entity::local("power"), stream, None)?;
     let config = json!({
       "exponent": 2
     });
     let outputs = component
-      .handle(invocation, stream.into(), Some(config.try_into()?), panic_callback())
+      .handle(invocation, Some(config.try_into()?), panic_callback())
       .await?;
     let mut packets: Vec<_> = outputs.collect().await;
     debug!("Output packets: {:?}", packets);

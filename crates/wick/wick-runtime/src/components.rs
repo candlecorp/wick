@@ -15,7 +15,7 @@ use wick_component_wasm::error::LinkError;
 use wick_config::config::components::{ManifestComponent, WasmComponent};
 use wick_config::config::{BoundInterface, FetchOptions, Metadata, ResourceDefinition, WasmComponentImplementation};
 use wick_config::{Resolver, WickConfiguration};
-use wick_packet::{Entity, Invocation, OperationConfig, PacketStream};
+use wick_packet::{Entity, Invocation, OperationConfig};
 
 use self::component_service::NativeComponentService;
 use crate::dev::prelude::*;
@@ -25,12 +25,7 @@ use crate::BoxFuture;
 
 pub(crate) trait InvocationHandler {
   fn get_signature(&self) -> Result<ComponentSignature>;
-  fn invoke(
-    &self,
-    msg: Invocation,
-    stream: PacketStream,
-    config: Option<OperationConfig>,
-  ) -> Result<BoxFuture<Result<InvocationResponse>>>;
+  fn invoke(&self, msg: Invocation, config: Option<OperationConfig>) -> Result<BoxFuture<Result<InvocationResponse>>>;
 }
 
 type Result<T> = std::result::Result<T, ComponentError>;
@@ -107,7 +102,7 @@ pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
   Arc::new(move |compref, op, stream, inherent, config, span| {
     let origin_url = compref.get_origin_url();
     let target_id = compref.get_target_id().to_owned();
-    let invocation = compref.to_invocation(&op, inherent, span);
+    let invocation = compref.to_invocation(&op, stream, inherent, span);
     invocation.trace(|| {
       debug!(
         origin = %origin_url,
@@ -118,7 +113,7 @@ pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
     });
     Box::pin(async move {
       {
-        let result = engine_invoke_async(engine_id, invocation, stream, config)
+        let result = engine_invoke_async(engine_id, invocation, config)
           .await
           .map_err(|e| flow_component::ComponentError::new(LinkError::CallFailure(e.to_string())))?;
         Ok(result)

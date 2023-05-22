@@ -160,7 +160,6 @@ impl Component for Collection {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     _data: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
@@ -168,7 +167,7 @@ impl Component for Collection {
     trace!("stdlib invoke: {}", target);
 
     Box::pin(async move {
-      let stream = dispatch!(invocation, stream, {
+      let stream = dispatch!(invocation, {
             "core::error" => operations::core::error::job,
             "core::log" => operations::core::log::job,
             "core::panic" => operations::core::panic::job,

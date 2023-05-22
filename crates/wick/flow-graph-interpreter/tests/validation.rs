@@ -21,7 +21,6 @@ impl Component for SignatureTestCollection {
   fn handle(
     &self,
     _invocation: Invocation,
-    _stream: PacketStream,
     _config: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<flow_component::RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {

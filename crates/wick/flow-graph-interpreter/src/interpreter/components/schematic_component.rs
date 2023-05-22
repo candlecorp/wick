@@ -71,7 +71,6 @@ impl Component for SchematicComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     _config: Option<wick_packet::OperationConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
@@ -85,7 +84,6 @@ impl Component for SchematicComponent {
       .map(|s| {
         s.invoke(
           invocation,
-          stream,
           self.rng.seed(),
           self.components.clone(),
           self.clone_self_collection(),

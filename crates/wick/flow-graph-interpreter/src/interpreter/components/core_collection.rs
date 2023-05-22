@@ -115,11 +115,9 @@ impl CoreCollection {
 }
 
 macro_rules! core_op {
-  ($type:ty, $inv:expr, $name:expr, $stream:ident, $callback:expr, $data:ident, $seed:ident) => {{
+  ($type:ty, $inv:expr, $name:expr, $callback:expr, $data:ident, $seed:ident) => {{
     let config = <$type>::decode_config($data)?;
-    $name
-      .handle($inv, $stream, Context::new(config, $seed, $callback))
-      .await
+    $name.handle($inv, Context::new(config, $seed, $callback)).await
   }};
 }
 
@@ -127,7 +125,6 @@ impl Component for CoreCollection {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     data: Option<wick_packet::OperationConfig>,
     callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
@@ -136,10 +133,10 @@ impl Component for CoreCollection {
 
     let task = async move {
       match invocation.target.operation_id() {
-        sender::Op::ID => core_op! {sender::Op, invocation, self.sender, stream, callback, data, seed},
-        pluck::Op::ID => core_op! {pluck::Op, invocation, self.pluck, stream, callback, data, seed},
-        merge::Op::ID => core_op! {merge::Op, invocation, self.merge, stream, callback, data, seed},
-        switch::Op::ID => core_op! {switch::Op, invocation, self.switch, stream, callback, data, seed},
+        sender::Op::ID => core_op! {sender::Op, invocation, self.sender, callback, data, seed},
+        pluck::Op::ID => core_op! {pluck::Op, invocation, self.pluck, callback, data, seed},
+        merge::Op::ID => core_op! {merge::Op, invocation, self.merge, callback, data, seed},
+        switch::Op::ID => core_op! {switch::Op, invocation, self.switch, callback, data, seed},
         _ => {
           panic!("Core operation {} not handled.", invocation.target.operation_id());
         }

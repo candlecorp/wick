@@ -167,13 +167,12 @@ impl Component for TestComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     _config: Option<wick_packet::OperationConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let operation = invocation.target.operation_id();
     println!("got op {} in echo test collection", operation);
-    Box::pin(async move { Ok(handler(invocation, stream, callback)?) })
+    Box::pin(async move { Ok(handler(invocation, callback)?) })
   }
 
   fn list(&self) -> &ComponentSignature {
@@ -181,11 +180,8 @@ impl Component for TestComponent {
   }
 }
 
-fn handler(
-  invocation: Invocation,
-  mut payload_stream: PacketStream,
-  callback: Arc<RuntimeCallback>,
-) -> anyhow::Result<PacketStream> {
+fn handler(mut invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Result<PacketStream> {
+  let mut payload_stream = invocation.packets;
   let operation = invocation.target.operation_id();
   match operation {
     "echo" => {

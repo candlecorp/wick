@@ -76,8 +76,8 @@ mod integration_test {
   async fn test_pg_basic() -> Result<()> {
     let pg = init_pg_component().await?;
     let input = packet_stream!(("input", 1_u32));
-    let inv = Invocation::test("postgres", "wick://__local__/test", None)?;
-    let response = pg.handle(inv, input, None, panic_callback()).await.unwrap();
+    let inv = Invocation::test("postgres", "wick://__local__/test", input, None)?;
+    let response = pg.handle(inv, None, panic_callback()).await.unwrap();
     let packets: Vec<_> = response.collect().await;
 
     assert_eq!(

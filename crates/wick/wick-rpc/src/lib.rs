@@ -138,10 +138,10 @@ pub fn convert_tonic_streaming(mut streaming: tonic::Streaming<rpc::Packet>) -> 
 
 #[macro_export]
 macro_rules! dispatch {
-  ($inv:expr, $stream:expr, {$($name:expr => $handler:path),*,}) => {
+  ($inv:expr, {$($name:expr => $handler:path),*,}) => {
     {
       match $inv.target.operation_id() {
-        $($name => $handler($stream).await?,)*
+        $($name => $handler($inv).await?,)*
         _ => {
           unreachable!()
         }

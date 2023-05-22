@@ -31,7 +31,6 @@ impl Component for InternalCollection {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     _config: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
@@ -43,7 +42,7 @@ impl Component for InternalCollection {
       if op == SCHEMATIC_OUTPUT {
         panic!("Output component should not be executed");
       } else if is_oneshot {
-        Ok(stream)
+        Ok(invocation.packets)
       } else {
         panic!("Internal component {} not handled.", op);
       }

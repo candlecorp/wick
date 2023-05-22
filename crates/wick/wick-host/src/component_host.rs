@@ -156,23 +156,19 @@ impl ComponentHost {
         let invocation = Invocation::new(
           Entity::server(&self.id),
           Entity::operation(&self.id, operation),
+          stream,
           data,
           &self.span,
         );
-        Ok(runtime.invoke(invocation, stream, None).await?)
+        Ok(runtime.invoke(invocation, None).await?)
       }
       None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }
   }
 
-  pub async fn invoke(
-    &self,
-    invocation: Invocation,
-    stream: PacketStream,
-    data: Option<OperationConfig>,
-  ) -> Result<PacketStream> {
+  pub async fn invoke(&self, invocation: Invocation, data: Option<OperationConfig>) -> Result<PacketStream> {
     match &self.runtime {
-      Some(runtime) => Ok(runtime.invoke(invocation, stream, data).await?),
+      Some(runtime) => Ok(runtime.invoke(invocation, data).await?),
       None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }
   }
@@ -277,7 +273,7 @@ mod test {
     println!("connected to server");
     let passed_data = "logging output";
     let packets = packets![("input", passed_data)];
-    let invocation: wick_rpc::rpc::Invocation = Invocation::test("test", Entity::local("logger"), None)?
+    let invocation: wick_rpc::rpc::Invocation = Invocation::test("test", Entity::local("logger"), Vec::new(), None)?
       .try_into()
       .unwrap();
 

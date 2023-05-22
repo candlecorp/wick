@@ -44,14 +44,13 @@ impl Component for NativeComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     _data: Option<wick_packet::OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let target = invocation.target_url();
     trace!("test collection invoke: {}", target);
     Box::pin(async move {
-      let stream = dispatch!(invocation, stream, {
+      let stream = dispatch!(invocation, {
         "error" => error,
         "test-component" => test_component,
       });
@@ -67,14 +66,14 @@ impl Component for NativeComponent {
 
 impl RpcHandler for NativeComponent {}
 
-async fn error(_input: PacketStream) -> Result<PacketStream, ComponentError> {
+async fn error(_input: Invocation) -> Result<PacketStream, ComponentError> {
   Err(anyhow::anyhow!("Always errors").into())
 }
 
-async fn test_component(mut input: PacketStream) -> Result<PacketStream, ComponentError> {
+async fn test_component(mut input: Invocation) -> Result<PacketStream, ComponentError> {
   let (tx, stream) = PacketStream::new_channels();
   tokio::spawn(async move {
-    let mut input = fan_out!(input, "input");
+    let mut input = fan_out!(input.packets, "input");
     while let Some(Ok(input)) = input.next().await {
       let input: String = input.payload.deserialize().unwrap();
       let output = Packet::encode("output", format!("TEST: {}", input));
@@ -102,11 +101,9 @@ mod tests {
     let input_stream = packet_stream!(("input", input));
 
     let entity = Entity::local("test-component");
-    let invocation = Invocation::test(file!(), entity, None)?;
+    let invocation = Invocation::test(file!(), entity, input_stream, None)?;
 
-    let outputs = collection
-      .handle(invocation, input_stream, None, panic_callback())
-      .await?;
+    let outputs = collection.handle(invocation, None, panic_callback()).await?;
     let mut packets: Vec<_> = outputs.collect().await;
     let output = packets.pop().unwrap().unwrap();
 

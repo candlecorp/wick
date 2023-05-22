@@ -30,16 +30,15 @@ async fn invoke_operation(
     .map(|packet| Packet::encode(packet.name(), packet.value()))
     .collect();
 
-  let packetstream: PacketStream = packets.into();
-
   let invocation = Invocation::new(
     Entity::server("schedule_client"),
     Entity::operation("0", operation.as_str()),
+    packets,
     None,
     &Span::current(),
   );
 
-  let mut response = runtime.invoke(invocation, packetstream, None).await?;
+  let mut response = runtime.invoke(invocation, None).await?;
   while let Some(packet) = response.next().await {
     trace!(?packet, "trigger:time:response");
   }

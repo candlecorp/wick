@@ -149,12 +149,7 @@ impl WasmHost {
   }
 
   #[allow(clippy::needless_pass_by_value)]
-  pub fn call(
-    &self,
-    invocation: Invocation,
-    stream: PacketStream,
-    config: Option<wick_packet::OperationConfig>,
-  ) -> Result<PacketStream> {
+  pub fn call(&self, invocation: Invocation, config: Option<wick_packet::OperationConfig>) -> Result<PacketStream> {
     let _span = self.span.enter();
     let component_name = invocation.target.operation_id();
     debug!(component = component_name, "wasm invoke");
@@ -165,10 +160,10 @@ impl WasmHost {
       .get_export("wick", component_name)
       .map_err(|_| crate::Error::OperationNotFound(component_name.to_owned(), ctx.get_exports()))?;
     if let Some(config) = config {
-      stream.set_context(config, seed);
+      invocation.packets.set_context(config, seed);
     }
 
-    let s = into_wasmrs(index, stream);
+    let s = into_wasmrs(index, invocation.packets);
     let out = ctx.request_channel(Box::pin(s));
     trace!(
       component = component_name,
