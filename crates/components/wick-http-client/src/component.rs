@@ -7,6 +7,7 @@ use parking_lot::Mutex;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::{ClientBuilder, Method, Request, RequestBuilder};
 use serde_json::{Map, Value};
+use tracing::Span;
 use url::Url;
 use wick_config::config::components::{Codec, HttpClientComponentConfig, HttpClientOperationDefinition, HttpMethod};
 use wick_config::config::{Metadata, UrlResource};
@@ -204,9 +205,16 @@ async fn handle(
         break 'outer;
       }
     };
+    invocation.trace(|| trace!(response = ?our_response, "response"));
+
     let _ = tx.send(Packet::encode("response", our_response));
     let _ = tx.send(Packet::done("response"));
-    tokio::spawn(output_task(codec, Box::pin(body_stream), tx.clone()));
+    tokio::spawn(output_task(
+      invocation.span.clone(),
+      codec,
+      Box::pin(body_stream),
+      tx.clone(),
+    ));
   }
   Ok(())
 }
@@ -286,6 +294,7 @@ impl Component for HttpClientComponent {
 }
 
 fn output_task(
+  span: Span,
   codec: Codec,
   mut body_stream: std::pin::Pin<Box<impl Stream<Item = Result<Base64Bytes, reqwest::Error>> + Send + 'static>>,
   tx: FluxChannel<Packet, wick_packet::Error>,
@@ -309,13 +318,14 @@ fn output_task(
             return;
           }
         };
-
+        span.in_scope(|| trace!(%json, "response body"));
         let _ = tx.send(Packet::encode("body", json));
         let _ = tx.send(Packet::done("body"));
       }
       Codec::Raw => {
         let _ = tx.send(Packet::open_bracket("body"));
         while let Some(Ok(bytes)) = body_stream.next().await {
+          span.in_scope(|| trace!(?bytes, "response body"));
           let _ = tx.send(Packet::encode("body", bytes));
         }
         let _ = tx.send(Packet::close_bracket("body"));

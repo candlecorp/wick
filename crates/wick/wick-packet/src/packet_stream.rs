@@ -4,11 +4,14 @@ use std::task::Poll;
 use futures::stream::{BoxStream, FusedStream};
 use futures::Stream;
 use pin_project_lite::pin_project;
+use tracing::Span;
 use wasmrs_rx::FluxChannel;
 
 use crate::{ContextTransport, OperationConfig, Packet};
 
 pub type PacketSender = FluxChannel<Packet, crate::Error>;
+
+type ContextConfig = (OperationConfig, Option<u64>);
 
 #[cfg(target_family = "wasm")]
 pin_project! {
@@ -17,7 +20,8 @@ pin_project! {
   pub struct PacketStream {
     #[pin]
     inner: std::sync::Arc<parking_lot::Mutex<dyn FusedStream<Item = Result<Packet, crate::Error>> + Unpin>>,
-    config: std::sync::Arc<parking_lot::Mutex<Option<(OperationConfig,Option<u64>)>>>
+    config: std::sync::Arc<parking_lot::Mutex<Option<ContextConfig>>>,
+    span: Span
   }
 }
 
@@ -28,7 +32,8 @@ pin_project! {
   pub struct PacketStream {
     #[pin]
     inner: std::sync::Arc<parking_lot::Mutex<dyn FusedStream<Item = Result<Packet, crate::Error>> + Send + Unpin>>,
-    config: std::sync::Arc<parking_lot::Mutex<Option<(OperationConfig,Option<u64>)>>>
+    config: std::sync::Arc<parking_lot::Mutex<Option<ContextConfig>>>,
+    span: Span
   }
 }
 
@@ -50,6 +55,7 @@ impl PacketStream {
     Self {
       inner: std::sync::Arc::new(parking_lot::Mutex::new(futures::StreamExt::fuse(rx))),
       config: Default::default(),
+      span: Span::current(),
     }
   }
   #[cfg(not(target_family = "wasm"))]
@@ -59,7 +65,12 @@ impl PacketStream {
     Self {
       inner: std::sync::Arc::new(parking_lot::Mutex::new(rx.fuse())),
       config: Default::default(),
+      span: Span::current(),
     }
+  }
+
+  pub fn set_span(&mut self, span: Span) {
+    self.span = span;
   }
 
   pub fn set_context(&self, context: OperationConfig, seed: Option<u64>) {
