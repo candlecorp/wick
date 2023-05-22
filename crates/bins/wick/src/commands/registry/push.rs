@@ -32,8 +32,6 @@ pub(crate) async fn handle(
     .instrument(span.clone())
     .await?;
 
-  let mut package_clone = if opts.latest { Some(package.clone()) } else { None };
-
   let Some(registry) =  package.registry() else  {
       span.in_scope(||error!("No registry provided in package"));
       return Err(anyhow!("No registry provided in package"));
@@ -58,24 +56,21 @@ pub(crate) async fn handle(
   span.in_scope(|| info!(reference, "pushing artifact"));
   span.in_scope(|| debug!(options=?oci_opts, reference= &reference, "pushing reference"));
 
-  let url = package.push(&reference, &oci_opts).await?;
+  let url = if opts.latest {
+    // there must be a better way than cloning the package here, feel free to fix it.
+    let url = package.clone().push(&reference, &oci_opts).await?;
+
+    span.in_scope(|| info!(%url, "artifact pushed"));
+
+    let reference = package.tagged_reference("latest").unwrap();
+    span.in_scope(|| info!(reference, "pushing latest tag"));
+
+    package.push(&reference, &oci_opts).await?;
+    url
+  } else {
+    package.push(&reference, &oci_opts).await?
+  };
   span.in_scope(|| info!(%url, "artifact pushed"));
-
-  if opts.latest && package_clone.is_some() {
-    match package_clone {
-      Some(ref mut p) => {
-        let reference = p.tagged_reference("latest").unwrap();
-
-        span.in_scope(|| info!(reference, "pushing artifact"));
-
-        span.in_scope(|| debug!(options=?oci_opts, reference= &reference, "pushing reference"));
-
-        let url = p.push(&reference, &oci_opts).await?;
-        span.in_scope(|| info!(%url, "artifact pushed"));
-      }
-      None => {}
-    }
-  }
 
   Ok(())
 }
