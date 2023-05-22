@@ -35,7 +35,7 @@ pub trait Operation {
   fn handle(
     &self,
     invocation: Invocation,
-    payload: PacketStream,
+    stream: PacketStream,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>>;
 

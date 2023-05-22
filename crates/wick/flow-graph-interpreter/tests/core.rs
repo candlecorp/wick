@@ -9,58 +9,27 @@ use wick_packet::{packets, Packet};
 
 #[test_logger::test(tokio::test)]
 async fn test_senders() -> Result<()> {
-  let (interpreter, mut outputs) =
-    test::common_setup("./tests/manifests/v0/core/senders.yaml", "test", Vec::new()).await?;
-
-  assert_eq!(outputs.len(), 2);
-
-  let _ = outputs.pop();
-  let wrapper = outputs.pop().unwrap().unwrap();
-  let expected = Packet::encode("output", "Hello world");
-  assert_eq!(wrapper, expected);
-  interpreter.shutdown().await?;
-
-  Ok(())
+  first_packet_test("./tests/manifests/v0/core/senders.yaml", Vec::new(), "Hello world").await
 }
 
 #[test_logger::test(tokio::test)]
 async fn test_pluck() -> Result<()> {
-  let (interpreter, mut outputs) = test::common_setup(
+  first_packet_test(
     "./tests/manifests/v1/core-pluck.yaml",
-    "test",
     packets!(("input", json!({ "to_pluck" :"Hello world!", "to_ignore": "ignore me" }))),
+    "Hello world!",
   )
-  .await?;
-
-  assert_eq!(outputs.len(), 2);
-
-  let _ = outputs.pop();
-  let wrapper = outputs.pop().unwrap().unwrap();
-  let expected = Packet::encode("output", "Hello world!");
-  assert_eq!(wrapper, expected);
-  interpreter.shutdown().await?;
-
-  Ok(())
+  .await
 }
 
 #[test_logger::test(tokio::test)]
 async fn test_drop() -> Result<()> {
-  let (interpreter, mut outputs) = test::common_setup(
+  first_packet_test(
     "./tests/manifests/v1/core-drop.yaml",
-    "test",
     packets!(("first", "first"), ("second", "second"), ("third", "third")),
+    "second",
   )
-  .await?;
-
-  assert_eq!(outputs.len(), 2);
-
-  let _ = outputs.pop();
-  let wrapper = outputs.pop().unwrap().unwrap();
-  let expected = Packet::encode("output", "second");
-  assert_eq!(wrapper, expected);
-  interpreter.shutdown().await?;
-
-  Ok(())
+  .await
 }
 
 #[test_logger::test(tokio::test)]
@@ -91,82 +60,72 @@ async fn test_merge() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_subflows() -> Result<()> {
-  let (interpreter, mut outputs) = test::common_setup(
+  first_packet_test(
     "./tests/manifests/v1/private-flows.yaml",
-    "test",
     packets!(("input", "hello WORLD")),
+    "DLROW OLLEH",
   )
-  .await?;
-
-  assert_eq!(outputs.len(), 2);
-
-  let _ = outputs.pop();
-  let wrapper = outputs.pop().unwrap().unwrap();
-  let actual: String = wrapper.deserialize()?;
-  let expected = "DLROW OLLEH";
-  assert_eq!(actual, expected);
-  interpreter.shutdown().await?;
-
-  Ok(())
+  .await
 }
 
 #[test_logger::test(tokio::test)]
-async fn test_switch_1() -> Result<()> {
-  let (interpreter, mut outputs) = test::common_setup(
+async fn test_switch_case_1() -> Result<()> {
+  first_packet_test(
     "./tests/manifests/v1/core-switch.yaml",
-    "test",
     packets!(("command", "want_reverse"), ("input", "hello WORLD")),
+    "DLROW olleh",
   )
-  .await?;
-
-  assert_eq!(outputs.len(), 2);
-
-  let _ = outputs.pop();
-  let wrapper = outputs.pop().unwrap().unwrap();
-  let actual: String = wrapper.deserialize()?;
-  let expected = "DLROW olleh";
-  assert_eq!(actual, expected);
-  interpreter.shutdown().await?;
-
-  Ok(())
+  .await
 }
 
 #[test_logger::test(tokio::test)]
-async fn test_switch_2() -> Result<()> {
-  let (interpreter, mut outputs) = test::common_setup(
+async fn test_switch_case_2() -> Result<()> {
+  first_packet_test(
     "./tests/manifests/v1/core-switch.yaml",
-    "test",
     packets!(("command", "want_uppercase"), ("input", "hello WORLD")),
+    "HELLO WORLD",
   )
-  .await?;
-
-  assert_eq!(outputs.len(), 2);
-
-  let _ = outputs.pop();
-  let wrapper = outputs.pop().unwrap().unwrap();
-  let actual: String = wrapper.deserialize()?;
-  let expected = "HELLO WORLD";
-  assert_eq!(actual, expected);
-  interpreter.shutdown().await?;
-
-  Ok(())
+  .await
 }
 
 #[test_logger::test(tokio::test)]
 async fn test_switch_default() -> Result<()> {
-  let (interpreter, mut outputs) = test::common_setup(
+  first_packet_test(
     "./tests/manifests/v1/core-switch.yaml",
-    "test",
     packets!(("command", "nomatch"), ("input", "hello WORLD")),
+    "hello WORLD",
   )
-  .await?;
+  .await
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_switch_bool_true() -> Result<()> {
+  first_packet_test(
+    "./tests/manifests/v1/core-switch-2.yaml",
+    packets!(("input", true), ("message", "does not matter")),
+    "on_true",
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_switch_bool_default() -> Result<()> {
+  first_packet_test(
+    "./tests/manifests/v1/core-switch-2.yaml",
+    packets!(("input", false), ("message", "does not matter")),
+    "on_false",
+  )
+  .await
+}
+
+async fn first_packet_test(file: &str, packets: Vec<Packet>, expected: &str) -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(file, "test", packets).await?;
 
   assert_eq!(outputs.len(), 2);
 
   let _ = outputs.pop();
   let wrapper = outputs.pop().unwrap().unwrap();
   let actual: String = wrapper.deserialize()?;
-  let expected = "hello WORLD";
   assert_eq!(actual, expected);
   interpreter.shutdown().await?;
 
