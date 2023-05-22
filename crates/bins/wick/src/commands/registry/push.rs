@@ -32,6 +32,11 @@ pub(crate) async fn handle(
     .instrument(span.clone())
     .await?;
 
+  let mut package_clone: Option<wick_package::WickPackage> = None;
+  if opts.latest {
+    package_clone = Some(package.clone());
+  }
+
   let Some(registry) =  package.registry() else  {
       span.in_scope(||error!("No registry provided in package"));
       return Err(anyhow!("No registry provided in package"));
@@ -59,15 +64,20 @@ pub(crate) async fn handle(
   let url = package.push(&reference, &oci_opts).await?;
   span.in_scope(|| info!(%url, "artifact pushed"));
 
-  if opts.latest {
-    let reference = package.tagged_reference("latest").unwrap();
+  if opts.latest && package_clone.is_some() {
+    match package_clone {
+      Some(ref mut p) => {
+        let reference = p.tagged_reference("latest").unwrap();
 
-    span.in_scope(|| info!(reference, "pushing artifact"));
+        span.in_scope(|| info!(reference, "pushing artifact"));
 
-    span.in_scope(|| debug!(options=?oci_opts, reference= &reference, "pushing reference"));
+        span.in_scope(|| debug!(options=?oci_opts, reference= &reference, "pushing reference"));
 
-    let url = package.push(&reference, &oci_opts).await?;
-    span.in_scope(|| info!(%url, "artifact pushed"));
+        let url = p.push(&reference, &oci_opts).await?;
+        span.in_scope(|| info!(%url, "artifact pushed"));
+      }
+      None => {}
+    }
   }
 
   Ok(())
