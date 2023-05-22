@@ -71,7 +71,7 @@ async fn error(_input: Invocation) -> Result<PacketStream, ComponentError> {
 }
 
 async fn test_component(mut input: Invocation) -> Result<PacketStream, ComponentError> {
-  let (tx, stream) = PacketStream::new_channels();
+  let (tx, stream) = input.make_response();
   tokio::spawn(async move {
     let mut input = fan_out!(input.packets, "input");
     while let Some(Ok(input)) = input.next().await {

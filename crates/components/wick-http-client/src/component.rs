@@ -13,7 +13,16 @@ use wick_config::config::components::{Codec, HttpClientComponentConfig, HttpClie
 use wick_config::config::{Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Base64Bytes, FluxChannel, Invocation, Observer, OperationConfig, Packet, PacketStream};
+use wick_packet::{
+  Base64Bytes,
+  FluxChannel,
+  Invocation,
+  Observer,
+  OperationConfig,
+  Packet,
+  PacketSender,
+  PacketStream,
+};
 
 use crate::error::Error;
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
@@ -239,7 +248,7 @@ impl Component for HttpClientComponent {
         }
         None => return Err(ComponentError::message("Http client component not initialized")),
       };
-      let (tx, rx) = PacketStream::new_channels();
+      let (tx, rx) = invocation.make_response();
       let fut = handle(
         opdef,
         tx.clone(),
@@ -294,7 +303,7 @@ fn output_task(
   span: Span,
   codec: Codec,
   mut body_stream: std::pin::Pin<Box<impl Stream<Item = Result<Base64Bytes, reqwest::Error>> + Send + 'static>>,
-  tx: FluxChannel<Packet, wick_packet::Error>,
+  tx: PacketSender,
 ) -> BoxFuture<'static, ()> {
   let task = async move {
     match codec {

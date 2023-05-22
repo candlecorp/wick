@@ -1,5 +1,5 @@
 use flow_component::{Component, ComponentError, RuntimeCallback};
-use wasmrs_rx::{FluxChannel, Observer};
+use wasmrs_rx::Observer;
 use wick_interface_types::{ComponentSignature, Field, OperationSignature};
 use wick_packet::{ComponentReference, Entity, Invocation, Packet, PacketStream};
 
@@ -58,16 +58,15 @@ impl Component for ComponentComponent {
           all_collections,
         )));
       }
-      let flux = FluxChannel::new();
+      let (tx, rx) = invocation.make_response();
 
-      flux
-        .send(Packet::encode(
-          port_name,
-          ComponentReference::new(invocation.origin.clone(), Entity::component(entity.component_id())),
-        ))
-        .map_err(ComponentError::new)?;
+      tx.send(Packet::encode(
+        port_name,
+        ComponentReference::new(invocation.origin.clone(), Entity::component(entity.component_id())),
+      ))
+      .map_err(ComponentError::new)?;
 
-      Ok(PacketStream::new(Box::new(flux)))
+      Ok(rx)
     })
   }
 

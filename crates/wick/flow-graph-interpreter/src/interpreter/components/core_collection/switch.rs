@@ -112,7 +112,7 @@ impl Operation for Op {
     mut invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let (tx, rx) = PacketStream::new_channels();
+    let (tx, rx) = invocation.make_response();
 
     let default = context.config.default.clone();
     let callback = context.callback;
@@ -177,7 +177,7 @@ impl Operation for Op {
         let stream = router.entry(op.clone()).or_insert_with(|| {
           let target = path_to_entity(op).unwrap(); // unwrap ok because the config has been pre-validated.
           let op_id = target.operation_id().to_owned();
-          let (route_tx, route_rx) = PacketStream::new_channels();
+          let (route_tx, route_rx) = invocation.make_response();
           let link = ComponentReference::new(origin.clone(), target);
           let tx = tx.clone();
           let callback = callback.clone();

@@ -3,7 +3,7 @@ use std::time::SystemTime;
 use tracing::{debug_span, Span};
 use uuid::Uuid;
 
-use crate::{Entity, InherentData, PacketStream, ParseError};
+use crate::{Entity, InherentData, PacketSender, PacketStream, ParseError};
 
 /// A complete invocation request.
 #[derive(Debug)]
@@ -38,6 +38,8 @@ impl Invocation {
     let invocation_id = get_uuid();
     let span = debug_span!("invocation",id=%invocation_id,tx_id=%tx_id);
     span.follows_from(following_span.id());
+    let mut packets: PacketStream = packets.into();
+    packets.set_span(span.clone());
 
     Invocation {
       origin: origin.into(),
@@ -46,7 +48,7 @@ impl Invocation {
       tx_id,
       inherent,
       span,
-      packets: packets.into(),
+      packets,
     }
   }
 
@@ -120,8 +122,10 @@ impl Invocation {
   /// invocations.
   pub fn next_tx(&self, origin: Entity, target: Entity) -> Invocation {
     let invocation_id = get_uuid();
-    let span = debug_span!("invocation",id=%invocation_id);
+    let span = debug_span!("invocation",id=%invocation_id, %target);
     span.follows_from(&self.span);
+    let mut packets: PacketStream = PacketStream::empty();
+    packets.set_span(span.clone());
 
     Invocation {
       origin,
@@ -145,7 +149,9 @@ impl Invocation {
   }
 
   pub fn attach_stream(&mut self, packets: impl Into<PacketStream>) {
-    let _ = std::mem::replace(&mut self.packets, packets.into());
+    let mut stream: PacketStream = packets.into();
+    stream.set_span(self.span.clone());
+    let _ = std::mem::replace(&mut self.packets, stream);
   }
 
   /// Get the seed associated with an invocation if it exists.
@@ -175,6 +181,14 @@ impl Invocation {
   /// Do work within this invocation's trace span.
   pub fn trace<F: FnOnce() -> T, T>(&self, f: F) -> T {
     self.span.in_scope(f)
+  }
+
+  pub fn make_response(&self) -> (PacketSender, PacketStream) {
+    let (tx, mut rx) = PacketStream::new_channels();
+    let span = debug_span!("invocation-response", id=%self.id, target=%self.target);
+    span.follows_from(&self.span);
+    rx.set_span(span);
+    (tx, rx)
   }
 }
 

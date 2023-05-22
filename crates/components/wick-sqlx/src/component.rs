@@ -141,8 +141,8 @@ impl Component for SqlXComponent {
       };
 
       let input_names: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
+      let (tx, rx) = invocation.make_response();
       let mut input_streams = wick_packet::split_stream(invocation.packets, input_names);
-      let (tx, rx) = PacketStream::new_channels();
       tokio::spawn(async move {
         'outer: loop {
           let mut incoming_packets = Vec::new();
