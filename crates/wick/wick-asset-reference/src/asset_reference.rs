@@ -216,6 +216,13 @@ impl AssetReference {
     Box::pin(UnboundedReceiverStream::new(rx))
   }
 
+  /// Check if the asset exists on disk.
+  #[must_use]
+  pub fn exists_locally(&self) -> bool {
+    let path = self.path();
+    path.is_ok() && path.unwrap().exists()
+  }
+
   fn retrieve_as_oci_with_progress(
     &self,
     options: FetchOptions,
@@ -292,14 +299,14 @@ impl Asset for AssetReference {
     let location = self.location().to_owned();
 
     let cache_location = self.cache_location.clone();
+    let exists = self.exists_locally();
     Box::pin(async move {
       let path = path.map_err(|e| assets::Error::Parse(e.to_string()))?;
       let pb = PathBuf::from(&path);
       if pb.is_dir() {
         return Err(assets::Error::IsDirectory(path.clone()));
       }
-      let file = tokio::fs::File::open(&pb).await;
-      if file.is_ok() {
+      if exists {
         debug!(path = ?path, "fetching local asset");
         let mut file = tokio::fs::File::open(&path)
           .await
