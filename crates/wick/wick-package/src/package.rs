@@ -90,10 +90,12 @@ fn process_assets(
         }
       }
 
-      let file_bytes = asset.bytes(&options).await?;
-      let hash = format!("sha256:{}", digest(file_bytes.as_ref()));
-      let wick_file = PackageFile::new(relative_path.to_path_buf(), hash, media_type.to_owned(), file_bytes);
-      wick_files.push(wick_file);
+      if asset.exists_locally() {
+        let file_bytes = asset.bytes(&options).await?;
+        let hash = format!("sha256:{}", digest(file_bytes.as_ref()));
+        let wick_file = PackageFile::new(relative_path.to_path_buf(), hash, media_type.to_owned(), file_bytes);
+        wick_files.push(wick_file);
+      }
     }
 
     Ok((seen_assets, wick_files))
