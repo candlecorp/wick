@@ -1,0 +1,89 @@
+name: my_component
+kind: wick/component@v1
+resources:
+  - name: DBADDR
+    resource:
+      kind: wick/resource/url@v1
+      url: postgres://postgres:$TEST_PASSWORD@$TEST_HOST:$POSTGRES_PORT/wick_test
+component:
+  kind: wick/component/sql@v1
+  resource: DBADDR
+  tls: false
+  operations:
+    - name: native_types
+      inputs:
+        - name: i16
+          type: i16
+        - name: i32
+          type: i32
+        - name: i64
+          type: i64
+        - name: f32
+          type: f32
+      query: |
+        INSERT INTO num_types (i16, i32, i64, f32) VALUES ($1,$2,$3,$4) RETURNING i16,i32,i64,f32
+      arguments:
+        - i16
+        - i32
+        - i64
+        - f32
+    - name: coerced_types
+      inputs:
+        - name: u16
+          type: u16
+        - name: u32
+          type: u32
+        - name: u64
+          type: u64
+        - name: f64
+          type: f64
+      query: |
+        INSERT INTO num_types (i16, i32, i64, f32) VALUES ($1,$2,$3,$4) RETURNING i16,i32,i64,f32
+      arguments:
+        - u16
+        - u32
+        - u64
+        - f64
+tests:
+  - name: native_types
+    operation: native_types
+    input:
+      - name: i16
+        data: 32767
+      - name: i32
+        data: 2147483647
+      - name: i64
+        data: 9223372036854775807
+      - name: f32
+        data: 3.4028234663852886e+38
+    output:
+      - name: output
+        data:
+          i16: 32767
+          i32: 2147483647
+          i64: 9223372036854775807
+          f32: 3.4028234663852886e+38
+      - name: output
+        flags:
+          done: true
+  - name: coerced_types
+    operation: coerced_types
+    input:
+      - name: u16
+        data: 32767
+      - name: u32
+        data: 2147483647
+      - name: u64
+        data: 9223372036854775807
+      - name: f64
+        data: 3.4028234663852886e+38
+    output:
+      - name: output
+        data:
+          i16: 32767
+          i32: 2147483647
+          i64: 9223372036854775807
+          f32: 3.4028234663852886e+38
+      - name: output
+        flags:
+          done: true

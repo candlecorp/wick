@@ -73,6 +73,7 @@ integration-tests: codegen-tests
 
 wick-db-tests:
   cargo run -p wick-cli -- test ./examples/db/flow-with-postgres.wick
+  cargo run -p wick-cli -- test ./examples/db/postgres-numeric.wick
 
 all-tests:
 	if {{nextest}} = "true"; then \
