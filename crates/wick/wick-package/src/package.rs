@@ -264,7 +264,6 @@ impl WickPackage {
   #[must_use]
   /// Returns an OCI URL with the specified tag.
   pub fn tagged_reference(&self, tag: &str) -> Option<String> {
-    println!("tagged_reference: {:?}", self.registry);
     self
       .registry
       .as_ref()
