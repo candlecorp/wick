@@ -1,7 +1,7 @@
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{alpha1, alphanumeric1, char, multispace0};
-use nom::combinator::{eof, map, recognize};
+use nom::combinator::{eof, recognize};
 use nom::error::ParseError;
 use nom::multi::{many0, many1};
 use nom::sequence::{delimited, pair, terminated};
@@ -137,11 +137,8 @@ fn connection_expression(input: &str) -> IResult<&str, ConnectionExpression> {
 }
 
 pub(crate) fn flow_expression(input: &str) -> IResult<&str, FlowExpression> {
-  let (i, expr) = terminated(
-    map(connection_expression, FlowExpression::ConnectionExpression),
-    alt((eof, ws(tag(";")))),
-  )(input)?;
-  Ok((i, expr))
+  let (i, expr) = terminated(connection_expression, alt((eof, ws(tag(";")))))(input)?;
+  Ok((i, FlowExpression::ConnectionExpression(Box::new(expr))))
 }
 
 fn _parse(input: &str) -> IResult<&str, FlowProgram> {

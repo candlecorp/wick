@@ -172,7 +172,7 @@ impl ConnectionExpression {
 /// A flow expression.
 pub enum FlowExpression {
   /// A [ConnectionExpression].
-  ConnectionExpression(ConnectionExpression),
+  ConnectionExpression(Box<ConnectionExpression>),
   /// A [BlockExpression].
   BlockExpression(BlockExpression),
 }

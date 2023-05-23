@@ -752,7 +752,7 @@ impl TryFrom<v1::FlowExpression> for ast::FlowExpression {
 
   fn try_from(expr: v1::FlowExpression) -> Result<Self> {
     Ok(match expr {
-      v1::FlowExpression::ConnectionDefinition(v) => ast::FlowExpression::ConnectionExpression(v.try_into()?),
+      v1::FlowExpression::ConnectionDefinition(v) => ast::FlowExpression::ConnectionExpression(Box::new(v.try_into()?)),
       v1::FlowExpression::BlockExpression(v) => ast::FlowExpression::BlockExpression(v.try_into()?),
     })
   }
@@ -976,7 +976,7 @@ impl TryFrom<ast::FlowExpression> for v1::FlowExpression {
 
   fn try_from(value: ast::FlowExpression) -> std::result::Result<Self, Self::Error> {
     match value {
-      ast::FlowExpression::ConnectionExpression(c) => Ok(Self::ConnectionDefinition(c.try_into()?)),
+      ast::FlowExpression::ConnectionExpression(c) => Ok(Self::ConnectionDefinition((*c).try_into()?)),
       ast::FlowExpression::BlockExpression(c) => Ok(Self::BlockExpression(c.try_into()?)),
     }
   }

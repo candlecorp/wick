@@ -110,7 +110,7 @@ impl TryFrom<crate::v0::SchematicManifest> for config::FlowOperation {
     let connections: Result<Vec<ast::FlowExpression>> = manifest
       .connections
       .into_iter()
-      .map(|def| Ok(ast::FlowExpression::ConnectionExpression(def.try_into()?)))
+      .map(|def| Ok(ast::FlowExpression::ConnectionExpression(Box::new(def.try_into()?))))
       .collect();
     Ok(Self {
       name: manifest.name.clone(),
