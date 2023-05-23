@@ -1,6 +1,8 @@
-use chrono::NaiveDateTime;
+pub use chrono::NaiveDateTime;
 
-pub(crate) fn parse_date(v: &str) -> NaiveDateTime {
+#[must_use]
+/// Parse a date from a string in RFC3339 format, or in the format `%Y-%m-%d %H:%M:%S`.
+pub fn parse_date(v: &str) -> NaiveDateTime {
   use chrono::DateTime;
   let v: DateTime<chrono::Utc> = DateTime::parse_from_rfc3339(v)
     .unwrap_or_else(|_| {

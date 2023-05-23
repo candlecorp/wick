@@ -4,8 +4,8 @@ use sqlx::encode::IsNull;
 use sqlx::postgres::PgTypeInfo;
 use sqlx::{Encode, Postgres};
 use wick_interface_types::TypeSignature;
+use wick_packet::parse_date;
 
-use crate::data::parse_date;
 use crate::sql_wrapper::SqlWrapper;
 
 impl<'q> Encode<'q, Postgres> for SqlWrapper {

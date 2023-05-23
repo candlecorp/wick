@@ -77,6 +77,8 @@
 mod b64_bytes;
 mod collection_link;
 mod context;
+#[cfg(feature = "datetime")]
+mod datetime;
 mod entity;
 mod error;
 mod inherent;
@@ -92,6 +94,8 @@ mod wrapped_type;
 
 pub use collection_link::ComponentReference;
 pub use context::{ContextTransport, OperationConfig};
+#[cfg(feature = "datetime")]
+pub use datetime::{parse_date, NaiveDateTime};
 pub use entity::Entity;
 pub use error::{Error, ParseError};
 pub use inherent::InherentData;

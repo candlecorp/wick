@@ -9,7 +9,11 @@
       "app.yaml"
     ]
   },
-  "rust-analyzer.cargo.features": ["wick-rpc/client"],
+  "rust-analyzer.cargo.features": [
+    "wick-rpc/client",
+    "wick-packet/datetime",
+    "wick-packet/invocation"
+  ],
   "rust-analyzer.rustfmt.overrideCommand": [
     "rustup",
     "run",

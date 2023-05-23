@@ -19,6 +19,7 @@ maintenance = { status = "actively-developed" }
 default = []
 invocation = ["uuid", "seeded-random"]
 rt-tokio = ["tokio/rt"]
+datetime = ["chrono"]
 
 [dependencies]
 wick-interface-types = { workspace = true, features = ["typeid"] }
@@ -41,6 +42,8 @@ seeded-random = { workspace = true, optional = true }
 pin-project-lite = "0.2"
 base64-serde = "0.7.0"
 base64 = { workspace = true, default-features = false, features = ["alloc"] }
+# datetime feature
+chrono = { workspace = true, optional = true, default-features = false }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasmrs-guest = { workspace = true }
