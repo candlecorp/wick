@@ -74,10 +74,10 @@ async fn load_shortform_yaml() -> Result<(), ManifestError> {
 
   assert_eq!(
     expr,
-    &FlowExpression::ConnectionExpression(ConnectionExpression::new(
+    &FlowExpression::ConnectionExpression(Box::new(ConnectionExpression::new(
       ConnectionTargetExpression::new(InstanceTarget::Input, "input", Default::default()),
       ConnectionTargetExpression::new(InstanceTarget::named("logger"), "input", Default::default())
-    ))
+    )))
   );
 
   Ok(())

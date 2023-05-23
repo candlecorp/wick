@@ -17,12 +17,14 @@ use crate::Error;
 
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
+type ProcessResult = (HashSet<PathBuf>, Vec<PackageFile>);
+
 fn process_assets(
   mut seen_assets: HashSet<PathBuf>,
   assets: Assets<AssetReference>,
   root_parent_dir: PathBuf,
   parent_dir: PathBuf,
-) -> BoxFuture<Result<(HashSet<PathBuf>, Vec<PackageFile>), Error>> {
+) -> BoxFuture<Result<ProcessResult, Error>> {
   let task = async move {
     let mut wick_files: Vec<PackageFile> = Vec::new();
     for asset in assets.iter() {
