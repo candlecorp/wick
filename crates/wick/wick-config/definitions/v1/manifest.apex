@@ -267,14 +267,20 @@ type Url @tagged("wick/resource/url@v1") {
 
 "A type definition for a Wick Components and Operations"
 type TypesConfiguration @tagged("wick/types@v1") {
-  "The name of this component."
+  "The name of this type."
   name: string?
 
-  "Additional types to export and make available to the component."
+  "Associated metadata for this type."
+  metadata: Metadata?,
+
+  "Additional types to export and make available to the type."
   types: [TypeDefinition]
 
   "A list of operation signatures."
   operations: [OperationDefinition]
+
+  "Details about the package for this types."
+  package: PackageDefinition?,
 }
 
 "A configuration for a Wick Component"

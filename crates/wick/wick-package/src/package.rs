@@ -130,7 +130,10 @@ impl WickPackage {
 
     let options = wick_config::FetchOptions::default();
     let config = WickConfiguration::fetch(path.to_string_lossy(), options).await?;
-    if !matches!(config, WickConfiguration::App(_) | WickConfiguration::Component(_)) {
+    if !matches!(
+      config,
+      WickConfiguration::App(_) | WickConfiguration::Component(_) | WickConfiguration::Types(_)
+    ) {
       return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string()));
     }
     let full_path = tokio::fs::canonicalize(path)
@@ -161,6 +164,19 @@ impl WickPackage {
         let annotations = metadata_to_annotations(&config.metadata());
         let media_type = media_types::COMPONENT;
         let kind = wick_oci_utils::WickPackageKind::COMPONENT;
+
+        extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
+
+        let registry = config.package().and_then(|package| package.registry().cloned());
+
+        (kind, name, version, annotations, parent_dir, media_type, registry)
+      }
+      WickConfiguration::Types(config) => {
+        let name = config.name().cloned().ok_or(Error::NoName)?;
+        let version = config.version();
+        let annotations = metadata_to_annotations(&config.metadata());
+        let media_type = media_types::TYPES;
+        let kind = wick_oci_utils::WickPackageKind::TYPES;
 
         extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
 
@@ -248,6 +264,7 @@ impl WickPackage {
   #[must_use]
   /// Returns an OCI URL with the specified tag.
   pub fn tagged_reference(&self, tag: &str) -> Option<String> {
+    println!("tagged_reference: {:?}", self.registry);
     self
       .registry
       .as_ref()

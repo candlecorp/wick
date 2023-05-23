@@ -1142,12 +1142,17 @@
             ]
           },
           "name": {
-            "description": "The name of this component.",
+            "description": "The name of this type.",
             "required": false,
             "type": "string"
           },
+          "metadata": {
+            "description": "Associated metadata for this type.",
+            "required": false,
+            "$ref": "#/$defs/v1/Metadata"
+          },
           "types": {
-            "description": "Additional types to export and make available to the component.",
+            "description": "Additional types to export and make available to the type.",
             "type": "array",
             "items": {
               "$ref": "#/$defs/v1/TypeDefinition"
@@ -1159,6 +1164,11 @@
             "items": {
               "$ref": "#/$defs/v1/OperationDefinition"
             }
+          },
+          "package": {
+            "description": "Details about the package for this types.",
+            "required": false,
+            "$ref": "#/$defs/v1/PackageDefinition"
           }
         },
         "required": []

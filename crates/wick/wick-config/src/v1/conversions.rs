@@ -75,6 +75,8 @@ impl TryFrom<v1::TypesConfiguration> for types_config::TypesConfiguration {
 
   fn try_from(value: v1::TypesConfiguration) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
+      name: value.name,
+      metadata: value.metadata.try_map_into()?,
       types: value.types.try_map_into()?,
       operations: value
         .operations
@@ -82,6 +84,7 @@ impl TryFrom<v1::TypesConfiguration> for types_config::TypesConfiguration {
         .map(|op| Ok((op.name.clone(), op.try_into()?)))
         .collect::<Result<_>>()?,
       source: None,
+      package: value.package.try_map_into()?,
     })
   }
 }
