@@ -42,7 +42,7 @@ impl CtxPool {
 
         let b = a.map(|a| a.map(SerMapPgRow::from));
         let c = b.map(|a| {
-          a.map(|a| serde_json::to_value(a).unwrap())
+          a.map(|a| serde_json::to_value(a).unwrap_or(Value::Null))
             .map_err(|e| Error::Fetch(e.to_string()))
         });
         c.boxed()
@@ -56,7 +56,7 @@ impl CtxPool {
         let a = query.fetch(c);
         let b = a.map(|a| a.map(SerMapMssqlRow::from));
         let c = b.map(|a| {
-          a.map(|a| serde_json::to_value(a).unwrap())
+          a.map(|a| serde_json::to_value(a).unwrap_or(Value::Null))
             .map_err(|e| Error::Fetch(e.to_string()))
         });
         c.boxed()

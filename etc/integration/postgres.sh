@@ -38,6 +38,8 @@ init() {
   docker exec -it $container_name psql -U $username -h localhost -d $db -c "CREATE TABLE users (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL);"
   echo "Creating user 'Test User'"
   docker exec -it $container_name psql -U $username -h localhost -d $db -c "INSERT INTO users (name, email) VALUES ('Test User', 'test_users@example.com');"
+  echo "Creating table 'num_types'"
+  docker exec -it $container_name psql -U $username -h localhost -d $db -c "CREATE TABLE num_types (id SERIAL PRIMARY KEY, i16 smallint, i32 integer, i64 bigint, db_decimal decimal, db_numeric numeric, f32 real, f64 double precision);"
 }
 
 handle "$@"
