@@ -84,7 +84,7 @@ integration-setup:
 	./etc/integration/mssql.sh up init
 	./etc/integration/registry.sh up init
 	./etc/integration/httpbin.sh up init
-	cargo run -p wick-cli -- reg push --debug ${DOCKER_REGISTRY}/test-component/baseline:0.1.0 ./crates/integration/test-baseline-component/component.yaml --insecure=${DOCKER_REGISTRY}
+	cargo run -p wick-cli -- reg push --debug ./crates/integration/test-baseline-component/component.yaml --insecure-oci=${DOCKER_REGISTRY}
 
 integration-teardown:
 	# docker rm -f simple_registry

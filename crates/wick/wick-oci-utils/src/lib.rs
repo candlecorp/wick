@@ -135,6 +135,8 @@ pub enum WickPackageKind {
   APPLICATION,
   /// A Wick component package.
   COMPONENT,
+  /// A Wick types package.
+  TYPES,
 }
 
 /// Retrieve a payload from an OCI url.

@@ -1,23 +1,35 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use asset_container::AssetManager;
+use asset_container::{AssetManager, Assets};
+use wick_asset_reference::AssetReference;
 use wick_interface_types::TypeDefinition;
 
+use super::common::package_definition::PackageConfig;
 use super::OperationSignature;
+use crate::config;
 
 #[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
 #[property(get(public), set(private), mut(disable))]
-#[asset(asset(crate::config::AssetReference))]
+#[asset(asset(AssetReference))]
 #[must_use]
 pub struct TypesConfiguration {
+  #[asset(skip)]
+  #[builder(setter(strip_option), default)]
+  pub(crate) name: Option<String>,
   #[asset(skip)]
   #[property(skip)]
   pub(crate) source: Option<PathBuf>,
   #[asset(skip)]
+  #[builder(default)]
+  #[property(skip)]
+  pub(crate) metadata: Option<config::Metadata>,
+  #[asset(skip)]
   pub(crate) types: Vec<TypeDefinition>,
   #[asset(skip)]
   pub(crate) operations: HashMap<String, OperationSignature>,
+  #[builder(default)]
+  pub(crate) package: Option<PackageConfig>,
 }
 
 impl TypesConfiguration {
@@ -43,6 +55,25 @@ impl TypesConfiguration {
   #[must_use]
   pub fn get_type(&self, name: &str) -> Option<&TypeDefinition> {
     self.types.iter().find(|t| t.name() == name)
+  }
+
+  /// Return the version of the application.
+  #[must_use]
+  pub fn version(&self) -> String {
+    self.metadata.clone().map(|m| m.version).unwrap_or_default()
+  }
+
+  /// Return the metadata of the component.
+  #[must_use]
+  pub fn metadata(&self) -> config::Metadata {
+    self.metadata.clone().unwrap()
+  }
+
+  /// Get the package files
+  #[must_use]
+  pub fn package_files(&self) -> Option<Assets<AssetReference>> {
+    // should return empty vec if package is None
+    self.package.as_ref().map(|p| p.assets())
   }
 
   /// Set the source location of the configuration.

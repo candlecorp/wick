@@ -585,12 +585,17 @@ pub(crate) struct Url {
 #[serde(deny_unknown_fields)]
 /// A type definition for a Wick Components and Operations
 pub(crate) struct TypesConfiguration {
-  /// The name of this component.
+  /// The name of this type.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) name: Option<String>,
-  /// Additional types to export and make available to the component.
+  /// Associated metadata for this type.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) metadata: Option<Metadata>,
+  /// Additional types to export and make available to the type.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -600,6 +605,11 @@ pub(crate) struct TypesConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
+  /// Details about the package for this types.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) package: Option<PackageDefinition>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
