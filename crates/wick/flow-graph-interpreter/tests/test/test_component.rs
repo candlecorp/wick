@@ -180,7 +180,7 @@ impl Component for TestComponent {
   }
 }
 
-fn handler(mut invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Result<PacketStream> {
+fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Result<PacketStream> {
   let mut payload_stream = invocation.packets;
   let operation = invocation.target.operation_id();
   match operation {
