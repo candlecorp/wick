@@ -1,14 +1,22 @@
+# rust
 **/target
-DEV.env
-node_modules
-/build
-/crates/integration/*/build
-.DS_Store
-archive
-crates/wick-rpc/src/generated/wick.rs
 crates/*/**/Cargo.lock
-bundle.tar
-/codegen/dist
-.vscode/*.log
-wick_components/
+
+# .env
+DEV.env
+.env.local
+
+# node/js
+node_modules
+
+# general wick/wasm
+/build
 .wick/
+crates/wick-rpc/src/generated/wick.rs
+
+/crates/integration/*/build
+
+# misc
+archive
+.vscode/*.log
+.DS_Store

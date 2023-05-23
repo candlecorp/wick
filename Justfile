@@ -69,6 +69,10 @@ integration-tests: codegen-tests
 	  cargo test --workspace -- --skip slow_test --test-threads=6; \
 	fi
 	cargo test --manifest-path tests/template/Cargo.toml
+	just wick-db-tests
+
+wick-db-tests:
+  cargo run -p wick-cli -- test ./examples/db/flow-with-postgres.wick
 
 all-tests:
 	if {{nextest}} = "true"; then \

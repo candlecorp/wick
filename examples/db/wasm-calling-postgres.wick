@@ -16,9 +16,6 @@ import:
           inputs:
             - name: id
               type: i32
-          outputs:
-            - name: output
-              type: object
           query: SELECT name FROM users WHERE id = $1
           arguments:
             - id
@@ -28,6 +25,6 @@ triggers:
       name: main
       component:
         kind: wick/component/manifest@v1
-        ref: ../crates/integration/test-cli-with-db/component.yaml
+        ref: ../../crates/integration/test-cli-with-db/component.yaml
         provide:
           db: MYDB

@@ -13,10 +13,7 @@ component:
     - name: get_user
       inputs:
         - name: id
-          type: u32
-      outputs:
-        - name: output
-          type: object
+          type: i32
       query: SELECT * FROM users WHERE id = $1
       arguments:
         - id
@@ -26,9 +23,6 @@ component:
           type: string
         - name: email
           type: string
-      outputs:
-        - name: output
-          type: object
       query: INSERT INTO users(name, email) VALUES ($1, $2)
       arguments:
         - name

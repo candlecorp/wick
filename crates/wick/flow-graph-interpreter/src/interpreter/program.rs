@@ -9,7 +9,7 @@ use crate::error::ValidationError;
 use crate::graph::types::*;
 
 pub(crate) mod validator;
-use super::components::{get_id, ComponentMap};
+use super::components::{reconcile_op_id, ComponentMap};
 use super::error::Error;
 
 #[must_use]
@@ -165,33 +165,33 @@ fn get_schematic_signature(
 }
 
 fn get_signature(
-  schematic: &str,
-  p: &Port,
-  kind: PortDirection,
+  local_name: &str,
+  port: &Port,
+  direction: PortDirection,
   components: &ComponentMap,
 ) -> Result<Option<TypeSignature>, ValidationError> {
-  let name = p.name();
-  match p.node().kind() {
-    NodeKind::Input(_) => match kind {
+  let name = port.name();
+  match port.node().kind() {
+    NodeKind::Input(_) => match direction {
       PortDirection::In => Ok(None),
       PortDirection::Out => Ok(Some(TypeSignature::Object)),
     },
 
-    NodeKind::Output(_) => match kind {
+    NodeKind::Output(_) => match direction {
       PortDirection::Out => Ok(None),
       PortDirection::In => Ok(Some(TypeSignature::Object)),
     },
     NodeKind::External(ext) | NodeKind::Inherent(ext) => {
-      let ext_collection = components
+      let ext_component = components
         .get(ext.component_id())
         .ok_or_else(|| ValidationError::ComponentIdNotFound(ext.component_id().to_owned()))?;
 
-      let operation = p.node();
+      let op_node = port.node();
 
-      let id = get_id(ext.component_id(), ext.name(), schematic, operation.name());
+      let id = reconcile_op_id(ext.component_id(), ext.name(), local_name, op_node.name());
 
       let operation =
-        ext_collection
+        ext_component
           .operations
           .iter()
           .find(|op| op.name == id)
@@ -200,16 +200,30 @@ fn get_signature(
             name: id.clone(),
           })?;
 
-      let sig = match kind {
-        PortDirection::In => operation.inputs.iter().find(|p| p.name == name).map(|p| p.ty.clone()),
-        PortDirection::Out => operation.outputs.iter().find(|p| p.name == name).map(|p| p.ty.clone()),
+      let sig = match direction {
+        PortDirection::In => operation
+          .inputs
+          .iter()
+          .find(|p| p.name == name)
+          .map(|p| p.ty.clone())
+          .ok_or(ValidationError::UnknownInput {
+            operation: ext.name().to_owned(),
+            component: ext.component_id().to_owned(),
+            port: name.to_owned(),
+          })?,
+        PortDirection::Out => operation
+          .outputs
+          .iter()
+          .find(|p| p.name == name)
+          .map(|p| p.ty.clone())
+          .ok_or(ValidationError::UnknownOutput {
+            operation: ext.name().to_owned(),
+            component: ext.component_id().to_owned(),
+            port: name.to_owned(),
+          })?,
       };
 
-      Ok(Some(sig.ok_or(ValidationError::MissingConnection {
-        operation: ext.name().to_owned(),
-        component: ext.component_id().to_owned(),
-        port: name.to_owned(),
-      })?))
+      Ok(Some(sig))
     }
   }
 }

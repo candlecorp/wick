@@ -4,7 +4,7 @@ use self::error::{OperationInvalid, ValidationError};
 use super::Program;
 use crate::constants::CORE_ID_SENDER;
 use crate::graph::Reference;
-use crate::interpreter::components::get_id;
+use crate::interpreter::components::reconcile_op_id;
 
 pub(crate) mod error;
 
@@ -32,7 +32,7 @@ impl Validator {
           }
           let component = component.unwrap();
 
-          let id = get_id(
+          let id = reconcile_op_id(
             reference.component_id(),
             reference.name(),
             schematic.name(),

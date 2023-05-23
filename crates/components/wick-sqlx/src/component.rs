@@ -96,11 +96,18 @@ impl SqlXComponent {
   #[allow(clippy::needless_pass_by_value)]
   pub fn new(config: SqlComponentConfig, metadata: Metadata, resolver: &Resolver) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
-    let sig = component! {
+    let mut sig = component! {
       name: "wick/component/sql",
       version: metadata.version(),
       operations: config.operation_signatures(),
     };
+    // NOTE: remove this must change when db components support customized outputs.
+    sig.operations.iter_mut().for_each(|op| {
+      if !op.outputs.iter().any(|f| f.name == "output") {
+        op.outputs.push(Field::new("output", TypeSignature::Object));
+      }
+    });
+
     let addr = resolver(config.resource())
       .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))
       .and_then(|r| r.try_resource().map_err(ComponentError::new))?;
@@ -229,6 +236,13 @@ fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Err
 }
 
 async fn init_client(config: SqlComponentConfig, addr: UrlResource) -> Result<CtxPool, Error> {
+  /*****************
+   *
+   * NOTE: This component was *supposed* to handle sql server (mssql) but sqlx was so buggy it
+   * wouldn't work. The mssql logic is still in this crate for now, but it's not used and may be
+   * removed in the future.
+   *
+   */
   let pool = match addr.scheme() {
     "mssql" => CtxPool::MsSql(mssql::connect(config, &addr).await?),
     "postgres" => CtxPool::Postgres(postgres::connect(config, &addr).await?),

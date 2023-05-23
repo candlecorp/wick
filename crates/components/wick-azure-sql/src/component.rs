@@ -50,11 +50,19 @@ impl AzureSqlComponent {
   #[allow(clippy::needless_pass_by_value)]
   pub fn new(config: SqlComponentConfig, metadata: Metadata, resolver: &Resolver) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
-    let sig = component! {
+    let mut sig = component! {
       name: "wick/component/sql",
       version: metadata.version(),
       operations: config.operation_signatures(),
     };
+
+    // NOTE: remove this must change when db components support customized outputs.
+    sig.operations.iter_mut().for_each(|op| {
+      if !op.outputs.iter().any(|f| f.name == "output") {
+        op.outputs.push(Field::new("output", TypeSignature::Object));
+      }
+    });
+
     let addr = resolver(config.resource())
       .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))
       .and_then(|r| r.try_resource().map_err(ComponentError::new))?;

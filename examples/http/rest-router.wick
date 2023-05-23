@@ -20,7 +20,7 @@ import:
   - name: sample
     component:
       kind: wick/component/manifest@v1
-      ref: ./component.wick
+      ref: ./rest-router/component.wick
 triggers:
   - kind: wick/trigger/http@v1
     resource: http
