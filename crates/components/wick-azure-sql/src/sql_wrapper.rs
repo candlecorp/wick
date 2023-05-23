@@ -1,9 +1,7 @@
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde_json::{Number, Value};
 use tiberius::{ColumnData, FromSql, IntoSql};
-use wick_packet::TypeWrapper;
-
-use crate::data::parse_date;
+use wick_packet::{parse_date, TypeWrapper};
 
 #[derive(Debug, Clone)]
 pub(crate) struct SqlWrapper(pub(crate) TypeWrapper);
@@ -11,6 +9,7 @@ pub(crate) struct SqlWrapper(pub(crate) TypeWrapper);
 impl<'a> IntoSql<'a> for SqlWrapper {
   fn into_sql(self) -> ColumnData<'a> {
     let v = self.0.inner();
+    println!("type sig is {:?}", self.0.type_signature());
     match self.0.type_signature() {
       wick_interface_types::TypeSignature::I8 => {
         let v = to_int::<i16>(v).unwrap();

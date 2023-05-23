@@ -8,9 +8,8 @@ use sqlx::encode::IsNull;
 use sqlx::mssql::MssqlTypeInfo;
 use sqlx::{Encode, Mssql, Type};
 use wick_interface_types::TypeSignature;
-use wick_packet::TypeWrapper;
+use wick_packet::{parse_date, TypeWrapper};
 
-use crate::data::parse_date;
 use crate::sql_wrapper::SqlWrapper;
 
 impl<'q> Encode<'q, Mssql> for SqlWrapper {

@@ -10,7 +10,7 @@ description = "Azure SQL Database component for the wick project."
 [features]
 
 [dependencies]
-wick-packet = { workspace = true, features = ["rt-tokio"] }
+wick-packet = { workspace = true, features = ["rt-tokio", "datetime"] }
 flow-component = { workspace = true }
 wick-config = { workspace = true }
 wick-rpc = { workspace = true }

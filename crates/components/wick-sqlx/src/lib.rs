@@ -85,7 +85,6 @@
 // Add exceptions here
 #![allow(missing_docs)]
 mod component;
-pub(crate) mod data;
 mod error;
 pub(crate) mod mssql;
 pub(crate) mod postgres;
