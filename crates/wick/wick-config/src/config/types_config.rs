@@ -47,17 +47,12 @@ impl TypesConfiguration {
 
   /// Set the source location of the configuration.
   pub fn set_source(&mut self, source: &Path) {
-    // Source is a file, so our baseurl needs to be the parent directory.
-    // Remove the trailing filename from source.
-    if source.is_dir() {
-      self.set_baseurl(source);
-      self.source = Some(source.to_path_buf());
-    } else {
-      let mut s = source.to_path_buf();
-      s.pop();
-
-      self.set_baseurl(&s);
-      self.source = Some(s);
+    let mut source = source.to_path_buf();
+    self.source = Some(source.clone());
+    // Source is (should be) a file, so pop the filename before setting the baseurl.
+    if !source.is_dir() {
+      source.pop();
     }
+    self.set_baseurl(&source);
   }
 }
