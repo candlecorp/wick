@@ -103,7 +103,7 @@ async fn test_invalid_port() -> Result<()> {
   if let Err(InterpreterError::EarlyError(e)) = result {
     assert_eq!(
       e,
-      ValidationError::MissingConnection {
+      ValidationError::UnknownInput {
         port: "input".to_owned(),
         operation: "echo".to_owned(),
         component: "test".to_owned(),
