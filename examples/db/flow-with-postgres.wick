@@ -1,0 +1,32 @@
+name: mycli
+kind: wick/component@v1
+import:
+  - name: MYDB
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./postgres-component.wick
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: get_user
+      flow:
+        - <>.id -> MYDB::get_user[a].id
+        - a.output -> <>
+tests:
+  - name: assert_test_user
+    operation: get_user
+    input:
+      - name: id
+        data: 1
+      - name: id
+        flags:
+          done: true
+    output:
+      - name: output
+        data:
+          email: test_users@example.com
+          id: 1
+          name: Test User
+      - name: output
+        flags:
+          done: true

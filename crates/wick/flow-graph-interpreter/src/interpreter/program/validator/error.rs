@@ -29,6 +29,20 @@ pub enum ValidationError {
     operation: String,
   },
 
+  #[error("Input '{port}' on operation '{component}::{operation}' is connected but does not exist on operation.")]
+  UnknownInput {
+    port: String,
+    component: String,
+    operation: String,
+  },
+
+  #[error("Output '{port}' on operation '{component}::{operation}' is connected but does not exist on operation.")]
+  UnknownOutput {
+    port: String,
+    component: String,
+    operation: String,
+  },
+
   #[error("Unused output port '{port}' on component '{component}::{operation}'")]
   UnusedOutput {
     port: String,

@@ -502,9 +502,9 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn test_rest_router() -> Result<()> {
     let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let manifest_dir = crate_dir.join("../../../examples/");
+    let manifest_dir = crate_dir.join("../../../examples/http/");
 
-    let yaml = manifest_dir.join("http-restapi.wick");
+    let yaml = manifest_dir.join("rest-router.wick");
     let app_config = config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default())
       .await?
       .try_app_config()?;

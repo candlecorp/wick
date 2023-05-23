@@ -90,7 +90,7 @@ pub(crate) fn dyn_component_id(name: &str, schematic: &str, instance: &str) -> S
   format!("{}<{}::{}>", name, schematic, instance)
 }
 
-pub(crate) fn get_id(ns: &str, name: &str, schematic: &str, instance: &str) -> String {
+pub(crate) fn reconcile_op_id(ns: &str, name: &str, schematic: &str, instance: &str) -> String {
   if ns == NS_CORE && name == CORE_ID_MERGE {
     dyn_component_id(name, schematic, instance)
   } else {

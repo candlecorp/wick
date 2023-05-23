@@ -56,8 +56,7 @@ mod integration_test {
   use super::*;
   #[test_logger::test(tokio::test)]
   async fn cli_with_db() -> Result<()> {
-    // let manifest = load_app_yaml("./manifests/v1/app_config/postgres.yaml").await?;
-    let manifest = load_app_yaml("../../../examples/postgres.yaml").await?;
+    let manifest = load_app_yaml("../../../examples/db/wasm-calling-postgres.wick").await?;
     let resources = Arc::new(init_resources(&manifest)?);
 
     let trigger_config = &manifest.triggers()[0];
