@@ -1,5 +1,6 @@
 
 nextest := `command -v cargo-nextest >/dev/null && echo true || echo false`
+rustup := `command -v rustup >/dev/null && echo true || echo false`
 
 set dotenv-load
 set export
@@ -52,11 +53,11 @@ unit-tests: codegen-tests
 	fi
 
 codegen-tests:
-  just tests/codegen-tests/codegen
-  just tests/codegen-tests/test
+	just tests/codegen-tests/codegen
+	just tests/codegen-tests/test
 
 ci-tests: wasm
-  just unit-tests
+	just unit-tests
 
 integration: integration-setup && integration-teardown
 	just integration-tests
@@ -93,19 +94,35 @@ integration-teardown:
 	./etc/integration/httpbin.sh down
 
 deps:
+	just dep-install-nightly
 	npm install -g apex-template prettier ts-node commitlint conventional-changelog-conventionalcommits
 	cargo install cargo-deny cargo-nextest
 
+dep-install-nightly:
+	#!/usr/bin/env bash
+	if [[ "{{rustup}}" == "true" ]]; then
+	   if [[ "$(rustup toolchain list | grep nightly)" == "" ]]; then
+	     echo "Installing rust nightly..."
+	     rustup toolchain install nightly;
+	   else
+	     echo "Rust nightly found."
+	   fi
+	else
+	  echo "Could not find rustup, please ensure you have rust nightly installed if you intend to build from source."
+	fi
+
+
+
 update-lints:
-  ts-node ./etc/update-lints.ts
+	ts-node ./etc/update-lints.ts
 
 lint-commits:
-  npx commitlint --config ./etc/commitlint.config.js --from $(git describe --all origin --abbrev=0) --to HEAD --verbose
+	npx commitlint --config ./etc/commitlint.config.js --from $(git describe --all origin --abbrev=0) --to HEAD --verbose
 
 publish-sdk VERSION *FLAGS:
-  cargo release {{VERSION}} {{FLAGS}} -p wick-packet -p wick-component-codegen -p wick-interface-types -p wick-component -p wick-config -p flow-expression-parser
+	cargo release {{VERSION}} {{FLAGS}} -p wick-packet -p wick-component-codegen -p wick-interface-types -p wick-component -p wick-config -p flow-expression-parser
 
 unused:
-  for crate in crates/bins/*; do ./etc/udeps.sh $crate; done
-  for crate in crates/wick/*; do ./etc/udeps.sh $crate; done
-  for crate in crates/misc/*; do ./etc/udeps.sh $crate; done
+	for crate in crates/bins/*; do ./etc/udeps.sh $crate; done
+	for crate in crates/wick/*; do ./etc/udeps.sh $crate; done
+	for crate in crates/misc/*; do ./etc/udeps.sh $crate; done
