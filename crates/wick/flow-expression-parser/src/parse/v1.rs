@@ -1,6 +1,6 @@
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::character::complete::{alpha1, alphanumeric1, char, multispace0};
+use nom::character::complete::{alpha1, alphanumeric1, char, digit1, multispace0};
 use nom::combinator::{eof, recognize};
 use nom::error::ParseError;
 use nom::multi::{many0, many1};
@@ -95,7 +95,7 @@ fn instance(input: &str) -> IResult<&str, InstanceTarget> {
 }
 
 pub(crate) fn instance_port(input: &str) -> IResult<&str, InstancePort> {
-  let (i, (name, parts)) = pair(identifier, many0(preceded(char('.'), identifier)))(input)?;
+  let (i, (name, parts)) = pair(identifier, many0(preceded(char('.'), alt((identifier, digit1)))))(input)?;
   if parts.is_empty() {
     Ok((i, InstancePort::Named(name.to_owned())))
   } else {
@@ -113,13 +113,6 @@ fn connection_target_expression(input: &str) -> IResult<&str, (InstanceTarget, O
 fn portless_target_expression(input: &str) -> IResult<&str, (InstanceTarget, Option<InstancePort>)> {
   instance(input).map(|(i, v)| (i, (v, None)))
 }
-
-// fn port_or(instance: &InstanceTarget, port: Option<&str>, or: &str) -> &str {
-//   match (instance, port) {
-//     (InstanceTarget::Null, _) => "input",
-//     (InstanceTarget::Input, Some()) => "input",
-//   }
-// }
 
 fn connection_expression(input: &str) -> IResult<&str, ConnectionExpression> {
   let (i, (from, to)) = pair(
@@ -329,6 +322,10 @@ mod tests {
   #[case(
     "this.output.field -> <>.output",
     flow_expr_conn(InstTgt::named("this"), InstPort::path("output",vec!["field".to_owned()]), InstTgt::Default, InstPort::named("output"))
+  )]
+  #[case(
+    "this.output.field.other.0 -> <>.output",
+    flow_expr_conn(InstTgt::named("this"), InstPort::path("output",vec!["field".to_owned(),"other".to_owned(), "0".to_owned()]), InstTgt::Default, InstPort::named("output"))
   )]
   // #[case(
   //   "this.output.field -> other.input",
