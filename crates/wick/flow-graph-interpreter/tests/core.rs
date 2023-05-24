@@ -26,7 +26,7 @@ async fn test_pluck() -> Result<()> {
 async fn test_pluck_shorthand() -> Result<()> {
   first_packet_test(
     "./tests/manifests/v1/core-pluck-shorthand.yaml",
-    packets!(("input", json!({ "to_pluck" :"Hello world!", "to_ignore": "ignore me" }))),
+    packets!(("request", json!({ "headers" : {"cookie": ["Hello world!"]}}))),
     "Hello world!",
   )
   .await
