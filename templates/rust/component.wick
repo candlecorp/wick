@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://github.com/candlecorp/wick/releases/download/nightly/schema.json
 ---
 name: '{{project-name}}'
 kind: wick/component@v1

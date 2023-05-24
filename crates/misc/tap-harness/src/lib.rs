@@ -219,7 +219,27 @@ impl TestBlock {
       test: Some(Box::new(test)),
       result: Some(false),
       description: description.as_ref().to_owned(),
-      diagnostics: diagnostics.unwrap_or_default(),
+      diagnostics,
+    });
+  }
+
+  /// Add a test failure.
+  pub fn fail<T: AsRef<str>>(&mut self, description: T, diagnostics: Option<Vec<String>>) {
+    self.tests.push(TestCase {
+      test: None,
+      result: Some(false),
+      description: description.as_ref().to_owned(),
+      diagnostics,
+    });
+  }
+
+  /// Add a test success.
+  pub fn succeed<T: AsRef<str>>(&mut self, description: T, diagnostics: Option<Vec<String>>) {
+    self.tests.push(TestCase {
+      test: None,
+      result: Some(true),
+      description: description.as_ref().to_owned(),
+      diagnostics,
     });
   }
 
@@ -234,14 +254,17 @@ impl TestBlock {
 
   /// Execute the [TestBlock]'s [TestCase]s.
   pub fn run(&mut self) -> Vec<TapTest> {
-    let mut tests = vec![];
+    let mut tests: Vec<TapTest> = vec![];
     for test_case in self.tests.iter_mut() {
-      let diags: Vec<&str> = test_case.diagnostics.iter().map(|s| s.as_str()).collect();
-      let tap_test = TapTestBuilder::new()
-        .name(test_case.description.clone())
-        .diagnostics(&diags)
-        .passed(test_case.exec())
-        .finalize();
+      let mut tap_test = TapTestBuilder::new();
+      tap_test.name(test_case.description.clone());
+
+      if let Some(diag) = &test_case.diagnostics {
+        let diags: Vec<&str> = diag.iter().map(|s| s.as_str()).collect();
+        tap_test.diagnostics(&diags);
+      }
+
+      let tap_test = tap_test.passed(test_case.exec()).finalize();
       tests.push(tap_test);
     }
     tests
@@ -253,7 +276,7 @@ struct TestCase {
   test: Option<Box<dyn FnOnce() -> bool + Sync + Send>>,
   result: Option<bool>,
   description: String,
-  diagnostics: Vec<String>,
+  diagnostics: Option<Vec<String>>,
 }
 
 impl std::fmt::Debug for TestCase {
@@ -274,8 +297,7 @@ impl TestCase {
         self.result = Some(result);
         result
       }
-      #[allow(clippy::expect_used)]
-      None => self.result.expect("Attempted to execute a test without a test case"),
+      None => self.result.unwrap_or(false),
     }
   }
 }
