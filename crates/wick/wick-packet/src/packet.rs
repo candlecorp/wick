@@ -161,11 +161,17 @@ impl Packet {
 
   pub fn to_json(&self) -> serde_json::Value {
     if self.flags() > 0 {
-      serde_json::json!({
+      let mut map = serde_json::json!({
         "flags": self.flags(),
-        "port": self.port(),
-        "payload": self.payload.to_json(),
-      })
+        "port": self.port()
+      });
+      if self.has_data() {
+        map
+          .as_object_mut()
+          .unwrap()
+          .insert("payload".to_owned(), self.payload.to_json());
+      }
+      map
     } else {
       serde_json::json!({
         "port": self.port(),

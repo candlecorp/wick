@@ -6767,6 +6767,7 @@ dependencies = [
  "flow-component",
  "serde",
  "serde-value",
+ "serde_json",
  "tap-harness",
  "thiserror",
  "tokio",
