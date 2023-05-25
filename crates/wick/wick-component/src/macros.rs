@@ -83,6 +83,14 @@ macro_rules! payload_fan_out {
                   $crate::handle_port!(raw: $raw, packet, tx, $port, $($ty)*)
                 },
               )*
+              $crate::packet::Packet::FATAL_ERROR => {
+                let error = packet.unwrap_err();
+                $crate::paste::paste! {
+                  $(
+                    [<$port:snake _tx>].send_result(Err($crate::anyhow::Error::msg(error.msg().to_owned()))).unwrap();
+                  )*
+                }
+              }
               _ => panic!("Unexpected port: {}", packet.port())
             }
           } else {
@@ -127,6 +135,15 @@ macro_rules! payload_fan_out {
                     $crate::handle_port!(raw: $raw, packet, tx, $port, $($ty)*)
                   },
                 )*
+                $crate::packet::Packet::FATAL_ERROR => {
+                  use $crate::wasmrs_rx::Observer;
+                  let error = packet.unwrap_err();
+                  $crate::paste::paste! {
+                    $(
+                      [<$port:snake _tx>].send_result(Err($crate::anyhow::Error::msg(error.msg().to_owned()))).unwrap();
+                    )*
+                  }
+                }
                 _ => panic!("Unexpected port: {}", packet.port())
               }
             } else {

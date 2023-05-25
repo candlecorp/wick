@@ -159,6 +159,20 @@ impl Packet {
     self.extra.is_close_bracket()
   }
 
+  pub fn unwrap_payload(self) -> Option<Base64Bytes> {
+    match self.payload {
+      PacketPayload::Ok(v) => v,
+      _ => panic!("Packet is an error"),
+    }
+  }
+
+  pub fn unwrap_err(self) -> PacketError {
+    match self.payload {
+      PacketPayload::Err(err) => err,
+      _ => panic!("Packet is not an error"),
+    }
+  }
+
   pub fn to_json(&self) -> serde_json::Value {
     if self.flags() > 0 {
       let mut map = serde_json::json!({
@@ -336,24 +350,39 @@ pub fn from_raw_wasmrs(stream: BoxFlux<RawPayload, PayloadError>) -> PacketStrea
   let s = StreamExt::map(stream, move |p| {
     let p = p.map_or_else(
       |e| {
-        let md = wasmrs::Metadata::decode(&mut e.metadata.unwrap());
+        if let Some(mut metadata) = e.metadata {
+          let md = wasmrs::Metadata::decode(&mut metadata);
 
-        let wmd = md.map_or_else(
-          |_e| WickMetadata::default(),
-          |m| WickMetadata::decode(m.extra.unwrap()).unwrap(),
-        );
-        Packet::raw_err(wmd.port, PacketError::new(e.msg))
+          let wmd = md.map_or_else(
+            |_e| WickMetadata::default(),
+            |m| {
+              m.extra
+                .map_or_else(WickMetadata::default, |extra| WickMetadata::decode(extra).unwrap())
+            },
+          );
+          Packet::raw_err(wmd.port, PacketError::new(e.msg))
+        } else {
+          Packet::component_error(e.msg)
+        }
       },
       |p| {
-        let md = wasmrs::Metadata::decode(&mut p.metadata.unwrap());
-        let wmd = md.map_or_else(
-          |_e| WickMetadata::default(),
-          |m| WickMetadata::decode(m.extra.unwrap()).unwrap(),
-        );
-        // Potential danger zone: this converts empty payload to None which *should* be the
-        // same thing. Calling this out as a potential source for weird bugs if they pop up.
-        let data = p.data.and_then(|b| (!b.is_empty()).then_some(b));
-        Packet::new_for_port(wmd.port(), PacketPayload::Ok(data.map(Into::into)), wmd.flags())
+        if let Some(mut metadata) = p.metadata {
+          let md = wasmrs::Metadata::decode(&mut metadata);
+
+          let wmd = md.map_or_else(
+            |_e| WickMetadata::default(),
+            |m| {
+              m.extra
+                .map_or_else(WickMetadata::default, |extra| WickMetadata::decode(extra).unwrap())
+            },
+          );
+          // Potential danger zone: this converts empty payload to None which *should* be the
+          // same thing. Calling this out as a potential source for weird bugs if they pop up.
+          let data = p.data.and_then(|b| (!b.is_empty()).then_some(b));
+          Packet::new_for_port(wmd.port(), PacketPayload::Ok(data.map(Into::into)), wmd.flags())
+        } else {
+          Packet::component_error("invalid wasmrs packet with no metadata.")
+        }
       },
     );
     Ok(p)
