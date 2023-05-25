@@ -75,12 +75,18 @@ impl StreamMap {
       senders.insert(port.clone(), streams.init(&port));
     }
     tokio::spawn(async move {
-      while let Some(Ok(payload)) = stream.next().await {
-        let sender = senders.get_mut(payload.port()).unwrap();
-        let is_done = payload.is_done();
-        let _ = sender.send(payload);
-        if is_done {
-          sender.complete();
+      while let Some(Ok(packet)) = stream.next().await {
+        if packet.is_fatal_error() {
+          for (name, sender) in senders.iter_mut() {
+            let _ = sender.send(packet.clone().set_port(name));
+          }
+        } else {
+          let sender = senders.get_mut(packet.port()).unwrap();
+          let is_done = packet.is_done();
+          let _ = sender.send(packet);
+          if is_done {
+            sender.complete();
+          }
         }
       }
     });

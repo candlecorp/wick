@@ -290,7 +290,11 @@ async fn exec(
 
   let mut bound_args = Vec::new();
   for arg in def.arguments() {
-    let (ty, packet) = args.iter().find(|(_, p)| p.port() == arg).cloned().unwrap();
+    let (ty, packet) = args
+      .iter()
+      .find(|(_, p)| p.port() == arg)
+      .cloned()
+      .ok_or_else(|| Error::MissingArgument(arg.clone()))?;
     let wrapper = match packet
       .deserialize_into(ty.clone())
       .map_err(|e| Error::Prepare(e.to_string()))
