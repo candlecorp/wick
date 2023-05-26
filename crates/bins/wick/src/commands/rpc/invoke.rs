@@ -12,9 +12,6 @@ use crate::utils;
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RpcInvokeCommand {
   #[clap(flatten)]
-  pub(crate) logging: wick_logger::LoggingOptions,
-
-  #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,
 
   /// Name of the component to execute.
@@ -50,9 +47,11 @@ pub(crate) struct RpcInvokeCommand {
   args: Vec<String>,
 }
 
-pub(crate) async fn handle(opts: RpcInvokeCommand) -> Result<()> {
-  let _guard = crate::utils::init_logger(&opts.logging)?;
-
+pub(crate) async fn handle(
+  opts: RpcInvokeCommand,
+  _settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<()> {
   let mut client = wick_rpc::make_rpc_client(
     format!("http://{}:{}", opts.connection.address, opts.connection.port),
     opts.connection.pem,
@@ -110,10 +109,10 @@ pub(crate) async fn handle(opts: RpcInvokeCommand) -> Result<()> {
       tx.send(Packet::done(port))?;
     }
 
-    let invocation = Invocation::new(origin, target, inherent_data);
-    trace!("issuing invocation");
-    let stream = client.invoke(invocation, stream).await?;
-    trace!("server responsed");
+    let invocation = Invocation::new(origin, target, stream, inherent_data, &span);
+    span.in_scope(|| trace!("issuing invocation"));
+    let stream = client.invoke(invocation).await?;
+    span.in_scope(|| trace!("server responsed"));
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
 

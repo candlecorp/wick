@@ -140,12 +140,9 @@ impl RpcClient {
   }
 
   /// Send an invoke RPC command with an [Invocation] object.
-  pub async fn invoke(
-    &mut self,
-    invocation: Invocation,
-    mut stream: PacketStream,
-  ) -> Result<PacketStream, RpcClientError> {
+  pub async fn invoke(&mut self, mut invocation: Invocation) -> Result<PacketStream, RpcClientError> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    let mut stream = invocation.eject_stream();
     tx.send(InvocationRequest {
       data: Some(generated::wick::invocation_request::Data::Invocation(invocation.into())),
     })

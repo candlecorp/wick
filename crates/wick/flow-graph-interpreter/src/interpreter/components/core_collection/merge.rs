@@ -4,7 +4,7 @@ use flow_component::{ComponentError, Context, Operation};
 use futures::FutureExt;
 use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, StructSignature, TypeSignature};
-use wick_packet::{Packet, PacketStream, StreamMap};
+use wick_packet::{Invocation, Packet, PacketStream, StreamMap};
 
 use crate::BoxFuture;
 pub(crate) struct Op {}
@@ -15,7 +15,7 @@ impl std::fmt::Debug for Op {
   }
 }
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub(crate) struct Config {
   inputs: Vec<Field>,
 }
@@ -48,11 +48,11 @@ impl Operation for Op {
   type Config = Config;
   fn handle(
     &self,
-    stream: PacketStream,
+    invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let mut map = StreamMap::from_stream(stream, self.input_names(&context.config));
-    let (tx, rx) = PacketStream::new_channels();
+    let (tx, rx) = invocation.make_response();
+    let mut map = StreamMap::from_stream(invocation.packets, self.input_names(&context.config));
     tokio::spawn(async move {
       while let Ok(next) = map.next_set().await {
         if next.is_none() {
@@ -84,11 +84,13 @@ impl Operation for Op {
     config.inputs.iter().map(|n| n.name.clone()).collect()
   }
 
-  fn decode_config(data: Option<flow_component::Value>) -> Result<Self::Config, ComponentError> {
-    serde_json::from_value(data.ok_or_else(|| {
+  fn decode_config(data: Option<wick_packet::OperationConfig>) -> Result<Self::Config, ComponentError> {
+    let config = data.ok_or_else(|| {
       ComponentError::message("Merge component requires configuration, please specify configuration.")
-    })?)
-    .map_err(ComponentError::new)
+    })?;
+    Ok(Self::Config {
+      inputs: config.get_into("inputs").map_err(ComponentError::new)?,
+    })
   }
 }
 
@@ -98,7 +100,7 @@ mod test {
   use flow_component::panic_callback;
   use serde_json::json;
   use tokio_stream::StreamExt;
-  use wick_packet::packet_stream;
+  use wick_packet::{packet_stream, Entity};
 
   use super::*;
 
@@ -110,10 +112,11 @@ mod test {
     ];
     let op = Op::new();
     let config = serde_json::json!({ "inputs": inputs });
-    let config = Op::decode_config(Some(config))?;
+    let config = Op::decode_config(Some(config.try_into()?))?;
     let stream = packet_stream!(("input_a", "hello"), ("input_b", 1000));
+    let inv = Invocation::test(file!(), Entity::test("noop"), stream, None)?;
     let mut packets = op
-      .handle(stream, Context::new(config, panic_callback()))
+      .handle(inv, Context::new(config, None, panic_callback()))
       .await?
       .collect::<Vec<_>>()
       .await;

@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
+use tracing::Instrument;
 use wick_config::WickConfiguration;
 use wick_wascap::{sign_buffer_with_claims, ClaimsOptions};
 
@@ -11,9 +12,6 @@ use crate::keys::{get_module_keys, GenerateCommon};
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct WasmSignCommand {
-  #[clap(flatten)]
-  pub(crate) logging: wick_logger::LoggingOptions,
-
   /// WebAssembly module location.
   #[clap(action)]
   pub(crate) source: String,
@@ -39,12 +37,18 @@ pub(crate) struct WasmSignCommand {
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: WasmSignCommand) -> Result<()> {
-  let _guard = crate::utils::init_logger(&opts.logging)?;
-  debug!("Signing module");
+pub(crate) async fn handle(
+  opts: WasmSignCommand,
+  _settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<()> {
+  span.in_scope(|| {
+    debug!("Signing module");
+    debug!("Reading from {}", opts.interface);
+  });
 
-  debug!("Reading from {}", opts.interface);
   let interface = WickConfiguration::fetch(&opts.interface, wick_config::FetchOptions::default())
+    .instrument(span.clone())
     .await?
     .try_component_config()?;
 
@@ -59,12 +63,6 @@ pub(crate) async fn handle(opts: WasmSignCommand) -> Result<()> {
     opts.common.subject,
   )
   .await?;
-
-  debug!(
-    "Signing module (orig: {} bytes) with interface : {:?}",
-    buf.len(),
-    interface
-  );
 
   let signed = sign_buffer_with_claims(
     &buf,
@@ -102,17 +100,17 @@ pub(crate) async fn handle(opts: WasmSignCommand) -> Result<()> {
       }
     }
   };
-  debug!("Destination : {}", destination);
+  span.in_scope(|| debug!("Destination : {}", destination));
 
   let mut outfile = File::create(&destination).unwrap();
-  match outfile.write(&signed) {
+  span.in_scope(|| match outfile.write(&signed) {
     Ok(_) => {
       info!("Successfully signed {}", destination,);
     }
     Err(e) => {
       error!("Error signing: {}", e);
     }
-  }
+  });
 
   Ok(())
 }

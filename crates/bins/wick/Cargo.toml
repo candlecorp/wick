@@ -1,6 +1,6 @@
 [package]
 name = "wick-cli"
-version = "0.6.0"
+version = "0.8.0"
 edition = "2021"
 default-run = "wick"
 license = "Elastic-2.0"
@@ -14,6 +14,7 @@ cross = ["openssl/vendored"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 wick-xdg = { workspace = true }
+wick-settings = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-rpc = { workspace = true, features = ["client"] }
@@ -26,10 +27,12 @@ wick-oci-utils = { workspace = true }
 wick-package = { workspace = true }
 wick-logger = { workspace = true }
 seeded-random = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
 tracing = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
+dialoguer = { workspace = true, features = ["password"] }
+human-panic = { workspace = true }
 futures = { workspace = true }
 thiserror = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
@@ -38,6 +41,7 @@ atty = { workspace = true }
 jaq-core = { workspace = true }
 markup-converter = { workspace = true }
 openssl = { workspace = true, features = ["vendored"], optional = true }
+option-utils = { workspace = true }
 
 [dev-dependencies]
 test_bin = { workspace = true }

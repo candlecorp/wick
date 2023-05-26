@@ -1,7 +1,13 @@
 use std::env;
 use std::path::PathBuf;
 
-use flow_expression_parser::ast::{ConnectionExpression, ConnectionTargetExpression, FlowExpression, InstanceTarget};
+use flow_expression_parser::ast::{
+  ConnectionExpression,
+  ConnectionTargetExpression,
+  FlowExpression,
+  InstancePort,
+  InstanceTarget,
+};
 use tracing::debug;
 use wick_config::component_config::CompositeComponentImplementation;
 use wick_config::error::ManifestError;
@@ -45,7 +51,7 @@ async fn load_noversion_yaml() -> Result<(), ManifestError> {
 #[test_logger::test(tokio::test)]
 async fn load_bad_manifest_yaml() -> Result<(), ManifestError> {
   let manifest = load("./tests/manifests/v0/bad-yaml.yaml").await;
-  if let Err(Error::YamlError(p, e)) = manifest {
+  if let Err(Error::YamlError(p, e, _)) = manifest {
     debug!("{:?}, {:?}", p, e);
   } else {
     panic!("Should have failed with YamlError but got : {:?}", manifest);
@@ -60,8 +66,8 @@ async fn load_collections_yaml() -> Result<(), ManifestError> {
     .await?
     .try_component_config()?;
 
-  assert_eq!(manifest.name(), &Some("collections".to_owned()));
-  assert_eq!(manifest.imports().len(), 3);
+  assert_eq!(manifest.name(), Some(&"collections".to_owned()));
+  assert_eq!(manifest.import().len(), 3);
 
   Ok(())
 }
@@ -70,13 +76,13 @@ async fn load_collections_yaml() -> Result<(), ManifestError> {
 async fn load_shortform_yaml() -> Result<(), ManifestError> {
   let manifest = load_component("./tests/manifests/v0/logger-shortform.yaml").await?;
 
-  let expr = &manifest.flow("logger").unwrap().expressions[0];
+  let expr = &manifest.flow("logger").unwrap().expressions()[0];
 
   assert_eq!(
     expr,
-    &FlowExpression::ConnectionExpression(ConnectionExpression::new(
-      ConnectionTargetExpression::new(InstanceTarget::Input, "input", None),
-      ConnectionTargetExpression::new(InstanceTarget::named("logger"), "input", None)
+    &FlowExpression::connection(ConnectionExpression::new(
+      ConnectionTargetExpression::new(InstanceTarget::Input, InstancePort::named("input")),
+      ConnectionTargetExpression::new(InstanceTarget::named("logger"), InstancePort::named("input"))
     ))
   );
 
@@ -89,7 +95,7 @@ async fn load_env() -> Result<(), ManifestError> {
   let manifest = load_component("./tests/manifests/v0/env.yaml").await?;
 
   assert_eq!(
-    manifest.flow("name_load_manifest_yaml_with_env").unwrap().name,
+    manifest.flow("name_load_manifest_yaml_with_env").unwrap().name(),
     "name_load_manifest_yaml_with_env"
   );
 
@@ -101,7 +107,7 @@ async fn load_ns_link() -> Result<(), ManifestError> {
   let manifest = load_component("./tests/manifests/v0/ns.yaml").await?;
 
   let schematic = &manifest.flow("logger").unwrap();
-  let from = &schematic.expressions[0].as_connection().unwrap().from();
+  let from = &schematic.expressions()[0].as_connection().unwrap().from();
 
   assert_eq!(from.instance(), &InstanceTarget::Link);
 

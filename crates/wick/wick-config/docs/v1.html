@@ -47,7 +47,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#HostConfig">HostConfig</a></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#HostConfig">HostConfig</a><span class=optional>(Optional)</span></span></span></li>
 
 
 </ul>
@@ -566,15 +566,379 @@
 </div><div class=field>
 
 <h3 class=field-name>
-  <a name="component">component</a>
+  <a name="tools">tools</a>
 </h3>
 
-<span class="description field-description">The component to expose as a Rest API.</span>
+<span class="description field-description">Additional tools and services to enable.</span>
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentDefinition">ComponentDefinition</a></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#Tools">Tools</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="routes">routes</a>
+</h3>
+
+<span class="description field-description">The routes to serve and operations that handle them.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Route">Route</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="info">info</a>
+</h3>
+
+<span class="description field-description">Information about the router to use when generating documentation and other tools.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Info">Info</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Tools">Tools</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="openapi">openapi</a>
+</h3>
+
+<span class="description field-description">The path to serve the OpenAPI spec from</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Info">Info</a>
+</h2>
+
+<span class="description type-description">Information about the router to use when generating documentation and other tools.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="title">title</a>
+</h3>
+
+<span class="description field-description">The title of the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="description">description</a>
+</h3>
+
+<span class="description field-description">A short description of the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="tos">tos</a>
+</h3>
+
+<span class="description field-description">The terms of service for the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="contact">contact</a>
+</h3>
+
+<span class="description field-description">The contact information for the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Contact">Contact</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="license">license</a>
+</h3>
+
+<span class="description field-description">The license information for the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#License">License</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="version">version</a>
+</h3>
+
+<span class="description field-description">The version of the API.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="documentation">documentation</a>
+</h3>
+
+<span class="description field-description">The URL to the API's terms of service.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Documentation">Documentation</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Documentation">Documentation</a>
+</h2>
+
+<span class="description type-description">Documentation information for the API.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="url">url</a>
+</h3>
+
+<span class="description field-description">The URL to the API's documentation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="description">description</a>
+</h3>
+
+<span class="description field-description">A short description of the documentation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="License">License</a>
+</h2>
+
+<span class="description type-description">The license information for the API.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the license.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="url">url</a>
+</h3>
+
+<span class="description field-description">The URL to the license.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Contact">Contact</a>
+</h2>
+
+<span class="description type-description">The contact information for the API.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the contact.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="url">url</a>
+</h3>
+
+<span class="description field-description">The URL to the contact.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="email">email</a>
+</h3>
+
+<span class="description field-description">The email address of the contact.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Route">Route</a>
+</h2>
+
+<span class="description type-description">A route to serve and the operation that handles it.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the route, used for documentation and tooling.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="methods">methods</a>
+</h3>
+
+<span class="description field-description">The HTTP methods to serve this route for.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="uri">uri</a>
+</h3>
+
+<span class="description field-description">The path to serve this route from.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="operation">operation</a>
+</h3>
+
+<span class="description field-description">The operation that will act as the main entrypoint for this route.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentOperationExpression">ComponentOperationExpression</a></span></span></li>
 <li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="description">description</a>
+</h3>
+
+<span class="description field-description">A short description of the route.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="summary">summary</a>
+</h3>
+
+<span class="description field-description">A longer description of the route.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
 
 </ul>
 </div></div></div><div class="definition">
@@ -612,6 +976,20 @@
 <li><span class="annotation field-note">Required</span></li>
 
 </ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="fallback">fallback</a>
+</h3>
+
+<span class="description field-description">Fallback path (relative to volume `resource`) for files to serve in case of a 404. Useful for SPA's. if volume resource is: /www and fallback: index.html, then a 404 will serve /www/index.html</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
   <a name="RawRouter">RawRouter</a>
@@ -631,6 +1009,20 @@
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
 <li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="codec">codec</a>
+</h3>
+
+<span class="description field-description">The codec to use when encoding/decoding data.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Codec">Codec</a><span class=optional>(Optional)</span></span></span></li>
+
 
 </ul>
 </div><div class=field>
@@ -773,7 +1165,7 @@
   <a name="name">name</a>
 </h3>
 
-<span class="description field-description">The name of this component.</span>
+<span class="description field-description">The name of this type.</span>
 
 
 <ul class="field-notes">
@@ -784,10 +1176,24 @@
 </div><div class=field>
 
 <h3 class=field-name>
+  <a name="metadata">metadata</a>
+</h3>
+
+<span class="description field-description">Associated metadata for this type.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Metadata">Metadata</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
   <a name="types">types</a>
 </h3>
 
-<span class="description field-description">Additional types to export and make available to the component.</span>
+<span class="description field-description">Additional types to export and make available to the type.</span>
 
 
 <ul class="field-notes">
@@ -806,6 +1212,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#OperationDefinition">OperationDefinition</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="package">package</a>
+</h3>
+
+<span class="description field-description">Details about the package for this types.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#PackageDefinition">PackageDefinition</a><span class=optional>(Optional)</span></span></span></li>
 
 
 </ul>
@@ -889,7 +1309,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#HostConfig">HostConfig</a></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#HostConfig">HostConfig</a><span class=optional>(Optional)</span></span></span></li>
 
 
 </ul>
@@ -1445,7 +1865,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type>Map<string,<a href="#any">any</a>><span class=optional>(Optional)</span></span></span></li>
 
 
 </ul>
@@ -1480,7 +1900,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type>Map<string,<a href="#any">any</a>><span class=optional>(Optional)</span></span></span></li>
 
 
 </ul>
@@ -1516,6 +1936,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="with">with</a>
+</h3>
+
+<span class="description field-description">Any configuration required by the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
 
 
 </ul>
@@ -1704,7 +2138,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a><span class=optional>(Optional)</span></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type>Map<string,<a href="#any">any</a>><span class=optional>(Optional)</span></span></span></li>
 
 
 </ul>
@@ -1739,7 +2173,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a><span class=optional>(Optional)</span></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
 
 
 </ul>
@@ -1771,9 +2205,418 @@
 
 
 </ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Field">Field</a>
+</h2>
+
+<span class="description type-description">Field definition with a name and type signature</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the field.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="type">type</a>
+</h3>
+
+<span class="description field-description">The type signature of the field.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TypeSignature">TypeSignature</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="description">description</a>
+</h3>
+
+<span class="description field-description">The description of the field.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
 </div></div></div><div class="definition">## unhandled
-    panic!()</div><div class="definition">## unhandled
     panic!()</div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="I8">I8</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="I16">I16</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="I32">I32</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="I64">I64</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="U8">U8</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="U16">U16</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="U32">U32</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="U64">U64</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="F32">F32</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="F64">F64</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Bool">Bool</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="StringType">StringType</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Datetime">Datetime</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Bytes">Bytes</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Custom">Custom</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the custom type.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Optional">Optional</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="type">type</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TypeSignature">TypeSignature</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="List">List</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="type">type</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TypeSignature">TypeSignature</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Map">Map</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="key">key</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TypeSignature">TypeSignature</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="value">value</a>
+</h3>
+
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#TypeSignature">TypeSignature</a></span></span></li>
+<li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Object">Object</a>
+</h2>
+
+
+<div class=fields>
+</div></div><div class="definition">## unhandled
+    panic!()</div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="StructSignature">StructSignature</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the struct.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="fields">fields</a>
+</h3>
+
+<span class="description field-description">The fields in this struct.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="description">description</a>
+</h3>
+
+<span class="description field-description">The description of the struct.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="EnumSignature">EnumSignature</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the enum.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="variants">variants</a>
+</h3>
+
+<span class="description field-description">The variants in the enum.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#EnumVariant">EnumVariant</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="description">description</a>
+</h3>
+
+<span class="description field-description">The description of the enum.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="EnumVariant">EnumVariant</a>
+</h2>
+
+
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="name">name</a>
+</h3>
+
+<span class="description field-description">The name of the variant.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="index">index</a>
+</h3>
+
+<span class="description field-description">The index of the variant.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>u32<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="value">value</a>
+</h3>
+
+<span class="description field-description">The optional value of the variant.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="description">description</a>
+</h3>
+
+<span class="description field-description">The description of the variant.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>string<span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div></div></div><div class="definition">
 <h2 class="definition-name type-name">
   <a name="InstanceBinding">InstanceBinding</a>
 </h2>
@@ -1818,7 +2661,7 @@
 
 
 <ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type><a href="#any">any</a><span class=optional>(Optional)</span></span></span></li>
+<li><span class="type field-note">Type: <span class=field-type>Map<string,<a href="#any">any</a>><span class=optional>(Optional)</span></span></span></li>
 
 
 </ul>
@@ -1868,6 +2711,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#InherentData">InherentData</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="with">with</a>
+</h3>
+
+<span class="description field-description">The configuration for the operation, if any.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>Map<string,<a href="#any">any</a>><span class=optional>(Optional)</span></span></span></li>
 
 
 </ul>
@@ -2022,7 +2879,7 @@
 </div><div class=field>
 
 <h3 class=field-name>
-  <a name="message">message</a>
+  <a name="error">error</a>
 </h3>
 
 <span class="description field-description">The error message.</span>
@@ -2155,6 +3012,20 @@
 </div><div class=field>
 
 <h3 class=field-name>
+  <a name="with">with</a>
+</h3>
+
+<span class="description field-description">Any configuration required by the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
   <a name="inputs">inputs</a>
 </h3>
 
@@ -2191,7 +3062,7 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
-
+<li><span class="annotation field-note">Required</span></li>
 
 </ul>
 </div><div class=field>
@@ -2281,6 +3152,20 @@
 </div><div class=field>
 
 <h3 class=field-name>
+  <a name="with">with</a>
+</h3>
+
+<span class="description field-description">Any configuration required by the operation.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Field">Field</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
   <a name="inputs">inputs</a>
 </h3>
 
@@ -2317,6 +3202,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#Codec">Codec</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="headers">headers</a>
+</h3>
+
+<span class="description field-description">Any headers to add to the request.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>Map<string,string[]></span></span></li>
 
 
 </ul>
@@ -2381,6 +3280,21 @@
 
 <ul class="field-notes">
 <li><span class="enum-index field-note">Index: <span class=field-type>1</span></span></li>
+
+
+</ul>
+
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="FormData">FormData</a>
+</h3>
+
+<span class=field-description>Form Data</span>
+
+
+<ul class="field-notes">
+<li><span class="enum-index field-note">Index: <span class=field-type>2</span></span></li>
 
 
 </ul>

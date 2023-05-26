@@ -8,11 +8,11 @@ pub enum Error {
   PortMissing(String),
 
   /// Error serializing payload.
-  #[error("Error serializing payload: {1} (payload was: {:?}",.0)]
+  #[error("Error serializing payload: {1} (payload was: {:?})",.0)]
   Encode(Vec<u8>, String),
 
   /// Error deserializing payload.
-  #[error("Error deserializing  payload: {1} (payload was: {:?}",.0)]
+  #[error("Error deserializing  payload: {1} (payload was: {:?})",.0)]
   Decode(Vec<u8>, String),
 
   /// Error converting payload into JSON.
@@ -25,7 +25,7 @@ pub enum Error {
 
   /// General error to wrap other errors.
   #[error("{0}")]
-  General(String),
+  Component(String),
 
   /// Payload was successful but no data was provided.
   #[error("No data in payload")]
@@ -39,6 +39,14 @@ pub enum Error {
   #[error("Got a Done signal in an unexpected context.")]
   UnexpectedDone,
 
+  /// Returned when an operation attempts to retrieve a configuration item that doesn't exist or decoding fails.
+  #[error("Could not retrieve configuration item '{0}'")]
+  ContextKey(String),
+
+  /// Returned when trying to decode a non-JSON object into a [crate::CustomContext].
+  #[error("Can not convert non-object JSON to a CustomContext")]
+  BadJson,
+
   /// Couldn't retrieve a complete set of packets from a [crate::StreamMap]
   #[error("Could not retrieve a complete set of packets. Stream '{0}' failed to provide a packet: '{1}'")]
   StreamMapError(String /* port */, String /* error */),
@@ -46,6 +54,12 @@ pub enum Error {
   /// Couldn't retrieve a complete set of packets from a [crate::StreamMap]
   #[error("Could not retrieve a complete set of packets. Stream '{0}' completed or failed before providing a packet.")]
   StreamMapMissing(String /* port */),
+}
+
+impl Error {
+  pub fn component_error(msg: impl AsRef<str>) -> Self {
+    Self::Component(msg.as_ref().to_owned())
+  }
 }
 
 impl From<wasmrs_rx::Error> for Error {
@@ -56,7 +70,7 @@ impl From<wasmrs_rx::Error> for Error {
 
 impl From<Box<dyn std::error::Error>> for Error {
   fn from(value: Box<dyn std::error::Error>) -> Self {
-    Self::General(value.to_string())
+    Self::Component(value.to_string())
   }
 }
 

@@ -3,8 +3,8 @@
 name: cli
 kind: wick/types@v1
 types:
-  - type: struct
-    name: Interactive
+  - name: Interactive
+    kind: wick/type/struct@v1
     fields:
       - name: stdin
         type: bool

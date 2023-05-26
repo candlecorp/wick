@@ -87,6 +87,7 @@
 
 mod macros;
 mod operations;
+
 use flow_component::{Component, RuntimeCallback};
 use seeded_random::Seed;
 use wick_interface_types::{component, ComponentSignature};
@@ -159,15 +160,14 @@ impl Component for Collection {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
-    _data: Option<flow_component::Value>,
+    _data: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target = invocation.target_url();
     trace!("stdlib invoke: {}", target);
 
     Box::pin(async move {
-      let stream = dispatch!(invocation, stream, {
+      let stream = dispatch!(invocation, {
             "core::error" => operations::core::error::job,
             "core::log" => operations::core::log::job,
             "core::panic" => operations::core::panic::job,

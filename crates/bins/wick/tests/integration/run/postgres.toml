@@ -1,11 +1,14 @@
 #:schema https://raw.githubusercontent.com/assert-rs/trycmd/main/schema.json
 bin.name = "wick"
-args = ["run", "../../../examples/postgres.yaml"]
+args = ["run", "../../../examples/db/wasm-calling-postgres.wick"]
 stdout = """
 
-In WebAssembly CLI component
-Looking up user with id: 1.
-Calling provided component operation at URL: wick://test-cli-with-db/=>wick://MYDB/get_user
-Call succeeded, waiting for response...
-Row data: {"name":"Test User"}
+cli:db: in WebAssembly CLI component
+cli:db: looking up user with id: 1.
+cli:db: calling provided component operation at URL: wick://test-cli-with-db/=>wick://MYDB/get_user
+cli:db: call succeeded, waiting for response...
+cli:db: row data: {"name":"Test User"}
+cli:db: response stream ended.
+cli:db: sending output code.
+cli:db: done.
 """

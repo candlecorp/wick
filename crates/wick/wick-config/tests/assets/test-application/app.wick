@@ -3,6 +3,8 @@ kind: wick/app@v1
 package:
   files:
     - ./assets/test.js
+    - ./dir1/**/*
+    - ./dir2
 triggers:
   - kind: wick/trigger/cli@v1
     operation: main::main

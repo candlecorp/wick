@@ -93,7 +93,6 @@ use rand::distributions::{Alphanumeric, Standard};
 use rand::prelude::Distribution;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha12Rng;
-use uuid::Uuid;
 
 #[allow(missing_copy_implementations)]
 #[derive(Debug)]
@@ -212,7 +211,8 @@ impl Random {
   }
 
   /// Utility function to generate a new [uuid::Uuid]
-  pub fn uuid(&self) -> Uuid {
+  #[cfg(feature = "uuid")]
+  pub fn uuid(&self) -> uuid::Uuid {
     let mut raw_bytes: [u8; 16] = [0; 16];
     let mut rng = self.rng.write();
     rng.fill(&mut raw_bytes);
@@ -271,6 +271,7 @@ mod tests {
   }
 
   #[test]
+  #[cfg(feature = "uuid")]
   fn uuid() {
     let rng = Random::from_seed(Seed(100000));
     let v1 = rng.uuid();

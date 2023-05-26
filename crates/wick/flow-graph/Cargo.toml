@@ -9,13 +9,14 @@ description = "A representation of a graph data structure for flow-based program
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 thiserror = { workspace = true }
-tracing = { workspace = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
 flow-expression-parser = { workspace = true }
+wick-packet = { workspace = true }
 wick-config = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt"] }
 wick-logger = { workspace = true }
 test-logger = { workspace = true }
 anyhow = { workspace = true }
+tracing = { workspace = true }

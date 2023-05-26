@@ -7,19 +7,19 @@ use clap::Args;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct WasmInspectCommand {
-  #[clap(flatten)]
-  pub(crate) logging: wick_logger::LoggingOptions,
-
   /// WebAssembly module location.
   #[clap(action)]
   pub(crate) module: String,
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: WasmInspectCommand) -> Result<()> {
-  let _guard = crate::utils::init_logger(&opts.logging)?;
-
-  let mut file = File::open(&opts.module)?;
+pub(crate) async fn handle(
+  opts: WasmInspectCommand,
+  _settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<()> {
+  let _enter = span.enter();
+  let mut file = File::open(opts.module)?;
   let mut buf = Vec::new();
   file.read_to_end(&mut buf)?;
 

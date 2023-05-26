@@ -87,7 +87,7 @@ fn convert_invocation_stream(mut streaming: tonic::Streaming<InvocationRequest>)
   let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
   tokio::spawn(async move {
     while let Some(p) = streaming.next().await {
-      let result = p.map_err(|e| wick_packet::Error::General(e.to_string())).map(|p| {
+      let result = p.map_err(|e| wick_packet::Error::Component(e.to_string())).map(|p| {
         p.data.map_or_else(
           || unreachable!(),
           |p| match p {
@@ -117,7 +117,7 @@ impl InvocationService for InvocationServer {
     let (tx, rx) = mpsc::channel(4);
     let mut stream = request.into_inner();
     let first = stream.next().await;
-    let invocation: wick_packet::Invocation = if let Some(Ok(inv)) = first {
+    let mut invocation: wick_packet::Invocation = if let Some(Ok(inv)) = first {
       if let Some(rpc::invocation_request::Data::Invocation(inv)) = inv.data {
         inv
           .try_into()
@@ -130,13 +130,11 @@ impl InvocationService for InvocationServer {
     };
     let stream = convert_invocation_stream(stream);
     let packet_stream = PacketStream::new(Box::new(stream));
+    invocation.attach_stream(packet_stream);
 
     let op_id = invocation.target.operation_id().to_owned();
 
-    let result = self
-      .collection
-      .handle(invocation, packet_stream, None, panic_callback())
-      .await;
+    let result = self.collection.handle(invocation, None, panic_callback()).await;
     if let Err(e) = result {
       let message = e.to_string();
       error!("Invocation failed: {}", message);

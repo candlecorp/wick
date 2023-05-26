@@ -1,20 +1,18 @@
 use std::collections::HashMap;
 
-use asset_container::Asset;
-use serde_json::Value;
-
 use crate::config;
 
 /// A separate Wick manifest to use as a collection.
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(disable))]
+#[asset(asset(config::AssetReference))]
 pub struct ManifestComponent {
   /// The OCI reference/local path of the manifest to use as a collection.
-  pub reference: config::AssetReference,
+  pub(crate) reference: config::AssetReference,
   /// The configuration for the collection
   #[asset(skip)]
-  pub config: Value,
+  pub(crate) config: Option<wick_packet::OperationConfig>,
   /// The components to provide to the referenced component.
   #[asset(skip)]
-  pub provide: HashMap<String, String>,
+  pub(crate) provide: HashMap<String, String>,
 }

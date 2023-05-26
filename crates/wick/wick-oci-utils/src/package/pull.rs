@@ -146,10 +146,26 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
         .map_err(|e| Error::WriteFile(layer_path, e))?;
     }
 
-    if layer.media_type == media_types::APPLICATION || layer.media_type == media_types::COMPONENT {
+    // This is only for backwards compatibility for very old packages that don't include root files.
+    if root_file.is_none()
+      && (layer.media_type == media_types::APPLICATION || layer.media_type == media_types::COMPONENT)
+    {
       root_file = Some(layer_title);
     }
   }
+
+  let config = image_data.config.data;
+  let config_str = std::str::from_utf8(&config);
+  let root_file = match config_str {
+    Ok(s) => {
+      let config: Result<crate::WickOciConfig, _> = serde_json::from_str(s);
+      match config {
+        Ok(config) => Some(config.root),
+        Err(_) => root_file,
+      }
+    }
+    Err(_) => root_file,
+  };
 
   let root_file = root_file.ok_or_else(|| Error::PackageReadFailed("No root file found".to_owned()))?;
   let manifest = AssetManifest::new(PathBuf::from(&root_file), version);

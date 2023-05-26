@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use serde_json::Value;
@@ -12,6 +13,8 @@ pub enum InstanceTarget {
   Input,
   /// A flow output node.
   Output,
+  /// A black hole for inputs.
+  Null(Option<String>),
   /// A reserved namespace for built-in nodes.
   Core,
   /// An unspecified node.
@@ -21,7 +24,7 @@ pub enum InstanceTarget {
   /// A named node instance.
   Named(String),
   /// An instance created inline.
-  Path(String, String),
+  Path(String, Option<String>),
 }
 
 impl InstanceTarget {
@@ -35,15 +38,16 @@ impl InstanceTarget {
 
   /// Get the id of the instance target.
   #[must_use]
-  pub fn id(&self) -> &str {
+  pub fn id(&self) -> Option<&str> {
     match self {
-      InstanceTarget::Input => parse::SCHEMATIC_INPUT,
-      InstanceTarget::Output => parse::SCHEMATIC_OUTPUT,
-      InstanceTarget::Core => parse::CORE_ID,
+      InstanceTarget::Input => Some(parse::SCHEMATIC_INPUT),
+      InstanceTarget::Output => Some(parse::SCHEMATIC_OUTPUT),
+      InstanceTarget::Null(id) => id.as_deref(),
+      InstanceTarget::Core => Some(parse::CORE_ID),
       InstanceTarget::Default => panic!("Cannot get id of default instance"),
-      InstanceTarget::Link => parse::NS_LINK,
-      InstanceTarget::Named(name) => name,
-      InstanceTarget::Path(_, id) => id,
+      InstanceTarget::Link => Some(parse::NS_LINK),
+      InstanceTarget::Named(name) => Some(name),
+      InstanceTarget::Path(_, id) => id.as_deref(),
     }
   }
 
@@ -54,7 +58,12 @@ impl InstanceTarget {
 
   /// Create a new [InstanceTarget::Path] from a path and id.
   pub fn path(path: impl AsRef<str>, id: impl AsRef<str>) -> Self {
-    Self::Path(path.as_ref().to_owned(), id.as_ref().to_owned())
+    Self::Path(path.as_ref().to_owned(), Some(id.as_ref().to_owned()))
+  }
+
+  /// Create a new [InstanceTarget::Path] from a path without an id.
+  pub fn anonymous_path(path: impl AsRef<str>) -> Self {
+    Self::Path(path.as_ref().to_owned(), None)
   }
 }
 
@@ -71,11 +80,15 @@ impl std::fmt::Display for InstanceTarget {
     match self {
       InstanceTarget::Input => f.write_str(parse::SCHEMATIC_INPUT),
       InstanceTarget::Output => f.write_str(parse::SCHEMATIC_OUTPUT),
+      InstanceTarget::Null(id) => f.write_str(id.as_deref().unwrap_or(parse::SCHEMATIC_NULL)),
       InstanceTarget::Core => f.write_str(parse::CORE_ID),
       InstanceTarget::Default => f.write_str("<>"),
       InstanceTarget::Link => f.write_str(parse::NS_LINK),
       InstanceTarget::Named(name) => f.write_str(name),
-      InstanceTarget::Path(path, id) => write!(f, "{}[{}]", path, id),
+      InstanceTarget::Path(path, id) => match id {
+        Some(id) => write!(f, "{}[{}]", path, id),
+        None => write!(f, "{}", path),
+      },
     }
   }
 }
@@ -144,10 +157,22 @@ impl ConnectionExpression {
     &self.from
   }
 
+  /// Get the from target.
+  #[must_use]
+  pub fn from_mut(&mut self) -> &mut ConnectionTargetExpression {
+    &mut self.from
+  }
+
   /// Get the to target.
   #[must_use]
   pub fn to(&self) -> &ConnectionTargetExpression {
     &self.to
+  }
+
+  /// Get the to target.
+  #[must_use]
+  pub fn to_mut(&mut self) -> &mut ConnectionTargetExpression {
+    &mut self.to
   }
 }
 
@@ -155,7 +180,7 @@ impl ConnectionExpression {
 /// A flow expression.
 pub enum FlowExpression {
   /// A [ConnectionExpression].
-  ConnectionExpression(ConnectionExpression),
+  ConnectionExpression(Box<ConnectionExpression>),
   /// A [BlockExpression].
   BlockExpression(BlockExpression),
 }
@@ -178,6 +203,18 @@ impl FlowExpression {
       _ => None,
     }
   }
+
+  #[must_use]
+  /// Make a new [FlowExpression::ConnectionExpression] from a [ConnectionExpression].
+  pub fn connection(expr: ConnectionExpression) -> Self {
+    FlowExpression::ConnectionExpression(Box::new(expr))
+  }
+
+  #[must_use]
+  /// Make a new [FlowExpression::BlockExpression] from a [BlockExpression].
+  pub fn block(expr: BlockExpression) -> Self {
+    FlowExpression::BlockExpression(expr)
+  }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -197,6 +234,16 @@ impl BlockExpression {
   #[must_use]
   pub fn into_parts(self) -> Vec<FlowExpression> {
     self.expressions
+  }
+
+  /// Get the expressions in the block as a mutable iterator.
+  pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut FlowExpression> {
+    self.expressions.iter_mut()
+  }
+
+  /// Get the expressions in the block as an iterator.
+  pub fn iter(&self) -> impl Iterator<Item = &FlowExpression> {
+    self.expressions.iter()
   }
 }
 
@@ -220,20 +267,83 @@ impl FlowProgram {
   }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// The port associated with an instance in a connection.
+pub enum InstancePort {
+  /// A simple, named port.
+  Named(String),
+  /// A named port with a path to an inner value.
+  Path(String, Vec<String>),
+}
+
+impl FromStr for InstancePort {
+  type Err = Error;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let (_, v) = crate::parse::v1::instance_port(s).map_err(|_e| Error::PortSyntax(s.to_owned()))?;
+    Ok(v)
+  }
+}
+
+impl std::fmt::Display for InstancePort {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      InstancePort::Named(name) => write!(f, "{}", name),
+      InstancePort::Path(name, path) => write!(f, "{}.{}", name, path.join(".")),
+    }
+  }
+}
+
+impl InstancePort {
+  /// Quickly create a [InstancePort::Named] variant.
+  #[must_use]
+  pub fn named(name: impl AsRef<str>) -> Self {
+    Self::Named(name.as_ref().to_owned())
+  }
+
+  /// Quickly create a [InstancePort::Path] variant.
+  #[must_use]
+  pub fn path(name: impl AsRef<str>, path: Vec<String>) -> Self {
+    Self::Path(name.as_ref().to_owned(), path)
+  }
+
+  /// Get the name of the port.
+  #[must_use]
+  pub fn name(&self) -> &String {
+    match self {
+      InstancePort::Named(name) => name,
+      InstancePort::Path(name, _) => name,
+    }
+  }
+}
+
 /// A connection target, specified by an instance and a port.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConnectionTargetExpression {
   instance: InstanceTarget,
-  port: String,
-  data: Option<Value>,
+  port: InstancePort,
+  data: Option<HashMap<String, Value>>,
 }
 
 impl ConnectionTargetExpression {
   /// Create a new [ConnectionTargetExpression]
-  pub fn new(instance: InstanceTarget, port: impl AsRef<str>, data: Option<Value>) -> Self {
+  pub fn new(instance: InstanceTarget, port: impl Into<InstancePort>) -> Self {
     Self {
       instance,
-      port: port.as_ref().to_owned(),
+      port: port.into(),
+      data: None,
+    }
+  }
+
+  /// Create a new [ConnectionTargetExpression] with default data
+  pub fn new_default(
+    instance: InstanceTarget,
+    port: impl Into<InstancePort>,
+    data: Option<HashMap<String, Value>>,
+  ) -> Self {
+    Self {
+      instance,
+      port: port.into(),
       data,
     }
   }
@@ -243,20 +353,25 @@ impl ConnectionTargetExpression {
     &self.instance
   }
 
+  /// Get the instance target.
+  pub fn instance_mut(&mut self) -> &mut InstanceTarget {
+    &mut self.instance
+  }
+
   /// Get the port.
   #[must_use]
-  pub fn port(&self) -> &str {
+  pub fn port(&self) -> &InstancePort {
     &self.port
   }
 
   /// Get the data.
   #[must_use]
-  pub fn data(&self) -> Option<&Value> {
+  pub fn data(&self) -> Option<&HashMap<String, Value>> {
     self.data.as_ref()
   }
 
   /// Get the owned parts of the connection target.
-  pub fn into_parts(self) -> (InstanceTarget, String, Option<Value>) {
+  pub fn into_parts(self) -> (InstanceTarget, InstancePort, Option<HashMap<String, Value>>) {
     (self.instance, self.port, self.data)
   }
 }

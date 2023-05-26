@@ -1,4 +1,3 @@
-# yaml-language-server: $schema=../../wick/wick-config/json-schema/manifest.json
 ---
 name: test-component
 kind: wick/component@v1
@@ -8,6 +7,16 @@ component:
   kind: wick/component/wasmrs@v1
   ref: ./build/baseline.signed.wasm
   operations:
+    - name: power
+      with:
+        - name: exponent
+          type: u32
+      inputs:
+        - name: input
+          type: u64
+      outputs:
+        - name: output
+          type: u64
     - name: add
       inputs:
         - name: left
@@ -58,6 +67,19 @@ tests:
       - name: output
         flags:
           done: true
+  - name: 2^5
+    operation: power
+    with:
+      exponent: 5
+    input:
+      - name: input
+        data: 2
+    output:
+      - name: output
+        data: 32
+      - name: output
+        flags:
+          done: true
   - name: validate
     operation: validate
     input:
@@ -65,4 +87,4 @@ tests:
         data: 'hello'
     output:
       - name: output
-        message: Needs to be longer than 8 characters
+        error: Needs to be longer than 8 characters

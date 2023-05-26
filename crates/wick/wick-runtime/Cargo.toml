@@ -23,9 +23,11 @@ wick-stdlib = { workspace = true }
 wick-rpc = { workspace = true }
 wick-interface-http = { workspace = true }
 seeded-random = { workspace = true }
+structured-output = { workspace = true }
 # High level components
 wick-sqlx = { workspace = true }
 wick-http-client = { workspace = true }
+wick-azure-sql = { workspace = true }
 # The rest
 tokio = { workspace = true, features = [
   "macros",
@@ -50,6 +52,7 @@ url = { workspace = true }
 bytes = { workspace = true }
 hyper-staticfile = "0.9"
 hyper-reverse-proxy = "0.5"
+derive_builder = { workspace = true }
 
 [dev-dependencies]
 wick-invocation-server = { workspace = true }

@@ -3,58 +3,9 @@ use std::error::Error;
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-#[allow(clippy::trivially_copy_pass_by_ref)]
-fn is_false(b: &bool) -> bool {
-  !(*b)
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Field {
-  /// The name of the field.
-  pub name: String,
-
-  /// The type of the field.
-  #[serde(rename = "type")]
-  #[cfg_attr(feature = "parser", serde(deserialize_with = "crate::signatures::type_signature"))]
-  #[cfg_attr(
-    feature = "yaml",
-    serde(serialize_with = "serde_yaml::with::singleton_map::serialize")
-  )]
-  pub ty: TypeSignature,
-
-  /// Whether the field is required.
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub default: Option<serde_yaml::Value>,
-
-  /// Whether the field is required.
-  #[serde(default, skip_serializing_if = "is_false")]
-  pub required: bool,
-
-  /// The description of the field.
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub description: Option<String>,
-}
-
-impl Field {
-  pub fn new(name: impl AsRef<str>, ty: TypeSignature) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      description: None,
-      default: None,
-      required: false,
-      ty,
-    }
-  }
-}
-
-impl std::fmt::Display for Field {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.write_str(&self.name);
-    f.write_str(": ")?;
-    self.ty.fmt(f)
-  }
-}
+use crate::{contents_equal, is_false, Field, TypeDefinition};
 
 /// The signature of a Wick component, including its input and output types.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
@@ -177,19 +128,6 @@ pub struct ComponentSignature {
   pub config: Vec<TypeDefinition>,
 }
 
-/// Assert that two lists are equal, regardless of sort order.
-fn contents_equal<T: Eq + std::fmt::Debug>(a: &[T], b: &[T]) -> bool {
-  if a.len() != b.len() {
-    return false;
-  }
-  for i in a {
-    if !b.contains(i) {
-      return false;
-    }
-  }
-  true
-}
-
 impl PartialEq for ComponentSignature {
   fn eq(&self, other: &Self) -> bool {
     let types_equal = contents_equal(&self.types, &other.types);
@@ -197,8 +135,7 @@ impl PartialEq for ComponentSignature {
     let config_equal = contents_equal(&self.config, &other.config);
     let wellknown_equal = contents_equal(&self.wellknown, &other.wellknown);
 
-    self.name == other.name
-      && self.format == other.format
+    self.format == other.format
       && self.metadata == other.metadata
       && types_equal
       && operations_equal
@@ -256,117 +193,6 @@ pub struct WellKnownSchema {
   pub url: String,
   /// The schema itself.
   pub schema: ComponentSignature,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[must_use]
-/// A valid type definition.
-#[serde(tag = "type")]
-pub enum TypeDefinition {
-  /// A struct definition.
-  #[serde(rename = "struct")]
-  Struct(StructSignature),
-  /// An enum definition.
-  #[serde(rename = "enum")]
-  Enum(EnumSignature),
-}
-
-impl TypeDefinition {
-  /// Get the name of the type.
-  #[must_use]
-  pub fn name(&self) -> &str {
-    match self {
-      TypeDefinition::Struct(s) => &s.name,
-      TypeDefinition::Enum(e) => &e.name,
-    }
-  }
-}
-
-/// Signatures of enum type definitions.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
-#[must_use]
-pub struct EnumSignature {
-  /// The name of the enum.
-  pub name: String,
-  /// The variants in the enum.
-  #[serde(default, skip_serializing_if = "Vec::is_empty")]
-  pub variants: Vec<EnumVariant>,
-  /// Whether this type is imported.
-  #[serde(default, skip_serializing_if = "is_false")]
-  pub imported: bool,
-}
-
-impl EnumSignature {
-  /// Constructor for [EnumSignature]
-  pub fn new<T: AsRef<str>>(name: T, variants: Vec<EnumVariant>) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      variants,
-      imported: false,
-    }
-  }
-}
-
-impl PartialEq for EnumSignature {
-  fn eq(&self, other: &Self) -> bool {
-    self.name == other.name && self.variants == other.variants
-  }
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
-#[must_use]
-/// An enum variant definition
-pub struct EnumVariant {
-  /// The name of the variant.
-  pub name: String,
-  /// The index of the variant.
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub index: Option<u32>,
-  /// The optional value of the variant.
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub value: Option<String>,
-}
-
-impl EnumVariant {
-  /// Constructor for [EnumVariant]
-  pub fn new<T: AsRef<str>>(name: T, index: Option<u32>, value: Option<String>) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      index,
-      value,
-    }
-  }
-}
-
-/// Signatures of struct-like type definitions.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
-#[must_use]
-pub struct StructSignature {
-  /// The name of the struct.
-  pub name: String,
-  /// The fields in this struct.
-  #[serde(default, skip_serializing_if = "Vec::is_empty")]
-  pub fields: Vec<Field>,
-  /// Whether this type is imported.
-  #[serde(default, skip_serializing_if = "is_false")]
-  pub imported: bool,
-}
-
-impl PartialEq for StructSignature {
-  fn eq(&self, other: &Self) -> bool {
-    self.name == other.name && contents_equal(&self.fields, &other.fields)
-  }
-}
-
-impl StructSignature {
-  /// Constructor for [StructSignature]
-  pub fn new<T: AsRef<str>>(name: T, fields: Vec<Field>) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      fields,
-      imported: false,
-    }
-  }
 }
 
 /// An enum representing the types of components that can be hosted.
@@ -427,20 +253,6 @@ pub enum TypeSignature {
     #[serde(rename = "ref")]
     /// The reference string
     reference: String,
-  },
-  /// A stream type
-  Stream {
-    /// The inner type
-    #[serde(rename = "type")]
-    #[cfg_attr(
-      feature = "parser",
-      serde(deserialize_with = "crate::signatures::box_type_signature")
-    )]
-    #[cfg_attr(
-      feature = "yaml",
-      serde(serialize_with = "serde_yaml::with::singleton_map::serialize")
-    )]
-    ty: Box<TypeSignature>,
   },
   /// A list type
   List {
@@ -535,18 +347,57 @@ impl TypeSignature {
       TypeSignature::String => TypeId::of::<String>(),
       TypeSignature::Datetime => TypeId::of::<String>(),
       TypeSignature::Bytes => TypeId::of::<Vec<u8>>(),
-      TypeSignature::Custom(_) => TypeId::of::<serde_json::Value>(),
+      TypeSignature::Custom(_) => TypeId::of::<Value>(),
       TypeSignature::Ref { reference } => unimplemented!(),
-      TypeSignature::Stream { ty } => unimplemented!(),
       TypeSignature::List { ty } => TypeId::of::<Vec<Box<dyn std::any::Any>>>(),
       TypeSignature::Optional { ty } => TypeId::of::<Option<Box<dyn std::any::Any>>>(),
       TypeSignature::Map { key, value } => {
         TypeId::of::<std::collections::HashMap<Box<dyn std::any::Any>, Box<dyn std::any::Any>>>()
       }
-      TypeSignature::Link { schemas } => TypeId::of::<serde_json::Value>(),
-      TypeSignature::Object => TypeId::of::<serde_json::Value>(),
+      TypeSignature::Link { schemas } => TypeId::of::<Value>(),
+      TypeSignature::Object => TypeId::of::<Value>(),
       TypeSignature::AnonymousStruct(_) => unimplemented!(),
     }
+  }
+
+  pub fn coerce_str<'a>(&self, value: &'a str) -> Result<Value, &'a str> {
+    let val = match self {
+      TypeSignature::String => Value::String(value.to_owned()),
+      TypeSignature::U8
+      | TypeSignature::U16
+      | TypeSignature::U32
+      | TypeSignature::U64
+      | TypeSignature::I8
+      | TypeSignature::I16
+      | TypeSignature::I32
+      | TypeSignature::I64
+      | TypeSignature::F32
+      | TypeSignature::F64 => Value::Number(value.parse().map_err(|_| value)?),
+      TypeSignature::Bool => Value::Bool(value.parse().map_err(|_| value)?),
+      TypeSignature::Object => match serde_json::from_str(value) {
+        Ok(v) => v,
+        Err(_) => serde_json::from_str(&format!("\"{}\"", value)).map_err(|_| value)?,
+      },
+      TypeSignature::List { ty } => {
+        let val: Value = serde_json::from_str(value).map_err(|_| value)?;
+        if val.is_array() {
+          val
+        } else {
+          Value::Array(vec![ty.coerce_str(value)?])
+        }
+      }
+      TypeSignature::Datetime => Value::String(value.to_owned()),
+      TypeSignature::Bytes => Value::String(value.to_owned()),
+      TypeSignature::Custom(_) => Value::Object(serde_json::from_str(value).map_err(|_| value)?),
+      TypeSignature::Ref { .. } => unimplemented!(),
+      TypeSignature::Optional { ty } => {
+        return Ok(ty.coerce_str(value).unwrap_or(Value::Null));
+      }
+      TypeSignature::Map { .. } => serde_json::from_str(value).map_err(|_| value)?,
+      TypeSignature::Link { schemas } => unimplemented!(),
+      TypeSignature::AnonymousStruct(_) => Value::Object(serde_json::from_str(value).map_err(|_| value)?),
+    };
+    Ok(val)
   }
 }
 
@@ -567,12 +418,11 @@ impl std::fmt::Display for TypeSignature {
       TypeSignature::String => f.write_str("string"),
       TypeSignature::Datetime => f.write_str("datetime"),
       TypeSignature::Bytes => f.write_str("bytes"),
-      TypeSignature::Custom(_) => todo!(),
+      TypeSignature::Custom(v) => f.write_str(v),
       TypeSignature::Ref { reference } => todo!(),
-      TypeSignature::Stream { ty } => todo!(),
-      TypeSignature::List { ty } => todo!(),
-      TypeSignature::Optional { ty } => todo!(),
-      TypeSignature::Map { key, value } => todo!(),
+      TypeSignature::List { ty } => write!(f, "{}[]", ty),
+      TypeSignature::Optional { ty } => write!(f, "{}?", ty),
+      TypeSignature::Map { key, value } => write!(f, "{{{}:{}}}", key, value),
       TypeSignature::Link { schemas } => todo!(),
       TypeSignature::Object => f.write_str("object"),
       TypeSignature::AnonymousStruct(_) => todo!(),
@@ -672,8 +522,13 @@ where
 #[cfg(test)]
 mod test {
   use anyhow::Result;
+  use serde_json::json;
 
-  use super::*;
+  use super::{TypeSignature as TS, *};
+
+  fn b<T>(el: T) -> Box<T> {
+    Box::new(el)
+  }
 
   #[test]
   fn test_decode() -> Result<()> {
@@ -682,6 +537,18 @@ mod test {
     let ty: Field = serde_json::from_str(r#"{"name": "foo", "type": "object"}"#)?;
     assert_eq!(ty.name, "foo");
     assert_eq!(ty.ty, TypeSignature::Object);
+    Ok(())
+  }
+
+  #[rstest::rstest]
+  #[case(TS::String, "foo", json!("foo"))]
+  #[case(TS::U32, "48", json!(48))]
+  #[case(TS::List{ty:b(TS::U32)}, "48", json!([48]))]
+  #[case(TS::List{ty:b(TS::String)}, "48", json!(["48"]))]
+  fn test_coerce(#[case] ty: TypeSignature, #[case] string: &str, #[case] json: Value) -> Result<()> {
+    let val = ty.coerce_str(string).unwrap();
+
+    assert_eq!(val, json);
     Ok(())
   }
 }

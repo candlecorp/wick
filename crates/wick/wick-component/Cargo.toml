@@ -18,6 +18,7 @@ maintenance = { status = "actively-developed" }
 
 [dependencies]
 wick-packet = { workspace = true, default-features = false }
+flow-component = { workspace = true, default-features = false }
 wasmrs = { workspace = true }
 wasmrs-rx = { workspace = true }
 wasmrs-codec = { workspace = true }
@@ -28,3 +29,4 @@ paste = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+serde = { workspace = true }

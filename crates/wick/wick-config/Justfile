@@ -25,8 +25,4 @@ codegen:
   cargo +nightly fmt
 
 json-schema:
-  jq  \
-    --slurpfile v0_manifest json-schema/v0/manifest.json \
-    --slurpfile v1_manifest json-schema/v1/manifest.json \
-    '.["$defs"] += $v0_manifest[0] + $v1_manifest[0]' \
-    definitions/json-schema.json.tpl > json-schema/manifest.json
+  ts-node definitions/json-schema.ts definitions/json-schema.json.tpl json-schema/v0/manifest.json json-schema/v1/manifest.json > json-schema/manifest.json

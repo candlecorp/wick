@@ -46,11 +46,10 @@ impl Component for HostComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
-    _data: Option<flow_component::Value>,
+    data: Option<wick_packet::OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, ComponentError>> {
-    let fut = self.host.invoke(invocation, stream);
+    let fut = self.host.invoke(invocation, data);
 
     Box::pin(async move {
       let outputs = fut.await.map_err(ComponentError::new)?;
@@ -72,6 +71,7 @@ mod tests {
   use anyhow::Result as TestResult;
   use flow_component::panic_callback;
   use tokio_stream::StreamExt;
+  use wick_config::WickConfiguration;
   use wick_packet::{packet_stream, Entity, Packet};
 
   use super::*;
@@ -79,18 +79,21 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn test_component() -> TestResult<()> {
-    let builder = ComponentHostBuilder::from_manifest_url("./manifests/logger.yaml", false, &[]).await?;
-    let mut host = builder.build();
+    let manifest = WickConfiguration::fetch("./manifests/logger.yaml", Default::default())
+      .await?
+      .try_component_config()?;
+    let mut builder = ComponentHostBuilder::default();
+    builder.manifest(manifest);
+
+    let mut host = builder.build()?;
     host.start(Some(0)).await?;
     let collection = HostComponent::new(host);
     let input = "Hello world";
 
     let job_payload = packet_stream![("input", input)];
 
-    let invocation = Invocation::new(Entity::test(file!()), Entity::local("logger"), None);
-    let mut outputs = collection
-      .handle(invocation, job_payload, None, panic_callback())
-      .await?;
+    let invocation = Invocation::test(file!(), Entity::local("logger"), job_payload, None)?;
+    let mut outputs = collection.handle(invocation, None, panic_callback()).await?;
     let output = outputs.next().await.unwrap().unwrap();
 
     println!("output: {:?}", output);

@@ -1,0 +1,25 @@
+name: 'test'
+kind: wick/component@v1
+metadata:
+  version: '0.0.2'
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: test
+      uses:
+        - name: BOOL
+          operation: core::sender
+          with:
+            output: true
+        - name: STRING
+          operation: core::sender
+          with:
+            output: 'Hello world'
+        - name: NUM
+          operation: core::sender
+          with:
+            output: 123456
+      flow:
+        - BOOL.output -> <>.a
+        - STRING.output -> <>.b
+        - NUM.output -> <>.c

@@ -8,11 +8,14 @@ use chrono::Utc;
 use config::{AppConfiguration, TimeTriggerConfig, TriggerDefinition};
 use cron::Schedule;
 use parking_lot::Mutex;
+use serde_json::json;
+use structured_output::StructuredOutput;
 use tokio::time::Duration;
 use tokio_stream::StreamExt;
+use tracing::Span;
 use wick_packet::{Entity, Packet};
 
-use super::{Trigger, TriggerKind};
+use super::{build_trigger_runtime, Trigger, TriggerKind};
 use crate::dev::prelude::*;
 use crate::resources::Resource;
 use crate::triggers::resolve_ref;
@@ -27,15 +30,15 @@ async fn invoke_operation(
     .map(|packet| Packet::encode(packet.name(), packet.value()))
     .collect();
 
-  let packetstream: PacketStream = packets.into();
-
   let invocation = Invocation::new(
     Entity::server("schedule_client"),
     Entity::operation("0", operation.as_str()),
+    packets,
     None,
+    &Span::current(),
   );
 
-  let mut response = runtime.invoke(invocation, packetstream).await?;
+  let mut response = runtime.invoke(invocation, None).await?;
   while let Some(packet) = response.next().await {
     trace!(?packet, "trigger:time:response");
   }
@@ -49,20 +52,21 @@ async fn create_schedule(
 ) -> tokio::task::JoinHandle<()> {
   // Create a scheduler loop
   tokio::spawn(async move {
-    let schedule_component = match resolve_ref(&app_config, config.component()) {
+    let span = debug_span!("trigger:schedule", schedule = ?schedule);
+    let schedule_component = match resolve_ref(&app_config, config.operation().component()) {
       Ok(component) => component,
       Err(err) => panic!("Unable to resolve component: {}", err),
     };
 
-    let mut runtime = crate::RuntimeBuilder::new();
+    let mut runtime = build_trigger_runtime(&app_config, span.clone()).unwrap();
     let schedule_binding = config::ImportBinding::component("0", schedule_component);
     runtime.add_import(schedule_binding);
     // needed for invoke command
-    let runtime = runtime.build().await.unwrap();
+    let runtime = runtime.build(None).await.unwrap();
 
     let runtime = Arc::new(runtime);
-    let operation = Arc::new(config.operation().to_owned());
-    let payload = Arc::new(config.payload().clone());
+    let operation = Arc::new(config.operation().operation().to_owned());
+    let payload = Arc::new(config.payload().to_vec());
 
     let mut current_count: u16 = 0;
 
@@ -78,20 +82,21 @@ async fn create_schedule(
 
       // Calculate the duration until the next scheduled time
       let duration = next.signed_duration_since(Utc::now());
-      debug!("duration until next schedule: {:?}", duration);
+      span.in_scope(|| debug!("duration until next schedule: {:?}", duration));
 
       tokio::time::sleep(Duration::from_millis(duration.num_milliseconds() as u64)).await;
 
-      debug!("done sleeping");
+      span.in_scope(|| debug!("done sleeping"));
 
       let rt_clone = runtime.clone();
       let operation_clone = operation.clone();
       let payload_clone = payload.clone();
 
       let fut = invoke_operation(rt_clone, operation_clone, payload_clone);
+      let span = span.clone();
       tokio::spawn(async move {
         if let Err(e) = fut.await {
-          error!("Error invoking operation: {}", e);
+          span.in_scope(|| error!("Error invoking operation: {}", e));
         }
       });
     }
@@ -117,9 +122,12 @@ impl Time {
     Ok(Arc::new(Self::new()))
   }
 
-  async fn handle_command(&self, app_config: AppConfiguration, config: TimeTriggerConfig) -> Result<(), RuntimeError> {
-    debug!("Self: {:?}", self);
-    let cron = config.schedule().cron().clone();
+  async fn handle(
+    &self,
+    app_config: AppConfiguration,
+    config: TimeTriggerConfig,
+  ) -> Result<StructuredOutput, RuntimeError> {
+    let cron = config.schedule().cron().to_owned();
 
     // Create a new cron schedule that runs every minute
     let schedule = Schedule::from_str(&cron);
@@ -137,7 +145,10 @@ impl Time {
 
     self.handler.lock().replace(scheduler_task);
 
-    Ok(())
+    Ok(StructuredOutput::new(
+      "Scheduler started",
+      json!({"scheduler": "started"}),
+    ))
   }
 }
 
@@ -149,14 +160,15 @@ impl Trigger for Time {
     app_config: AppConfiguration,
     config: TriggerDefinition,
     _resources: Arc<HashMap<String, Resource>>,
-  ) -> Result<(), RuntimeError> {
+    _span: Span,
+  ) -> Result<StructuredOutput, RuntimeError> {
     let config = if let TriggerDefinition::Time(config) = config {
       config
     } else {
       return Err(RuntimeError::InvalidTriggerConfig(TriggerKind::Time));
     };
 
-    self.handle_command(app_config, config).await
+    self.handle(app_config, config).await
   }
 
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError> {
@@ -197,7 +209,13 @@ mod test {
     let trigger = Time::load()?;
     let trigger_config = app_config.triggers()[0].clone();
     trigger
-      .run("test".to_owned(), app_config, trigger_config, Default::default())
+      .run(
+        "test".to_owned(),
+        app_config,
+        trigger_config,
+        Default::default(),
+        Span::current(),
+      )
       .await?;
     debug!("scheduler is running");
     trigger.wait_for_done().await;

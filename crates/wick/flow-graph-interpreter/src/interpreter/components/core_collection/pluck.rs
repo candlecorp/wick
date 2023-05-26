@@ -1,7 +1,8 @@
 use flow_component::{ComponentError, Context, Operation};
 use futures::{FutureExt, StreamExt};
+use serde_json::Value;
 use wick_interface_types::{operation, OperationSignature};
-use wick_packet::{Packet, PacketStream, StreamMap};
+use wick_packet::{Invocation, Packet, PacketStream, StreamMap};
 
 use crate::BoxFuture;
 pub(crate) struct Op {
@@ -14,7 +15,7 @@ impl std::fmt::Debug for Op {
   }
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub(crate) struct Config {
   field: String,
 }
@@ -34,15 +35,36 @@ impl Op {
   }
 }
 
+fn _pluck<'a>(val: &'a Value, path: &[&str], idx: usize) -> Option<&'a Value> {
+  if idx == path.len() {
+    Some(val)
+  } else {
+    let part = path[idx];
+    match val {
+      Value::Object(map) => map.get(part).and_then(|next| _pluck(next, path, idx + 1)),
+      Value::Array(list) => {
+        let i: Result<usize, _> = part.parse();
+        i.map_or(None, |i| list.get(i).and_then(|next| _pluck(next, path, idx + 1)))
+      }
+      _ => None,
+    }
+  }
+}
+
+fn pluck<'a>(val: &'a Value, path: &str) -> Option<&'a Value> {
+  let path = path.split('.').collect::<Vec<_>>();
+  _pluck(val, &path, 0)
+}
+
 impl Operation for Op {
   const ID: &'static str = "pluck";
   type Config = Config;
   fn handle(
     &self,
-    stream: PacketStream,
+    invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let mut map = StreamMap::from_stream(stream, self.input_names(&context.config));
+    let mut map = StreamMap::from_stream(invocation.packets, self.input_names(&context.config));
     let mapped = map.take("input").map_err(ComponentError::new).map(|input| {
       input
         .map(move |next| {
@@ -50,8 +72,8 @@ impl Operation for Op {
           next.and_then(move |packet| {
             if packet.has_data() {
               let obj = packet.deserialize_generic()?;
-              let value = obj.get(&field).map_or_else(
-                || Packet::err("output", format!("Field {} not found", field)),
+              let value = pluck(&obj, &field).map_or_else(
+                || Packet::err("output", format!("could not pluck field {}: not found", field)),
                 |value| Packet::encode("output", value),
               );
 
@@ -75,9 +97,13 @@ impl Operation for Op {
     self.signature.inputs.iter().map(|n| n.name.clone()).collect()
   }
 
-  fn decode_config(data: Option<flow_component::Value>) -> Result<Self::Config, ComponentError> {
-    serde_json::from_value(data.ok_or_else(|| ComponentError::message("Empty configuration passed"))?)
-      .map_err(ComponentError::new)
+  fn decode_config(data: Option<wick_packet::OperationConfig>) -> Result<Self::Config, ComponentError> {
+    let config = data.ok_or_else(|| {
+      ComponentError::message("Merge component requires configuration, please specify configuration.")
+    })?;
+    Ok(Self::Config {
+      field: config.get_into("field").map_err(ComponentError::new)?,
+    })
   }
 }
 
@@ -85,7 +111,7 @@ impl Operation for Op {
 mod test {
   use anyhow::Result;
   use flow_component::panic_callback;
-  use wick_packet::packet_stream;
+  use wick_packet::{packet_stream, Entity};
 
   use super::*;
 
@@ -95,7 +121,7 @@ mod test {
     let config = serde_json::json!({
       "field": "pluck_this"
     });
-    let config = Op::decode_config(Some(config))?;
+    let config = Op::decode_config(Some(config.try_into()?))?;
     let stream = packet_stream!((
       "input",
       serde_json::json!({
@@ -103,8 +129,9 @@ mod test {
         "dont_pluck_this": "unused",
       })
     ));
+    let inv = Invocation::test(file!(), Entity::test("noop"), stream, None)?;
     let mut packets = op
-      .handle(stream, Context::new(config, panic_callback()))
+      .handle(inv, Context::new(config, None, panic_callback()))
       .await?
       .collect::<Vec<_>>()
       .await;
@@ -112,6 +139,25 @@ mod test {
     let _ = packets.pop().unwrap()?;
     let packet = packets.pop().unwrap()?;
     assert_eq!(packet.deserialize::<String>()?, "hello");
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn test_pluck_fn() -> Result<()> {
+    let json = serde_json::json!({
+      "first": {
+        "second": {
+          "third" : [
+            {"fourth": "first element"},
+            {"fourth": "second element"}
+          ]
+        }
+      }
+    });
+
+    let val = pluck(&json, "first.second.third.0.fourth");
+    assert_eq!(val, Some(&serde_json::json!("first element")));
 
     Ok(())
   }

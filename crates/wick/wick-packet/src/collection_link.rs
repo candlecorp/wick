@@ -18,10 +18,16 @@ impl ComponentReference {
 
   #[cfg(feature = "invocation")]
   /// Create an [crate::Invocation] for this component reference.
-  pub fn to_invocation(&self, operation: &str, inherent: Option<crate::InherentData>) -> crate::Invocation {
+  pub fn to_invocation(
+    &self,
+    operation: &str,
+    packets: impl Into<PacketStream>,
+    inherent: Option<crate::InherentData>,
+    follows_from: &tracing::Span,
+  ) -> crate::Invocation {
     let target = crate::Entity::operation(self.target.component_id(), operation);
 
-    crate::Invocation::new(self.origin.clone(), target, inherent)
+    crate::Invocation::new(self.origin.clone(), target, packets, inherent, follows_from)
   }
 
   #[must_use]
@@ -77,11 +83,15 @@ fn link_call(
   };
 
   let _ = tx.send_result(Packet::encode("", first).into());
-  wasmrs_runtime::spawn(async move {
-    while let Some(payload) = stream.next().await {
-      if let Err(_e) = tx.send_result(payload) {
-        // Error sending payload, channel probably closed.
-      };
+  let _ = wasmrs_guest::runtime::spawn("comp_ref", async move {
+    loop {
+      if let Some(payload) = stream.next().await {
+        if let Err(_e) = tx.send_result(payload) {
+          // Error sending payload, channel probably closed.
+        };
+      } else {
+        break;
+      }
     }
   });
 

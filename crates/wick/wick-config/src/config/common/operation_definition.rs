@@ -1,17 +1,17 @@
-use serde_json::Value;
 use wick_interface_types::Field;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Builder, Clone, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 pub struct OperationSignature {
   /// The name of the schematic.
-  pub name: String,
+  pub(crate) name: String,
 
   /// Any configuration required for the component to operate.
-  pub config: Option<Value>,
+  pub(crate) config: Vec<Field>,
 
   /// A list of the input types for the operation.
-  pub inputs: Vec<Field>,
+  pub(crate) inputs: Vec<Field>,
 
   /// A list of the input types for the operation.
-  pub outputs: Vec<Field>,
+  pub(crate) outputs: Vec<Field>,
 }

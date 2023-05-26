@@ -60,6 +60,7 @@ pub(crate) struct AppConfiguration {
   /// Associated metadata for this component.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) metadata: Option<Metadata>,
   /// The application&#x27;s name.
 
@@ -69,7 +70,8 @@ pub(crate) struct AppConfiguration {
   /// Configuration that controls how this application runs within a host.
 
   #[serde(default)]
-  pub(crate) host: HostConfig,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) host: Option<HostConfig>,
   /// Components to import into the application&#x27;s scope.
 
   #[serde(default)]
@@ -88,6 +90,7 @@ pub(crate) struct AppConfiguration {
   /// Details about the package for this application.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) package: Option<PackageDefinition>,
 }
 
@@ -103,6 +106,7 @@ pub(crate) struct PackageDefinition {
   /// Configuration for publishing the package to a registry. This will be used if the package is published without any additional arguments on the command line. If a tag is specified on the command line, that tag will be used instead.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) registry: Option<RegistryDefinition>,
 }
 
@@ -148,10 +152,12 @@ pub(crate) struct Metadata {
   /// A short description of the component or application.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) description: Option<String>,
   /// Where to find documentation for the component or application.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) documentation: Option<String>,
   /// The license(s) for the component or application.
 
@@ -161,6 +167,7 @@ pub(crate) struct Metadata {
   /// The icon for the component or application.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) icon: Option<crate::v1::helpers::LocationReference>,
 }
 
@@ -310,10 +317,160 @@ pub(crate) struct RestRouter {
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
-  /// The component to expose as a Rest API.
+  /// Additional tools and services to enable.
 
-  #[serde(deserialize_with = "crate::v1::parse::component_shortform")]
-  pub(crate) component: ComponentDefinition,
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) tools: Option<Tools>,
+  /// The routes to serve and operations that handle them.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) routes: Vec<Route>,
+  /// Information about the router to use when generating documentation and other tools.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) info: Option<Info>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Tools {
+  /// The path to serve the OpenAPI spec from
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) openapi: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Information about the router to use when generating documentation and other tools.
+pub(crate) struct Info {
+  /// The title of the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) title: Option<String>,
+  /// A short description of the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) description: Option<String>,
+  /// The terms of service for the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) tos: Option<String>,
+  /// The contact information for the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) contact: Option<Contact>,
+  /// The license information for the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) license: Option<License>,
+  /// The version of the API.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) version: Option<String>,
+  /// The URL to the API&#x27;s terms of service.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) documentation: Option<Documentation>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Documentation information for the API.
+pub(crate) struct Documentation {
+  /// The URL to the API&#x27;s documentation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) url: Option<String>,
+  /// A short description of the documentation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// The license information for the API.
+pub(crate) struct License {
+  /// The name of the license.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) name: Option<String>,
+  /// The URL to the license.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// The contact information for the API.
+pub(crate) struct Contact {
+  /// The name of the contact.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) name: Option<String>,
+  /// The URL to the contact.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) url: Option<String>,
+  /// The email address of the contact.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) email: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A route to serve and the operation that handles it.
+pub(crate) struct Route {
+  /// The name of the route, used for documentation and tooling.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) name: Option<String>,
+  /// The HTTP methods to serve this route for.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) methods: Vec<String>,
+  /// The path to serve this route from.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) uri: String,
+  /// The operation that will act as the main entrypoint for this route.
+
+  #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
+  pub(crate) operation: ComponentOperationExpression,
+  /// A short description of the route.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) description: Option<String>,
+  /// A longer description of the route.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) summary: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -327,6 +484,11 @@ pub(crate) struct StaticRouter {
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) volume: String,
+  /// Fallback path (relative to volume &#x60;resource&#x60;) for files to serve in case of a 404. Useful for SPA&#x27;s. if volume resource is: /www and fallback: index.html, then a 404 will serve /www/index.html
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) fallback: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -337,6 +499,11 @@ pub(crate) struct RawRouter {
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
+  /// The codec to use when encoding/decoding data.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) codec: Option<Codec>,
   /// The operation that handles HTTP requests.
 
   #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
@@ -418,20 +585,31 @@ pub(crate) struct Url {
 #[serde(deny_unknown_fields)]
 /// A type definition for a Wick Components and Operations
 pub(crate) struct TypesConfiguration {
-  /// The name of this component.
+  /// The name of this type.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) name: Option<String>,
-  /// Additional types to export and make available to the component.
+  /// Associated metadata for this type.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) metadata: Option<Metadata>,
+  /// Additional types to export and make available to the type.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
+  pub(crate) types: Vec<TypeDefinition>,
   /// A list of operation signatures.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
+  /// Details about the package for this types.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) package: Option<PackageDefinition>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -441,6 +619,7 @@ pub(crate) struct TestConfiguration {
   /// The name of this component.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) name: Option<String>,
   /// Unit tests to run against components and operations.
 
@@ -456,15 +635,18 @@ pub(crate) struct ComponentConfiguration {
   /// The name of this component.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) name: Option<String>,
   /// Associated metadata for this component.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) metadata: Option<Metadata>,
   /// Configuration for when wick hosts this component as a service.
 
   #[serde(default)]
-  pub(crate) host: HostConfig,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) host: Option<HostConfig>,
   /// Resources that the application can access.
 
   #[serde(default)]
@@ -479,7 +661,7 @@ pub(crate) struct ComponentConfiguration {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
+  pub(crate) types: Vec<TypeDefinition>,
   /// Interfaces the component requires to operate.
 
   #[serde(default)]
@@ -501,6 +683,7 @@ pub(crate) struct ComponentConfiguration {
   /// Details about the package for this component.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) package: Option<PackageDefinition>,
 }
 
@@ -524,7 +707,7 @@ pub(crate) struct InterfaceDefinition {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) types: Vec<wick_interface_types::TypeDefinition>,
+  pub(crate) types: Vec<TypeDefinition>,
   /// A list of operations defined by this interface.
 
   #[serde(default)]
@@ -694,6 +877,7 @@ pub(crate) struct HostConfig {
   /// Configuration for the GRPC server.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) rpc: Option<HttpConfig>,
 }
 
@@ -709,22 +893,27 @@ pub(crate) struct HttpConfig {
   /// The port to bind to.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) port: Option<u16>,
   /// The address to bind to.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) address: Option<String>,
   /// Path to pem file for TLS.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) pem: Option<crate::v1::helpers::LocationReference>,
   /// Path to key file for TLS.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) key: Option<crate::v1::helpers::LocationReference>,
   /// Path to CA file.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) ca: Option<crate::v1::helpers::LocationReference>,
 }
 
@@ -739,8 +928,9 @@ pub(crate) struct GrpcUrlComponent {
   /// Any configuration necessary for the component.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
-  pub(crate) with: Value,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) with: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -754,8 +944,9 @@ pub(crate) struct ManifestComponent {
   /// Any configuration necessary for the component.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
-  pub(crate) with: Value,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) with: Option<HashMap<String, Value>>,
   /// External components to provide to the referenced component.
 
   #[serde(default)]
@@ -773,16 +964,21 @@ pub(crate) struct CompositeOperationDefinition {
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
+  /// Any configuration required by the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
   /// Types of the inputs to the operation.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) inputs: Vec<wick_interface_types::Field>,
+  pub(crate) inputs: Vec<Field>,
   /// Types of the outputs to the operation.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) outputs: Vec<wick_interface_types::Field>,
+  pub(crate) outputs: Vec<Field>,
   /// A list of components the schematic can use.
 
   #[serde(default)]
@@ -855,7 +1051,9 @@ pub(crate) struct ConnectionTargetDefinition {
   /// The default value to provide on this connection in the event of an error.
 
   #[serde(default)]
-  pub(crate) data: Option<Value>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) data: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -870,26 +1068,252 @@ pub(crate) struct OperationDefinition {
   /// Any configuration required by the operation.
 
   #[serde(default)]
-  pub(crate) with: Option<Value>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
   /// Types of the inputs to the operation.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) inputs: Vec<wick_interface_types::Field>,
+  pub(crate) inputs: Vec<Field>,
   /// Types of the outputs to the operation.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) outputs: Vec<wick_interface_types::Field>,
+  pub(crate) outputs: Vec<Field>,
 }
 
-/// Field definition. This is not technically an any type, it is a wick interface type field.
-#[allow(unused)]
-pub(crate) type Field = Value;
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Field definition with a name and type signature
+pub(crate) struct Field {
+  /// The name of the field.
 
-/// Type definition. This is not technically an any type, it is a wick interface type definition.
-#[allow(unused)]
-pub(crate) type TypeDefinition = Value;
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) name: String,
+  /// The type signature of the field.
+
+  #[serde(rename = "type")]
+  pub(crate) ty: TypeSignature,
+  /// The description of the field.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) description: Option<String>,
+}
+
+#[derive(Debug, Clone, serde_with::DeserializeFromStr, Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(tag = "kind")]
+pub(crate) enum TypeSignature {
+  /// A variant representing a [I8] type.
+  I8(I8),
+  /// A variant representing a [I16] type.
+  I16(I16),
+  /// A variant representing a [I32] type.
+  I32(I32),
+  /// A variant representing a [I64] type.
+  I64(I64),
+  /// A variant representing a [U8] type.
+  U8(U8),
+  /// A variant representing a [U16] type.
+  U16(U16),
+  /// A variant representing a [U32] type.
+  U32(U32),
+  /// A variant representing a [U64] type.
+  U64(U64),
+  /// A variant representing a [F32] type.
+  F32(F32),
+  /// A variant representing a [F64] type.
+  F64(F64),
+  /// A variant representing a [Bool] type.
+  Bool(Bool),
+  /// A variant representing a [StringType] type.
+  StringType(StringType),
+  /// A variant representing a [Optional] type.
+  Optional(Optional),
+  /// A variant representing a [Datetime] type.
+  Datetime(Datetime),
+  /// A variant representing a [Bytes] type.
+  Bytes(Bytes),
+  /// A variant representing a [Custom] type.
+  Custom(Custom),
+  /// A variant representing a [List] type.
+  List(List),
+  /// A variant representing a [Map] type.
+  Map(Map),
+  /// A variant representing a [Object] type.
+  Object(Object),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct I8();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct I16();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct I32();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct I64();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct U8();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct U16();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct U32();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct U64();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct F32();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct F64();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Bool();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct StringType();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Datetime();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Bytes();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Custom {
+  /// The name of the custom type.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Optional {
+  #[serde(rename = "type")]
+  pub(crate) ty: Box<TypeSignature>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct List {
+  #[serde(rename = "type")]
+  pub(crate) ty: Box<TypeSignature>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Map {
+  pub(crate) key: Box<TypeSignature>,
+
+  pub(crate) value: Box<TypeSignature>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Object();
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(tag = "kind")]
+/// Struct or Enum type definition.
+pub(crate) enum TypeDefinition {
+  /// A variant representing a [StructSignature] type.
+  #[serde(rename = "wick/type/struct@v1")]
+  StructSignature(StructSignature),
+  /// A variant representing a [EnumSignature] type.
+  #[serde(rename = "wick/type/enum@v1")]
+  EnumSignature(EnumSignature),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct StructSignature {
+  /// The name of the struct.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) name: String,
+  /// The fields in this struct.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) fields: Vec<Field>,
+  /// The description of the struct.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct EnumSignature {
+  /// The name of the enum.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) name: String,
+  /// The variants in the enum.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) variants: Vec<EnumVariant>,
+  /// The description of the enum.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct EnumVariant {
+  /// The name of the variant.
+
+  #[serde(default)]
+  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
+  pub(crate) name: String,
+  /// The index of the variant.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) index: Option<u32>,
+  /// The optional value of the variant.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) value: Option<String>,
+  /// The description of the variant.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) description: Option<String>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -906,7 +1330,9 @@ pub(crate) struct InstanceBinding {
   /// Data to associate with the reference, if any.
 
   #[serde(default)]
-  pub(crate) with: Option<Value>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) with: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -924,7 +1350,14 @@ pub(crate) struct TestDefinition {
   /// Inherent data to use for the test.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) inherent: Option<InherentData>,
+  /// The configuration for the operation, if any.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) with: Option<HashMap<String, Value>>,
   /// The inputs to the test.
 
   #[serde(default)]
@@ -944,10 +1377,12 @@ pub(crate) struct InherentData {
   /// An RNG seed.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) seed: Option<u64>,
   /// A timestamp.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) timestamp: Option<u64>,
 }
 
@@ -973,10 +1408,12 @@ pub(crate) struct PayloadData {
   /// Any flags set on the packet.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) flags: Option<PacketFlags>,
   /// The data to send.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) data: Option<Value>,
 }
 
@@ -990,11 +1427,12 @@ pub(crate) struct ErrorData {
   /// Any flags set on the packet.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) flags: Option<PacketFlags>,
   /// The error message.
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) message: String,
+  pub(crate) error: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1047,19 +1485,23 @@ pub(crate) struct SqlOperationDefinition {
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
+  /// Any configuration required by the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
   /// Types of the inputs to the operation.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) inputs: Vec<wick_interface_types::Field>,
+  pub(crate) inputs: Vec<Field>,
   /// Types of the outputs to the operation.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) outputs: Vec<wick_interface_types::Field>,
+  pub(crate) outputs: Vec<Field>,
   /// The query to execute.
 
-  #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) query: String,
   /// The arguments to the query, defined as a list of input names.
@@ -1081,6 +1523,7 @@ pub(crate) struct HttpClientComponent {
   /// The codec to use when encoding/decoding data. Can be overridden by individual operations.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) codec: Option<Codec>,
   /// A list of operations to expose on this component.
 
@@ -1097,11 +1540,16 @@ pub(crate) struct HttpClientOperationDefinition {
   #[serde(default)]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
+  /// Any configuration required by the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
   /// Types of the inputs to the operation.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) inputs: Vec<wick_interface_types::Field>,
+  pub(crate) inputs: Vec<Field>,
   /// The HTTP method to use.
 
   #[serde(default)]
@@ -1109,10 +1557,17 @@ pub(crate) struct HttpClientOperationDefinition {
   /// The codec to use when encoding/decoding data.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) codec: Option<Codec>,
+  /// Any headers to add to the request.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
+  pub(crate) headers: HashMap<String, Vec<String>>,
   /// The body to send, processed as a structured JSON liquid template.
 
   #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) body: Option<liquid_json::LiquidJsonValue>,
   /// The path to append to our base URL, processed as a liquid template with each input as part of the template data.
 
@@ -1129,6 +1584,8 @@ pub(crate) enum Codec {
   Json = 0,
   /// Raw
   Raw = 1,
+  /// Form Data
+  FormData = 2,
 }
 
 impl Default for Codec {
@@ -1142,6 +1599,7 @@ impl FromPrimitive for Codec {
     Some(match n {
       0 => Self::Json,
       1 => Self::Raw,
+      2 => Self::FormData,
       _ => {
         return None;
       }
@@ -1152,6 +1610,7 @@ impl FromPrimitive for Codec {
     Some(match n {
       0 => Self::Json,
       1 => Self::Raw,
+      2 => Self::FormData,
       _ => {
         return None;
       }

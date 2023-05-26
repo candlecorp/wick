@@ -14,57 +14,57 @@ where
   let name = info.name();
   match name {
         "BOOL" => {
-            let v: bool = Decode::<Postgres>::decode(value).unwrap();
+            let v: bool = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_bool(v)
         }
         "INT2" => {
-            let v: i16 = Decode::<Postgres>::decode(value).unwrap();
+            let v: i16 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_i16(v)
         }
         "INT4" => {
-            let v: i32 = Decode::<Postgres>::decode(value).unwrap();
+            let v: i32 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_i32(v)
         }
         "INT8" => {
-            let v: i64 = Decode::<Postgres>::decode(value).unwrap();
+            let v: i64 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_i64(v)
         }
         "FLOAT4" => {
-            let v: f32 = Decode::<Postgres>::decode(value).unwrap();
+            let v: f32 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_f32(v)
         }
         "FLOAT8" | "NUMERIC" => {
-            let v: f64 = Decode::<Postgres>::decode(value).unwrap();
+            let v: f64 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_f64(v)
         }
         "CHAR" | "VARCHAR" | "TEXT" | "\"CHAR\"" => {
-            let v: String = Decode::<Postgres>::decode(value).unwrap();
+            let v: String = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_str(&v)
         }
         "BYTEA" => {
-            let v: Vec<u8> = Decode::<Postgres>::decode(value).unwrap();
+            let v: Vec<u8> = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_some(&v)
         }
         "JSON" | "JSONB" => {
-            let v: Value = Decode::<Postgres>::decode(value).unwrap();
+            let v: Value = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_some(&v)
         }
         "TIMESTAMP" => {
-            let v: sqlx::types::chrono::NaiveDateTime = Decode::<Postgres>::decode(value).unwrap();
+            let v: sqlx::types::chrono::NaiveDateTime = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             let v = v.format("%Y-%m-%dT%H:%M:%S.%f").to_string();
             s.serialize_str(&v)
         }
         "TIMESTAMPTZ" => {
             use sqlx::types::chrono;
-            let v: chrono::DateTime::<chrono::Utc> = Decode::<Postgres>::decode(value).unwrap();
+            let v: chrono::DateTime::<chrono::Utc> = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_str(&v.to_rfc3339())
         }
         "UUID" => {
-            let v: String = Decode::<Postgres>::decode(value).unwrap();
+            let v: String = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_str(&v)
         }
         _ => {
-            let v: String = Decode::<Postgres>::decode(value).unwrap();
+            let v: String = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_str(&v)
         }
         // PgType::Name => "NAME",

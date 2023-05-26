@@ -2,13 +2,16 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use seeded_random::Seed;
+use tracing::Span;
 use uuid::Uuid;
+use wick_config::config::{ComponentConfiguration, ComponentConfigurationBuilder};
+use wick_packet::{Entity, OperationConfig};
 
 use crate::dev::prelude::*;
 use crate::runtime_service::{ComponentFactory, ComponentRegistry, Initialize};
 
 type Result<T> = std::result::Result<T, RuntimeError>;
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[must_use]
 pub struct Runtime {
   pub uid: Uuid,
@@ -16,32 +19,31 @@ pub struct Runtime {
   timeout: Duration,
 }
 
-#[derive(Debug)]
+#[derive(Debug, derive_builder::Builder)]
+#[builder(pattern = "owned", name = "RuntimeBuilder", setter(into), build_fn(skip))]
 #[must_use]
 pub struct RuntimeInit {
-  definition: config::ComponentConfiguration,
-  allow_latest: bool,
-  allowed_insecure: Vec<String>,
-  timeout: Duration,
-  namespace: Option<String>,
-  rng_seed: Seed,
-  native_components: ComponentRegistry,
+  #[builder(default)]
+  pub(crate) manifest: ComponentConfiguration,
+  #[builder(default)]
+  pub(crate) allow_latest: bool,
+  #[builder(default)]
+  pub(crate) allowed_insecure: Vec<String>,
+  #[builder(default = "Duration::from_secs(5)")]
+  pub(crate) timeout: Duration,
+  #[builder(setter(strip_option))]
+  pub(crate) namespace: Option<String>,
+  #[builder(default)]
+  pub(crate) constraints: Vec<RuntimeConstraint>,
+  pub(crate) span: Span,
+  #[builder(setter(custom = true))]
+  pub(crate) native_components: ComponentRegistry,
 }
 
 impl Runtime {
-  #[instrument(name = "runtime", skip_all)]
-  pub async fn new(config: RuntimeInit) -> Result<Self> {
-    trace!(?config, "init");
-    let init = Initialize::new(
-      config.rng_seed,
-      config.definition,
-      config.allowed_insecure.clone(),
-      config.allow_latest,
-      config.timeout,
-      config.native_components,
-      config.namespace,
-      debug_span!("runtime:new"),
-    );
+  pub async fn new(seed: Seed, config: RuntimeInit) -> Result<Self> {
+    let timeout = config.timeout;
+    let init = Initialize::new(seed, config);
 
     let service = RuntimeService::new(init)
       .await
@@ -49,15 +51,15 @@ impl Runtime {
     Ok(Self {
       uid: service.id,
       inner: service,
-      timeout: config.timeout,
+      timeout,
     })
   }
 
-  pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream> {
+  pub async fn invoke(&self, invocation: Invocation, config: Option<OperationConfig>) -> Result<PacketStream> {
     let time = std::time::SystemTime::now();
     trace!(start_time=%time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() ,"invocation start");
 
-    let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation, stream)?)
+    let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation, config)?)
       .await
       .map_err(|_| RuntimeError::Timeout)??;
     trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"invocation complete");
@@ -84,112 +86,102 @@ impl Runtime {
   }
 }
 
-/// The [RuntimeBuilder] builds the configuration for a Wick [Runtime].
-#[derive(Default)]
-#[must_use]
-pub struct RuntimeBuilder {
-  allow_latest: bool,
-  allowed_insecure: Vec<String>,
-  manifest_builder: config::ComponentConfigurationBuilder,
-  timeout: Duration,
-  rng_seed: Option<Seed>,
-  namespace: Option<String>,
-  native_components: ComponentRegistry,
-}
-
 impl std::fmt::Debug for RuntimeBuilder {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("RuntimeBuilder")
       .field("allow_latest", &self.allow_latest)
       .field("allowed_insecure", &self.allowed_insecure)
-      .field("manifest_builder", &self.manifest_builder)
+      .field("manifest", &self.manifest)
       .field("timeout", &self.timeout)
-      .field("rng_seed", &self.rng_seed)
       .field("namespace", &self.namespace)
       .field("native_components", &self.native_components)
       .finish()
   }
 }
 
-impl RuntimeBuilder {
-  pub fn new() -> Self {
-    Self {
-      timeout: Duration::from_secs(5),
-      ..Default::default()
+#[derive(Debug, Clone)]
+pub enum RuntimeConstraint {
+  Operation {
+    entity: Entity,
+    signature: OperationSignature,
+  },
+}
+
+impl std::fmt::Display for RuntimeConstraint {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      RuntimeConstraint::Operation { entity, .. } => {
+        write!(f, "Operation signature for {}", entity)
+      }
     }
+  }
+}
+
+impl RuntimeBuilder {
+  #[must_use]
+  pub fn new() -> Self {
+    Self::default()
   }
 
   /// Creates a new [RuntimeBuilder] from a [config::ComponentConfiguration]
-  pub fn from_definition(definition: config::ComponentConfiguration) -> Result<Self> {
-    Ok(Self {
-      allow_latest: definition.allow_latest(),
-      allowed_insecure: definition.insecure_registries().clone(),
-      manifest_builder: config::ComponentConfigurationBuilder::from_base(definition),
-      timeout: Duration::from_secs(5),
-      native_components: ComponentRegistry::default(),
-      namespace: None,
-      rng_seed: None,
-    })
+  #[must_use]
+  pub fn from_definition(definition: ComponentConfiguration) -> Self {
+    let builder = Self::new();
+    builder
+      .allow_latest(definition.allow_latest())
+      .allowed_insecure(definition.insecure_registries().map(|v| v.to_vec()).unwrap_or_default())
+      .manifest(definition)
+  }
+
+  pub fn add_constraint(&mut self, constraint: RuntimeConstraint) -> &mut Self {
+    let mut val = self.constraints.take().unwrap_or_default();
+    val.push(constraint);
+    self.constraints.replace(val);
+    self
   }
 
   pub fn add_import(&mut self, component: config::ImportBinding) -> &mut Self {
-    self.manifest_builder.add_import(component);
+    let val = self.manifest.take().unwrap_or_default();
+    let mut val = ComponentConfigurationBuilder::from_base(val);
+    val.add_import(component);
+    self.manifest.replace(val.build().unwrap());
     self
   }
 
   pub fn add_resource(&mut self, resource: config::ResourceBinding) -> &mut Self {
-    self.manifest_builder.add_resource(resource);
+    let val = self.manifest.take().unwrap_or_default();
+    let mut val = ComponentConfigurationBuilder::from_base(val);
+    val.add_resource(resource);
+    self.manifest.replace(val.build().unwrap());
     self
   }
 
-  pub fn timeout(self, timeout: Duration) -> Self {
-    Self { timeout, ..self }
-  }
-
-  pub fn allow_latest(self, allow_latest: bool) -> Self {
-    Self { allow_latest, ..self }
-  }
-
-  pub fn allow_insecure(self, allowed_insecure: Vec<String>) -> Self {
-    Self {
-      allowed_insecure,
-      ..self
-    }
-  }
-
-  pub fn with_seed(self, seed: Seed) -> Self {
-    Self {
-      rng_seed: Some(seed),
-      ..self
-    }
-  }
-
-  pub fn namespace<T: AsRef<str>>(self, namespace: T) -> Self {
-    Self {
-      namespace: Some(namespace.as_ref().to_owned()),
-      ..self
-    }
-  }
-
-  pub fn native_component(&mut self, factory: Box<ComponentFactory>) {
-    self.native_components.add(factory);
+  pub fn add_native_component(&mut self, factory: Box<ComponentFactory>) -> &mut Self {
+    let mut val = self.native_components.take().unwrap_or_default();
+    val.add(factory);
+    self.native_components.replace(val);
+    self
   }
 
   /// Constructs an instance of a Wick [Runtime].
-  pub async fn build(self) -> Result<Runtime> {
-    let definition = self
-      .manifest_builder
-      .build()
-      .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
-    Runtime::new(RuntimeInit {
-      definition,
-      allow_latest: self.allow_latest,
-      allowed_insecure: self.allowed_insecure,
-      native_components: self.native_components,
-      timeout: self.timeout,
-      namespace: self.namespace,
-      rng_seed: self.rng_seed.unwrap_or_else(new_seed),
-    })
+  pub async fn build(self, seed: Option<Seed>) -> Result<Runtime> {
+    let from_span = self.span.unwrap_or_else(tracing::Span::current);
+    let span = debug_span!("runtime");
+    span.follows_from(from_span);
+    let definition = self.manifest.unwrap_or_default();
+    Runtime::new(
+      seed.unwrap_or_else(new_seed),
+      RuntimeInit {
+        manifest: definition,
+        allow_latest: self.allow_latest.unwrap_or_default(),
+        allowed_insecure: self.allowed_insecure.unwrap_or_default(),
+        native_components: self.native_components.unwrap_or_default(),
+        timeout: self.timeout.unwrap_or_else(|| Duration::from_secs(5)),
+        namespace: self.namespace.unwrap_or_default(),
+        constraints: self.constraints.unwrap_or_default(),
+        span,
+      },
+    )
     .await
   }
 }

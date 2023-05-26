@@ -1,16 +1,29 @@
 ---
 kind: wick/component@v1
-name: 'jinja'
+name: "jinja"
 metadata:
-  version: '2'
-  icon: './assets/icon.png'
-component:
-  kind: wick/component/wasmrs@v1
-  ref: ./assets/test.fake.wasm
+  version: "2"
+  icon: "./assets/icon.png"
+import:
+  - name: include
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./include.wick
 package:
   files:
-    - ./assets/test.js
-    - ./assets/static/**/*
+    - ./assets/**/*
   registry:
     registry: $DOCKER_REGISTRY
     namespace: default
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: test-component
+      inputs:
+        - name: input
+          type: string
+      outputs:
+        - name: output
+          type: string
+      flow:
+        - <>.input -> <>.output

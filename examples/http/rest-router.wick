@@ -1,0 +1,34 @@
+---
+kind: wick/app@v1
+name: serve_http_component
+metadata:
+  description: Serve raw HTTP with a WASM component
+  version: 0.0.1
+  authors:
+    - 'Wick Maintainers'
+  vendors:
+    - 'Candle Corporation'
+  licenses:
+    - Apache-2.0
+resources:
+  - name: http
+    resource:
+      kind: wick/resource/tcpport@v1
+      port: 8999
+      address: 0.0.0.0
+import:
+  - name: sample
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./rest-router/component.wick
+triggers:
+  - kind: wick/trigger/http@v1
+    resource: http
+    routers:
+      - kind: wick/router/rest@v1
+        path: /
+        routes:
+          # - uri: '/this/{first:string}/some/{second:u32}?third:string[]&fourth:bool' # TODO: fix broken test
+          - uri: '/this/{first:string}/some/{second:u32}?third:string&fourth:bool'
+            operation: sample::echo
+            description: 'Echoes inputs first, second, third, and fourth back as JSON'

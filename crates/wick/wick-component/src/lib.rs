@@ -76,5 +76,14 @@
 
 pub mod macros;
 pub use futures::stream::StreamExt;
-pub use {anyhow, paste, wasmrs, wasmrs_codec, wasmrs_runtime as runtime, wasmrs_rx, wick_packet as packet};
+pub use {
+  anyhow,
+  flow_component,
+  paste,
+  wasmrs,
+  wasmrs_codec,
+  wasmrs_runtime as runtime,
+  wasmrs_rx,
+  wick_packet as packet,
+};
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;

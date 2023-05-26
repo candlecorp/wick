@@ -11,7 +11,7 @@ use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition
 use wick_config::config::{Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{component, ComponentSignature, Field, TypeSignature};
-use wick_packet::{FluxChannel, Invocation, Observer, Packet, PacketStream, TypeWrapper};
+use wick_packet::{FluxChannel, Invocation, Observer, OperationConfig, Packet, PacketStream};
 use wick_rpc::RpcHandler;
 
 use crate::error::Error;
@@ -27,9 +27,9 @@ enum CtxPool {
 }
 
 impl CtxPool {
-  fn fetch<'a, 'b>(&'a self, query: &'b str, args: Vec<SqlWrapper>) -> BoxStream<'a, Result<Value, Error>>
+  fn fetch<'a, 'q>(&'a self, query: &'q str, args: Vec<SqlWrapper>) -> BoxStream<'a, Result<Value, Error>>
   where
-    'b: 'a,
+    'q: 'a,
   {
     match self {
       CtxPool::Postgres(c) => {
@@ -42,7 +42,7 @@ impl CtxPool {
 
         let b = a.map(|a| a.map(SerMapPgRow::from));
         let c = b.map(|a| {
-          a.map(|a| serde_json::to_value(a).unwrap())
+          a.map(|a| serde_json::to_value(a).unwrap_or(Value::Null))
             .map_err(|e| Error::Fetch(e.to_string()))
         });
         c.boxed()
@@ -56,7 +56,7 @@ impl CtxPool {
         let a = query.fetch(c);
         let b = a.map(|a| a.map(SerMapMssqlRow::from));
         let c = b.map(|a| {
-          a.map(|a| serde_json::to_value(a).unwrap())
+          a.map(|a| serde_json::to_value(a).unwrap_or(Value::Null))
             .map_err(|e| Error::Fetch(e.to_string()))
         });
         c.boxed()
@@ -93,15 +93,23 @@ pub struct SqlXComponent {
 }
 
 impl SqlXComponent {
+  #[allow(clippy::needless_pass_by_value)]
   pub fn new(config: SqlComponentConfig, metadata: Metadata, resolver: &Resolver) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
-    let sig = component! {
+    let mut sig = component! {
       name: "wick/component/sql",
-      version: metadata.version,
+      version: metadata.version(),
       operations: config.operation_signatures(),
     };
-    let addr = resolver(&config.resource)
-      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource)))
+    // NOTE: remove this must change when db components support customized outputs.
+    sig.operations.iter_mut().for_each(|op| {
+      if !op.outputs.iter().any(|f| f.name == "output") {
+        op.outputs.push(Field::new("output", TypeSignature::Object));
+      }
+    });
+
+    let addr = resolver(config.resource())
+      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))
       .and_then(|r| r.try_resource().map_err(ComponentError::new))?;
 
     Ok(Self {
@@ -117,8 +125,7 @@ impl Component for SqlXComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
-    _data: Option<Value>,
+    _data: Option<OperationConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let ctx = self.context.clone();
@@ -128,9 +135,9 @@ impl Component for SqlXComponent {
         Some(ctx) => {
           let opdef = ctx
             .config
-            .operations
+            .operations()
             .iter()
-            .find(|op| op.name == invocation.target.operation_id())
+            .find(|op| op.name() == invocation.target.operation_id())
             .unwrap()
             .clone();
           let client = ctx.db.clone();
@@ -140,38 +147,42 @@ impl Component for SqlXComponent {
         None => return Err(ComponentError::message("DB not initialized")),
       };
 
-      let input_list: Vec<_> = opdef.inputs.iter().map(|i| i.name.clone()).collect();
-      let mut inputs = wick_packet::split_stream(stream, input_list);
-      let (tx, rx) = PacketStream::new_channels();
+      let input_names: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
+      let (tx, rx) = invocation.make_response();
+      let mut input_streams = wick_packet::split_stream(invocation.packets, input_names);
       tokio::spawn(async move {
         'outer: loop {
-          for input in &mut inputs {
-            let mut inputs = Vec::new();
-            inputs.push(input.next().await);
-            let num_done = inputs.iter().filter(|r| r.is_none()).count();
-            if num_done > 0 {
-              if num_done != opdef.inputs.len() {
-                let _ = tx.send(Packet::component_error("Missing input"));
-              }
-              break 'outer;
+          let mut incoming_packets = Vec::new();
+          for input in &mut input_streams {
+            incoming_packets.push(input.next().await);
+          }
+          let num_done = incoming_packets.iter().filter(|r| r.is_none()).count();
+          if num_done > 0 {
+            if num_done != opdef.inputs().len() {
+              let _ = tx.error(wick_packet::Error::component_error("Missing input"));
             }
-            let results = inputs.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
-            if let Some(Err(e)) = results.iter().find(|r| r.is_err()) {
-              let _ = tx.send(Packet::component_error(e.to_string()));
-              break 'outer;
-            }
-            let results = results
-              .into_iter()
-              .enumerate()
-              .map(|(i, r)| (opdef.inputs[i].ty.clone(), r.unwrap()))
-              .collect::<Vec<_>>();
-            if results.iter().any(|(_, r)| r.is_done()) {
-              break 'outer;
-            }
+            break 'outer;
+          }
+          let incoming_packets = incoming_packets.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
 
-            if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), results, stmt.clone()).await {
-              error!(error = %e, "error executing query");
+          if let Some(Err(e)) = incoming_packets.iter().find(|r| r.is_err()) {
+            let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
+            break 'outer;
+          }
+          let fields = opdef.inputs();
+          let mut type_wrappers = Vec::new();
+
+          for packet in incoming_packets {
+            let packet = packet.unwrap();
+            if packet.is_done() {
+              break 'outer;
             }
+            let ty = fields.iter().find(|f| f.name() == packet.port()).unwrap().ty().clone();
+            type_wrappers.push((ty, packet));
+          }
+
+          if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), type_wrappers, stmt.clone()).await {
+            error!(error = %e, "error executing query");
           }
         }
       });
@@ -208,12 +219,13 @@ impl ConfigValidation for SqlXComponent {
 
 fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Error> {
   let bad_ops: Vec<_> = config
-    .operations
+    .operations()
     .iter()
     .filter(|op| {
-      op.outputs.len() > 1 || op.outputs.len() == 1 && op.outputs[0] != Field::new("output", TypeSignature::Object)
+      let outputs = op.outputs();
+      outputs.len() > 1 || outputs.len() == 1 && outputs[0] != Field::new("output", TypeSignature::Object)
     })
-    .map(|op| op.name.clone())
+    .map(|op| op.name().to_owned())
     .collect();
 
   if !bad_ops.is_empty() {
@@ -224,6 +236,13 @@ fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Err
 }
 
 async fn init_client(config: SqlComponentConfig, addr: UrlResource) -> Result<CtxPool, Error> {
+  /*****************
+   *
+   * NOTE: This component was *supposed* to handle sql server (mssql) but sqlx was so buggy it
+   * wouldn't work. The mssql logic is still in this crate for now, but it's not used and may be
+   * removed in the future.
+   *
+   */
   let pool = match addr.scheme() {
     "mssql" => CtxPool::MsSql(mssql::connect(config, &addr).await?),
     "postgres" => CtxPool::Postgres(postgres::connect(config, &addr).await?),
@@ -238,12 +257,15 @@ async fn init_client(config: SqlComponentConfig, addr: UrlResource) -> Result<Ct
 async fn init_context(config: SqlComponentConfig, addr: UrlResource) -> Result<Context, Error> {
   let client = init_client(config.clone(), addr).await?;
   let mut queries = HashMap::new();
-  trace!(count=%config.operations.len(), "preparing queries");
-  for op in &config.operations {
+  trace!(count=%config.operations().len(), "preparing queries");
+  for op in config.operations() {
     // let query: Query<Postgres, _> = sqlx::query(&op.query);
     // TODO: this is a hack to during the sqlx transition and this needs to support prepared queries properly.
-    queries.insert(op.name.clone(), Arc::new((op.query.clone(), op.query.clone())));
-    trace!(query=%op.query, "prepared query");
+    queries.insert(
+      op.name().to_owned(),
+      Arc::new((op.query().to_owned(), op.query().to_owned())),
+    );
+    trace!(query=%op.query(), "prepared query");
   }
 
   let db = client;
@@ -264,32 +286,33 @@ async fn exec(
   args: Vec<(TypeSignature, Packet)>,
   stmt: Arc<(String, String)>,
 ) -> Result<(), Error> {
-  debug!(stmt = %stmt.0, "executing  query");
-  let input_list: Vec<_> = def.inputs.iter().map(|i| i.name.clone()).collect();
+  debug!(stmt = %stmt.0, "executing query");
 
-  let values = args
-    .into_iter()
-    .map(|(ty, r)| r.deserialize_into(ty))
-    .collect::<Result<Vec<TypeWrapper>, wick_packet::Error>>();
-
-  if let Err(e) = values {
-    let _ = tx.send(Packet::component_error(e.to_string()));
-    return Err(Error::Prepare(e.to_string()));
+  let mut bound_args = Vec::new();
+  for arg in def.arguments() {
+    let (ty, packet) = args
+      .iter()
+      .find(|(_, p)| p.port() == arg)
+      .cloned()
+      .ok_or_else(|| Error::MissingArgument(arg.clone()))?;
+    let wrapper = match packet
+      .deserialize_into(ty.clone())
+      .map_err(|e| Error::Prepare(e.to_string()))
+    {
+      Ok(type_wrapper) => SqlWrapper(type_wrapper),
+      Err(e) => {
+        let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
+        return Err(Error::Prepare(e.to_string()));
+      }
+    };
+    bound_args.push(wrapper);
   }
-  let values = values.unwrap();
-  #[allow(trivial_casts)]
-  let args = def
-    .arguments
-    .iter()
-    .map(|a| input_list.iter().position(|i| i == a).unwrap())
-    .map(|i| SqlWrapper(values[i].clone()))
-    .collect::<Vec<_>>();
 
-  let mut result = client.fetch(&stmt.1, args);
+  let mut result = client.fetch(&stmt.1, bound_args);
 
   while let Some(row) = result.next().await {
     if let Err(e) = row {
-      let _ = tx.send(Packet::component_error(e.to_string()));
+      let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
       return Err(Error::Fetch(e.to_string()));
     }
     let row = row.unwrap();
@@ -304,7 +327,7 @@ async fn exec(
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use wick_config::config::components::SqlOperationDefinition;
+  use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
   use wick_config::config::{ResourceDefinition, TcpPort};
   use wick_interface_types::{Field, TypeSignature};
 
@@ -318,19 +341,21 @@ mod test {
 
   #[test_logger::test(test)]
   fn test_validate() -> Result<()> {
-    let mut config = SqlComponentConfig {
-      resource: "db".to_owned(),
-      tls: false,
-      operations: vec![],
-    };
-    let op = SqlOperationDefinition {
-      name: "test".to_owned(),
-      query: "select * from users where user_id = $1;".to_owned(),
-      inputs: vec![Field::new("input", TypeSignature::I32)],
-      outputs: vec![Field::new("output", TypeSignature::String)],
-      arguments: vec!["input".to_owned()],
-    };
-    config.operations.push(op);
+    let mut config = SqlComponentConfigBuilder::default()
+      .resource("db")
+      .tls(false)
+      .build()
+      .unwrap();
+    let op = SqlOperationDefinitionBuilder::default()
+      .name("test")
+      .query("select * from users where user_id = $1;")
+      .inputs([Field::new("input", TypeSignature::I32)])
+      .outputs([Field::new("output", TypeSignature::String)])
+      .arguments(["input".to_owned()])
+      .build()
+      .unwrap();
+
+    config.operations_mut().push(op);
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource("db", ResourceDefinition::TcpPort(TcpPort::new("0.0.0.0", 11111)));
 

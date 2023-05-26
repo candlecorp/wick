@@ -1,7 +1,9 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 
-use flow_expression_parser::ast;
+use flow_expression_parser::ast::{self, InstancePort};
 use serde::Deserialize;
+use serde_json::Value;
 
 use crate::error::ManifestError;
 use crate::{v1, Error};
@@ -11,7 +13,7 @@ type Result<T> = std::result::Result<T, Error>;
 /// The reserved identifier representing an as-of-yet-undetermined default value.
 const DEFAULT_ID: &str = "<>";
 
-pub(crate) fn parse_target(s: &str) -> Result<(String, Option<&str>)> {
+pub(crate) fn parse_target(s: &str) -> Result<(String, Option<InstancePort>)> {
   Ok(flow_expression_parser::parse::v1::parse_target(s)?)
 }
 
@@ -19,8 +21,8 @@ pub(crate) fn parse_connection_target(s: &str) -> Result<v1::ConnectionTargetDef
   let (t_ref, t_port) = parse_target(s)?;
   Ok(v1::ConnectionTargetDefinition {
     instance: t_ref,
-    port: t_port.unwrap_or(DEFAULT_ID).to_owned(),
-    data: None,
+    port: t_port.map_or(DEFAULT_ID.to_owned(), |v| v.to_string()),
+    data: Default::default(),
   })
 }
 
@@ -30,21 +32,21 @@ pub(crate) fn parse_connection(s: &str) -> Result<v1::ConnectionDefinition> {
   Ok(v1::ConnectionDefinition {
     from: v1::ConnectionTargetDefinition {
       instance: from.0.to_string(),
-      port: from.1,
+      port: from.1.to_string(),
       data: from.2,
     },
     to: v1::ConnectionTargetDefinition {
       instance: to.0.to_string(),
-      port: to.1,
+      port: to.1.to_string(),
       data: to.2,
     },
   })
 }
 
-impl TryFrom<(String, String, Option<serde_json::Value>)> for v1::ConnectionTargetDefinition {
+impl TryFrom<(String, String, Option<HashMap<String, Value>>)> for v1::ConnectionTargetDefinition {
   type Error = Error;
 
-  fn try_from(value: (String, String, Option<serde_json::Value>)) -> Result<Self> {
+  fn try_from(value: (String, String, Option<HashMap<String, Value>>)) -> Result<Self> {
     Ok(Self {
       instance: value.0,
       port: value.1,

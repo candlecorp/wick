@@ -1,6 +1,5 @@
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use flow_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
-use serde_json::Value;
 use wick_interface_types::{ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
 
@@ -32,11 +31,10 @@ impl Component for InternalCollection {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
-    _config: Option<Value>,
+    _config: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL);
+    invocation.trace(|| trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL));
     let op = invocation.target.operation_id().to_owned();
 
     let is_oneshot = op == SCHEMATIC_INPUT || op == INTERNAL_ID_INHERENT;
@@ -44,7 +42,7 @@ impl Component for InternalCollection {
       if op == SCHEMATIC_OUTPUT {
         panic!("Output component should not be executed");
       } else if is_oneshot {
-        Ok(stream)
+        Ok(invocation.packets)
       } else {
         panic!("Internal component {} not handled.", op);
       }

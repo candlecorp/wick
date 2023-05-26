@@ -2,13 +2,13 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
+use tracing::Instrument;
 use wick_oci_utils::OciOptions;
+
+use crate::options::get_auth_for_scope;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct RegistryPullCommand {
-  #[clap(flatten)]
-  pub(crate) logging: wick_logger::LoggingOptions,
-
   /// OCI reference to pull.
   #[clap(action)]
   pub(crate) reference: String,
@@ -45,19 +45,33 @@ pub(crate) async fn pull(reference: String, oci_opts: OciOptions) -> Result<wick
 }
 
 #[allow(clippy::unused_async)]
-pub(crate) async fn handle(opts: RegistryPullCommand) -> Result<()> {
-  let _guard = crate::utils::init_logger(&opts.logging)?;
+pub(crate) async fn handle(
+  opts: RegistryPullCommand,
+  settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<()> {
+  let configured_creds = settings
+    .credentials
+    .iter()
+    .find(|c| opts.reference.starts_with(&c.scope));
+
+  let (username, password) = get_auth_for_scope(
+    configured_creds,
+    opts.oci_opts.username.as_deref(),
+    opts.oci_opts.password.as_deref(),
+  );
+
   let oci_opts = wick_oci_utils::OciOptions::default()
     .allow_insecure(opts.oci_opts.insecure_registries)
     .allow_latest(true)
-    .username(opts.oci_opts.username)
-    .password(opts.oci_opts.password)
+    .username(username)
+    .password(password)
     .overwrite(opts.force)
     .base_dir(opts.output);
 
-  debug!(options=?oci_opts, reference= opts.reference, "pulling reference");
+  span.in_scope(|| debug!(options=?oci_opts, reference= opts.reference, "pulling reference"));
 
-  let pull_result = pull(opts.reference, oci_opts).await;
+  let pull_result = pull(opts.reference, oci_opts).instrument(span.clone()).await;
 
   for file in pull_result?.list_files() {
     info!("Pulled file: {}", file.path().display());

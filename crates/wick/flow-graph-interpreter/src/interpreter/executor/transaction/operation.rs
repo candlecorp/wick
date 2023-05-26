@@ -210,7 +210,7 @@ impl InstanceHandler {
   pub(crate) async fn start(
     self: Arc<Self>,
     tx_id: Uuid,
-    invocation: Invocation,
+    mut invocation: Invocation,
     channel: InterpreterDispatchChannel,
     options: &InterpreterOptions,
     callback: Arc<RuntimeCallback>,
@@ -227,13 +227,14 @@ impl InstanceHandler {
 
     self.increment_pending();
     let stream = PacketStream::new(Box::new(self.sender.take_rx().unwrap()));
+    invocation.attach_stream(stream);
     let cb = callback.clone();
 
     let fut = if namespace == NS_SELF {
       let clone = self.self_collection.clone();
       tokio::spawn(async move {
         clone
-          .handle(invocation, stream, associated_data, cb)
+          .handle(invocation, associated_data, cb)
           .await
           .map_err(ExecutionError::ComponentError)
       })
@@ -246,7 +247,7 @@ impl InstanceHandler {
         .clone();
       tokio::spawn(async move {
         clone
-          .handle(invocation, stream, associated_data, cb)
+          .handle(invocation, associated_data, cb)
           .await
           .map_err(ExecutionError::ComponentError)
       })
@@ -326,8 +327,14 @@ async fn output_handler(
           break CompletionStatus::Error;
         }
         let message = message.unwrap();
+        if message.is_fatal_error() {
+          warn!(error=?message,"component-wide error");
+          channel.dispatch_op_err(tx_id, instance.index(), message.payload).await;
+          break CompletionStatus::Error;
+        }
 
         let port = instance.find_output(message.port())?;
+
         if message.is_done() {
           hanging.remove(&port);
         } else {

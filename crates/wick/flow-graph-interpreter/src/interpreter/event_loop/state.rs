@@ -123,9 +123,6 @@ impl State {
     tx.stats
       .mark(format!("input:{}:{}:ready", port.node_index(), port.port_index()));
 
-    let span = trace_span!("input", port = port_name, component = instance.id());
-    let _guard = span.enter();
-
     let is_schematic_output = port.node_index() == graph.output().index();
 
     if is_schematic_output {
@@ -157,9 +154,6 @@ impl State {
       port = port_name,
       "handling port output"
     );
-
-    let span = trace_span!("output", port = port_name, component = instance.id());
-    let _guard = span.enter();
 
     tx.stats
       .mark(format!("output:{}:{}:ready", port.node_index(), port.port_index()));

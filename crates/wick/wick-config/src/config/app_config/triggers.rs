@@ -10,7 +10,7 @@ pub use http::*;
 pub use time::*;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 
 /// Normalized representation of a trigger definition.
 pub enum TriggerDefinition {
@@ -56,7 +56,7 @@ impl std::fmt::Display for TriggerKind {
 }
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[asset(asset(AssetReference))]
 #[must_use]
 
 pub struct OperationInputConfig {

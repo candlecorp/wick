@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 pub(super) mod resources;
 pub(super) mod triggers;
 
@@ -17,27 +18,41 @@ use crate::import_cache::{setup_cache, ImportCache};
 use crate::utils::RwOption;
 use crate::{config, v1, Resolver, Result};
 
-#[derive(Debug, Clone, Default, derive_asset_container::AssetManager)]
-#[asset(AssetReference)]
+#[derive(Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(disable), mut(disable))]
+#[asset(asset(AssetReference))]
+#[builder(setter(into))]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct AppConfiguration {
   #[asset(skip)]
-  pub name: String,
+  pub(crate) name: String,
   #[asset(skip)]
-  pub(crate) source: Option<String>,
+  #[builder(setter(strip_option), default)]
+  #[property(skip)]
+  pub(crate) source: Option<PathBuf>,
+  #[builder(setter(strip_option), default)]
+  #[property(skip)]
   pub(crate) metadata: Option<config::Metadata>,
+  #[builder(default)]
   pub(crate) import: HashMap<String, ImportBinding>,
-  #[asset(skip)]
+  #[builder(default)]
   pub(crate) resources: HashMap<String, ResourceBinding>,
+  #[builder(default)]
   pub(crate) triggers: Vec<TriggerDefinition>,
   #[asset(skip)]
-  pub(crate) host: HostConfig,
+  #[builder(setter(strip_option), default)]
+  pub(crate) host: Option<HostConfig>,
   #[asset(skip)]
+  #[builder(setter(skip))]
+  #[property(skip)]
   pub(crate) type_cache: ImportCache,
   #[asset(skip)]
+  #[builder(default)]
+  #[property(skip)]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
-  pub package: Option<PackageConfig>,
+  #[builder(setter(strip_option), default)]
+  pub(crate) package: Option<PackageConfig>,
 }
 
 impl AppConfiguration {
@@ -53,10 +68,14 @@ impl AppConfiguration {
     .await
   }
 
+  /// Set the name of the component
+  pub fn set_name(&mut self, name: String) {
+    self.name = name;
+  }
+
   /// Get the package files
-  #[must_use]
-  pub fn package_files(&self) -> Option<Assets<AssetReference>> {
-    self.package.as_ref().map(|p| p.assets())
+  pub fn package_files(&self) -> Assets<AssetReference> {
+    self.package.assets()
   }
 
   /// Get the configuration item a binding points to.
@@ -81,29 +100,19 @@ impl AppConfiguration {
 
   /// Return the underlying version of the source manifest.
   #[must_use]
-  pub fn source(&self) -> &Option<String> {
-    &self.source
+  pub fn source(&self) -> Option<&Path> {
+    self.source.as_deref()
   }
 
   /// Set the source location of the configuration.
-  pub fn set_source(&mut self, source: String) {
-    // Source is a file, so our baseurl needs to be the parent directory.
-    // Remove the trailing filename from source.
-    if source.ends_with(std::path::MAIN_SEPARATOR) {
-      self.set_baseurl(&source);
-      self.source = Some(source);
-    } else {
-      let s = source.rfind('/').map_or(source.as_str(), |index| &source[..index]);
-
-      self.set_baseurl(s);
-      self.source = Some(s.to_owned());
+  pub fn set_source(&mut self, source: &Path) {
+    let mut source = source.to_path_buf();
+    self.source = Some(source.clone());
+    // Source is (should be) a file, so pop the filename before setting the baseurl.
+    if !source.is_dir() {
+      source.pop();
     }
-  }
-
-  #[must_use]
-  /// Get the name for this manifest.
-  pub fn name(&self) -> String {
-    self.name.clone()
+    self.set_baseurl(&source);
   }
 
   /// Return the version of the application.
@@ -124,12 +133,6 @@ impl AppConfiguration {
     &self.import
   }
 
-  #[must_use]
-  /// Get the application's resources.
-  pub fn resources(&self) -> &HashMap<String, ResourceBinding> {
-    &self.resources
-  }
-
   /// Add a resource to the application configuration.
   pub fn add_resource(&mut self, name: impl AsRef<str>, resource: ResourceDefinition) {
     self
@@ -142,12 +145,6 @@ impl AppConfiguration {
     self
       .import
       .insert(name.as_ref().to_owned(), ImportBinding::new(name.as_ref(), import));
-  }
-
-  #[must_use]
-  /// Get the application's triggers.
-  pub fn triggers(&self) -> &Vec<TriggerDefinition> {
-    &self.triggers
   }
 
   pub fn into_v1_yaml(self) -> Result<String> {

@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 
 use flow_expression_parser::ast::{self};
-use serde_json::Value;
 use wick_interface_types::Field;
+use wick_packet::OperationConfig;
 
 use crate::config::{self};
 
-#[derive(Debug, Default, Clone, derive_asset_container::AssetManager)]
-#[asset(crate::config::AssetReference)]
+#[derive(Debug, Default, Clone, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(disable))]
+#[asset(asset(crate::config::AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct CompositeComponentImplementation {
@@ -18,8 +19,8 @@ pub struct CompositeComponentImplementation {
 impl CompositeComponentImplementation {
   #[must_use]
   /// Get a map of [FlowOperation]s from the [CompositeComponentConfiguration]
-  pub fn operations(&self) -> &HashMap<String, FlowOperation> {
-    &self.operations
+  pub fn operations_mut(&mut self) -> &mut HashMap<String, FlowOperation> {
+    &mut self.operations
   }
 
   /// Get a [FlowOperation] by name.
@@ -45,50 +46,35 @@ impl From<FlowOperation> for wick_interface_types::OperationSignature {
   }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Builder, Default, property::Property)]
+#[property(get(public), set(private), mut(public, suffix = "_mut"))]
 /// The SchematicDefinition struct is a normalized representation of a Wick [SchematicManifest].
 /// It handles the job of translating manifest versions into a consistent data structure.
 #[must_use]
 pub struct FlowOperation {
   /// The name of the schematic.
-  pub name: String,
+  pub(crate) name: String,
 
   /// A list of the input types for the operation.
-  pub inputs: Vec<Field>,
+  pub(crate) inputs: Vec<Field>,
 
   /// A list of the input types for the operation.
-  pub outputs: Vec<Field>,
+  pub(crate) outputs: Vec<Field>,
+
+  /// Any configuration required for the component to operate.
+  pub(crate) config: Vec<Field>,
 
   /// A mapping of instance names to the components they refer to.
-  pub instances: HashMap<String, InstanceReference>,
+  pub(crate) instances: HashMap<String, InstanceReference>,
 
   /// A list of connections from and to ports on instances defined in the instance map.
-  pub expressions: Vec<ast::FlowExpression>,
+  pub(crate) expressions: Vec<ast::FlowExpression>,
 
   /// Additional flows scoped to this operation.
-  pub flows: Vec<FlowOperation>,
+  pub(crate) flows: Vec<FlowOperation>,
 
   /// A list of component IDs to expose to this schematic.
-  pub components: Vec<String>,
-}
-
-impl FlowOperation {
-  /// Get the name as an owned [String].
-  #[must_use]
-  pub fn get_name(&self) -> String {
-    self.name.clone()
-  }
-  /// Get a [ComponentDefinition] by instance name.
-  #[must_use]
-  pub fn get_component(&self, instance: &str) -> Option<InstanceReference> {
-    self.instances.get(instance).cloned()
-  }
-
-  /// Get a reference to the [ComponentDefinition] map.
-  #[must_use]
-  pub fn instances(&self) -> &HashMap<String, InstanceReference> {
-    &self.instances
-  }
+  pub(crate) components: Vec<String>,
 }
 
 impl From<FlowOperation> for config::OperationSignature {
@@ -97,22 +83,23 @@ impl From<FlowOperation> for config::OperationSignature {
       name: value.name,
       inputs: value.inputs,
       outputs: value.outputs,
-      config: None,
+      config: value.config,
     }
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 /// A definition of a component used to reference a component registered under a collection.
 /// Note: [InstanceReference] include embed the concept of a namespace so two identical.
 /// components registered on different namespaces will not be equal.
 pub struct InstanceReference {
   /// The operation's name.
-  pub name: String,
+  pub(crate) name: String,
   /// The id of the component.
-  pub component_id: String,
+  pub(crate) component_id: String,
   /// Data associated with the component instance.
-  pub data: Option<Value>,
+  pub(crate) data: Option<OperationConfig>,
 }
 
 impl InstanceReference {

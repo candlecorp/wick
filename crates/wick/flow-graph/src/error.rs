@@ -8,4 +8,6 @@ pub enum Error {
   MultipleInputConnections(String),
   #[error("Missing downstream '{0}'")]
   MissingDownstream(String),
+  #[error("Usage of inline operation '{0}' can not be discerned, it's inputs are used by multiple connections. Use the inline ID syntax to disambiguate, e.g. component::op[A] to give the operation an id of 'A'")]
+  AmbiguousOperation(String),
 }

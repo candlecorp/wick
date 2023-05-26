@@ -1,7 +1,7 @@
 use crate::config;
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 /// The kinds of collections that can operate in a flow.
 #[must_use]
 pub enum ImportDefinition {

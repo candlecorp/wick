@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use wick_interface_types as wick;
-use wick_packet::{Entity, InherentData, Metadata, Packet, WickMetadata};
+use wick_packet::{Entity, InherentData, Metadata, Packet, PacketStream, WickMetadata};
 
 use crate::error::RpcError;
 use crate::{rpc, DurationStatistics};
@@ -243,6 +243,8 @@ impl TryFrom<rpc::Invocation> for wick_packet::Invocation {
         seed: d.seed,
         timestamp: d.timestamp,
       }),
+      span: tracing::Span::current(),
+      packets: PacketStream::empty(),
     })
   }
 }
@@ -270,9 +272,6 @@ impl TryFrom<wick::TypeSignature> for rpc::TypeSignature {
       wick::TypeSignature::Bytes => PrimitiveType::Bytes.into(),
       wick::TypeSignature::Object => PrimitiveType::Object.into(),
       wick::TypeSignature::Custom(v) => Signature::Custom(v),
-      wick::TypeSignature::Stream { ty } => Signature::Stream(Box::new(InnerType {
-        r#type: Some(ty.try_into()?),
-      })),
       wick::TypeSignature::Ref { reference } => Signature::Ref(RefType { r#ref: reference }),
       wick::TypeSignature::List { ty } => Signature::List(Box::new(InnerType {
         r#type: Some(ty.try_into()?),
@@ -346,12 +345,6 @@ impl TryFrom<rpc::TypeSignature> for wick::TypeSignature {
             None => return err,
           },
         },
-        Signature::Stream(t) => DestType::Stream {
-          ty: match t.r#type {
-            Some(v) => v.try_into()?,
-            None => return err,
-          },
-        },
         Signature::Optional(opt) => DestType::Optional {
           ty: match opt.r#type {
             Some(v) => v.try_into()?,
@@ -409,13 +402,6 @@ impl From<rpc::simple_type::PrimitiveType> for rpc::type_signature::Signature {
   }
 }
 
-// impl TryFrom<rpc::Field> for wick::Field {
-//   type Error = RpcError;
-//   fn try_from(t: rpc::Field) -> std::result::Result<Self, Self::Error> {
-//     Ok(Self::new(t.name, t.r#type.try_into()?))
-//   }
-// }
-
 impl TryFrom<rpc::StructSignature> for wick::StructSignature {
   type Error = RpcError;
   fn try_from(v: rpc::StructSignature) -> Result<Self> {
@@ -423,6 +409,7 @@ impl TryFrom<rpc::StructSignature> for wick::StructSignature {
       name: v.name,
       fields: convert_list(v.fields)?,
       imported: false,
+      description: Some(v.description),
     })
   }
 }
@@ -480,6 +467,7 @@ impl TryFrom<wick::Field> for rpc::Field {
     Ok(rpc::Field {
       name: v.name,
       r#type: Some(v.ty.try_into()?),
+      description: v.description.unwrap_or_default(),
     })
   }
 }
@@ -497,6 +485,7 @@ impl TryFrom<wick::StructSignature> for rpc::StructSignature {
     Ok(Self {
       name: v.name,
       fields: convert_list(v.fields)?,
+      description: v.description.unwrap_or_default(),
     })
   }
 }
@@ -506,6 +495,7 @@ impl TryFrom<wick::EnumSignature> for rpc::EnumSignature {
   fn try_from(v: wick::EnumSignature) -> Result<Self> {
     Ok(Self {
       name: v.name,
+      description: v.description.unwrap_or_default(),
       values: v
         .variants
         .into_iter()
@@ -522,6 +512,7 @@ impl TryFrom<wick::EnumVariant> for rpc::EnumVariant {
       name: v.name,
       index: v.index,
       value: v.value,
+      description: v.description.unwrap_or_default(),
     })
   }
 }

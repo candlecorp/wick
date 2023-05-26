@@ -36,6 +36,7 @@ wick-invocation-server = { path = "./crates/wick/wick-invocation-server", versio
 wick-oci-utils = { path = "./crates/wick/wick-oci-utils", version = "0.3.0" }
 wick-package = { path = "./crates/wick/wick-package", version = "0.2.0" }
 wick-packet = { path = "./crates/wick/wick-packet", version = "0.15.0" }
+wick-settings = { path = "./crates/wick/wick-settings", version = "0.1.0" }
 wick-rpc = { path = "./crates/wick/wick-rpc", version = "0.1.0" }
 wick-runtime = { path = "./crates/wick/wick-runtime", version = "0.22.0" }
 wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.1.0" }
@@ -52,27 +53,21 @@ test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
 # crates/interfaces
 wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.2.0" }
 # crates/components
+wick-azure-sql = { path = "./crates/components/wick-azure-sql", version = "0.1.0" }
 wick-sqlx = { path = "./crates/components/wick-sqlx", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
 # wasmrs
-wasmrs = { version = "0.10" }
-wasmrs-codec = { version = "0.10" }
-wasmrs-frames = { version = "0.10" }
-wasmrs-guest = { version = "0.10" }
-wasmrs-host = { version = "0.10" }
-wasmrs-runtime = { version = "0.10" }
-wasmrs-rx = { version = "0.10" }
-wasmrs-wasmtime = { version = "0.10" }
-# wasmrs = { path = "../wasmrs-rust/crates/wasmrs" }
-# wasmrs-rx = { path = "../wasmrs-rust/crates/wasmrs-rx" }
-# wasmrs-frames = { path = "../wasmrs-rust/crates/wasmrs-frames" }
-# wasmrs-codec = { path = "../wasmrs-rust/crates/wasmrs-codec" }
-# wasmrs-wasmtime = { path = "../wasmrs-rust/crates/wasmrs-wasmtime" }
-# wasmrs-host = { path = "../wasmrs-rust/crates/wasmrs-host" }
-# wasmrs-runtime = { path = "../wasmrs-rust/crates/wasmrs-runtime" }
-# wasmrs-guest = { path = "../wasmrs-rust/crates/wasmrs-guest" }
+wasmrs = { version = "0.11" }
+wasmrs-codec = { version = "0.11" }
+wasmrs-frames = { version = "0.11" }
+wasmrs-guest = { version = "0.11" }
+wasmrs-host = { version = "0.11" }
+wasmrs-runtime = { version = "0.11" }
+wasmrs-rx = { version = "0.11" }
+wasmrs-wasmtime = { version = "0.11" }
 #
 # Other
+ansi_term = "0.12"
 anyhow = "1.0"
 async-recursion = "1.0"
 async-stream = "0.3"
@@ -80,19 +75,24 @@ async-trait = "0.1"
 atty = "0.2"
 bytes = "1.4"
 base64 = "0.21"
+bitflags = "2.2"
 cfg-if = "1.0"
+check_keyword = "0.2"
 chrono = "0.4"
-clap = "4.1"
+clap = "4.2"
 console = "0.15"
 data-encoding = "2.3.2"
 derive_builder = "0.12"
+dialoguer = "0.10"
 dyn-clone = "1.0"
 env_logger = "0.10"
 futures = "0.3"
 glob = "0.3"
 heck = "0.4"
+human-panic = "1.1"
 http = "0.2"
 hyper = "0.14"
+itertools = "0.10"
 jaq-core = "0.10"
 lazy_static = "1.4"
 liquid = "0.26"
@@ -106,18 +106,21 @@ num-traits = "0.2"
 oci-distribution = "0.9"
 once_cell = "1.8"
 openssl = "0.10"
+option-utils = "0.1"
 opentelemetry = { version = "0.18.0" }
-opentelemetry-jaeger = { version = "0.17.0" }
+opentelemetry-otlp = { version = "0.11.0" }
 parking_lot = "0.12"
 paste = "1.0"
 postgres-openssl = "0.5"
 pretty_assertions = "1.3"
 proc-macro-crate = "1.1"
 proc-macro2 = "1.0"
+property = "0.3"
 prost = "0.11"
 prost-types = "0.11"
 quote = "1.0"
 rand = "0.8"
+rand_core = "0.6"
 rand_chacha = "0.3"
 regex = "1.8"
 reqwest = "~0.11.16"
@@ -125,6 +128,7 @@ ring = "0.16"
 serde = "1.0"
 serde_json = "1.0"
 serde_repr = "0.1"
+serde_with = "3.0"
 serde_yaml = "0.9"
 serde-value = "0.7"
 serde-with-expand-env = "1.1"
@@ -133,12 +137,16 @@ shellexpand = "3.0"
 syn = "2.0"
 sqlx = "0.6"
 # sqlx = "0.7.0-alpha.2"
+structmeta = "0.2"
+structured-output = "0.1.1"
 tar = "0.4"
 flate2 = "1"
+tracing-appender = "0.2"
 test_bin = "0.4"
 test-log = "0.2"
 testanything = "0.4"
 thiserror = "1.0"
+time = "0.3"
 tokio = "1"
 tokio-postgres = "0.7"
 tokio-stream = "0.1"
@@ -156,6 +164,7 @@ url = "2.3"
 uuid = "1.1"
 walrus = "0.19"
 wascap = "0.8"
+walkdir = "2.3"
 xdg = "2.4"
 byteorder = "1.4"
 rstest = "0.17"

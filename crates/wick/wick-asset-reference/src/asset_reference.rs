@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::future::Future;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use asset_container::{self as assets, Asset, AssetManager, Progress, Status};
@@ -19,7 +19,7 @@ use crate::{normalize_path_str, Error};
 pub struct AssetReference {
   pub(crate) location: String,
   pub(crate) cache_location: Arc<RwLock<Option<PathBuf>>>,
-  pub(crate) baseurl: Arc<RwLock<Option<String>>>,
+  pub(crate) baseurl: Arc<RwLock<Option<PathBuf>>>,
 }
 
 impl std::fmt::Display for AssetReference {
@@ -111,9 +111,9 @@ impl AssetReference {
   }
 
   /// Get the relative part of the path or return an error if the path does not exist within the base URL.
-  pub fn get_relative_part(&self) -> Result<String, Error> {
+  pub fn get_relative_part(&self) -> Result<PathBuf, Error> {
     let path = self.path()?;
-    let base_dir = PathBuf::from(self.baseurl().unwrap()); // safe to unwrap because this is a developer error if it panics.
+    let base_dir = self.baseurl().unwrap(); // safe to unwrap because this is a developer error if it panics.
 
     let base_dir = base_dir.normalize().map_err(|_| Error::NotFound(path.clone()))?;
     let mut base_dir = base_dir.as_path().to_string_lossy().to_string();
@@ -122,23 +122,23 @@ impl AssetReference {
     }
 
     path.strip_prefix(&base_dir).map_or_else(
-      || Err(Error::FileEscapesRoot(path.clone(), base_dir)),
+      |_e| Err(Error::FileEscapesRoot(path.clone(), base_dir)),
       |s| Ok(s.to_owned()),
     )
   }
 
   #[must_use]
-  pub fn baseurl(&self) -> Option<String> {
+  pub fn baseurl(&self) -> Option<PathBuf> {
     self.baseurl.read().clone()
   }
 
-  pub fn path(&self) -> Result<String, Error> {
+  pub fn path(&self) -> Result<PathBuf, Error> {
     if let Some(cache_loc) = self.cache_location.read().as_ref() {
-      Ok(cache_loc.to_string_lossy().to_string())
+      Ok(cache_loc.clone())
     } else if self.location.starts_with('@') {
-      Ok(self.location.trim_start_matches('@').to_owned())
+      Ok(PathBuf::from(self.location.trim_start_matches('@')))
     } else {
-      let url = normalize_path_str(&self.location, self.baseurl())?;
+      let url = normalize_path_str(self.location.as_ref(), self.baseurl())?;
       Ok(url)
     }
   }
@@ -148,10 +148,15 @@ impl AssetReference {
     &self.location
   }
 
+  #[must_use]
+  pub fn is_directory(&self) -> bool {
+    self.path().map_or(false, |path| path.is_dir())
+  }
+
   pub async fn bytes(&self, options: &FetchOptions) -> Result<Bytes, Error> {
     match self.fetch(options.clone()).await {
       Ok(bytes) => Ok(bytes.into()),
-      Err(err) => Err(Error::LoadError(self.path()?, err.to_string())),
+      Err(_err) => Err(Error::LoadError(self.path()?)),
     }
   }
 
@@ -211,6 +216,13 @@ impl AssetReference {
     Box::pin(UnboundedReceiverStream::new(rx))
   }
 
+  /// Check if the asset exists on disk.
+  #[must_use]
+  pub fn exists_locally(&self) -> bool {
+    let path = self.path();
+    path.is_ok() && path.unwrap().exists()
+  }
+
   fn retrieve_as_oci_with_progress(
     &self,
     options: FetchOptions,
@@ -244,12 +256,12 @@ impl Asset for AssetReference {
   type Options = FetchOptions;
 
   #[allow(clippy::expect_used)]
-  fn update_baseurl(&self, baseurl: &str) {
-    let baseurl = if baseurl.starts_with('.') {
+  fn update_baseurl(&self, baseurl: &Path) {
+    let baseurl = if baseurl.starts_with(".") {
       let mut path = std::env::current_dir().expect("failed to get current dir");
       path.push(baseurl);
 
-      path.to_string_lossy().to_string()
+      path
     } else {
       baseurl.to_owned()
     };
@@ -263,7 +275,6 @@ impl Asset for AssetReference {
     debug!(path = ?path, "fetching asset with progress");
     match path {
       Ok(path) => {
-        let path = PathBuf::from(path);
         if path.exists() {
           debug!(path = %path.display(), "load as file");
           self.retrieve_as_file()
@@ -287,13 +298,16 @@ impl Asset for AssetReference {
     let path = self.path();
     let location = self.location().to_owned();
 
-    debug!(path = ?path, "fetching asset");
     let cache_location = self.cache_location.clone();
+    let exists = self.exists_locally();
     Box::pin(async move {
       let path = path.map_err(|e| assets::Error::Parse(e.to_string()))?;
       let pb = PathBuf::from(&path);
-      let file = tokio::fs::File::open(&pb).await;
-      if file.is_ok() {
+      if pb.is_dir() {
+        return Err(assets::Error::IsDirectory(path.clone()));
+      }
+      if exists {
+        debug!(path = ?path, "fetching local asset");
         let mut file = tokio::fs::File::open(&path)
           .await
           .map_err(|err| assets::Error::FileOpen(path.clone(), err.to_string()))?;
@@ -301,6 +315,7 @@ impl Asset for AssetReference {
         file.read_to_end(&mut bytes).await?;
         Ok(bytes)
       } else {
+        debug!(path = ?path, "fetching remote asset");
         let (cache_loc, bytes) = retrieve_remote(&location, options)
           .await
           .map_err(|err| assets::Error::FileOpen(path.clone(), err.to_string()))?;
@@ -319,26 +334,28 @@ async fn retrieve_remote(location: &str, options: FetchOptions) -> Result<(PathB
   let oci_opts = wick_oci_utils::OciOptions::default()
     .cache_dir(options.get_artifact_dir().cloned())
     .allow_insecure(options.allow_insecure)
-    .allow_latest(options.allow_latest);
+    .allow_latest(options.allow_latest)
+    .username(options.oci_username)
+    .password(options.oci_password);
   let result = wick_oci_utils::package::pull(location, &oci_opts)
     .await
-    .map_err(|e| Error::LoadError(location.to_owned(), e.to_string()))?;
+    .map_err(|_| Error::LoadError(PathBuf::from(location)))?;
   let cache_location = result.base_dir.join(result.root_path);
   let bytes = tokio::fs::read(&cache_location)
     .await
-    .map_err(|e| Error::LoadError(cache_location.display().to_string(), e.to_string()))?;
+    .map_err(|_| Error::LoadError(cache_location.clone()))?;
   Ok((cache_location, bytes))
 }
 
 impl AssetManager for AssetReference {
   type Asset = AssetReference;
 
-  fn set_baseurl(&self, baseurl: &str) {
+  fn set_baseurl(&self, baseurl: &Path) {
     self.update_baseurl(baseurl);
   }
 
   fn assets(&self) -> assets::Assets<Self::Asset> {
-    assets::Assets::new(vec![Cow::Borrowed(self)])
+    assets::Assets::new(vec![Cow::Borrowed(self)], 0)
   }
 }
 
@@ -364,9 +381,8 @@ mod test {
     println!("location: {:?}", location);
     let mut expected = std::env::current_dir().unwrap();
     expected.push("Cargo.toml");
-    let expected = expected.to_string_lossy();
-    assert_eq!(location.path()?, expected.to_string());
-    assert!(PathBuf::from(location.path()?).exists());
+    assert_eq!(location.path()?, expected);
+    assert!((location.path()?).exists());
     Ok(())
   }
 
@@ -378,12 +394,11 @@ mod test {
     root_project_dir.pop();
     root_project_dir.pop();
 
-    location.set_baseurl(&root_project_dir.to_string_lossy());
+    location.set_baseurl(&root_project_dir);
     let mut expected = root_project_dir;
     expected.push("Cargo.toml");
-    let expected = expected.to_string_lossy();
-    assert_eq!(location.path()?, expected.to_string());
-    assert!(PathBuf::from(location.path()?).exists());
+    assert_eq!(location.path()?, expected);
+    assert!((location.path()?).exists());
 
     Ok(())
   }
@@ -396,12 +411,11 @@ mod test {
     root_project_dir.pop();
     root_project_dir.pop();
 
-    location.set_baseurl(&root_project_dir.to_string_lossy());
+    location.set_baseurl(&root_project_dir);
     let mut expected = root_project_dir;
     expected.pop();
     expected.push("Cargo.toml");
-    let expected = expected.to_string_lossy();
-    assert_eq!(location.path()?, expected.to_string());
+    assert_eq!(location.path()?, expected);
 
     Ok(())
   }
@@ -411,7 +425,7 @@ mod test {
     let location = AssetReference::new("../src/utils.rs");
     let mut crate_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     crate_dir.push("src");
-    location.set_baseurl(&crate_dir.to_string_lossy());
+    location.set_baseurl(&crate_dir);
     println!("crate_dir: {}", crate_dir.to_string_lossy());
     println!("actual: {:#?}", location);
     let mut expected = PathBuf::from(&crate_dir);
@@ -419,7 +433,7 @@ mod test {
     println!("expected: {}", expected.to_string_lossy());
 
     let expected = expected.canonicalize()?;
-    assert_eq!(location.path()?, expected.to_string_lossy().to_string());
+    assert_eq!(location.path()?, expected);
 
     Ok(())
   }
@@ -435,10 +449,10 @@ mod test {
     println!("base dir: {}", testdata_dir.display());
     println!("asset location: {}", path);
     let asset = AssetReference::new(path);
-    asset.update_baseurl(&testdata_dir.to_string_lossy());
+    asset.update_baseurl(&testdata_dir);
 
     let result = asset.get_relative_part();
-    let expected = expected.map(|s| s.to_owned());
+    let expected = expected.map(|s| PathBuf::from(s.to_owned()));
     assert_eq!(result, expected);
 
     Ok(())
@@ -465,10 +479,10 @@ mod test {
     println!("base dir: {}", base_dir.display());
     println!("asset location: {}", path);
     let asset = AssetReference::new(path);
-    asset.update_baseurl(&base_dir.to_string_lossy());
+    asset.update_baseurl(&base_dir);
 
     let result = asset.get_relative_part();
-    let expected = expected.map(|s| s.to_owned());
+    let expected = expected.map(|s| PathBuf::from(s.to_owned()));
     assert_eq!(result, expected);
 
     Ok(())
@@ -493,10 +507,10 @@ mod test {
     println!("base dir: {}", testdata_dir.display());
     println!("asset location: {}", path);
     let asset = AssetReference::new(path);
-    asset.update_baseurl(&testdata_dir.to_string_lossy());
+    asset.update_baseurl(&testdata_dir);
 
     let result = asset.get_relative_part();
-    let expected = expected.map(|s| s.to_owned());
+    let expected = expected.map(|s| PathBuf::from(s.to_owned()));
     assert_eq!(result, expected);
 
     Ok(())

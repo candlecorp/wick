@@ -11,12 +11,13 @@ version = "0.26.0"
 flow-component = { workspace = true }
 flow-expression-parser = { workspace = true }
 wick-packet = { workspace = true, default-features = false }
-wick-interface-types = { workspace = true, features = ["yaml"] }
+wick-interface-types = { workspace = true, features = ["yaml", "parser"] }
 wick-asset-reference = { workspace = true }
 regex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
+serde_with = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 shellexpand = { workspace = true }
@@ -31,6 +32,9 @@ url = { workspace = true }
 glob = { workspace = true }
 parking_lot = { workspace = true }
 liquid-json = { workspace = true, features = ["serde"] }
+itertools = { workspace = true }
+option-utils = { workspace = true }
+property = { workspace = true }
 
 [dev-dependencies]
 wick-xdg = { workspace = true }
@@ -42,3 +46,4 @@ test-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 asset-container = { workspace = true }
 tokio-stream = { workspace = true }
+rstest = { workspace = true }

@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
-use asset_container::Asset;
-
 use crate::config::{self, OperationSignature};
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct WasmComponentImplementation {

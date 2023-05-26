@@ -75,6 +75,7 @@ message Operation {
 message Field {
   string name = 1;
   TypeSignature type = 2;
+  string description = 3;
 }
 
 message ComponentSignature {
@@ -122,17 +123,20 @@ message DurationStatistics {
 message StructSignature {
   string name = 1;
   repeated Field fields = 2;
+  string description = 3;
 }
 
 message EnumSignature {
   string name = 1;
   repeated EnumVariant values = 2;
+  string description = 3;
 }
 
 message EnumVariant {
   string name = 1;
   optional uint32 index = 2;
   optional string value = 3;
+  string description = 4;
 }
 
 message TypeSignature {
@@ -143,7 +147,6 @@ message TypeSignature {
     InnerType optional = 4;
     RefType ref = 5;
     LinkType link = 6;
-    InnerType stream = 9;
     AnonymousStruct anonymous_struct = 10;
     string custom = 11;
   }

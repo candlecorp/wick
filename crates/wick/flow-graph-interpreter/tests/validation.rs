@@ -2,14 +2,14 @@ use std::path::Path;
 
 mod test;
 use anyhow::Result;
-use flow_component::{Component, ComponentError};
+use flow_component::{panic_callback, Component, ComponentError};
 use flow_graph_interpreter::error::{InterpreterError, OperationInvalid, ValidationError};
 use flow_graph_interpreter::graph::from_def;
 use flow_graph_interpreter::{HandlerMap, Interpreter, NamespaceHandler};
 use pretty_assertions::assert_eq;
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
 use seeded_random::Seed;
-use serde_json::Value;
+use tracing::Span;
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{Invocation, PacketStream};
 fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentConfiguration> {
@@ -21,8 +21,7 @@ impl Component for SignatureTestCollection {
   fn handle(
     &self,
     _invocation: Invocation,
-    _stream: PacketStream,
-    _config: Option<Value>,
+    _config: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<flow_component::RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     todo!()
@@ -42,28 +41,29 @@ fn collections(sig: ComponentSignature) -> HandlerMap {
 }
 
 fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interpreter, InterpreterError> {
-  let network = from_def(&load(path).unwrap()).unwrap();
-  let callback = std::sync::Arc::new(|_, _, _, _| panic!());
+  let network = from_def(&mut load(path).unwrap()).unwrap();
 
   Interpreter::new(
     Some(Seed::unsafe_new(1)),
     network,
     None,
     Some(collections(sig)),
-    callback,
+    panic_callback(),
+    &Span::current(),
   )
 }
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_collections() -> Result<()> {
-  let manifest = load("./tests/manifests/v0/external.yaml")?;
-  let network = from_def(&manifest)?;
+  let mut manifest = load("./tests/manifests/v0/external.yaml")?;
+  let network = from_def(&mut manifest)?;
   let result: std::result::Result<Interpreter, _> = Interpreter::new(
     Some(Seed::unsafe_new(1)),
     network,
     None,
     None,
-    std::sync::Arc::new(|_, _, _, _| panic!()),
+    panic_callback(),
+    &Span::current(),
   );
   let validation_errors = ValidationError::ComponentIdNotFound("test".to_owned());
   if let Err(InterpreterError::EarlyError(e)) = result {
@@ -103,7 +103,7 @@ async fn test_invalid_port() -> Result<()> {
   if let Err(InterpreterError::EarlyError(e)) = result {
     assert_eq!(
       e,
-      ValidationError::MissingConnection {
+      ValidationError::UnknownInput {
         port: "input".to_owned(),
         operation: "echo".to_owned(),
         component: "test".to_owned(),

@@ -4,9 +4,9 @@ use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
 use wick_interface_types::Field;
-use wick_logger::LoggingOptions;
 
 use crate::utils::merge_config;
+
 #[derive(Debug, Clone, Args)]
 pub(crate) struct ListCommand {
   #[clap(flatten)]
@@ -16,16 +16,11 @@ pub(crate) struct ListCommand {
   #[clap(action)]
   pub(crate) location: String,
 
-  #[clap(flatten)]
-  pub(crate) logging: LoggingOptions,
-
   #[clap(long = "json", action)]
   pub(crate) json: bool,
 }
 
-pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
-  let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
-
+pub(crate) async fn handle(opts: ListCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);
@@ -38,12 +33,10 @@ pub(crate) async fn handle_command(opts: ListCommand) -> Result<()> {
 
   let mut config = merge_config(&manifest, &opts.oci, Some(server_options));
   // Disable everything but the mesh
-  config.host_mut().rpc = None;
+  config.host_mut().set_rpc(None);
 
-  let host_builder = ComponentHostBuilder::from_definition(config);
+  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 
-  let mut host = host_builder.build();
-  // host.connect_to_mesh().await?;
   host.start_engine(None).await?;
   let signature = host.get_signature()?;
 

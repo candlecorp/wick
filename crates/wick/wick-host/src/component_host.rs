@@ -6,13 +6,13 @@ use flow_component::SharedComponent;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use seeded_random::Seed;
+use tracing::Span;
 use uuid::Uuid;
 use wick_component_cli::options::{Options as HostOptions, ServerOptions};
 use wick_component_cli::ServerState;
 use wick_config::config::ComponentConfiguration;
-use wick_config::WickConfiguration;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Entity, InherentData, Invocation, PacketStream};
+use wick_packet::{Entity, InherentData, Invocation, OperationConfig, PacketStream};
 use wick_runtime::{EngineComponent, Runtime, RuntimeBuilder};
 
 use crate::{Error, Result};
@@ -28,19 +28,26 @@ fn from_registry(id: Uuid) -> SharedComponent {
 
 /// A Wick Host wraps a Wick runtime with server functionality like persistence,.
 #[must_use]
-#[derive(Debug)]
+#[derive(Debug, derive_builder::Builder)]
+#[builder(derive(Debug), setter(into))]
 pub struct ComponentHost {
+  #[builder(default = "Uuid::new_v4().to_string()")]
   id: String,
-  engine: Option<Runtime>,
+  #[builder(default)]
+  runtime: Option<Runtime>,
+  #[builder(default)]
   manifest: ComponentConfiguration,
+  #[builder(default, setter(strip_option))]
   server_metadata: Option<ServerState>,
+  #[builder(default = "tracing::Span::current()")]
+  span: Span,
 }
 
 impl ComponentHost {
   /// Starts the host. This call is non-blocking, so it is up to the consumer
   /// to wait with a method like `host.wait_for_sigint()`.
   pub async fn start(&mut self, seed: Option<u64>) -> Result<()> {
-    debug!("host starting");
+    self.span.in_scope(|| debug!("host starting"));
 
     // self.mesh = self.get_mesh().await?;
     self.start_engine(seed.map(Seed::unsafe_new)).await?;
@@ -60,7 +67,7 @@ impl ComponentHost {
   }
 
   pub fn get_signature(&self) -> Result<ComponentSignature> {
-    match &self.engine {
+    match &self.runtime {
       Some(engine) => Ok(engine.get_signature()?),
       None => Err(Error::NoEngine),
     }
@@ -73,55 +80,59 @@ impl ComponentHost {
 
   /// Stops a running host.
   pub async fn stop(self) {
-    debug!("host stopping");
-    if let Some(engine) = self.engine {
+    self.span.in_scope(|| debug!("host stopping"));
+    if let Some(engine) = self.runtime {
       let _ = engine.shutdown().await;
     }
   }
 
   pub fn get_engine(&self) -> Result<&Runtime> {
-    self.engine.as_ref().ok_or(Error::NoEngine)
+    self.runtime.as_ref().ok_or(Error::NoEngine)
   }
 
   pub fn get_engine_uid(&self) -> Result<Uuid> {
-    self.engine.as_ref().ok_or(Error::NoEngine).map(|engine| engine.uid)
+    self.runtime.as_ref().ok_or(Error::NoEngine).map(|engine| engine.uid)
   }
 
   pub async fn start_engine(&mut self, seed: Option<Seed>) -> Result<()> {
     ensure!(
-      self.engine.is_none(),
+      self.runtime.is_none(),
       crate::Error::InvalidHostState("Host already has a engine running".into())
     );
 
-    let mut engine_builder = RuntimeBuilder::from_definition(self.manifest.clone())?;
-    if let Some(seed) = seed {
-      engine_builder = engine_builder.with_seed(seed);
-    }
+    let mut engine_builder = RuntimeBuilder::from_definition(self.manifest.clone());
+    let span = debug_span!("host");
+    span.follows_from(&self.span);
+    engine_builder = engine_builder.span(span);
     engine_builder = engine_builder.namespace(self.get_host_id());
-    engine_builder = engine_builder.allow_latest(self.manifest.host().allow_latest);
-    engine_builder = engine_builder.allow_insecure(self.manifest.host().insecure_registries.clone());
+    engine_builder = engine_builder.allow_latest(self.manifest.allow_latest());
+    if let Some(insecure) = self.manifest.insecure_registries() {
+      engine_builder = engine_builder.allowed_insecure(insecure.to_vec());
+    }
 
-    let engine = engine_builder.build().await?;
+    let engine = engine_builder.build(seed).await?;
 
-    self.engine = Some(engine);
+    self.runtime = Some(engine);
     Ok(())
   }
 
   async fn start_servers(&mut self) -> Result<ServerState> {
     let nuid = self.get_engine_uid()?;
 
+    let host_config = self.manifest.host().cloned().unwrap_or_default();
+
     #[allow(clippy::manual_map)]
     let options = HostOptions {
-      rpc: self.manifest.host().rpc.as_ref().map(|config| ServerOptions {
-        port: config.port,
-        address: config.address,
-        pem: config.pem.clone(),
-        key: config.key.clone(),
-        ca: config.ca.clone(),
-        enabled: config.enabled,
+      rpc: host_config.rpc().map(|config| ServerOptions {
+        port: config.port(),
+        address: config.address().copied(),
+        pem: config.pem().cloned(),
+        key: config.key().cloned(),
+        ca: config.ca().cloned(),
+        enabled: config.enabled(),
       }),
       id: self.get_host_id().to_owned(),
-      timeout: self.manifest.host().timeout,
+      timeout: *host_config.timeout(),
     };
 
     let collection = from_registry(nuid);
@@ -140,25 +151,31 @@ impl ComponentHost {
     stream: PacketStream,
     data: Option<InherentData>,
   ) -> Result<PacketStream> {
-    match &self.engine {
-      Some(engine) => {
-        let invocation = Invocation::new(Entity::server(&self.id), Entity::operation(&self.id, operation), data);
-        Ok(engine.invoke(invocation, stream).await?)
+    match &self.runtime {
+      Some(runtime) => {
+        let invocation = Invocation::new(
+          Entity::server(&self.id),
+          Entity::operation(&self.id, operation),
+          stream,
+          data,
+          &self.span,
+        );
+        Ok(runtime.invoke(invocation, None).await?)
       }
       None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }
   }
 
-  pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream> {
-    match &self.engine {
-      Some(engine) => Ok(engine.invoke(invocation, stream).await?),
+  pub async fn invoke(&self, invocation: Invocation, data: Option<OperationConfig>) -> Result<PacketStream> {
+    match &self.runtime {
+      Some(runtime) => Ok(runtime.invoke(invocation, data).await?),
       None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }
   }
 
   pub async fn wait_for_sigint(&self) -> Result<()> {
     tokio::signal::ctrl_c().await.unwrap();
-    debug!("SIGINT received");
+    self.span.in_scope(|| debug!("SIGINT received"));
     Ok(())
   }
 
@@ -169,75 +186,17 @@ impl ComponentHost {
 
   #[must_use]
   pub fn is_started(&self) -> bool {
-    self.engine.is_some()
-  }
-}
-
-/// The HostBuilder builds the configuration for a Wick Host.
-#[must_use]
-#[derive(Debug, Clone)]
-pub struct ComponentHostBuilder {
-  manifest: ComponentConfiguration,
-}
-
-impl Default for ComponentHostBuilder {
-  fn default() -> Self {
-    Self::new()
+    self.runtime.is_some()
   }
 }
 
 impl ComponentHostBuilder {
   /// Creates a new host builder.
+  #[must_use]
   pub fn new() -> ComponentHostBuilder {
-    ComponentHostBuilder {
-      manifest: ComponentConfiguration::default(),
-    }
-  }
-
-  pub async fn from_manifest_url(location: &str, allow_latest: bool, insecure_registries: &[String]) -> Result<Self> {
-    let fetch_options = wick_config::config::FetchOptions::new()
-      .allow_latest(allow_latest)
-      .allow_insecure(insecure_registries);
-
-    let manifest = WickConfiguration::fetch(location, fetch_options)
-      .await?
-      .try_component_config()?;
-    Ok(Self::from_definition(manifest))
-  }
-
-  pub fn from_definition(definition: ComponentConfiguration) -> Self {
-    ComponentHostBuilder { manifest: definition }
-  }
-
-  /// Constructs an instance of a Wick host.
-  pub fn build(self) -> ComponentHost {
-    let host_id = Uuid::new_v4().to_string();
-
-    ComponentHost {
-      id: host_id,
-      engine: None,
-      manifest: self.manifest,
-      server_metadata: None,
-    }
+    ComponentHostBuilder::default()
   }
 }
-
-// impl TryFrom<PathBuf> for ComponentHostBuilder {
-//   type Error = Error;
-
-//   fn try_from(file: PathBuf) -> Result<Self> {
-//     let manifest = WickConfiguration::load_from_file(file)?.try_component_config()?;
-//     Ok(ComponentHostBuilder::from_definition(manifest))
-//   }
-// }
-
-// impl TryFrom<&str> for ComponentHostBuilder {
-//   type Error = Error;
-
-//   fn try_from(value: &str) -> Result<Self> {
-//     ComponentHostBuilder::try_from(PathBuf::from(value))
-//   }
-// }
 
 #[cfg(test)]
 mod test {
@@ -248,7 +207,8 @@ mod test {
   use anyhow::Result;
   use futures::StreamExt;
   use http::Uri;
-  use wick_config::config::HttpConfig;
+  use wick_config::config::HttpConfigBuilder;
+  use wick_config::WickConfiguration;
   use wick_invocation_server::connect_rpc_client;
   use wick_packet::{packet_stream, packets, Entity, Packet};
 
@@ -262,7 +222,7 @@ mod test {
 
   #[test_logger::test(tokio::test)]
   async fn should_start_and_stop() -> Result<()> {
-    let mut host = ComponentHostBuilder::new().build();
+    let mut host = ComponentHostBuilder::new().build()?;
 
     host.start(None).await?;
     assert!(host.is_started());
@@ -275,7 +235,7 @@ mod test {
   async fn request_direct() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
     let manifest = WickConfiguration::load_from_file(&file).await?.try_component_config()?;
-    let mut host = ComponentHostBuilder::from_definition(manifest).build();
+    let mut host = ComponentHostBuilder::default().manifest(manifest).build()?;
     host.start(None).await?;
     let passed_data = "logging output";
     let stream = packet_stream!(("input", passed_data));
@@ -296,14 +256,15 @@ mod test {
   async fn request_rpc_server() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
     let mut def = WickConfiguration::load_from_file(&file).await?.try_component_config()?;
-    def.host_mut().rpc = Some(HttpConfig {
-      enabled: true,
-      port: None,
-      address: Some(Ipv4Addr::from_str("127.0.0.1").unwrap()),
-      ..Default::default()
-    });
 
-    let mut host = ComponentHostBuilder::from_definition(def).build();
+    def.host_mut().rpc_mut().replace(
+      HttpConfigBuilder::default()
+        .enabled(true)
+        .address(Ipv4Addr::from_str("127.0.0.1").unwrap())
+        .build()?,
+    );
+
+    let mut host = ComponentHostBuilder::default().manifest(def).build()?;
     host.start(None).await?;
     let address = host.rpc_address().unwrap();
     println!("rpc server bound to : {}", address);
@@ -312,7 +273,7 @@ mod test {
     println!("connected to server");
     let passed_data = "logging output";
     let packets = packets![("input", passed_data)];
-    let invocation: wick_rpc::rpc::Invocation = Invocation::new(Entity::test("test"), Entity::local("logger"), None)
+    let invocation: wick_rpc::rpc::Invocation = Invocation::test("test", Entity::local("logger"), Vec::new(), None)?
       .try_into()
       .unwrap();
 

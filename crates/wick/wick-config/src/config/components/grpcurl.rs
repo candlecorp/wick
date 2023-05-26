@@ -1,10 +1,9 @@
-use serde_json::Value;
-
 /// A collection exposed as an external microservice.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 pub struct GrpcUrlComponent {
   /// The URL to connect to .
-  pub url: String,
+  pub(crate) url: String,
   /// The configuration for the collection
-  pub config: Value,
+  pub(crate) config: Option<wick_packet::OperationConfig>,
 }

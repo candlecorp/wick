@@ -22,9 +22,7 @@ pub(crate) struct ServeCommand {
   pub(crate) location: String,
 }
 
-pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
-  let _guard = wick_logger::init(&opts.cli.logging.name(crate::BIN_NAME));
-
+pub(crate) async fn handle(opts: ServeCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);
@@ -35,9 +33,7 @@ pub(crate) async fn handle_command(opts: ServeCommand) -> Result<()> {
 
   let config = merge_config(&manifest, &opts.oci, Some(opts.cli));
 
-  let host_builder = ComponentHostBuilder::from_definition(config);
-
-  let mut host = host_builder.build();
+  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 
   host.start(Some(0)).await?;
   info!("Host started");

@@ -13,10 +13,6 @@ pub enum CliError {
   IpAddrError(#[from] std::net::AddrParseError),
 
   #[error(transparent)]
-  /// An error from the logger.
-  LoggerError(#[from] wick_logger::error::LoggerError),
-
-  #[error(transparent)]
   /// An IO error binding to a port or similar.
   IOError(#[from] std::io::Error),
 

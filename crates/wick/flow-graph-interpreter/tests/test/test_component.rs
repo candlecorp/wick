@@ -6,10 +6,9 @@ type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use futures::{Future, StreamExt};
 use seeded_random::{Random, Seed};
-use serde_json::Value;
 use tokio::spawn;
 use tokio::task::JoinHandle;
-use tracing::trace;
+use tracing::{trace, Span};
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::{ComponentSignature, OperationSignature, TypeSignature};
 use wick_packet::{fan_out, packet_stream, ComponentReference, Invocation, Packet, PacketStream};
@@ -65,6 +64,16 @@ impl TestComponent {
           .add_output("output", TypeSignature::String),
       )
       .add_operation(
+        OperationSignature::new("noimpl")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_operation(
+        OperationSignature::new("component_error")
+          .add_input("input", TypeSignature::String)
+          .add_output("output", TypeSignature::String),
+      )
+      .add_operation(
         OperationSignature::new("concat-five")
           .add_input("one", TypeSignature::String)
           .add_input("two", TypeSignature::String)
@@ -76,27 +85,12 @@ impl TestComponent {
       .add_operation(
         OperationSignature::new("splitter")
           .add_input("input", TypeSignature::String)
-          .add_output(
-            "rest",
-            TypeSignature::Stream {
-              ty: Box::new(TypeSignature::String),
-            },
-          )
-          .add_output(
-            "vowels",
-            TypeSignature::Stream {
-              ty: Box::new(TypeSignature::String),
-            },
-          ),
+          .add_output("rest", TypeSignature::String)
+          .add_output("vowels", TypeSignature::String),
       )
       .add_operation(
         OperationSignature::new("join")
-          .add_input(
-            "input",
-            TypeSignature::Stream {
-              ty: Box::new(TypeSignature::String),
-            },
-          )
+          .add_input("input", TypeSignature::String)
           .add_output("output", TypeSignature::String),
       )
       .add_operation(
@@ -123,12 +117,7 @@ impl TestComponent {
         OperationSignature::new("copy")
           .add_input("input", TypeSignature::String)
           .add_input("times", TypeSignature::U64)
-          .add_output(
-            "output",
-            TypeSignature::Stream {
-              ty: Box::new(TypeSignature::String),
-            },
-          ),
+          .add_output("output", TypeSignature::String),
       )
       .add_operation(OperationSignature::new("no-inputs").add_output("output", TypeSignature::String))
       .add_operation(
@@ -178,13 +167,12 @@ impl Component for TestComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
-    _config: Option<Value>,
+    _config: Option<wick_packet::OperationConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let operation = invocation.target.operation_id();
     println!("got op {} in echo test collection", operation);
-    Box::pin(async move { Ok(handler(invocation, stream, callback)?) })
+    Box::pin(async move { Ok(handler(invocation, callback)?) })
   }
 
   fn list(&self) -> &ComponentSignature {
@@ -192,11 +180,8 @@ impl Component for TestComponent {
   }
 }
 
-fn handler(
-  invocation: Invocation,
-  mut payload_stream: PacketStream,
-  callback: Arc<RuntimeCallback>,
-) -> anyhow::Result<PacketStream> {
+fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Result<PacketStream> {
+  let mut payload_stream = invocation.packets;
   let operation = invocation.target.operation_id();
   match operation {
     "echo" => {
@@ -224,7 +209,9 @@ fn handler(
           let link: ComponentReference = component.deserialize().unwrap();
           let message: String = message.deserialize().unwrap();
           let packets = packet_stream!(("input", message));
-          let mut response = callback(link, "reverse".to_owned(), packets, None).await.unwrap();
+          let mut response = callback(link, "reverse".to_owned(), packets, None, None, &Span::current())
+            .await
+            .unwrap();
           while let Some(Ok(res)) = response.next().await {
             defer(vec![send(res.set_port("output"))]);
           }
@@ -333,6 +320,15 @@ fn handler(
       panic!();
     }
     "error" => Err(anyhow!("This operation always errors")),
+    "noimpl" => {
+      let (_send, stream) = stream(1);
+      Ok(stream)
+    }
+    "component_error" => {
+      let (mut send, stream) = stream(1);
+      send(Packet::component_error("Oh no"));
+      Ok(stream)
+    }
     "timeout-nodone" => {
       let mut input = fan_out!(payload_stream, "input");
       let (mut send, stream) = stream(1);

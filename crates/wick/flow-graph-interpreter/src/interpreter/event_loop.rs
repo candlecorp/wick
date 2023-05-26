@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use parking_lot::Mutex;
 use tokio::task::JoinHandle;
+use tracing::Span;
 use tracing_futures::Instrument;
 
 use super::channel::{Event, EventKind, InterpreterChannel, InterpreterDispatchChannel};
@@ -17,6 +18,7 @@ pub(crate) struct EventLoop {
   channel: Option<InterpreterChannel>,
   dispatcher: InterpreterDispatchChannel,
   task: Mutex<Option<JoinHandle<Result<(), ExecutionError>>>>,
+  span: Span,
 }
 
 impl EventLoop {
@@ -25,19 +27,20 @@ impl EventLoop {
 
   pub(super) fn new(channel: InterpreterChannel) -> Self {
     let dispatcher = channel.dispatcher();
+    let span = debug_span!("event_loop");
+    span.follows_from(Span::current());
     Self {
       channel: Some(channel),
       dispatcher,
       task: Mutex::new(None),
+      span,
     }
   }
 
   pub(super) async fn start(&mut self, options: InterpreterOptions, observer: Option<Box<dyn Observer + Send + Sync>>) {
-    trace!("starting event loop");
     let channel = self.channel.take().unwrap();
 
-    let span = trace_span!("event_loop");
-
+    let span = self.span.clone();
     let handle = tokio::spawn(async move { event_loop(channel, options, observer).instrument(span).await });
     let mut lock = self.task.lock();
     lock.replace(handle);
@@ -49,21 +52,21 @@ impl EventLoop {
   }
 
   pub(super) async fn shutdown(&self) -> Result<(), Error> {
-    trace!("shutting down event loop");
+    self.span.in_scope(|| trace!("shutting down event loop"));
     let task = self.steal_task();
     match task {
       Some(task) => {
         self.dispatcher.dispatch_close(None).await;
-        trace!("yielding to loop");
+
         let timeout = std::time::Duration::from_secs(2);
         let result = tokio::time::timeout(timeout, task).await;
         result
           .map_err(|e| Error::Shutdown(e.to_string()))?
           .map_err(|e| Error::Shutdown(e.to_string()))??;
-        debug!("event loop closed");
+        self.span.in_scope(|| debug!("event loop closed"));
       }
       None => {
-        warn!("shutdown called but no task running");
+        self.span.in_scope(|| warn!("shutdown called but no task running"));
       }
     }
 
@@ -73,7 +76,7 @@ impl EventLoop {
 
 impl Drop for EventLoop {
   fn drop(&mut self) {
-    trace!("dropping event loop");
+    self.span.in_scope(|| trace!("dropping event loop"));
     let lock = self.task.lock();
     if let Some(task) = &*lock {
       task.abort();
@@ -92,7 +95,8 @@ async fn event_loop(
   options: InterpreterOptions,
   observer: Option<Box<dyn Observer + Send + Sync>>,
 ) -> Result<(), ExecutionError> {
-  debug!(?options, "started");
+  let span = trace_span!("event_loop");
+  span.in_scope(|| debug!(?options, "started"));
   let mut state = State::new(channel.dispatcher());
 
   let mut num: usize = 0;
@@ -107,8 +111,8 @@ async fn event_loop(
           observer.on_event(num, &event);
         }
 
-        let span = trace_span!("event", otel.name = event.name(), i = num, %tx_id);
-        debug!(event = ?event, tx_id = ?tx_id, "iteration");
+        let evt_span = trace_span!(parent:&span,"event", otel.name = event.name(), i = num, %tx_id);
+        evt_span.in_scope(|| debug!(event = ?event, tx_id = ?tx_id, "iteration"));
         let name = event.name().to_owned();
 
         let result = match event.kind {
@@ -116,13 +120,13 @@ async fn event_loop(
             error!("invocation not supported");
             panic!("invocation not supported")
           }
-          EventKind::CallComplete(data) => state.handle_call_complete(tx_id, data).instrument(span).await,
-          EventKind::PortData(data) => state.handle_port_data(tx_id, data).instrument(span).await,
-          EventKind::TransactionDone => state.handle_transaction_done(tx_id).instrument(span).await,
+          EventKind::CallComplete(data) => state.handle_call_complete(tx_id, data).instrument(evt_span).await,
+          EventKind::PortData(data) => state.handle_port_data(tx_id, data).instrument(evt_span).await,
+          EventKind::TransactionDone => state.handle_transaction_done(tx_id).instrument(evt_span).await,
           EventKind::TransactionStart(transaction) => {
             state
               .handle_transaction_start(*transaction, &options)
-              .instrument(span)
+              .instrument(evt_span)
               .await
           }
           EventKind::Ping(ping) => {
@@ -131,11 +135,11 @@ async fn event_loop(
           }
           EventKind::Close(error) => match error {
             Some(error) => {
-              error!(%error,"stopped with error");
+              evt_span.in_scope(|| error!(%error,"stopped with error"));
               break Err(error);
             }
             None => {
-              debug!("stopping");
+              evt_span.in_scope(|| debug!("stopping"));
               break Ok(());
             }
           },
@@ -143,13 +147,13 @@ async fn event_loop(
 
         if let Err(e) = result {
           if options.error_on_missing && matches!(e, ExecutionError::MissingTx(_)) {
-            error!(event = %name, tx_id = ?tx_id, response_error = %e, "iteration:end");
+            span.in_scope(|| error!(event = %name, tx_id = ?tx_id, response_error = %e, "iteration:end"));
             channel.dispatcher().dispatch_close(Some(e)).await;
           } else {
-            warn!(event = %name, tx_id = ?tx_id, response_error = %e, "iteration:end");
+            span.in_scope(|| warn!(event = %name, tx_id = ?tx_id, response_error = %e, "iteration:end"));
           }
         } else {
-          trace!(event = %name, tx_id = ?tx_id, "iteration:end");
+          span.in_scope(|| trace!(event = %name, tx_id = ?tx_id, "iteration:end"));
         }
 
         if let Some(observer) = &observer {
@@ -158,18 +162,18 @@ async fn event_loop(
         num += 1;
       }
       Ok(None) => {
-        trace!("done");
+        span.in_scope(|| trace!("done"));
         break Ok(());
       }
       Err(_) => {
         if let Err(error) = state.check_hung(options.error_on_hung).await {
-          error!(%error,"Error checking hung transactions");
+          span.in_scope(|| error!(%error,"Error checking hung transactions"));
           channel.dispatcher().dispatch_close(Some(error)).await;
         };
       }
     }
   };
-  trace!("stopped");
+  span.in_scope(|| trace!("stopped"));
   if let Some(observer) = &observer {
     observer.on_close();
   }

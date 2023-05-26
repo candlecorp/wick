@@ -3,7 +3,6 @@ use std::sync::Arc;
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
-use serde_json::Value;
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream};
@@ -72,11 +71,10 @@ impl Component for SchematicComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
-    _config: Option<Value>,
+    _config: Option<wick_packet::OperationConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    trace!(target = %invocation.target, namespace = NS_SELF);
+    invocation.trace(|| trace!(target = %invocation.target, namespace = NS_SELF));
 
     let operation = invocation.target.operation_id().to_owned();
     let fut = self
@@ -86,7 +84,6 @@ impl Component for SchematicComponent {
       .map(|s| {
         s.invoke(
           invocation,
-          stream,
           self.rng.seed(),
           self.components.clone(),
           self.clone_self_collection(),
@@ -94,7 +91,6 @@ impl Component for SchematicComponent {
         )
       })
       .ok_or_else(|| Error::SchematicNotFound(operation.clone()));
-    trace!(%operation, "operation");
 
     Box::pin(async move {
       let span = trace_span!("ns_self", name = %operation);

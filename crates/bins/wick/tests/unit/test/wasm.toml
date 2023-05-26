@@ -1,21 +1,13 @@
 bin.name = "wick"
 args = ["test", "../../integration/test-baseline-component/component.yaml"]
 stdout = """
-1..13 # Test
-# add 1 and 2: test operation 'add'
-ok 1 add 1 and 2: test operation 'add': correct port? ('output' == 'output')
-ok 2 add 1 and 2: test operation 'add': actual deserialized payload == expected deserialized payload?
-ok 3 add 1 and 2: test operation 'add': correct port? ('output' == 'output')
-ok 4 add 1 and 2: test operation 'add': actual raw packet == expected raw packet?
-ok 5 add 1 and 2: test operation 'add': total_outputs
-# add 2000 and 3292982: test operation 'add'
-ok 6 add 2000 and 3292982: test operation 'add': correct port? ('output' == 'output')
-ok 7 add 2000 and 3292982: test operation 'add': actual deserialized payload == expected deserialized payload?
-ok 8 add 2000 and 3292982: test operation 'add': correct port? ('output' == 'output')
-ok 9 add 2000 and 3292982: test operation 'add': actual raw packet == expected raw packet?
-ok 10 add 2000 and 3292982: test operation 'add': total_outputs
-# validate: test operation 'validate'
-ok 11 validate: test operation 'validate': correct port? ('output' == 'output')
-ok 12 validate: test operation 'validate': actual deserialized payload == expected deserialized payload?
-ok 13 validate: test operation 'validate': total_outputs
+1..4 # Test
+# (test name='add 1 and 2', operation='add')
+ok 1 (test name='add 1 and 2', operation='add'): invocation succeeded
+# (test name='add 2000 and 3292982', operation='add')
+ok 2 (test name='add 2000 and 3292982', operation='add'): invocation succeeded
+# (test name='2^5', operation='power')
+ok 3 (test name='2^5', operation='power'): invocation succeeded
+# (test name='validate', operation='validate')
+ok 4 (test name='validate', operation='validate'): invocation succeeded
 """

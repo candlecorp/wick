@@ -85,34 +85,17 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-use std::sync::Arc;
+mod context;
+pub use context::*;
+#[cfg(feature = "traits")]
+mod traits;
 
-use wick_interface_types::{ComponentSignature, OperationSignature};
-use wick_packet::{ComponentReference, InherentData, Invocation, PacketStream};
-
-pub type SharedComponent = Arc<dyn Component + Send + Sync>;
+#[cfg(feature = "traits")]
+pub use traits::*;
 
 pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
 
 pub use serde_json::Value;
-
-pub type RuntimeCallback = dyn Fn(
-    ComponentReference,
-    String,
-    PacketStream,
-    Option<InherentData>,
-  ) -> BoxFuture<'static, Result<PacketStream, ComponentError>>
-  + Send
-  + Sync;
-
-#[must_use]
-pub fn panic_callback() -> Arc<RuntimeCallback> {
-  Arc::new(|_, _, _, _| {
-    Box::pin(async move {
-      panic!("Panic callback invoked. This should never happen outside of tests.");
-    })
-  })
-}
 
 #[derive(Debug)]
 #[must_use]
@@ -157,70 +140,4 @@ impl std::fmt::Display for GenericError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.0)
   }
-}
-
-pub trait Component {
-  fn handle(
-    &self,
-    invocation: Invocation,
-    stream: PacketStream,
-    data: Option<Value>,
-    callback: Arc<RuntimeCallback>,
-  ) -> BoxFuture<Result<PacketStream, ComponentError>>;
-  fn list(&self) -> &ComponentSignature;
-  fn init(&self) -> BoxFuture<Result<(), ComponentError>> {
-    // Override if you need a more explicit init.
-    Box::pin(async move { Ok(()) })
-  }
-
-  fn shutdown(&self) -> BoxFuture<Result<(), ComponentError>> {
-    // Override if you need a more explicit shutdown.
-    Box::pin(async move { Ok(()) })
-  }
-}
-
-#[derive()]
-pub struct Context<T>
-where
-  T: std::fmt::Debug,
-{
-  pub config: Arc<T>,
-  pub callback: Arc<RuntimeCallback>,
-}
-
-impl<T> std::fmt::Debug for Context<T>
-where
-  T: std::fmt::Debug,
-{
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("Context").field("config", &self.config).finish()
-  }
-}
-
-impl<T> Context<T>
-where
-  T: std::fmt::Debug,
-{
-  pub fn new(config: T, callback: Arc<RuntimeCallback>) -> Self {
-    Self {
-      config: Arc::new(config),
-      callback,
-    }
-  }
-}
-
-pub trait Operation {
-  const ID: &'static str;
-  type Config: std::fmt::Debug + Send + Sync + 'static;
-  fn handle(
-    &self,
-    payload: PacketStream,
-    context: Context<Self::Config>,
-  ) -> BoxFuture<Result<PacketStream, ComponentError>>;
-
-  fn get_signature(&self, config: Option<&Self::Config>) -> &OperationSignature;
-
-  fn input_names(&self, config: &Self::Config) -> Vec<String>;
-
-  fn decode_config(data: Option<Value>) -> Result<Self::Config, ComponentError>;
 }

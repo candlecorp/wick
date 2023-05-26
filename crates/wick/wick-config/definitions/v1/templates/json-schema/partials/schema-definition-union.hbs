@@ -3,8 +3,10 @@
     {{#withAnnotation "shortform" ~}}
     { "type":"string" },
     {{~/withAnnotation}}
+    {{#unlessAnnotation "shortformonly"}}
     {{#join types "," ~}}
     {"$ref": "#/$defs/v1/{{name.value}}"}
     {{~/join}}
+    {{/unlessAnnotation}}
   ]
 },

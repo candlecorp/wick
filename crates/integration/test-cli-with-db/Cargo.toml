@@ -12,18 +12,22 @@ lto = true
 opt-level = "z"
 panic = "abort"
 
+[features]
+default = []
+localgen = []
+
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-wasmrs-guest = { version="0.10", features = [
+wasmrs-guest = { version="0.11", features = [
 ] }
 wick-component = { path = "../../wick/wick-component" }
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"
 futures = "0.3"
-once_cell="1.17"
-console="0.15"
+once_cell = "1.17"
+console = "0.15"
 
 [build-dependencies]
-wick-component-codegen = { path = "../../wick/wick-component-codegen"}
+wick-component-codegen = { path = "../../wick/wick-component-codegen" }

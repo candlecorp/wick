@@ -1,0 +1,45 @@
+[package]
+name = "wick-azure-sql"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "Azure SQL Database component for the wick project."
+
+[features]
+
+[dependencies]
+wick-packet = { workspace = true, features = ["rt-tokio", "datetime"] }
+flow-component = { workspace = true }
+wick-config = { workspace = true }
+wick-rpc = { workspace = true }
+wick-interface-types = { workspace = true, features = ["parser"] }
+tokio-util = { version = "0.7", features = ["compat"] }
+# tiberius & pool
+tiberius = { version = "0.12", features = [
+  "rustls",
+  "tds73",
+  "chrono"
+], default-features = false }
+bb8-tiberius = { version = "0.15.0", features = ["with-tokio"] }
+bb8 = "0.8.0"
+#
+tracing = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true }
+#
+futures = { workspace = true }
+thiserror = { workspace = true }
+parking_lot = { workspace = true }
+serde_json = { workspace = true }
+#
+bytes = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+wick-logger = { workspace = true }
+test-logger = { workspace = true }
+anyhow = { workspace = true }
+pretty_assertions = { workspace = true }

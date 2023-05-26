@@ -127,7 +127,7 @@ pub fn convert_tonic_streaming(mut streaming: tonic::Streaming<rpc::Packet>) -> 
     while let Some(packet) = streaming.next().await {
       let result: Result<wick_packet::Packet, wick_packet::Error> = match packet {
         Ok(o) => Ok(o.into()),
-        Err(e) => Err(wick_packet::Error::General(e.to_string())),
+        Err(e) => Err(wick_packet::Error::Component(e.to_string())),
       };
       let _ = tx.send(result);
     }
@@ -138,10 +138,10 @@ pub fn convert_tonic_streaming(mut streaming: tonic::Streaming<rpc::Packet>) -> 
 
 #[macro_export]
 macro_rules! dispatch {
-  ($inv:expr, $stream:expr, {$($name:expr => $handler:path),*,}) => {
+  ($inv:expr, {$($name:expr => $handler:path),*,}) => {
     {
       match $inv.target.operation_id() {
-        $($name => $handler($stream).await?,)*
+        $($name => $handler($inv).await?,)*
         _ => {
           unreachable!()
         }

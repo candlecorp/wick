@@ -111,14 +111,12 @@ where
   }
 
   pub fn add_input<T: AsStr>(&mut self, port: T) -> PortReference {
-    trace!(port=%port.as_ref(), "add schematic input");
     let input = self.get_mut(self.input).unwrap();
     input.add_input(&port);
     input.add_output(port)
   }
 
   pub fn add_output<T: AsStr>(&mut self, port: T) -> PortReference {
-    trace!(port=%port.as_ref(), "add schematic output");
     let output = self.get_mut(self.output).unwrap();
     output.add_output(&port);
     output.add_input(port)
@@ -204,13 +202,11 @@ where
 
   pub fn add_external<T: AsStr>(&mut self, name: T, reference: NodeReference, data: Option<DATA>) -> NodeIndex {
     let name = name.as_ref().to_owned();
-    trace!(%name, %reference, "adding external node");
     self.add_node(name, NodeKind::External(reference), data)
   }
 
   pub fn add_inherent<T: AsStr>(&mut self, name: T, reference: NodeReference, data: Option<DATA>) -> NodeIndex {
     let name = name.as_ref().to_owned();
-    trace!(%name, %reference, "adding inherent node");
     self.add_node(name, NodeKind::Inherent(reference), data)
   }
 
@@ -218,13 +214,9 @@ where
     let existing_index = self.node_map.get(&name);
 
     match existing_index {
-      Some(index) => {
-        trace!(%name, index, %kind, "retrieving existing node");
-        *index
-      }
+      Some(index) => *index,
       None => {
         let index = self.nodes.len();
-        trace!(%name, index, %kind, "added node");
         let node = Node::new(&name, index, kind, data);
         self.nodes.push(node);
         self.node_map.insert(name, index);
@@ -234,7 +226,6 @@ where
   }
 
   pub fn connect(&mut self, from: PortReference, to: PortReference, data: Option<DATA>) -> Result<(), Error> {
-    trace!(%from, %to, "connecting");
     let connection_index = self.connections.len();
     let downstream_node = &mut self.nodes[to.node_index];
     downstream_node.connect_input(to.port_index, connection_index)?;

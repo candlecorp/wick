@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::sync::Arc;
 mod cli;
 mod http;
@@ -7,10 +8,25 @@ mod time;
 use async_trait::async_trait;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use structured_output::StructuredOutput;
+use tracing::Span;
 use wick_config::config::{AppConfiguration, ComponentDefinition, TriggerDefinition, TriggerKind};
 
 use crate::dev::prelude::*;
 use crate::resources::Resource;
+use crate::RuntimeBuilder;
+
+fn build_trigger_runtime(config: &AppConfiguration, span: Span) -> Result<RuntimeBuilder, Infallible> {
+  let mut rt = RuntimeBuilder::default();
+  for import in config.imports().values() {
+    rt.add_import(import.clone());
+  }
+  for resource in config.resources().values() {
+    rt.add_resource(resource.clone());
+  }
+  rt = rt.span(span);
+  Ok(rt)
+}
 
 #[async_trait]
 pub trait Trigger {
@@ -20,7 +36,8 @@ pub trait Trigger {
     app_config: AppConfiguration,
     config: TriggerDefinition,
     resources: Arc<HashMap<String, Resource>>,
-  ) -> Result<(), RuntimeError>;
+    span: Span,
+  ) -> Result<StructuredOutput, RuntimeError>;
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError>;
   async fn wait_for_done(&self);
 }

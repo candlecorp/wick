@@ -19,6 +19,7 @@ wasmrs-codec = { workspace = true }
 # Common dependencies
 serde = { workspace = true, features = ["derive"] }
 serde-value = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["io-std", "macros", "rt-multi-thread"] }
 tokio-stream = { workspace = true }

@@ -9,7 +9,7 @@ use proc_macro_crate::{crate_name, FoundCrate};
 use quote::quote;
 use syn::parse::Parser;
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, parse_quote, ItemFn, Meta, Path, ReturnType, Token};
+use syn::{parse_macro_input, parse_quote, ItemFn, Meta, ReturnType, Token};
 
 /// A procedural macro for the `test` attribute.
 ///
@@ -73,13 +73,22 @@ pub fn test(attr: TokenStream, item: TokenStream) -> TokenStream {
 
   let input = parse_macro_input!(item as ItemFn);
 
-  let inner_test = match args.into_iter().collect::<Vec<_>>().as_slice() {
+  let args = args.into_iter().collect::<Vec<_>>();
+
+  let inner_test = match args.as_slice() {
     [] => parse_quote! { ::core::prelude::v1::test },
-    [Meta::Path(path)] => path.clone(),
-    _ => panic!("unsupported attributes supplied: {}", quote! { args }),
+    [Meta::Path(path)] => quote! {#path},
+    [Meta::List(list)] => {
+      let path = &list.path;
+      let args = &list.tokens;
+      quote! { #path(#args) }
+    }
+    _ => {
+      panic!("unsupported attributes supplied: {}", quote! { args })
+    }
   };
 
-  expand_wrapper(&inner_test, &input)
+  expand_wrapper(inner_test, &input)
 }
 
 /// Expand the initialization code for the `log` crate.
@@ -89,10 +98,11 @@ fn expand_logging_init() -> Tokens {
   match found_crate {
     FoundCrate::Itself => quote! {
       let __guard = crate::init_test(&crate::LoggingOptions {
-        trace: true,
+        level: crate::LogLevel::Trace,
         silly: true,
         app_name: "test".to_owned(),
-        jaeger_endpoint: std::env::var("OTEL_EXPORTER_JAEGER_ENDPOINT").ok(),
+        otlp_endpoint: std::env::var("OTLP_ENDPOINT").ok(),
+        global:true,
         ..Default::default()
       });
     },
@@ -102,10 +112,11 @@ fn expand_logging_init() -> Tokens {
       quote! {
         let __guard =
           #ident::init_test(&#ident::LoggingOptions {
-            trace: true,
+            level: #ident::LogLevel::Trace,
             silly: true,
             app_name: "test".to_owned(),
-            jaeger_endpoint: std::env::var("OTEL_EXPORTER_JAEGER_ENDPOINT").ok(),
+            otlp_endpoint: std::env::var("OTLP_ENDPOINT").ok(),
+            global:true,
             ..Default::default()
           });
 
@@ -115,7 +126,7 @@ fn expand_logging_init() -> Tokens {
 }
 
 /// Emit code for a wrapper function around a test function.
-fn expand_wrapper(inner_test: &Path, wrappee: &ItemFn) -> TokenStream {
+fn expand_wrapper(inner_test: Tokens, wrappee: &ItemFn) -> TokenStream {
   let attrs = &wrappee.attrs;
   let async_ = &wrappee.sig.asyncness;
   let await_ = if async_.is_some() {

@@ -1,8 +1,10 @@
 mod integration_test {
 
   use std::path::Path;
+  use std::time::{SystemTime, UNIX_EPOCH};
 
   use anyhow::Result;
+  use walkdir::WalkDir;
   use wick_oci_utils::package::PackageFile;
   use wick_oci_utils::OciOptions;
   use wick_package::WickPackage;
@@ -26,10 +28,17 @@ mod integration_test {
     let package_path = Path::new("./tests/files/jinja.wick");
     println!("Package path: {:?}", package_path);
     let mut package = WickPackage::from_path(package_path).await.unwrap();
+    let num_files = package.list_files().len();
+    assert_eq!(num_files, 4, "Mismatch in hard coded number of files");
+
     // necessary to clone our WickPackage because push() consumes our contents and we
     // want to test the original bytes post-push.
     let expected = package.clone();
-    let reference = expected.registry_reference().unwrap();
+    let test_timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+
+    let reference = expected
+      .tagged_reference(&test_timestamp.as_secs().to_string())
+      .unwrap();
     let push_result = package.push(&reference, &options).await;
     if push_result.is_err() {
       panic!("Failed to push WickPackage: {:?}", push_result);
@@ -37,17 +46,20 @@ mod integration_test {
     drop(package); // dropping it here to make sure tests use the clone `expected` instead.
 
     // Run the pull operation
-    let pulled_package_result = WickPackage::pull(&reference, &options).await;
-    println!("pulled_package_result: {:?}", pulled_package_result);
-    assert!(pulled_package_result.is_ok(), "Failed to pull WickPackage");
-    let pulled_package = pulled_package_result.unwrap();
+    let pulled_package = WickPackage::pull(&reference, &options).await?;
 
     // Check if the pulled package is the same as the pushed one
     assert_eq!(
       expected.list_files().len(),
       pulled_package.list_files().len(),
-      "Mismatch in number of files"
+      "Mismatch in number of files between packages"
     );
+    let mut root_dir = pulled_package.path().to_owned();
+    root_dir.pop();
+    println!("Counting files in pulled directory: {}", root_dir.display());
+    let num_files = WalkDir::new(root_dir).into_iter().count();
+
+    assert_eq!(num_files, 11, "Mismatch in number of files in the pulled package");
 
     let pushed_files: Vec<&PackageFile> = expected.list_files();
     let pulled_files: Vec<&PackageFile> = pulled_package.list_files();

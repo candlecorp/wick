@@ -38,27 +38,24 @@ impl SchematicExecutor {
   pub(crate) async fn invoke(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
     seed: Seed,
-    collections: Arc<HandlerMap>,
-    self_collection: Arc<dyn Component + Send + Sync>,
+    components: Arc<HandlerMap>,
+    self_component: Arc<dyn Component + Send + Sync>,
     callback: Arc<RuntimeCallback>,
   ) -> Result<PacketStream> {
-    debug!(schematic = self.name(), ?invocation,);
+    invocation.trace(|| debug!(schematic = self.name(), ?invocation,));
 
     let seed = invocation.seed().map_or(seed, Seed::unsafe_new);
 
     let mut transaction = Transaction::new(
       self.schematic.clone(),
       invocation,
-      stream,
       self.channel.clone(),
-      &collections,
-      &self_collection,
+      &components,
+      &self_component,
       callback,
       seed,
     );
-    trace!(tx_id = %transaction.id(), "invoking schematic");
     let stream = transaction.take_stream().unwrap();
     self.channel.dispatch_start(Box::new(transaction)).await;
     Ok(stream)

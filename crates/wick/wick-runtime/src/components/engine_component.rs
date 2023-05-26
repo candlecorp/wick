@@ -30,8 +30,7 @@ impl Component for EngineComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    stream: PacketStream,
-    _data: Option<flow_component::Value>,
+    config: Option<wick_packet::OperationConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target_url = invocation.target_url();
@@ -46,10 +45,10 @@ impl Component for EngineComponent {
       let engine = RuntimeService::for_id(&self.engine_id)
         .ok_or_else(|| flow_component::ComponentError::message(&format!("Engine '{}' not found", target_url)))?;
 
-      trace!(target = %target_url, "invoking");
+      invocation.trace(|| trace!(target = %target_url, "invoking"));
 
       let result: InvocationResponse = engine
-        .invoke(invocation, stream)
+        .invoke(invocation, config)
         .map_err(flow_component::ComponentError::new)?
         .instrument(span)
         .await
@@ -83,8 +82,8 @@ mod tests {
   async fn request_log(component: &EngineComponent, data: &str) -> Result<String> {
     let stream = packet_stream!(("MAIN_IN", data));
 
-    let invocation = Invocation::new(Entity::test(file!()), Entity::local("simple"), None);
-    let outputs = component.handle(invocation, stream, None, panic_callback()).await?;
+    let invocation = Invocation::test(file!(), Entity::local("simple"), stream, None)?;
+    let outputs = component.handle(invocation, None, panic_callback()).await?;
     let mut packets: Vec<_> = outputs.collect().await;
     println!("packets: {:#?}", packets);
     let _ = packets.pop();

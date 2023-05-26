@@ -260,3 +260,35 @@ where
 
   deserializer.deserialize_any(HashMapVisitor)
 }
+
+pub(crate) fn configmap_deserializer<'de, D>(deserializer: D) -> Result<Option<HashMap<String, Value>>, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  struct HashMapVisitor;
+
+  impl<'de> serde::de::Visitor<'de> for HashMapVisitor {
+    type Value = Option<HashMap<String, Value>>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+      formatter.write_str("a key/value map or nil")
+    }
+
+    fn visit_map<A>(self, mut access: A) -> Result<Self::Value, A::Error>
+    where
+      A: serde::de::MapAccess<'de>,
+    {
+      let mut map = HashMap::with_capacity(access.size_hint().unwrap_or(0));
+      while let Some((key, mut value)) = access.next_entry::<String, Value>()? {
+        if let Value::String(s) = value {
+          value = Value::String(expand(s).map_err(serde::de::Error::custom)?);
+        }
+
+        map.insert(expand(key).map_err(serde::de::Error::custom)?, value);
+      }
+      Ok(Some(map))
+    }
+  }
+
+  deserializer.deserialize_any(HashMapVisitor)
+}

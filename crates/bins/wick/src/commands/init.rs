@@ -7,9 +7,6 @@ use wick_config::config::{AppConfiguration, ComponentConfiguration};
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct InitCommand {
-  #[clap(flatten)]
-  pub(crate) logging: super::LoggingOptions,
-
   /// Name of the project.
   #[clap()]
   name: String,
@@ -20,21 +17,21 @@ pub(crate) struct InitCommand {
 }
 
 #[allow(clippy::field_reassign_with_default)]
-pub(crate) async fn handle_command(mut opts: InitCommand) -> Result<()> {
-  let logging = &mut opts.logging;
-  let _guard = wick_logger::init(&logging.name(crate::BIN_NAME));
-
-  let files: Vec<(PathBuf, String)> = if opts.component {
-    info!("Initializing wick component project: {}", opts.name);
-    let mut config = ComponentConfiguration::default();
-    config.name = Some(opts.name);
-    vec![("component.yaml".into(), config.into_v1_yaml()?)]
-  } else {
-    info!("Initializing wick application: {}", opts.name);
-    let mut config = AppConfiguration::default();
-    config.name = opts.name;
-    vec![("app.yaml".into(), config.into_v1_yaml()?)]
-  };
+pub(crate) async fn handle(opts: InitCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
+  let files: Result<Vec<(PathBuf, String)>> = span.in_scope(|| {
+    if opts.component {
+      info!("Initializing wick component project: {}", opts.name);
+      let mut config = ComponentConfiguration::default();
+      config.set_name(opts.name);
+      Ok(vec![("component.wick".into(), config.into_v1_yaml()?)])
+    } else {
+      info!("Initializing wick application: {}", opts.name);
+      let mut config = AppConfiguration::default();
+      config.set_name(opts.name);
+      Ok(vec![("app.wick".into(), config.into_v1_yaml()?)])
+    }
+  });
+  let files = files?;
 
   for (file, _) in &files {
     if file.exists() {
@@ -43,7 +40,8 @@ pub(crate) async fn handle_command(mut opts: InitCommand) -> Result<()> {
   }
 
   for (file, contents) in files {
-    info!("Writing file: {}", file.display());
+    span.in_scope(|| info!("Writing file: {}", file.display()));
+
     crate::io::write_bytes(file, contents.as_bytes()).await?;
   }
 

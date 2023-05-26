@@ -5,7 +5,7 @@ use anyhow::Result;
 use flow_expression_parser::ast::FlowExpression;
 use flow_graph::iterators::SchematicHop;
 use flow_graph::{Network, NodeReference, PortDirection, Schematic};
-use serde_json::Value;
+use wick_packet::OperationConfig;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Counter {
@@ -26,7 +26,7 @@ pub fn hash_set(list: &[&str]) -> HashSet<String> {
 
 impl Counter {
   #[allow(unused)]
-  pub fn walk_down(schematic: &Schematic<Value>) -> Self {
+  pub fn walk_down(schematic: &Schematic<OperationConfig>) -> Self {
     let mut counter = Counter::default();
     let walker = schematic.walker();
     for hop in walker {
@@ -36,7 +36,7 @@ impl Counter {
     counter
   }
   #[allow(unused)]
-  pub fn walk_up(schematic: &Schematic<Value>) -> Self {
+  pub fn walk_up(schematic: &Schematic<OperationConfig>) -> Self {
     let mut counter = Counter::default();
     let walker = schematic.walk_from_output();
     for hop in walker {
@@ -46,7 +46,7 @@ impl Counter {
     counter
   }
   #[allow(unused)]
-  pub fn count(&mut self, hop: &SchematicHop<Value>) {
+  pub fn count(&mut self, hop: &SchematicHop<OperationConfig>) {
     match hop {
       SchematicHop::Node(v) => {
         self.node_visits += 1;
@@ -76,31 +76,35 @@ pub fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentCon
   Ok(wick_config::WickConfiguration::load_from_file_sync(path.as_ref())?.try_component_config()?)
 }
 
-pub fn from_manifest(network_def: &wick_config::config::ComponentConfiguration) -> Result<Network<Value>> {
-  let mut network = Network::new(network_def.name().clone().unwrap_or_default());
+pub fn from_manifest(network_def: &wick_config::config::ComponentConfiguration) -> Result<Network<OperationConfig>> {
+  let mut network: Network<OperationConfig> = Network::new(network_def.name().cloned().unwrap_or_default());
   let network_def = network_def.try_composite()?;
 
   for flow in network_def.operations().values() {
-    let mut schematic = Schematic::new(flow.name.clone());
+    let mut schematic: Schematic<OperationConfig> = Schematic::new(flow.name().to_owned());
 
-    for (name, def) in flow.instances.iter() {
-      schematic.add_external(name, NodeReference::new(&def.component_id, &def.name), def.data.clone());
+    for (name, def) in flow.instances().iter() {
+      schematic.add_external(
+        name,
+        NodeReference::new(def.component_id(), def.name()),
+        def.data().cloned(),
+      );
     }
 
-    for connection in &flow.expressions {
+    for connection in flow.expressions() {
       if let FlowExpression::ConnectionExpression(connection) = connection {
         println!("{:?}", connection);
         let from = connection.from();
         let to = connection.to();
-        let to_port = if let Some(node) = schematic.find_mut(to.instance().id()) {
+        let to_port = if let Some(node) = schematic.find_mut(to.instance().id().unwrap()) {
           println!("{:?}", node);
-          node.add_input(to.port())
+          node.add_input(to.port().name())
         } else {
           panic!();
         };
-        if let Some(node) = schematic.find_mut(from.instance().id()) {
+        if let Some(node) = schematic.find_mut(from.instance().id().unwrap()) {
           println!("{:?}", node);
-          let from_port = node.add_output(from.port());
+          let from_port = node.add_output(from.port().name());
           schematic.connect(from_port, to_port, None)?;
         } else {
           // panic!();

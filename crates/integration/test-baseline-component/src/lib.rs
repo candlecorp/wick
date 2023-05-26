@@ -1,8 +1,11 @@
 use std::fmt::Display;
 
 use wasmrs_guest::*;
-// mod generated;
-// use generated as wick;
+#[cfg(feature = "localgen")]
+mod generated;
+#[cfg(feature = "localgen")]
+use generated as wick;
+#[cfg(not(feature = "localgen"))]
 mod wick {
   #![allow(unused_imports, missing_debug_implementations, clippy::needless_pass_by_value)]
   wick_component::wick_import!();
@@ -12,9 +15,45 @@ use wick::*;
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
 impl OpAdd for Component {
-  async fn add(mut left: WickStream<u64>, mut right: WickStream<u64>, mut outputs: OpAddOutputs) -> wick::Result<()> {
-    while let (Some(Ok(left)), Some(Ok(right))) = (left.next().await, right.next().await) {
-      outputs.output.send(&(left + right));
+  async fn add(
+    mut left: WickStream<u64>,
+    mut right: WickStream<u64>,
+    mut outputs: OpAddOutputs,
+    _ctx: Context<OpAddConfig>,
+  ) -> wick::Result<()> {
+    println!("op:add: in add operation, waiting for inputs");
+    while let (Some(left), Some(right)) = (left.next().await, right.next().await) {
+      println!("op:add: received inputs");
+      match (left, right) {
+        (Ok(left), Ok(right)) => {
+          let output = left + right;
+          println!("op:add: sending output");
+          outputs.output.send(&output);
+        }
+        (Err(err), _) | (_, Err(err)) => {
+          println!("op:add: received error, propagating forward");
+          outputs.output.error(format!("Error adding numbers: {}", err));
+        }
+      }
+    }
+    println!("op:add: done");
+    outputs.output.done();
+    Ok(())
+  }
+}
+
+#[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
+impl OpPower for Component {
+  async fn power(
+    mut input: WickStream<u64>,
+    mut outputs: OpPowerOutputs,
+    ctx: Context<OpPowerConfig>,
+  ) -> wick::Result<()> {
+    println!("op:power: received exponent {}", ctx.config.exponent);
+    while let Some(Ok(input)) = input.next().await {
+      let output = input.pow(ctx.config.exponent);
+      outputs.output.send(&output);
     }
     outputs.output.done();
     Ok(())
@@ -24,10 +63,17 @@ impl OpAdd for Component {
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
 impl OpError for Component {
-  async fn error(mut input: WickStream<String>, _outputs: OpErrorOutputs) -> wick::Result<()> {
+  async fn error(
+    mut input: WickStream<String>,
+    _outputs: OpErrorOutputs,
+    _ctx: Context<OpErrorConfig>,
+  ) -> wick::Result<()> {
+    println!("In error operation");
     while let Some(Ok(_)) = input.next().await {
+      println!("Going to panic! This is expected!");
       panic!("This component always panics");
     }
+    println!("Returning from error operation without panicking (this is unexpected)");
     Ok(())
   }
 }
@@ -35,7 +81,11 @@ impl OpError for Component {
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
 impl OpValidate for Component {
-  async fn validate(mut input: WickStream<String>, mut outputs: OpValidateOutputs) -> Result<()> {
+  async fn validate(
+    mut input: WickStream<String>,
+    mut outputs: OpValidateOutputs,
+    _ctx: Context<OpValidateConfig>,
+  ) -> Result<()> {
     while let Some(Ok(password)) = input.next().await {
       println!("Checking password {}", password);
 

@@ -21,7 +21,7 @@ type AppConfiguration @default @tagged("wick/app@v1") {
   name: string,
 
   "Configuration that controls how this application runs within a host."
-  host: HostConfig,
+  host: HostConfig?,
 
   "Components to import into the application's scope."
   import: [ImportBinding],
@@ -136,8 +136,79 @@ type RestRouter @tagged("wick/router/rest@v1") {
   "The path to start serving this router from."
   path: string @required
 
-  "The component to expose as a Rest API."
-  component: ComponentDefinition @required
+  "Additional tools and services to enable."
+  tools: Tools?
+
+  "The routes to serve and operations that handle them."
+  routes: [Route]
+
+  "Information about the router to use when generating documentation and other tools."
+  info: Info?
+}
+
+type Tools {
+  "The path to serve the OpenAPI spec from"
+  openapi: string?
+}
+
+"Information about the router to use when generating documentation and other tools."
+type Info {
+  "The title of the API."
+  title:        string?
+  "A short description of the API."
+	description:  string?
+  "The terms of service for the API."
+	tos:          string?
+  "The contact information for the API."
+	contact:      Contact?
+  "The license information for the API."
+	license:      License?
+  "The version of the API."
+	version:      string?
+  "The URL to the API's terms of service."
+  documentation: Documentation?
+}
+
+"Documentation information for the API."
+type Documentation {
+  "The URL to the API's documentation."
+  url:         string?
+  "A short description of the documentation."
+  description: string?
+}
+
+"The license information for the API."
+type License {
+  "The name of the license."
+	name: string?
+  "The URL to the license."
+	url:  string?
+}
+
+"The contact information for the API."
+type Contact {
+  "The name of the contact."
+	name: string?
+  "The URL to the contact."
+	url:  string?
+  "The email address of the contact."
+	email:  string?
+}
+
+"A route to serve and the operation that handles it."
+type Route {
+  "The name of the route, used for documentation and tooling."
+  name: string?
+  "The HTTP methods to serve this route for."
+  methods: [string]
+  "The path to serve this route from."
+  uri: string
+  "The operation that will act as the main entrypoint for this route."
+  operation: ComponentOperationExpression @required @shortform
+  "A short description of the route."
+  description: string?
+  "A longer description of the route."
+  summary: string?
 }
 
 type StaticRouter @tagged("wick/router/static@v1") {
@@ -146,12 +217,18 @@ type StaticRouter @tagged("wick/router/static@v1") {
 
   "The volume to serve static files from."
   volume: string @required
+
+  "Fallback path (relative to volume `resource`) for files to serve in case of a 404. Useful for SPA's. if volume resource is: /www and fallback: index.html, then a 404 will serve /www/index.html"
+  fallback: string?
 }
 
 "A RawHttpRouter delegates raw requests and bodies to operations based on the request path."
 type RawRouter @tagged("wick/router/raw@v1") {
   "The path to start serving this router from."
   path: string @required
+
+  "The codec to use when encoding/decoding data."
+  codec: Codec?
 
   "The operation that handles HTTP requests."
   operation: ComponentOperationExpression @required
@@ -190,14 +267,20 @@ type Url @tagged("wick/resource/url@v1") {
 
 "A type definition for a Wick Components and Operations"
 type TypesConfiguration @tagged("wick/types@v1") {
-  "The name of this component."
+  "The name of this type."
   name: string?
 
-  "Additional types to export and make available to the component."
+  "Associated metadata for this type."
+  metadata: Metadata?,
+
+  "Additional types to export and make available to the type."
   types: [TypeDefinition]
 
   "A list of operation signatures."
   operations: [OperationDefinition]
+
+  "Details about the package for this types."
+  package: PackageDefinition?,
 }
 
 "A configuration for a Wick Component"
@@ -219,7 +302,7 @@ type ComponentConfiguration @tagged("wick/component@v1") {
   metadata: Metadata?
 
   "Configuration for when wick hosts this component as a service."
-  host: HostConfig
+  host: HostConfig?
 
   "Resources that the application can access."
   resources: [ResourceBinding]
@@ -361,7 +444,7 @@ type GrpcUrlComponent @tagged("wick/component/grpc@v1") {
   url: string @required
 
   "Any configuration necessary for the component."
-  with: any
+  with: {string: any}?,
 }
 
 "A native component that can be extracted and run as a microservice."
@@ -369,7 +452,7 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
   "The URL (and optional tag) or local file path to find the manifest."
   ref: LocationReference @rename("reference")  @required
   "Any configuration necessary for the component."
-  with: any
+  with: {string: any}?,
   "External components to provide to the referenced component."
   provide: {string:string}
 }
@@ -378,6 +461,9 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
 type CompositeOperationDefinition {
   "The name of the operation."
   name: string,
+
+  "Any configuration required by the operation."
+  with: [Field],
 
   "Types of the inputs to the operation."
   inputs: [Field],
@@ -424,7 +510,7 @@ type ConnectionTargetDefinition {
   port: string @required,
 
   "The default value to provide on this connection in the event of an error."
-  data: any?,
+  data: {string: any}?,
 }
 
 "An operation name and its input and output signatures"
@@ -433,7 +519,7 @@ type OperationDefinition {
   name: string,
 
   "Any configuration required by the operation."
-  with: any?,
+  with: [Field],
 
   "Types of the inputs to the operation."
   inputs: [Field],
@@ -442,11 +528,79 @@ type OperationDefinition {
   outputs: [Field],
 }
 
-"Field definition. This is not technically an any type, it is a wick interface type field."
-alias Field = any
+"Field definition with a name and type signature"
+type Field {
+  "The name of the field."
+  name: string @required
+  "The type signature of the field."
+  type: TypeSignature @rename("ty") @required
+  "The description of the field."
+  description: string?,
+}
 
-"Type definition. This is not technically an any type, it is a wick interface type definition."
-alias TypeDefinition = any
+union TypeSignature @shortform @shortformonly = I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | Bool | StringType | Optional | Datetime | Bytes | Custom | List | Map | Object
+
+type I8 @nameonly("i8") {}
+type I16 @nameonly("i16") {}
+type I32 @nameonly("i32") {}
+type I64 @nameonly("i64") {}
+type U8 @nameonly("u8") {}
+type U16 @nameonly("u16") {}
+type U32 @nameonly("u32") {}
+type U64 @nameonly("u64") {}
+type F32 @nameonly("f32") {}
+type F64 @nameonly("f64") {}
+type Bool @nameonly("i8") {}
+type StringType @nameonly("string") {}
+type Datetime @nameonly("datetime") {}
+type Bytes @nameonly("bytes") {}
+type Custom {
+  "The name of the custom type."
+  name: string
+}
+type Optional  {
+  type: TypeSignature @rename("ty") @required @recursive
+}
+type List {
+  type: TypeSignature @rename("ty") @required @recursive
+}
+type Map {
+  key: TypeSignature @required @recursive
+  value: TypeSignature @required @recursive
+}
+type Object @nameonly("object") {}
+
+"Struct or Enum type definition."
+union TypeDefinition = StructSignature | EnumSignature
+
+type StructSignature @tagged("wick/type/struct@v1") {
+  "The name of the struct."
+   name: string,
+  "The fields in this struct."
+   fields: [Field],
+  "The description of the struct."
+  description: string?,
+}
+
+type EnumSignature @tagged("wick/type/enum@v1") {
+  "The name of the enum."
+  name: string,
+  "The variants in the enum."
+  variants: [EnumVariant],
+  "The description of the enum."
+  description: string?,
+}
+
+type EnumVariant {
+  "The name of the variant."
+  name: string,
+  "The index of the variant."
+  index: u32?,
+  "The optional value of the variant."
+  value: string?,
+  "The description of the variant."
+  description: string?,
+}
 
 "An identifier bound to a component's operation."
 type InstanceBinding {
@@ -455,7 +609,7 @@ type InstanceBinding {
   "The operation to bind to."
   operation: ComponentOperationExpression @required @shortform
   "Data to associate with the reference, if any."
-  with: any?,
+  with: {string: any}?,
 }
 
 "A test case for a component."
@@ -464,10 +618,13 @@ type TestDefinition {
   name: string @required
 
   "The operaton to test."
-  operation: string @required @shortform
+  operation: string @required
 
   "Inherent data to use for the test."
   inherent: InherentData?
+
+  "The configuration for the operation, if any."
+  with: {string: any}?
 
   "The inputs to the test."
   input: [PacketData]
@@ -503,7 +660,7 @@ type ErrorData {
   "Any flags set on the packet."
   flags: PacketFlags?
   "The error message."
-  message: string @required
+  error: string @required
 }
 
 "Flags set on a packet."
@@ -532,6 +689,9 @@ type SqlOperationDefinition {
   "The name of the operation."
   name: string
 
+  "Any configuration required by the operation."
+  with: [Field],
+
   "Types of the inputs to the operation."
   inputs: [Field],
 
@@ -539,7 +699,7 @@ type SqlOperationDefinition {
   outputs: [Field],
 
   "The query to execute."
-  query: string
+  query: string @required
 
   "The arguments to the query, defined as a list of input names."
   arguments: [string]
@@ -562,6 +722,9 @@ type HttpClientOperationDefinition {
   "The name of the operation."
   name: string
 
+  "Any configuration required by the operation."
+  with: [Field],
+
   "Types of the inputs to the operation."
   inputs: [Field],
 
@@ -570,6 +733,9 @@ type HttpClientOperationDefinition {
 
   "The codec to use when encoding/decoding data."
   codec: Codec?
+
+  "Any headers to add to the request."
+  headers: {string: [string]}
 
   "The body to send, processed as a structured JSON liquid template."
   body: LiquidJsonValue?
@@ -584,6 +750,8 @@ enum Codec {
   Json = 0 as "json",
   "Raw"
   Raw = 1 as "raw",
+  "Form Data"
+  FormData = 2 as "form-data",
 }
 
 "Supported HTTP methods"

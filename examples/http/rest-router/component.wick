@@ -1,0 +1,20 @@
+kind: wick/component@v1
+name: my_component
+metadata:
+  description: A component that connects to a Postgres database
+  version: 0.0.1
+  authors:
+    - 'Wick Maintainers'
+  vendors:
+    - 'Candle Corporation'
+  licenses:
+    - Apache-2.0
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: echo
+      flow:
+        - <>.first -> <>.first
+        - <>.second -> <>.second
+        - <>.third -> <>.third
+        - <>.fourth -> <>.fourth

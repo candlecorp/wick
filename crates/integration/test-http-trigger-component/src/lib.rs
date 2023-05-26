@@ -1,12 +1,14 @@
 use futures::TryStreamExt;
 use wasmrs_guest::StreamExt;
-// mod generated;
-// use generated as wick;
+#[cfg(feature = "localgen")]
+mod generated;
+#[cfg(feature = "localgen")]
+use generated as wick;
+#[cfg(not(feature = "localgen"))]
 mod wick {
   #![allow(unused_imports, missing_debug_implementations, clippy::needless_pass_by_value)]
   wick_component::wick_import!();
 }
-use wick::types::http::{HttpRequest, HttpResponse, HttpVersion, StatusCode};
 use wick::*;
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -23,9 +25,10 @@ struct Response {
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl OpHttpHandler for Component {
   async fn http_handler(
-    mut request: WickStream<HttpRequest>,
+    mut request: WickStream<types::http::HttpRequest>,
     body: WickStream<bytes::Bytes>,
     mut outputs: OpHttpHandlerOutputs,
+    _ctx: Context<OpHttpHandlerConfig>,
   ) -> Result<()> {
     if let Some(Ok(request)) = request.next().await {
       println!("{:#?}", request);
@@ -40,9 +43,9 @@ impl OpHttpHandler for Component {
       let new: String = req.message.chars().rev().collect();
       serde_json::to_string(&Response { output_message: new })?.into()
     };
-    let mut res = HttpResponse {
-      version: HttpVersion::Http11,
-      status: StatusCode::Ok,
+    let mut res = types::http::HttpResponse {
+      version: types::http::HttpVersion::Http11,
+      status: types::http::StatusCode::Ok,
       headers: std::collections::HashMap::new(),
     };
     res

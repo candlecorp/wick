@@ -38,6 +38,7 @@ impl PartialEq for Packet {
 }
 
 impl Packet {
+  pub const FATAL_ERROR: &str = "<component>";
   pub fn new_raw(payload: PacketPayload, wasmrs: Metadata, metadata: WickMetadata) -> Self {
     Self {
       payload,
@@ -65,7 +66,7 @@ impl Packet {
   }
 
   pub fn component_error(err: impl AsRef<str>) -> Self {
-    Self::new_for_port("<component>", PacketPayload::fatal_error(err), 0)
+    Self::new_for_port(Self::FATAL_ERROR, PacketPayload::fatal_error(err), 0)
   }
 
   pub fn ok(port: impl AsRef<str>, payload: RawPayload) -> Self {
@@ -90,6 +91,14 @@ impl Packet {
 
   pub fn close_bracket(port: impl AsRef<str>) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(None), CLOSE_BRACKET)
+  }
+
+  pub fn context(&self) -> Option<Base64Bytes> {
+    self.extra.context.clone()
+  }
+
+  pub fn set_context(&mut self, context: Base64Bytes) {
+    self.extra.context = Some(context);
   }
 
   pub fn encode<T: Serialize>(port: impl AsRef<str>, data: T) -> Self {
@@ -130,6 +139,10 @@ impl Packet {
     &self.extra.port
   }
 
+  pub fn is_fatal_error(&self) -> bool {
+    self.port() == Self::FATAL_ERROR
+  }
+
   pub fn payload(&self) -> &PacketPayload {
     &self.payload
   }
@@ -146,13 +159,33 @@ impl Packet {
     self.extra.is_close_bracket()
   }
 
+  pub fn unwrap_payload(self) -> Option<Base64Bytes> {
+    match self.payload {
+      PacketPayload::Ok(v) => v,
+      _ => panic!("Packet is an error"),
+    }
+  }
+
+  pub fn unwrap_err(self) -> PacketError {
+    match self.payload {
+      PacketPayload::Err(err) => err,
+      _ => panic!("Packet is not an error"),
+    }
+  }
+
   pub fn to_json(&self) -> serde_json::Value {
     if self.flags() > 0 {
-      serde_json::json!({
+      let mut map = serde_json::json!({
         "flags": self.flags(),
-        "port": self.port(),
-        "payload": self.payload.to_json(),
-      })
+        "port": self.port()
+      });
+      if self.has_data() {
+        map
+          .as_object_mut()
+          .unwrap()
+          .insert("payload".to_owned(), self.payload.to_json());
+      }
+      map
     } else {
       serde_json::json!({
         "port": self.port(),
@@ -172,7 +205,7 @@ impl Packet {
             serde_json::from_str(value).map_err(|e| crate::Error::Decode(value.as_bytes().to_vec(), e.to_string()))?;
           packets.push(Packet::encode(port, val));
         }
-        None => return Err(Error::General(format!("Invalid port=value pair: '{}'", input))),
+        None => return Err(Error::Component(format!("Invalid port=value pair: '{}'", input))),
       }
     }
     Ok(packets)
@@ -238,7 +271,6 @@ impl PacketPayload {
       TypeSignature::Bytes => TypeWrapper::new(sig, self.deserialize::<Vec<u8>>()?.into()),
       TypeSignature::Custom(_) => TypeWrapper::new(sig, self.deserialize::<serde_json::Value>()?),
       TypeSignature::Ref { .. } => unimplemented!(),
-      TypeSignature::Stream { .. } => unimplemented!(),
       TypeSignature::List { .. } => TypeWrapper::new(sig, self.deserialize::<Vec<serde_json::Value>>()?.into()),
       TypeSignature::Optional { .. } => TypeWrapper::new(sig, self.deserialize::<Option<serde_json::Value>>()?.into()),
       TypeSignature::Map { .. } => TypeWrapper::new(
@@ -318,24 +350,39 @@ pub fn from_raw_wasmrs(stream: BoxFlux<RawPayload, PayloadError>) -> PacketStrea
   let s = StreamExt::map(stream, move |p| {
     let p = p.map_or_else(
       |e| {
-        let md = wasmrs::Metadata::decode(&mut e.metadata.unwrap());
+        if let Some(mut metadata) = e.metadata {
+          let md = wasmrs::Metadata::decode(&mut metadata);
 
-        let wmd = md.map_or_else(
-          |_e| WickMetadata::default(),
-          |m| WickMetadata::decode(m.extra.unwrap()).unwrap(),
-        );
-        Packet::raw_err(wmd.port, PacketError::new(e.msg))
+          let wmd = md.map_or_else(
+            |_e| WickMetadata::default(),
+            |m| {
+              m.extra
+                .map_or_else(WickMetadata::default, |extra| WickMetadata::decode(extra).unwrap())
+            },
+          );
+          Packet::raw_err(wmd.port, PacketError::new(e.msg))
+        } else {
+          Packet::component_error(e.msg)
+        }
       },
       |p| {
-        let md = wasmrs::Metadata::decode(&mut p.metadata.unwrap());
-        let wmd = md.map_or_else(
-          |_e| WickMetadata::default(),
-          |m| WickMetadata::decode(m.extra.unwrap()).unwrap(),
-        );
-        // Potential danger zone: this converts empty payload to None which *should* be the
-        // same thing. Calling this out as a potential source for weird bugs if they pop up.
-        let data = p.data.and_then(|b| (!b.is_empty()).then_some(b));
-        Packet::new_for_port(wmd.port(), PacketPayload::Ok(data.map(Into::into)), wmd.flags())
+        if let Some(mut metadata) = p.metadata {
+          let md = wasmrs::Metadata::decode(&mut metadata);
+
+          let wmd = md.map_or_else(
+            |_e| WickMetadata::default(),
+            |m| {
+              m.extra
+                .map_or_else(WickMetadata::default, |extra| WickMetadata::decode(extra).unwrap())
+            },
+          );
+          // Potential danger zone: this converts empty payload to None which *should* be the
+          // same thing. Calling this out as a potential source for weird bugs if they pop up.
+          let data = p.data.and_then(|b| (!b.is_empty()).then_some(b));
+          Packet::new_for_port(wmd.port(), PacketPayload::Ok(data.map(Into::into)), wmd.flags())
+        } else {
+          Packet::component_error("invalid wasmrs packet with no metadata.")
+        }
       },
     );
     Ok(p)
@@ -373,6 +420,7 @@ pub fn from_wasmrs(stream: BoxFlux<Payload, PayloadError>) -> PacketStream {
 impl From<Payload> for Packet {
   fn from(mut value: Payload) -> Self {
     let ex = value.metadata.extra.take();
+
     Self {
       extra: WickMetadata::decode(ex.unwrap()).unwrap(),
       metadata: value.metadata,

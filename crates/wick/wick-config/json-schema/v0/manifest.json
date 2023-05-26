@@ -15,6 +15,7 @@
         },
         "host": {
           "description": "Additional host configuration.",
+          "required": false,
 
           "$ref": "#/$defs/v0/HostConfig"
         },
@@ -221,7 +222,11 @@
         },
         "data": {
           "description": "Data or configuration used to initialize the collection.",
-          "type": "object"
+          "required": false,
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "object" }
+          }
         }
       },
       "required": []
@@ -248,7 +253,11 @@
         },
         "data": {
           "description": "Data or configuration used to initialize the collection.",
-          "type": "object"
+          "required": false,
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "object" }
+          }
         }
       },
       "required": []
@@ -315,7 +324,10 @@
         "data": {
           "description": "Data to associate with the reference.",
           "required": false,
-          "type": "object"
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "object" }
+          }
         }
       },
       "required": ["id"]
@@ -356,7 +368,10 @@
         "data": {
           "description": "Data to associate with a connection.",
           "required": false,
-          "type": "object"
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": { "type": "object" }
+          }
         }
       },
       "required": ["instance", "port"]

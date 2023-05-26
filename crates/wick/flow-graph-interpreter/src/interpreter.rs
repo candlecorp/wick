@@ -12,9 +12,10 @@ use std::time::Duration;
 use flow_component::{Component, RuntimeCallback};
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
+use tracing::{trace_span, Span};
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Entity, Invocation, PacketStream};
+use wick_packet::{Entity, Invocation, OperationConfig, PacketStream};
 
 use self::channel::InterpreterDispatchChannel;
 use self::components::HandlerMap;
@@ -26,6 +27,7 @@ use crate::constants::*;
 use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterChannel;
 use crate::interpreter::components::component_component::ComponentComponent;
+use crate::interpreter::components::null_component::NullComponent;
 use crate::interpreter::components::schematic_component::SchematicComponent;
 use crate::interpreter::executor::error::ExecutionError;
 use crate::{NamespaceHandler, Observer, SharedHandler};
@@ -43,6 +45,7 @@ pub struct Interpreter {
   namespace: Option<String>,
   callback: Arc<RuntimeCallback>,
   exposed_ops: HashMap<String, SharedHandler>, // A map from op name to the ns of the handler that exposes it.
+  span: Span,
 }
 
 impl std::fmt::Debug for Interpreter {
@@ -58,15 +61,17 @@ impl std::fmt::Debug for Interpreter {
 }
 
 impl Interpreter {
-  #[instrument(name="interpreter-init", skip_all, fields(namespace = %namespace.as_ref().map_or("n/a", String::as_str)))]
   pub fn new(
     seed: Option<Seed>,
     network: Network,
     namespace: Option<String>,
     components: Option<HandlerMap>,
     callback: Arc<RuntimeCallback>,
+    parent_span: &Span,
   ) -> Result<Self, Error> {
-    debug!("init");
+    let span = trace_span!("interpreter");
+    span.follows_from(parent_span);
+    let _guard = span.enter();
     let rng = seed.map_or_else(Random::new, Random::from_seed);
     let mut handlers = components.unwrap_or_default();
     debug!(handlers = ?handlers.keys(), "initializing interpreter");
@@ -81,6 +86,7 @@ impl Interpreter {
       }
     }
     handlers.add_core(&network)?;
+    handlers.add(NamespaceHandler::new(NS_NULL, Box::new(NullComponent::new())))?;
 
     // Add the component:: component
     let component_component = ComponentComponent::new(&handlers);
@@ -109,6 +115,7 @@ impl Interpreter {
       operations = ?handled_opts,
       "operations handled by this interpreter"
     );
+    drop(_guard);
 
     Ok(Self {
       rng,
@@ -121,6 +128,7 @@ impl Interpreter {
       namespace,
       exposed_ops,
       callback,
+      span,
     })
   }
 
@@ -132,25 +140,26 @@ impl Interpreter {
     let cb_container = Arc::new(Mutex::new(None));
 
     let inner_cb = cb_container.clone();
-    let local_first_callback: Arc<RuntimeCallback> = Arc::new(move |compref, op, stream, inherent| {
+    let local_first_callback: Arc<RuntimeCallback> = Arc::new(move |compref, op, stream, inherent, config, span| {
       let internal_components = internal_components.clone();
       let inner_cb = inner_cb.clone();
       let outside_callback = outside_callback.clone();
       let self_component = self_component.clone();
+      let span = span.clone();
       Box::pin(async move {
-        trace!(op, %compref, "invoke:component reference");
+        span.in_scope(|| trace!(op, %compref, "invoke:component reference"));
         if compref.get_target_id() == NS_SELF {
-          trace!(op, %compref, "handling component invocation for self");
+          span.in_scope(|| trace!(op, %compref, "handling component invocation for self"));
           let cb = inner_cb.lock().clone().unwrap();
-          let invocation = compref.to_invocation(&op, inherent);
-          self_component.handle(invocation, stream, None, cb).await
+          let invocation = compref.to_invocation(&op, stream, inherent, &span);
+          self_component.handle(invocation, config, cb).await
         } else if let Some(handler) = internal_components.get(compref.get_target_id()) {
-          trace!(op, %compref, "handling component invocation internal to this interpreter");
+          span.in_scope(|| trace!(op, %compref, "handling component invocation internal to this interpreter"));
           let cb = inner_cb.lock().clone().unwrap();
-          let invocation = compref.to_invocation(&op, inherent);
-          handler.component().handle(invocation, stream, None, cb).await
+          let invocation = compref.to_invocation(&op, stream, inherent, &span);
+          handler.component().handle(invocation, config, cb).await
         } else {
-          outside_callback(compref, op, stream, inherent).await
+          outside_callback(compref, op, stream, inherent, config, &span).await
         }
       })
     });
@@ -158,7 +167,7 @@ impl Interpreter {
     local_first_callback
   }
 
-  async fn invoke_operation(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
+  async fn invoke_operation(&self, invocation: Invocation) -> Result<PacketStream, Error> {
     let dispatcher = self.dispatcher.clone();
     let name = invocation.target.operation_id().to_owned();
     let op = self
@@ -172,24 +181,24 @@ impl Interpreter {
           self.program.operations().iter().map(|s| s.name().to_owned()).collect(),
         )
       })?;
+    let span = self.span.clone();
 
     let executor = SchematicExecutor::new(op.clone(), dispatcher.clone());
     Ok(
       executor
         .invoke(
           invocation,
-          stream,
           self.rng.seed(),
           self.components.clone(),
           self.self_component.clone(),
           self.get_callback(),
         )
-        .instrument(tracing::span::Span::current())
+        .instrument(span)
         .await?,
     )
   }
 
-  pub async fn invoke(&self, invocation: Invocation, stream: PacketStream) -> Result<PacketStream, Error> {
+  pub async fn invoke(&self, invocation: Invocation, config: Option<OperationConfig>) -> Result<PacketStream, Error> {
     let known_targets = || {
       let mut hosted: Vec<_> = self.components.inner().keys().cloned().collect();
       if let Some(ns) = &self.namespace {
@@ -197,32 +206,32 @@ impl Interpreter {
       }
       hosted
     };
-    let span = trace_span!("invoke");
+    let span = trace_span!("invoke", tx_id = %invocation.tx_id);
     let cb = self.get_callback();
-    trace!(?invocation, "invoking");
+    span.in_scope(|| trace!(?invocation, "invoking"));
     let stream = match &invocation.target {
       Entity::Operation(ns, name) => {
         if ns == NS_SELF || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
           if let Some(component) = self.exposed_ops.get(name) {
-            trace!(entity=%invocation.target, "invoke::exposed::operation");
+            span.in_scope(|| trace!(entity=%invocation.target, "invoke::exposed::operation"));
             return Ok(
               component
-                .handle(invocation, stream, None, cb)
+                .handle(invocation, config, cb)
                 .instrument(span)
                 .await
                 .map_err(ExecutionError::ComponentError)?,
             );
           }
-          trace!(entity=%invocation.target, "invoke::composite::operation");
-          self.invoke_operation(invocation, stream).instrument(span).await?
+          span.in_scope(|| trace!(entity=%invocation.target, "invoke::composite::operation"));
+          self.invoke_operation(invocation).instrument(span).await?
         } else {
-          trace!(entity=%invocation.target, "invoke::instance::operation");
+          span.in_scope(|| trace!(entity=%invocation.target, "invoke::instance::operation"));
           self
             .components
             .get(ns)
             .ok_or_else(|| Error::TargetNotFound(invocation.target.clone(), known_targets()))?
             .component
-            .handle(invocation, stream, None, cb)
+            .handle(invocation, config, cb)
             .instrument(span)
             .await
             .map_err(ExecutionError::ComponentError)?
@@ -246,21 +255,22 @@ impl Interpreter {
     self.event_loop.start(options.unwrap_or_default(), observer).await;
   }
 
-  #[instrument(skip(self))]
   pub async fn shutdown(&self) -> Result<(), Error> {
     let shutdown = self.event_loop.shutdown().await;
     if let Err(error) = &shutdown {
-      error!(%error,"error shutting down event loop");
+      self.span.in_scope(|| error!(%error,"error shutting down event loop"));
     };
     for (ns, components) in self.components.inner() {
-      debug!(namespace = %ns, "shutting down collection");
+      self
+        .span
+        .in_scope(|| debug!(namespace = %ns, "shutting down collection"));
       if let Err(error) = components
         .component
         .shutdown()
         .await
         .map_err(|e| Error::ComponentShutdown(e.to_string()))
       {
-        warn!(%error,"error during shutdown");
+        self.span.in_scope(|| warn!(%error,"error during shutdown"));
       };
     }
 

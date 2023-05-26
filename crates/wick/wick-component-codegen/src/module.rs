@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use itertools::Itertools;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
 
@@ -32,7 +33,7 @@ impl Module {
   pub(crate) fn codegen(&self) -> TokenStream {
     let name = Ident::new(&self.0, Span::call_site());
     let implementations = &self.1;
-    let modules = &self.2.iter().map(|m| m.borrow().codegen()).collect::<Vec<_>>();
+    let modules = &self.2.iter().map(|m| m.borrow().codegen()).collect_vec();
     quote! {
       pub mod #name {
         #[allow(unused)]

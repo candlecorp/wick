@@ -8,8 +8,8 @@ use futures::StreamExt;
 use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
-use wasmrs_rx::{FluxChannel, Observer};
-use wick_packet::{InherentData, Invocation, Packet, PacketError, PacketStream};
+use wasmrs_rx::Observer;
+use wick_packet::{InherentData, Invocation, Packet, PacketError, PacketSender, PacketStream};
 
 use self::operation::InstanceHandler;
 use super::error::ExecutionError;
@@ -30,10 +30,10 @@ type Result<T> = std::result::Result<T, ExecutionError>;
 #[must_use]
 pub struct Transaction {
   schematic: Arc<Schematic>,
-  output: FluxChannel<Packet, wick_packet::Error>,
+  output_tx: PacketSender,
+  output_rx: Option<PacketStream>,
   channel: InterpreterDispatchChannel,
   invocation: Invocation,
-  incoming: Option<PacketStream>,
   instances: Vec<Arc<InstanceHandler>>,
   id: Uuid,
   start_time: Instant,
@@ -53,11 +53,9 @@ impl std::fmt::Debug for Transaction {
 
 #[allow(clippy::too_many_arguments)]
 impl Transaction {
-  #[instrument(skip_all, name = "tx_new")]
   pub(crate) fn new(
     schematic: Arc<Schematic>,
     mut invocation: Invocation,
-    stream: PacketStream,
     channel: InterpreterDispatchChannel,
     collections: &Arc<HandlerMap>,
     self_collection: &Arc<dyn Component + Send + Sync>,
@@ -85,12 +83,14 @@ impl Transaction {
     let span = tracing::Span::current();
     span.record("tx_id", id.to_string());
 
+    let (tx, rx) = invocation.make_response();
+
     Self {
       channel,
       invocation,
-      incoming: Some(stream),
       schematic,
-      output: FluxChannel::new(),
+      output_tx: tx,
+      output_rx: Some(rx),
       instances,
       start_time: Instant::now(),
       stats,
@@ -133,11 +133,11 @@ impl Transaction {
     outputs_done
   }
 
-  #[instrument(parent = &self.span, skip_all, name = "tx_start", fields(id = %self.id()))]
   pub(crate) async fn start(&mut self, options: &InterpreterOptions) -> Result<()> {
     self.stats.mark("start");
     self.stats.start("execution");
-    trace!("starting transaction");
+    self.span.in_scope(|| trace!("starting transaction"));
+
     self.start_time = Instant::now();
 
     for instance in self.instances.iter() {
@@ -159,7 +159,7 @@ impl Transaction {
         .await?;
     }
 
-    let incoming = self.incoming.take().unwrap();
+    let incoming = self.invocation.eject_stream();
 
     self.prime_input_ports(self.schematic.input().index(), incoming)?;
 
@@ -186,8 +186,11 @@ impl Transaction {
 
     tokio::spawn(async move {
       while let Some(Ok(packet)) = payloads.next().await {
-        let port = input.find_input(packet.port()).unwrap();
-        accept_input(tx_id, port, &input, &channel, packet).await;
+        if let Ok(port) = input.find_input(packet.port()) {
+          accept_input(tx_id, port, &input, &channel, packet).await;
+        } else {
+          warn!(port = packet.port(), "dropping packet for unconnected port");
+        }
       }
     });
     Ok(())
@@ -234,8 +237,7 @@ impl Transaction {
 
   pub(crate) async fn emit_output_message(&self, packets: Vec<Packet>) -> Result<()> {
     for packet in packets {
-      trace!(?packet, "emitting tx output");
-      self.output.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
+      self.output_tx.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
     }
 
     if self.done() {
@@ -253,7 +255,7 @@ impl Transaction {
   }
 
   pub(crate) fn take_stream(&mut self) -> Option<PacketStream> {
-    self.output.take_rx().ok().map(|s| PacketStream::new(Box::new(s)))
+    self.output_rx.take()
   }
 
   pub(crate) fn take_tx_output(&self) -> Result<Vec<Packet>> {
@@ -299,8 +301,6 @@ impl Transaction {
   }
 
   pub(crate) async fn handle_schematic_output(&self) -> Result<()> {
-    debug!("schematic output");
-
     self.emit_output_message(self.take_tx_output()?).await?;
 
     Ok(())

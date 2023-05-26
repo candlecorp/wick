@@ -10,11 +10,11 @@ pub async fn init_engine_from_yaml(path: &str, timeout: Duration) -> anyhow::Res
   let host_def = WickConfiguration::load_from_file(path).await?.try_component_config()?;
   debug!("Manifest loaded");
 
-  let builder = RuntimeBuilder::from_definition(host_def)?
+  let builder = RuntimeBuilder::from_definition(host_def)
     .namespace("__TEST__")
     .timeout(timeout);
 
-  let engine = builder.build().await?;
+  let engine = builder.build(None).await?;
 
   let nuid = engine.uid;
   Ok((engine, nuid))
@@ -37,6 +37,8 @@ pub async fn base_test(
   target: Entity,
   mut expected: Vec<Packet>,
 ) -> anyhow::Result<()> {
+  let cwd = std::env::current_dir()?;
+  println!("Working from path: {}", cwd.display());
   let (engine, _) = init_engine_from_yaml(path, Duration::from_secs(1)).await?;
   let inherent = InherentData::new(1, 1000);
 
@@ -48,8 +50,8 @@ pub async fn base_test(
 
   let result = engine
     .invoke(
-      Invocation::new(Entity::test("simple schematic"), target, Some(inherent)),
-      stream,
+      Invocation::test("simple schematic", target, stream, Some(inherent))?,
+      None,
     )
     .await?;
 

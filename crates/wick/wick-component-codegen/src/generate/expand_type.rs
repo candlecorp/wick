@@ -2,7 +2,8 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
 use super::{config, Direction};
-use crate::generate::{get_typename_parts, Dependency};
+use crate::dependency::Dependency;
+use crate::generate::ids::get_typename_parts;
 
 pub(super) fn expand_type(
   config: &mut config::Config,
@@ -60,11 +61,11 @@ pub(super) fn expand_type(
     }
     wick_interface_types::TypeSignature::Datetime => todo!("implement datetime in new codegen"),
     wick_interface_types::TypeSignature::Ref { .. } => todo!("implement ref in new codegen"),
-    wick_interface_types::TypeSignature::Stream { ty } => {
-      let ty = expand_type(config, dir, imported, ty);
-      config.add_dep(Dependency::WasmRsRx);
-      quote! { WickStream<#ty> }
-    }
+    // wick_interface_types::TypeSignature::Stream { ty } => {
+    //   let ty = expand_type(config, dir, imported, ty);
+    //   config.add_dep(Dependency::WasmRsRx);
+    //   quote! { WickStream<#ty> }
+    // }
     wick_interface_types::TypeSignature::Object => {
       config.add_dep(Dependency::SerdeJson);
       quote! { Value }

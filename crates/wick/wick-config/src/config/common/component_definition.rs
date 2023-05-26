@@ -1,12 +1,12 @@
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
-use serde_json::Value;
 
 use crate::config;
 
 /// A reference to an operation.
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(disable))]
+#[asset(asset(config::AssetReference))]
 
 pub struct ComponentOperationExpression {
   /// The operation ID.
@@ -23,17 +23,6 @@ impl ComponentOperationExpression {
       operation: operation.as_ref().to_owned(),
       component,
     }
-  }
-
-  /// Returns the operation ID.
-  #[must_use]
-  pub fn operation(&self) -> &str {
-    &self.operation
-  }
-
-  /// Returns the component definition.
-  pub fn component(&self) -> &ComponentDefinition {
-    &self.component
   }
 }
 
@@ -60,7 +49,7 @@ impl std::str::FromStr for ComponentOperationExpression {
 }
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
 pub enum HighLevelComponent {
@@ -71,7 +60,7 @@ pub enum HighLevelComponent {
 }
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[asset(asset(config::AssetReference))]
 /// The kinds of collections that can operate in a flow.
 #[must_use]
 pub enum ComponentDefinition {
@@ -103,12 +92,12 @@ impl ComponentDefinition {
 
   /// Returns the component config, if it exists
   #[must_use]
-  pub fn config(&self) -> Option<&Value> {
+  pub fn config(&self) -> Option<&wick_packet::OperationConfig> {
     match self {
       #[allow(deprecated)]
-      ComponentDefinition::Wasm(c) => Some(&c.config),
-      ComponentDefinition::GrpcUrl(c) => Some(&c.config),
-      ComponentDefinition::Manifest(c) => Some(&c.config),
+      ComponentDefinition::Wasm(c) => c.config.as_ref(),
+      ComponentDefinition::GrpcUrl(c) => c.config.as_ref(),
+      ComponentDefinition::Manifest(c) => c.config.as_ref(),
       ComponentDefinition::Native(_) => None,
       ComponentDefinition::Reference(_) => None,
       ComponentDefinition::HighLevelComponent(_) => None,

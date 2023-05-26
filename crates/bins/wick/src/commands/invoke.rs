@@ -7,18 +7,16 @@ use clap::Args;
 use seeded_random::Seed;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_component_cli::parse_args;
-use wick_config::WickConfiguration;
+use wick_config::{FetchOptions, WickConfiguration};
 use wick_host::ComponentHostBuilder;
-use wick_packet::{InherentData, Observer, Packet, PacketStream};
+use wick_packet::{InherentData, Packet, PacketStream};
 
+use crate::options::get_auth_for_scope;
 use crate::utils::{self, merge_config};
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct InvokeCommand {
-  #[clap(flatten)]
-  pub(crate) logging: super::LoggingOptions,
-
   #[clap(flatten)]
   wasi: crate::wasm::WasiOptions,
 
@@ -31,7 +29,7 @@ pub(crate) struct InvokeCommand {
 
   /// Path or OCI url to manifest or wasm file.
   #[clap(action)]
-  location: String,
+  path: String,
 
   /// Name of the operation to execute.
   #[clap(default_value = "default", action)]
@@ -66,24 +64,37 @@ pub(crate) struct InvokeCommand {
   args: Vec<String>,
 }
 
-pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
-  let mut logging = &mut opts.logging;
-  if !(opts.info || logging.trace || logging.debug) {
-    logging.quiet = true;
+pub(crate) async fn handle(opts: InvokeCommand, settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
+  // let mut logging = &mut opts.logging;
+  // if !(opts.info || logging.trace || logging.debug) {
+  //   logging.quiet = true;
+  // }
+
+  // let _guard = wick_logger::init(&logging.name(crate::BIN_NAME).into());
+
+  let configured_creds = settings.credentials.iter().find(|c| opts.path.starts_with(&c.scope));
+
+  let (username, password) = get_auth_for_scope(
+    configured_creds,
+    opts.oci.username.as_deref(),
+    opts.oci.password.as_deref(),
+  );
+
+  let mut fetch_opts = FetchOptions::default()
+    .allow_insecure(opts.oci.insecure_registries.clone())
+    .allow_latest(true);
+  if let Some(username) = username {
+    fetch_opts = fetch_opts.oci_username(username);
+  }
+  if let Some(password) = password {
+    fetch_opts = fetch_opts.oci_password(password);
   }
 
-  let _guard = wick_logger::init(&logging.name(crate::BIN_NAME));
-
-  let fetch_options = if PathBuf::from(&opts.location).exists() {
-    wick_config::config::FetchOptions::new()
-  } else {
-    wick_config::config::FetchOptions::new().artifact_dir(wick_xdg::Directories::GlobalCache.basedir()?)
+  if !PathBuf::from(&opts.path).exists() {
+    fetch_opts = fetch_opts.artifact_dir(wick_xdg::Directories::GlobalCache.basedir()?);
   };
-  let fetch_options = fetch_options
-    .allow_latest(opts.oci.allow_latest)
-    .allow_insecure(&opts.oci.insecure_registries);
 
-  let manifest = WickConfiguration::fetch_all(&opts.location, fetch_options)
+  let manifest = WickConfiguration::fetch_all(&opts.path, fetch_opts)
     .await?
     .try_component_config()?;
 
@@ -93,9 +104,8 @@ pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
 
   let component = opts.operation;
 
-  let host_builder = ComponentHostBuilder::from_definition(config);
+  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 
-  let mut host = host_builder.build();
   host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
@@ -144,19 +154,21 @@ pub(crate) async fn handle_command(mut opts: InvokeCommand) -> Result<()> {
 
     let args = parse_args(&opts.args)?;
     trace!(args= ?args, "parsed CLI arguments");
-    let (tx, stream) = PacketStream::new_channels();
+    let mut packets = Vec::new();
     let mut seen_ports = HashSet::new();
     for packet in args {
       seen_ports.insert(packet.port().to_owned());
-      tx.send(packet)?;
+      packets.push(Ok(packet));
     }
     for packet in data {
       seen_ports.insert(packet.port().to_owned());
-      tx.send(packet)?;
+      packets.push(Ok(packet));
     }
     for port in seen_ports {
-      tx.send(Packet::done(port))?;
+      packets.push(Ok(Packet::done(port)));
     }
+    debug!(args= ?packets, "invoke");
+    let stream = PacketStream::new(futures::stream::iter(packets));
 
     let stream = host.request(&component, stream, inherent_data).await?;
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;

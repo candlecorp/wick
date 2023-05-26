@@ -11,7 +11,7 @@ description = "Library for implementing or interacting with a wick runtime via g
 client = ["tokio/fs"]
 
 [dependencies]
-flow-component = { workspace = true }
+flow-component = { workspace = true, features = ["traits"] }
 wick-packet = { workspace = true, features = ["invocation"] }
 wick-interface-types = { workspace = true }
 tonic = { workspace = true, features = ["tls"] }

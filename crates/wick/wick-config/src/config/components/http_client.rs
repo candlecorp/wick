@@ -1,21 +1,27 @@
+use std::collections::HashMap;
+
 use crate::config;
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
-#[asset(config::AssetReference)]
+#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(public, suffix = "_mut"))]
+#[asset(asset(config::AssetReference))]
+#[builder(setter(into))]
 #[must_use]
 /// A component made out of other components
 pub struct HttpClientComponentConfig {
   /// The URL base to use.
   #[asset(skip)]
-  pub resource: String,
+  pub(crate) resource: String,
 
   /// The codec to use when encoding/decoding data.
   #[asset(skip)]
-  pub codec: Option<Codec>,
+  #[builder(default)]
+  pub(crate) codec: Option<Codec>,
 
   /// A list of operations to expose on this component.
   #[asset(skip)]
-  pub operations: Vec<HttpClientOperationDefinition>,
+  #[builder(default)]
+  pub(crate) operations: Vec<HttpClientOperationDefinition>,
 }
 
 impl HttpClientComponentConfig {
@@ -49,6 +55,7 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
           match operation.codec {
             Some(Codec::Json) => wick_interface_types::TypeSignature::Object,
             Some(Codec::Raw) => wick_interface_types::TypeSignature::Bytes,
+            Some(Codec::FormData) => wick_interface_types::TypeSignature::Object,
             None => wick_interface_types::TypeSignature::Object,
           },
         ),
@@ -57,38 +64,54 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Builder, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
+#[builder(setter(into))]
 #[must_use]
 pub struct HttpClientOperationDefinition {
   /// The name of the operation.
-  pub name: String,
+  pub(crate) name: String,
+
+  /// The configuration the operation needs.
+  #[builder(default)]
+  pub(crate) config: Vec<wick_interface_types::Field>,
 
   /// Types of the inputs to the operation.
-  pub inputs: Vec<wick_interface_types::Field>,
+  pub(crate) inputs: Vec<wick_interface_types::Field>,
 
   /// The path to append to our base URL, processed as a liquid template with each input as part of the template data.
-  pub path: String,
+  pub(crate) path: String,
 
   /// The codec to use when encoding/decoding data.
-  pub codec: Option<Codec>,
+  #[builder(default)]
+  pub(crate) codec: Option<Codec>,
 
-  pub body: Option<liquid_json::LiquidJsonValue>,
+  /// The body to send with the request.
+  #[builder(default)]
+  pub(crate) body: Option<liquid_json::LiquidJsonValue>,
+
+  /// The headers to send with the request.
+  #[builder(default)]
+  pub(crate) headers: HashMap<String, Vec<String>>,
 
   /// The HTTP method to use.
-  pub method: HttpMethod,
+  pub(crate) method: HttpMethod,
 }
 
 impl HttpClientOperationDefinition {
   /// Create a new GET operation.
-  pub fn new_get(name: impl AsRef<str>, path: impl AsRef<str>, inputs: Vec<wick_interface_types::Field>) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      inputs,
-      path: path.as_ref().to_owned(),
-      method: HttpMethod::Get,
-      body: Default::default(),
-      codec: Default::default(),
-    }
+  pub fn new_get(
+    name: impl AsRef<str>,
+    path: impl AsRef<str>,
+    inputs: Vec<wick_interface_types::Field>,
+  ) -> HttpClientOperationDefinitionBuilder {
+    let mut builder = HttpClientOperationDefinitionBuilder::default();
+    builder
+      .name(name.as_ref())
+      .inputs(inputs)
+      .path(path.as_ref())
+      .method(HttpMethod::Get);
+    builder
   }
 
   /// Create a new POST operation.
@@ -97,15 +120,15 @@ impl HttpClientOperationDefinition {
     path: impl AsRef<str>,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
-  ) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      inputs,
-      path: path.as_ref().to_owned(),
-      method: HttpMethod::Post,
-      body,
-      codec: Default::default(),
-    }
+  ) -> HttpClientOperationDefinitionBuilder {
+    let mut builder = HttpClientOperationDefinitionBuilder::default();
+    builder
+      .name(name.as_ref())
+      .inputs(inputs)
+      .path(path.as_ref())
+      .body(body)
+      .method(HttpMethod::Post);
+    builder
   }
 
   /// Create a new PUT operation.
@@ -114,15 +137,15 @@ impl HttpClientOperationDefinition {
     path: impl AsRef<str>,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
-  ) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      inputs,
-      path: path.as_ref().to_owned(),
-      method: HttpMethod::Put,
-      body,
-      codec: Default::default(),
-    }
+  ) -> HttpClientOperationDefinitionBuilder {
+    let mut builder = HttpClientOperationDefinitionBuilder::default();
+    builder
+      .name(name.as_ref())
+      .inputs(inputs)
+      .path(path.as_ref())
+      .body(body)
+      .method(HttpMethod::Put);
+    builder
   }
 
   /// Create a new DELETE operation.
@@ -131,15 +154,15 @@ impl HttpClientOperationDefinition {
     path: impl AsRef<str>,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
-  ) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      inputs,
-      path: path.as_ref().to_owned(),
-      method: HttpMethod::Delete,
-      body,
-      codec: Default::default(),
-    }
+  ) -> HttpClientOperationDefinitionBuilder {
+    let mut builder = HttpClientOperationDefinitionBuilder::default();
+    builder
+      .name(name.as_ref())
+      .inputs(inputs)
+      .path(path.as_ref())
+      .body(body)
+      .method(HttpMethod::Delete);
+    builder
   }
 }
 
@@ -159,6 +182,8 @@ pub enum Codec {
   Json = 0,
   /// Raw
   Raw = 1,
+  /// Form Data
+  FormData = 2,
 }
 
 impl Default for Codec {

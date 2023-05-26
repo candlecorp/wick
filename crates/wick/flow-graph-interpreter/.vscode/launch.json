@@ -17,7 +17,6 @@
         ]
       },
       "env": {
-        "OTEL_EXPORTER_JAEGER_ENDPOINT": "nas.glhf.lan:6831"
       },
       "args": [],
       "cwd": "${workspaceFolder}"

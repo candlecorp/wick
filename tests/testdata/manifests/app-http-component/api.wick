@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../../../../crates/wick/wick-config/json-schema/manifest.json
+---
+kind: wick/component@v1
+name: contact-form
+resources:
+  - name: api-url
+    resource:
+      kind: wick/resource/url@v1
+      url: http://${HTTPBIN:-www.httpbin.org}/post
+import:
+  - name: API_CLIENT
+    component:
+      kind: wick/component/http@v1
+      resource: api-url
+      operations:
+        - name: check
+          with:
+            - name: secret
+              type: string
+          inputs:
+            - name: token
+              type: string
+          method: Post
+          path: '?secret={{secret}}&token={{token}}'
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: handler
+      uses:
+        - name: PLUCK_TOKEN
+          operation: core::pluck
+          with:
+            field: 'token'
+      flow:
+        - <>.request -> drop
+        - <>.body -> PLUCK_TOKEN.input
+        - PLUCK_TOKEN.output -> self::api_call[A].token
+        - A.response -> <>.response
+        - A.body -> <>.body
+    - name: api_call
+      uses:
+        - name: API_CLIENT_1
+          operation: API_CLIENT::check
+          with:
+            secret: 'foobar'
+      flow:
+        - <>.token -> API_CLIENT_1.token
+        - API_CLIENT_1.response -> <>.response
+        - API_CLIENT_1.body -> <>.body

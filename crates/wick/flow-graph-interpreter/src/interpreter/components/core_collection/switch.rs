@@ -7,7 +7,7 @@ use parking_lot::Mutex;
 use serde_json::Value;
 use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, TypeSignature};
-use wick_packet::{ComponentReference, Entity, Packet, PacketSender, PacketStream};
+use wick_packet::{ComponentReference, Entity, Invocation, PacketSender, PacketStream};
 
 use crate::constants::NS_CORE;
 use crate::graph::types::Network;
@@ -25,7 +25,7 @@ impl std::fmt::Debug for Op {
   }
 }
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub(crate) struct Config {
   context: Vec<Field>,
   outputs: Vec<Field>,
@@ -33,9 +33,9 @@ pub(crate) struct Config {
   default: String,
 }
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub(crate) struct SwitchCase {
-  case: String,
+  case: Value,
   #[serde(rename = "do")]
   case_do: String,
 }
@@ -49,7 +49,10 @@ fn gen_signature(id: &str, graph: &Network, config: Config) -> OperationSignatur
       "Invalid switch configuration: default operation '{}' not found.",
       default_op_path
     );
-    panic!();
+    panic!(
+      "Invalid switch configuration: default operation '{}' not found.",
+      default_op_path
+    );
   });
   let case_ops = config
     .cases
@@ -103,12 +106,13 @@ impl Op {
 impl Operation for Op {
   const ID: &'static str = "switch";
   type Config = Config;
+  #[allow(clippy::too_many_lines)]
   fn handle(
     &self,
-    mut stream: PacketStream,
+    mut invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let (tx, rx) = PacketStream::new_channels();
+    let (tx, rx) = invocation.make_response();
 
     let default = context.config.default.clone();
     let callback = context.callback;
@@ -117,20 +121,34 @@ impl Operation for Op {
       let mut held_packets = VecDeque::new();
       let mut router: HashMap<String, PacketSender> = HashMap::new();
       let origin = Entity::operation(NS_CORE, Op::ID);
-      loop {
-        let packet = match held_packets.pop_front() {
-          Some(p) => p,
-          None => match stream.next().await {
+      'outer: loop {
+        let packet = if condition.is_some() {
+          match held_packets.pop_front() {
+            Some(p) => p,
+            None => match invocation.packets.next().await {
+              Some(Ok(p)) => p,
+              Some(Err(e)) => {
+                let _ = tx.error(e);
+                continue;
+              }
+              None => {
+                break 'outer;
+              }
+            },
+          }
+        } else {
+          match invocation.packets.next().await {
             Some(Ok(p)) => p,
             Some(Err(e)) => {
               let _ = tx.error(e);
               continue;
             }
             None => {
-              break;
+              break 'outer;
             }
-          },
+          }
         };
+
         if packet.port() == DISCRIMINANT {
           if packet.has_data() {
             condition = Some(packet.deserialize_generic().unwrap());
@@ -139,6 +157,7 @@ impl Operation for Op {
         }
         let Some(condition) = &condition else {
           held_packets.push_back(packet);
+          tokio::task::yield_now().await;
           continue;
         };
         let case = context.config.cases.iter().find(|case| case.case == *condition);
@@ -149,26 +168,28 @@ impl Operation for Op {
             &default
           },
           |case| {
-            trace!(case = case.case, op = case.case_do, "switch:case");
+            trace!(case = %case.case, op = case.case_do, "switch:case");
             &case.case_do
           },
         );
+        trace!(operation = op, "core:switch:route");
+        let span = invocation.span.clone();
         let stream = router.entry(op.clone()).or_insert_with(|| {
           let target = path_to_entity(op).unwrap(); // unwrap ok because the config has been pre-validated.
           let op_id = target.operation_id().to_owned();
-          let (route_tx, route_rx) = PacketStream::new_channels();
+          let (route_tx, route_rx) = invocation.make_response();
           let link = ComponentReference::new(origin.clone(), target);
           let tx = tx.clone();
           let callback = callback.clone();
           tokio::spawn(async move {
-            match callback(link, op_id, route_rx, None).await {
+            match callback(link, op_id, route_rx, None, None, &span).await {
               Ok(mut call_rx) => {
                 while let Some(packet) = call_rx.next().await {
                   let _ = tx.send_result(packet);
                 }
               }
               Err(e) => {
-                let _ = tx.send(Packet::component_error(e.to_string()));
+                let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
               }
             };
           });
@@ -191,8 +212,15 @@ impl Operation for Op {
     context
   }
 
-  fn decode_config(data: Option<Value>) -> Result<Self::Config, ComponentError> {
-    serde_json::from_value(data.ok_or_else(|| ComponentError::message("Empty configuration passed"))?)
-      .map_err(ComponentError::new)
+  fn decode_config(data: Option<wick_packet::OperationConfig>) -> Result<Self::Config, ComponentError> {
+    let config = data.ok_or_else(|| {
+      ComponentError::message("Merge component requires configuration, please specify configuration.")
+    })?;
+    Ok(Self::Config {
+      context: config.get_into("context").map_err(ComponentError::new)?,
+      outputs: config.get_into("outputs").map_err(ComponentError::new)?,
+      cases: config.get_into("cases").map_err(ComponentError::new)?,
+      default: config.get_into("default").map_err(ComponentError::new)?,
+    })
   }
 }

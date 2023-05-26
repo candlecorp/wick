@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use thiserror::Error;
 
 /// This crate's primary Error type.
@@ -8,18 +10,18 @@ pub enum Error {
   BadUrl(String),
 
   /// Could not load file.
-  #[error("Could not read file {0}: {1}")]
-  LoadError(String, String),
+  #[error("Could not read file {}", .0.display())]
+  LoadError(PathBuf),
 
   /// Could not find file during path normalization.
   #[error("Could not read file at path {0}: {1}")]
   NormalizationFailure(String, String),
 
   /// Could not find file or directory.
-  #[error("File or directory {0} not found")]
-  NotFound(String),
+  #[error("File or directory {} not found", .0.display())]
+  NotFound(PathBuf),
 
   /// Error returned when a file path does not reside in a target directory.
-  #[error("File {0} does not reside in target directory {1}")]
-  FileEscapesRoot(String, String),
+  #[error("File {} does not reside in target directory {1}", .0.display())]
+  FileEscapesRoot(PathBuf, String),
 }

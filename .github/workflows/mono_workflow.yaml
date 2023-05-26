@@ -2,14 +2,16 @@ name: mono-workflow
 on:
   push:
     tags:
-      - "[0-9]+.[0-9]+.[0-9]+" # matches 0.1.0, 0.2.1, etc.
+      - '[0-9]+.[0-9]+.[0-9]+' # matches 0.1.0, 0.2.1, etc.
   schedule:
     - cron: "0 1 * * *" # 1am UTC
   pull_request:
     paths-ignore:
       - "tools/**"
+      - "docs/**"
     branches:
       - main
+  workflow_dispatch:
 permissions:
   contents: write
   packages: write
@@ -19,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Update Nightly Tag
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         uses: richardsimko/update-tag@v1
         with:
           tag_name: nightly
@@ -47,16 +49,16 @@ jobs:
     env:
       SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
       SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
-      SCCACHE_AZURE_KEY_PREFIX: "wick-github-actions-test"
-      RUSTC_WRAPPER: "sccache"
+      SCCACHE_AZURE_KEY_PREFIX: 'wick-github-actions-test'
+      RUSTC_WRAPPER: 'sccache'
     strategy:
       matrix:
         config:
           - {
-              os: "ubuntu-latest",
-              name: "linux",
-              arch: "amd64",
-              target: "x86_64-unknown-linux-gnu",
+              os: 'ubuntu-latest',
+              name: 'linux',
+              arch: 'amd64',
+              target: 'x86_64-unknown-linux-gnu',
             }
     steps:
       - name: make space
@@ -112,18 +114,11 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-${{ matrix.config.target }}-rust-toolchain-${{ env.RUST_VERSION }}
-      - name: build cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            target/
-            crates/**/target
-          key: ${{ runner.os }}-${{ matrix.config.target }}-cargo-build-test-${{ hashFiles('**/Cargo.lock') }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.config.target }}
-      - name: "rustup updates"
+      - name: 'rustup updates'
         run: |
           rustup target add wasm32-unknown-unknown wasm32-wasi
           cargo install cargo-deny just
@@ -135,47 +130,47 @@ jobs:
   build:
     needs: tag
     runs-on: ${{ matrix.config.os }}
-    if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true
+    if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true || github.event_name == 'workflow_dispatch'
     env:
       SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
       SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
-      SCCACHE_AZURE_KEY_PREFIX: "wick-github-actions"
-      RUSTC_WRAPPER: "sccache"
-      CARGO_PROFILE_RELEASE_DEBUG: "0" # https://doc.rust-lang.org/cargo/reference/profiles.html#debug
-      CARGO_INCREMENTAL: "true" # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
-      CARGO_PROFILE_RELEASE_LTO: "true" # https://doc.rust-lang.org/cargo/reference/profiles.html#lto
-      CARGO_PROFILE_RELEASE_OPT_LEVEL: "3" # https://doc.rust-lang.org/cargo/reference/profiles.html#opt-level
-      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "1" # https://doc.rust-lang.org/cargo/reference/profiles.html#codegen-units
-      CARGO_PROFILE_RELEASE_STRIP: "true" # https://doc.rust-lang.org/cargo/reference/unstable.html#profile-strip-option
+      SCCACHE_AZURE_KEY_PREFIX: 'wick-github-actions'
+      RUSTC_WRAPPER: 'sccache'
+      CARGO_PROFILE_RELEASE_DEBUG: '0' # https://doc.rust-lang.org/cargo/reference/profiles.html#debug
+      CARGO_INCREMENTAL: 'true' # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
+      CARGO_PROFILE_RELEASE_LTO: 'true' # https://doc.rust-lang.org/cargo/reference/profiles.html#lto
+      CARGO_PROFILE_RELEASE_OPT_LEVEL: '3' # https://doc.rust-lang.org/cargo/reference/profiles.html#opt-level
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '1' # https://doc.rust-lang.org/cargo/reference/profiles.html#codegen-units
+      CARGO_PROFILE_RELEASE_STRIP: 'true' # https://doc.rust-lang.org/cargo/reference/unstable.html#profile-strip-option
     strategy:
       matrix:
         config:
           - {
-              os: "ubuntu-latest",
-              name: "linux",
-              arch: "amd64",
-              target: "x86_64-unknown-linux-gnu",
-              args: "",
+              os: 'ubuntu-latest',
+              name: 'linux',
+              arch: 'amd64',
+              target: 'x86_64-unknown-linux-gnu',
+              args: '',
             }
           - {
-              os: "ubuntu-latest",
-              name: "linux",
-              target: "aarch64-unknown-linux-gnu",
-              arch: "aarch64",
-              args: "--features cross",
+              os: 'ubuntu-latest',
+              name: 'linux',
+              target: 'aarch64-unknown-linux-gnu',
+              arch: 'aarch64',
+              args: '--features cross',
             }
           - {
-              os: "macos-latest",
-              name: "macos",
-              target: "x86_64-apple-darwin",
-              arch: "amd64",
+              os: 'macos-latest',
+              name: 'macos',
+              target: 'x86_64-apple-darwin',
+              arch: 'amd64',
             }
           - {
-              os: "macos-latest",
-              name: "macos",
-              target: "aarch64-apple-darwin",
-              arch: "aarch64",
-              args: "--features cross",
+              os: 'macos-latest',
+              name: 'macos',
+              target: 'aarch64-apple-darwin',
+              arch: 'aarch64',
+              args: '--features cross',
             }
           # - {
           #     os: "ubuntu-latest",
@@ -238,15 +233,15 @@ jobs:
           path: |
             target/
             crates/**/target
-          key: ${{ runner.os }}-${{ matrix.config.target }}-cargo-build-test-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.config.target }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.config.target }}
-      - name: "rustup updates"
+      - name: 'rustup updates'
         run: |
           rustup target add wasm32-unknown-unknown wasm32-wasi
-      - name: "build binary"
+      - name: 'build binary'
         run: |
           cargo build --release -p wick-cli --target=${{ matrix.config.target }} ${{ matrix.config.args }}
       - name: package release assets
@@ -278,8 +273,8 @@ jobs:
           path: _dist/wick-${{ matrix.config.name }}-${{ matrix.config.arch }}.zip
   release:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true
-    needs: [test, build]
+    if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true || github.event_name == 'workflow_dispatch'
+    needs: [build]
     steps:
       - uses: actions/checkout@v3
       - name: Download artifacts

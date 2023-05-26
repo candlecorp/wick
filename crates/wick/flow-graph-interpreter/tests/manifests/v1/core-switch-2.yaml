@@ -1,0 +1,44 @@
+---
+kind: wick/component@v1
+name: switch-bool
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: test
+      uses:
+        - name: switch
+          operation: core::switch
+          with:
+            context:
+              - name: message
+                type: object
+            outputs:
+              - name: output
+                type: string
+            cases:
+              - case: false
+                do: self::test::on_false
+            default: self::test::on_true
+      flow:
+        - <>.input -> switch.match
+        - <>.message -> switch.message
+        - switch.output -> <>
+      operations:
+        - name: on_false
+          uses:
+            - name: STATUS
+              operation: core::sender
+              with:
+                output: 'on_false'
+          flow:
+            - <>.message -> drop
+            - STATUS.output -> <>.output
+        - name: on_true
+          uses:
+            - name: STATUS
+              operation: core::sender
+              with:
+                output: 'on_true'
+          flow:
+            - <>.message -> drop
+            - STATUS.output -> <>.output

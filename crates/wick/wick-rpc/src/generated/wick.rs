@@ -163,6 +163,8 @@ pub struct Field {
   pub name: ::prost::alloc::string::String,
   #[prost(message, optional, tag = "2")]
   pub r#type: ::core::option::Option<TypeSignature>,
+  #[prost(string, tag = "3")]
+  pub description: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -255,6 +257,8 @@ pub struct StructSignature {
   pub name: ::prost::alloc::string::String,
   #[prost(message, repeated, tag = "2")]
   pub fields: ::prost::alloc::vec::Vec<Field>,
+  #[prost(string, tag = "3")]
+  pub description: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -263,6 +267,8 @@ pub struct EnumSignature {
   pub name: ::prost::alloc::string::String,
   #[prost(message, repeated, tag = "2")]
   pub values: ::prost::alloc::vec::Vec<EnumVariant>,
+  #[prost(string, tag = "3")]
+  pub description: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -273,11 +279,13 @@ pub struct EnumVariant {
   pub index: ::core::option::Option<u32>,
   #[prost(string, optional, tag = "3")]
   pub value: ::core::option::Option<::prost::alloc::string::String>,
+  #[prost(string, tag = "4")]
+  pub description: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TypeSignature {
-  #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 5, 6, 9, 10, 11")]
+  #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 5, 6, 10, 11")]
   pub signature: ::core::option::Option<type_signature::Signature>,
 }
 /// Nested message and enum types in `TypeSignature`.
@@ -297,8 +305,6 @@ pub mod type_signature {
     Ref(super::RefType),
     #[prost(message, tag = "6")]
     Link(super::LinkType),
-    #[prost(message, tag = "9")]
-    Stream(::prost::alloc::boxed::Box<super::InnerType>),
     #[prost(message, tag = "10")]
     AnonymousStruct(super::AnonymousStruct),
     #[prost(string, tag = "11")]

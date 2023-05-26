@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use hyper::http::response::Builder;
-use hyper::{Body, Request, StatusCode};
+use hyper::{Request, StatusCode};
 use wick_interface_http::types as wick_http;
 
 use super::HttpError;
@@ -72,7 +72,10 @@ pub(super) fn headers_to_wick(headers: &hyper::http::HeaderMap) -> Result<HashMa
   Ok(map)
 }
 
-pub(super) fn request_to_wick(req: Request<Body>) -> Result<(wick_http::HttpRequest, Body), HttpError> {
+pub(super) fn request_to_wick<B>(req: Request<B>) -> Result<(wick_http::HttpRequest, B), HttpError>
+where
+  B: Send + Sync + 'static,
+{
   Ok((
     wick_http::HttpRequest {
       method: method_to_wick(req.method())?,

@@ -111,6 +111,3 @@ pub use schematic::{
 };
 
 pub(crate) mod util;
-
-#[macro_use]
-extern crate tracing;

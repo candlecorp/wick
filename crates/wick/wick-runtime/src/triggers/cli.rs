@@ -7,10 +7,13 @@ use config::{AppConfiguration, CliConfig, ImportBinding, TriggerDefinition};
 // use futures::StreamExt;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
+use structured_output::StructuredOutput;
 use tokio_stream::StreamExt;
+use tracing::{Instrument, Span};
 use wick_packet::{packet_stream, Entity, Invocation};
 
-use super::{resolve_ref, Trigger, TriggerKind};
+use super::{build_trigger_runtime, resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::*;
 use crate::resources::Resource;
 
@@ -40,30 +43,14 @@ impl Cli {
     })
   }
 
-  async fn handle_command(
+  async fn handle(
     &self,
     app_config: AppConfiguration,
     config: CliConfig,
     args: Vec<String>,
-  ) -> Result<(), RuntimeError> {
-    let cli_component = resolve_ref(&app_config, config.component())?;
+  ) -> Result<StructuredOutput, RuntimeError> {
+    let cli_component = resolve_ref(&app_config, config.operation().component())?;
     let cli_binding = ImportBinding::component("cli", cli_component);
-
-    let invocation = Invocation::new(
-      Entity::server("cli_channel"),
-      Entity::operation(&cli_binding.id, config.operation()),
-      None,
-    );
-
-    let mut runtime = crate::RuntimeBuilder::new();
-    runtime.add_import(cli_binding);
-    for import in app_config.imports().values() {
-      runtime.add_import(import.clone());
-    }
-    for resource in app_config.resources().values() {
-      runtime.add_resource(resource.clone());
-    }
-    let runtime = runtime.build().await?;
 
     let is_interactive = IsInteractive {
       stdin: atty::is(atty::Stream::Stdin),
@@ -72,15 +59,46 @@ impl Cli {
     };
 
     let packet_stream = packet_stream!(("args", args), ("isInteractive", is_interactive));
+    let invocation = Invocation::new(
+      Entity::server("cli_channel"),
+      Entity::operation(cli_binding.id(), config.operation().operation()),
+      packet_stream,
+      None,
+      &Span::current(),
+    );
+    let mut runtime = build_trigger_runtime(&app_config, Span::current())?;
+    runtime.add_import(cli_binding);
+    let runtime = runtime.build(None).await?;
 
-    let mut response = runtime.invoke(invocation, packet_stream).await?;
-    while let Some(packet) = response.next().await {
-      trace!(?packet, "trigger:cli:response");
-    }
+    let mut response = runtime.invoke(invocation, None).await?;
+    let output = loop {
+      if let Some(packet) = response.next().await {
+        trace!(?packet, "trigger:cli:response");
+        match packet {
+          Ok(p) => {
+            if p.port() == "code" && p.has_data() {
+              let code: u32 = p.deserialize().unwrap();
+              break StructuredOutput::new(format!("Exit code: {}", code), json!({ "code": code }));
+            }
+          }
+          Err(e) => {
+            break StructuredOutput::new(
+              format!("CLI Trigger produced error: {}", e),
+              json!({ "error": e.to_string() }),
+            );
+          }
+        }
+      } else {
+        break StructuredOutput::new(
+          "CLI Trigger failed to return an exit code",
+          json!({ "error": "CLI Trigger failed to return an exit code" }),
+        );
+      }
+    };
 
     let _ = self.done_tx.lock().take().unwrap().send(());
 
-    Ok(())
+    Ok(output)
   }
 }
 
@@ -92,7 +110,8 @@ impl Trigger for Cli {
     app_config: AppConfiguration,
     config: TriggerDefinition,
     _resources: Arc<HashMap<String, Resource>>,
-  ) -> Result<(), RuntimeError> {
+    span: Span,
+  ) -> Result<StructuredOutput, RuntimeError> {
     let config = if let TriggerDefinition::Cli(config) = config {
       config
     } else {
@@ -111,9 +130,9 @@ impl Trigger for Cli {
     // Insert app name as the first argument.
     args.insert(0, name);
 
-    self.handle_command(app_config, config, args).await?;
+    self.handle(app_config, config, args).instrument(span).await?;
 
-    Ok(())
+    Ok(StructuredOutput::default())
   }
 
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError> {

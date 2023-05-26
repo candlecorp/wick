@@ -4,7 +4,6 @@ use anyhow::Result;
 use clap::Args;
 use seeded_random::Seed;
 use wick_component_cli::options::DefaultCliOptions;
-use wick_component_cli::LoggingOptions;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
 use wick_test::TestSuite;
@@ -14,9 +13,6 @@ use crate::utils::merge_config;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 pub(crate) struct TestCommand {
-  #[clap(flatten)]
-  pub(crate) logging: LoggingOptions,
-
   #[clap(flatten)]
   pub(crate) oci: crate::oci::Options,
 
@@ -40,9 +36,7 @@ pub(crate) struct TestCommand {
   filter: Vec<String>,
 }
 
-pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
-  let _guard = wick_logger::init(&opts.logging.name(crate::BIN_NAME));
-
+pub(crate) async fn handle(opts: TestCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);
@@ -56,7 +50,7 @@ pub(crate) async fn handle_command(opts: TestCommand) -> Result<()> {
 
   let config = merge_config(&config, &opts.oci, Some(server_options));
 
-  let mut host = ComponentHostBuilder::from_definition(config).build();
+  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
   host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;
 
   let component = Arc::new(wick_host::HostComponent::new(host));

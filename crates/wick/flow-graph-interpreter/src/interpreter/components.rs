@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 pub(super) mod component_component;
 pub(super) mod core_collection;
-// pub(super) mod dynamic_core_collection;
 pub(crate) mod internal_collection;
+pub(super) mod null_component;
 pub(super) mod schematic_component;
 
 use flow_component::Component;
@@ -51,7 +51,7 @@ impl HandlerMap {
   }
 
   pub(crate) fn add_core(&mut self, network: &Network) -> Result<(), InterpreterError> {
-    self.add(NamespaceHandler::new(NS_CORE, Box::new(CoreCollection::new(network))))
+    self.add(NamespaceHandler::new(NS_CORE, Box::new(CoreCollection::new(network)?)))
   }
 
   #[must_use]
@@ -74,7 +74,6 @@ impl HandlerMap {
   }
 
   pub fn add(&mut self, component: NamespaceHandler) -> Result<(), InterpreterError> {
-    trace!(namespace = %component.namespace, "adding component");
     if self.components.contains_key(&component.namespace) {
       return Err(InterpreterError::DuplicateNamespace(component.namespace));
     }
@@ -91,7 +90,7 @@ pub(crate) fn dyn_component_id(name: &str, schematic: &str, instance: &str) -> S
   format!("{}<{}::{}>", name, schematic, instance)
 }
 
-pub(crate) fn get_id(ns: &str, name: &str, schematic: &str, instance: &str) -> String {
+pub(crate) fn reconcile_op_id(ns: &str, name: &str, schematic: &str, instance: &str) -> String {
   if ns == NS_CORE && name == CORE_ID_MERGE {
     dyn_component_id(name, schematic, instance)
   } else {
