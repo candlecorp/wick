@@ -4,10 +4,22 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use wick_packet::ContextTransport;
 
+#[cfg(target_family = "wasm")]
+pub trait LocalAwareSend {}
+#[cfg(not(target_family = "wasm"))]
+pub trait LocalAwareSend: Send {}
+
+#[cfg(target_family = "wasm")]
+impl<T> LocalAwareSend for T {}
+
+#[cfg(not(target_family = "wasm"))]
+impl<T> LocalAwareSend for T where T: Send {}
+
 #[derive(Clone)]
 pub struct Context<T>
 where
   T: std::fmt::Debug,
+  T: LocalAwareSend,
 {
   pub config: Arc<T>,
   pub seed: Option<u64>,
@@ -18,6 +30,7 @@ where
 impl<T> std::fmt::Debug for Context<T>
 where
   T: std::fmt::Debug + DeserializeOwned + Serialize,
+  T: LocalAwareSend,
 {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("Context").field("config", &self.config).finish()
@@ -27,6 +40,7 @@ where
 impl<T> From<ContextTransport<T>> for Context<T>
 where
   T: std::fmt::Debug + Serialize + DeserializeOwned,
+  T: LocalAwareSend,
 {
   fn from(value: ContextTransport<T>) -> Self {
     Self {
@@ -41,6 +55,7 @@ where
 impl<T> Context<T>
 where
   T: std::fmt::Debug,
+  T: LocalAwareSend,
 {
   #[cfg(feature = "traits")]
   pub fn new(config: T, seed: Option<u64>, callback: Arc<crate::RuntimeCallback>) -> Self {

@@ -57,6 +57,9 @@ pub(crate) struct {{name.value}} {
         {{#ifCond type.type.name.value "==" "FlowExpression"}}
           #[serde(deserialize_with = "crate::v1::parse::vec_connection")]
         {{/ifCond}}
+        {{#ifCond type.type.name.value "==" "ComponentOperationExpression"}}
+          #[serde(deserialize_with = "crate::v1::parse::vec_component_operation")]
+        {{/ifCond}}
       {{/case}}
       {{#case "Optional"}}
         #[serde(skip_serializing_if = "Option::is_none")]

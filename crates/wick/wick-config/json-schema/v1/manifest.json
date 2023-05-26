@@ -299,6 +299,15 @@
           "description": "The operation to call.",
 
           "type": "string"
+        },
+        "with": {
+          "description": "Configuration to tie to this operation",
+          "required": false,
+
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+          }
         }
       },
       "required": ["component", "name"]
@@ -355,6 +364,12 @@
 
           "type": "string"
         },
+        "middleware": {
+          "description": "Middleware operations for this router.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/Middleware"
+        },
         "url": {
           "description": "The URL resource to proxy to.",
 
@@ -389,6 +404,12 @@
           "required": false,
 
           "$ref": "#/$defs/v1/Tools"
+        },
+        "middleware": {
+          "description": "Middleware operations for this router.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/Middleware"
         },
         "routes": {
           "description": "The routes to serve and operations that handle them.",
@@ -607,6 +628,12 @@
 
           "type": "string"
         },
+        "middleware": {
+          "description": "Middleware operations for this router.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/Middleware"
+        },
         "volume": {
           "description": "The volume to serve static files from.",
 
@@ -637,6 +664,12 @@
 
           "type": "string"
         },
+        "middleware": {
+          "description": "Middleware operations for this router.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/Middleware"
+        },
         "codec": {
           "description": "The codec to use when encoding/decoding data.",
           "required": false,
@@ -645,11 +678,50 @@
         },
         "operation": {
           "description": "The operation that handles HTTP requests.",
-
-          "$ref": "#/$defs/v1/ComponentOperationExpression"
+          "oneOf": [
+            { "type": "string" },
+            {
+              "$ref": "#/$defs/v1/ComponentOperationExpression"
+            }
+          ]
         }
       },
       "required": ["path", "operation"]
+    },
+
+    "Middleware": {
+      "$anchor": "#v1/Middleware",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "request": {
+          "description": "The middleware to apply to requests.",
+
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "$ref": "#/$defs/v1/ComponentOperationExpression"
+              }
+            ]
+          }
+        },
+        "response": {
+          "description": "The middleware to apply to responses.",
+
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "$ref": "#/$defs/v1/ComponentOperationExpression"
+              }
+            ]
+          }
+        }
+      },
+      "required": []
     },
 
     "ResourceDefinition": {

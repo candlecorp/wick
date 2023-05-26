@@ -16,7 +16,7 @@ wick-packet = { workspace = true }
 flow-graph = { workspace = true }
 flow-graph-interpreter = { workspace = true }
 flow-component = { workspace = true }
-wick-interface-types = { workspace = true }
+wick-interface-types = { workspace = true, features = ["value"] }
 wick-config = { workspace = true }
 wick-component-wasm = { workspace = true }
 wick-stdlib = { workspace = true }

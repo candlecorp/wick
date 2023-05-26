@@ -13,6 +13,10 @@ pub enum Error {
   #[error("Could not read file {}", .0.display())]
   LoadError(PathBuf),
 
+  /// Remote fetch failed.
+  #[error("Pulling asset {} failed: {1}", .0.display())]
+  PullFailed(PathBuf, String),
+
   /// Could not find file during path normalization.
   #[error("Could not read file at path {0}: {1}")]
   NormalizationFailure(String, String),

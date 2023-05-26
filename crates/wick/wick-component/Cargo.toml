@@ -24,9 +24,9 @@ wasmrs-rx = { workspace = true }
 wasmrs-codec = { workspace = true }
 wasmrs-runtime = { workspace = true }
 futures = { workspace = true }
-anyhow = { workspace = true }
 paste = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 serde = { workspace = true }
+anyhow = { version = "1.0" }

@@ -16,6 +16,7 @@ default = ["yaml", "parser"]
 parser = ["nom"]
 yaml = ["serde_yaml"]
 typeid = ["serde_json"]
+value = ["serde_json"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }

@@ -14,13 +14,17 @@ use wick::*;
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl OpMain for Component {
+impl MainOperation for Component {
+  type Error = Box<dyn std::error::Error>;
+  type Outputs = main::Outputs;
+  type Config = main::Config;
+
   async fn main(
     mut args: WickStream<Vec<String>>,
     mut is_interactive: WickStream<types::cli::Interactive>,
-    mut outputs: OpMainOutputs,
-    _ctx: Context<OpMainConfig>,
-  ) -> Result<()> {
+    mut outputs: Self::Outputs,
+    _ctx: Context<Self::Config>,
+  ) -> Result<(), Self::Error> {
     set_colors_enabled(false);
     println!("\ncli:db: in WebAssembly CLI component");
 

@@ -1,8 +1,12 @@
 ---
-name: test-component
+name: baseline
 kind: wick/component@v1
 metadata:
   version: '1'
+package:
+  registry:
+    registry: $DOCKER_REGISTRY
+    namespace: test-component
 component:
   kind: wick/component/wasmrs@v1
   ref: ./build/baseline.signed.wasm

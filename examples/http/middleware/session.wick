@@ -1,0 +1,87 @@
+kind: wick/component@v1
+name: my_component
+metadata:
+  description: A component that connects to a Postgres database
+  version: 0.0.1
+  authors:
+    - 'Wick Maintainers'
+  vendors:
+    - 'Candle Corporation'
+  licenses:
+    - Apache-2.0
+requires:
+  - name: session_db
+    interface:
+      operations:
+        - name: validate
+          inputs:
+            - name: session
+              type: string
+          outputs:
+            - name: valid
+              type: bool
+import:
+  - name: cookie
+    component:
+      kind: wick/component/manifest@v1
+      ref: registry.candle.dev/jsoverson/cookie/0.0.1
+  - name: http
+    component:
+      kind: wick/component/manifest@v1
+      ref: rregistry.candle.dev/common/http:0.0.1
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: validate
+      uses:
+        - name: get_session
+          operation: cookie::get
+          with:
+            name: session
+        - name: switch
+          operation: core::switch
+          with:
+            context:
+              - name: request
+                type: http::HttpRequest
+            outputs:
+              - name: output
+                type: string
+            cases:
+              - case: false
+                do: self::validate::valid
+            default: self::validate::invalid
+      flow:
+        - <>.request.headers.cookie.0 -> get_session.input
+        - get_session.output -> session_db.validate[a].session
+        - a.output -> switch.match
+        - <>.request -> switch.request
+        - switch.request -> <>.request
+        - switch.response -> <>.response
+      operations:
+        - name: invalid
+          uses:
+            - name: STATUS
+              operation: core::sender
+              with:
+                output:
+                  status: 301
+                  version: 1.1
+                  headers:
+                    location: [/login]
+          outputs:
+            - name: request
+              type: http::HttpRequest
+            - name: response
+              type: http::HttpResponse?
+          flow:
+            - <>.request -> drop
+            - STATUS.output -> <>.response
+        - name: valid
+          outputs:
+            - name: request
+              type: http::HttpRequest
+            - name: response
+              type: http::HttpResponse?
+          flow:
+            - <>.request -> <>.request

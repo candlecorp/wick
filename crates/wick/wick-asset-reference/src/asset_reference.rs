@@ -301,12 +301,12 @@ impl Asset for AssetReference {
     let cache_location = self.cache_location.clone();
     let exists = self.exists_locally();
     Box::pin(async move {
-      let path = path.map_err(|e| assets::Error::Parse(e.to_string()))?;
-      let pb = PathBuf::from(&path);
-      if pb.is_dir() {
-        return Err(assets::Error::IsDirectory(path.clone()));
-      }
       if exists {
+        let path = path.unwrap();
+        if path.is_dir() {
+          return Err(assets::Error::IsDirectory(path.clone()));
+        }
+
         debug!(path = ?path, "fetching local asset");
         let mut file = tokio::fs::File::open(&path)
           .await
@@ -315,10 +315,11 @@ impl Asset for AssetReference {
         file.read_to_end(&mut bytes).await?;
         Ok(bytes)
       } else {
+        let path = location;
         debug!(path = ?path, "fetching remote asset");
-        let (cache_loc, bytes) = retrieve_remote(&location, options)
+        let (cache_loc, bytes) = retrieve_remote(&path, options)
           .await
-          .map_err(|err| assets::Error::FileOpen(path.clone(), err.to_string()))?;
+          .map_err(|err| assets::Error::RemoteFetch(path, err.to_string()))?;
         *cache_location.write() = Some(cache_loc);
         Ok(bytes)
       }
@@ -339,7 +340,7 @@ async fn retrieve_remote(location: &str, options: FetchOptions) -> Result<(PathB
     .password(options.oci_password);
   let result = wick_oci_utils::package::pull(location, &oci_opts)
     .await
-    .map_err(|_| Error::LoadError(PathBuf::from(location)))?;
+    .map_err(|e| Error::PullFailed(PathBuf::from(location), e.to_string()))?;
   let cache_location = result.base_dir.join(result.root_path);
   let bytes = tokio::fs::read(&cache_location)
     .await

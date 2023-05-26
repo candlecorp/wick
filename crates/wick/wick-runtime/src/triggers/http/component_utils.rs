@@ -11,11 +11,12 @@ use serde_json::{Map, Value};
 use tokio_stream::StreamExt;
 use tracing::Span;
 use wick_config::config::components::Codec;
-use wick_packet::{packets, Entity, Invocation, Observer, Packet, PacketStream};
+use wick_interface_http::types as wick_http;
+use wick_packet::{packets, Entity, Invocation, Observer, OperationConfig, Packet, PacketStream};
 
 use super::conversions::convert_response;
 use super::HttpError;
-use crate::triggers::http::conversions::request_to_wick;
+use crate::triggers::http::conversions::request_and_body_to_wick;
 use crate::Runtime;
 
 pub(super) async fn handle(
@@ -31,48 +32,135 @@ pub(super) async fn handle(
     .invoke(invocation, None)
     .await
     .map_err(|e| HttpError::OperationError(e.to_string()));
-  match request_to_wick(req) {
-    Ok((req, mut body)) => {
-      let packets = packets!(("request", req));
-      for packet in packets {
-        let _ = tx.send(packet);
-      }
-      tokio::spawn(async move {
-        if codec == Codec::Json {
-          let bytes: Result<Vec<Bytes>, _> = body.try_collect().await;
-          match bytes {
-            Ok(b) => {
-              let bytes = b.join(&0);
-              trace!(?bytes, "http:codec:json:bytes");
-              let Ok(value) : Result<Value,_> = serde_json::from_slice(&bytes) else {
+  let (req, mut body) = request_and_body_to_wick(req)?;
+
+  let packets = packets!(("request", req));
+  for packet in packets {
+    let _ = tx.send(packet);
+  }
+  tokio::spawn(async move {
+    if codec == Codec::Json {
+      let bytes: Result<Vec<Bytes>, _> = body.try_collect().await;
+      match bytes {
+        Ok(b) => {
+          let bytes = b.join(&0);
+          trace!(?bytes, "http:codec:json:bytes");
+          let Ok(value) : Result<Value,_> = serde_json::from_slice(&bytes) else {
                 let _ = tx.error(wick_packet::Error::component_error("Could not decode body as JSON"));
                 return;
               };
-              let _ = tx.send(Packet::encode("body", value));
-            }
-            Err(e) => {
-              let _ = tx.send(Packet::err("body", e.to_string()));
-            }
+          let _ = tx.send(Packet::encode("body", value));
+        }
+        Err(e) => {
+          let _ = tx.send(Packet::err("body", e.to_string()));
+        }
+      }
+    } else {
+      while let Some(bytes) = body.next().await {
+        trace!(?bytes, "http:codec:raw:bytes");
+        match bytes {
+          Ok(b) => {
+            let _ = tx.send(Packet::encode("body", b));
           }
-        } else {
-          while let Some(bytes) = body.next().await {
-            trace!(?bytes, "http:codec:raw:bytes");
-            match bytes {
-              Ok(b) => {
-                let _ = tx.send(Packet::encode("body", b));
-              }
-              Err(e) => {
-                let _ = tx.send(Packet::err("body", e.to_string()));
-              }
-            }
+          Err(e) => {
+            let _ = tx.send(Packet::err("body", e.to_string()));
           }
         }
-        trace!("http:request:done");
-        let _ = tx.send(Packet::done("body"));
-      });
-      stream
+      }
     }
-    Err(e) => Err(e),
+    trace!("http:request:done");
+    let _ = tx.send(Packet::done("body"));
+  });
+  stream
+}
+
+pub(super) enum Either {
+  Request(wick_http::HttpRequest),
+  Response(wick_http::HttpResponse),
+}
+
+pub(super) async fn handle_request_middleware(
+  target: Entity,
+  operation_config: Option<OperationConfig>,
+  engine: Arc<Runtime>,
+  req: &wick_http::HttpRequest,
+) -> Result<Option<Either>, HttpError> {
+  let packets = packets!(("request", req));
+  let invocation = Invocation::new(Entity::server("http_client"), target, packets, None, &Span::current());
+
+  let mut stream = engine
+    .invoke(invocation, operation_config)
+    .await
+    .map_err(|e| HttpError::OperationError(e.to_string()))?;
+
+  let packet = stream.next().await;
+
+  if packet.is_none() {
+    return Ok(None);
+  }
+
+  let packet = packet.unwrap();
+
+  if let Err(e) = packet {
+    return Err(HttpError::InvalidPreRequestResponse(e.to_string()));
+  }
+
+  let packet = packet.unwrap();
+
+  if packet.port() == "response" {
+    let response: wick_http::HttpResponse = packet
+      .deserialize()
+      .map_err(|e| HttpError::InvalidPreRequestResponse(e.to_string()))?;
+
+    Ok(Some(Either::Response(response)))
+  } else if packet.port() == "request" {
+    let request: wick_http::HttpRequest = packet
+      .deserialize()
+      .map_err(|e| HttpError::InvalidPreRequestResponse(e.to_string()))?;
+
+    Ok(Some(Either::Request(request)))
+  } else {
+    Err(HttpError::InvalidPreRequestResponse("Invalid packet".to_owned()))
+  }
+}
+
+pub(super) async fn handle_response_middleware(
+  target: Entity,
+  operation_config: Option<OperationConfig>,
+  engine: Arc<Runtime>,
+  req: &wick_http::HttpRequest,
+  res: &wick_http::HttpResponse,
+) -> Result<Option<wick_http::HttpResponse>, HttpError> {
+  let packets = packets!(("request", req), ("response", res));
+  let invocation = Invocation::new(Entity::server("http_client"), target, packets, None, &Span::current());
+
+  let mut stream = engine
+    .invoke(invocation, operation_config)
+    .await
+    .map_err(|e| HttpError::OperationError(e.to_string()))?;
+
+  let packet = stream.next().await;
+
+  if packet.is_none() {
+    return Ok(None);
+  }
+
+  let packet = packet.unwrap();
+
+  if let Err(e) = packet {
+    return Err(HttpError::InvalidPostRequestResponse(e.to_string()));
+  }
+
+  let packet = packet.unwrap();
+
+  if packet.port() == "response" {
+    let response: wick_http::HttpResponse = packet
+      .deserialize()
+      .map_err(|e| HttpError::InvalidPostRequestResponse(e.to_string()))?;
+
+    Ok(Some(response))
+  } else {
+    Err(HttpError::InvalidPostRequestResponse("Invalid packet".to_owned()))
   }
 }
 

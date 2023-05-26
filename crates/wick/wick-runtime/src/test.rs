@@ -20,3 +20,19 @@ pub(crate) async fn init_engine_from_yaml(path: &str) -> Result<(Runtime, uuid::
   trace!(engine_id = %engine_id, "engine uid");
   Ok((engine, engine_id))
 }
+
+pub(crate) async fn load_test_manifest(name: &str) -> Result<WickConfiguration> {
+  let crate_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+  let manifest_dir = crate_dir.join("../../../tests/testdata/manifests");
+  let yaml = manifest_dir.join(name);
+
+  Ok(wick_config::config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default()).await?)
+}
+
+pub(crate) async fn load_example(name: &str) -> Result<WickConfiguration> {
+  let crate_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+  let manifest_dir = crate_dir.join("../../../examples");
+  let yaml = manifest_dir.join(name);
+
+  Ok(wick_config::config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default()).await?)
+}

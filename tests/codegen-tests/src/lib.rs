@@ -1,15 +1,20 @@
+#[allow(unused, clippy::derivable_impls)]
 mod import_types;
 mod test1 {
   use crate::import_types::*;
   # [cfg_attr (target_family = "wasm" , async_trait :: async_trait (? Send))]
   #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-  impl OpTestop for Component {
+  impl TestopOperation for Component {
+    type Error = anyhow::Error;
+    type Outputs = testop::Outputs;
+    type Config = testop::Config;
+
     #[allow(unused)]
     async fn testop(
       message: WickStream<types::http::HttpResponse>,
-      outputs: OpTestopOutputs,
-      ctx: Context<OpTestopConfig>,
-    ) -> Result<()> {
+      outputs: Self::Outputs,
+      ctx: Context<Self::Config>,
+    ) -> Result<(), Self::Error> {
       Ok(())
     }
   }
@@ -44,8 +49,8 @@ mod test1 {
       };
       let packets = tokio_stream::iter(vec![Ok(response)]).boxed();
       let tx = FluxChannel::new();
-      let outputs = OpTestopOutputs::new(tx);
-      let ctx = Context::new(OpTestopConfig::default(), None, panic_callback());
+      let outputs = testop::Outputs::new(tx);
+      let ctx = Context::new(testop::Config::default(), None, panic_callback());
 
       Component::testop(packets, outputs, ctx).await?;
       Ok(())
@@ -54,13 +59,13 @@ mod test1 {
     #[tokio::test]
     async fn test_configgen() -> Result<()> {
       // Don't delete, it tests that local structs are genned correctly.
-      let config = OpTestopConfig {
+      let config = testop::Config {
         a: "value".to_owned(),
         b: 2,
       };
       let expected = ContextTransport::new(config, None);
       let bytes = wasmrs_codec::messagepack::serialize(&expected).unwrap();
-      let actual: ContextTransport<OpTestopConfig> = wasmrs_codec::messagepack::deserialize(&bytes).unwrap();
+      let actual: ContextTransport<testop::Config> = wasmrs_codec::messagepack::deserialize(&bytes).unwrap();
       assert_eq!(actual, expected);
 
       Ok(())

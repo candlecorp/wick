@@ -2,6 +2,12 @@
 ---
 name: http
 kind: wick/types@v1
+metadata:
+  version: 0.0.1
+package:
+  registry:
+    registry: registry.candle.dev
+    namespace: types
 types:
   - name: HttpMethod
     kind: wick/type/enum@v1

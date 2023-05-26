@@ -10,7 +10,9 @@ use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
 use tracing::Span;
 
-use super::HttpRouter;
+use super::component_utils::{handle_request_middleware, handle_response_middleware, Either};
+use super::conversions::{convert_response, convert_to_wick_response, merge_requests, request_to_wick};
+use super::{HttpError, HttpRouter, RawRouterHandler};
 use crate::Runtime;
 
 pub(super) struct ServiceFactory {
@@ -71,7 +73,7 @@ impl ResponseService {
 
 impl Service<Request<Body>> for ResponseService {
   type Response = Response<Body>;
-  type Error = hyper::Error;
+  type Error = HttpError;
   type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
   fn poll_ready(&mut self, _: &mut Context) -> Poll<Result<(), Self::Error>> {
@@ -102,43 +104,99 @@ impl Service<Request<Body>> for ResponseService {
 
     Box::pin(async move {
       let start = chrono::Local::now().format("%d/%b/%Y:%H:%M:%S %z");
-      match router {
+      let response = match router {
         Some(h) => match h {
-          HttpRouter::Raw(r) => match r.component.handle(remote_addr, engine, req).await {
-            Ok(res) => {
-              let status: u16 = res.status().into();
-
-              if status >= 400 {
-                span.in_scope(|| {
-                  error!(
-                    time=%start,
-                    path,
-                    status=%res.status(),
-                    "error",
-                  );
-                });
-              };
-
-              Ok(res)
-            }
-            Err(e) => {
-              span.in_scope(|| {
-                error!(
-                  time=%start,
-                  path,
-                  error=%e,
-                  "internal error",
-                );
-              });
-
-              Ok(make_ise(e))
-            }
-          },
+          HttpRouter::Raw(r) => {
+            let (wick_request_object, early_response) = run_request_middleware(&req, engine.clone(), &r).await?;
+            // if we have an early response, skip the main handler.
+            let response = if let Some(response) = early_response {
+              response
+            } else {
+              let req = merge_requests(&wick_request_object, req)?;
+              match r.component.handle(remote_addr, engine.clone(), req).await {
+                Ok(res) => res,
+                Err(e) => {
+                  span.in_scope(|| {
+                    error!(
+                      time=%start,
+                      path,
+                      error=%e,
+                      "internal error",
+                    );
+                  });
+                  make_ise(e)
+                }
+              }
+            };
+            run_response_middleware(wick_request_object, response, engine.clone(), &r).await?
+          }
         },
-        None => Ok(make_ise("")),
-      }
+        None => make_ise(""),
+      };
+      let status: u16 = response.status().into();
+
+      if status >= 400 {
+        span.in_scope(|| {
+          error!(
+            time=%start,
+            path,
+            status=%response.status(),
+            "error",
+          );
+        });
+      };
+
+      Ok(response)
     })
   }
+}
+
+async fn run_request_middleware<B>(
+  req: &Request<B>,
+  engine: Arc<Runtime>,
+  r: &RawRouterHandler,
+) -> Result<(wick_interface_http::types::HttpRequest, Option<Response<Body>>), HttpError>
+where
+  B: Send + Sync + 'static,
+{
+  let mut wick_req = request_to_wick(req)?;
+  for (entity, config) in &r.middleware.request {
+    let response = handle_request_middleware(entity.clone(), config.clone(), engine.clone(), &wick_req).await?;
+    match response {
+      Some(Either::Request(req)) => wick_req = req,
+      Some(Either::Response(res)) => {
+        let builder = convert_response(Response::builder(), res)?;
+        let res = builder.body(Body::empty()).unwrap();
+        return Ok((wick_req, Some(res)));
+      }
+      None => {
+        // do nothing
+      }
+    }
+  }
+  Ok((wick_req, None))
+}
+
+async fn run_response_middleware(
+  wick_req: wick_interface_http::types::HttpRequest,
+  response: Response<Body>,
+  engine: Arc<Runtime>,
+  r: &RawRouterHandler,
+) -> Result<Response<Body>, HttpError> {
+  let (mut response, body) = convert_to_wick_response(response)?;
+  for (entity, config) in &r.middleware.response {
+    let modified_response =
+      handle_response_middleware(entity.clone(), config.clone(), engine.clone(), &wick_req, &response).await?;
+    if let Some(r) = modified_response {
+      response = r;
+    }
+  }
+
+  let response = convert_response(Response::builder(), response)?
+    .body(body)
+    .map_err(|_e| HttpError::InternalError(super::InternalError::Builder))?;
+
+  Ok(response)
 }
 
 fn make_ise(e: impl std::fmt::Display) -> Response<Body> {

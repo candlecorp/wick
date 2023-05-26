@@ -1,7 +1,9 @@
 pub(crate) mod config;
+mod dependency;
 mod expand_type;
 mod f;
 mod ids;
+mod module;
 mod templates;
 
 use std::cell::RefCell;
@@ -12,14 +14,13 @@ pub use config::configure;
 use expand_type::expand_type;
 use ids::*;
 use itertools::Itertools;
+use module::Module;
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use templates::TypeOptions;
 use wick_config::config::OperationSignature;
 use wick_config::{FetchOptions, WickConfiguration};
 use wick_interface_types::TypeDefinition;
-
-use crate::module::Module;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Direction {
@@ -66,7 +67,21 @@ fn gen_trait_fns<'a>(
   config: &mut config::Config,
   op: impl Iterator<Item = &'a OperationSignature>,
 ) -> Vec<TokenStream> {
-  op.map(|op| templates::trait_signature(config, op)).collect_vec()
+  op.map(|op| {
+    let op_name = id(&snake(op.name()));
+    let op_config = templates::op_config(config, op);
+    let op_output = templates::op_outputs(config, op);
+    let trait_sig = templates::trait_signature(config, op);
+    quote! {
+      pub mod #op_name {
+        use super::*;
+        #op_config
+        #op_output
+      }
+      #trait_sig
+    }
+  })
+  .collect_vec()
 }
 
 #[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
@@ -121,8 +136,7 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
   let expanded = quote! {
     #imports
     #[allow(unused)]
-    pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, wick_component::anyhow::Error>;
-    pub use wick_component::anyhow::Result;
+    pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, Box<dyn std::error::Error + Send + Sync>>;
     pub use wick_component::flow_component::Context;
 
     #init

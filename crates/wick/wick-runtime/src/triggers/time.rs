@@ -65,7 +65,7 @@ async fn create_schedule(
     let runtime = runtime.build(None).await.unwrap();
 
     let runtime = Arc::new(runtime);
-    let operation = Arc::new(config.operation().operation().to_owned());
+    let operation = Arc::new(config.operation().name().to_owned());
     let payload = Arc::new(config.payload().to_vec());
 
     let mut current_count: u16 = 0;
@@ -198,14 +198,22 @@ impl fmt::Display for Time {
 
 #[cfg(test)]
 mod test {
+  use std::path::PathBuf;
+
   use anyhow::Result;
 
   use super::*;
 
   #[test_logger::test(tokio::test)]
   async fn test_basic() -> Result<()> {
-    let yaml = include_str!("./time.test.yaml");
-    let app_config = config::WickConfiguration::from_yaml(yaml, &None)?.try_app_config()?;
+    let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let manifest_dir = crate_dir.join("../../../examples/time/");
+
+    let yaml = manifest_dir.join("time.wick");
+    let app_config = config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default())
+      .await?
+      .try_app_config()?;
+
     let trigger = Time::load()?;
     let trigger_config = app_config.triggers()[0].clone();
     trigger

@@ -1,5 +1,6 @@
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
+use wick_packet::OperationConfig;
 
 use crate::config;
 
@@ -11,17 +12,21 @@ use crate::config;
 pub struct ComponentOperationExpression {
   /// The operation ID.
   #[asset(skip)]
-  pub(crate) operation: String,
+  pub(crate) name: String,
   /// The component referenced by identifier or anonymously.
   pub(crate) component: ComponentDefinition,
+  /// Configuration to associate with this operation.
+  #[asset(skip)]
+  pub(crate) config: Option<OperationConfig>,
 }
 
 impl ComponentOperationExpression {
   /// Create a new [ComponentOperationExpression] with specified operation and component.
   pub fn new(operation: impl AsRef<str>, component: ComponentDefinition) -> Self {
     Self {
-      operation: operation.as_ref().to_owned(),
+      name: operation.as_ref().to_owned(),
       component,
+      config: None,
     }
   }
 }
@@ -42,8 +47,9 @@ impl std::str::FromStr for ComponentOperationExpression {
       .to_owned();
 
     Ok(Self {
-      operation,
+      name: operation,
       component: ComponentDefinition::Reference(config::components::ComponentReference { id: component }),
+      config: None,
     })
   }
 }
@@ -92,7 +98,7 @@ impl ComponentDefinition {
 
   /// Returns the component config, if it exists
   #[must_use]
-  pub fn config(&self) -> Option<&wick_packet::OperationConfig> {
+  pub fn config(&self) -> Option<&OperationConfig> {
     match self {
       #[allow(deprecated)]
       ComponentDefinition::Wasm(c) => c.config.as_ref(),

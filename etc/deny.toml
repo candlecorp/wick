@@ -69,7 +69,7 @@ allow = [
   "BSD-2-Clause",
   "OpenSSL",
   "Unicode-DFS-2016",
-  "BlueOak-1.0.0"
+  "BlueOak-1.0.0",
 ]
 # List of explictly disallowed licenses
 # See https://spdx.org/licenses/ for list of possible licenses
@@ -117,8 +117,10 @@ exceptions = [
     { name = "flow-component", allow = ["Elastic-2.0"] },
     { name = "flow-graph", allow = ["Elastic-2.0"] },
     { name = "flow-expression-parser", allow = ["Elastic-2.0"] },
-
-
+    { name = "webpki-roots", allow = ["MPL-2.0"] },
+    { name = "option-ext", allow = ["MPL-2.0"] },
+    { name = "ittapi-sys", allow = ["GPL-2.0","BSD-3-Clause"] },
+    { name = "ittapi", allow = ["GPL-2.0","BSD-3-Clause"] },
 ]
 
 # Some crates don't have (easily) machine readable licensing information,

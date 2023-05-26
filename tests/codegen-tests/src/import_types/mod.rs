@@ -4,8 +4,7 @@ pub use bytes::Bytes;
 pub(crate) use wick_component::wasmrs_rx::{Observable, Observer};
 pub use wick_component::{packet as wick_packet, runtime, wasmrs, wasmrs_codec, wasmrs_rx};
 #[allow(unused)]
-pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, wick_component::anyhow::Error>;
-pub use wick_component::anyhow::Result;
+pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, Box<dyn std::error::Error + Send + Sync>>;
 pub use wick_component::flow_component::Context;
 #[no_mangle]
 #[cfg(target_family = "wasm")]
@@ -63,9 +62,9 @@ pub mod types {
     pub field1: String,
     pub field2: String,
   }
-  pub mod AAA {
+  pub mod aaa {
     #[allow(unused)]
-    use super::AAA;
+    use super::aaa;
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     pub struct HttpResponse {
       pub version: HttpVersion,
@@ -166,9 +165,9 @@ pub mod types {
       }
     }
   }
-  pub mod ZZZ {
+  pub mod zzz {
     #[allow(unused)]
-    use super::ZZZ;
+    use super::zzz;
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     pub struct HttpResponse {
       pub version: HttpVersion,
@@ -373,41 +372,62 @@ pub mod types {
     }
   }
 }
-#[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-pub struct OpTestopConfig {
-  pub a: String,
-  pub b: u32,
-}
-impl Default for OpTestopConfig {
-  fn default() -> Self {
-    Self {
-      a: Default::default(),
-      b: Default::default(),
+pub mod testop {
+  use super::*;
+  #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
+  pub struct Config {
+    pub a: String,
+    pub b: u32,
+  }
+  impl Default for Config {
+    fn default() -> Self {
+      Self {
+        a: Default::default(),
+        b: Default::default(),
+      }
+    }
+  }
+  pub struct Outputs {
+    #[allow(unused)]
+    pub(crate) output: wick_packet::Output<String>,
+  }
+  impl Outputs {
+    pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+      Self {
+        output: wick_packet::Output::new("output", channel.clone()),
+      }
+    }
+    #[allow(unused)]
+    pub fn broadcast_err(&mut self, err: impl AsRef<str>) {
+      self.output.error(&err);
     }
   }
 }
-pub struct OpTestopOutputs {
-  #[allow(unused)]
-  pub(crate) output: wick_packet::Output<String>,
-}
-impl OpTestopOutputs {
-  pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
-    Self {
-      output: wick_packet::Output::new("output", channel.clone()),
-    }
-  }
-}
-# [cfg_attr (target_family = "wasm" , async_trait :: async_trait (? Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait OpTestop {
+# [async_trait :: async_trait (? Send)]
+#[cfg(target_family = "wasm")]
+pub trait TestopOperation {
+  type Error: std::fmt::Display;
+  type Outputs;
+  type Config: std::fmt::Debug;
   #[allow(unused)]
   async fn testop(
     message: WickStream<types::http::HttpResponse>,
-    outputs: OpTestopOutputs,
-    ctx: wick_component::flow_component::Context<OpTestopConfig>,
-  ) -> Result<()> {
-    unimplemented!()
-  }
+    outputs: Self::Outputs,
+    ctx: wick_component::flow_component::Context<Self::Config>,
+  ) -> std::result::Result<(), Self::Error>;
+}
+#[async_trait::async_trait]
+#[cfg(not(target_family = "wasm"))]
+pub trait TestopOperation {
+  type Error: std::fmt::Display + Send;
+  type Outputs: Send;
+  type Config: std::fmt::Debug + Send;
+  #[allow(unused)]
+  async fn testop(
+    message: WickStream<types::http::HttpResponse>,
+    outputs: Self::Outputs,
+    ctx: wick_component::flow_component::Context<Self::Config>,
+  ) -> std::result::Result<(), Self::Error>;
 }
 #[derive(Default, Clone)]
 pub struct Component;
@@ -419,9 +439,9 @@ impl Component {
     Box<dyn std::error::Error + Send + Sync>,
   > {
     let (channel, rx) = wasmrs_rx::FluxChannel::<wasmrs::RawPayload, wasmrs::PayloadError>::new_parts();
-    let outputs = OpTestopOutputs::new(channel.clone());
+    let outputs = testop::Outputs::new(channel.clone());
     runtime::spawn("testop_wrapper", async move {
-      let (config, message) = wick_component :: payload_fan_out ! (input , raw : false , OpTestopConfig , [("message" , types :: http :: HttpResponse) ,]);
+      let (config, message) = wick_component :: payload_fan_out ! (input , raw : false , Box < dyn std :: error :: Error + Send + Sync > , testop :: Config , [("message" , types :: http :: HttpResponse) ,]);
       let config = match config.await {
         Ok(Ok(config)) => config,
         _ => {

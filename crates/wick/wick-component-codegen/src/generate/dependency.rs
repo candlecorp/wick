@@ -44,7 +44,6 @@ impl ToTokens for Dependency {
       Dependency::AsyncTrait => tokens.extend(quote! { pub use async_trait::async_trait; }),
       Dependency::WickComponent => tokens.extend(quote! {
         pub use wick_component;
-
       }),
     }
   }

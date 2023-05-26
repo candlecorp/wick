@@ -1,8 +1,8 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
+use super::dependency::Dependency;
 use super::{config, Direction};
-use crate::dependency::Dependency;
 use crate::generate::ids::get_typename_parts;
 
 pub(super) fn expand_type(

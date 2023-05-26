@@ -92,3 +92,10 @@ store-success-output = false
 # Note that if a description can be extracted from the output, it is always stored in the
 # <description> element.
 store-failure-output = true
+
+[test-groups]
+port-limited = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = 'test(port_limited::)'
+test-group = 'port-limited'

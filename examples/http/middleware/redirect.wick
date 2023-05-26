@@ -1,0 +1,68 @@
+kind: wick/component@v1
+name: request_decorator
+metadata:
+  description: A component that redirects you to google.com if the path is "/google"
+  version: 0.0.1
+  authors:
+    - 'Wick Maintainers'
+  vendors:
+    - 'Candle Corporation'
+  licenses:
+    - Apache-2.0
+import:
+  - name: http
+    component:
+      kind: wick/component/types@v1
+      ref: 'registry.candle.dev/common/http:0.0.1'
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: pathcheck
+      uses:
+        - name: switch
+          operation: core::switch
+          with:
+            context:
+              - name: request
+                type: http::HttpRequest
+            outputs:
+              - name: request
+                type: http::HttpRequest
+              - name: response
+                type: http::HttpResponse?
+            cases:
+              - case: '/google'
+                do: self::pathcheck::to_google
+            default: self::pathcheck::none
+      flow:
+        - <>.request.path -> switch.match
+        - <>.request -> switch.request
+        - switch.request -> <>.request
+        - switch.response -> <>.response
+      operations:
+        - name: to_google
+          uses:
+            - name: STATUS
+              operation: core::sender
+              with:
+                output:
+                  status: 301
+                  version: 1.1
+                  headers:
+                    location: ['https://google.com']
+          outputs:
+            - name: request
+              type: http::HttpRequest
+            - name: response
+              type: http::HttpResponse?
+          flow:
+            - <>.request -> drop
+            - STATUS.output -> <>.response
+        - name: none
+          outputs:
+            - name: request
+              type: http::HttpRequest
+            - name: response
+              type: http::HttpResponse?
+          flow:
+            - <>.request -> <>.request

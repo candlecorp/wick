@@ -23,13 +23,17 @@ struct Response {
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl OpHttpHandler for Component {
+impl HttpHandlerOperation for Component {
+  type Error = Box<dyn std::error::Error + Send + Sync>;
+  type Outputs = http_handler::Outputs;
+  type Config = http_handler::Config;
+
   async fn http_handler(
     mut request: WickStream<types::http::HttpRequest>,
     body: WickStream<bytes::Bytes>,
-    mut outputs: OpHttpHandlerOutputs,
-    _ctx: Context<OpHttpHandlerConfig>,
-  ) -> Result<()> {
+    mut outputs: Self::Outputs,
+    _ctx: Context<Self::Config>,
+  ) -> Result<(), Self::Error> {
     if let Some(Ok(request)) = request.next().await {
       println!("{:#?}", request);
     }

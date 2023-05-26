@@ -29,11 +29,12 @@ use wick_config::config::{
   RawRouterConfig,
   RestRouterConfig,
   StaticRouterConfig,
+  WickRouter,
 };
-use wick_packet::Entity;
+use wick_packet::{Entity, OperationConfig};
 
 use self::static_router::StaticRouter;
-use super::{resolve_ref, Trigger, TriggerKind};
+use super::{resolve_or_import, resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
 use crate::runtime::RuntimeConstraint;
@@ -46,6 +47,9 @@ use crate::Runtime;
 
 #[derive(Debug, thiserror::Error)]
 enum HttpError {
+  #[error("Internal error: {:?}",.0)]
+  InternalError(InternalError),
+
   #[error("Operation error: {0}")]
   OperationError(String),
   #[error("Unsupported HTTP method: {0}")]
@@ -60,8 +64,29 @@ enum HttpError {
   InvalidParameter(String),
   #[error("Invalid response: {0}")]
   InvalidResponse(String),
+
+  #[error("Invalid header name: {0}")]
+  InvalidHeaderName(String),
+
+  #[error("Invalid header value: {0}")]
+  InvalidHeaderValue(String),
+
+  #[error("Invalid path or query parameters: {0}")]
+  InvalidUri(String),
+
+  #[error("Invalid pre-request middleware response: {0}")]
+  InvalidPreRequestResponse(String),
+
+  #[error("Invalid post-request middleware response: {0}")]
+  InvalidPostRequestResponse(String),
+
   #[error("Error deserializing response on port {0}: {1}")]
   Deserialize(String, String),
+}
+
+#[derive(Debug)]
+enum InternalError {
+  Builder,
 }
 
 #[derive()]
@@ -140,6 +165,7 @@ impl HttpRouter {
 struct RawRouterHandler {
   path: String,
   component: Arc<dyn RawRouter + Send + Sync>,
+  middleware: RouterMiddleware,
 }
 impl std::fmt::Debug for RawRouterHandler {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -152,6 +178,22 @@ struct RouterOperation {
   operation: String,
   component: String,
   codec: Codec,
+}
+
+#[derive(Debug, Clone)]
+struct RouterMiddleware {
+  request: Vec<(Entity, Option<OperationConfig>)>,
+  #[allow(unused)]
+  response: Vec<(Entity, Option<OperationConfig>)>,
+}
+
+impl RouterMiddleware {
+  pub(crate) fn new(
+    request: Vec<(Entity, Option<OperationConfig>)>,
+    response: Vec<(Entity, Option<OperationConfig>)>,
+  ) -> Self {
+    Self { request, response }
+  }
 }
 
 #[derive(Default)]
@@ -209,16 +251,54 @@ fn index_to_router_id(index: usize) -> String {
   format!("router_{}", index)
 }
 
+fn resolve_middleware_components(
+  router_index: usize,
+  app_config: &AppConfiguration,
+  router: &impl WickRouter,
+) -> Result<(RouterMiddleware, Vec<ImportBinding>), RuntimeError> {
+  let mut request_operations = Vec::new();
+  let mut response_operations = Vec::new();
+  let mut bindings = Vec::new();
+  if let Some(middleware) = router.middleware() {
+    for (i, operation) in middleware.request().iter().enumerate() {
+      let (name, binding) = resolve_or_import(
+        app_config,
+        format!("{}_request_middleware_{}", router_index, i),
+        operation,
+      )?;
+      if let Some(binding) = binding {
+        bindings.push(binding);
+      }
+      request_operations.push((name, operation.config().cloned()));
+    }
+    for (i, operation) in middleware.response().iter().enumerate() {
+      let (name, binding) = resolve_or_import(
+        app_config,
+        format!("{}_request_middleware_{}", router_index, i),
+        operation,
+      )?;
+      if let Some(binding) = binding {
+        bindings.push(binding);
+      }
+      response_operations.push((name, operation.config().cloned()));
+    }
+  }
+  let middleware = RouterMiddleware::new(request_operations, response_operations);
+  Ok((middleware, bindings))
+}
+
 fn register_raw_router(
   index: usize,
   app_config: &AppConfiguration,
   router_config: &RawRouterConfig,
 ) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
   trace!(index, "registering raw router");
+  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
+
   let router_component = resolve_ref(app_config, router_config.operation().component())?;
   let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
   let router = RouterOperation {
-    operation: router_config.operation().operation().to_owned(),
+    operation: router_config.operation().name().to_owned(),
     component: index_to_router_id(index),
     codec: router_config.codec().copied().unwrap_or_default(),
   };
@@ -239,11 +319,13 @@ fn register_raw_router(
   };
   let router = RawComponentRouter::new(router);
 
+  bindings.push(router_binding);
   Ok((
-    vec![router_binding],
+    bindings,
     HttpRouter::Raw(RawRouterHandler {
       path: router_config.path().to_owned(),
       component: Arc::new(router),
+      middleware,
     }),
     vec![constraint],
   ))
@@ -252,10 +334,11 @@ fn register_raw_router(
 fn register_static_router(
   index: usize,
   resources: Arc<HashMap<String, Resource>>,
-  _app_config: &AppConfiguration,
+  app_config: &AppConfiguration,
   router_config: &StaticRouterConfig,
 ) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
   trace!(index, "registering static router");
+  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
   let volume = resources.get(router_config.volume()).ok_or_else(|| {
     RuntimeError::ResourceNotFound(
       TriggerKind::Http,
@@ -278,11 +361,13 @@ fn register_static_router(
   let router = StaticRouter::new(volume, Some(router_config.path().to_owned()), fallback);
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
   let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
+  bindings.push(router_binding);
   Ok((
-    vec![router_binding],
+    bindings,
     HttpRouter::Raw(RawRouterHandler {
       path: router_config.path().to_owned(),
       component: Arc::new(router),
+      middleware,
     }),
     vec![],
   ))
@@ -295,7 +380,7 @@ fn register_rest_router(
   router_config: &RestRouterConfig,
 ) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
   trace!(index, "registering rest router");
-  let mut bindings = Vec::new();
+  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
   let mut routes = Vec::new();
   for (i, route) in router_config.routes().iter().enumerate() {
     let route_component = resolve_ref(app_config, route.operation().component())?;
@@ -321,6 +406,7 @@ fn register_rest_router(
     HttpRouter::Raw(RawRouterHandler {
       path: router_config.path().to_owned(),
       component: Arc::new(router),
+      middleware,
     }),
     vec![],
   ))
@@ -329,10 +415,11 @@ fn register_rest_router(
 fn register_proxy_router(
   index: usize,
   resources: Arc<HashMap<String, Resource>>,
-  _app_config: &AppConfiguration,
+  app_config: &AppConfiguration,
   router_config: &ProxyRouterConfig,
 ) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
   trace!(index, "registering proxy router");
+  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
   let url = resources.get(router_config.url()).ok_or_else(|| {
     RuntimeError::ResourceNotFound(
       TriggerKind::Http,
@@ -357,11 +444,13 @@ fn register_proxy_router(
   let router = ProxyRouter::new(url, strip_path);
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
   let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
+  bindings.push(router_binding);
   Ok((
-    vec![router_binding],
+    bindings,
     HttpRouter::Raw(RawRouterHandler {
       path: router_config.path().to_owned(),
       component: Arc::new(router),
+      middleware,
     }),
     vec![],
   ))
@@ -454,102 +543,156 @@ trait RawRouter {
 
 #[cfg(test)]
 mod test {
-  use std::path::PathBuf;
 
-  use anyhow::Result;
+  // "port_limited" tests are grouped together and run on a single thread to prevent port contention
+  mod port_limited {
 
-  use super::*;
+    use anyhow::Result;
 
-  #[test_logger::test(tokio::test)]
-  async fn test_raw_router() -> Result<()> {
-    let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let manifest_dir = crate_dir.join("../../../tests/testdata/manifests");
-    let yaml = manifest_dir.join("app-http-server-wasm.wick");
+    use super::super::*;
+    use crate::test::{load_example, load_test_manifest};
 
-    let app_config = config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default())
-      .await?
-      .try_app_config()?;
+    static PORT: &str = "9005";
 
-    let trigger = Http::default();
-    let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
-    let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
-    let trigger_config = app_config.triggers()[0].clone();
-    trigger
-      .run(
-        "test".to_owned(),
-        app_config,
-        trigger_config,
-        resources,
-        Span::current(),
-      )
-      .await?;
-    let client = reqwest::Client::new();
-    let res = client
-      .post("http://0.0.0.0:8999")
-      .body(r#"{"message": "my json message"}"#)
-      .send()
-      .await?
-      .text()
-      .await?;
+    async fn get(path: &str) -> Result<reqwest::Response> {
+      let client = reqwest::Client::new();
+      let res = client.get(format!("http://0.0.0.0:{}{}", PORT, path)).send().await?;
+      Ok(res)
+    }
 
-    println!("{:#?}", res);
-    assert_eq!(res, r#"{"output_message":"egassem nosj ym"}"#);
-    trigger.shutdown_gracefully().await?;
+    #[test_logger::test(tokio::test)]
+    async fn test_raw_router() -> Result<()> {
+      std::env::set_var("HTTP_PORT", PORT);
+      let app_config = load_test_manifest("app-http-server-wasm.wick")
+        .await?
+        .try_app_config()?;
 
-    Ok(())
-  }
+      let trigger = Http::default();
+      let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
+      let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
+      let trigger_config = app_config.triggers()[0].clone();
+      trigger
+        .run(
+          "test".to_owned(),
+          app_config,
+          trigger_config,
+          resources,
+          Span::current(),
+        )
+        .await?;
+      let client = reqwest::Client::new();
+      let res = client
+        .post(format!("http://0.0.0.0:{}", PORT))
+        .body(r#"{"message": "my json message"}"#)
+        .send()
+        .await?
+        .text()
+        .await?;
 
-  #[test_logger::test(tokio::test)]
-  async fn test_rest_router() -> Result<()> {
-    let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let manifest_dir = crate_dir.join("../../../examples/http/");
+      println!("{:#?}", res);
+      assert_eq!(res, r#"{"output_message":"egassem nosj ym"}"#);
+      trigger.shutdown_gracefully().await?;
 
-    let yaml = manifest_dir.join("rest-router.wick");
-    let app_config = config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default())
-      .await?
-      .try_app_config()?;
-    let trigger = Http::default();
-    let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
-    let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
-    let trigger_config = app_config.triggers()[0].clone();
-    trigger
-      .run(
-        "test".to_owned(),
-        app_config,
-        trigger_config,
-        resources,
-        Span::current(),
-      )
-      .await?;
-    let client = reqwest::Client::new();
-    let res: serde_json::Value = client
-      .get("http://0.0.0.0:8999/this/FIRST_VALUE/some/222?third=third_a&fourth=true")
-      .send()
-      .await?
-      .json()
-      .await?;
+      Ok(())
+    }
 
-    println!("{:#?}", res);
-    assert_eq!(
-      res,
-      json!({"first":"FIRST_VALUE", "second": 222,"third":"third_a", "fourth":true })
-    );
-    trigger.shutdown_gracefully().await?;
-    // Todo, fix parsing query string list parameters
-    // let res: serde_json::Value = client
-    //   .get("http://0.0.0.0:8999/this/FIRST_VALUE/some/222?third=third_a&third=third_b&fourth=true")
-    //   .send()
-    //   .await?
-    //   .json()
-    //   .await?;
+    #[test_logger::test(tokio::test)]
+    async fn test_middleware() -> Result<()> {
+      std::env::set_var("HTTP_PORT", PORT);
+      let app_config = load_example("http/middleware.wick").await?.try_app_config()?;
 
-    // println!("{:#?}", res);
-    // assert_eq!(
-    //   res,
-    //   json!({"first":"FIRST_VALUE", "second": 222,"third":["third_a","third_b"], "fourth":true })
-    // );
-    // trigger.shutdown_gracefully().await?;
+      let trigger = Http::default();
+      let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
+      let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
+      let trigger_config = app_config.triggers()[0].clone();
+      trigger
+        .run(
+          "test".to_owned(),
+          app_config,
+          trigger_config,
+          resources,
+          Span::current(),
+        )
+        .await?;
+      // requests to /redirect should result in a redirected response.
+      let res = get("/redirect?url=https://google.com/").await?.text().await?;
 
-    Ok(())
+      println!("{:#?}", res);
+
+      assert!(res.contains("Google"));
+
+      // check that other requests still go through.
+      let res = get("/this/FIRST_VALUE/some/222?third=third_a&fourth=true").await?;
+
+      // check that our request middleware modified a request header & that it made its way to the response middleware
+      let header = res.headers().get("x-wick-redirect").unwrap();
+      assert_eq!(header, "false");
+      // check our response middleware added a header.
+      let header = res.headers().get("x-wick-count").unwrap();
+      assert_eq!(header, "2");
+      let res: serde_json::Value = res.json().await?;
+      println!("{:#?}", res);
+      assert_eq!(
+        res,
+        json!({"first":"FIRST_VALUE", "second": 222,"third":"third_a", "fourth":true })
+      );
+
+      // check that our response middleware has been called again.
+      let res = get("/this/FIRST_VALUE/some/222?third=third_a&fourth=true").await?;
+      let header = res.headers().get("x-wick-count").unwrap();
+      assert_eq!(header, "3");
+
+      trigger.shutdown_gracefully().await?;
+
+      Ok(())
+    }
+
+    #[test_logger::test(tokio::test)]
+    async fn test_rest_router() -> Result<()> {
+      std::env::set_var("HTTP_PORT", PORT);
+      let app_config = load_example("http/rest-router.wick").await?.try_app_config()?;
+
+      let trigger = Http::default();
+      let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
+      let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
+      let trigger_config = app_config.triggers()[0].clone();
+      trigger
+        .run(
+          "test".to_owned(),
+          app_config,
+          trigger_config,
+          resources,
+          Span::current(),
+        )
+        .await?;
+
+      let res: serde_json::Value = get("/this/FIRST_VALUE/some/222?third=third_a&fourth=true")
+        .await?
+        .json()
+        .await?;
+
+      println!("{:#?}", res);
+      assert_eq!(
+        res,
+        json!({"first":"FIRST_VALUE", "second": 222,"third":"third_a", "fourth":true })
+      );
+      trigger.shutdown_gracefully().await?;
+      // Todo, fix parsing query string list parameters
+      // let res: serde_json::Value = client
+      //   .get("http://0.0.0.0:8999/this/FIRST_VALUE/some/222?third=third_a&third=third_b&fourth=true")
+      //   .send()
+      //   .await?
+      //   .json()
+      //   .await?;
+
+      // println!("{:#?}", res);
+      // assert_eq!(
+      //   res,
+      //   json!({"first":"FIRST_VALUE", "second": 222,"third":["third_a","third_b"], "fourth":true })
+      // );
+      // trigger.shutdown_gracefully().await?;
+
+      Ok(())
+    }
   }
 }
