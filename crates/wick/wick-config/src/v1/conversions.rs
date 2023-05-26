@@ -328,8 +328,9 @@ impl TryFrom<v1::ComponentOperationExpression> for ComponentOperationExpression 
   type Error = ManifestError;
   fn try_from(literal: v1::ComponentOperationExpression) -> Result<Self> {
     Ok(Self {
-      operation: literal.name,
+      name: literal.name,
       component: literal.component.try_into()?,
+      config: literal.with.map_into(),
     })
   }
 }
@@ -487,6 +488,7 @@ impl TryFrom<ProxyRouterConfig> for v1::ProxyRouter {
       path: value.path,
       url: value.url,
       strip_path: value.strip_path,
+      middleware: value.middleware.try_map_into()?,
     })
   }
 }
@@ -498,6 +500,7 @@ impl TryFrom<StaticRouterConfig> for v1::StaticRouter {
       path: value.path,
       volume: value.volume,
       fallback: value.fallback,
+      middleware: value.middleware.try_map_into()?,
     })
   }
 }
@@ -509,6 +512,7 @@ impl TryFrom<RawRouterConfig> for v1::RawRouter {
       path: value.path,
       codec: value.codec.map_into(),
       operation: value.operation.try_into()?,
+      middleware: value.middleware.try_map_into()?,
     })
   }
 }
@@ -520,7 +524,30 @@ impl TryFrom<RestRouterConfig> for v1::RestRouter {
       path: value.path,
       tools: value.tools.try_map_into()?,
       routes: value.routes.try_map_into()?,
+      middleware: value.middleware.try_map_into()?,
       info: value.info.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<config::Middleware> for v1::Middleware {
+  type Error = ManifestError;
+
+  fn try_from(value: config::Middleware) -> Result<Self> {
+    Ok(Self {
+      request: value.request.try_map_into()?,
+      response: value.response.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<v1::Middleware> for config::Middleware {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::Middleware) -> Result<Self> {
+    Ok(Self {
+      request: value.request.try_map_into()?,
+      response: value.response.try_map_into()?,
     })
   }
 }
@@ -675,8 +702,9 @@ impl TryFrom<ComponentOperationExpression> for v1::ComponentOperationExpression 
   type Error = ManifestError;
   fn try_from(value: ComponentOperationExpression) -> Result<Self> {
     Ok(Self {
-      name: value.operation,
+      name: value.name,
       component: value.component.try_into()?,
+      with: value.config.map_into(),
     })
   }
 }
@@ -956,7 +984,7 @@ impl TryFrom<config::FlowOperation> for v1::CompositeOperationDefinition {
   type Error = ManifestError;
 
   fn try_from(value: config::FlowOperation) -> std::result::Result<Self, Self::Error> {
-    let instances: Vec<v1::InstanceBinding> = value.instances.into_iter().map(|(id, val)| (id, val).into()).collect();
+    let instances: Vec<v1::InstanceBinding> = value.instances.into_iter().map(from_wat).collect();
     let connections: Result<Vec<v1::FlowExpression>> = value.expressions.try_map_into();
     Ok(Self {
       name: value.name,
@@ -1018,18 +1046,17 @@ impl TryFrom<ast::ConnectionTargetExpression> for v1::ConnectionTargetDefinition
   }
 }
 
-impl From<(String, config::InstanceReference)> for v1::InstanceBinding {
-  fn from(value: (String, config::InstanceReference)) -> Self {
-    let id = value.0;
-    let value = value.1;
-    Self {
-      name: id,
-      operation: v1::ComponentOperationExpression {
-        name: value.name,
-        component: v1::ComponentDefinition::ComponentReference(v1::ComponentReference { id: value.component_id }),
-      },
+fn from_wat(value: (String, config::InstanceReference)) -> v1::InstanceBinding {
+  let id = value.0;
+  let value = value.1;
+  v1::InstanceBinding {
+    name: id,
+    operation: v1::ComponentOperationExpression {
+      name: value.name,
+      component: v1::ComponentDefinition::ComponentReference(v1::ComponentReference { id: value.component_id }),
       with: value.data.map_into(),
-    }
+    },
+    with: None,
   }
 }
 
@@ -1219,22 +1246,26 @@ impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
         path: v.path,
         codec: v.codec.map_into(),
         operation: v.operation.try_into()?,
+        middleware: v.middleware.try_map_into()?,
       }),
       v1::HttpRouter::RestRouter(v) => Self::RestRouter(RestRouterConfig {
         path: v.path,
         tools: v.tools.try_map_into()?,
         routes: v.routes.try_map_into()?,
         info: v.info.try_map_into()?,
+        middleware: v.middleware.try_map_into()?,
       }),
       v1::HttpRouter::StaticRouter(v) => Self::StaticRouter(StaticRouterConfig {
         path: v.path,
         volume: v.volume,
         fallback: v.fallback,
+        middleware: v.middleware.try_map_into()?,
       }),
       v1::HttpRouter::ProxyRouter(v) => Self::ProxyRouter(ProxyRouterConfig {
         path: v.path,
         url: v.url,
         strip_path: v.strip_path,
+        middleware: v.middleware.try_map_into()?,
       }),
     };
     Ok(rv)

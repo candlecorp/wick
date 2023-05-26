@@ -15,6 +15,7 @@ exclude = [
   "crates/integration/test-http-trigger-component",
   "tests/template",
   "tests/testdata",
+  "examples/http/middleware/request",
 ]
 
 [workspace.dependencies]

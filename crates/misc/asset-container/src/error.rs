@@ -11,6 +11,10 @@ pub enum Error {
   #[error("Error opening file {}: {1}", .0.display())]
   FileOpen(PathBuf, String),
 
+  /// Could not fetch remote asset.
+  #[error("Error fetching file {0}: {1}")]
+  RemoteFetch(String, String),
+
   /// Could not load file.
   #[error("Could not read file {0}")]
   LoadError(String),

@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://github.com/candlecorp/wick/releases/download/nightly/schema.json
+---
+name: 'request'
+kind: wick/component@v1
+metadata:
+  version: '0.0.1'
+import:
+  - name: http
+    component:
+      kind: wick/component/types@v1
+      ref: 'registry.candle.dev/common/http:0.0.1'
+component:
+  kind: wick/component/wasmrs@v1
+  ref: build/request.signed.wasm
+  operations:
+    - name: redirect
+      inputs:
+        - name: request
+          type: http::HttpRequest
+      outputs:
+        - name: request
+          type: http::HttpRequest
+        - name: response
+          type: http::HttpResponse
+    - name: count
+      inputs:
+        - name: request
+          type: http::HttpRequest
+        - name: response
+          type: http::HttpResponse
+      outputs:
+        - name: response
+          type: http::HttpResponse

@@ -256,6 +256,12 @@ pub(crate) struct ComponentOperationExpression {
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
+  /// Configuration to tie to this operation
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) with: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -299,6 +305,11 @@ pub(crate) struct ProxyRouter {
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
+  /// Middleware operations for this router.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) middleware: Option<Middleware>,
   /// The URL resource to proxy to.
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
@@ -322,6 +333,11 @@ pub(crate) struct RestRouter {
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) tools: Option<Tools>,
+  /// Middleware operations for this router.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) middleware: Option<Middleware>,
   /// The routes to serve and operations that handle them.
 
   #[serde(default)]
@@ -480,6 +496,11 @@ pub(crate) struct StaticRouter {
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
+  /// Middleware operations for this router.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) middleware: Option<Middleware>,
   /// The volume to serve static files from.
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
@@ -499,6 +520,11 @@ pub(crate) struct RawRouter {
 
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
+  /// Middleware operations for this router.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) middleware: Option<Middleware>,
   /// The codec to use when encoding/decoding data.
 
   #[serde(default)]
@@ -508,6 +534,24 @@ pub(crate) struct RawRouter {
 
   #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
   pub(crate) operation: ComponentOperationExpression,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Request and response operations that run before and after the main operation.
+pub(crate) struct Middleware {
+  /// The middleware to apply to requests.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  #[serde(deserialize_with = "crate::v1::parse::vec_component_operation")]
+  pub(crate) request: Vec<ComponentOperationExpression>,
+  /// The middleware to apply to responses.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  #[serde(deserialize_with = "crate::v1::parse::vec_component_operation")]
+  pub(crate) response: Vec<ComponentOperationExpression>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

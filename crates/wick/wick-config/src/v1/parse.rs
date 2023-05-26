@@ -112,6 +112,47 @@ where
   deserializer.deserialize_seq(Visitor)
 }
 
+pub(crate) fn vec_component_operation<'de, D>(
+  deserializer: D,
+) -> std::result::Result<Vec<crate::v1::ComponentOperationExpression>, D::Error>
+where
+  D: serde::Deserializer<'de>,
+{
+  struct Visitor;
+  impl<'de> serde::de::Visitor<'de> for Visitor {
+    type Value = Vec<crate::v1::ComponentOperationExpression>;
+    fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+      write!(f, "a list of operations")
+    }
+
+    fn visit_seq<A: serde::de::SeqAccess<'de>>(
+      self,
+      mut seq: A,
+    ) -> std::result::Result<Vec<crate::v1::ComponentOperationExpression>, A::Error> {
+      let mut v = vec![];
+      while let Some(thing) = seq.next_element::<serde_value::Value>()? {
+        let result = match thing {
+          serde_value::Value::String(s) => crate::v1::ComponentOperationExpression::from_str(&s)
+            .map_err(|e| serde::de::Error::custom(e.to_string()))?,
+          serde_value::Value::Map(map) => crate::v1::ComponentOperationExpression::deserialize(
+            serde_value::ValueDeserializer::new(serde_value::Value::Map(map)),
+          )?,
+          _ => {
+            return Err(serde::de::Error::invalid_type(
+              serde::de::Unexpected::Other("other"),
+              &self,
+            ))
+          }
+        };
+        v.push(result);
+      }
+      Ok(v)
+    }
+  }
+
+  deserializer.deserialize_seq(Visitor)
+}
+
 pub(crate) fn connection_target_shortform<'de, D>(
   deserializer: D,
 ) -> std::result::Result<crate::v1::ConnectionTargetDefinition, D::Error>
@@ -196,6 +237,7 @@ impl FromStr for v1::ComponentOperationExpression {
     Ok(Self {
       name: operation,
       component: crate::v1::ComponentDefinition::ComponentReference(crate::v1::ComponentReference { id }),
+      with: None,
     })
   }
 }

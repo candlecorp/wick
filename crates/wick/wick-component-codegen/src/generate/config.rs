@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use derive_builder::Builder;
 use wick_config::WickConfiguration;
 
-use crate::dependency::Dependency;
+use super::dependency::Dependency;
 
 #[derive(Debug, Default, Builder, Clone)]
 #[must_use]

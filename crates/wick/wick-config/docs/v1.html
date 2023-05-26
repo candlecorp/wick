@@ -457,6 +457,20 @@
 <li><span class="annotation field-note">Required</span></li>
 
 </ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="with">with</a>
+</h3>
+
+<span class="description field-description">Configuration to tie to this operation</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type>Map<string,<a href="#any">any</a>><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
 </div></div></div><div class="definition">
 <h2 class="definition-name type-name">
   <a name="HttpTrigger">HttpTrigger</a>
@@ -512,6 +526,20 @@
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type>string</span></span></li>
 <li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="middleware">middleware</a>
+</h3>
+
+<span class="description field-description">Middleware operations for this router.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Middleware">Middleware</a><span class=optional>(Optional)</span></span></span></li>
+
 
 </ul>
 </div><div class=field>
@@ -574,6 +602,20 @@
 
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#Tools">Tools</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="middleware">middleware</a>
+</h3>
+
+<span class="description field-description">Middleware operations for this router.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Middleware">Middleware</a><span class=optional>(Optional)</span></span></span></li>
 
 
 </ul>
@@ -965,6 +1007,20 @@
 </div><div class=field>
 
 <h3 class=field-name>
+  <a name="middleware">middleware</a>
+</h3>
+
+<span class="description field-description">Middleware operations for this router.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Middleware">Middleware</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
   <a name="volume">volume</a>
 </h3>
 
@@ -1014,6 +1070,20 @@
 </div><div class=field>
 
 <h3 class=field-name>
+  <a name="middleware">middleware</a>
+</h3>
+
+<span class="description field-description">Middleware operations for this router.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#Middleware">Middleware</a><span class=optional>(Optional)</span></span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
   <a name="codec">codec</a>
 </h3>
 
@@ -1037,6 +1107,41 @@
 <ul class="field-notes">
 <li><span class="type field-note">Type: <span class=field-type><a href="#ComponentOperationExpression">ComponentOperationExpression</a></span></span></li>
 <li><span class="annotation field-note">Required</span></li>
+
+</ul>
+</div></div></div><div class="definition">
+<h2 class="definition-name type-name">
+  <a name="Middleware">Middleware</a>
+</h2>
+
+<span class="description type-description">Request and response operations that run before and after the main operation.</span>
+<div class=fields>
+<div class=field>
+
+<h3 class=field-name>
+  <a name="request">request</a>
+</h3>
+
+<span class="description field-description">The middleware to apply to requests.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentOperationExpression">ComponentOperationExpression</a>[]</span></span></li>
+
+
+</ul>
+</div><div class=field>
+
+<h3 class=field-name>
+  <a name="response">response</a>
+</h3>
+
+<span class="description field-description">The middleware to apply to responses.</span>
+
+
+<ul class="field-notes">
+<li><span class="type field-note">Type: <span class=field-type><a href="#ComponentOperationExpression">ComponentOperationExpression</a>[]</span></span></li>
+
 
 </ul>
 </div></div></div><div class="definition">## unhandled

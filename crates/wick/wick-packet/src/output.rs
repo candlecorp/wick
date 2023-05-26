@@ -35,6 +35,13 @@ where
     self.send_raw(Packet::encode(&self.name, value));
   }
 
+  pub fn send_result(&mut self, value: Result<T, impl std::fmt::Display>) {
+    match value {
+      Ok(value) => self.send(&value),
+      Err(err) => self.error(err.to_string()),
+    }
+  }
+
   pub fn send_raw(&mut self, value: Packet) {
     if let Err(e) = self.channel.send_result(value.into()) {
       warn!(

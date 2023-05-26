@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use hyper::http::response::Builder;
-use hyper::{Request, StatusCode};
+use hyper::http::{HeaderName, HeaderValue};
+use hyper::{Body, Request, Response, StatusCode, Uri};
 use wick_interface_http::types as wick_http;
 
 use super::HttpError;
@@ -15,6 +17,20 @@ pub(super) fn method_to_wick(method: &hyper::Method) -> Result<wick_http::HttpMe
     &hyper::Method::HEAD => Ok(wick_http::HttpMethod::Head),
     &hyper::Method::OPTIONS => Ok(wick_http::HttpMethod::Options),
     &hyper::Method::TRACE => Ok(wick_http::HttpMethod::Trace),
+    x => Err(HttpError::UnsupportedMethod(x.to_string())),
+  }
+}
+
+pub(super) fn method_from_wick(method: &wick_http::HttpMethod) -> Result<hyper::Method, HttpError> {
+  match method {
+    &wick_http::HttpMethod::Get => Ok(hyper::Method::GET),
+    &wick_http::HttpMethod::Post => Ok(hyper::Method::POST),
+    &wick_http::HttpMethod::Put => Ok(hyper::Method::PUT),
+    &wick_http::HttpMethod::Delete => Ok(hyper::Method::DELETE),
+    &wick_http::HttpMethod::Head => Ok(hyper::Method::HEAD),
+    &wick_http::HttpMethod::Options => Ok(hyper::Method::OPTIONS),
+    &wick_http::HttpMethod::Trace => Ok(hyper::Method::TRACE),
+
     x => Err(HttpError::UnsupportedMethod(x.to_string())),
   }
 }
@@ -48,7 +64,7 @@ pub(super) fn path_to_wick(path: &str) -> Result<String, HttpError> {
   Ok(path.to_owned())
 }
 
-pub(super) fn uri_to_wick(url: &hyper::http::uri::Uri) -> Result<String, HttpError> {
+pub(super) fn uri_to_wick(url: &Uri) -> Result<String, HttpError> {
   Ok(url.to_string())
 }
 
@@ -72,7 +88,7 @@ pub(super) fn headers_to_wick(headers: &hyper::http::HeaderMap) -> Result<HashMa
   Ok(map)
 }
 
-pub(super) fn request_to_wick<B>(req: Request<B>) -> Result<(wick_http::HttpRequest, B), HttpError>
+pub(super) fn request_and_body_to_wick<B>(req: Request<B>) -> Result<(wick_http::HttpRequest, B), HttpError>
 where
   B: Send + Sync + 'static,
 {
@@ -91,8 +107,28 @@ where
   ))
 }
 
+pub(super) fn request_to_wick<B>(req: &Request<B>) -> Result<wick_http::HttpRequest, HttpError>
+where
+  B: Send + Sync + 'static,
+{
+  Ok(wick_http::HttpRequest {
+    method: method_to_wick(req.method())?,
+    scheme: scheme_to_wick(req.uri().scheme())?,
+    authority: authority_to_wick(req.uri().authority())?,
+    query_parameters: query_params_to_wick(req.uri().query())?,
+    path: path_to_wick(req.uri().path())?,
+    uri: uri_to_wick(req.uri())?,
+    version: version_to_wick(req.version())?,
+    headers: headers_to_wick(req.headers())?,
+  })
+}
+
 pub(super) fn convert_status(code: wick_http::StatusCode) -> Result<StatusCode, HttpError> {
   StatusCode::from_bytes(code.value().unwrap().as_bytes()).map_err(|_e| HttpError::InvalidStatusCode(code.to_string()))
+}
+
+pub(super) fn convert_to_wick_status(code: StatusCode) -> Result<wick_http::StatusCode, HttpError> {
+  wick_http::StatusCode::from_str(code.as_str()).map_err(|_e| HttpError::InvalidStatusCode(code.as_str().to_owned()))
 }
 
 pub(super) fn convert_response(mut builder: Builder, res: wick_http::HttpResponse) -> Result<Builder, HttpError> {
@@ -103,4 +139,47 @@ pub(super) fn convert_response(mut builder: Builder, res: wick_http::HttpRespons
     }
   }
   Ok(builder)
+}
+
+pub(super) fn merge_requests<B>(wick: &wick_http::HttpRequest, mut hyper: Request<B>) -> Result<Request<B>, HttpError>
+where
+  B: Send + Sync + 'static,
+{
+  let headers = hyper.headers_mut();
+  headers.clear();
+  for (name, values) in &wick.headers {
+    if let Some(v) = values.get(0) {
+      headers.insert(
+        name
+          .parse::<HeaderName>()
+          .map_err(|_| HttpError::InvalidHeaderName(name.clone()))?,
+        HeaderValue::from_str(v).map_err(|_| HttpError::InvalidHeaderValue(v.clone()))?,
+      );
+    }
+  }
+  *(hyper.method_mut()) = method_from_wick(&wick.method)?;
+  let query_string = wick
+    .query_parameters
+    .iter()
+    .flat_map(|(k, v)| v.iter().map(|v| format!("{}={}", k, v)).collect::<Vec<_>>())
+    .collect::<Vec<String>>()
+    .join("&");
+  *(hyper.uri_mut()) = Uri::builder()
+    .path_and_query(format!("{}?{}", wick.path, query_string).as_str())
+    .build()
+    .map_err(|e| HttpError::InvalidUri(e.to_string()))?;
+  Ok(hyper)
+}
+
+pub(super) fn convert_to_wick_response(res: Response<Body>) -> Result<(wick_http::HttpResponse, Body), HttpError> {
+  let (parts, body) = res.into_parts();
+
+  Ok((
+    wick_http::HttpResponse {
+      version: version_to_wick(parts.version)?,
+      status: convert_to_wick_status(parts.status)?,
+      headers: headers_to_wick(&parts.headers)?,
+    },
+    body,
+  ))
 }

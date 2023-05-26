@@ -2,7 +2,7 @@ use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use wick_config::config::{BoundInterface, OperationSignature};
 
-use crate::dependency::Dependency;
+use crate::generate::dependency::Dependency;
 use crate::generate::ids::*;
 use crate::generate::{config, f};
 

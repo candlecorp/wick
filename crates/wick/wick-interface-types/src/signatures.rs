@@ -360,6 +360,7 @@ impl TypeSignature {
     }
   }
 
+  #[cfg(feature = "value")]
   pub fn coerce_str<'a>(&self, value: &'a str) -> Result<Value, &'a str> {
     let val = match self {
       TypeSignature::String => Value::String(value.to_owned()),
@@ -540,6 +541,7 @@ mod test {
     Ok(())
   }
 
+  #[cfg(feature = "value")]
   #[rstest::rstest]
   #[case(TS::String, "foo", json!("foo"))]
   #[case(TS::U32, "48", json!(48))]

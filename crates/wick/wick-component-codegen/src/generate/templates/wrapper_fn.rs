@@ -3,7 +3,7 @@ use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use wick_config::config::OperationSignature;
 
-use crate::dependency::Dependency;
+use crate::generate::dependency::Dependency;
 use crate::generate::expand_type::expand_type;
 use crate::generate::ids::*;
 use crate::generate::{config, Direction};
@@ -38,10 +38,10 @@ pub(crate) fn gen_wrapper_fn(config: &mut config::Config, component: &Ident, op:
   quote! {
     fn #wrapper_id(mut input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>) -> std::result::Result<wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>,Box<dyn std::error::Error + Send + Sync>> {
       let (channel, rx) = wasmrs_rx::FluxChannel::<wasmrs::RawPayload, wasmrs::PayloadError>::new_parts();
-      let outputs = #outputs_name::new(channel.clone());
+      let outputs = #impl_name::#outputs_name::new(channel.clone());
 
       runtime::spawn(#wrapper_name,async move {
-        let #sanitized_input_names = wick_component::payload_fan_out!(input, #raw, #config_id, [#(#input_pairs,)*]);
+        let #sanitized_input_names = wick_component::payload_fan_out!(input, #raw, Box<dyn std::error::Error + Send + Sync>, #impl_name::#config_id, [#(#input_pairs,)*]);
          let config = match config.await {
           Ok(Ok(config)) => {
             config

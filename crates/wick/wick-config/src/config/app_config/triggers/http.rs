@@ -1,3 +1,4 @@
+pub use middleware::Middleware;
 use wick_asset_reference::AssetReference;
 
 pub use self::proxy_router::ProxyRouterConfig;
@@ -5,6 +6,7 @@ pub use self::raw_router::RawRouterConfig;
 pub use self::rest_router::*;
 pub use self::static_router::StaticRouterConfig;
 
+mod middleware;
 mod proxy_router;
 mod raw_router;
 mod rest_router;
@@ -28,4 +30,9 @@ pub enum HttpRouterConfig {
   RestRouter(RestRouterConfig),
   StaticRouter(StaticRouterConfig),
   ProxyRouter(ProxyRouterConfig),
+}
+
+pub trait WickRouter {
+  fn middleware(&self) -> Option<&Middleware>;
+  fn path(&self) -> &str;
 }

@@ -5,6 +5,8 @@ use itertools::Itertools;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
 
+use crate::generate::ids::snake;
+
 pub(crate) struct Module(String, Vec<TokenStream>, Vec<Rc<RefCell<Module>>>);
 
 impl Module {
@@ -31,7 +33,7 @@ impl Module {
   }
 
   pub(crate) fn codegen(&self) -> TokenStream {
-    let name = Ident::new(&self.0, Span::call_site());
+    let name = Ident::new(&snake(&self.0), Span::call_site());
     let implementations = &self.1;
     let modules = &self.2.iter().map(|m| m.borrow().codegen()).collect_vec();
     quote! {

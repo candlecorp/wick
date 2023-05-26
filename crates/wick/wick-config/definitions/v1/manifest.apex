@@ -103,11 +103,13 @@ type Schedule {
 }
 
 "A reference to an operation with an explicit component definition."
-type ComponentOperationExpression {
+type ComponentOperationExpression @shortform {
   "The component that exports the operation."
   component: ComponentDefinition @required @shortform
   "The operation to call."
   name: string @required
+  "Configuration to tie to this operation"
+  with: {string: any}?,
 }
 
 "An HTTP server that delegates to HTTP routers upon requests."
@@ -125,6 +127,9 @@ type ProxyRouter @tagged("wick/router/proxy@v1") {
   "The path to start serving this router from."
   path: string @required
 
+  "Middleware operations for this router."
+  middleware: Middleware?
+
   "The URL resource to proxy to."
   url: string @required
 
@@ -138,6 +143,9 @@ type RestRouter @tagged("wick/router/rest@v1") {
 
   "Additional tools and services to enable."
   tools: Tools?
+
+  "Middleware operations for this router."
+  middleware: Middleware?
 
   "The routes to serve and operations that handle them."
   routes: [Route]
@@ -215,6 +223,9 @@ type StaticRouter @tagged("wick/router/static@v1") {
   "The path to start serving this router from."
   path: string @required
 
+  "Middleware operations for this router."
+  middleware: Middleware?
+
   "The volume to serve static files from."
   volume: string @required
 
@@ -227,11 +238,22 @@ type RawRouter @tagged("wick/router/raw@v1") {
   "The path to start serving this router from."
   path: string @required
 
+  "Middleware operations for this router."
+  middleware: Middleware?
+
   "The codec to use when encoding/decoding data."
   codec: Codec?
 
   "The operation that handles HTTP requests."
-  operation: ComponentOperationExpression @required
+  operation: ComponentOperationExpression @required @shortform
+}
+
+"Request and response operations that run before and after the main operation."
+type Middleware {
+  "The middleware to apply to requests."
+  request: [ComponentOperationExpression]
+  "The middleware to apply to responses."
+  response: [ComponentOperationExpression]
 }
 
 "The possible types of resources."

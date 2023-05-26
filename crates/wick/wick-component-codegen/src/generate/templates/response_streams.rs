@@ -3,7 +3,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use wick_config::config::BoundInterface;
 
-use crate::dependency::Dependency;
+use crate::generate::dependency::Dependency;
 use crate::generate::expand_type::expand_type;
 use crate::generate::ids::*;
 use crate::generate::{f, Direction};
@@ -45,7 +45,7 @@ pub(crate) fn response_streams(config: &mut Config, required: Vec<BoundInterface
           quote! {
             pub fn #name(&self, input: wick_packet::PacketStream) -> std::result::Result<#types,wick_packet::Error> {
               let mut stream = self.component.call(#op_name, input)?;
-              Ok(wick_component::payload_fan_out!(stream, raw: false, [#(#fan_out),*]))
+              Ok(wick_component::payload_fan_out!(stream, raw: false, Box<dyn std::error::Error + Send + Sync>, [#(#fan_out),*]))
             }
           }
         })

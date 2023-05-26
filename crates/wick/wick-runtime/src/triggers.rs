@@ -10,7 +10,15 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use structured_output::StructuredOutput;
 use tracing::Span;
-use wick_config::config::{AppConfiguration, ComponentDefinition, TriggerDefinition, TriggerKind};
+use wick_config::config::{
+  AppConfiguration,
+  ComponentDefinition,
+  ComponentOperationExpression,
+  ImportBinding,
+  TriggerDefinition,
+  TriggerKind,
+};
+use wick_packet::Entity;
 
 use crate::dev::prelude::*;
 use crate::resources::Resource;
@@ -55,6 +63,28 @@ static TRIGGER_LOADER_REGISTRY: Lazy<Mutex<HashMap<TriggerKind, TriggerLoader>>>
 #[must_use]
 pub fn get_trigger_loader(name: &TriggerKind) -> Option<TriggerLoader> {
   TRIGGER_LOADER_REGISTRY.lock().get(name).cloned()
+}
+
+pub(crate) fn resolve_or_import(
+  app_config: &AppConfiguration,
+  optional_name: impl AsRef<str>,
+  operation: &ComponentOperationExpression,
+) -> Result<(Entity, Option<ImportBinding>), RuntimeError> {
+  if let ComponentDefinition::Reference(cref) = operation.component() {
+    let _assert = app_config
+      .resolve_binding(cref.id())
+      .ok_or_else(|| {
+        RuntimeError::InitializationFailed(format!("Could not find a component by the name of {}", cref.id()))
+      })?
+      .try_component()
+      .map_err(|e| RuntimeError::ReferenceError(cref.id().to_owned(), e))?;
+    Ok((Entity::operation(cref.id(), operation.name()), None))
+  } else {
+    Ok((
+      Entity::operation(&optional_name, operation.name()),
+      Some(ImportBinding::component(optional_name, operation.component().clone())),
+    ))
+  }
 }
 
 pub(crate) fn resolve_ref(

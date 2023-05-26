@@ -8,7 +8,11 @@ use crate::config::ComponentOperationExpression;
 pub struct RestRouterConfig {
   /// The path to start serving this router from.
   #[asset(skip)]
+  #[property(get(disable))]
   pub(crate) path: String,
+  /// Middleware operations for this router.
+  #[property(get(disable))]
+  pub(crate) middleware: Option<super::middleware::Middleware>,
   /// Additional tools and services to enable.
   #[asset(skip)]
   pub(crate) tools: Option<Tools>,
@@ -17,6 +21,16 @@ pub struct RestRouterConfig {
   /// Information about the router to use when generating documentation and other tools.
   #[asset(skip)]
   pub(crate) info: Option<Info>,
+}
+
+impl super::WickRouter for RestRouterConfig {
+  fn middleware(&self) -> Option<&super::Middleware> {
+    self.middleware.as_ref()
+  }
+
+  fn path(&self) -> &str {
+    &self.path
+  }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, property::Property)]

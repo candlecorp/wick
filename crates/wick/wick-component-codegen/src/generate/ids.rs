@@ -17,8 +17,8 @@ pub(crate) fn component_id(r: &BoundInterface) -> String {
   format!("{}Component", &pascal(r.id()))
 }
 
-pub(crate) fn config_id(name: &str) -> String {
-  format!("Op{}Config", pascal(name))
+pub(crate) fn config_id(_name: &str) -> String {
+  "Config".to_owned()
 }
 
 pub(crate) fn snake(s: &str) -> String {
@@ -33,8 +33,8 @@ pub(crate) fn op_wrapper_name(op: &OperationSignature) -> String {
   snake(&format!("{}_wrapper", op.name()))
 }
 
-pub(crate) fn op_outputs_name(op: &OperationSignature) -> String {
-  format!("Op{}Outputs", pascal(op.name()))
+pub(crate) fn op_outputs_name(_op: &OperationSignature) -> String {
+  "Outputs".to_owned()
 }
 
 pub(crate) fn get_typename_parts(name: &str) -> (Vec<&str>, &str) {

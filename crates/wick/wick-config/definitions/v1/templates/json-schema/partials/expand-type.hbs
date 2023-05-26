@@ -9,7 +9,20 @@
   {{#case "ListType"}}
   "type":"array",
   "items": {
+    {{#withType type}}
+    {{#withAnnotation "shortform" ~}}
+      "oneOf" : [
+      { "type":"string" },
+      {{#with "{"}}{{.}}{{/with}}
+    {{~/withAnnotation}}
+    {{/withType}}
     {{> expand-type type }}
+    {{#withType type}}
+    {{#withAnnotation "shortform" ~}}
+      {{#with "}"}}{{.}}{{/with}}
+      ]
+    {{~/withAnnotation}}
+    {{/withType}}
   }
   {{/case}}
   {{#case "Optional"}}

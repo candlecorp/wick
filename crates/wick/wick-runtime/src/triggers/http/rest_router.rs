@@ -7,7 +7,7 @@ use hyper::body::to_bytes;
 use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
 use tracing::{Instrument, Span};
-use wick_config::config::{ComponentOperationExpression, ImportBinding, RestRouterConfig};
+use wick_config::config::{ComponentOperationExpression, ImportBinding, RestRouterConfig, WickRouter};
 use wick_packet::{Entity, Invocation, Packet};
 mod route;
 
@@ -130,7 +130,7 @@ impl RestHandler {
 
       let invocation = Invocation::new(
         Entity::server("http_client"),
-        Entity::operation(route.component.id(), route.operation.operation()),
+        Entity::operation(route.component.id(), route.operation.name()),
         packets,
         None,
         &span,

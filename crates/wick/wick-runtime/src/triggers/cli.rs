@@ -61,7 +61,7 @@ impl Cli {
     let packet_stream = packet_stream!(("args", args), ("isInteractive", is_interactive));
     let invocation = Invocation::new(
       Entity::server("cli_channel"),
-      Entity::operation(cli_binding.id(), config.operation().operation()),
+      Entity::operation(cli_binding.id(), config.operation().name()),
       packet_stream,
       None,
       &Span::current(),

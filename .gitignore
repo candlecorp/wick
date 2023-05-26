@@ -13,7 +13,7 @@ node_modules
 /build
 .wick/
 crates/wick-rpc/src/generated/wick.rs
-
+crates/**/src/generated/mod.rs
 /crates/integration/*/build
 
 # misc

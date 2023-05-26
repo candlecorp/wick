@@ -63,12 +63,12 @@ macro_rules! handle_port {
 
 #[macro_export]
 macro_rules! payload_fan_out {
-    ($stream:expr, raw:$raw:tt, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
+    ($stream:expr, raw:$raw:tt, $error:ty, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
       {
         $crate::paste::paste! {
           $(
             #[allow(unused_parens)]
-            let ([<$port:snake _tx>],[<$port:snake _rx>]) = $crate::wasmrs_rx::FluxChannel::<_,$crate::anyhow::Error>::new_parts();
+            let ([<$port:snake _tx>],[<$port:snake _rx>]) = $crate::wasmrs_rx::FluxChannel::<_,$error>::new_parts();
           )*
         }
       $crate::runtime::spawn("payload_fan_out", async move {
@@ -87,7 +87,7 @@ macro_rules! payload_fan_out {
                 let error = packet.unwrap_err();
                 $crate::paste::paste! {
                   $(
-                    [<$port:snake _tx>].send_result(Err($crate::anyhow::Error::msg(error.msg().to_owned()))).unwrap();
+                    [<$port:snake _tx>].send_result(Err(Box::new($crate::flow_component::ComponentError::message(error.msg())).into())).unwrap();
                   )*
                 }
               }
@@ -103,12 +103,12 @@ macro_rules! payload_fan_out {
       }
 
     };
-    ($stream:expr, raw:$raw:tt, $config:ty, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
+    ($stream:expr, raw:$raw:tt, $error:ty, $config:ty, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
       {
           $crate::paste::paste! {
             $(
               #[allow(unused_parens)]
-              let ([<$port:snake _tx>],[<$port:snake _rx>]) = $crate::wasmrs_rx::FluxChannel::<_,$crate::anyhow::Error>::new_parts();
+              let ([<$port:snake _tx>],[<$port:snake _rx>]) = $crate::wasmrs_rx::FluxChannel::<_,$error>::new_parts();
             )*
           }
           let (config_tx,config_rx) = $crate::runtime::oneshot();
@@ -140,7 +140,7 @@ macro_rules! payload_fan_out {
                   let error = packet.unwrap_err();
                   $crate::paste::paste! {
                     $(
-                      [<$port:snake _tx>].send_result(Err($crate::anyhow::Error::msg(error.msg().to_owned()))).unwrap();
+                      [<$port:snake _tx>].send_result(Err(Box::new($crate::flow_component::ComponentError::message(error.msg())).into())).unwrap();
                     )*
                   }
                 }
@@ -157,6 +157,37 @@ macro_rules! payload_fan_out {
     };
 }
 
+#[macro_export]
+macro_rules! propagate_if_error {
+  ($result:expr, $outputs:ident, continue) => {
+    match $result {
+      Ok(value) => value,
+      Err(err) => {
+        $outputs.broadcast_err(err.to_string());
+        continue;
+      }
+    }
+  };
+  ($result:expr,$outputs:ident, break) => {
+    match $result {
+      Ok(value) => value,
+      Err(err) => {
+        $outputs.broadcast_err(err.to_string());
+        continue;
+      }
+    }
+  };
+  ($result:expr,$outputs:ident, return $rv:expr) => {
+    match $result {
+      Ok(value) => value,
+      Err(err) => {
+        $outputs.broadcast_err(err.to_string());
+        return $rv;
+      }
+    }
+  };
+}
+
 #[cfg(test)]
 mod test {
   use anyhow::Result;
@@ -171,7 +202,8 @@ mod test {
   async fn test_basic() -> Result<()> {
     let mut stream: FluxReceiver<Packet, PayloadError> =
       payload_stream!(("foo", 1), ("bar", 2), ("foo", 3), ("bar", 4), ("foo", 5), ("bar", 6));
-    let (_config, mut foo_rx, mut bar_rx) = payload_fan_out!(stream, raw: false, Config, [("foo", i32), ("bar", i32)]);
+    let (_config, mut foo_rx, mut bar_rx) =
+      payload_fan_out!(stream, raw: false,anyhow::Error, Config, [("foo", i32), ("bar", i32)]);
     assert_eq!(foo_rx.next().await.unwrap().unwrap(), 1);
     assert_eq!(bar_rx.next().await.unwrap().unwrap(), 2);
     assert_eq!(foo_rx.next().await.unwrap().unwrap(), 3);
