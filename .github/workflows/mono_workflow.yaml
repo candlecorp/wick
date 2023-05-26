@@ -4,7 +4,13 @@ on:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+' # matches 0.1.0, 0.2.1, etc.
   schedule:
-    - cron: '0 1 * * *' # 1am UTC
+    - cron: "0 1 * * *" # 1am UTC
+  pull_request:
+    paths-ignore:
+      - "tools/**"
+      - "docs/**"
+    branches:
+      - main
   workflow_dispatch:
 permissions:
   contents: write
