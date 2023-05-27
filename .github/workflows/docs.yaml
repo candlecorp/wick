@@ -18,9 +18,6 @@ jobs:
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
 
-      - name: CD to Docs
-        run: cd docs
-
       - name: Build site
         run: hugo --minify
 
@@ -28,7 +25,7 @@ jobs:
         uses: candlecorp/wick-push-action@v0.0.2
         id: push
         with:
-          path: "docs.wick"
+          path: "docs/docs.wick"
           latest: "true"
           username: ${{ secrets.CANDLE_REG_USERNAME }}
           password: ${{ secrets.CANDLE_REG_PASSWORD }}
