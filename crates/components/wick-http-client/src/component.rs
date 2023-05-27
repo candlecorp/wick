@@ -50,6 +50,27 @@ pub struct HttpClientComponent {
   config: HttpClientComponentConfig,
 }
 
+fn recursive_deserialize(value: &mut Value) {
+  match value {
+    Value::Object(ref mut map) => {
+      for v in map.values_mut() {
+        recursive_deserialize(v);
+      }
+    }
+    Value::Array(ref mut vec) => {
+      for v in vec.iter_mut() {
+        recursive_deserialize(v);
+      }
+    }
+    Value::String(s) => {
+      if let Ok(parsed) = serde_json::from_str::<Value>(s) {
+        *value = parsed;
+      }
+    }
+    _ => (),
+  }
+}
+
 impl HttpClientComponent {
   #[allow(clippy::needless_pass_by_value)]
   pub fn new(
@@ -139,7 +160,10 @@ async fn handle(
 
     let body = match opdef.body() {
       Some(body) => match body.render(&inputs) {
-        Ok(p) => Some(p),
+        Ok(mut p) => {
+          recursive_deserialize(&mut p);
+          Some(p)
+        }
         Err(e) => {
           let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
           break 'outer;
@@ -147,6 +171,8 @@ async fn handle(
       },
       None => None,
     };
+
+    invocation.trace(|| trace!(body=?body, "request body"));
 
     let append_path = match liquid_json::render_string(&template.0, &inputs)
       .map_err(|e| Error::PathTemplate(template.1.clone(), e.to_string()))
@@ -166,6 +192,7 @@ async fn handle(
       HttpMethod::Put => Request::new(Method::PUT, request_url),
       HttpMethod::Delete => Request::new(Method::DELETE, request_url),
     };
+
     let request_builder = RequestBuilder::from_parts(client.clone(), request);
     let mut request_builder = if let Some(body) = body {
       match codec {
@@ -230,8 +257,11 @@ async fn handle(
       }
       None => {}
     }
+
     let (client, request) = request_builder.build_split();
     let request = request.unwrap();
+
+    invocation.trace(|| trace!(request=?request, "request created"));
 
     let response = match client.execute(request).await {
       Ok(r) => r,
@@ -518,7 +548,10 @@ mod test {
       let response_args = response.get("args").unwrap();
       assert_eq!(response_args, &json!( {"query1": "SENTINEL","query2": "0xDEADBEEF"}));
       let response_headers = response.get("headers").unwrap();
-      assert_eq!(response_headers.get("Authorization").unwrap(), &json!("Bearer 0xDEADBEEF"));
+      assert_eq!(
+        response_headers.get("Authorization").unwrap(),
+        &json!("Bearer 0xDEADBEEF")
+      );
       assert_eq!(stream.pop().unwrap(), Ok(Packet::done("response")));
       let response: HttpResponse = stream.pop().unwrap().unwrap().deserialize().unwrap();
       assert_eq!(response.version, HttpVersion::Http11);
@@ -547,7 +580,10 @@ mod test {
       let data = response.get("json").unwrap();
       assert_eq!(data, &json!( {"key": "SENTINEL","other":123}));
       let response_headers = response.get("headers").unwrap();
-      assert_eq!(response_headers.get("Content-Type").unwrap(), &json!("application/json"));
+      assert_eq!(
+        response_headers.get("Content-Type").unwrap(),
+        &json!("application/json")
+      );
       assert_eq!(response_headers.get("X-Custom-Header").unwrap(), &json!("SENTINEL"));
       assert_eq!(stream.pop().unwrap(), Ok(Packet::done("response")));
       let response: HttpResponse = stream.pop().unwrap().unwrap().deserialize().unwrap();
