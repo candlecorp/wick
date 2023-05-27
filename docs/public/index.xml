@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Wick Framework Documentation on Candle Documentation</title>
+    <link>https://candle.dev/docs/</link>
+    <description>Recent content in Wick Framework Documentation on Candle Documentation</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://candle.dev/docs/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Core Concepts</title>
+      <link>https://candle.dev/docs/overview/concepts/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://candle.dev/docs/overview/concepts/</guid>
+      <description>Wick is designed to enable developers to &amp;ldquo;compose&amp;rdquo; applications using a configuration file and invoke components based on the needs of the application. This section covers the core concepts behind Wick&amp;rsquo;s composition model and its main benefits.
+Application Composition In Wick, applications are composed by defining components and their relationships in a configuration file. This configuration-driven approach simplifies the development process by abstracting the underlying complexity and focusing on the high-level structure of the application.</description>
+    </item>
+    
+    <item>
+      <title>Installation</title>
+      <link>https://candle.dev/docs/getting-started/installation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://candle.dev/docs/getting-started/installation/</guid>
+      <description>Express Installation Mac and Linux users can install the latest stable version of Wick with the following command in terminal:
+curl -sSL sh.wick.run | bash To download and install the nightly version, or other releases of wick, pass a single argument of the desired release.
+curl -sSL sh.wick.run | bash -s -- nightly Quick Install - Windows
+Windows users can install the latest stable version of Wick with the following command in powershell:</description>
+    </item>
+    
+    <item>
+      <title>Introduction</title>
+      <link>https://candle.dev/docs/introduction/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://candle.dev/docs/introduction/</guid>
+      <description>What is Wick? Wick is a software development framework that aims to revolutionize the way developers create valuable applications by addressing the unique challenges faced by application developers. By leveraging WebAssembly, a standardized bytecode, Wick provides an innovative platform that is secure, composable, and highly maintainable.
+Philosophy Wick acknowledges the differences between application developers and library developers. While both types of developers create immense value, they face distinct challenges and often use the same tools designed for library developers.</description>
+    </item>
+    
+    <item>
+      <title>Streaming</title>
+      <link>https://candle.dev/docs/overview/streaming/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://candle.dev/docs/overview/streaming/</guid>
+      <description>One of the biggest differentiators between Wick and other WebAssembly frameworks is Wick&amp;rsquo;s adoption of WasmRS and full data streaming support.
+WasmRS Wick incorporates WasmRS, which implements reactive streams in WebAssembly modules. This enables asynchronous, bidirectional communication in and out of WebAssembly, expanding the capabilities of Wick. WasmRS is leading the industry and taking the possibilities with WebAssembly to new heights.
+WasmRS Protocol At the core of WasmRS is a set of methods that allow the host and guest to write RSocket frames to their respective buffers in WebAssembly memory.</description>
+    </item>
+    
+    <item>
+      <title>Tutorial</title>
+      <link>https://candle.dev/docs/getting-started/tutorial/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://candle.dev/docs/getting-started/tutorial/</guid>
+      <description>Start a new project In this tutorial we&amp;rsquo;ll be making a template renderer component in Rust.
+The wick repository includes templates in the templates/ folder with templates in the common liquid template format. Use cargo generate (cargo install cargo-generate) to easily pull, render, and setup new components.
+$ cargo generate candlecorp/wick templates/rust --name jinja The template comes with a sample component.yaml that defines two operations, greet and add.
+--- name: &amp;#39;jinja&amp;#39; format: 1 metadata: version: &amp;#39;0.</description>
+    </item>
+    
+  </channel>
+</rss>

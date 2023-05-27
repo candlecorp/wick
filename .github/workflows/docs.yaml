@@ -1,0 +1,34 @@
+name: Build Docs site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v2
+
+      - name: CD to Docs
+        run: cd docs
+
+      - name: Build site
+        run: hugo --minify
+
+      - name: Publish Wick Package
+        uses: candlecorp/wick-push-action@v0.0.2
+        id: push
+        with:
+          path: "docs.wick"
+          latest: "true"
+          username: ${{ secrets.CANDLE_REG_USERNAME }}
+          password: ${{ secrets.CANDLE_REG_PASSWORD }}

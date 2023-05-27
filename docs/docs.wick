@@ -1,0 +1,35 @@
+---
+kind: wick/app@v1
+name: wick_docs
+metadata:
+  description: Docs Site Hosting for Wick
+  version: 0.0.1
+  authors:
+    - "Wick Maintainers"
+  vendors:
+    - "Candle Corporation"
+  licenses:
+    - Apache-2.0
+package:
+  registry:
+    registry: registry.candle.dev
+    namespace: wick
+  files:
+    - ./public
+resources:
+  - name: http
+    resource:
+      kind: wick/resource/tcpport@v1
+      port: 8080
+      address: 0.0.0.0
+  - name: DIR
+    resource:
+      kind: wick/resource/volume@v1
+      path: ./public
+triggers:
+  - kind: wick/trigger/http@v1
+    resource: http
+    routers:
+      - kind: wick/router/static@v1
+        path: /docs
+        volume: DIR

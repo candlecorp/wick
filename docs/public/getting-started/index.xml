@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Getting Started on Candle Documentation</title>
+    <link>https://candle.dev/docs/getting-started/</link>
+    <description>Recent content in Getting Started on Candle Documentation</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://candle.dev/docs/getting-started/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Installation</title>
+      <link>https://candle.dev/docs/getting-started/installation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://candle.dev/docs/getting-started/installation/</guid>
+      <description>Express Installation Mac and Linux users can install the latest stable version of Wick with the following command in terminal:
+curl -sSL sh.wick.run | bash To download and install the nightly version, or other releases of wick, pass a single argument of the desired release.
+curl -sSL sh.wick.run | bash -s -- nightly Quick Install - Windows
+Windows users can install the latest stable version of Wick with the following command in powershell:</description>
+    </item>
+    
+    <item>
+      <title>Tutorial</title>
+      <link>https://candle.dev/docs/getting-started/tutorial/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://candle.dev/docs/getting-started/tutorial/</guid>
+      <description>Start a new project In this tutorial we&amp;rsquo;ll be making a template renderer component in Rust.
+The wick repository includes templates in the templates/ folder with templates in the common liquid template format. Use cargo generate (cargo install cargo-generate) to easily pull, render, and setup new components.
+$ cargo generate candlecorp/wick templates/rust --name jinja The template comes with a sample component.yaml that defines two operations, greet and add.
+--- name: &amp;#39;jinja&amp;#39; format: 1 metadata: version: &amp;#39;0.</description>
+    </item>
+    
+  </channel>
+</rss>

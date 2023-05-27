@@ -21,7 +21,8 @@ import:
             - name: token
               type: string
           method: Post
-          path: '?secret={{secret}}&token={{token}}'
+          path: "?secret={{secret}}&token={{token}}"
+
 component:
   kind: wick/component/composite@v1
   operations:
@@ -30,7 +31,7 @@ component:
         - name: PLUCK_TOKEN
           operation: core::pluck
           with:
-            field: 'token'
+            field: "token"
       flow:
         - <>.request -> drop
         - <>.body -> PLUCK_TOKEN.input
@@ -42,7 +43,7 @@ component:
         - name: API_CLIENT_1
           operation: API_CLIENT::check
           with:
-            secret: 'foobar'
+            secret: "foobar"
       flow:
         - <>.token -> API_CLIENT_1.token
         - API_CLIENT_1.response -> <>.response
