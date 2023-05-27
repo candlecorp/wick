@@ -178,14 +178,57 @@ async fn handle(
     } else {
       request_builder
     };
-    for (header, values) in opdef.headers() {
-      for value in values {
-        let Ok(value) =  liquid_json::render_string(value, &inputs) else {
-          let _ = tx.error(wick_packet::Error::component_error(format!("Can't render template {}", value)));
+
+    let headers = match opdef.headers() {
+      Some(headers) => match headers.render(&inputs) {
+        Ok(p) => Some(p),
+        Err(e) => {
+          let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
           break 'outer;
-        };
-        request_builder = request_builder.header(header, value);
+        }
+      },
+      None => None,
+    };
+
+    //headers should be turned into HashMap<String, Vec<String>>.  If it can not be turned itno that then throw an error.
+    let headers_map = match &headers {
+      Some(h) => match h.as_object() {
+        Some(map) => {
+          let mut headers_map = HashMap::new();
+          for (key, value) in map {
+            match value.as_str() {
+              Some(v) => {
+                headers_map.insert(key.to_string(), vec![v.to_string()]);
+              }
+              None => {
+                let _ = tx.error(wick_packet::Error::component_error(format!(
+                  "Invalid header value for key: {}",
+                  key
+                )));
+                break 'outer;
+              }
+            }
+          }
+          Some(headers_map)
+        }
+        None => {
+          let _ = tx.error(wick_packet::Error::component_error(
+            "Invalid headers format. Should be a HashMap<String, Vec<String>> object.".to_string(),
+          ));
+          break 'outer;
+        }
+      },
+      None => None,
+    };
+    match headers_map {
+      Some(h) => {
+        for (key, value) in h {
+          for v in value {
+            request_builder = request_builder.header(key.clone(), v);
+          }
+        }
       }
+      None => {}
     }
     let (client, request) = request_builder.build_split();
     let request = request.unwrap();
@@ -388,16 +431,24 @@ mod test {
       .resource("base")
       .build()
       .unwrap();
+
+    // Headers for the GET operation
+    let get_headers = Some(json!({ "Authorization": "Bearer {{secret}}" }).into());
+
     config.operations_mut().push(
       HttpClientOperationDefinition::new_get(
         GET_OP,
         "/get?query1={{input}}&query2={{secret}}",
         vec![Field::new("input", TypeSignature::String)],
+        get_headers,
       )
       .config([Field::new("secret", TypeSignature::String)])
       .build()
       .unwrap(),
     );
+
+    let post_headers = Some(json!({ "Content-Type": "application/json", "X-Custom-Header": "{{input}}" }).into());
+
     config.operations_mut().push(
       HttpClientOperationDefinition::new_post(
         POST_OP,
@@ -407,6 +458,7 @@ mod test {
           Field::new("number", TypeSignature::I64),
         ],
         Some(json!({"key": "{{input}}","other":"{{number}}"}).into()),
+        post_headers,
       )
       .build()
       .unwrap(),
@@ -463,8 +515,10 @@ mod test {
 
       assert_eq!(stream.pop().unwrap(), Ok(Packet::done("body")));
       let response = stream.pop().unwrap().unwrap().deserialize_generic().unwrap();
-      let response = response.get("args").unwrap();
-      assert_eq!(response, &json!( {"query1": "SENTINEL","query2": "0xDEADBEEF"}));
+      let response_args = response.get("args").unwrap();
+      assert_eq!(response_args, &json!( {"query1": "SENTINEL","query2": "0xDEADBEEF"}));
+      let response_headers = response.get("headers").unwrap();
+      assert_eq!(response_headers.get("Authorization").unwrap(), &json!("Bearer 0xDEADBEEF"));
       assert_eq!(stream.pop().unwrap(), Ok(Packet::done("response")));
       let response: HttpResponse = stream.pop().unwrap().unwrap().deserialize().unwrap();
       assert_eq!(response.version, HttpVersion::Http11);
@@ -492,6 +546,9 @@ mod test {
       assert_eq!(args, &json!( {"query1": "SENTINEL"}));
       let data = response.get("json").unwrap();
       assert_eq!(data, &json!( {"key": "SENTINEL","other":123}));
+      let response_headers = response.get("headers").unwrap();
+      assert_eq!(response_headers.get("Content-Type").unwrap(), &json!("application/json"));
+      assert_eq!(response_headers.get("X-Custom-Header").unwrap(), &json!("SENTINEL"));
       assert_eq!(stream.pop().unwrap(), Ok(Packet::done("response")));
       let response: HttpResponse = stream.pop().unwrap().unwrap().deserialize().unwrap();
       assert_eq!(response.version, HttpVersion::Http11);

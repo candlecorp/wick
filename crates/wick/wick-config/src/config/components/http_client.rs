@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::config;
 
 #[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
@@ -92,7 +90,7 @@ pub struct HttpClientOperationDefinition {
 
   /// The headers to send with the request.
   #[builder(default)]
-  pub(crate) headers: HashMap<String, Vec<String>>,
+  pub(crate) headers: Option<liquid_json::LiquidJsonValue>,
 
   /// The HTTP method to use.
   pub(crate) method: HttpMethod,
@@ -104,12 +102,14 @@ impl HttpClientOperationDefinition {
     name: impl AsRef<str>,
     path: impl AsRef<str>,
     inputs: Vec<wick_interface_types::Field>,
+    headers: Option<liquid_json::LiquidJsonValue>,
   ) -> HttpClientOperationDefinitionBuilder {
     let mut builder = HttpClientOperationDefinitionBuilder::default();
     builder
       .name(name.as_ref())
       .inputs(inputs)
       .path(path.as_ref())
+      .headers(headers)
       .method(HttpMethod::Get);
     builder
   }
@@ -120,6 +120,7 @@ impl HttpClientOperationDefinition {
     path: impl AsRef<str>,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
+    headers: Option<liquid_json::LiquidJsonValue>,
   ) -> HttpClientOperationDefinitionBuilder {
     let mut builder = HttpClientOperationDefinitionBuilder::default();
     builder
@@ -127,6 +128,7 @@ impl HttpClientOperationDefinition {
       .inputs(inputs)
       .path(path.as_ref())
       .body(body)
+      .headers(headers)
       .method(HttpMethod::Post);
     builder
   }
@@ -137,6 +139,7 @@ impl HttpClientOperationDefinition {
     path: impl AsRef<str>,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
+    headers: Option<liquid_json::LiquidJsonValue>,
   ) -> HttpClientOperationDefinitionBuilder {
     let mut builder = HttpClientOperationDefinitionBuilder::default();
     builder
@@ -144,6 +147,7 @@ impl HttpClientOperationDefinition {
       .inputs(inputs)
       .path(path.as_ref())
       .body(body)
+      .headers(headers)
       .method(HttpMethod::Put);
     builder
   }
@@ -154,6 +158,7 @@ impl HttpClientOperationDefinition {
     path: impl AsRef<str>,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
+    headers: Option<liquid_json::LiquidJsonValue>,
   ) -> HttpClientOperationDefinitionBuilder {
     let mut builder = HttpClientOperationDefinitionBuilder::default();
     builder
@@ -161,6 +166,7 @@ impl HttpClientOperationDefinition {
       .inputs(inputs)
       .path(path.as_ref())
       .body(body)
+      .headers(headers)
       .method(HttpMethod::Delete);
     builder
   }
