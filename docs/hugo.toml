@@ -1,0 +1,7 @@
+baseURL = 'https://candle.dev/docs/'
+languageCode = 'en-us'
+title = 'Candle Documentation'
+theme = 'hugo-theme-techdoc'
+
+[params]
+    menu_style = "open-menu"

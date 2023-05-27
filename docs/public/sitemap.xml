@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://candle.dev/docs/overview/</loc>
+  </url><url>
+    <loc>https://candle.dev/docs/categories/</loc>
+  </url><url>
+    <loc>https://candle.dev/docs/overview/concepts/</loc>
+  </url><url>
+    <loc>https://candle.dev/docs/getting-started/</loc>
+  </url><url>
+    <loc>https://candle.dev/docs/getting-started/installation/</loc>
+  </url><url>
+    <loc>https://candle.dev/docs/introduction/</loc>
+  </url><url>
+    <loc>https://candle.dev/docs/overview/streaming/</loc>
+  </url><url>
+    <loc>https://candle.dev/docs/tags/</loc>
+  </url><url>
+    <loc>https://candle.dev/docs/getting-started/tutorial/</loc>
+  </url><url>
+    <loc>https://candle.dev/docs/</loc>
+  </url>
+</urlset>

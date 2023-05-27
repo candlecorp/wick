@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Introduction - Candle Documentation</title>
+<meta name="generator" content="Hugo 0.112.3">
+<link href="https://candle.dev/docs//index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://candle.dev/docs/introduction/">
+<link rel="stylesheet" href="https://candle.dev/docs/css/theme.min.css">
+<link rel="stylesheet" href="https://candle.dev/docs/css/chroma.min.css">
+<script defer src="https://candle.dev/docs//js/fontawesome6/all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js" integrity="sha256-H3cjtrm/ztDeuhCN9I4yh4iN2Ybx/y1RM7rMmAesA0k=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js" integrity="sha256-4XodgW4TwIJuDtf+v6vDJ39FVxI0veC/kSCCmnFp7ck=" crossorigin="anonymous"></script>
+<script src="https://candle.dev/docs/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="Introduction" />
+<meta property="og:description" content="What is Wick? Wick is a software development framework that aims to revolutionize the way developers create valuable applications by addressing the unique challenges faced by application developers. By leveraging WebAssembly, a standardized bytecode, Wick provides an innovative platform that is secure, composable, and highly maintainable.
+Philosophy Wick acknowledges the differences between application developers and library developers. While both types of developers create immense value, they face distinct challenges and often use the same tools designed for library developers." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://candle.dev/docs/introduction/" /><meta property="article:section" content="" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Introduction"/>
+<meta name="twitter:description" content="What is Wick? Wick is a software development framework that aims to revolutionize the way developers create valuable applications by addressing the unique challenges faced by application developers. By leveraging WebAssembly, a standardized bytecode, Wick provides an innovative platform that is secure, composable, and highly maintainable.
+Philosophy Wick acknowledges the differences between application developers and library developers. While both types of developers create immense value, they face distinct challenges and often use the same tools designed for library developers."/>
+<meta itemprop="name" content="Introduction">
+<meta itemprop="description" content="What is Wick? Wick is a software development framework that aims to revolutionize the way developers create valuable applications by addressing the unique challenges faced by application developers. By leveraging WebAssembly, a standardized bytecode, Wick provides an innovative platform that is secure, composable, and highly maintainable.
+Philosophy Wick acknowledges the differences between application developers and library developers. While both types of developers create immense value, they face distinct challenges and often use the same tools designed for library developers.">
+
+<meta itemprop="wordCount" content="423">
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>Candle Documentation</h1>
+</header>
+
+
+<div class="content-container">
+<main><h1>Introduction</h1>
+<h1 id="what-is-wick">What is Wick?</h1>
+<p>Wick is a software development framework that aims to revolutionize the way developers create valuable applications by addressing the unique challenges faced by application developers. By leveraging WebAssembly, a standardized bytecode, Wick provides an innovative platform that is secure, composable, and highly maintainable.</p>
+<h2 id="philosophy">Philosophy</h2>
+<p>Wick acknowledges the differences between application developers and library developers. While both types of developers create immense value, they face distinct challenges and often use the same tools designed for library developers. Wick is specifically designed as a platform for application developers, enabling them to build scalable and adaptable applications with ease.</p>
+<h2 id="overview">Overview</h2>
+<p>At a high level, Wick orchestrates code and manages communication between dependencies. It can work with various types of code, such as WebAssembly modules, external microservices, or anything else that speaks the Wick protocol.</p>
+<p>Wick combines functional and flow-based concepts from projects like Erlang, Rx, FBP, and Haskell, along with ideas from Docker and Kubernetes, to create a powerful platform for application development.</p>
+<h2 id="key-benefits">Key Benefits</h2>
+<p>Wick offers numerous advantages to developers, including:</p>
+<ol>
+<li>Security: Wick uses WebAssembly to sandbox all dependencies and restricts functionality to CPU only by default. It isolates memory per transaction, providing a secure environment for applications. With Wick, you can safely run third-party precompiled code without the risk of data exfiltration, ensuring the security and integrity of your application&rsquo;s data.</li>
+<li>Composability: Developers can compile code into Wick components and connect them together with a manifest, which can then be used as a collection of new components. This enables a high degree of code reusability.</li>
+<li>Productivity: Wick normalizes the interfaces in and out of WebAssembly, simplifying complex integrations and allowing developers to swap dependencies with minimal effort.</li>
+<li>Testability: Wick&rsquo;s test runner enables developers to run unit tests rapidly on the command line without the need for complex integrations.</li>
+<li>Maintainability: Wick allows for seamless scaling and modification of applications, as any part can be turned into a microservice, worker, or other component without rebuilding.</li>
+<li>Versatility: Wick allows you to run the same code on both server and client sides, reducing development time and effort while maintaining consistency across your application.</li>
+</ol>
+<h2 id="what-can-wick-build">What Can Wick Build?</h2>
+<p>Wick is a versatile and opinionated runtime designed to support a wide range of application types. With Wick, developers can effortlessly build web servers, microservices, background workers, command-line applications, or client-side applications using the same framework. Built on the principles of security, reusability, and composability, Wick aims to revolutionize the application development landscape, providing a robust and flexible platform for developers to create valuable software across various domains.</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-next" href="https://candle.dev/docs/overview/" title="Overview">Next - Overview <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main>
+<div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://candle.dev/docs/">Home</a></li>
+
+<li class=""><a href="https://candle.dev/docs/overview/">Overview</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://candle.dev/docs/overview/concepts/">Core Concepts</a></li>
+<li class=""><a href="https://candle.dev/docs/overview/streaming/">Streaming</a></li>
+</ul>
+  
+</li>
+
+<li class=""><a href="https://candle.dev/docs/getting-started/">Getting Started</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://candle.dev/docs/getting-started/installation/">Installation</a></li>
+<li class=""><a href="https://candle.dev/docs/getting-started/tutorial/">Tutorial</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>
