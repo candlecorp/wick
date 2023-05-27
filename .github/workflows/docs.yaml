@@ -1,7 +1,7 @@
 name: Build Docs site
 
 on:
-  pull_request:
+  push:
     branches:
       - main
     paths:
@@ -17,8 +17,6 @@ jobs:
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
-        with:
-          hugo-version: "2.6.0"
 
       - name: CD to Docs
         run: cd docs
