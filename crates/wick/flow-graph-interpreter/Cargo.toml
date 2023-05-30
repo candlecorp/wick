@@ -18,7 +18,7 @@ flow-component = { workspace = true, features = ["traits"] }
 wick-config = { workspace = true }
 flow-expression-parser = { workspace = true }
 wick-interface-types = { workspace = true }
-seeded-random = { workspace = true, features = ["uuid"] }
+seeded-random = { workspace = true, features = ["uuid", "rng", "std"] }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-futures = { workspace = true }

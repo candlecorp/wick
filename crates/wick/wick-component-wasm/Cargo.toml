@@ -21,7 +21,7 @@ wick-rpc = { workspace = true }
 wick-wascap = { workspace = true }
 wick-config = { workspace = true }
 flow-component = { workspace = true }
-seeded-random = { workspace = true }
+seeded-random = { workspace = true, features = ["rng", "std"] }
 tokio = { workspace = true, features = ["fs"] }
 parking_lot = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

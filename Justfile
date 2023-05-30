@@ -49,20 +49,12 @@ clean:
 test: codegen early-errors wasm unit-tests
 
 # Run unit tests
-unit-tests: _codegen-tests
-  if {{nextest}} = "true"; then \
-    cargo nextest run -E 'not (test(slow_test) | test(integration_test))'; \
-  else \
-    cargo test --workspace -- --skip integration_test --skip slow_test --skip codegen-test --test-threads=6; \
-  fi
+unit-tests: _check_nextest _codegen-tests
+  cargo nextest run -E 'not (test(slow_test) | test(integration_test))'
 
 # Run integration tests
-integration-tests: _codegen-tests
-  if {{nextest}} = "true"; then \
-    cargo nextest run -E 'not (test(slow_test))'; \
-  else \
-    cargo test --workspace -- --skip slow_test --test-threads=6; \
-  fi
+integration-tests: _check_nextest _codegen-tests
+  cargo nextest run -E 'not (test(slow_test))'
   cargo test --manifest-path tests/template/Cargo.toml
   just _wick-db-tests
 
@@ -71,12 +63,8 @@ ci-tests: wasm
   just unit-tests
 
 # Run unit, integration, and slow tests
-all-tests:
-  if {{nextest}} = "true"; then \
-    cargo nextest run; \
-  else \
-    cargo test --workspace -- --test-threads=6; \
-  fi
+all-tests: _check_nextest
+  cargo nextest run
   cargo test --manifest-path tests/template/Cargo.toml
 
 # Run integration setup, tests, and teardown in one task
@@ -134,6 +122,12 @@ sanity: early-errors
 ##################################
 ### Private, dependency tasks. ###
 ##################################
+
+_check_nextest:
+  #!{{python}}
+  if "{{nextest}}" != "true":
+    print ("Tests use cargo-nextest, please install it with: cargo install cargo-nextest")
+    exit(1)
 
 _dep-install-nightly:
   #!/usr/bin/env bash

@@ -14,7 +14,7 @@ client = ["tokio/fs"]
 flow-component = { workspace = true, features = ["traits"] }
 wick-packet = { workspace = true, features = ["invocation"] }
 wick-interface-types = { workspace = true }
-tonic = { workspace = true, features = ["tls"] }
+tonic = { workspace = true, features = ["tls", "transport"] }
 prost = { workspace = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }
 tokio-stream = { workspace = true, features = ["net"] }
@@ -26,6 +26,7 @@ uuid = { workspace = true }
 [build-dependencies]
 tonic-build = { workspace = true, default-features = false, features = [
   "prost",
+  "transport"
 ] }
 
 [dev-dependencies]

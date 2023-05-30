@@ -17,7 +17,7 @@ flow-component = { workspace = true, features = ["traits"] }
 serde = { workspace = true, features = ["derive"] }
 async-trait = { workspace = true }
 bytes = { workspace = true }
-anyhow = { version = "1.0" }
+anyhow = { version = "1" }
 
 [dev-dependencies]
 wick-packet = { workspace = true }
