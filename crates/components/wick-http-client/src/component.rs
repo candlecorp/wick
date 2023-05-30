@@ -50,27 +50,6 @@ pub struct HttpClientComponent {
   config: HttpClientComponentConfig,
 }
 
-fn recursive_deserialize(value: &mut Value) {
-  match value {
-    Value::Object(ref mut map) => {
-      for v in map.values_mut() {
-        recursive_deserialize(v);
-      }
-    }
-    Value::Array(ref mut vec) => {
-      for v in vec.iter_mut() {
-        recursive_deserialize(v);
-      }
-    }
-    Value::String(s) => {
-      if let Ok(parsed) = serde_json::from_str::<Value>(s) {
-        *value = parsed;
-      }
-    }
-    _ => (),
-  }
-}
-
 impl HttpClientComponent {
   #[allow(clippy::needless_pass_by_value)]
   pub fn new(
@@ -160,10 +139,7 @@ async fn handle(
 
     let body = match opdef.body() {
       Some(body) => match body.render(&inputs) {
-        Ok(mut p) => {
-          recursive_deserialize(&mut p);
-          Some(p)
-        }
+        Ok(p) => Some(p),
         Err(e) => {
           let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
           break 'outer;
@@ -206,56 +182,16 @@ async fn handle(
       request_builder
     };
 
-    let headers = match opdef.headers() {
-      Some(headers) => match headers.render(&inputs) {
-        Ok(p) => Some(p),
-        Err(e) => {
-          let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
+    if let Some(headers) = opdef.headers() {
+      for (header, values) in headers {
+        for value in values {
+          let Ok(value) =  liquid_json::render_string(value, &inputs) else {
+          let _ = tx.error(wick_packet::Error::component_error(format!("Can't render template {}", value)));
           break 'outer;
-        }
-      },
-      None => None,
-    };
-
-    //headers should be turned into HashMap<String, Vec<String>>.  If it can not be turned itno that then throw an error.
-    let headers_map = match &headers {
-      Some(h) => match h.as_object() {
-        Some(map) => {
-          let mut headers_map = HashMap::new();
-          for (key, value) in map {
-            match value.as_str() {
-              Some(v) => {
-                headers_map.insert(key.to_string(), vec![v.to_string()]);
-              }
-              None => {
-                let _ = tx.error(wick_packet::Error::component_error(format!(
-                  "Invalid header value for key: {}",
-                  key
-                )));
-                break 'outer;
-              }
-            }
-          }
-          Some(headers_map)
-        }
-        None => {
-          let _ = tx.error(wick_packet::Error::component_error(
-            "Invalid headers format. Should be a HashMap<String, Vec<String>> object.".to_string(),
-          ));
-          break 'outer;
-        }
-      },
-      None => None,
-    };
-    match headers_map {
-      Some(h) => {
-        for (key, value) in h {
-          for v in value {
-            request_builder = request_builder.header(key.clone(), v);
-          }
+        };
+          request_builder = request_builder.header(header, value);
         }
       }
-      None => {}
     }
 
     let (client, request) = request_builder.build_split();
@@ -462,8 +398,10 @@ mod test {
       .build()
       .unwrap();
 
-    // Headers for the GET operation
-    let get_headers = Some(json!({ "Authorization": "Bearer {{secret}}" }).into());
+    let get_headers = Some(HashMap::from([(
+      "Authorization".to_owned(),
+      vec!["Bearer {{secret}}".to_owned()],
+    )]));
 
     config.operations_mut().push(
       HttpClientOperationDefinition::new_get(
@@ -477,7 +415,10 @@ mod test {
       .unwrap(),
     );
 
-    let post_headers = Some(json!({ "Content-Type": "application/json", "X-Custom-Header": "{{input}}" }).into());
+    let post_headers = Some(HashMap::from([
+      ("Content-Type".to_owned(), vec!["application/json".to_owned()]),
+      ("X-Custom-Header".to_owned(), vec!["{{input}}".to_owned()]),
+    ]));
 
     config.operations_mut().push(
       HttpClientOperationDefinition::new_post(

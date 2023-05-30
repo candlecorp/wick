@@ -2542,6 +2542,7 @@
           },
           "headers": {
             "description": "Any headers to add to the request.",
+            "required": false,
             "type": "object",
             "patternProperties": {
               "[a-zA-Z0-9][a-zA-Z0-9_]*": {
