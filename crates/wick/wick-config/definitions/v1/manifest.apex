@@ -757,7 +757,7 @@ type HttpClientOperationDefinition {
   codec: Codec?
 
   "Any headers to add to the request."
-  headers: {string: [string]}
+  headers: {string: [string]}?
 
   "The body to send, processed as a structured JSON liquid template."
   body: LiquidJsonValue?
