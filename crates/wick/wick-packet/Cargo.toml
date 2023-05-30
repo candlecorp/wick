@@ -17,7 +17,7 @@ maintenance = { status = "actively-developed" }
 
 [features]
 default = []
-invocation = ["uuid", "seeded-random"]
+invocation = ["uuid", "seeded-random/rng"]
 rt-tokio = ["tokio/rt"]
 datetime = ["chrono"]
 

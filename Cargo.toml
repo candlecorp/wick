@@ -20,25 +20,25 @@ exclude = [
 
 [workspace.dependencies]
 # crates/wick
-flow-component = { path = "./crates/wick/flow-component", version = "0.5.0" }
+flow-component = { path = "./crates/wick/flow-component", version = "0.5.0", default-features = false }
 flow-expression-parser = { path = "./crates/wick/flow-expression-parser", version = "0.5.0" }
 flow-graph = { path = "./crates/wick/flow-graph", version = "0.21.0" }
 flow-graph-interpreter = { path = "./crates/wick/flow-graph-interpreter", version = "0.20.0" }
 wick-logger = { path = "./crates/wick/wick-logger", version = "0.2.0" }
 wick-asset-reference = { path = "./crates/wick/wick-asset-reference", version = "0.3.0" }
-wick-component = { path = "./crates/wick/wick-component", version = "0.15.0" }
-wick-component-cli = { path = "./crates/wick/wick-component-cli", version = "0.1.0" }
+wick-component = { path = "./crates/wick/wick-component", version = "0.15.0", default-features = false }
+wick-component-cli = { path = "./crates/wick/wick-component-cli", version = "0.1.0", default-features = false }
 wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.4.0" }
 wick-component-wasm = { path = "./crates/wick/wick-component-wasm", version = "0.2.0" }
-wick-config = { path = "./crates/wick/wick-config", version = "0.26.0" }
+wick-config = { path = "./crates/wick/wick-config", version = "0.26.0", default-features = false }
 wick-host = { path = "./crates/wick/wick-host", version = "0.4.0" }
 wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.15.0" }
 wick-invocation-server = { path = "./crates/wick/wick-invocation-server", version = "0.1.0" }
-wick-oci-utils = { path = "./crates/wick/wick-oci-utils", version = "0.3.0" }
+wick-oci-utils = { path = "./crates/wick/wick-oci-utils", version = "0.3.0", default-features = false }
 wick-package = { path = "./crates/wick/wick-package", version = "0.2.0" }
-wick-packet = { path = "./crates/wick/wick-packet", version = "0.15.0" }
+wick-packet = { path = "./crates/wick/wick-packet", version = "0.15.0", default-features = false }
 wick-settings = { path = "./crates/wick/wick-settings", version = "0.1.0" }
-wick-rpc = { path = "./crates/wick/wick-rpc", version = "0.1.0" }
+wick-rpc = { path = "./crates/wick/wick-rpc", version = "0.1.0", default-features = false }
 wick-runtime = { path = "./crates/wick/wick-runtime", version = "0.22.0" }
 wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.1.0" }
 wick-test = { path = "./crates/wick/wick-test", version = "0.1.0" }
@@ -48,7 +48,7 @@ wick-xdg = { path = "./crates/wick/wick-xdg", version = "0.2.0" }
 asset-container = { path = "./crates/misc/asset-container", version = "0.2.0" }
 derive-asset-container = { path = "./crates/misc/derive-asset-container", version = "0.2.0" }
 performance-mark = { path = "./crates/misc/performance-mark", version = "0.1.0" }
-seeded-random = { path = "./crates/misc/seeded-random", version = "0.3.0" }
+seeded-random = { path = "./crates/misc/seeded-random", version = "0.3.0", default-features = false }
 tap-harness = { path = "./crates/misc/tap-harness", version = "0.1.0" }
 test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
 # crates/interfaces
@@ -75,11 +75,11 @@ async-stream = "0.3"
 async-trait = "0.1"
 atty = "0.2"
 bytes = "1.4"
-base64 = "0.21"
+base64 = { version = "0.21", default-features = false }
 bitflags = "2.2"
 cfg-if = "1.0"
 check_keyword = "0.2"
-chrono = "0.4"
+chrono = { version = "0.4", default-features = false }
 clap = "4.2"
 console = "0.15"
 data-encoding = "2.3.2"
@@ -104,7 +104,7 @@ nom = "7.1"
 normpath = "1.1"
 nuid = "0.4"
 num-traits = "0.2"
-oci-distribution = "0.9"
+oci-distribution = { version = "0.9", default-features = false }
 once_cell = "1.8"
 openssl = "0.10"
 option-utils = "0.1"
@@ -120,11 +120,11 @@ property = "0.3"
 prost = "0.11"
 prost-types = "0.11"
 quote = "1.0"
-rand = "0.8"
-rand_core = "0.6"
-rand_chacha = "0.3"
+rand = { version = "0.8", default-features = false }
+rand_core = { version = "0.6", default-features = false }
+rand_chacha = { version = "0.3", default-features = false }
 regex = "1.8"
-reqwest = "~0.11.16"
+reqwest = { version = "~0.11.16", default-features = false }
 ring = "0.16"
 serde = "1.0"
 serde_json = "1.0"
@@ -153,8 +153,8 @@ tokio-postgres = "0.7"
 tokio-stream = "0.1"
 tokio-util = "0.7"
 tonic = "0.9"
-tonic-build = "0.9"
-tonic-reflection = "0.9"
+tonic-build = { version = "0.9", default-features = false }
+tonic-reflection = { version = "0.9", default-features = false }
 tracing = "0.1"
 tracing-futures = "0.2"
 tracing-log = "0.1"

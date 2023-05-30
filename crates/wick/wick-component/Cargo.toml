@@ -29,4 +29,4 @@ paste = { workspace = true }
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 serde = { workspace = true }
-anyhow = { version = "1.0" }
+anyhow = { version = "1" }
