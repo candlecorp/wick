@@ -1603,11 +1603,11 @@ pub(crate) struct HttpClientOperationDefinition {
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) codec: Option<Codec>,
-  /// Any headers to add to the request, processed as a structured JSON liquid template.
+  /// Any headers to add to the request.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) headers: Option<liquid_json::LiquidJsonValue>,
+  pub(crate) headers: Option<HashMap<String, Vec<String>>>,
   /// The body to send, processed as a structured JSON liquid template.
 
   #[serde(default)]

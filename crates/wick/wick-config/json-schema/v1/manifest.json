@@ -2144,6 +2144,7 @@
         },
         "headers": {
           "description": "Any headers to add to the request.",
+          "required": false,
 
           "type": "object",
           "patternProperties": {
