@@ -426,9 +426,14 @@ mod test {
         "/post?query1={{input}}",
         vec![
           Field::new("input", TypeSignature::String),
-          Field::new("number", TypeSignature::I64),
+          Field::new(
+            "number",
+            TypeSignature::List {
+              ty: Box::new(TypeSignature::I64),
+            },
+          ),
         ],
-        Some(json!({"key": "{{input}}","other":"{{number}}"}).into()),
+        Some(json!({"key": "{{input}}","other":"{{number | each: '{\"value\": {{el}} }' | json | output }}"}).into()),
         post_headers,
       )
       .build()
@@ -504,7 +509,7 @@ mod test {
     async fn test_post_request() -> Result<()> {
       let (app_config, component_config) = get_config();
       let comp = get_component(app_config, component_config).await;
-      let packets = packet_stream!(("input", "SENTINEL"), ("number", 123));
+      let packets = packet_stream!(("input", "SENTINEL"), ("number", [123, 345, 678]));
       let invocation = Invocation::test("test_post_request", Entity::local(POST_OP), packets, Default::default())?;
       let mut stream = comp
         .handle(invocation, None, panic_callback())
@@ -519,7 +524,10 @@ mod test {
       let args = response.get("args").unwrap();
       assert_eq!(args, &json!( {"query1": "SENTINEL"}));
       let data = response.get("json").unwrap();
-      assert_eq!(data, &json!( {"key": "SENTINEL","other":123}));
+      assert_eq!(
+        data,
+        &json!( {"key": "SENTINEL","other":[{"value":123},{"value":345},{"value":678}]})
+      );
       let response_headers = response.get("headers").unwrap();
       assert_eq!(
         response_headers.get("Content-Type").unwrap(),
