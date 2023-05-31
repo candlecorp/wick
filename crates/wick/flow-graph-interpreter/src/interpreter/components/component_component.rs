@@ -37,7 +37,7 @@ impl Component for ComponentComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _config: Option<wick_packet::OperationConfig>,
+    _config: Option<wick_packet::GenericConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, namespace = NS_COMPONENTS);

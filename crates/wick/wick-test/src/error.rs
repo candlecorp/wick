@@ -12,4 +12,6 @@ pub enum TestError {
   InvocationTimeout(String),
   #[error("Deserialization failed: {0}")]
   ConversionFailed(String),
+  #[error("Could not create component instance to test: {0}")]
+  Factory(String),
 }

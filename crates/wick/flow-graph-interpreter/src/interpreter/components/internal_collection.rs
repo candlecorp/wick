@@ -31,7 +31,7 @@ impl Component for InternalCollection {
   fn handle(
     &self,
     invocation: Invocation,
-    _config: Option<wick_packet::OperationConfig>,
+    _config: Option<wick_packet::GenericConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL));

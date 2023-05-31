@@ -665,11 +665,17 @@ pub(crate) struct TestConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) name: Option<String>,
+  /// Configuration used to instantiate this component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
+  pub(crate) with: Option<HashMap<String, Value>>,
   /// Unit tests to run against components and operations.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) tests: Vec<TestDefinition>,
+  pub(crate) cases: Vec<TestDefinition>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -723,7 +729,7 @@ pub(crate) struct ComponentConfiguration {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) tests: Vec<TestDefinition>,
+  pub(crate) tests: Vec<TestConfiguration>,
   /// Details about the package for this component.
 
   #[serde(default)]
@@ -763,6 +769,11 @@ pub(crate) struct InterfaceDefinition {
 #[serde(deny_unknown_fields)]
 /// A component made out of other components
 pub(crate) struct CompositeComponentConfiguration {
+  /// Global configuration to use when instantiating the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
   /// A list of operations implemented by the Composite component.
 
   #[serde(default)]
@@ -778,6 +789,11 @@ pub(crate) struct WasmComponentConfiguration {
 
   #[serde(rename = "ref")]
   pub(crate) reference: crate::v1::helpers::LocationReference,
+  /// Global configuration to use when instantiating the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
   /// A list of operations implemented by the WebAssembly module.
 
   #[serde(default)]

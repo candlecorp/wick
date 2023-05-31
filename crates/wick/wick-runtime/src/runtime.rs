@@ -5,7 +5,7 @@ use seeded_random::Seed;
 use tracing::Span;
 use uuid::Uuid;
 use wick_config::config::{ComponentConfiguration, ComponentConfigurationBuilder};
-use wick_packet::{Entity, OperationConfig};
+use wick_packet::{Entity, GenericConfig};
 
 use crate::dev::prelude::*;
 use crate::runtime_service::{ComponentFactory, ComponentRegistry, Initialize};
@@ -25,17 +25,27 @@ pub struct Runtime {
 pub struct RuntimeInit {
   #[builder(default)]
   pub(crate) manifest: ComponentConfiguration,
+
+  #[builder(default)]
+  pub(crate) config: Option<GenericConfig>,
+
   #[builder(default)]
   pub(crate) allow_latest: bool,
+
   #[builder(default)]
   pub(crate) allowed_insecure: Vec<String>,
+
   #[builder(default = "Duration::from_secs(5)")]
   pub(crate) timeout: Duration,
+
   #[builder(setter(strip_option))]
   pub(crate) namespace: Option<String>,
+
   #[builder(default)]
   pub(crate) constraints: Vec<RuntimeConstraint>,
+
   pub(crate) span: Span,
+
   #[builder(setter(custom = true))]
   pub(crate) native_components: ComponentRegistry,
 }
@@ -55,7 +65,7 @@ impl Runtime {
     })
   }
 
-  pub async fn invoke(&self, invocation: Invocation, config: Option<OperationConfig>) -> Result<PacketStream> {
+  pub async fn invoke(&self, invocation: Invocation, config: Option<GenericConfig>) -> Result<PacketStream> {
     let time = std::time::SystemTime::now();
     trace!(start_time=%time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() ,"invocation start");
 
@@ -173,6 +183,7 @@ impl RuntimeBuilder {
       seed.unwrap_or_else(new_seed),
       RuntimeInit {
         manifest: definition,
+        config: self.config.unwrap_or_default(),
         allow_latest: self.allow_latest.unwrap_or_default(),
         allowed_insecure: self.allowed_insecure.unwrap_or_default(),
         native_components: self.native_components.unwrap_or_default(),

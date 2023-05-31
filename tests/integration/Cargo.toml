@@ -18,6 +18,7 @@ wick-config = { workspace = true, features = [] }
 wick-host = { workspace = true, features = [] }
 wick-component = { workspace = true }
 wick-interface-types = { workspace = true, features = ["parser"] }
+wick-test = { workspace = true }
 flow-component = { workspace = true }
 wick-rpc = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -27,9 +28,8 @@ futures = { workspace = true }
 test-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros", "process", "rt"] }
 wick-logger = { workspace = true }
-clap = { version = "3.0", features = ["derive", "env"] }
 pretty_assertions = { workspace = true }
-wick-component-cli = { workspace = true }
+wick-component-cli = { workspace = true, features = ["cli"] }
 tonic = { workspace = true }
 wick-invocation-server = { workspace = true }
 tokio-stream = { workspace = true }

@@ -12,7 +12,7 @@ use tokio_stream::StreamExt;
 use tracing::Span;
 use wick_config::config::components::Codec;
 use wick_interface_http::types as wick_http;
-use wick_packet::{packets, Entity, Invocation, Observer, OperationConfig, Packet, PacketStream};
+use wick_packet::{packets, Entity, GenericConfig, Invocation, Observer, Packet, PacketStream};
 
 use super::conversions::convert_response;
 use super::HttpError;
@@ -81,7 +81,7 @@ pub(super) enum Either {
 
 pub(super) async fn handle_request_middleware(
   target: Entity,
-  operation_config: Option<OperationConfig>,
+  operation_config: Option<GenericConfig>,
   engine: Arc<Runtime>,
   req: &wick_http::HttpRequest,
 ) -> Result<Option<Either>, HttpError> {
@@ -126,7 +126,7 @@ pub(super) async fn handle_request_middleware(
 
 pub(super) async fn handle_response_middleware(
   target: Entity,
-  operation_config: Option<OperationConfig>,
+  operation_config: Option<GenericConfig>,
   engine: Arc<Runtime>,
   req: &wick_http::HttpRequest,
   res: &wick_http::HttpResponse,

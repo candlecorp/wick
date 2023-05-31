@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use wick_interface_types::{ComponentSignature, OperationSignature};
-use wick_packet::{ComponentReference, InherentData, Invocation, OperationConfig, PacketStream};
+use wick_packet::{ComponentReference, GenericConfig, InherentData, Invocation, PacketStream};
 
 use crate::context::Context;
 use crate::{BoxFuture, ComponentError};
@@ -14,7 +14,7 @@ pub trait Component {
   fn handle(
     &self,
     invocation: Invocation,
-    data: Option<OperationConfig>,
+    data: Option<GenericConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>>;
   fn list(&self) -> &ComponentSignature;
@@ -41,7 +41,7 @@ pub trait Operation {
 
   fn input_names(&self, config: &Self::Config) -> Vec<String>;
 
-  fn decode_config(data: Option<OperationConfig>) -> Result<Self::Config, ComponentError>;
+  fn decode_config(data: Option<GenericConfig>) -> Result<Self::Config, ComponentError>;
 }
 
 pub type RuntimeCallback = dyn Fn(
@@ -49,7 +49,7 @@ pub type RuntimeCallback = dyn Fn(
     String,
     PacketStream,
     Option<InherentData>,
-    Option<OperationConfig>,
+    Option<GenericConfig>,
     &tracing::Span,
   ) -> BoxFuture<'static, Result<PacketStream, ComponentError>>
   + Send

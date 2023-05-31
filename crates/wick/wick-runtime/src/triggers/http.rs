@@ -31,7 +31,7 @@ use wick_config::config::{
   StaticRouterConfig,
   WickRouter,
 };
-use wick_packet::{Entity, OperationConfig};
+use wick_packet::{Entity, GenericConfig};
 
 use self::static_router::StaticRouter;
 use super::{resolve_or_import, resolve_ref, Trigger, TriggerKind};
@@ -182,15 +182,15 @@ struct RouterOperation {
 
 #[derive(Debug, Clone)]
 struct RouterMiddleware {
-  request: Vec<(Entity, Option<OperationConfig>)>,
+  request: Vec<(Entity, Option<GenericConfig>)>,
   #[allow(unused)]
-  response: Vec<(Entity, Option<OperationConfig>)>,
+  response: Vec<(Entity, Option<GenericConfig>)>,
 }
 
 impl RouterMiddleware {
   pub(crate) fn new(
-    request: Vec<(Entity, Option<OperationConfig>)>,
-    response: Vec<(Entity, Option<OperationConfig>)>,
+    request: Vec<(Entity, Option<GenericConfig>)>,
+    response: Vec<(Entity, Option<GenericConfig>)>,
   ) -> Self {
     Self { request, response }
   }

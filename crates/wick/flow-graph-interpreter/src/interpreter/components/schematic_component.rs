@@ -71,7 +71,7 @@ impl Component for SchematicComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _config: Option<wick_packet::OperationConfig>,
+    _config: Option<wick_packet::GenericConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, namespace = NS_SELF));

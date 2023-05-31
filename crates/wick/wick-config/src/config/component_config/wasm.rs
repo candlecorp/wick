@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use wick_interface_types::Field;
+
 use crate::config::{self, OperationSignature};
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
@@ -7,9 +9,14 @@ use crate::config::{self, OperationSignature};
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct WasmComponentImplementation {
+  /// The configuration for the component.
+  #[asset(skip)]
+  pub(crate) config: Vec<Field>,
+
   /// The location of the component.
   pub(crate) reference: config::AssetReference,
 
+  /// The operations defined by the component.
   #[asset(skip)]
   pub(crate) operations: HashMap<String, OperationSignature>,
 }

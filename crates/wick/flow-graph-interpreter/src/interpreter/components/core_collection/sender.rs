@@ -49,7 +49,7 @@ impl Operation for Op {
     self.signature.inputs.iter().map(|n| n.name.clone()).collect()
   }
 
-  fn decode_config(data: Option<wick_packet::OperationConfig>) -> Result<Self::Config, ComponentError> {
+  fn decode_config(data: Option<wick_packet::GenericConfig>) -> Result<Self::Config, ComponentError> {
     let config = data.ok_or_else(|| {
       ComponentError::message("Merge component requires configuration, please specify configuration.")
     })?;

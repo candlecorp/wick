@@ -46,7 +46,7 @@ impl Component for HostComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    data: Option<wick_packet::OperationConfig>,
+    data: Option<wick_packet::GenericConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, ComponentError>> {
     let fut = self.host.invoke(invocation, data);

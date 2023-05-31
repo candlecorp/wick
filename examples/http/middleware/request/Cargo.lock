@@ -930,11 +930,13 @@ dependencies = [
 
 [[package]]
 name = "liquid-json"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e12e873af73710d72ae13246e3732d558c3919ee18e1bac1f954b0d5fab4335"
+checksum = "e3fa84b645d05cf0eb96104b6202d0f304d3536dad406af50aa6359efd9f9e74"
 dependencies = [
  "liquid",
+ "liquid-core",
+ "liquid-lib",
  "once_cell",
  "regex",
  "serde",

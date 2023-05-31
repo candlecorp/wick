@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 /// Data inherent to an invocation. Meant to be supplied by a runtime, not a user.
 #[must_use]
 pub struct InherentData {

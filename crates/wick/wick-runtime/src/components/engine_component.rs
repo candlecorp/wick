@@ -30,7 +30,7 @@ impl Component for EngineComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    config: Option<wick_packet::OperationConfig>,
+    config: Option<wick_packet::GenericConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target_url = invocation.target_url();

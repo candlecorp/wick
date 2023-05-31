@@ -1,5 +1,5 @@
 {
-  "title": "JSON schema for Wick applications and components",
+  "title": "Wick configuration",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "$defs": {
@@ -1261,7 +1261,15 @@
             "required": false,
             "type": "string"
           },
-          "tests": {
+          "with": {
+            "description": "Configuration used to instantiate this component.",
+            "required": false,
+            "type": "object",
+            "patternProperties": {
+              "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+            }
+          },
+          "cases": {
             "description": "Unit tests to run against components and operations.",
             "type": "array",
             "items": {
@@ -1343,7 +1351,7 @@
             "description": "Assertions that can be run against the component to validate its behavior.",
             "type": "array",
             "items": {
-              "$ref": "#/$defs/v1/TestDefinition"
+              "$ref": "#/$defs/v1/TestConfiguration"
             }
           },
           "package": {
@@ -1409,6 +1417,13 @@
               "wick/component/composite@v1"
             ]
           },
+          "with": {
+            "description": "Global configuration to use when instantiating the component.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
           "operations": {
             "description": "A list of operations implemented by the Composite component.",
             "type": "array",
@@ -1434,6 +1449,13 @@
           "ref": {
             "description": "A reference to a local WebAssembly implementation",
             "type": "string"
+          },
+          "with": {
+            "description": "Global configuration to use when instantiating the component.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
           },
           "operations": {
             "description": "A list of operations implemented by the WebAssembly module.",

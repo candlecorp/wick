@@ -10,10 +10,17 @@ use crate::config;
 #[must_use]
 pub struct TestConfiguration {
   #[asset(skip)]
+  pub(crate) name: Option<String>,
+
+  #[asset(skip)]
   #[property(skip)]
   pub(crate) source: Option<PathBuf>,
+
   #[asset(skip)]
-  pub(crate) tests: Vec<config::TestCase>,
+  pub(crate) config: Option<wick_packet::GenericConfig>,
+
+  #[asset(skip)]
+  pub(crate) cases: Vec<config::TestCase>,
 }
 
 impl TestConfiguration {

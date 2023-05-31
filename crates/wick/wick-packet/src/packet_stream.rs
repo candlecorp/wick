@@ -7,11 +7,11 @@ use pin_project_lite::pin_project;
 use tracing::Span;
 use wasmrs_rx::FluxChannel;
 
-use crate::{ContextTransport, OperationConfig, Packet};
+use crate::{ContextTransport, GenericConfig, InherentData, Packet};
 
 pub type PacketSender = FluxChannel<Packet, crate::Error>;
 
-type ContextConfig = (OperationConfig, Option<u64>);
+type ContextConfig = (GenericConfig, Option<InherentData>);
 
 #[cfg(target_family = "wasm")]
 pin_project! {
@@ -73,7 +73,7 @@ impl PacketStream {
     self.span = span;
   }
 
-  pub fn set_context(&self, context: OperationConfig, seed: Option<u64>) {
+  pub fn set_context(&self, context: GenericConfig, seed: Option<InherentData>) {
     self.config.lock().replace((context, seed));
   }
 

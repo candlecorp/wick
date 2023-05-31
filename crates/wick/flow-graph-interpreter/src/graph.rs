@@ -1,12 +1,12 @@
 pub mod types {
-  use wick_packet::OperationConfig;
+  use wick_packet::GenericConfig;
 
   pub(crate) static INHERENT_COMPONENT: usize = 2;
-  pub(crate) type Network = flow_graph::Network<OperationConfig>;
-  pub(crate) type Operation = flow_graph::Node<OperationConfig>;
+  pub(crate) type Network = flow_graph::Network<GenericConfig>;
+  pub(crate) type Operation = flow_graph::Node<GenericConfig>;
   pub(crate) type OperationPort = flow_graph::NodePort;
-  pub(crate) type Schematic = flow_graph::Schematic<OperationConfig>;
-  pub(crate) type Port<'a> = flow_graph::iterators::Port<'a, OperationConfig>;
+  pub(crate) type Schematic = flow_graph::Schematic<GenericConfig>;
+  pub(crate) type Port<'a> = flow_graph::iterators::Port<'a, GenericConfig>;
 }
 
 use std::collections::HashMap;
@@ -24,7 +24,7 @@ use flow_graph::NodeReference;
 use serde_json::Value;
 use types::*;
 use wick_config::config::{ComponentImplementation, FlowOperation};
-use wick_packet::OperationConfig;
+use wick_packet::GenericConfig;
 
 use crate::constants::{INTERNAL_ID_INHERENT, NS_CORE, NS_INTERNAL, NS_NULL};
 
@@ -148,7 +148,7 @@ fn expand_port_paths(
       let (to_inst, to_port, _) = to.into_parts();
       if let InstancePort::Path(name, parts) = from_port {
         let id = format!("{}_pluck_{}_{}", schematic.name(), name, parts.join(","));
-        let config = OperationConfig::from(HashMap::from([("field".to_owned(), Value::String(parts.join(".")))]));
+        let config = GenericConfig::from(HashMap::from([("field".to_owned(), Value::String(parts.join(".")))]));
         schematic.add_external(&id, NodeReference::new("core", "pluck"), Some(config));
         *expression = FlowExpression::block(BlockExpression::new(vec![
           FlowExpression::connection(ConnectionExpression::new(

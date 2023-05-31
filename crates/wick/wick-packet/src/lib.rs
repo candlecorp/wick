@@ -93,7 +93,7 @@ mod stream_map;
 mod wrapped_type;
 
 pub use collection_link::ComponentReference;
-pub use context::{ContextTransport, OperationConfig};
+pub use context::{ContextTransport, GenericConfig};
 #[cfg(feature = "datetime")]
 pub use datetime::{parse_date, NaiveDateTime};
 pub use entity::Entity;

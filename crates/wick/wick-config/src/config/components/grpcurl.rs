@@ -5,5 +5,5 @@ pub struct GrpcUrlComponent {
   /// The URL to connect to .
   pub(crate) url: String,
   /// The configuration for the collection
-  pub(crate) config: Option<wick_packet::OperationConfig>,
+  pub(crate) config: Option<wick_packet::GenericConfig>,
 }

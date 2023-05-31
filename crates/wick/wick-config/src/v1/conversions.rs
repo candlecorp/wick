@@ -65,11 +65,26 @@ impl TryFrom<v1::TestConfiguration> for test_config::TestConfiguration {
 
   fn try_from(value: v1::TestConfiguration) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      tests: value.tests.map_into(),
+      cases: value.cases.map_into(),
+      config: value.with.map_into(),
+      name: value.name,
       source: None,
     })
   }
 }
+
+impl TryFrom<config::TestConfiguration> for v1::TestConfiguration {
+  type Error = ManifestError;
+
+  fn try_from(value: config::TestConfiguration) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      name: value.name,
+      with: value.config.map_into(),
+      cases: value.cases.into_iter().map(|v| v.into()).collect(),
+    })
+  }
+}
+
 impl TryFrom<v1::TypesConfiguration> for types_config::TypesConfiguration {
   type Error = ManifestError;
 
@@ -99,7 +114,7 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
       host: def.host.try_map_into()?,
       name: def.name,
       labels: def.labels,
-      tests: def.tests.map_into(),
+      tests: def.tests.try_map_into()?,
       component: def.component.try_into()?,
       types: def.types.try_map_into()?,
       requires: def
@@ -141,7 +156,7 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
       import: def.import.into_values().map(|v| v.try_into()).collect::<Result<_>>()?,
       types: def.types.try_map_into()?,
       resources: def.resources.into_values().map(|v| v.into()).collect(),
-      tests: def.tests.map_into(),
+      tests: def.tests.try_map_into()?,
       component: def.component.try_into()?,
       package: def.package.try_map_into()?,
     })
@@ -223,6 +238,7 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentImplementation {
   fn try_from(value: v1::WasmComponentConfiguration) -> Result<Self> {
     Ok(Self {
       reference: value.reference.try_into()?,
+      config: value.with.try_map_into()?,
       operations: value
         .operations
         .into_iter()
@@ -262,6 +278,7 @@ impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentImplemen
   type Error = ManifestError;
   fn try_from(value: v1::CompositeComponentConfiguration) -> Result<Self> {
     Ok(Self {
+      config: value.with.try_map_into()?,
       operations: value
         .operations
         .into_iter()
@@ -275,6 +292,7 @@ impl TryFrom<CompositeComponentImplementation> for v1::CompositeComponentConfigu
   type Error = ManifestError;
   fn try_from(value: CompositeComponentImplementation) -> Result<Self> {
     Ok(Self {
+      with: value.config.try_map_into()?,
       operations: value
         .operations
         .into_values()
@@ -288,6 +306,7 @@ impl TryFrom<WasmComponentImplementation> for v1::WasmComponentConfiguration {
   type Error = ManifestError;
   fn try_from(value: WasmComponentImplementation) -> Result<Self> {
     Ok(Self {
+      with: value.config.try_map_into()?,
       operations: value
         .operations
         .into_values()

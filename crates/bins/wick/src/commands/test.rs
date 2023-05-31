@@ -2,11 +2,12 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use clap::Args;
+use futures::TryFutureExt;
 use seeded_random::Seed;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
-use wick_test::TestSuite;
+use wick_test::{ComponentFactory, SharedComponent, TestSuite};
 
 use crate::utils::merge_config;
 
@@ -31,8 +32,12 @@ pub(crate) struct TestCommand {
   #[clap(action)]
   pub(crate) location: String,
 
-  /// Filter which tests to run
+  /// Paths to external test files.
   #[clap(action)]
+  pub(crate) tests: Vec<String>,
+
+  /// Filter which tests to run
+  #[clap(long = "filter", short = 'f', action)]
   filter: Vec<String>,
 }
 
@@ -41,28 +46,57 @@ pub(crate) async fn handle(opts: TestCommand, _settings: wick_settings::Settings
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);
 
-  let config = WickConfiguration::fetch_all(&opts.location, fetch_options)
+  let root_manifest = WickConfiguration::fetch_all(&opts.location, fetch_options.clone())
     .await?
     .try_component_config()?;
 
-  let mut suite = TestSuite::from_test_cases(config.tests());
+  let mut suite = TestSuite::from_configuration(root_manifest.tests());
+
+  let test_files: Vec<_> = futures::future::join_all(opts.tests.iter().map(|path| {
+    WickConfiguration::fetch_all(path, fetch_options.clone())
+      .and_then(|config| futures::future::ready(config.try_test_config()))
+  }))
+  .await
+  .into_iter()
+  .collect::<Result<_, _>>()?;
+
+  for config in &test_files {
+    suite.add_configuration(config);
+  }
+
   let server_options = DefaultCliOptions { ..Default::default() };
 
-  let config = merge_config(&config, &opts.oci, Some(server_options));
+  let manifest = merge_config(&root_manifest, &opts.oci, Some(server_options));
 
-  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
-  host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;
+  let factory: ComponentFactory = Box::new(move |config| {
+    let manifest = manifest.clone();
+    let span = span.clone();
+    let task = async move {
+      let mut host = ComponentHostBuilder::default()
+        .manifest(manifest)
+        .config(config)
+        .span(span)
+        .build()
+        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
+      host
+        .start_engine(opts.seed.map(Seed::unsafe_new))
+        .await
+        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
+      let component: SharedComponent = Arc::new(wick_host::HostComponent::new(host));
+      Ok(component)
+    };
+    Box::pin(task)
+  });
 
-  let component = Arc::new(wick_host::HostComponent::new(host));
-  let id = component.id().to_owned();
+  let runners = suite.run(factory).await?;
 
-  let harness = suite.run(Some(&id), component).await?;
-
-  harness.print();
-  let num_failed = harness.num_failed();
-  if num_failed > 0 {
-    Err(anyhow!("{} tests failed", num_failed))
-  } else {
-    Ok(())
+  for harness in runners {
+    harness.print();
+    let num_failed = harness.num_failed();
+    if num_failed > 0 {
+      return Err(anyhow!("{} tests failed", num_failed));
+    }
   }
+
+  Ok(())
 }

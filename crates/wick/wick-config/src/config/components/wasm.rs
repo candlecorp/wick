@@ -11,7 +11,7 @@ pub struct WasmComponent {
   pub(crate) reference: config::AssetReference,
   /// The configuration for the collection
   #[asset(skip)]
-  pub(crate) config: Option<wick_packet::OperationConfig>,
+  pub(crate) config: Option<wick_packet::GenericConfig>,
   /// Permissions for this collection
   #[asset(skip)]
   pub(crate) permissions: Permissions,

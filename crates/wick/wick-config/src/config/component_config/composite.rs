@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use flow_expression_parser::ast::{self};
 use wick_interface_types::Field;
-use wick_packet::OperationConfig;
+use wick_packet::GenericConfig;
 
 use crate::config::{self};
 
@@ -12,6 +12,11 @@ use crate::config::{self};
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct CompositeComponentImplementation {
+  /// The configuration for the component.
+  #[asset(skip)]
+  pub(crate) config: Vec<Field>,
+
+  /// The operations defined by the component.
   #[asset(skip)]
   pub(crate) operations: HashMap<String, FlowOperation>,
 }
@@ -99,7 +104,7 @@ pub struct InstanceReference {
   /// The id of the component.
   pub(crate) component_id: String,
   /// Data associated with the component instance.
-  pub(crate) data: Option<OperationConfig>,
+  pub(crate) data: Option<GenericConfig>,
 }
 
 impl InstanceReference {

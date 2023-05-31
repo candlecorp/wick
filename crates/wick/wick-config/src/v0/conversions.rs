@@ -21,7 +21,10 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
       .into_iter()
       .map(|val| Ok((val.name.clone(), val.try_into()?)))
       .collect();
-    let composite = config::CompositeComponentImplementation { operations: flows? };
+    let composite = config::CompositeComponentImplementation {
+      operations: flows?,
+      config: Default::default(),
+    };
     Ok(config::ComponentConfiguration {
       source: None,
       types: Default::default(),

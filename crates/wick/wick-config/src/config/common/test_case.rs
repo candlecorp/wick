@@ -9,7 +9,7 @@ pub struct TestCase {
   /// The operaton to test.
   pub(crate) operation: String,
   /// The configuration for the operation being tested, if any.
-  pub(crate) config: Option<wick_packet::OperationConfig>,
+  pub(crate) config: Option<wick_packet::GenericConfig>,
   /// Inherent data to use for the test.
   pub(crate) inherent: Option<InherentConfig>,
   /// The inputs to the test.

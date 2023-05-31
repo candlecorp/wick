@@ -28,7 +28,7 @@ impl Component for NullComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _data: Option<wick_packet::OperationConfig>,
+    _data: Option<wick_packet::GenericConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, namespace = NS_CORE));
