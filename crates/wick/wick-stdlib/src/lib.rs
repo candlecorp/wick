@@ -160,7 +160,7 @@ impl Component for Collection {
   fn handle(
     &self,
     invocation: Invocation,
-    _data: Option<wick_packet::OperationConfig>,
+    _data: Option<wick_packet::GenericConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target = invocation.target_url();

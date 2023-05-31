@@ -115,9 +115,9 @@ impl CoreCollection {
 }
 
 macro_rules! core_op {
-  ($type:ty, $inv:expr, $name:expr, $callback:expr, $data:ident, $seed:ident) => {{
+  ($type:ty, $inv:expr, $name:expr, $callback:expr, $data:ident, $inherent:ident) => {{
     let config = <$type>::decode_config($data)?;
-    $name.handle($inv, Context::new(config, $seed, $callback)).await
+    $name.handle($inv, Context::new(config, $inherent, $callback)).await
   }};
 }
 
@@ -125,11 +125,11 @@ impl Component for CoreCollection {
   fn handle(
     &self,
     invocation: Invocation,
-    data: Option<wick_packet::OperationConfig>,
+    data: Option<wick_packet::GenericConfig>,
     callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, namespace = NS_CORE));
-    let seed = invocation.seed();
+    let seed = invocation.inherent;
 
     let task = async move {
       match invocation.target.operation_id() {

@@ -5,7 +5,7 @@ use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use tracing::Span;
 use wasmrs_host::WasiParams;
 use wick_config::config::components::Permissions;
-use wick_packet::{Entity, Invocation, OperationConfig, PacketStream};
+use wick_packet::{Entity, GenericConfig, Invocation, PacketStream};
 use wick_rpc::RpcHandler;
 
 use crate::helpers::WickWasmModule;
@@ -76,7 +76,7 @@ impl Component for WasmComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    data: Option<OperationConfig>,
+    data: Option<GenericConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, config=?data, "wasm invoke"));

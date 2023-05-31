@@ -15,7 +15,7 @@ use seeded_random::{Random, Seed};
 use tracing::{trace_span, Span};
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Entity, Invocation, OperationConfig, PacketStream};
+use wick_packet::{Entity, GenericConfig, Invocation, PacketStream};
 
 use self::channel::InterpreterDispatchChannel;
 use self::components::HandlerMap;
@@ -198,7 +198,7 @@ impl Interpreter {
     )
   }
 
-  pub async fn invoke(&self, invocation: Invocation, config: Option<OperationConfig>) -> Result<PacketStream, Error> {
+  pub async fn invoke(&self, invocation: Invocation, config: Option<GenericConfig>) -> Result<PacketStream, Error> {
     let known_targets = || {
       let mut hosted: Vec<_> = self.components.inner().keys().cloned().collect();
       if let Some(ns) = &self.namespace {

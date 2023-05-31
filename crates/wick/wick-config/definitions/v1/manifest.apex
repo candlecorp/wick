@@ -310,8 +310,11 @@ type TestConfiguration @tagged("wick/tests@v1") {
   "The name of this component."
   name: string?
 
+  "Configuration used to instantiate this component."
+  with: {string: any}?
+
   "Unit tests to run against components and operations."
-  tests: [TestDefinition]
+  cases: [TestDefinition]
 }
 
 
@@ -345,7 +348,7 @@ type ComponentConfiguration @tagged("wick/component@v1") {
   component: ComponentKind @required
 
   "Assertions that can be run against the component to validate its behavior."
-  tests: [TestDefinition]
+  tests: [TestConfiguration]
 
   "Details about the package for this component."
   package: PackageDefinition?,
@@ -371,6 +374,9 @@ type InterfaceDefinition {
 
 "A component made out of other components"
 type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
+  "Global configuration to use when instantiating the component."
+  with: [Field]
+
   "A list of operations implemented by the Composite component."
   operations: [CompositeOperationDefinition]
 }
@@ -379,6 +385,9 @@ type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
 type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
   "A reference to a local WebAssembly implementation"
   ref: LocationReference @rename("reference") @required
+
+  "Global configuration to use when instantiating the component."
+  with: [Field]
 
   "A list of operations implemented by the WebAssembly module."
   operations: [OperationDefinition]

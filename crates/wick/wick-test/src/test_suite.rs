@@ -1,33 +1,84 @@
-use flow_component::SharedComponent;
+use flow_component::BoxFuture;
 use tap_harness::TestRunner;
 use wick_config::config::TestCase;
+use wick_config::test_config::TestConfiguration;
+use wick_packet::GenericConfig;
 
-use crate::{get_description, run_test, TestError, UnitTest};
+use crate::{run_test, TestError, UnitTest};
 
-#[derive(Debug)]
+pub type ComponentFactory<'a> =
+  Box<dyn Fn(Option<GenericConfig>) -> BoxFuture<'a, Result<SharedComponent, TestError>> + Sync + Send>;
+
+pub use flow_component::SharedComponent;
+
+#[derive(Debug, Default)]
 #[must_use]
 pub struct TestSuite<'a> {
-  tests: Vec<UnitTest<'a>>,
-  name: String,
-  filters: Vec<String>,
-}
-
-impl<'a> Default for TestSuite<'a> {
-  fn default() -> Self {
-    Self::new("Test")
-  }
+  tests: Vec<TestGroup<'a>>,
 }
 
 impl<'a> TestSuite<'a> {
+  pub fn from_configuration<'b>(configurations: &'b [TestConfiguration]) -> Self
+  where
+    'b: 'a,
+  {
+    let defs: Vec<TestGroup<'b>> = configurations
+      .iter()
+      .map(|config| TestGroup::from_test_cases(config.config().cloned(), config.cases()))
+      .collect();
+    Self { tests: defs }
+  }
+
+  pub fn add_configuration<'b>(&mut self, config: &'b TestConfiguration)
+  where
+    'b: 'a,
+  {
+    self
+      .tests
+      .push(TestGroup::from_test_cases(config.config().cloned(), config.cases()));
+  }
+
+  pub async fn run(&'a mut self, factory: ComponentFactory<'a>) -> Result<Vec<TestRunner>, TestError> {
+    let mut runners = Vec::new();
+    for group in &mut self.tests {
+      let component = factory(group.config.clone());
+      runners.push(
+        group
+          .run(None, component.await.map_err(|e| TestError::Factory(e.to_string()))?)
+          .await?,
+      );
+    }
+    Ok(runners)
+  }
+}
+
+#[derive(Debug)]
+#[must_use]
+pub struct TestGroup<'a> {
+  tests: Vec<UnitTest<'a>>,
+  config: Option<GenericConfig>,
+  name: String,
+}
+
+impl<'a> Default for TestGroup<'a> {
+  fn default() -> Self {
+    Self {
+      name: "Test".to_owned(),
+      config: None,
+      tests: Vec::new(),
+    }
+  }
+}
+
+impl<'a> TestGroup<'a> {
   pub fn new<T: AsRef<str>>(name: T) -> Self {
     Self {
-      tests: Vec::new(),
       name: name.as_ref().to_owned(),
-      filters: Vec::new(),
+      ..Default::default()
     }
   }
 
-  pub fn from_test_cases<'b>(tests: &'b [TestCase]) -> Self
+  pub fn from_test_cases<'b>(config: Option<GenericConfig>, tests: &'b [TestCase]) -> Self
   where
     'b: 'a,
   {
@@ -40,6 +91,7 @@ impl<'a> TestSuite<'a> {
       .collect();
     Self {
       tests: defs,
+      config,
       ..Default::default()
     }
   }
@@ -48,21 +100,7 @@ impl<'a> TestSuite<'a> {
   where
     'a: 'b,
   {
-    let filters = &self.filters;
-    if !filters.is_empty() {
-      self
-        .tests
-        .iter_mut()
-        .filter(|test| filters.iter().any(|filter| get_description(test).contains(filter)))
-        .collect()
-    } else {
-      self.tests.iter_mut().collect()
-    }
-  }
-
-  pub fn filter(mut self, filters: Vec<String>) -> Self {
-    self.filters = filters;
-    self
+    self.tests.iter_mut().collect()
   }
 
   pub fn name(mut self, name: String) -> Self {

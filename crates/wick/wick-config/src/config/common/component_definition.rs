@@ -1,6 +1,6 @@
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
-use wick_packet::OperationConfig;
+use wick_packet::GenericConfig;
 
 use crate::config;
 
@@ -17,7 +17,7 @@ pub struct ComponentOperationExpression {
   pub(crate) component: ComponentDefinition,
   /// Configuration to associate with this operation.
   #[asset(skip)]
-  pub(crate) config: Option<OperationConfig>,
+  pub(crate) config: Option<GenericConfig>,
 }
 
 impl ComponentOperationExpression {
@@ -98,7 +98,7 @@ impl ComponentDefinition {
 
   /// Returns the component config, if it exists
   #[must_use]
-  pub fn config(&self) -> Option<&OperationConfig> {
+  pub fn config(&self) -> Option<&GenericConfig> {
     match self {
       #[allow(deprecated)]
       ComponentDefinition::Wasm(c) => c.config.as_ref(),

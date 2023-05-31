@@ -12,7 +12,7 @@ use wick_component_cli::options::{Options as HostOptions, ServerOptions};
 use wick_component_cli::ServerState;
 use wick_config::config::ComponentConfiguration;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Entity, InherentData, Invocation, OperationConfig, PacketStream};
+use wick_packet::{Entity, GenericConfig, InherentData, Invocation, PacketStream};
 use wick_runtime::{EngineComponent, Runtime, RuntimeBuilder};
 
 use crate::{Error, Result};
@@ -37,6 +37,8 @@ pub struct ComponentHost {
   runtime: Option<Runtime>,
   #[builder(default)]
   manifest: ComponentConfiguration,
+  #[builder(default)]
+  config: Option<GenericConfig>,
   #[builder(default, setter(strip_option))]
   server_metadata: Option<ServerState>,
   #[builder(default = "tracing::Span::current()")]
@@ -105,6 +107,7 @@ impl ComponentHost {
     span.follows_from(&self.span);
     engine_builder = engine_builder.span(span);
     engine_builder = engine_builder.namespace(self.get_host_id());
+    engine_builder = engine_builder.config(self.config.clone());
     engine_builder = engine_builder.allow_latest(self.manifest.allow_latest());
     if let Some(insecure) = self.manifest.insecure_registries() {
       engine_builder = engine_builder.allowed_insecure(insecure.to_vec());
@@ -166,7 +169,7 @@ impl ComponentHost {
     }
   }
 
-  pub async fn invoke(&self, invocation: Invocation, data: Option<OperationConfig>) -> Result<PacketStream> {
+  pub async fn invoke(&self, invocation: Invocation, data: Option<GenericConfig>) -> Result<PacketStream> {
     match &self.runtime {
       Some(runtime) => Ok(runtime.invoke(invocation, data).await?),
       None => Err(crate::Error::InvalidHostState("No engine available".into())),

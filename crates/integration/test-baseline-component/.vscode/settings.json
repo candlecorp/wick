@@ -1,4 +1,10 @@
 {
   "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
-  "rust-analyzer.cargo.features": ["localgen"]
+  "rust-analyzer.cargo.features": ["localgen"],
+  "yaml.schemas": {
+    "/home/jsoverson/development/src/vino/crates/vino-manifest/json-schema/v0/manifest.json": [
+      "*.vino"
+    ],
+    "file:///Users/jsoverson/development/src/wick/crates/wick/wick-config/json-schema/manifest.json": "file:///Users/jsoverson/development/src/wick/crates/integration/test-baseline-component/component.yaml"
+  }
 }

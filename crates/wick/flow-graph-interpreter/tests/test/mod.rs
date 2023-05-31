@@ -7,7 +7,7 @@ use flow_graph_interpreter::Interpreter;
 pub use observer::JsonWriter;
 use seeded_random::Seed;
 pub use test_component::TestComponent;
-use wick_packet::{Entity, OperationConfig, Packet};
+use wick_packet::{Entity, GenericConfig, Packet};
 
 use crate::test;
 
@@ -25,7 +25,7 @@ pub(crate) async fn base_setup(
   manifest: &str,
   entity: Entity,
   packets: Vec<Packet>,
-  config: Option<OperationConfig>,
+  config: Option<GenericConfig>,
 ) -> anyhow::Result<(Interpreter, Vec<Result<Packet, wick_packet::Error>>)> {
   use flow_graph_interpreter::{HandlerMap, InterpreterOptions, NamespaceHandler};
   use tokio_stream::StreamExt;

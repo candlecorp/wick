@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../wick/wick-config/json-schema/manifest.json
 ---
 name: baseline
 kind: wick/component@v1
@@ -10,6 +11,9 @@ package:
 component:
   kind: wick/component/wasmrs@v1
   ref: ./build/baseline.signed.wasm
+  with:
+    - name: default_err
+      type: string
   operations:
     - name: power
       with:
@@ -45,50 +49,52 @@ component:
         - name: output
           type: string
 tests:
-  - name: add 1 and 2
-    operation: add
-    input:
-      - name: left
-        data: 1
-      - name: right
-        data: 2
-    output:
-      - name: output
-        data: 3
-      - name: output
-        flags:
-          done: true
-  - name: add 2000 and 3292982
-    operation: add
-    input:
-      - name: left
-        data: 2000
-      - name: right
-        data: 3292982
-    output:
-      - name: output
-        data: 3294982
-      - name: output
-        flags:
-          done: true
-  - name: 2^5
-    operation: power
-    with:
-      exponent: 5
-    input:
-      - name: input
-        data: 2
-    output:
-      - name: output
-        data: 32
-      - name: output
-        flags:
-          done: true
-  - name: validate
-    operation: validate
-    input:
-      - name: input
-        data: 'hello'
-    output:
-      - name: output
-        error: Needs to be longer than 8 characters
+  - name: baseline
+    cases:
+      - name: add 1 and 2
+        operation: add
+        input:
+          - name: left
+            data: 1
+          - name: right
+            data: 2
+        output:
+          - name: output
+            data: 3
+          - name: output
+            flags:
+              done: true
+      - name: add 2000 and 3292982
+        operation: add
+        input:
+          - name: left
+            data: 2000
+          - name: right
+            data: 3292982
+        output:
+          - name: output
+            data: 3294982
+          - name: output
+            flags:
+              done: true
+      - name: 2^5
+        operation: power
+        with:
+          exponent: 5
+        input:
+          - name: input
+            data: 2
+        output:
+          - name: output
+            data: 32
+          - name: output
+            flags:
+              done: true
+      - name: validate
+        operation: validate
+        input:
+          - name: input
+            data: 'hello'
+        output:
+          - name: output
+            error: Needs to be longer than 8 characters

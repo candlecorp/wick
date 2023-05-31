@@ -5,7 +5,7 @@ use anyhow::Result;
 use flow_expression_parser::ast::FlowExpression;
 use flow_graph::iterators::SchematicHop;
 use flow_graph::{Network, NodeReference, PortDirection, Schematic};
-use wick_packet::OperationConfig;
+use wick_packet::GenericConfig;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Counter {
@@ -26,7 +26,7 @@ pub fn hash_set(list: &[&str]) -> HashSet<String> {
 
 impl Counter {
   #[allow(unused)]
-  pub fn walk_down(schematic: &Schematic<OperationConfig>) -> Self {
+  pub fn walk_down(schematic: &Schematic<GenericConfig>) -> Self {
     let mut counter = Counter::default();
     let walker = schematic.walker();
     for hop in walker {
@@ -36,7 +36,7 @@ impl Counter {
     counter
   }
   #[allow(unused)]
-  pub fn walk_up(schematic: &Schematic<OperationConfig>) -> Self {
+  pub fn walk_up(schematic: &Schematic<GenericConfig>) -> Self {
     let mut counter = Counter::default();
     let walker = schematic.walk_from_output();
     for hop in walker {
@@ -46,7 +46,7 @@ impl Counter {
     counter
   }
   #[allow(unused)]
-  pub fn count(&mut self, hop: &SchematicHop<OperationConfig>) {
+  pub fn count(&mut self, hop: &SchematicHop<GenericConfig>) {
     match hop {
       SchematicHop::Node(v) => {
         self.node_visits += 1;
@@ -76,12 +76,12 @@ pub fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentCon
   Ok(wick_config::WickConfiguration::load_from_file_sync(path.as_ref())?.try_component_config()?)
 }
 
-pub fn from_manifest(network_def: &wick_config::config::ComponentConfiguration) -> Result<Network<OperationConfig>> {
-  let mut network: Network<OperationConfig> = Network::new(network_def.name().cloned().unwrap_or_default());
+pub fn from_manifest(network_def: &wick_config::config::ComponentConfiguration) -> Result<Network<GenericConfig>> {
+  let mut network: Network<GenericConfig> = Network::new(network_def.name().cloned().unwrap_or_default());
   let network_def = network_def.try_composite()?;
 
   for flow in network_def.operations().values() {
-    let mut schematic: Schematic<OperationConfig> = Schematic::new(flow.name().to_owned());
+    let mut schematic: Schematic<GenericConfig> = Schematic::new(flow.name().to_owned());
 
     for (name, def) in flow.instances().iter() {
       schematic.add_external(

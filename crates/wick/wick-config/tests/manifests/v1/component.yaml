@@ -18,13 +18,15 @@ component:
           type: string
 tests:
   - name: render
-    operation: render
-    input:
-      - name: template
-        data: 'Hello {{ name }}!'
-      - name: data
-        data:
-          name: 'jinja'
-    output:
-      - name: output
-        data: 'Hello jinja!'
+    cases:
+      - name: render
+        operation: render
+        input:
+          - name: template
+            data: 'Hello {{ name }}!'
+          - name: data
+            data:
+              name: 'jinja'
+        output:
+          - name: output
+            data: 'Hello jinja!'

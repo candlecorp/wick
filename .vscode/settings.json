@@ -8,7 +8,7 @@
     "titleBar.inactiveBackground": "#60170c",
     "titleBar.inactiveForeground": "#e7e7e799",
     "sash.hoverBorder": "#fa3a1d",
-    "tab.activeBorder": "#fa3a1d",
+    "tab.activeBorder": "#0096AD",
     "tab.activeBorderTop": "#000000"
   },
   "git.ignoreLimitWarning": true,

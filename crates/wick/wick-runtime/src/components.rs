@@ -15,7 +15,7 @@ use wick_component_wasm::error::LinkError;
 use wick_config::config::components::{ManifestComponent, WasmComponent};
 use wick_config::config::{BoundInterface, FetchOptions, Metadata, ResourceDefinition, WasmComponentImplementation};
 use wick_config::{Resolver, WickConfiguration};
-use wick_packet::{Entity, Invocation, OperationConfig};
+use wick_packet::{Entity, GenericConfig, Invocation};
 
 use self::component_service::NativeComponentService;
 use crate::dev::prelude::*;
@@ -25,7 +25,7 @@ use crate::BoxFuture;
 
 pub(crate) trait InvocationHandler {
   fn get_signature(&self) -> Result<ComponentSignature>;
-  fn invoke(&self, msg: Invocation, config: Option<OperationConfig>) -> Result<BoxFuture<Result<InvocationResponse>>>;
+  fn invoke(&self, msg: Invocation, config: Option<GenericConfig>) -> Result<BoxFuture<Result<InvocationResponse>>>;
 }
 
 type Result<T> = std::result::Result<T, ComponentError>;
@@ -149,6 +149,7 @@ pub(crate) async fn init_manifest_component(
 
   match manifest.component() {
     config::ComponentImplementation::Wasm(wasmimpl) => {
+      // TODO assert passed config matches our config signature.
       let comp = init_wasmrs_component(wasmimpl, id.clone(), opts, provided).await?;
       let signed_sig = comp.component().list();
       let manifest_sig = manifest.signature()?;
@@ -160,7 +161,8 @@ pub(crate) async fn init_manifest_component(
       )?;
       Ok(comp)
     }
-    config::ComponentImplementation::Composite(_) => {
+    config::ComponentImplementation::Composite(_c) => {
+      // TODO assert passed config matches our config signature.
       let _engine = RuntimeService::init_child(uuid, manifest, Some(id.clone()), opts).await?;
 
       let component = Arc::new(engine_component::EngineComponent::new(uuid));

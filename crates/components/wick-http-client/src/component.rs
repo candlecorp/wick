@@ -13,16 +13,7 @@ use wick_config::config::components::{Codec, HttpClientComponentConfig, HttpClie
 use wick_config::config::{Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::ComponentSignature;
-use wick_packet::{
-  Base64Bytes,
-  FluxChannel,
-  Invocation,
-  Observer,
-  OperationConfig,
-  Packet,
-  PacketSender,
-  PacketStream,
-};
+use wick_packet::{Base64Bytes, FluxChannel, GenericConfig, Invocation, Observer, Packet, PacketSender, PacketStream};
 
 use crate::error::Error;
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
@@ -85,7 +76,7 @@ async fn handle(
   opdef: Option<HttpClientOperationDefinition>,
   tx: FluxChannel<Packet, wick_packet::Error>,
   mut invocation: Invocation,
-  config: Option<OperationConfig>,
+  config: Option<GenericConfig>,
   codec: Option<Codec>,
   path_template: Option<Arc<(String, String)>>,
   baseurl: Url,
@@ -240,7 +231,7 @@ impl Component for HttpClientComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    data: Option<OperationConfig>,
+    data: Option<GenericConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let ctx = self.ctx.clone();

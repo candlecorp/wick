@@ -47,7 +47,7 @@ impl ImportBinding {
 
   /// Get the configuration object for the collection.
   #[must_use]
-  pub fn config(&self) -> Option<&wick_packet::OperationConfig> {
+  pub fn config(&self) -> Option<&wick_packet::GenericConfig> {
     match &self.kind {
       ImportDefinition::Component(c) => c.config(),
       ImportDefinition::Types(_) => None,

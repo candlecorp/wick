@@ -4,12 +4,12 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::Error;
+use crate::{Error, InherentData};
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct OperationConfig(HashMap<String, Value>);
+pub struct GenericConfig(HashMap<String, Value>);
 
-impl OperationConfig {
+impl GenericConfig {
   /// Get a value from the configuration map, deserializing it into the target type.
   pub fn get_into<T>(&self, key: &str) -> Result<T, Error>
   where
@@ -30,19 +30,19 @@ impl OperationConfig {
   }
 }
 
-impl From<HashMap<String, Value>> for OperationConfig {
+impl From<HashMap<String, Value>> for GenericConfig {
   fn from(value: HashMap<String, Value>) -> Self {
     Self(value)
   }
 }
 
-impl From<OperationConfig> for HashMap<String, Value> {
-  fn from(value: OperationConfig) -> Self {
+impl From<GenericConfig> for HashMap<String, Value> {
+  fn from(value: GenericConfig) -> Self {
     value.0
   }
 }
 
-impl TryFrom<Value> for OperationConfig {
+impl TryFrom<Value> for GenericConfig {
   type Error = Error;
 
   fn try_from(value: Value) -> Result<Self, Self::Error> {
@@ -65,14 +65,14 @@ where
   T: std::fmt::Debug + Serialize,
 {
   pub config: T,
-  pub seed: Option<u64>,
+  pub seed: Option<InherentData>,
 }
 
 impl<T> ContextTransport<T>
 where
   T: std::fmt::Debug + Serialize,
 {
-  pub fn new(config: T, seed: Option<u64>) -> Self {
+  pub fn new(config: T, seed: Option<InherentData>) -> Self {
     Self { config, seed }
   }
 }

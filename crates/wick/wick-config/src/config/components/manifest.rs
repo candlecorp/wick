@@ -9,9 +9,9 @@ use crate::config;
 pub struct ManifestComponent {
   /// The OCI reference/local path of the manifest to use as a collection.
   pub(crate) reference: config::AssetReference,
-  /// The configuration for the collection
+  /// The configuration for the component.
   #[asset(skip)]
-  pub(crate) config: Option<wick_packet::OperationConfig>,
+  pub(crate) config: Option<wick_packet::GenericConfig>,
   /// The components to provide to the referenced component.
   #[asset(skip)]
   pub(crate) provide: HashMap<String, String>,

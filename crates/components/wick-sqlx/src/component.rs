@@ -11,7 +11,7 @@ use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition
 use wick_config::config::{Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{component, ComponentSignature, Field, TypeSignature};
-use wick_packet::{FluxChannel, Invocation, Observer, OperationConfig, Packet, PacketStream};
+use wick_packet::{FluxChannel, GenericConfig, Invocation, Observer, Packet, PacketStream};
 use wick_rpc::RpcHandler;
 
 use crate::error::Error;
@@ -125,7 +125,7 @@ impl Component for SqlXComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _data: Option<OperationConfig>,
+    _data: Option<GenericConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let ctx = self.context.clone();

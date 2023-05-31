@@ -11,7 +11,7 @@ use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeDefinition};
 
 use super::common::package_definition::PackageConfig;
-use super::{make_resolver, ImportBinding};
+use super::{make_resolver, ImportBinding, TestConfiguration};
 use crate::app_config::ResourceBinding;
 use crate::common::BoundInterface;
 use crate::import_cache::{setup_cache, ImportCache};
@@ -53,7 +53,7 @@ pub struct ComponentConfiguration {
   pub(crate) labels: HashMap<String, String>,
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) tests: Vec<config::TestCase>,
+  pub(crate) tests: Vec<TestConfiguration>,
   #[asset(skip)]
   #[builder(default)]
   #[property(skip)]

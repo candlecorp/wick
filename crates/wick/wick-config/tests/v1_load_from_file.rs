@@ -40,7 +40,7 @@ async fn test_types() -> Result<(), ManifestError> {
 async fn test_tests() -> Result<(), ManifestError> {
   let tests = load("./tests/manifests/v1/tests.yaml").await?.try_test_config()?;
 
-  assert_eq!(tests.tests().len(), 1);
+  assert_eq!(tests.cases().len(), 1);
 
   Ok(())
 }

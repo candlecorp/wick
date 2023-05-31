@@ -16,6 +16,7 @@ pub enum CliError {
   /// An IO error binding to a port or similar.
   IOError(#[from] std::io::Error),
 
+  #[cfg(feature = "grpc")]
   #[error(transparent)]
   /// Error related to configuration or asset loading.
   Config(#[from] wick_config::AssetError),

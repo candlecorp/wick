@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use wick_packet::ContextTransport;
+use wick_packet::{ContextTransport, InherentData};
 
 #[cfg(target_family = "wasm")]
 pub trait LocalAwareSend {}
@@ -22,7 +22,7 @@ where
   T: LocalAwareSend,
 {
   pub config: Arc<T>,
-  pub seed: Option<u64>,
+  pub inherent: Option<InherentData>,
   #[cfg(feature = "traits")]
   pub callback: Arc<crate::RuntimeCallback>,
 }
@@ -44,7 +44,7 @@ where
 {
   fn from(value: ContextTransport<T>) -> Self {
     Self {
-      seed: value.seed,
+      inherent: value.seed,
       config: Arc::new(value.config),
       #[cfg(feature = "traits")]
       callback: crate::panic_callback(),
@@ -58,18 +58,18 @@ where
   T: LocalAwareSend,
 {
   #[cfg(feature = "traits")]
-  pub fn new(config: T, seed: Option<u64>, callback: Arc<crate::RuntimeCallback>) -> Self {
+  pub fn new(config: T, inherent: Option<InherentData>, callback: Arc<crate::RuntimeCallback>) -> Self {
     Self {
-      seed,
+      inherent,
       config: Arc::new(config),
       callback,
     }
   }
 
   #[cfg(not(feature = "traits"))]
-  pub fn new(config: T, seed: Option<u64>) -> Self {
+  pub fn new(config: T, inherent: Option<InherentData>) -> Self {
     Self {
-      seed,
+      inherent,
       config: Arc::new(config),
     }
   }

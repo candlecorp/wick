@@ -167,7 +167,7 @@ impl Component for TestComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _config: Option<wick_packet::OperationConfig>,
+    _config: Option<wick_packet::GenericConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let operation = invocation.target.operation_id();

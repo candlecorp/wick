@@ -12,7 +12,7 @@ use tracing::Span;
 use uuid::Uuid;
 use wick_config::config::{ComponentConfiguration, ComponentKind, Metadata};
 use wick_config::Resolver;
-use wick_packet::OperationConfig;
+use wick_packet::GenericConfig;
 
 use self::error::ConstraintFailure;
 use crate::components::{
@@ -50,10 +50,11 @@ impl Initialize {
     Self { id, config, rng }
   }
 
-  fn component_init(&self) -> ComponentInitOptions {
+  fn component_init(&self, config: Option<GenericConfig>) -> ComponentInitOptions {
     ComponentInitOptions {
       rng_seed: self.rng.seed(),
       runtime_id: self.id,
+      config,
       allow_latest: self.config.allow_latest,
       allowed_insecure: self.config.allowed_insecure.clone(),
       timeout: self.config.timeout,
@@ -134,7 +135,7 @@ impl RuntimeService {
           .map_err(|e| EngineError::InterpreterInit(config.manifest.source().map(Into::into), Box::new(e)))?;
       }
     } else {
-      let component_init = init.component_init();
+      let component_init = init.component_init(init.config.config.clone());
       let binding = config::ImportBinding::new(&ns, config.manifest.component().clone().into());
 
       if let Some(main_component) = instantiate_import(&binding, component_init).await? {
@@ -158,7 +159,7 @@ impl RuntimeService {
     }
 
     for component in config.manifest.import().values() {
-      let component_init = init.component_init();
+      let component_init = init.component_init(component.config().cloned());
       if let Some(p) = instantiate_import(component, component_init).await? {
         components
           .add(p)
@@ -209,6 +210,7 @@ impl RuntimeService {
     child_span.follows_from(opts.span);
     let config = RuntimeInit {
       manifest,
+      config: opts.config,
       allow_latest: opts.allow_latest,
       allowed_insecure: opts.allowed_insecure,
       timeout: opts.timeout,
@@ -276,7 +278,7 @@ impl InvocationHandler for RuntimeService {
   fn invoke(
     &self,
     invocation: Invocation,
-    config: Option<OperationConfig>,
+    config: Option<GenericConfig>,
   ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, ComponentError>>, ComponentError> {
     let tx_id = invocation.tx_id;
 
@@ -304,6 +306,7 @@ pub(crate) struct ComponentInitOptions {
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) timeout: Duration,
+  pub(crate) config: Option<GenericConfig>,
   pub(crate) resolver: Box<Resolver>,
   #[allow(unused)]
   pub(crate) span: Span,
@@ -387,7 +390,7 @@ mod test {
     fn handle(
       &self,
       _invocation: Invocation,
-      _data: Option<OperationConfig>,
+      _data: Option<GenericConfig>,
       _callback: Arc<flow_component::RuntimeCallback>,
     ) -> flow_component::BoxFuture<std::result::Result<PacketStream, flow_component::ComponentError>> {
       todo!()
