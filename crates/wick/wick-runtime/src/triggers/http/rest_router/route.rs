@@ -46,16 +46,18 @@ impl Route {
       }
     }
 
-    for part in query.split('&') {
-      let (name, type_) = if let Some(idx) = part.find(':') {
-        let (name, type_) = part.split_at(idx);
-        let type_ = type_.trim_start_matches(':');
-        let ty = wick_interface_types::parse(type_)?;
-        (name.to_owned(), ty)
-      } else {
-        (part.to_owned(), TypeSignature::Object)
-      };
-      query_params.push(Field::new(name, type_));
+    if query.contains('&') {
+      for part in query.split('&') {
+        let (name, type_) = if let Some(idx) = part.find(':') {
+          let (name, type_) = part.split_at(idx);
+          let type_ = type_.trim_start_matches(':');
+          let ty = wick_interface_types::parse(type_)?;
+          (name.to_owned(), ty)
+        } else {
+          (part.to_owned(), TypeSignature::Object)
+        };
+        query_params.push(Field::new(name, type_));
+      }
     }
 
     Ok(Self {
@@ -184,6 +186,26 @@ mod test {
         Field::new("sort", TypeSignature::String),
       ]
     );
+
+    Ok(())
+  }
+
+  #[test]
+  fn test_no_query_string() -> Result<()> {
+    let route = Route::parse("/api/v1/users/{id:u32}/posts/{post_id:string}")?;
+    assert_eq!(
+      route.path_parts,
+      vec![
+        PathPart::Literal("api".to_owned()),
+        PathPart::Literal("v1".to_owned()),
+        PathPart::Literal("users".to_owned()),
+        PathPart::Param(Field::new("id", TypeSignature::U32)),
+        PathPart::Literal("posts".to_owned()),
+        PathPart::Param(Field::new("post_id", TypeSignature::String)),
+      ],
+    );
+
+    assert_eq!(route.query_params, vec![]);
 
     Ok(())
   }
