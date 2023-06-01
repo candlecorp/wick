@@ -24,7 +24,7 @@ impl TryFrom<wick::TypeDefinition> for v1::TypeDefinition {
   }
 }
 
-impl TryFrom<v1::StructSignature> for wick::StructSignature {
+impl TryFrom<v1::StructSignature> for wick::StructDefinition {
   type Error = ManifestError;
 
   fn try_from(value: v1::StructSignature) -> std::result::Result<Self, Self::Error> {
@@ -37,10 +37,10 @@ impl TryFrom<v1::StructSignature> for wick::StructSignature {
   }
 }
 
-impl TryFrom<wick::StructSignature> for v1::StructSignature {
+impl TryFrom<wick::StructDefinition> for v1::StructSignature {
   type Error = ManifestError;
 
-  fn try_from(value: wick::StructSignature) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: wick::StructDefinition) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       name: value.name,
       description: value.description,
@@ -49,7 +49,7 @@ impl TryFrom<wick::StructSignature> for v1::StructSignature {
   }
 }
 
-impl TryFrom<v1::EnumSignature> for wick::EnumSignature {
+impl TryFrom<v1::EnumSignature> for wick::EnumDefinition {
   type Error = ManifestError;
 
   fn try_from(value: v1::EnumSignature) -> std::result::Result<Self, Self::Error> {
@@ -62,10 +62,10 @@ impl TryFrom<v1::EnumSignature> for wick::EnumSignature {
   }
 }
 
-impl TryFrom<wick::EnumSignature> for v1::EnumSignature {
+impl TryFrom<wick::EnumDefinition> for v1::EnumSignature {
   type Error = ManifestError;
 
-  fn try_from(value: wick::EnumSignature) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: wick::EnumDefinition) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       name: value.name,
       description: value.description,
@@ -134,11 +134,11 @@ impl FromStr for v1::TypeSignature {
   }
 }
 
-impl TryFrom<v1::TypeSignature> for wick::TypeSignature {
+impl TryFrom<v1::TypeSignature> for wick::Type {
   type Error = ManifestError;
 
   fn try_from(value: v1::TypeSignature) -> std::result::Result<Self, Self::Error> {
-    use wick::TypeSignature as TS;
+    use wick::Type as TS;
     let v = match value {
       v1::TypeSignature::I8(_) => TS::I8,
       v1::TypeSignature::I16(_) => TS::I16,
@@ -171,41 +171,41 @@ impl TryFrom<v1::TypeSignature> for wick::TypeSignature {
   }
 }
 
-impl TryFrom<wick::TypeSignature> for v1::TypeSignature {
+impl TryFrom<wick::Type> for v1::TypeSignature {
   type Error = ManifestError;
 
-  fn try_from(value: wick::TypeSignature) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: wick::Type) -> std::result::Result<Self, Self::Error> {
     use v1::TypeSignature as TS;
     let v = match value {
-      wick::TypeSignature::I8 => TS::I8(v1::I8()),
-      wick::TypeSignature::I16 => TS::I16(v1::I16()),
-      wick::TypeSignature::I32 => TS::I32(v1::I32()),
-      wick::TypeSignature::I64 => TS::I64(v1::I64()),
-      wick::TypeSignature::U8 => TS::U8(v1::U8()),
-      wick::TypeSignature::U16 => TS::U16(v1::U16()),
-      wick::TypeSignature::U32 => TS::U32(v1::U32()),
-      wick::TypeSignature::U64 => TS::U64(v1::U64()),
-      wick::TypeSignature::F32 => TS::F32(v1::F32()),
-      wick::TypeSignature::F64 => TS::F64(v1::F64()),
-      wick::TypeSignature::Bool => TS::Bool(v1::Bool()),
-      wick::TypeSignature::String => TS::StringType(v1::StringType()),
-      wick::TypeSignature::Optional { ty } => TS::Optional(v1::Optional {
+      wick::Type::I8 => TS::I8(v1::I8()),
+      wick::Type::I16 => TS::I16(v1::I16()),
+      wick::Type::I32 => TS::I32(v1::I32()),
+      wick::Type::I64 => TS::I64(v1::I64()),
+      wick::Type::U8 => TS::U8(v1::U8()),
+      wick::Type::U16 => TS::U16(v1::U16()),
+      wick::Type::U32 => TS::U32(v1::U32()),
+      wick::Type::U64 => TS::U64(v1::U64()),
+      wick::Type::F32 => TS::F32(v1::F32()),
+      wick::Type::F64 => TS::F64(v1::F64()),
+      wick::Type::Bool => TS::Bool(v1::Bool()),
+      wick::Type::String => TS::StringType(v1::StringType()),
+      wick::Type::Optional { ty } => TS::Optional(v1::Optional {
         ty: Box::new((*ty).try_into()?),
       }),
-      wick::TypeSignature::Datetime => TS::Datetime(v1::Datetime {}),
-      wick::TypeSignature::Bytes => TS::Bytes(v1::Bytes {}),
-      wick::TypeSignature::Custom(v) => TS::Custom(v1::Custom { name: v }),
-      wick::TypeSignature::List { ty } => TS::List(v1::List {
+      wick::Type::Datetime => TS::Datetime(v1::Datetime {}),
+      wick::Type::Bytes => TS::Bytes(v1::Bytes {}),
+      wick::Type::Custom(v) => TS::Custom(v1::Custom { name: v }),
+      wick::Type::List { ty } => TS::List(v1::List {
         ty: Box::new((*ty).try_into()?),
       }),
-      wick::TypeSignature::Map { key, value } => TS::Map(v1::Map {
+      wick::Type::Map { key, value } => TS::Map(v1::Map {
         key: Box::new((*key).try_into()?),
         value: Box::new((*value).try_into()?),
       }),
-      wick::TypeSignature::Link { .. } => unimplemented!(),
-      wick::TypeSignature::Object => TS::Object(v1::Object {}),
-      wick::TypeSignature::Ref { .. } => unimplemented!(),
-      wick::TypeSignature::AnonymousStruct(_) => unimplemented!(),
+      wick::Type::Link { .. } => unimplemented!(),
+      wick::Type::Object => TS::Object(v1::Object {}),
+      wick::Type::Ref { .. } => unimplemented!(),
+      wick::Type::AnonymousStruct(_) => unimplemented!(),
     };
     Ok(v)
   }

@@ -4,6 +4,8 @@ network:
     - namespace: wapc
       kind: WaPC
       reference: ../../integration/test-baseline-component/build/baseline.signed.wasm
+      data:
+        default_err: 'error from global-collection-def.yaml'
   schematics:
     - name: first_schematic
       collections:

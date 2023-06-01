@@ -92,6 +92,9 @@ mod packet_stream;
 mod stream_map;
 mod wrapped_type;
 
+#[cfg(feature = "validation")]
+pub mod validation;
+
 pub use collection_link::ComponentReference;
 pub use context::{ContextTransport, GenericConfig};
 #[cfg(feature = "datetime")]

@@ -4,7 +4,6 @@ use std::sync::Arc;
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use wick_interface_types::*;
 use wick_packet::{Invocation, PacketStream};
-use wick_rpc::RpcHandler;
 
 use crate::ComponentHost;
 
@@ -58,12 +57,10 @@ impl Component for HostComponent {
     })
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.signature
   }
 }
-
-impl RpcHandler for HostComponent {}
 
 #[cfg(test)]
 mod tests {

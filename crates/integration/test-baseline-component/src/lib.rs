@@ -77,13 +77,14 @@ impl ErrorOperation for Component {
   async fn error(
     mut input: WickStream<String>,
     _outputs: Self::Outputs,
-    ctx: Context<Self::Config>,
+    _ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
-    // let err = ctx.component_config().default_err;
+    let config = get_root_config();
+
     println!("In error operation");
     while let Some(Ok(_)) = input.next().await {
       println!("Going to panic! This is expected!");
-      panic!("This component always panics");
+      panic!("This component always panics: {}", config.default_err);
     }
     println!("Returning from error operation without panicking (this is unexpected)");
     Ok(())

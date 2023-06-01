@@ -18,6 +18,13 @@ impl GenericConfig {
     let value = self.0.get(key).ok_or_else(|| Error::ContextKey(key.to_owned()))?;
     serde_json::from_value(value.clone()).map_err(|_| Error::ContextKey(key.to_owned()))
   }
+
+  /// Check if a value exists in the configuration map.
+  #[must_use]
+  pub fn has(&self, key: &str) -> bool {
+    self.0.contains_key(key)
+  }
+
   /// Get a value from the configuration map.
   #[must_use]
   pub fn get(&self, key: &str) -> Option<&Value> {

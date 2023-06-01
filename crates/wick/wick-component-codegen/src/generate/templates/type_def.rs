@@ -2,7 +2,7 @@
 use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
-use wick_interface_types::{EnumSignature, StructSignature, TypeDefinition};
+use wick_interface_types::{EnumDefinition, StructDefinition, TypeDefinition};
 
 use crate::generate::ids::*;
 use crate::generate::{config, f};
@@ -27,7 +27,7 @@ pub(crate) fn type_def<'a>(
 
 pub(crate) fn gen_enum<'a>(
   _config: &config::Config,
-  ty: &'a EnumSignature,
+  ty: &'a EnumDefinition,
   _options: TypeOptions,
 ) -> (Vec<&'a str>, TokenStream) {
   let (path_parts, item_part) = get_typename_parts(&ty.name);
@@ -134,7 +134,7 @@ pub(crate) fn gen_enum<'a>(
 
 pub(crate) fn gen_struct<'a>(
   config: &mut config::Config,
-  ty: &'a StructSignature,
+  ty: &'a StructDefinition,
   options: TypeOptions,
 ) -> (Vec<&'a str>, TokenStream) {
   let (module_parts, item_part) = get_typename_parts(&ty.name);

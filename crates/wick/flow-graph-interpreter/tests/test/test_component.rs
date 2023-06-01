@@ -10,7 +10,7 @@ use tokio::spawn;
 use tokio::task::JoinHandle;
 use tracing::{trace, Span};
 use wasmrs_rx::{FluxChannel, Observer};
-use wick_interface_types::{ComponentSignature, OperationSignature, TypeSignature};
+use wick_interface_types::{ComponentSignature, OperationSignature, Type};
 use wick_packet::{fan_out, packet_stream, ComponentReference, Invocation, Packet, PacketStream};
 
 pub struct TestComponent(ComponentSignature);
@@ -22,108 +22,108 @@ impl TestComponent {
       .metadata(Default::default())
       .add_operation(
         OperationSignature::new("echo")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("call")
-          .add_input("component", TypeSignature::Link { schemas: vec![] })
-          .add_input("message", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("component", Type::Link { schemas: vec![] })
+          .add_input("message", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("uppercase")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("reverse")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("add")
-          .add_input("left", TypeSignature::U64)
-          .add_input("right", TypeSignature::U64)
-          .add_output("output", TypeSignature::U64),
+          .add_input("left", Type::U64)
+          .add_input("right", Type::U64)
+          .add_output("output", Type::U64),
       )
       .add_operation(
         OperationSignature::new("timeout")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("timeout-nodone")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("concat")
-          .add_input("left", TypeSignature::String)
-          .add_input("right", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("left", Type::String)
+          .add_input("right", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("noimpl")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("component_error")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("concat-five")
-          .add_input("one", TypeSignature::String)
-          .add_input("two", TypeSignature::String)
-          .add_input("three", TypeSignature::String)
-          .add_input("four", TypeSignature::String)
-          .add_input("five", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("one", Type::String)
+          .add_input("two", Type::String)
+          .add_input("three", Type::String)
+          .add_input("four", Type::String)
+          .add_input("five", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("splitter")
-          .add_input("input", TypeSignature::String)
-          .add_output("rest", TypeSignature::String)
-          .add_output("vowels", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("rest", Type::String)
+          .add_output("vowels", Type::String),
       )
       .add_operation(
         OperationSignature::new("join")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("ref_to_string")
-          .add_input("link", TypeSignature::Link { schemas: vec![] })
-          .add_output("output", TypeSignature::String),
+          .add_input("link", Type::Link { schemas: vec![] })
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("exception")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("panic")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("error")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       )
       .add_operation(
         OperationSignature::new("copy")
-          .add_input("input", TypeSignature::String)
-          .add_input("times", TypeSignature::U64)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_input("times", Type::U64)
+          .add_output("output", Type::String),
       )
-      .add_operation(OperationSignature::new("no-inputs").add_output("output", TypeSignature::String))
+      .add_operation(OperationSignature::new("no-inputs").add_output("output", Type::String))
       .add_operation(
         OperationSignature::new("render")
-          .add_input("input", TypeSignature::String)
-          .add_output("output", TypeSignature::String),
+          .add_input("input", Type::String)
+          .add_output("output", Type::String),
       );
 
     Self(signature)
@@ -175,7 +175,7 @@ impl Component for TestComponent {
     Box::pin(async move { Ok(handler(invocation, callback)?) })
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.0
   }
 }

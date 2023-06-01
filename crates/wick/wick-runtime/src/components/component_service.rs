@@ -14,14 +14,14 @@ pub(crate) struct NativeComponentService {
 impl NativeComponentService {
   pub(crate) fn new(component: SharedComponent) -> Self {
     Self {
-      signature: component.list().clone(),
+      signature: component.signature().clone(),
       component,
     }
   }
 }
 
 impl Component for NativeComponentService {
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.signature
   }
 

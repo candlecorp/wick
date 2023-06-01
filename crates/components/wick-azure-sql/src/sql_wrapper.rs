@@ -11,31 +11,31 @@ impl<'a> IntoSql<'a> for SqlWrapper {
     let v = self.0.inner();
     println!("type sig is {:?}", self.0.type_signature());
     match self.0.type_signature() {
-      wick_interface_types::TypeSignature::I8 => {
+      wick_interface_types::Type::I8 => {
         let v = to_int::<i16>(v).unwrap();
         v.into_sql()
       }
-      wick_interface_types::TypeSignature::I16 => to_int::<i16>(v).unwrap().into_sql(),
-      wick_interface_types::TypeSignature::I32 => to_int::<i32>(v).unwrap().into_sql(),
-      wick_interface_types::TypeSignature::I64 => to_int::<i64>(v).unwrap().into_sql(),
-      wick_interface_types::TypeSignature::U8 => to_uint::<u8>(v).unwrap().into_sql(),
-      wick_interface_types::TypeSignature::U16 => to_int::<i16>(v).unwrap().into_sql(),
-      wick_interface_types::TypeSignature::U32 => to_int::<i32>(v).unwrap().into_sql(),
-      wick_interface_types::TypeSignature::U64 => to_int::<i64>(v).unwrap().into_sql(),
-      wick_interface_types::TypeSignature::F32 => v.as_f64().unwrap().into_sql(),
-      wick_interface_types::TypeSignature::F64 => v.as_f64().unwrap().into_sql(),
-      wick_interface_types::TypeSignature::Bool => v.as_bool().unwrap().into_sql(),
-      wick_interface_types::TypeSignature::String => v.as_str().unwrap().to_owned().into_sql(),
-      wick_interface_types::TypeSignature::Datetime => parse_date(v.as_str().unwrap()).into_sql(),
-      wick_interface_types::TypeSignature::Bytes => unimplemented!("Bytes are not supported yet."),
-      wick_interface_types::TypeSignature::Custom(_) => unimplemented!("Custom types are not supported yet."),
-      wick_interface_types::TypeSignature::Ref { .. } => unimplemented!("References are not supported yet."),
-      wick_interface_types::TypeSignature::List { .. } => unimplemented!("Lists are not supported yet."),
-      wick_interface_types::TypeSignature::Optional { .. } => unimplemented!("Optional values are not supported yet."),
-      wick_interface_types::TypeSignature::Map { .. } => unimplemented!("Maps are not supported yet."),
-      wick_interface_types::TypeSignature::Link { .. } => unimplemented!("Links are not supported yet."),
-      wick_interface_types::TypeSignature::Object => unimplemented!("Objects are not supported yet."),
-      wick_interface_types::TypeSignature::AnonymousStruct(_) => {
+      wick_interface_types::Type::I16 => to_int::<i16>(v).unwrap().into_sql(),
+      wick_interface_types::Type::I32 => to_int::<i32>(v).unwrap().into_sql(),
+      wick_interface_types::Type::I64 => to_int::<i64>(v).unwrap().into_sql(),
+      wick_interface_types::Type::U8 => to_uint::<u8>(v).unwrap().into_sql(),
+      wick_interface_types::Type::U16 => to_int::<i16>(v).unwrap().into_sql(),
+      wick_interface_types::Type::U32 => to_int::<i32>(v).unwrap().into_sql(),
+      wick_interface_types::Type::U64 => to_int::<i64>(v).unwrap().into_sql(),
+      wick_interface_types::Type::F32 => v.as_f64().unwrap().into_sql(),
+      wick_interface_types::Type::F64 => v.as_f64().unwrap().into_sql(),
+      wick_interface_types::Type::Bool => v.as_bool().unwrap().into_sql(),
+      wick_interface_types::Type::String => v.as_str().unwrap().to_owned().into_sql(),
+      wick_interface_types::Type::Datetime => parse_date(v.as_str().unwrap()).into_sql(),
+      wick_interface_types::Type::Bytes => unimplemented!("Bytes are not supported yet."),
+      wick_interface_types::Type::Custom(_) => unimplemented!("Custom types are not supported yet."),
+      wick_interface_types::Type::Ref { .. } => unimplemented!("References are not supported yet."),
+      wick_interface_types::Type::List { .. } => unimplemented!("Lists are not supported yet."),
+      wick_interface_types::Type::Optional { .. } => unimplemented!("Optional values are not supported yet."),
+      wick_interface_types::Type::Map { .. } => unimplemented!("Maps are not supported yet."),
+      wick_interface_types::Type::Link { .. } => unimplemented!("Links are not supported yet."),
+      wick_interface_types::Type::Object => unimplemented!("Objects are not supported yet."),
+      wick_interface_types::Type::AnonymousStruct(_) => {
         unimplemented!("Anonymous structs are not supported yet.")
       }
     }

@@ -2,7 +2,7 @@ use thiserror::Error;
 use wick_rpc::error::RpcError;
 
 #[derive(Error, Debug)]
-pub enum WasmCollectionError {
+pub enum WasmComponentError {
   #[error("Could not extract claims signature from WASM module : {0}")]
   ClaimsError(String),
 
@@ -14,6 +14,12 @@ pub enum WasmCollectionError {
 
   #[error("Setup failed: {}", .0.msg)]
   Setup(wasmrs::PayloadError),
+
+  #[error(transparent)]
+  SetupSignature(wick_packet::Error),
+
+  #[error("Setup failed, operation timed out.")]
+  SetupTimeout,
 
   #[error(transparent)]
   IoError(#[from] std::io::Error),
@@ -37,14 +43,14 @@ pub enum WasmCollectionError {
   SetupOperation,
 }
 
-impl From<serde_json::error::Error> for WasmCollectionError {
+impl From<serde_json::error::Error> for WasmComponentError {
   fn from(e: serde_json::error::Error) -> Self {
-    WasmCollectionError::JsonError(e.to_string())
+    WasmComponentError::JsonError(e.to_string())
   }
 }
 
-impl From<WasmCollectionError> for Box<RpcError> {
-  fn from(e: WasmCollectionError) -> Self {
+impl From<WasmComponentError> for Box<RpcError> {
+  fn from(e: WasmComponentError) -> Self {
     Box::new(RpcError::Component(e.to_string()))
   }
 }

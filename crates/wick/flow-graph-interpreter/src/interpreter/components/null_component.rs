@@ -35,7 +35,7 @@ impl Component for NullComponent {
     async move { Ok(PacketStream::empty()) }.boxed()
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.signature
   }
 }

@@ -92,8 +92,8 @@ pub mod transaction;
 pub mod wasm_host;
 mod wasm_module;
 
-pub(crate) type Result<T> = std::result::Result<T, error::WasmCollectionError>;
-pub type Error = error::WasmCollectionError;
+pub(crate) type Result<T> = std::result::Result<T, error::WasmComponentError>;
+pub type Error = error::WasmComponentError;
 
 #[macro_use]
 extern crate tracing;

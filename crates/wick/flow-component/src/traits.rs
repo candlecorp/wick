@@ -17,7 +17,7 @@ pub trait Component {
     data: Option<GenericConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>>;
-  fn list(&self) -> &ComponentSignature;
+  fn signature(&self) -> &ComponentSignature;
   fn init(&self) -> BoxFuture<Result<(), ComponentError>> {
     // Override if you need a more explicit init.
     Box::pin(async move { Ok(()) })

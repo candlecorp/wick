@@ -1,4 +1,5 @@
 mod utils;
+use serde_json::json;
 use utils::*;
 use wick_packet::{packet_stream, Packet};
 
@@ -17,11 +18,12 @@ async fn good_wasm_component_v0() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn good_wasm_component_v1() -> Result<()> {
-  common_test(
+  test_with_config(
     "../../integration/test-baseline-component/component.yaml",
     packet_stream!(("left", 10), ("right", 1001)),
     "add",
     vec![Packet::encode("output", 1011), Packet::done("output")],
+    json!({"default_err":"custom error"}).try_into()?,
   )
   .await
 }
@@ -30,7 +32,7 @@ async fn good_wasm_component_v1() -> Result<()> {
 #[ignore = "signature check needs to be re-enabled for this test to pass"]
 async fn bad_wasm_component_v1() -> Result<()> {
   let path = "./manifests/v1/bad-wasmrs-component.yaml";
-  let result = init_engine_from_yaml(path, std::time::Duration::from_secs(1)).await;
+  let result = init_engine_from_yaml(path, None, std::time::Duration::from_secs(1)).await;
   assert!(result.is_err());
   println!("Error: {:?}", result.err().unwrap());
   // let result = result.err().unwrap().source().unwrap();

@@ -5,7 +5,6 @@ use std::time::Duration;
 use tokio_stream::{Stream, StreamExt};
 use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity, Uri};
 use tracing::debug;
-use wick_interface_types::HostedType;
 use wick_packet::{Invocation, Packet, PacketStream};
 
 use crate::error::RpcClientError;
@@ -108,16 +107,19 @@ impl RpcClient {
   }
 
   /// Make a request to the list RPC method
-  pub async fn list(&mut self) -> Result<Vec<HostedType>, RpcClientError> {
+  pub async fn list(&mut self) -> Result<Vec<wick_interface_types::ComponentSignature>, RpcClientError> {
     let request = ListRequest {};
     debug!("Making list request");
     let result = self.inner.list(request).await.map_err(RpcClientError::ListCallFailed)?;
     debug!("List result: {:?}", result);
     let response = result.into_inner();
-    let signatures: Result<Vec<HostedType>, _> = response.schemas.into_iter().map(|e| e.try_into()).collect();
 
-    signatures
-      .map_err(|_| RpcClientError::ResponseInvalid("Could not convert RPC ListResponse to HostedType".to_owned()))
+    response
+      .components
+      .into_iter()
+      .map(TryInto::try_into)
+      .collect::<Result<_, _>>()
+      .map_err(|_| RpcClientError::TypeConversion)
   }
 
   /// Send an invoke RPC command with a raw RPC [Invocation] object.

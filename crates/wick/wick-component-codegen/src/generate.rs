@@ -86,26 +86,30 @@ fn gen_trait_fns<'a>(
 
 #[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
 fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> Result<String> {
-  let (ops, types, required): (_, _, _) = match &wick_config {
-    wick_config::WickConfiguration::Component(config) => {
-      let types = config
+  let (ops, types, required, root_config) = match &wick_config {
+    wick_config::WickConfiguration::Component(comp) => {
+      let types = comp
         .types()?
         .into_iter()
         .sorted_by(|a, b| a.name().cmp(b.name()))
         .collect();
-      let requires = config.requires().values().cloned().collect_vec();
-      let ops = match config.component() {
+      let root_config = comp.config().to_owned();
+      let requires = comp.requires().values().cloned().collect_vec();
+      let ops = match comp.component() {
         wick_config::config::ComponentImplementation::Wasm(c) => c.operations().clone(),
         wick_config::config::ComponentImplementation::Composite(c) => {
           c.operations().clone().into_iter().map(|(k, v)| (k, v.into())).collect()
         }
         _ => panic!("Code generation only supports `wick/component/wasm|composite` and `wick/types` configurations"),
       };
-      (ops, types, requires)
+      (ops, types, requires, Some(root_config))
     }
-    wick_config::WickConfiguration::Types(config) => {
-      (config.operations().clone(), config.types().to_vec(), Default::default())
-    }
+    wick_config::WickConfiguration::Types(config) => (
+      config.operations().clone(),
+      config.types().to_vec(),
+      Default::default(),
+      None,
+    ),
     _ => panic!("Code generation only supports `wick/component` and `wick/types` configurations"),
   };
 
@@ -119,6 +123,8 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
     || {},
     templates::gen_component_impls(gen_config, &component_name, ops.values(), required),
   );
+
+  let root_config = templates::component_config(gen_config, root_config);
 
   let imports = gen_config.deps.iter().map(|dep| quote! { #dep }).collect_vec();
   let imports = quote! { #( #imports )* };
@@ -140,6 +146,8 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
     pub use wick_component::flow_component::Context;
 
     #init
+
+    #root_config
 
     #typedefs
     #( #trait_defs )*
@@ -171,7 +179,7 @@ mod test {
    * See <project_root>/tests/codegen-tests/ for integration tests
    */
   use anyhow::Result;
-  use wick_interface_types::TypeSignature;
+  use wick_interface_types::Type;
 
   use super::*;
   use crate::generate::config::ConfigBuilder;
@@ -192,7 +200,7 @@ mod test {
   #[test]
   fn test_expand_type() -> Result<()> {
     let mut config = Config::default();
-    let ty = TypeSignature::Object;
+    let ty = Type::Object;
     let src = expand_type(&mut config, Direction::In, false, &ty);
 
     assert_eq!(&src.to_string(), "Value");

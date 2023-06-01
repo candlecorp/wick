@@ -50,19 +50,19 @@
 // // }
 
 use serde_json::Value;
-use wick_interface_types::TypeSignature;
+use wick_interface_types::Type;
 
 #[derive(Debug, Clone)]
 #[must_use]
-pub struct TypeWrapper(TypeSignature, Value);
+pub struct TypeWrapper(Type, Value);
 
 impl TypeWrapper {
   /// Create a new TypeWrapper.
-  pub fn new(ty: TypeSignature, val: Value) -> Self {
+  pub fn new(ty: Type, val: Value) -> Self {
     Self(ty, val)
   }
 
-  pub fn type_signature(&self) -> &TypeSignature {
+  pub fn type_signature(&self) -> &Type {
     &self.0
   }
 

@@ -145,7 +145,7 @@ impl Component for CoreCollection {
     Box::pin(task)
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.signature
   }
 }

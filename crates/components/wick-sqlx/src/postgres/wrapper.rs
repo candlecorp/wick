@@ -3,7 +3,7 @@ use serde_json::Value;
 use sqlx::encode::IsNull;
 use sqlx::postgres::PgTypeInfo;
 use sqlx::{Encode, Postgres};
-use wick_interface_types::TypeSignature;
+use wick_interface_types::Type;
 use wick_packet::parse_date;
 
 use crate::sql_wrapper::SqlWrapper;
@@ -29,34 +29,34 @@ impl<'q> Encode<'q, Postgres> for SqlWrapper {
     let sig = self.0.type_signature();
     let v = self.0.inner();
     let res = match sig {
-      TypeSignature::I8 => convert_int!(i8, v, buf),
-      TypeSignature::I16 => convert_int!(i16, v, buf),
-      TypeSignature::I32 => convert_int!(i32, v, buf),
-      TypeSignature::I64 => convert_int!(i64, v, buf),
-      TypeSignature::U8 => convert_uint!(i8, v, buf),
-      TypeSignature::U16 => convert_uint!(i16, v, buf),
-      TypeSignature::U32 => convert_uint!(i32, v, buf),
-      TypeSignature::U64 => convert_uint!(i64, v, buf),
-      TypeSignature::F32 => convert_float(v, buf),
-      TypeSignature::F64 => convert_float(v, buf),
-      TypeSignature::Bool => {
+      Type::I8 => convert_int!(i8, v, buf),
+      Type::I16 => convert_int!(i16, v, buf),
+      Type::I32 => convert_int!(i32, v, buf),
+      Type::I64 => convert_int!(i64, v, buf),
+      Type::U8 => convert_uint!(i8, v, buf),
+      Type::U16 => convert_uint!(i16, v, buf),
+      Type::U32 => convert_uint!(i32, v, buf),
+      Type::U64 => convert_uint!(i64, v, buf),
+      Type::F32 => convert_float(v, buf),
+      Type::F64 => convert_float(v, buf),
+      Type::Bool => {
         let v = v.as_bool().unwrap();
         Encode::<Postgres>::encode(v, buf)
       }
-      TypeSignature::String => {
+      Type::String => {
         let v = v.as_str().unwrap();
         Encode::<Postgres>::encode(v, buf)
       }
-      TypeSignature::Datetime => {
+      Type::Datetime => {
         let v = v.as_str().unwrap();
         let datetime = parse_date(v);
         Encode::<Postgres>::encode(datetime, buf)
       }
-      TypeSignature::Custom(_) => unimplemented!("custom types not yet handled"),
-      TypeSignature::Ref { .. } => unimplemented!("refs not yet handled"),
-      TypeSignature::Bytes => encode_array(&TypeSignature::U8, v, buf),
-      TypeSignature::List { ty } => encode_array(ty, v, buf),
-      TypeSignature::Optional { .. } => {
+      Type::Custom(_) => unimplemented!("custom types not yet handled"),
+      Type::Ref { .. } => unimplemented!("refs not yet handled"),
+      Type::Bytes => encode_array(&Type::U8, v, buf),
+      Type::List { ty } => encode_array(ty, v, buf),
+      Type::Optional { .. } => {
         if v.is_null() {
           buf.put_u8(0);
           IsNull::Yes
@@ -64,7 +64,7 @@ impl<'q> Encode<'q, Postgres> for SqlWrapper {
           Encode::<Postgres>::encode(v, buf)
         }
       }
-      TypeSignature::Map { .. } => {
+      Type::Map { .. } => {
         let v = v.as_object().unwrap();
         buf.put_u32(v.len() as u32);
         for (k, v) in v {
@@ -73,42 +73,35 @@ impl<'q> Encode<'q, Postgres> for SqlWrapper {
         }
         IsNull::No
       }
-      TypeSignature::Link { .. } => unimplemented!("links not yet handled"),
-      TypeSignature::Object => unimplemented!("objects not yet handled"),
-      TypeSignature::AnonymousStruct(_) => unimplemented!("anonymous structs not yet handled"),
+      Type::Link { .. } => unimplemented!("links not yet handled"),
+      Type::Object => unimplemented!("objects not yet handled"),
+      Type::AnonymousStruct(_) => unimplemented!("anonymous structs not yet handled"),
     };
     res
   }
 }
 
 fn encode_array(
-  ty: &TypeSignature,
+  ty: &Type,
   v: &Value,
   buf: &mut <Postgres as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
 ) -> IsNull {
   if matches!(
     ty,
-    TypeSignature::U8
-      | TypeSignature::U16
-      | TypeSignature::U32
-      | TypeSignature::U64
-      | TypeSignature::I8
-      | TypeSignature::I16
-      | TypeSignature::I32
-      | TypeSignature::I64
+    Type::U8 | Type::U16 | Type::U32 | Type::U64 | Type::I8 | Type::I16 | Type::I32 | Type::I64
   ) {
     let mut array = Vec::new();
     for v in v.as_array().unwrap() {
       array.push(v.as_i64().unwrap());
     }
     return Encode::<Postgres>::encode(array, buf);
-  } else if ty == &TypeSignature::String {
+  } else if ty == &Type::String {
     let mut array = Vec::new();
     for v in v.as_array().unwrap() {
       array.push(v.as_str().unwrap());
     }
     return Encode::<Postgres>::encode(array, buf);
-  } else if matches!(ty, &TypeSignature::F32 | &TypeSignature::F64) {
+  } else if matches!(ty, &Type::F32 | &Type::F64) {
     let mut array = Vec::new();
     for v in v.as_array().unwrap() {
       array.push(v.as_f64().unwrap());

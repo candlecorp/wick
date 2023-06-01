@@ -10,7 +10,7 @@ use pretty_assertions::assert_eq;
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
 use seeded_random::Seed;
 use tracing::Span;
-use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeSignature};
+use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, Type};
 use wick_packet::{Invocation, PacketStream};
 fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentConfiguration> {
   Ok(wick_config::WickConfiguration::load_from_file_sync(path.as_ref())?.try_component_config()?)
@@ -27,7 +27,7 @@ impl Component for SignatureTestCollection {
     todo!()
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.0
   }
 }
@@ -123,10 +123,10 @@ async fn test_missing_port() -> Result<()> {
     .metadata(ComponentMetadata::default())
     .add_operation(
       OperationSignature::new("echo")
-        .add_input("input", TypeSignature::String)
-        .add_input("OTHER_IN", TypeSignature::String)
-        .add_output("output", TypeSignature::String)
-        .add_output("OTHER_OUT", TypeSignature::String),
+        .add_input("input", Type::String)
+        .add_input("OTHER_IN", Type::String)
+        .add_output("output", Type::String)
+        .add_output("OTHER_OUT", Type::String),
     );
 
   let result = interp("./tests/manifests/v0/external.yaml", signature);

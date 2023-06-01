@@ -50,6 +50,8 @@ component:
           type: string
 tests:
   - name: baseline
+    with:
+      default_err: 'Custom error message'
     cases:
       - name: add 1 and 2
         operation: add

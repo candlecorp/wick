@@ -10,22 +10,22 @@ use wick_interface_types::{
   ComponentSignature,
   Field,
   OperationSignature,
-  TypeSignature,
+  Type,
 };
 
 #[test_log::test]
 fn test_parser() -> Result<()> {
-  assert_eq!(parse("bool")?, TypeSignature::Bool);
+  assert_eq!(parse("bool")?, Type::Bool);
   assert_eq!(
     parse("bool[]")?,
-    TypeSignature::List {
-      ty: Box::new(TypeSignature::Bool),
+    Type::List {
+      ty: Box::new(Type::Bool),
     }
   );
-  let fields = vec![Field::new("myBool", TypeSignature::Bool)];
-  assert_eq!(parse("{ myBool : bool }")?, TypeSignature::AnonymousStruct(fields));
+  let fields = vec![Field::new("myBool", Type::Bool)];
+  assert_eq!(parse("{ myBool : bool }")?, Type::AnonymousStruct(fields));
 
-  let custom = TypeSignature::Custom("some_struct".to_owned());
+  let custom = Type::Custom("some_struct".to_owned());
   assert_eq!(parse("some_struct")?, custom);
 
   Ok(())
@@ -36,7 +36,7 @@ fn test_typemap() -> Result<()> {
   let map = fields! {
     "myBool" => "bool",
   };
-  let fields = vec![Field::new("myBool", TypeSignature::Bool)];
+  let fields = vec![Field::new("myBool", Type::Bool)];
   assert_eq!(map, fields);
 
   Ok(())

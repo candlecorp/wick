@@ -8,9 +8,8 @@ use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 use tonic::{Response, Status};
 use wick_packet::PacketStream;
-use wick_rpc::rpc::hosted_type::Type;
 use wick_rpc::rpc::invocation_service_server::InvocationService;
-use wick_rpc::rpc::{HostedType, InvocationRequest, ListResponse, Packet, StatsResponse};
+use wick_rpc::rpc::{InvocationRequest, ListResponse, Packet, StatsResponse};
 use wick_rpc::{rpc, DurationStatistics, Statistics};
 
 /// A GRPC server for implementers of [wick_rpc::RpcHandler].
@@ -159,10 +158,9 @@ impl InvocationService for InvocationServer {
   }
 
   async fn list(&self, _request: tonic::Request<rpc::ListRequest>) -> Result<Response<ListResponse>, Status> {
-    let list = HostedType {
-      r#type: Some(Type::Component(self.collection.list().clone().try_into().unwrap())),
+    let response = ListResponse {
+      components: vec![self.collection.signature().clone().try_into().unwrap()],
     };
-    let response = ListResponse { schemas: vec![list] };
     Ok(Response::new(response))
   }
 

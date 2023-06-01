@@ -268,7 +268,7 @@ impl Component for HttpClientComponent {
     })
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.signature
   }
 
@@ -369,7 +369,7 @@ mod test {
     HttpClientOperationDefinition,
   };
   use wick_config::config::{AppConfiguration, ResourceDefinition};
-  use wick_interface_types::{Field, TypeSignature};
+  use wick_interface_types::{Field, Type};
   use wick_packet::{packet_stream, Entity};
 
   use super::*;
@@ -398,10 +398,10 @@ mod test {
       HttpClientOperationDefinition::new_get(
         GET_OP,
         "/get?query1={{input}}&query2={{secret}}",
-        vec![Field::new("input", TypeSignature::String)],
+        vec![Field::new("input", Type::String)],
         get_headers,
       )
-      .config([Field::new("secret", TypeSignature::String)])
+      .config([Field::new("secret", Type::String)])
       .build()
       .unwrap(),
     );
@@ -416,11 +416,11 @@ mod test {
         POST_OP,
         "/post?query1={{input}}",
         vec![
-          Field::new("input", TypeSignature::String),
+          Field::new("input", Type::String),
           Field::new(
             "number",
-            TypeSignature::List {
-              ty: Box::new(TypeSignature::I64),
+            Type::List {
+              ty: Box::new(Type::I64),
             },
           ),
         ],

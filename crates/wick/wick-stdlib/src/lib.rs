@@ -92,7 +92,7 @@ use flow_component::{Component, RuntimeCallback};
 use seeded_random::Seed;
 use wick_interface_types::{component, ComponentSignature};
 use wick_packet::{Invocation, PacketStream};
-use wick_rpc::{dispatch, RpcHandler};
+use wick_rpc::dispatch;
 
 #[macro_use]
 extern crate tracing;
@@ -182,9 +182,7 @@ impl Component for Collection {
     })
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.signature
   }
 }
-
-impl RpcHandler for Collection {}

@@ -1,5 +1,5 @@
 use serde_json::Value;
-use wick_interface_types::{Field, FieldValue, TypeSignature};
+use wick_interface_types::{Field, FieldValue, Type};
 
 use crate::triggers::http::HttpError;
 
@@ -37,7 +37,7 @@ impl Route {
           let ty = wick_interface_types::parse(type_)?;
           (name.to_owned(), ty)
         } else {
-          (name, TypeSignature::Object)
+          (name, Type::Object)
         };
         let field = Field::new(name, type_);
         path_parts.push(PathPart::Param(field));
@@ -54,7 +54,7 @@ impl Route {
           let ty = wick_interface_types::parse(type_)?;
           (name.to_owned(), ty)
         } else {
-          (part.to_owned(), TypeSignature::Object)
+          (part.to_owned(), Type::Object)
         };
         query_params.push(Field::new(name, type_));
       }
@@ -118,7 +118,7 @@ impl Route {
           if name != param.name {
             continue;
           }
-          if let TypeSignature::List { ty } = &param.ty {
+          if let Type::List { ty } = &param.ty {
             let Ok(value) = ty.coerce_str(value) else {
               warn!("Failed to coerce {} to {} for query param {}", value, param.ty,name);
               return Err(HttpError::InvalidParameter(param.name.clone()));
@@ -168,9 +168,9 @@ mod test {
         PathPart::Literal("api".to_owned()),
         PathPart::Literal("v1".to_owned()),
         PathPart::Literal("users".to_owned()),
-        PathPart::Param(Field::new("id", TypeSignature::U32)),
+        PathPart::Param(Field::new("id", Type::U32)),
         PathPart::Literal("posts".to_owned()),
-        PathPart::Param(Field::new("post_id", TypeSignature::String)),
+        PathPart::Param(Field::new("post_id", Type::String)),
       ],
     );
 
@@ -179,11 +179,11 @@ mod test {
       vec![
         Field::new(
           "filter",
-          TypeSignature::List {
-            ty: Box::new(TypeSignature::String)
+          Type::List {
+            ty: Box::new(Type::String)
           }
         ),
-        Field::new("sort", TypeSignature::String),
+        Field::new("sort", Type::String),
       ]
     );
 
@@ -199,9 +199,9 @@ mod test {
         PathPart::Literal("api".to_owned()),
         PathPart::Literal("v1".to_owned()),
         PathPart::Literal("users".to_owned()),
-        PathPart::Param(Field::new("id", TypeSignature::U32)),
+        PathPart::Param(Field::new("id", Type::U32)),
         PathPart::Literal("posts".to_owned()),
-        PathPart::Param(Field::new("post_id", TypeSignature::String)),
+        PathPart::Param(Field::new("post_id", Type::String)),
       ],
     );
 
@@ -221,18 +221,18 @@ mod test {
         .unwrap(),
       Some((
         vec![
-          Field::new("id", TypeSignature::U32).with_value(123),
-          Field::new("post_id", TypeSignature::String).with_value("abc"),
+          Field::new("id", Type::U32).with_value(123),
+          Field::new("post_id", Type::String).with_value("abc"),
         ],
         vec![
           Field::new(
             "filter",
-            TypeSignature::List {
-              ty: Box::new(TypeSignature::String)
+            Type::List {
+              ty: Box::new(Type::String)
             }
           )
           .with_value(vec!["foo".to_owned(), "bar".to_owned()]),
-          Field::new("sort", TypeSignature::String).with_value("asc"),
+          Field::new("sort", Type::String).with_value("asc"),
         ],
       ))
     );
@@ -250,12 +250,12 @@ mod test {
         .unwrap(),
       Some((
         vec![
-          Field::new("id", TypeSignature::U32).with_value(123),
-          Field::new("post_id", TypeSignature::String).with_value("abc"),
+          Field::new("id", Type::U32).with_value(123),
+          Field::new("post_id", Type::String).with_value("abc"),
         ],
         vec![
-          Field::new("filter", TypeSignature::String).with_value("foo".to_owned()),
-          Field::new("sort", TypeSignature::String).with_value("asc"),
+          Field::new("filter", Type::String).with_value("foo".to_owned()),
+          Field::new("sort", Type::String).with_value("asc"),
         ],
       ))
     );

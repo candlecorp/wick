@@ -4,9 +4,13 @@ network:
     - namespace: wapc
       kind: WaPC
       reference: ../../integration/test-baseline-component/build/baseline.signed.wasm
+      data:
+        default_err: 'error from ns-link-child.yaml'
     - namespace: wapc2
       kind: WaPC
       reference: ../../integration/test-baseline-component/build/baseline.signed.wasm
+      data:
+        default_err: 'error from ns-link-child.yaml'
   schematics:
     - name: test-child
       collections:

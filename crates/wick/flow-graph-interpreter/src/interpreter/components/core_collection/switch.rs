@@ -6,7 +6,7 @@ use futures::{FutureExt, StreamExt};
 use parking_lot::Mutex;
 use serde_json::Value;
 use wasmrs_rx::Observer;
-use wick_interface_types::{Field, OperationSignature, TypeSignature};
+use wick_interface_types::{Field, OperationSignature, Type};
 use wick_packet::{ComponentReference, Entity, Invocation, PacketSender, PacketStream};
 
 use crate::constants::NS_CORE;
@@ -42,7 +42,7 @@ pub(crate) struct SwitchCase {
 
 fn gen_signature(id: &str, graph: &Network, config: Config) -> OperationSignature {
   let mut signature = OperationSignature::new(id);
-  signature = signature.add_input(DISCRIMINANT, TypeSignature::Object);
+  signature = signature.add_input(DISCRIMINANT, Type::Object);
   let default_op_path = config.default.trim_start_matches("self::");
   let default_op = graph.schematic(default_op_path).unwrap_or_else(|| {
     error!(

@@ -1,34 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{contents_equal, is_false, Field};
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[must_use]
-/// A valid type definition.
-#[serde(tag = "type")]
-pub enum TypeDefinition {
-  /// A struct definition.
-  #[serde(rename = "struct")]
-  Struct(StructSignature),
-  /// An enum definition.
-  #[serde(rename = "enum")]
-  Enum(EnumSignature),
-}
-
-impl TypeDefinition {
-  /// Get the name of the type.
-  #[must_use]
-  pub fn name(&self) -> &str {
-    match self {
-      TypeDefinition::Struct(s) => &s.name,
-      TypeDefinition::Enum(e) => &e.name,
-    }
-  }
-}
+use crate::is_false;
 
 /// Signatures of enum type definitions.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
 #[must_use]
-pub struct EnumSignature {
+pub struct EnumDefinition {
   /// The name of the enum.
   pub name: String,
   /// The variants in the enum.
@@ -42,7 +19,7 @@ pub struct EnumSignature {
   pub imported: bool,
 }
 
-impl EnumSignature {
+impl EnumDefinition {
   /// Constructor for [EnumSignature]
   pub fn new<T: AsRef<str>>(name: T, variants: Vec<EnumVariant>) -> Self {
     Self {
@@ -54,7 +31,7 @@ impl EnumSignature {
   }
 }
 
-impl PartialEq for EnumSignature {
+impl PartialEq for EnumDefinition {
   fn eq(&self, other: &Self) -> bool {
     self.name == other.name && self.variants == other.variants
   }
@@ -84,41 +61,6 @@ impl EnumVariant {
       name: name.as_ref().to_owned(),
       index,
       value,
-      description: None,
-    }
-  }
-}
-
-/// Signatures of struct-like type definitions.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
-#[must_use]
-pub struct StructSignature {
-  /// The name of the struct.
-  pub name: String,
-  /// The fields in this struct.
-  #[serde(default, skip_serializing_if = "Vec::is_empty")]
-  pub fields: Vec<Field>,
-  /// The optional description of the struct.
-  #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub description: Option<String>,
-  /// Whether this type is imported.
-  #[serde(default, skip_serializing_if = "is_false")]
-  pub imported: bool,
-}
-
-impl PartialEq for StructSignature {
-  fn eq(&self, other: &Self) -> bool {
-    self.name == other.name && contents_equal(&self.fields, &other.fields)
-  }
-}
-
-impl StructSignature {
-  /// Constructor for [StructSignature]
-  pub fn new<T: AsRef<str>>(name: T, fields: Vec<Field>) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      fields,
-      imported: false,
       description: None,
     }
   }

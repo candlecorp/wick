@@ -2,7 +2,6 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use derive_builder::Builder;
-use wick_config::WickConfiguration;
 
 use super::dependency::Dependency;
 
@@ -33,16 +32,6 @@ impl Config {
 
   pub(crate) fn add_dep(&mut self, dep: Dependency) {
     self.deps.insert(dep);
-  }
-
-  pub(crate) fn _needs_rx(&self, config: &WickConfiguration) -> bool {
-    let has_ops = match config {
-      WickConfiguration::Component(c) => !c.operation_signatures().is_empty(),
-      WickConfiguration::App(_) => unimplemented!(),
-      WickConfiguration::Types(c) => !c.operations().is_empty(),
-      WickConfiguration::Tests(_) => unimplemented!(),
-    };
-    has_ops && (self.op_traits || self.components || self.output_structs)
   }
 
   pub fn exec(self) -> anyhow::Result<()> {

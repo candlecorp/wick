@@ -15,8 +15,8 @@ use wick_config::Resolver;
 use wick_packet::GenericConfig;
 
 use self::error::ConstraintFailure;
+use crate::components::validation::expect_signature_match;
 use crate::components::{
-  expect_signature_match,
   init_hlc_component,
   init_manifest_component,
   init_wasm_component,
@@ -139,7 +139,7 @@ impl RuntimeService {
       let binding = config::ImportBinding::new(&ns, config.manifest.component().clone().into());
 
       if let Some(main_component) = instantiate_import(&binding, component_init).await? {
-        let reported_sig = main_component.component().list();
+        let reported_sig = main_component.component().signature();
         let manifest_sig = config.manifest.signature()?;
         span.in_scope(|| debug!("manifest_sig: {:?}", config.manifest));
 
@@ -242,7 +242,7 @@ fn assert_constraints(constraints: &[RuntimeConstraint], components: &HandlerMap
       let handler = components
         .get(entity.component_id())
         .ok_or_else(|| EngineError::InvalidConstraint(ConstraintFailure::ComponentNotFound(entity.clone())))?;
-      let sig = handler.component().list();
+      let sig = handler.component().signature();
       let op = sig
         .get_operation(entity.operation_id())
         .ok_or_else(|| EngineError::InvalidConstraint(ConstraintFailure::OperationNotFound(entity.clone())))?;
@@ -334,9 +334,16 @@ pub(crate) async fn instantiate_import(
     config::ImportDefinition::Component(c) => {
       match c {
         #[allow(deprecated)]
-        config::ComponentDefinition::Wasm(def) => {
-          Ok(Some(init_wasm_component(def, id, opts, Default::default()).await?))
-        }
+        config::ComponentDefinition::Wasm(def) => Ok(Some(
+          init_wasm_component(
+            def.reference(),
+            Some(def.permissions().clone()),
+            id,
+            opts,
+            Default::default(),
+          )
+          .await?,
+        )),
         config::ComponentDefinition::Manifest(def) => Ok(Some(init_manifest_component(def, id, opts).await?)),
         config::ComponentDefinition::Reference(_) => unreachable!(),
         config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
@@ -396,7 +403,7 @@ mod test {
       todo!()
     }
 
-    fn list(&self) -> &ComponentSignature {
+    fn signature(&self) -> &ComponentSignature {
       &self.signature
     }
   }

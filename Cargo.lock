@@ -6534,6 +6534,7 @@ name = "wick-rpc"
 version = "0.1.0"
 dependencies = [
  "flow-component",
+ "option-utils",
  "prost",
  "serde",
  "thiserror",
@@ -6570,6 +6571,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "pretty_assertions",
  "reqwest",
+ "rstest",
  "seeded-random",
  "serde",
  "serde_json",
