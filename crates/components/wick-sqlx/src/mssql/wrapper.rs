@@ -6,8 +6,8 @@ use chrono::{NaiveDate, NaiveTime};
 use serde_json::Value;
 use sqlx::encode::IsNull;
 use sqlx::mssql::MssqlTypeInfo;
-use sqlx::{Encode, Mssql, Type};
-use wick_interface_types::TypeSignature;
+use sqlx::{Encode, Mssql, Type as SqlxType};
+use wick_interface_types::Type;
 use wick_packet::{parse_date, TypeWrapper};
 
 use crate::sql_wrapper::SqlWrapper;
@@ -16,28 +16,28 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
   #[inline]
   fn size_hint(&self) -> usize {
     match self.0.type_signature() {
-      TypeSignature::I8 => mem::size_of::<i8>(),
-      TypeSignature::I16 => mem::size_of::<i16>(),
-      TypeSignature::I32 => mem::size_of::<i32>(),
-      TypeSignature::I64 => mem::size_of::<i64>(),
-      TypeSignature::U8 => mem::size_of::<u8>(),
-      TypeSignature::U16 => mem::size_of::<u16>(),
-      TypeSignature::U32 => mem::size_of::<u32>(),
-      TypeSignature::U64 => mem::size_of::<u64>(),
-      TypeSignature::F32 => mem::size_of::<f32>(),
-      TypeSignature::F64 => mem::size_of::<f64>(),
-      TypeSignature::Bool => mem::size_of::<bool>(),
-      TypeSignature::String => (self.0.inner().as_str().unwrap().len() + 1) * mem::size_of::<u16>(),
-      TypeSignature::Datetime => mem::size_of::<u64>(),
-      TypeSignature::Bytes => self.0.inner().as_array().unwrap().len() * mem::size_of::<u8>(),
-      TypeSignature::Custom(_) => unimplemented!("Custom types are not supported yet"),
-      TypeSignature::Ref { .. } => unimplemented!("References are not supported"),
-      TypeSignature::List { .. } => unimplemented!("Lists are not supported yet"),
-      TypeSignature::Optional { .. } => unimplemented!("Optional values are not supported yet"),
-      TypeSignature::Map { .. } => unimplemented!("Maps are not supported yet"),
-      TypeSignature::Link { .. } => unimplemented!("Component references are not supported"),
-      TypeSignature::Object => unimplemented!("Objects are not supported yet"),
-      TypeSignature::AnonymousStruct(_) => unimplemented!("Anonymous structs are not supported yet"),
+      Type::I8 => mem::size_of::<i8>(),
+      Type::I16 => mem::size_of::<i16>(),
+      Type::I32 => mem::size_of::<i32>(),
+      Type::I64 => mem::size_of::<i64>(),
+      Type::U8 => mem::size_of::<u8>(),
+      Type::U16 => mem::size_of::<u16>(),
+      Type::U32 => mem::size_of::<u32>(),
+      Type::U64 => mem::size_of::<u64>(),
+      Type::F32 => mem::size_of::<f32>(),
+      Type::F64 => mem::size_of::<f64>(),
+      Type::Bool => mem::size_of::<bool>(),
+      Type::String => (self.0.inner().as_str().unwrap().len() + 1) * mem::size_of::<u16>(),
+      Type::Datetime => mem::size_of::<u64>(),
+      Type::Bytes => self.0.inner().as_array().unwrap().len() * mem::size_of::<u8>(),
+      Type::Custom(_) => unimplemented!("Custom types are not supported yet"),
+      Type::Ref { .. } => unimplemented!("References are not supported"),
+      Type::List { .. } => unimplemented!("Lists are not supported yet"),
+      Type::Optional { .. } => unimplemented!("Optional values are not supported yet"),
+      Type::Map { .. } => unimplemented!("Maps are not supported yet"),
+      Type::Link { .. } => unimplemented!("Component references are not supported"),
+      Type::Object => unimplemented!("Objects are not supported yet"),
+      Type::AnonymousStruct(_) => unimplemented!("Anonymous structs are not supported yet"),
     }
   }
 
@@ -77,25 +77,25 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
     let sig = self.0.type_signature();
     let v = self.0.inner();
     match sig {
-      TypeSignature::I8 => convert_int::<i8>(v, buf).unwrap(),
-      TypeSignature::I16 => convert_int::<i16>(v, buf).unwrap(),
-      TypeSignature::I32 => {
+      Type::I8 => convert_int::<i8>(v, buf).unwrap(),
+      Type::I16 => convert_int::<i16>(v, buf).unwrap(),
+      Type::I32 => {
         let v: u32 = v.as_i64().unwrap().try_into().unwrap();
         buf.extend(v.to_le_bytes());
         IsNull::No
       }
-      TypeSignature::I64 => convert_int::<i64>(v, buf).unwrap(),
-      TypeSignature::U8 => convert_int::<i8>(v, buf).unwrap(),
-      TypeSignature::U16 => convert_int::<i16>(v, buf).unwrap(),
-      TypeSignature::U32 => convert_int::<i32>(v, buf).unwrap(),
-      TypeSignature::U64 => convert_int::<i64>(v, buf).unwrap(),
-      TypeSignature::F32 => convert_float(v, buf),
-      TypeSignature::F64 => convert_float(v, buf),
-      TypeSignature::Bool => {
+      Type::I64 => convert_int::<i64>(v, buf).unwrap(),
+      Type::U8 => convert_int::<i8>(v, buf).unwrap(),
+      Type::U16 => convert_int::<i16>(v, buf).unwrap(),
+      Type::U32 => convert_int::<i32>(v, buf).unwrap(),
+      Type::U64 => convert_int::<i64>(v, buf).unwrap(),
+      Type::F32 => convert_float(v, buf),
+      Type::F64 => convert_float(v, buf),
+      Type::Bool => {
         let v = v.as_bool().unwrap();
         Encode::<Mssql>::encode(v, buf)
       }
-      TypeSignature::String => {
+      Type::String => {
         let len_pos = buf.len();
         let v = v.as_str().unwrap().encode_utf16();
         buf.put_u16_le(0u16);
@@ -109,7 +109,7 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
         dst.put_u16_le(length as u16);
         IsNull::No
       }
-      TypeSignature::Datetime => {
+      Type::Datetime => {
         let v = v.as_str().unwrap();
         let datetime = parse_date(v);
 
@@ -122,11 +122,11 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
 
         IsNull::No
       }
-      TypeSignature::Custom(_) => unimplemented!(),
-      TypeSignature::Ref { .. } => unimplemented!(),
-      TypeSignature::Bytes => encode_array(&TypeSignature::U8, v, buf),
-      TypeSignature::List { ty } => encode_array(ty, v, buf),
-      TypeSignature::Optional { ty } => {
+      Type::Custom(_) => unimplemented!(),
+      Type::Ref { .. } => unimplemented!(),
+      Type::Bytes => encode_array(&Type::U8, v, buf),
+      Type::List { ty } => encode_array(ty, v, buf),
+      Type::Optional { ty } => {
         if v.is_null() {
           buf.put_u8(0);
           IsNull::Yes
@@ -134,7 +134,7 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
           Encode::<Mssql>::encode(SqlWrapper(TypeWrapper::new(*ty.clone(), v.clone())), buf)
         }
       }
-      TypeSignature::Map { value, .. } => {
+      Type::Map { value, .. } => {
         let v = v.as_object().unwrap();
         buf.put_u32(v.len() as u32);
         for (k, v) in v {
@@ -143,15 +143,15 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
         }
         IsNull::No
       }
-      TypeSignature::Link { .. } => unimplemented!(),
-      TypeSignature::Object => unimplemented!(),
-      TypeSignature::AnonymousStruct(_) => unimplemented!(),
+      Type::Link { .. } => unimplemented!(),
+      Type::Object => unimplemented!(),
+      Type::AnonymousStruct(_) => unimplemented!(),
     }
   }
 }
 
 fn encode_array(
-  _ty: &TypeSignature,
+  _ty: &Type,
   _v: &Value,
   _buf: &mut <Mssql as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
 ) -> IsNull {
@@ -177,9 +177,9 @@ fn convert_float(v: &Value, buf: &mut <Mssql as sqlx::database::HasArguments<'_>
   Encode::<Mssql>::encode(v, buf)
 }
 
-impl Type<Mssql> for SqlWrapper {
+impl SqlxType<Mssql> for SqlWrapper {
   fn type_info() -> MssqlTypeInfo {
-    <i32 as Type<Mssql>>::type_info()
+    <i32 as SqlxType<Mssql>>::type_info()
   }
 
   fn compatible(_ty: &<Mssql as sqlx::Database>::TypeInfo) -> bool {

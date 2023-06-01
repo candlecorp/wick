@@ -4,7 +4,7 @@ use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use futures::StreamExt;
 use wick_interface_types::{component, ComponentSignature};
 use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream};
-use wick_rpc::{dispatch, RpcHandler};
+use wick_rpc::dispatch;
 
 mod wick_component_cli;
 mod wick_host_run;
@@ -58,13 +58,11 @@ impl Component for NativeComponent {
     })
   }
 
-  fn list(&self) -> &wick_interface_types::ComponentSignature {
+  fn signature(&self) -> &wick_interface_types::ComponentSignature {
     trace!("test collection get list");
     &self.signature
   }
 }
-
-impl RpcHandler for NativeComponent {}
 
 async fn error(_input: Invocation) -> Result<PacketStream, ComponentError> {
   Err(anyhow::anyhow!("Always errors").into())
@@ -117,29 +115,28 @@ mod tests {
   async fn list() -> anyhow::Result<()> {
     let collection = NativeComponent::default();
 
-    let response = collection.get_list()?;
+    let sig = collection.signature();
 
-    debug!("list response : {:?}", response);
+    debug!("signature response : {:?}", sig);
 
-    assert_eq!(response.len(), 1);
     let expected = ComponentSignature {
       name: Some("test-native-component".to_owned()),
       metadata: ComponentMetadata::new("0.1.0"),
       operations: vec![
         OperationSignature {
           name: "error".to_string(),
-          inputs: vec![Field::new("input", TypeSignature::String)],
-          outputs: vec![Field::new("output", TypeSignature::String)],
+          inputs: vec![Field::new("input", Type::String)],
+          outputs: vec![Field::new("output", Type::String)],
         },
         OperationSignature {
           name: "test-component".to_string(),
-          inputs: vec![Field::new("input", TypeSignature::String)],
-          outputs: vec![Field::new("output", TypeSignature::String)],
+          inputs: vec![Field::new("input", Type::String)],
+          outputs: vec![Field::new("output", Type::String)],
         },
       ],
       ..Default::default()
     };
-    assert_eq!(response[0], HostedType::Component(expected));
+    assert_eq!(sig, &expected);
     Ok(())
   }
 }

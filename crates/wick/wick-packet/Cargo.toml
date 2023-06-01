@@ -20,6 +20,7 @@ default = []
 invocation = ["uuid", "seeded-random/rng"]
 rt-tokio = ["tokio/rt"]
 datetime = ["chrono"]
+validation = []
 
 [dependencies]
 wick-interface-types = { workspace = true, features = ["typeid"] }

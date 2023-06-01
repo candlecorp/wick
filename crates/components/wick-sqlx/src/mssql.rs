@@ -27,7 +27,7 @@ mod integration_test {
   use serde_json::json;
   use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
   use wick_config::config::{Metadata, ResourceDefinition};
-  use wick_interface_types::{Field, TypeSignature};
+  use wick_interface_types::{Field, Type};
   use wick_packet::{packet_stream, Invocation, Packet};
 
   use crate::SqlXComponent;
@@ -48,8 +48,8 @@ mod integration_test {
     let op = SqlOperationDefinitionBuilder::default()
       .name("test")
       .query("select id,name from users where id=$1;")
-      .inputs([Field::new("input", TypeSignature::I32)])
-      .outputs([Field::new("output", TypeSignature::Object)])
+      .inputs([Field::new("input", Type::I32)])
+      .outputs([Field::new("output", Type::Object)])
       .arguments(["input".to_owned()])
       .build()
       .unwrap();

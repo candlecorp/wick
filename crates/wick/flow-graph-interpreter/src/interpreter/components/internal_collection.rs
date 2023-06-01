@@ -1,6 +1,6 @@
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use flow_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
-use wick_interface_types::{ComponentSignature, OperationSignature, TypeSignature};
+use wick_interface_types::{ComponentSignature, OperationSignature, Type};
 use wick_packet::{Invocation, PacketStream};
 
 use crate::constants::*;
@@ -17,10 +17,10 @@ impl Default for InternalCollection {
   fn default() -> Self {
     let signature = ComponentSignature::new(NS_INTERNAL).version("0.0.0").add_operation(
       OperationSignature::new(INTERNAL_ID_INHERENT)
-        .add_input("seed", TypeSignature::U64)
-        .add_input("timestamp", TypeSignature::U64)
-        .add_output("seed", TypeSignature::U64)
-        .add_output("timestamp", TypeSignature::U64),
+        .add_input("seed", Type::U64)
+        .add_input("timestamp", Type::U64)
+        .add_output("seed", Type::U64)
+        .add_output("timestamp", Type::U64),
     );
 
     Self { signature }
@@ -50,7 +50,7 @@ impl Component for InternalCollection {
     Box::pin(task)
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.signature
   }
 }

@@ -6,7 +6,6 @@ use tracing::Span;
 use wasmrs_host::WasiParams;
 use wick_config::config::components::Permissions;
 use wick_packet::{Entity, GenericConfig, Invocation, PacketStream};
-use wick_rpc::RpcHandler;
 
 use crate::helpers::WickWasmModule;
 use crate::wasm_host::{SetupPayload, WasmHost, WasmHostBuilder};
@@ -37,8 +36,8 @@ impl WasmComponent {
   pub async fn try_load(
     module: &WickWasmModule,
     max_threads: usize,
-    config: Option<Permissions>,
-    additional_config: Option<Permissions>,
+    permissions: Option<Permissions>,
+    config: Option<GenericConfig>,
     callback: Option<Arc<RuntimeCallback>>,
     provided: HashMap<String, String>,
     span: Span,
@@ -47,15 +46,10 @@ impl WasmComponent {
 
     let name = module.name().clone().unwrap_or_else(|| module.id().clone());
 
-    // If we're passed a "wasi" field in the config map...
-    if let Some(config) = config {
+    #[allow(clippy::option_if_let_else)]
+    if let Some(config) = permissions {
       span.in_scope(|| debug!(id=%name, config=?config, "wasi enabled"));
       builder = builder.wasi_params(permissions_to_wasi_params(&config));
-    } else if let Some(opts) = additional_config {
-      // if we were passed wasi params, use those.
-      span.in_scope(|| debug!(id=%name, config=?opts, "wasi enabled"));
-
-      builder = builder.wasi_params(permissions_to_wasi_params(&opts));
     } else {
       span.in_scope(|| debug!(id = %name, "wasi disabled"));
     }
@@ -65,7 +59,16 @@ impl WasmComponent {
       builder = builder.link_callback(callback);
     }
     let host = builder.build(module)?;
-    let setup = SetupPayload::new(&Entity::component(module.name().clone().unwrap_or_default()), provided);
+
+    let sig = host.signature();
+    wick_packet::validation::expect_configuration_matches(&name, config.as_ref(), Some(&sig.config))
+      .map_err(Error::SetupSignature)?;
+
+    let setup = SetupPayload::new(
+      &Entity::component(module.name().clone().unwrap_or_default()),
+      provided,
+      config,
+    );
     host.setup(setup).await?;
 
     Ok(Self { host: Arc::new(host) })
@@ -86,12 +89,10 @@ impl Component for WasmComponent {
     Box::pin(async move { outputs.map_err(ComponentError::new) })
   }
 
-  fn list(&self) -> &wick_interface_types::ComponentSignature {
-    self.host.get_operations()
+  fn signature(&self) -> &wick_interface_types::ComponentSignature {
+    self.host.signature()
   }
 }
-
-impl RpcHandler for WasmComponent {}
 
 #[cfg(test)]
 mod tests {
@@ -107,7 +108,7 @@ mod tests {
   use super::*;
 
   async fn load_component() -> Result<WasmComponent> {
-    let component = crate::helpers::load_wasm_from_file(&PathBuf::from_str(
+    let component = WickWasmModule::from_file(&PathBuf::from_str(
       "../../integration/test-baseline-component/build/baseline.signed.wasm",
     )?)
     .await?;
@@ -116,7 +117,7 @@ mod tests {
       &component,
       2,
       None,
-      None,
+      Some(json!({"default_err":"error from wasm test"}).try_into()?),
       Some(Arc::new(|_, _, _, _, _, _| {
         Box::pin(async { Ok(packet_stream!(("test", "test"))) })
       })),

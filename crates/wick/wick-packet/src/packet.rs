@@ -3,7 +3,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 use wasmrs::{BoxFlux, Metadata, Payload, PayloadError, RawPayload};
-use wick_interface_types::TypeSignature;
+use wick_interface_types::Type;
 
 use crate::metadata::DONE_FLAG;
 use crate::{
@@ -122,7 +122,7 @@ impl Packet {
   }
 
   /// Try to deserialize a [Packet] into the target type
-  pub fn deserialize_into(self, ty: TypeSignature) -> Result<TypeWrapper, Error> {
+  pub fn deserialize_into(self, ty: Type) -> Result<TypeWrapper, Error> {
     self.payload.deserialize_into(ty)
   }
 
@@ -253,36 +253,36 @@ impl PacketPayload {
   }
 
   /// Try to deserialize a [Packet] into the target type
-  pub fn deserialize_into(self, sig: TypeSignature) -> Result<TypeWrapper, Error> {
+  pub fn deserialize_into(self, sig: Type) -> Result<TypeWrapper, Error> {
     let val = match sig {
-      TypeSignature::I8 => TypeWrapper::new(sig, self.deserialize::<i8>()?.into()),
-      TypeSignature::I16 => TypeWrapper::new(sig, self.deserialize::<i16>()?.into()),
-      TypeSignature::I32 => TypeWrapper::new(sig, self.deserialize::<i32>()?.into()),
-      TypeSignature::I64 => TypeWrapper::new(sig, self.deserialize::<i64>()?.into()),
-      TypeSignature::U8 => TypeWrapper::new(sig, self.deserialize::<u8>()?.into()),
-      TypeSignature::U16 => TypeWrapper::new(sig, self.deserialize::<u16>()?.into()),
-      TypeSignature::U32 => TypeWrapper::new(sig, self.deserialize::<u32>()?.into()),
-      TypeSignature::U64 => TypeWrapper::new(sig, self.deserialize::<u64>()?.into()),
-      TypeSignature::F32 => TypeWrapper::new(sig, self.deserialize::<f32>()?.into()),
-      TypeSignature::F64 => TypeWrapper::new(sig, self.deserialize::<f64>()?.into()),
-      TypeSignature::Bool => TypeWrapper::new(sig, self.deserialize::<bool>()?.into()),
-      TypeSignature::String => TypeWrapper::new(sig, self.deserialize::<String>()?.into()),
-      TypeSignature::Datetime => TypeWrapper::new(sig, self.deserialize::<String>()?.into()),
-      TypeSignature::Bytes => TypeWrapper::new(sig, self.deserialize::<Vec<u8>>()?.into()),
-      TypeSignature::Custom(_) => TypeWrapper::new(sig, self.deserialize::<serde_json::Value>()?),
-      TypeSignature::Ref { .. } => unimplemented!(),
-      TypeSignature::List { .. } => TypeWrapper::new(sig, self.deserialize::<Vec<serde_json::Value>>()?.into()),
-      TypeSignature::Optional { .. } => TypeWrapper::new(sig, self.deserialize::<Option<serde_json::Value>>()?.into()),
-      TypeSignature::Map { .. } => TypeWrapper::new(
+      Type::I8 => TypeWrapper::new(sig, self.deserialize::<i8>()?.into()),
+      Type::I16 => TypeWrapper::new(sig, self.deserialize::<i16>()?.into()),
+      Type::I32 => TypeWrapper::new(sig, self.deserialize::<i32>()?.into()),
+      Type::I64 => TypeWrapper::new(sig, self.deserialize::<i64>()?.into()),
+      Type::U8 => TypeWrapper::new(sig, self.deserialize::<u8>()?.into()),
+      Type::U16 => TypeWrapper::new(sig, self.deserialize::<u16>()?.into()),
+      Type::U32 => TypeWrapper::new(sig, self.deserialize::<u32>()?.into()),
+      Type::U64 => TypeWrapper::new(sig, self.deserialize::<u64>()?.into()),
+      Type::F32 => TypeWrapper::new(sig, self.deserialize::<f32>()?.into()),
+      Type::F64 => TypeWrapper::new(sig, self.deserialize::<f64>()?.into()),
+      Type::Bool => TypeWrapper::new(sig, self.deserialize::<bool>()?.into()),
+      Type::String => TypeWrapper::new(sig, self.deserialize::<String>()?.into()),
+      Type::Datetime => TypeWrapper::new(sig, self.deserialize::<String>()?.into()),
+      Type::Bytes => TypeWrapper::new(sig, self.deserialize::<Vec<u8>>()?.into()),
+      Type::Custom(_) => TypeWrapper::new(sig, self.deserialize::<serde_json::Value>()?),
+      Type::Ref { .. } => unimplemented!(),
+      Type::List { .. } => TypeWrapper::new(sig, self.deserialize::<Vec<serde_json::Value>>()?.into()),
+      Type::Optional { .. } => TypeWrapper::new(sig, self.deserialize::<Option<serde_json::Value>>()?.into()),
+      Type::Map { .. } => TypeWrapper::new(
         sig,
         serde_json::Value::Object(self.deserialize::<serde_json::Map<String, serde_json::Value>>()?),
       ),
-      TypeSignature::Link { .. } => TypeWrapper::new(
+      Type::Link { .. } => TypeWrapper::new(
         sig,
         serde_json::Value::String(self.deserialize::<ComponentReference>()?.to_string()),
       ),
-      TypeSignature::Object => TypeWrapper::new(sig, self.deserialize::<serde_json::Value>()?),
-      TypeSignature::AnonymousStruct(_) => unimplemented!(),
+      Type::Object => TypeWrapper::new(sig, self.deserialize::<serde_json::Value>()?),
+      Type::AnonymousStruct(_) => unimplemented!(),
     };
     Ok(val)
   }

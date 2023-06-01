@@ -1,19 +1,13 @@
-use std::path::Path;
-
 use wick_config::config::{AssetReference, FetchOptions};
 
-use crate::error::WasmCollectionError;
+use crate::error::WasmComponentError;
 pub use crate::wasm_module::WickWasmModule;
 
-pub async fn load_wasm_from_file(path: &Path) -> Result<WickWasmModule, WasmCollectionError> {
-  WickWasmModule::from_file(path).await
-}
-
-pub async fn load_wasm(
+pub async fn fetch_wasm(
   location: &AssetReference,
   allow_latest: bool,
   allowed_insecure: &[String],
-) -> Result<WickWasmModule, WasmCollectionError> {
+) -> Result<WickWasmModule, WasmComponentError> {
   let options = FetchOptions::new()
     .allow_latest(allow_latest)
     .allow_insecure(allowed_insecure);

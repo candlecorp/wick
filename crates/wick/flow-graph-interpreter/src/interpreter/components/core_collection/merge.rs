@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use flow_component::{ComponentError, Context, Operation};
 use futures::FutureExt;
 use wasmrs_rx::Observer;
-use wick_interface_types::{Field, OperationSignature, StructSignature, TypeSignature};
+use wick_interface_types::{Field, OperationSignature, StructDefinition, Type};
 use wick_packet::{Invocation, Packet, PacketStream, StreamMap};
 
 use crate::BoxFuture;
@@ -20,16 +20,16 @@ pub(crate) struct Config {
   inputs: Vec<Field>,
 }
 
-fn gen_signature(id: String, config: Config) -> (OperationSignature, StructSignature) {
+fn gen_signature(id: String, config: Config) -> (OperationSignature, StructDefinition) {
   let mut signature = OperationSignature::new(&id);
   let output_type = Vec::new();
-  let mut output_signature = StructSignature::new(&id, output_type);
+  let mut output_signature = StructDefinition::new(&id, output_type);
   for field in config.inputs {
     output_signature.fields.push(field.clone());
     signature = signature.add_input(field.name, field.ty);
   }
 
-  signature = signature.add_output("output", TypeSignature::Ref { reference: id });
+  signature = signature.add_output("output", Type::Ref { reference: id });
 
   (signature, output_signature)
 }
@@ -38,7 +38,7 @@ impl Op {
   pub(crate) fn new() -> Self {
     Self {}
   }
-  pub(crate) fn gen_signature(id: String, config: Config) -> (OperationSignature, StructSignature) {
+  pub(crate) fn gen_signature(id: String, config: Config) -> (OperationSignature, StructDefinition) {
     gen_signature(id, config)
   }
 }
@@ -106,10 +106,7 @@ mod test {
 
   #[tokio::test]
   async fn test_basic() -> Result<()> {
-    let inputs = vec![
-      Field::new("input_a", TypeSignature::String),
-      Field::new("input_b", TypeSignature::U32),
-    ];
+    let inputs = vec![Field::new("input_a", Type::String), Field::new("input_b", Type::U32)];
     let op = Op::new();
     let config = serde_json::json!({ "inputs": inputs });
     let config = Op::decode_config(Some(config.try_into()?))?;

@@ -12,7 +12,7 @@ use nom::multi::{many0, many0_count, separated_list1};
 use nom::sequence::{delimited, pair, terminated, tuple};
 use nom::IResult;
 
-use crate::{Field, TypeSignature};
+use crate::{Field, Type};
 
 #[derive(Debug, Clone)]
 pub enum ParserError {
@@ -37,7 +37,7 @@ where
   delimited(multispace0, inner, multispace0)
 }
 
-pub fn parse(input: &str) -> Result<TypeSignature, ParserError> {
+pub fn parse(input: &str) -> Result<Type, ParserError> {
   _parse(input)
     .map(|(_, t)| t)
     .map_err(|_| ParserError::Fail(input.to_owned()))
@@ -47,30 +47,30 @@ fn square_brackets(input: &str) -> IResult<&str, &str> {
   delimited(char('['), multispace0, char(']'))(input)
 }
 
-fn struct_type(input: &str) -> IResult<&str, TypeSignature> {
+fn struct_type(input: &str) -> IResult<&str, Type> {
   let (i, (v)) = delimited(char('{'), separated_list1(char(','), ws(key_type_pair)), char('}'))(input)?;
   let v: Vec<_> = v.into_iter().map(|(s, t)| Field::new(s, t)).collect();
-  Ok((i, TypeSignature::AnonymousStruct(v)))
+  Ok((i, Type::AnonymousStruct(v)))
 }
 
-fn map_type(input: &str) -> IResult<&str, TypeSignature> {
+fn map_type(input: &str) -> IResult<&str, Type> {
   let (i, ((_, ty))) = delimited(char('{'), ws(map_key_type_pair), char('}'))(input)?;
 
   Ok((
     i,
-    TypeSignature::Map {
-      key: Box::new(TypeSignature::String),
+    Type::Map {
+      key: Box::new(Type::String),
       value: Box::new(ty),
     },
   ))
 }
 
-fn key_type_pair(input: &str) -> IResult<&str, (&str, TypeSignature)> {
+fn key_type_pair(input: &str) -> IResult<&str, (&str, Type)> {
   let (i, (key, _, t)) = tuple((identifier, ws(char(':')), valid_type))(input)?;
   Ok((i, (key, t)))
 }
 
-fn map_key_type_pair(input: &str) -> IResult<&str, (&str, TypeSignature)> {
+fn map_key_type_pair(input: &str) -> IResult<&str, (&str, Type)> {
   let (i, (key, _, t)) = tuple((tag("string"), ws(char(':')), valid_type))(input)?;
   Ok((i, (key, t)))
 }
@@ -82,46 +82,46 @@ fn identifier(input: &str) -> IResult<&str, &str> {
   ))(input)
 }
 
-fn list_type(input: &str) -> IResult<&str, TypeSignature> {
+fn list_type(input: &str) -> IResult<&str, Type> {
   let (i, (t, _)) = pair(typename, ws(square_brackets))(input)?;
 
-  Ok((i, TypeSignature::List { ty: Box::new(t) }))
+  Ok((i, Type::List { ty: Box::new(t) }))
 }
 
-fn valid_type(input: &str) -> IResult<&str, TypeSignature> {
+fn valid_type(input: &str) -> IResult<&str, Type> {
   alt((map_type, struct_type, list_type, typename))(input)
 }
 
-fn typename(input: &str) -> IResult<&str, TypeSignature> {
+fn typename(input: &str) -> IResult<&str, Type> {
   let (i, t) = alt((
     recognize(pair(many0(terminated(identifier, tag("::"))), identifier)),
     identifier,
   ))(input)?;
   let t = match t {
-    "bool" => TypeSignature::Bool,
-    "i8" => TypeSignature::I8,
-    "i16" => TypeSignature::I16,
-    "i32" => TypeSignature::I32,
-    "i64" => TypeSignature::I64,
-    "u8" => TypeSignature::U8,
-    "u16" => TypeSignature::U16,
-    "u32" => TypeSignature::U32,
-    "u64" => TypeSignature::U64,
-    "f32" => TypeSignature::F32,
-    "f64" => TypeSignature::F64,
-    "bytes" => TypeSignature::Bytes,
-    "string" => TypeSignature::String,
-    "datetime" => TypeSignature::Datetime,
-    "object" => TypeSignature::Object,
-    x => TypeSignature::Custom(x.to_owned()),
+    "bool" => Type::Bool,
+    "i8" => Type::I8,
+    "i16" => Type::I16,
+    "i32" => Type::I32,
+    "i64" => Type::I64,
+    "u8" => Type::U8,
+    "u16" => Type::U16,
+    "u32" => Type::U32,
+    "u64" => Type::U64,
+    "f32" => Type::F32,
+    "f64" => Type::F64,
+    "bytes" => Type::Bytes,
+    "string" => Type::String,
+    "datetime" => Type::Datetime,
+    "object" => Type::Object,
+    x => Type::Custom(x.to_owned()),
   };
   Ok((i, t))
 }
 
-fn _parse(input: &str) -> IResult<&str, TypeSignature> {
+fn _parse(input: &str) -> IResult<&str, Type> {
   let (i, (t, optional)) = pair(alt((list_type, map_type, struct_type, typename)), opt(tag("?")))(input)?;
   if optional.is_some() {
-    Ok((i, TypeSignature::Optional { ty: Box::new(t) }))
+    Ok((i, Type::Optional { ty: Box::new(t) }))
   } else {
     Ok((i, t))
   }
@@ -206,98 +206,98 @@ mod test {
   use crate::Field;
 
   #[rstest::rstest]
-  #[case("bool[]", TypeSignature::Bool)]
-  #[case("bool []", TypeSignature::Bool)]
-  #[case("bool [ ]", TypeSignature::Bool)]
-  #[case("string[]", TypeSignature::String)]
-  fn test_list_variants(#[case] input: &'static str, #[case] expected: TypeSignature) -> Result<()> {
+  #[case("bool[]", Type::Bool)]
+  #[case("bool []", Type::Bool)]
+  #[case("bool [ ]", Type::Bool)]
+  #[case("string[]", Type::String)]
+  fn test_list_variants(#[case] input: &'static str, #[case] expected: Type) -> Result<()> {
     let (i, t) = list_type(input)?;
-    assert_eq!(t, TypeSignature::List { ty: Box::new(expected) });
+    assert_eq!(t, Type::List { ty: Box::new(expected) });
     Ok(())
   }
 
   #[rstest::rstest]
-  #[case("{ myBool : bool }", TypeSignature::Bool)]
-  #[case("{myBool:bool}", TypeSignature::Bool)]
-  #[case("{ myBool : bool }", TypeSignature::Bool)]
-  fn test_struct_variants(#[case] input: &'static str, #[case] expected: TypeSignature) -> Result<()> {
+  #[case("{ myBool : bool }", Type::Bool)]
+  #[case("{myBool:bool}", Type::Bool)]
+  #[case("{ myBool : bool }", Type::Bool)]
+  fn test_struct_variants(#[case] input: &'static str, #[case] expected: Type) -> Result<()> {
     let (i, t) = struct_type(input)?;
-    let fields = [Field::new("myBool", TypeSignature::Bool)];
-    assert_eq!(t, TypeSignature::AnonymousStruct(fields.into()));
+    let fields = [Field::new("myBool", Type::Bool)];
+    assert_eq!(t, Type::AnonymousStruct(fields.into()));
     Ok(())
   }
 
   #[rstest::rstest]
-  #[case("bool", TypeSignature::Bool)]
-  #[case("i8", TypeSignature::I8)]
-  #[case("i16", TypeSignature::I16)]
-  #[case("i32", TypeSignature::I32)]
-  #[case("i64", TypeSignature::I64)]
-  #[case("u8", TypeSignature::U8)]
-  #[case("u16", TypeSignature::U16)]
-  #[case("u32", TypeSignature::U32)]
-  #[case("u64", TypeSignature::U64)]
-  #[case("f32", TypeSignature::F32)]
-  #[case("f64", TypeSignature::F64)]
-  #[case("bytes", TypeSignature::Bytes)]
-  #[case("string", TypeSignature::String)]
-  #[case("datetime", TypeSignature::Datetime)]
-  #[case("object", TypeSignature::Object)]
-  #[case("myType", TypeSignature::Custom("myType".to_owned()))]
-  #[case("name::myType", TypeSignature::Custom("name::myType".to_owned()))]
-  fn test_parse_typename(#[case] as_str: &'static str, #[case] ty: TypeSignature) -> Result<()> {
+  #[case("bool", Type::Bool)]
+  #[case("i8", Type::I8)]
+  #[case("i16", Type::I16)]
+  #[case("i32", Type::I32)]
+  #[case("i64", Type::I64)]
+  #[case("u8", Type::U8)]
+  #[case("u16", Type::U16)]
+  #[case("u32", Type::U32)]
+  #[case("u64", Type::U64)]
+  #[case("f32", Type::F32)]
+  #[case("f64", Type::F64)]
+  #[case("bytes", Type::Bytes)]
+  #[case("string", Type::String)]
+  #[case("datetime", Type::Datetime)]
+  #[case("object", Type::Object)]
+  #[case("myType", Type::Custom("myType".to_owned()))]
+  #[case("name::myType", Type::Custom("name::myType".to_owned()))]
+  fn test_parse_typename(#[case] as_str: &'static str, #[case] ty: Type) -> Result<()> {
     assert_eq!(typename(as_str)?, ("", ty));
     Ok(())
   }
 
   #[rstest::rstest]
-  #[case("bool", TypeSignature::Bool)]
-  #[case("i8", TypeSignature::I8)]
-  #[case("i16", TypeSignature::I16)]
-  #[case("i32", TypeSignature::I32)]
-  #[case("i64", TypeSignature::I64)]
-  #[case("u8", TypeSignature::U8)]
-  #[case("u16", TypeSignature::U16)]
-  #[case("u32", TypeSignature::U32)]
-  #[case("u64", TypeSignature::U64)]
-  #[case("f32", TypeSignature::F32)]
-  #[case("f64", TypeSignature::F64)]
-  #[case("bytes", TypeSignature::Bytes)]
-  #[case("string", TypeSignature::String)]
-  #[case("datetime", TypeSignature::Datetime)]
-  #[case("object", TypeSignature::Object)]
-  #[case("myType[]", TypeSignature::List{ty:Box::new(TypeSignature::Custom("myType".to_owned()))})]
-  #[case("{string: bool}", TypeSignature::Map{key:Box::new(TypeSignature::String),value:Box::new(TypeSignature::Bool)})]
-  #[case("{string: bool[]}", TypeSignature::Map{key:Box::new(TypeSignature::String),value:Box::new(TypeSignature::List{ty:Box::new(TypeSignature::Bool)})})]
-  #[case("{string: name::myType}", TypeSignature::Map{key:Box::new(TypeSignature::String),value:Box::new(TypeSignature::Custom("name::myType".to_owned()))})]
-  #[case("name::myType", TypeSignature::Custom("name::myType".to_owned()))]
-  fn test_parse_type(#[case] as_str: &'static str, #[case] ty: TypeSignature) -> Result<()> {
+  #[case("bool", Type::Bool)]
+  #[case("i8", Type::I8)]
+  #[case("i16", Type::I16)]
+  #[case("i32", Type::I32)]
+  #[case("i64", Type::I64)]
+  #[case("u8", Type::U8)]
+  #[case("u16", Type::U16)]
+  #[case("u32", Type::U32)]
+  #[case("u64", Type::U64)]
+  #[case("f32", Type::F32)]
+  #[case("f64", Type::F64)]
+  #[case("bytes", Type::Bytes)]
+  #[case("string", Type::String)]
+  #[case("datetime", Type::Datetime)]
+  #[case("object", Type::Object)]
+  #[case("myType[]", Type::List{ty:Box::new(Type::Custom("myType".to_owned()))})]
+  #[case("{string: bool}", Type::Map{key:Box::new(Type::String),value:Box::new(Type::Bool)})]
+  #[case("{string: bool[]}", Type::Map{key:Box::new(Type::String),value:Box::new(Type::List{ty:Box::new(Type::Bool)})})]
+  #[case("{string: name::myType}", Type::Map{key:Box::new(Type::String),value:Box::new(Type::Custom("name::myType".to_owned()))})]
+  #[case("name::myType", Type::Custom("name::myType".to_owned()))]
+  fn test_parse_type(#[case] as_str: &'static str, #[case] ty: Type) -> Result<()> {
     assert_eq!(valid_type(as_str)?, ("", ty));
     Ok(())
   }
 
   #[rstest::rstest]
-  #[case("bool", TypeSignature::Bool)]
-  #[case("i8", TypeSignature::I8)]
-  #[case("i16", TypeSignature::I16)]
-  #[case("i32", TypeSignature::I32)]
-  #[case("i64", TypeSignature::I64)]
-  #[case("u8", TypeSignature::U8)]
-  #[case("u16", TypeSignature::U16)]
-  #[case("u32", TypeSignature::U32)]
-  #[case("u64", TypeSignature::U64)]
-  #[case("f32", TypeSignature::F32)]
-  #[case("f32", TypeSignature::F32)]
-  #[case("f64?", TypeSignature::Optional{ty:Box::new(TypeSignature::F64)} )]
-  #[case("bytes", TypeSignature::Bytes)]
-  #[case("string", TypeSignature::String)]
-  #[case("datetime", TypeSignature::Datetime)]
-  #[case("{string:string}", TypeSignature::Map { key: Box::new(TypeSignature::String), value: Box::new(TypeSignature::String) })]
-  #[case("{string:string[]}", TypeSignature::Map { key: Box::new(TypeSignature::String), value: Box::new(TypeSignature::List{ty:Box::new(TypeSignature::String)}) })]
-  #[case("object", TypeSignature::Object)]
-  #[case("myType", TypeSignature::Custom("myType".to_owned()))]
-  #[case("name::myType", TypeSignature::Custom("name::myType".to_owned()))]
-  fn test_parse(#[case] as_str: &'static str, #[case] ty: TypeSignature) -> Result<()> {
+  #[case("bool", Type::Bool)]
+  #[case("i8", Type::I8)]
+  #[case("i16", Type::I16)]
+  #[case("i32", Type::I32)]
+  #[case("i64", Type::I64)]
+  #[case("u8", Type::U8)]
+  #[case("u16", Type::U16)]
+  #[case("u32", Type::U32)]
+  #[case("u64", Type::U64)]
+  #[case("f32", Type::F32)]
+  #[case("f32", Type::F32)]
+  #[case("f64?", Type::Optional{ty:Box::new(Type::F64)} )]
+  #[case("bytes", Type::Bytes)]
+  #[case("string", Type::String)]
+  #[case("datetime", Type::Datetime)]
+  #[case("{string:string}", Type::Map { key: Box::new(Type::String), value: Box::new(Type::String) })]
+  #[case("{string:string[]}", Type::Map { key: Box::new(Type::String), value: Box::new(Type::List{ty:Box::new(Type::String)}) })]
+  #[case("object", Type::Object)]
+  #[case("myType", Type::Custom("myType".to_owned()))]
+  #[case("name::myType", Type::Custom("name::myType".to_owned()))]
+  fn test_parse(#[case] as_str: &'static str, #[case] ty: Type) -> Result<()> {
     assert_eq!(parse(as_str)?, ty);
     Ok(())
   }

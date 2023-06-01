@@ -12,7 +12,7 @@ use wick_host::ComponentHostBuilder;
 use wick_packet::{InherentData, Packet, PacketStream};
 
 use crate::options::get_auth_for_scope;
-use crate::utils::{self, merge_config};
+use crate::utils::{self, merge_config, parse_config_string};
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
@@ -59,19 +59,16 @@ pub(crate) struct InvokeCommand {
   #[clap(long = "seed", short = 's', env = "WICK_SEED", action)]
   seed: Option<u64>,
 
+  /// Pass configuration necessary to instantiate the component (JSON).
+  #[clap(long = "config", short = 'c', action)]
+  config: Option<String>,
+
   /// Arguments to pass as inputs to a component.
   #[clap(last(true), action)]
   args: Vec<String>,
 }
 
 pub(crate) async fn handle(opts: InvokeCommand, settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
-  // let mut logging = &mut opts.logging;
-  // if !(opts.info || logging.trace || logging.debug) {
-  //   logging.quiet = true;
-  // }
-
-  // let _guard = wick_logger::init(&logging.name(crate::BIN_NAME).into());
-
   let configured_creds = settings.credentials.iter().find(|c| opts.path.starts_with(&c.scope));
 
   let (username, password) = get_auth_for_scope(
@@ -104,7 +101,13 @@ pub(crate) async fn handle(opts: InvokeCommand, settings: wick_settings::Setting
 
   let component = opts.operation;
 
-  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
+  let component_config = parse_config_string(opts.config.as_deref())?;
+
+  let mut host = ComponentHostBuilder::default()
+    .manifest(config)
+    .config(component_config)
+    .span(span)
+    .build()?;
 
   host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;
 

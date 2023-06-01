@@ -4,7 +4,8 @@ use wick_interface_types::Field;
 
 use crate::config::{self, OperationSignature};
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(disable))]
 #[asset(asset(config::AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
@@ -26,18 +27,5 @@ impl WasmComponentImplementation {
   #[must_use]
   pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
     self.operations.values().cloned().map(Into::into).collect()
-  }
-}
-
-impl WasmComponentImplementation {
-  /// Get the operations implemented by this component.
-  #[must_use]
-  pub fn operations(&self) -> &HashMap<String, OperationSignature> {
-    &self.operations
-  }
-
-  /// Get the reference location to the component.
-  pub fn reference(&self) -> &config::AssetReference {
-    &self.reference
   }
 }

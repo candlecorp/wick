@@ -1,21 +1,31 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use flow_component::RuntimeCallback;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
+use tokio::time::timeout;
 use tracing::Span;
 use wasmrs::{GenericError, OperationHandler, RSocket, RawPayload};
 use wasmrs_codec::messagepack::serialize;
 use wasmrs_host::{CallContext, Host, WasiParams};
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::ComponentSignature;
-use wick_packet::{from_raw_wasmrs, from_wasmrs, into_wasmrs, ComponentReference, Entity, Invocation, PacketStream};
+use wick_packet::{
+  from_raw_wasmrs,
+  from_wasmrs,
+  into_wasmrs,
+  ComponentReference,
+  Entity,
+  GenericConfig,
+  Invocation,
+  PacketStream,
+};
 use wick_wascap::{Claims, CollectionClaims};
 
-use crate::error::WasmCollectionError;
+use crate::error::WasmComponentError;
 use crate::wasm_module::WickWasmModule;
 use crate::{Error, Result};
 
@@ -126,10 +136,10 @@ impl WasmHost {
     };
     let engine = engine
       .build()
-      .map_err(|e| WasmCollectionError::EngineFailure(e.to_string()))?;
+      .map_err(|e| WasmComponentError::EngineFailure(e.to_string()))?;
     trace!(duration_μs = %time.elapsed().as_micros(), "wasmtime instance loaded");
 
-    let host = Host::new(engine).map_err(|e| WasmCollectionError::EngineFailure(e.to_string()))?;
+    let host = Host::new(engine).map_err(|e| WasmComponentError::EngineFailure(e.to_string()))?;
 
     debug!(duration_μs = ?time.elapsed().as_micros(), "wasmtime initialize");
     if let Some(callback) = callback {
@@ -149,7 +159,7 @@ impl WasmHost {
   }
 
   #[allow(clippy::needless_pass_by_value)]
-  pub fn call(&self, invocation: Invocation, config: Option<wick_packet::GenericConfig>) -> Result<PacketStream> {
+  pub fn call(&self, invocation: Invocation, config: Option<GenericConfig>) -> Result<PacketStream> {
     let _span = self.span.enter();
     let component_name = invocation.target.operation_id();
     debug!(component = component_name, "wasm invoke");
@@ -183,19 +193,24 @@ impl WasmHost {
         .map_err(|_| crate::Error::SetupOperation)?;
       let metadata = wasmrs::Metadata::new(index);
       let data = serialize(&provided).unwrap();
-      Ok::<_, WasmCollectionError>(RawPayload::new(metadata.encode(), data.into()))
+      Ok::<_, WasmComponentError>(RawPayload::new(metadata.encode(), data.into()))
     })?;
 
-    let result = ctx.request_response(payload).await;
+    // this should never take more than a second.
+    let result = timeout(Duration::from_millis(1000), ctx.request_response(payload)).await;
 
     self.span.in_scope(|| {
       match result {
-        Ok(_) => {
+        Ok(Ok(_)) => {
           debug!("setup finished");
         }
-        Err(e) => {
+        Ok(Err(e)) => {
           error!("setup failed: {}", e);
           return Err(Error::Setup(e));
+        }
+        Err(e) => {
+          error!("setup failed with timeout: {}", e);
+          return Err(Error::SetupTimeout);
         }
       }
 
@@ -204,7 +219,7 @@ impl WasmHost {
     })
   }
 
-  pub fn get_operations(&self) -> &ComponentSignature {
+  pub fn signature(&self) -> &ComponentSignature {
     let claims = &self.claims;
     &claims.metadata.as_ref().unwrap().interface
   }
@@ -265,10 +280,11 @@ fn make_host_callback(
 #[must_use]
 pub struct SetupPayload {
   provided: HashMap<String, ComponentReference>,
+  config: GenericConfig,
 }
 
 impl SetupPayload {
-  pub fn new(origin: &Entity, provided: HashMap<String, String>) -> Self {
+  pub fn new(origin: &Entity, provided: HashMap<String, String>, config: Option<GenericConfig>) -> Self {
     let provided = provided
       .into_iter()
       .map(|(k, v)| {
@@ -278,6 +294,9 @@ impl SetupPayload {
         )
       })
       .collect();
-    Self { provided }
+    Self {
+      provided,
+      config: config.unwrap_or_default(),
+    }
   }
 }

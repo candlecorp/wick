@@ -13,6 +13,9 @@ pub enum EngineError {
   #[error("Could not complete building the runtime. Component {0} failed to initialize: {1}")]
   ComponentInit(String, String),
 
+  #[error("Component failed to initialize, {0}")]
+  Setup(wick_packet::Error),
+
   #[error("Component signature mismatch. Signature reported by instantiated component at {} differs from configured signature in {}. For WebAssembly, use `wick wasm inspect` to view the embedded signature to verify its contents and update the manifest signature.", .0.to_string_lossy(), .1.to_string_lossy())]
   ComponentSignature(PathBuf, PathBuf),
 

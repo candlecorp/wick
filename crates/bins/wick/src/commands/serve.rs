@@ -4,7 +4,7 @@ use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
 
-use crate::utils::merge_config;
+use crate::utils::{merge_config, parse_config_string};
 
 #[derive(Debug, Clone, Args)]
 pub(crate) struct ServeCommand {
@@ -20,6 +20,10 @@ pub(crate) struct ServeCommand {
   /// The path or OCI URL to a wick manifest or wasm file.
   #[clap(action)]
   pub(crate) location: String,
+
+  /// Pass configuration necessary to instantiate the component (JSON).
+  #[clap(long = "config", short = 'c', action)]
+  config: Option<String>,
 }
 
 pub(crate) async fn handle(opts: ServeCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
@@ -32,8 +36,13 @@ pub(crate) async fn handle(opts: ServeCommand, _settings: wick_settings::Setting
     .try_component_config()?;
 
   let config = merge_config(&manifest, &opts.oci, Some(opts.cli));
+  let component_config = parse_config_string(opts.config.as_deref())?;
 
-  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
+  let mut host = ComponentHostBuilder::default()
+    .manifest(config)
+    .config(component_config)
+    .span(span)
+    .build()?;
 
   host.start(Some(0)).await?;
   info!("Host started");

@@ -79,7 +79,7 @@ impl Interpreter {
 
     for handler in handlers.inner().values() {
       if handler.is_exposed() {
-        for op in &handler.component.list().operations {
+        for op in &handler.component.signature().operations {
           trace!(operation = op.name, "interpreter:exposing operation");
           exposed_ops.insert(op.name.clone(), handler.component.clone());
         }
@@ -104,7 +104,7 @@ impl Interpreter {
     // Make the self:: component
     let components = Arc::new(handlers);
     let self_component = SchematicComponent::new(components.clone(), program.state(), &dispatcher, rng.seed());
-    let self_signature = self_component.list().clone();
+    let self_signature = self_component.signature().clone();
 
     debug!(?self_signature, "signature");
 

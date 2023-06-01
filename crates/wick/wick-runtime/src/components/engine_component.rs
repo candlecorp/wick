@@ -2,7 +2,6 @@ use flow_component::{Component, RuntimeCallback};
 use tracing::Instrument;
 use uuid::Uuid;
 use wick_packet::{Invocation, PacketStream};
-use wick_rpc::RpcHandler;
 
 use crate::dev::prelude::*;
 
@@ -61,12 +60,10 @@ impl Component for EngineComponent {
     })
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.signature
   }
 }
-
-impl RpcHandler for EngineComponent {}
 
 #[cfg(test)]
 mod tests {
@@ -110,9 +107,9 @@ mod tests {
   async fn test_list() -> Result<()> {
     let (_, engine_id) = init_engine_from_yaml("./manifests/v0/simple.yaml").await?;
     let component = EngineComponent::new(engine_id);
-    let list = component.get_list()?;
-    println!("components on engine : {:?}", list);
-    assert_eq!(list.len(), 1);
+    let sig = component.signature();
+    println!("operations on engine : {:?}", sig);
+    assert_eq!(sig.operations.len(), 1);
     Ok(())
   }
 }

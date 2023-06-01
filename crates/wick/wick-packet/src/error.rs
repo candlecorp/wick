@@ -43,8 +43,8 @@ pub enum Error {
   #[error("Could not retrieve configuration item '{0}'")]
   ContextKey(String),
 
-  /// Returned when trying to decode a non-JSON object into a [crate::CustomContext].
-  #[error("Can not convert non-object JSON to a CustomContext")]
+  /// Returned when trying to decode a non-JSON object into [crate::GenericConfig].
+  #[error("Can only convert JSON Objects to a operation and component configuration")]
   BadJson,
 
   /// Couldn't retrieve a complete set of packets from a [crate::StreamMap]
@@ -54,6 +54,9 @@ pub enum Error {
   /// Couldn't retrieve a complete set of packets from a [crate::StreamMap]
   #[error("Could not retrieve a complete set of packets. Stream '{0}' completed or failed before providing a packet.")]
   StreamMapMissing(String /* port */),
+
+  #[error("Data provided for component '{0}' does not match expected signature, {1}")]
+  Signature(String, String),
 }
 
 impl Error {

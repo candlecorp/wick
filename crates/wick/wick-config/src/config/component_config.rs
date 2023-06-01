@@ -81,6 +81,15 @@ impl ComponentConfiguration {
     }
   }
 
+  #[must_use]
+  pub fn config(&self) -> &[wick_interface_types::Field] {
+    match &self.component {
+      ComponentImplementation::Composite(c) => c.config(),
+      ComponentImplementation::Wasm(c) => c.config(),
+      _ => unimplemented!(),
+    }
+  }
+
   /// Set the name of the component
   pub fn set_name(&mut self, name: String) {
     self.name = Some(name);
@@ -91,15 +100,6 @@ impl ComponentConfiguration {
   pub fn package_files(&self) -> Option<Assets<AssetReference>> {
     // should return empty vec if package is None
     self.package.as_ref().map(|p| p.assets())
-  }
-
-  #[must_use]
-  pub fn operation_signatures(&self) -> Vec<OperationSignature> {
-    match &self.component {
-      ComponentImplementation::Composite(c) => c.operation_signatures(),
-      ComponentImplementation::Wasm(c) => c.operation_signatures(),
-      _ => unimplemented!(),
-    }
   }
 
   pub fn try_wasm(&self) -> Result<&WasmComponentImplementation> {
@@ -220,6 +220,7 @@ impl ComponentConfiguration {
       version: self.version(),
       operations: self.component.operation_signatures(),
     };
+    sig.config = self.config().to_vec();
     sig.types = self.types()?;
     Ok(sig)
   }

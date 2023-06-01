@@ -10,9 +10,8 @@ use sqlx::{MssqlPool, PgPool};
 use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition};
 use wick_config::config::{Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
-use wick_interface_types::{component, ComponentSignature, Field, TypeSignature};
+use wick_interface_types::{component, ComponentSignature, Field, Type};
 use wick_packet::{FluxChannel, GenericConfig, Invocation, Observer, Packet, PacketStream};
-use wick_rpc::RpcHandler;
 
 use crate::error::Error;
 use crate::mssql::SerMapMssqlRow;
@@ -104,7 +103,7 @@ impl SqlXComponent {
     // NOTE: remove this must change when db components support customized outputs.
     sig.operations.iter_mut().for_each(|op| {
       if !op.outputs.iter().any(|f| f.name == "output") {
-        op.outputs.push(Field::new("output", TypeSignature::Object));
+        op.outputs.push(Field::new("output", Type::Object));
       }
     });
 
@@ -191,7 +190,7 @@ impl Component for SqlXComponent {
     })
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.signature
   }
 
@@ -223,7 +222,7 @@ fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Err
     .iter()
     .filter(|op| {
       let outputs = op.outputs();
-      outputs.len() > 1 || outputs.len() == 1 && outputs[0] != Field::new("output", TypeSignature::Object)
+      outputs.len() > 1 || outputs.len() == 1 && outputs[0] != Field::new("output", Type::Object)
     })
     .map(|op| op.name().to_owned())
     .collect();
@@ -277,13 +276,11 @@ async fn init_context(config: SqlComponentConfig, addr: UrlResource) -> Result<C
   })
 }
 
-impl RpcHandler for SqlXComponent {}
-
 async fn exec(
   client: CtxPool,
   tx: FluxChannel<Packet, wick_packet::Error>,
   def: SqlOperationDefinition,
-  args: Vec<(TypeSignature, Packet)>,
+  args: Vec<(Type, Packet)>,
   stmt: Arc<(String, String)>,
 ) -> Result<(), Error> {
   debug!(stmt = %stmt.0, "executing query");
@@ -329,7 +326,7 @@ mod test {
   use anyhow::Result;
   use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
   use wick_config::config::{ResourceDefinition, TcpPort};
-  use wick_interface_types::{Field, TypeSignature};
+  use wick_interface_types::{Field, Type};
 
   use super::*;
 
@@ -349,8 +346,8 @@ mod test {
     let op = SqlOperationDefinitionBuilder::default()
       .name("test")
       .query("select * from users where user_id = $1;")
-      .inputs([Field::new("input", TypeSignature::I32)])
-      .outputs([Field::new("output", TypeSignature::String)])
+      .inputs([Field::new("input", Type::I32)])
+      .outputs([Field::new("output", Type::String)])
       .arguments(["input".to_owned()])
       .build()
       .unwrap();

@@ -98,22 +98,7 @@ pub struct ListRequest {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListResponse {
   #[prost(message, repeated, tag = "1")]
-  pub schemas: ::prost::alloc::vec::Vec<HostedType>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct HostedType {
-  #[prost(oneof = "hosted_type::Type", tags = "1")]
-  pub r#type: ::core::option::Option<hosted_type::Type>,
-}
-/// Nested message and enum types in `HostedType`.
-pub mod hosted_type {
-  #[allow(clippy::derive_partial_eq_without_eq)]
-  #[derive(Clone, PartialEq, ::prost::Oneof)]
-  pub enum Type {
-    #[prost(message, tag = "1")]
-    Component(super::ComponentSignature),
-  }
+  pub components: ::prost::alloc::vec::Vec<ComponentSignature>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -180,7 +165,7 @@ pub struct ComponentSignature {
   #[prost(message, repeated, tag = "4")]
   pub types: ::prost::alloc::vec::Vec<TypeDefinition>,
   #[prost(message, repeated, tag = "5")]
-  pub config: ::prost::alloc::vec::Vec<TypeDefinition>,
+  pub config: ::prost::alloc::vec::Vec<Field>,
   #[prost(message, repeated, tag = "7")]
   pub wellknown: ::prost::alloc::vec::Vec<WellKnownSchema>,
 }

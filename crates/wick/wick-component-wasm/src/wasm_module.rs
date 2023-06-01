@@ -2,7 +2,7 @@ use std::path::Path;
 
 use wick_wascap::{Claims, CollectionClaims, Token};
 
-use crate::error::WasmCollectionError;
+use crate::error::WasmComponentError;
 
 #[derive(Clone, Debug)]
 pub struct WickWasmModule {
@@ -13,9 +13,9 @@ pub struct WickWasmModule {
 impl WickWasmModule {
   /// Create an actor from the bytes of a signed WebAssembly module. Attempting to load.
   /// an unsigned module, or a module signed improperly, will result in an error.
-  pub fn from_slice(buf: &[u8]) -> Result<WickWasmModule, WasmCollectionError> {
-    let token = wick_wascap::extract_claims(buf).map_err(|e| WasmCollectionError::ClaimsError(e.to_string()))?;
-    token.map_or(Err(WasmCollectionError::ClaimsExtraction), |t| {
+  pub fn from_slice(buf: &[u8]) -> Result<WickWasmModule, WasmComponentError> {
+    let token = wick_wascap::extract_claims(buf).map_err(|e| WasmComponentError::ClaimsError(e.to_string()))?;
+    token.map_or(Err(WasmComponentError::ClaimsExtraction), |t| {
       Ok(WickWasmModule {
         token: t,
         bytes: buf.to_vec(),
@@ -24,7 +24,7 @@ impl WickWasmModule {
   }
 
   /// Create an actor from a signed WebAssembly (`.wasm`) file.
-  pub async fn from_file(path: &Path) -> Result<WickWasmModule, WasmCollectionError> {
+  pub async fn from_file(path: &Path) -> Result<WickWasmModule, WasmComponentError> {
     let file = tokio::fs::read(path).await?;
 
     WickWasmModule::from_slice(&file)

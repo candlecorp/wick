@@ -35,6 +35,6 @@ async fn test_starts() -> Result<()> {
   let response = client.list(ListRequest {}).await.unwrap();
   let list = response.into_inner();
   println!("list: {:?}", list);
-  assert_eq!(list.schemas.len(), 1);
+  assert_eq!(list.components.len(), 1);
   Ok(())
 }

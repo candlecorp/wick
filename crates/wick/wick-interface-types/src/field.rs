@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{is_false, TypeSignature};
+use crate::{is_false, Type};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Field {
@@ -9,12 +9,12 @@ pub struct Field {
 
   /// The type of the field.
   #[serde(rename = "type")]
-  #[cfg_attr(feature = "parser", serde(deserialize_with = "crate::signatures::type_signature"))]
+  #[cfg_attr(feature = "parser", serde(deserialize_with = "crate::types::deserialize_type"))]
   #[cfg_attr(
     feature = "yaml",
     serde(serialize_with = "serde_yaml::with::singleton_map::serialize")
   )]
-  pub ty: TypeSignature,
+  pub ty: Type,
 
   /// Whether the field is required.
   #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -30,7 +30,7 @@ pub struct Field {
 }
 
 impl Field {
-  pub fn new(name: impl AsRef<str>, ty: TypeSignature) -> Self {
+  pub fn new(name: impl AsRef<str>, ty: Type) -> Self {
     Self {
       name: name.as_ref().to_owned(),
       description: None,
@@ -47,7 +47,7 @@ impl Field {
   }
 
   /// Get the type of the field
-  pub fn ty(&self) -> &TypeSignature {
+  pub fn ty(&self) -> &Type {
     &self.ty
   }
 
@@ -107,7 +107,7 @@ impl FieldValue {
   }
 
   /// Get the type of the field
-  pub fn signature(&self) -> &TypeSignature {
+  pub fn signature(&self) -> &Type {
     &self.field.ty
   }
 

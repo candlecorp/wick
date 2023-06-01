@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use flow_graph::iterators::{SchematicHop, WalkDirection};
 use flow_graph::{NodeKind, PortDirection};
-use wick_interface_types::{ComponentSignature, Field, OperationSignature, TypeSignature};
+use wick_interface_types::{ComponentSignature, Field, OperationSignature, Type};
 
 use crate::constants::*;
 use crate::error::ValidationError;
@@ -169,17 +169,17 @@ fn get_signature(
   port: &Port,
   direction: PortDirection,
   components: &ComponentMap,
-) -> Result<Option<TypeSignature>, ValidationError> {
+) -> Result<Option<Type>, ValidationError> {
   let name = port.name();
   match port.node().kind() {
     NodeKind::Input(_) => match direction {
       PortDirection::In => Ok(None),
-      PortDirection::Out => Ok(Some(TypeSignature::Object)),
+      PortDirection::Out => Ok(Some(Type::Object)),
     },
 
     NodeKind::Output(_) => match direction {
       PortDirection::Out => Ok(None),
-      PortDirection::In => Ok(Some(TypeSignature::Object)),
+      PortDirection::In => Ok(Some(Type::Object)),
     },
     NodeKind::External(ext) | NodeKind::Inherent(ext) => {
       let ext_component = components

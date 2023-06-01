@@ -49,14 +49,14 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
       inputs: operation.inputs,
       outputs: vec![
         // TODO: support actual HTTP Response type.
-        wick_interface_types::Field::new("response", wick_interface_types::TypeSignature::Object),
+        wick_interface_types::Field::new("response", wick_interface_types::Type::Object),
         wick_interface_types::Field::new(
           "body",
           match operation.codec {
-            Some(Codec::Json) => wick_interface_types::TypeSignature::Object,
-            Some(Codec::Raw) => wick_interface_types::TypeSignature::Bytes,
-            Some(Codec::FormData) => wick_interface_types::TypeSignature::Object,
-            None => wick_interface_types::TypeSignature::Object,
+            Some(Codec::Json) => wick_interface_types::Type::Object,
+            Some(Codec::Raw) => wick_interface_types::Type::Bytes,
+            Some(Codec::FormData) => wick_interface_types::Type::Object,
+            None => wick_interface_types::Type::Object,
           },
         ),
       ],

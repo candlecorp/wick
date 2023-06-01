@@ -55,11 +55,7 @@ message InherentData {
 }
 
 message ListRequest {}
-message ListResponse { repeated HostedType schemas = 1; }
-
-message HostedType {
-  oneof type { ComponentSignature component = 1; }
-}
+message ListResponse { repeated ComponentSignature components = 1; }
 
 message Operation {
   enum OperationKind {
@@ -84,7 +80,7 @@ message ComponentSignature {
   ComponentMetadata metadata = 8;
   repeated Operation operations = 3;
   repeated TypeDefinition types = 4;
-  repeated TypeDefinition config = 5;
+  repeated Field config = 5;
   repeated WellKnownSchema wellknown = 7;
 }
 

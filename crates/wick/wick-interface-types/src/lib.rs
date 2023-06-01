@@ -79,24 +79,17 @@
 mod parser;
 #[cfg(feature = "parser")]
 pub use parser::{parse, ParserError};
-mod type_definition;
-pub use type_definition::{EnumSignature, EnumVariant, StructSignature, TypeDefinition};
 
 /// Signatures of Wick types.
-mod signatures;
+mod types;
 
 mod field;
 
+mod signatures;
+
 pub use field::{Field, FieldValue};
-pub use signatures::{
-  ComponentMetadata,
-  ComponentSignature,
-  ComponentVersion,
-  HostedType,
-  OperationSignature,
-  TypeSignature,
-  WellKnownSchema,
-};
+pub use signatures::*;
+pub use types::*;
 
 #[macro_use]
 mod macros;

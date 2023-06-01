@@ -23,10 +23,9 @@ impl ComponentComponent {
     for ns in list.inner().keys() {
       trace!(id = ns, "interpreter:registering component on 'component' ns");
       let mut comp_sig = OperationSignature::new(ns.clone());
-      comp_sig.outputs.push(Field::new(
-        "ref",
-        wick_interface_types::TypeSignature::Link { schemas: vec![] },
-      ));
+      comp_sig
+        .outputs
+        .push(Field::new("ref", wick_interface_types::Type::Link { schemas: vec![] }));
       signature.operations.push(comp_sig);
     }
     Self { signature }
@@ -70,7 +69,7 @@ impl Component for ComponentComponent {
     })
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.signature
   }
 }

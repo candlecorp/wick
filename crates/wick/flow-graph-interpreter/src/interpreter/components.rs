@@ -64,7 +64,7 @@ impl HandlerMap {
     self
       .components
       .iter()
-      .map(|(name, p)| (name.clone(), p.component.list().clone()))
+      .map(|(name, p)| (name.clone(), p.component.signature().clone()))
       .collect::<HashMap<String, ComponentSignature>>()
   }
 
@@ -139,7 +139,7 @@ impl Debug for NamespaceHandler {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("NamespaceHandler")
       .field("namespace", &self.namespace)
-      .field("collection", &self.component.list())
+      .field("collection", &self.component.signature())
       .finish()
   }
 }

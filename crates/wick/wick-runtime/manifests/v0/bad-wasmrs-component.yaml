@@ -5,6 +5,8 @@ network:
     - namespace: wapc
       kind: WaPC
       reference: ../../integration/test-baseline-component/build/baseline.signed.wasm
+      data:
+        default_err: 'custom error'
   schematics:
     - name: test
       collections:

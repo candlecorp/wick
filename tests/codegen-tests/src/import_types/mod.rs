@@ -15,29 +15,31 @@ extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_h
 }
 #[cfg(target_family = "wasm")]
 thread_local! { static __CONFIG : std :: cell :: UnsafeCell < Option < SetupPayload >> = std :: cell :: UnsafeCell :: new (None) ; }
+#[derive(Debug, Clone, Default, serde :: Serialize, serde :: Deserialize, PartialEq)]
+pub struct RootConfig {}
 #[cfg(target_family = "wasm")]
 #[derive(Debug, serde :: Deserialize)]
 pub(crate) struct SetupPayload {
   #[allow(unused)]
   pub(crate) provided: std::collections::HashMap<String, wick_packet::ComponentReference>,
+  #[allow(unused)]
+  pub(crate) config: RootConfig,
 }
 #[cfg(target_family = "wasm")]
 fn __setup(
   input: wasmrs_rx::BoxMono<wasmrs::Payload, wasmrs::PayloadError>,
 ) -> Result<wasmrs_rx::BoxMono<wasmrs::RawPayload, wasmrs::PayloadError>, wick_component::BoxError> {
   Ok(Box::pin(async move {
-    match input.await {
-      Ok(payload) => {
-        let input = wasmrs_codec::messagepack::deserialize::<SetupPayload>(&payload.data).unwrap();
+    let payload = input.await?;
+    match wasmrs_codec::messagepack::deserialize::<SetupPayload>(&payload.data) {
+      Ok(input) => {
         __CONFIG.with(|cell| {
           #[allow(unsafe_code)]
           unsafe { &mut *cell.get() }.replace(input);
         });
         Ok(wasmrs::RawPayload::new_data(None, None))
       }
-      Err(e) => {
-        return Err(e);
-      }
+      Err(e) => Err(wasmrs::PayloadError::application_error(e.to_string(), None)),
     }
   }))
 }
@@ -47,6 +49,14 @@ pub(crate) fn get_config() -> &'static SetupPayload {
   __CONFIG.with(|cell| {
     #[allow(unsafe_code)]
     unsafe { &*cell.get() }.as_ref().unwrap()
+  })
+}
+#[allow(unused)]
+#[cfg(target_family = "wasm")]
+pub(crate) fn get_root_config() -> &'static RootConfig {
+  __CONFIG.with(|cell| {
+    #[allow(unsafe_code)]
+    &unsafe { &*cell.get() }.as_ref().unwrap().config
   })
 }
 pub mod types {

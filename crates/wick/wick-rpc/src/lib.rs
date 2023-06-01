@@ -100,26 +100,13 @@ mod generated;
 /// Utility and conversion types.
 pub mod types;
 
-use flow_component::Component;
 /// Module with generated Tonic & Protobuf code.
 pub use generated::wick as rpc;
 use tokio_stream::StreamExt;
 pub use types::*;
-use wick_interface_types::HostedType;
 
 /// The crate's error type.
 pub type Error = crate::error::RpcError;
-
-/// A trait that implementers of the RPC interface should implement.
-pub trait RpcHandler: Component + Sync
-where
-  Self: 'static,
-{
-  /// List the entities this [RpcHandler] manages.
-  fn get_list(&self) -> Result<Vec<HostedType>, Box<error::RpcError>> {
-    Ok(vec![HostedType::Component(self.list().clone())])
-  }
-}
 
 pub fn convert_tonic_streaming(mut streaming: tonic::Streaming<rpc::Packet>) -> wick_packet::PacketStream {
   let (tx, rx) = tokio::sync::mpsc::unbounded_channel();

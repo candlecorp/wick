@@ -101,7 +101,7 @@ impl Component for SchematicComponent {
     })
   }
 
-  fn list(&self) -> &ComponentSignature {
+  fn signature(&self) -> &ComponentSignature {
     &self.signature
   }
 }

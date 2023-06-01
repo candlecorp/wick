@@ -1,9 +1,10 @@
 use std::time::Duration;
 
 use futures::StreamExt;
+use serde_json::Value;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::config::{AssetReference, ComponentConfiguration, HttpConfigBuilder};
-use wick_packet::PacketStream;
+use wick_packet::{GenericConfig, PacketStream};
 
 pub(crate) fn merge_config(
   def: &ComponentConfiguration,
@@ -90,4 +91,18 @@ pub(crate) async fn print_stream_json(
   }
   trace!("stream complete");
   Ok(())
+}
+
+pub(crate) fn parse_config_string(source: Option<&str>) -> anyhow::Result<Option<GenericConfig>> {
+  let component_config = match source {
+    Some(c) => Some(
+      GenericConfig::try_from(
+        serde_json::from_str::<Value>(&c)
+          .map_err(|e| anyhow::anyhow!("Failed to parse config argument as JSON: {}", e))?,
+      )
+      .map_err(|e| anyhow::anyhow!("Failed to parse config: {}", e))?,
+    ),
+    None => None,
+  };
+  Ok(component_config)
 }
