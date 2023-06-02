@@ -115,7 +115,7 @@ jobs:
       - name: 'rustup updates'
         run: |
           rustup target add wasm32-unknown-unknown wasm32-wasi
-          cargo install cargo-deny just
+          cargo install cargo-deny just cargo-nextest
       #Updating rustup updates means that the github cache needs to be manually deleted.
       - name: Run just ci-tests
         id: just-ci-test
