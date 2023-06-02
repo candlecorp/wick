@@ -30,11 +30,11 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
       Type::String => (self.0.inner().as_str().unwrap().len() + 1) * mem::size_of::<u16>(),
       Type::Datetime => mem::size_of::<u64>(),
       Type::Bytes => self.0.inner().as_array().unwrap().len() * mem::size_of::<u8>(),
-      Type::Custom(_) => unimplemented!("Custom types are not supported yet"),
-      Type::Ref { .. } => unimplemented!("References are not supported"),
+      Type::Named(_) => unimplemented!("Custom types are not supported yet"),
       Type::List { .. } => unimplemented!("Lists are not supported yet"),
       Type::Optional { .. } => unimplemented!("Optional values are not supported yet"),
       Type::Map { .. } => unimplemented!("Maps are not supported yet"),
+      #[allow(deprecated)]
       Type::Link { .. } => unimplemented!("Component references are not supported"),
       Type::Object => unimplemented!("Objects are not supported yet"),
       Type::AnonymousStruct(_) => unimplemented!("Anonymous structs are not supported yet"),
@@ -59,7 +59,7 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
   //     TypeSignature::String => DataType::NVarChar,
   //     TypeSignature::Datetime => DataType::DateTimeN,
   //     TypeSignature::Bytes => DataType::Binary,
-  //     TypeSignature::Custom(_) => todo!(),
+  //     TypeSignature::Named(_) => todo!(),
   //     TypeSignature::Ref { .. } => todo!(),
   //     TypeSignature::List { .. } => todo!(),
   //     TypeSignature::Optional { .. } => todo!(),
@@ -122,8 +122,7 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
 
         IsNull::No
       }
-      Type::Custom(_) => unimplemented!(),
-      Type::Ref { .. } => unimplemented!(),
+      Type::Named(_) => unimplemented!(),
       Type::Bytes => encode_array(&Type::U8, v, buf),
       Type::List { ty } => encode_array(ty, v, buf),
       Type::Optional { ty } => {
@@ -143,6 +142,7 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
         }
         IsNull::No
       }
+      #[allow(deprecated)]
       Type::Link { .. } => unimplemented!(),
       Type::Object => unimplemented!(),
       Type::AnonymousStruct(_) => unimplemented!(),

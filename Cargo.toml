@@ -19,7 +19,9 @@ exclude = [
 ]
 
 [workspace.dependencies]
+#
 # crates/wick
+#
 flow-component = { path = "./crates/wick/flow-component", version = "0.5.0", default-features = false }
 flow-expression-parser = { path = "./crates/wick/flow-expression-parser", version = "0.5.0" }
 flow-graph = { path = "./crates/wick/flow-graph", version = "0.21.0" }
@@ -44,16 +46,23 @@ wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.1.0" }
 wick-test = { path = "./crates/wick/wick-test", version = "0.1.0" }
 wick-wascap = { path = "./crates/wick/wick-wascap", version = "0.1.0" }
 wick-xdg = { path = "./crates/wick/wick-xdg", version = "0.2.0" }
+#
 # crates/misc
+#
 asset-container = { path = "./crates/misc/asset-container", version = "0.2.0" }
 derive-asset-container = { path = "./crates/misc/derive-asset-container", version = "0.2.0" }
 performance-mark = { path = "./crates/misc/performance-mark", version = "0.1.0" }
 seeded-random = { path = "./crates/misc/seeded-random", version = "0.3.0", default-features = false }
 tap-harness = { path = "./crates/misc/tap-harness", version = "0.1.0" }
 test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
+#
 # crates/interfaces
+#
 wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.2.0" }
+wick-interface-cli = { path = "./crates/interfaces/wick-interface-cli", version = "0.2.0" }
+#
 # crates/components
+#
 wick-azure-sql = { path = "./crates/components/wick-azure-sql", version = "0.1.0" }
 wick-sqlx = { path = "./crates/components/wick-sqlx", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
@@ -68,6 +77,7 @@ wasmrs-rx = { version = "0.12" }
 wasmrs-wasmtime = { version = "0.12" }
 #
 # Other
+#
 ansi_term = "0.12"
 anyhow = "1.0"
 async-recursion = "1.0"

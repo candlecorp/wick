@@ -112,7 +112,7 @@ async fn handle(
       .into_iter()
       .map(|(k, v)| {
         let v = v
-          .deserialize_generic()
+          .decode_value()
           .map_err(|e| {
             invocation.trace(|| warn!(port=%k,error=%e, "http:input:deserialize"));
             e
@@ -481,7 +481,7 @@ mod test {
         .await;
 
       assert_eq!(stream.pop().unwrap(), Ok(Packet::done("body")));
-      let response = stream.pop().unwrap().unwrap().deserialize_generic().unwrap();
+      let response = stream.pop().unwrap().unwrap().decode_value().unwrap();
       let response_args = response.get("args").unwrap();
       assert_eq!(response_args, &json!( {"query1": "SENTINEL","query2": "0xDEADBEEF"}));
       let response_headers = response.get("headers").unwrap();
@@ -490,7 +490,7 @@ mod test {
         &json!("Bearer 0xDEADBEEF")
       );
       assert_eq!(stream.pop().unwrap(), Ok(Packet::done("response")));
-      let response: HttpResponse = stream.pop().unwrap().unwrap().deserialize().unwrap();
+      let response: HttpResponse = stream.pop().unwrap().unwrap().decode().unwrap();
       assert_eq!(response.version, HttpVersion::Http11);
 
       Ok(())
@@ -511,7 +511,7 @@ mod test {
       assert_eq!(stream.pop().unwrap(), Ok(Packet::done("body")));
       let response = stream.pop().unwrap().unwrap();
       println!("{:?}", response);
-      let response = response.deserialize_generic().unwrap();
+      let response = response.decode_value().unwrap();
       let args = response.get("args").unwrap();
       assert_eq!(args, &json!( {"query1": "SENTINEL"}));
       let data = response.get("json").unwrap();
@@ -526,7 +526,7 @@ mod test {
       );
       assert_eq!(response_headers.get("X-Custom-Header").unwrap(), &json!("SENTINEL"));
       assert_eq!(stream.pop().unwrap(), Ok(Packet::done("response")));
-      let response: HttpResponse = stream.pop().unwrap().unwrap().deserialize().unwrap();
+      let response: HttpResponse = stream.pop().unwrap().unwrap().decode().unwrap();
       assert_eq!(response.version, HttpVersion::Http11);
 
       Ok(())

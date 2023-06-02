@@ -141,10 +141,8 @@ message TypeSignature {
     MapType map = 2;
     InnerType list = 3;
     InnerType optional = 4;
-    RefType ref = 5;
-    LinkType link = 6;
     AnonymousStruct anonymous_struct = 10;
-    string custom = 11;
+    string named = 11;
   }
 }
 
@@ -170,10 +168,6 @@ message SimpleType {
   }
   PrimitiveType type = 1;
 }
-
-message RefType { string ref = 1; }
-
-message LinkType { repeated string schemas = 1; }
 
 message MapType {
   TypeSignature keyType = 1;

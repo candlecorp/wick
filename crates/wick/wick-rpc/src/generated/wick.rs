@@ -270,7 +270,7 @@ pub struct EnumVariant {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TypeSignature {
-  #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 5, 6, 10, 11")]
+  #[prost(oneof = "type_signature::Signature", tags = "1, 2, 3, 4, 10, 11")]
   pub signature: ::core::option::Option<type_signature::Signature>,
 }
 /// Nested message and enum types in `TypeSignature`.
@@ -286,14 +286,10 @@ pub mod type_signature {
     List(::prost::alloc::boxed::Box<super::InnerType>),
     #[prost(message, tag = "4")]
     Optional(::prost::alloc::boxed::Box<super::InnerType>),
-    #[prost(message, tag = "5")]
-    Ref(super::RefType),
-    #[prost(message, tag = "6")]
-    Link(super::LinkType),
     #[prost(message, tag = "10")]
     AnonymousStruct(super::AnonymousStruct),
     #[prost(string, tag = "11")]
-    Custom(::prost::alloc::string::String),
+    Named(::prost::alloc::string::String),
   }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -375,18 +371,6 @@ pub mod simple_type {
       }
     }
   }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RefType {
-  #[prost(string, tag = "1")]
-  pub r#ref: ::prost::alloc::string::String,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct LinkType {
-  #[prost(string, repeated, tag = "1")]
-  pub schemas: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

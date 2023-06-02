@@ -298,7 +298,7 @@ async fn exec(
       .cloned()
       .ok_or_else(|| Error::MissingArgument(arg.clone()))?;
     let wrapper = match packet
-      .deserialize_into(ty.clone())
+      .to_type_wrapper(ty.clone())
       .map_err(|e| Error::Prepare(e.to_string()))
     {
       Ok(type_wrapper) => SqlWrapper(type_wrapper),

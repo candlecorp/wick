@@ -85,14 +85,9 @@ fn test_serde_all() -> Result<()> {
     Type::List {
       ty: Box::new(Type::String),
     },
-    Type::Ref {
-      reference: "ref-test".to_owned(),
-    },
+    Type::Named("ref-test".to_owned()),
     Type::Optional {
       ty: Box::new(Type::String),
-    },
-    Type::Link {
-      schemas: vec!["link-test".to_owned()],
     },
   ];
 
@@ -117,12 +112,9 @@ fn test_serde_rt() -> Result<()> {
   compsig.inputs.push(Field::new("input2", Type::U64));
   compsig.outputs.push(Field::new("output1", Type::String));
   compsig.outputs.push(Field::new("output2", Type::U64));
-  compsig.outputs.push(Field::new(
-    "output2",
-    Type::Ref {
-      reference: "MYREF".to_owned(),
-    },
-  ));
+  compsig
+    .outputs
+    .push(Field::new("output2", Type::Named("MYREF".to_owned())));
 
   sig.operations.push(compsig);
 
@@ -163,12 +155,9 @@ fn test_serde_yaml_rt() -> Result<()> {
 
   compsig.outputs.push(Field::new("output1", Type::String));
   compsig.outputs.push(Field::new("output2", Type::U64));
-  compsig.outputs.push(Field::new(
-    "output2",
-    Type::Ref {
-      reference: "MYREF".to_owned(),
-    },
-  ));
+  compsig
+    .outputs
+    .push(Field::new("output2", Type::Named("MYREF".to_owned())));
 
   sig.operations.push(compsig);
 

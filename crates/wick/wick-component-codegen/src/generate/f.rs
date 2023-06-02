@@ -14,7 +14,14 @@ pub(crate) fn field_pair(config: &mut config::Config, imported: bool) -> impl Fn
   move |f| {
     let name = id(&snake(&f.name));
     let ty = expand_type(config, Direction::In, imported, &f.ty);
-    quote! {pub #name: #ty}
+    let desc = f
+      .description
+      .as_ref()
+      .map_or_else(|| quote! {}, |desc| quote! {#[doc = #desc]});
+    quote! {
+      #desc
+      pub #name: #ty
+    }
   }
 }
 

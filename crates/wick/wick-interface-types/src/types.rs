@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use std::any::TypeId;
 use std::error::Error;
 use std::str::FromStr;
@@ -10,7 +12,7 @@ use serde_json::Value;
 
 pub use self::enum_def::{EnumDefinition, EnumVariant};
 pub use self::struct_def::StructDefinition;
-use crate::{contents_equal, is_false, ComponentSignature, Field};
+use crate::Field;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[must_use]
@@ -69,14 +71,8 @@ pub enum Type {
   Datetime,
   /// Raw bytes.
   Bytes,
-  /// A custom type name.
-  Custom(String),
   /// A reference to another type.
-  Ref {
-    #[serde(rename = "ref")]
-    /// The reference string
-    reference: String,
-  },
+  Named(String),
   /// A list type
   List {
     /// The type of the list's elements
@@ -117,6 +113,7 @@ pub enum Type {
     value: Box<Type>,
   },
   /// A type representing a link to another collection.
+  #[deprecated = "Links are deprecated, use the require/provides interface instead."]
   Link {
     /// The schemas that must be provided with the linked collection.
     #[serde(default)]
@@ -129,14 +126,6 @@ pub enum Type {
     /// A list of fields in the struct.
     Vec<Field>,
   ),
-}
-
-fn stringify<S>(x: &str, s: S) -> Result<S::Ok, S::Error>
-where
-  S: serde::Serializer,
-{
-  println!("{:?}", x);
-  s.serialize_str(x)
 }
 
 impl Type {
@@ -158,14 +147,11 @@ impl Type {
       Type::String => TypeId::of::<String>(),
       Type::Datetime => TypeId::of::<String>(),
       Type::Bytes => TypeId::of::<Vec<u8>>(),
-      Type::Custom(_) => TypeId::of::<Value>(),
-      Type::Ref { reference } => unimplemented!(),
-      Type::List { ty } => TypeId::of::<Vec<Box<dyn std::any::Any>>>(),
-      Type::Optional { ty } => TypeId::of::<Option<Box<dyn std::any::Any>>>(),
-      Type::Map { key, value } => {
-        TypeId::of::<std::collections::HashMap<Box<dyn std::any::Any>, Box<dyn std::any::Any>>>()
-      }
-      Type::Link { schemas } => TypeId::of::<Value>(),
+      Type::Named(_) => TypeId::of::<Value>(),
+      Type::List { .. } => TypeId::of::<Vec<Box<dyn std::any::Any>>>(),
+      Type::Optional { .. } => TypeId::of::<Option<Box<dyn std::any::Any>>>(),
+      Type::Map { .. } => TypeId::of::<std::collections::HashMap<Box<dyn std::any::Any>, Box<dyn std::any::Any>>>(),
+      Type::Link { .. } => TypeId::of::<Value>(),
       Type::Object => TypeId::of::<Value>(),
       Type::AnonymousStruct(_) => unimplemented!(),
     }
@@ -200,13 +186,12 @@ impl Type {
       }
       Type::Datetime => Value::String(value.to_owned()),
       Type::Bytes => Value::String(value.to_owned()),
-      Type::Custom(_) => Value::Object(serde_json::from_str(value).map_err(|_| value)?),
-      Type::Ref { .. } => unimplemented!(),
+      Type::Named(_) => Value::Object(serde_json::from_str(value).map_err(|_| value)?),
       Type::Optional { ty } => {
         return Ok(ty.coerce_str(value).unwrap_or(Value::Null));
       }
       Type::Map { .. } => serde_json::from_str(value).map_err(|_| value)?,
-      Type::Link { schemas } => unimplemented!(),
+      Type::Link { .. } => unimplemented!(),
       Type::AnonymousStruct(_) => Value::Object(serde_json::from_str(value).map_err(|_| value)?),
     };
     Ok(val)
@@ -230,12 +215,11 @@ impl std::fmt::Display for Type {
       Type::String => f.write_str("string"),
       Type::Datetime => f.write_str("datetime"),
       Type::Bytes => f.write_str("bytes"),
-      Type::Custom(v) => f.write_str(v),
-      Type::Ref { reference } => todo!(),
+      Type::Named(v) => f.write_str(v),
       Type::List { ty } => write!(f, "{}[]", ty),
       Type::Optional { ty } => write!(f, "{}?", ty),
       Type::Map { key, value } => write!(f, "{{{}:{}}}", key, value),
-      Type::Link { schemas } => todo!(),
+      Type::Link { .. } => todo!(),
       Type::Object => f.write_str("object"),
       Type::AnonymousStruct(_) => todo!(),
     }
@@ -259,12 +243,8 @@ impl FromStr for Type {
   type Err = ParseError;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    crate::parser::parse(s).map_err(|e| ParseError(s.to_owned()))
+    crate::parser::parse(s).map_err(|_e| ParseError(s.to_owned()))
   }
-}
-
-fn is_valid_typeid(name: &str) -> bool {
-  name.chars().all(|c| c.is_alphanumeric() || c == '_')
 }
 
 #[cfg(feature = "parser")]

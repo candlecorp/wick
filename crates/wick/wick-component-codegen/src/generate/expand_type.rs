@@ -37,7 +37,7 @@ pub(super) fn expand_type(
       config.add_dep(Dependency::Bytes);
       quote! {bytes::Bytes}
     }
-    wick_interface_types::Type::Custom(name) => {
+    wick_interface_types::Type::Named(name) => {
       let (mod_parts, item_part) = get_typename_parts(name);
       let mod_parts = mod_parts.iter().map(|p| Ident::new(p, Span::call_site()));
       let ty = Ident::new(item_part, Span::call_site());
@@ -57,12 +57,15 @@ pub(super) fn expand_type(
       let value = expand_type(config, dir, imported, value);
       quote! { std::collections::HashMap<#key,#value> }
     }
+    #[allow(deprecated)]
     wick_interface_types::Type::Link { .. } => {
       config.add_dep(Dependency::WickComponent);
       quote! {wick_component::packet::ComponentReference}
     }
-    wick_interface_types::Type::Datetime => todo!("implement datetime in new codegen"),
-    wick_interface_types::Type::Ref { .. } => todo!("implement ref in new codegen"),
+    wick_interface_types::Type::Datetime => {
+      config.add_dep(Dependency::Chrono);
+      quote! {chrono::NaiveDateTime}
+    }
     // wick_interface_types::TypeSignature::Stream { ty } => {
     //   let ty = expand_type(config, dir, imported, ty);
     //   config.add_dep(Dependency::WasmRsRx);

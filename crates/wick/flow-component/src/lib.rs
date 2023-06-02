@@ -1,3 +1,5 @@
+//! This crate contains the core definitions and traits that make up a flow-based component or process that can execute within the [flow-graph-interpreter](https://crates.io/crates/flow-graph-interpreter).
+
 // !!START_LINTS
 // Wick lints
 // Do not change anything between the START_LINTS and END_LINTS line.
@@ -83,7 +85,7 @@
 #![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)]
+#![allow()]
 
 mod context;
 pub use context::*;
@@ -93,12 +95,14 @@ mod traits;
 #[cfg(feature = "invocation")]
 pub use traits::*;
 
+/// A boxed future that can be sent across threads.
 pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
 
 pub use serde_json::Value;
 
 #[derive(Debug)]
 #[must_use]
+/// A generic error type for components.
 pub struct ComponentError {
   source: Box<dyn std::error::Error + Send + Sync>,
 }
@@ -109,12 +113,14 @@ impl std::fmt::Display for ComponentError {
   }
 }
 impl ComponentError {
+  /// Create a new error from a boxed error.
   pub fn new(source: impl std::error::Error + Send + Sync + 'static) -> Self {
     Self {
       source: Box::new(source),
     }
   }
 
+  /// Create a new error from a string.
   pub fn message(msg: &str) -> Self {
     Self {
       source: Box::new(GenericError(msg.to_owned())),

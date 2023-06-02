@@ -52,8 +52,7 @@ impl<'q> Encode<'q, Postgres> for SqlWrapper {
         let datetime = parse_date(v);
         Encode::<Postgres>::encode(datetime, buf)
       }
-      Type::Custom(_) => unimplemented!("custom types not yet handled"),
-      Type::Ref { .. } => unimplemented!("refs not yet handled"),
+      Type::Named(_) => unimplemented!("custom types not yet handled"),
       Type::Bytes => encode_array(&Type::U8, v, buf),
       Type::List { ty } => encode_array(ty, v, buf),
       Type::Optional { .. } => {
@@ -73,7 +72,8 @@ impl<'q> Encode<'q, Postgres> for SqlWrapper {
         }
         IsNull::No
       }
-      Type::Link { .. } => unimplemented!("links not yet handled"),
+      #[allow(deprecated)]
+      Type::Link { .. } => unimplemented!("links not handled"),
       Type::Object => unimplemented!("objects not yet handled"),
       Type::AnonymousStruct(_) => unimplemented!("anonymous structs not yet handled"),
     };

@@ -214,7 +214,7 @@ impl TryFrom<wick::Type> for rpc::TypeSignature {
   fn try_from(t: wick::Type) -> Result<Self> {
     use rpc::simple_type::PrimitiveType;
     use rpc::type_signature::Signature;
-    use rpc::{InnerType, LinkType, MapType, RefType};
+    use rpc::{InnerType, MapType};
     let sig: Signature = match t {
       wick::Type::I8 => PrimitiveType::I8.into(),
       wick::Type::I16 => PrimitiveType::I16.into(),
@@ -231,8 +231,7 @@ impl TryFrom<wick::Type> for rpc::TypeSignature {
       wick::Type::Datetime => PrimitiveType::Datetime.into(),
       wick::Type::Bytes => PrimitiveType::Bytes.into(),
       wick::Type::Object => PrimitiveType::Object.into(),
-      wick::Type::Custom(v) => Signature::Custom(v),
-      wick::Type::Ref { reference } => Signature::Ref(RefType { r#ref: reference }),
+      wick::Type::Named(v) => Signature::Named(v),
       wick::Type::List { ty } => Signature::List(Box::new(InnerType {
         r#type: Some(ty.try_into()?),
       })),
@@ -243,10 +242,11 @@ impl TryFrom<wick::Type> for rpc::TypeSignature {
         key_type: Some(key.try_into()?),
         value_type: Some(value.try_into()?),
       })),
-      wick::Type::Link { schemas } => Signature::Link(LinkType { schemas }),
       wick::Type::AnonymousStruct(v) => Signature::AnonymousStruct(rpc::AnonymousStruct {
         fields: convert_list(v)?,
       }),
+      #[allow(deprecated)]
+      wick::Type::Link { .. } => unimplemented!(),
     };
     Ok(Self { signature: Some(sig) })
   }
@@ -288,7 +288,7 @@ impl TryFrom<rpc::TypeSignature> for wick::Type {
             None => return err,
           }
         }
-        Signature::Custom(v) => DestType::Custom(v),
+        Signature::Named(v) => DestType::Named(v),
         Signature::Map(map) => DestType::Map {
           key: match map.key_type {
             Some(v) => v.try_into()?,
@@ -311,10 +311,6 @@ impl TryFrom<rpc::TypeSignature> for wick::Type {
             None => return err,
           },
         },
-        Signature::Ref(reference) => DestType::Ref {
-          reference: reference.r#ref,
-        },
-        Signature::Link(link) => DestType::Link { schemas: link.schemas },
         Signature::AnonymousStruct(v) => DestType::AnonymousStruct(convert_list(v.fields)?),
       },
       None => return err,

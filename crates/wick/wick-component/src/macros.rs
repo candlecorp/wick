@@ -55,7 +55,7 @@ macro_rules! handle_port {
     if $packet.is_done() {
       $tx.complete();
     } else {
-      let packet: Result<$ty, _> = $packet.deserialize().map_err(|e| e.into());
+      let packet: Result<$ty, _> = $packet.decode().map_err(|e| e.into());
       let _ = $tx.send_result(packet);
     }
   }};

@@ -25,7 +25,7 @@ fn test_parser() -> Result<()> {
   let fields = vec![Field::new("myBool", Type::Bool)];
   assert_eq!(parse("{ myBool : bool }")?, Type::AnonymousStruct(fields));
 
-  let custom = Type::Custom("some_struct".to_owned());
+  let custom = Type::Named("some_struct".to_owned());
   assert_eq!(parse("some_struct")?, custom);
 
   Ok(())

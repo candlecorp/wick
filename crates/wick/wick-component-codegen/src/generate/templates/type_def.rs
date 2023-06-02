@@ -25,6 +25,7 @@ pub(crate) fn type_def<'a>(
   }
 }
 
+#[allow(clippy::too_many_lines)]
 pub(crate) fn gen_enum<'a>(
   _config: &config::Config,
   ty: &'a EnumDefinition,
@@ -37,7 +38,15 @@ pub(crate) fn gen_enum<'a>(
     .iter()
     .map(|v| {
       let name = id(&enumvariant_name(v));
-      quote! {#name}
+      let description = v
+        .description
+        .as_ref()
+        .map_or_else(|| quote! {}, |desc| quote! {#[doc = #desc]});
+
+      quote! {
+        #description
+        #name
+      }
     })
     .collect_vec();
 
@@ -81,14 +90,22 @@ pub(crate) fn gen_enum<'a>(
     })
     .collect_vec();
 
+  let description = ty
+    .description
+    .as_ref()
+    .map_or_else(|| quote! {}, |desc| quote! {#[doc = #desc]});
+
   let enum_impl = quote! {
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+    #description
     pub enum #name {
       #(#variants,)*
+
     }
 
     impl #name {
       #[allow(unused)]
+      #[doc = "Returns the value of the enum variant as a string."]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -171,8 +188,14 @@ pub(crate) fn gen_struct<'a>(
 
   let default_impl = f::gen_if(options == TypeOptions::Defaults, || {}, default_impl);
 
+  let description = ty
+    .description
+    .as_ref()
+    .map_or_else(|| quote! {}, |desc| quote! {#[doc = #desc]});
+
   let item = quote! {
     #derive
+    #description
     pub struct #name {
       #(#fields,)*
     }

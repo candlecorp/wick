@@ -128,10 +128,10 @@ async fn run_unit<'a>(
     }
 
     let actual_value: Result<Value, TestError> = actual_payload
-      .deserialize()
+      .decode()
       .map_err(|e| TestError::ConversionFailed(e.to_string()));
     let expected_value: Result<Value, TestError> = expected
-      .deserialize()
+      .decode()
       .map_err(|e| TestError::ConversionFailed(e.to_string()));
 
     debug!(i,index,actual=?actual_value, "actual");

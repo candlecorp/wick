@@ -10,6 +10,7 @@ pub(crate) enum Dependency {
   SerdeJson,
   Bytes,
   WickComponent,
+  Chrono,
   AsyncTrait,
   WickPacket,
 }
@@ -25,6 +26,9 @@ impl ToTokens for Dependency {
       }
       Dependency::WasmRsRuntime => {
         tokens.extend(quote! { pub use wick_component::runtime; });
+      }
+      Dependency::Chrono => {
+        tokens.extend(quote! { pub use chrono; });
       }
 
       Dependency::WasmRs => {

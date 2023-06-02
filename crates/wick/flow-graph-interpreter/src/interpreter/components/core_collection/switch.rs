@@ -151,7 +151,7 @@ impl Operation for Op {
 
         if packet.port() == DISCRIMINANT {
           if packet.has_data() {
-            condition = Some(packet.deserialize_generic().unwrap());
+            condition = Some(packet.decode_value().unwrap());
           }
           continue;
         }
