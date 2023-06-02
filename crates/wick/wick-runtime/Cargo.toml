@@ -10,8 +10,8 @@ description = "The runtime for the Wick project."
 [features]
 
 [dependencies]
-cron = "0.12"
-chrono = "0.4"
+cron = { workspace = true }
+chrono = { workspace = true }
 wick-packet = { workspace = true, features = ["validation"] }
 flow-graph = { workspace = true }
 flow-graph-interpreter = { workspace = true }
@@ -50,8 +50,8 @@ atty = { workspace = true }
 hyper = { workspace = true, features = ["runtime", "server"] }
 url = { workspace = true }
 bytes = { workspace = true }
-hyper-staticfile = "0.9"
-hyper-reverse-proxy = "0.5"
+hyper-staticfile = { workspace = true }
+hyper-reverse-proxy = { workspace = true }
 derive_builder = { workspace = true }
 
 [dev-dependencies]

@@ -15,15 +15,15 @@ flow-component = { workspace = true }
 wick-config = { workspace = true }
 wick-rpc = { workspace = true }
 wick-interface-types = { workspace = true, features = ["parser"] }
-tokio-util = { version = "0.7", features = ["compat"] }
+tokio-util = { workspace = true, features = ["compat"] }
 # tiberius & pool
-tiberius = { version = "0.12", features = [
+tiberius = { workspace = true, features = [
   "rustls",
   "tds73",
   "chrono"
 ], default-features = false }
-bb8-tiberius = { version = "0.15.0", features = ["with-tokio"] }
-bb8 = "0.8.0"
+bb8-tiberius = { workspace = true, features = ["with-tokio"] }
+bb8 = { workspace = true }
 #
 tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

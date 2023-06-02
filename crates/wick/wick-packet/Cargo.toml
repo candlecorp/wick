@@ -36,8 +36,8 @@ wasmrs-codec = { workspace = true }
 bytes = { workspace = true, features = ["serde"] }
 parking_lot = { workspace = true }
 url = { workspace = true }
-pin-project-lite = "0.2"
-base64-serde = "0.7.0"
+pin-project-lite = { workspace = true }
+base64-serde = { workspace = true }
 base64 = { workspace = true, default-features = false, features = ["alloc"] }
 tokio-stream = { workspace = true, default-features = false }
 #

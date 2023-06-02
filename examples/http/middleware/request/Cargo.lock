@@ -2282,7 +2282,6 @@ dependencies = [
  "flow-component",
  "flow-expression-parser",
  "glob",
- "itertools",
  "liquid-json",
  "num-traits",
  "option-utils",
