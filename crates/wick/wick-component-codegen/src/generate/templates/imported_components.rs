@@ -31,6 +31,7 @@ pub(crate) fn imported_components(config: &mut Config, required: Vec<BoundInterf
           pub fn new(component: wick_packet::ComponentReference) -> Self {
             Self { component }
           }
+          #[allow(unused)]
           pub fn component(&self) -> &wick_packet::ComponentReference {
             &self.component
           }

@@ -1,11 +1,8 @@
-use std::collections::HashMap;
 use std::fmt::Debug;
-use std::str::FromStr;
 
 use nom::branch::alt;
-use nom::bytes::complete::{is_not, tag, take_while1};
+use nom::bytes::complete::tag;
 use nom::character::complete::{alpha1, alphanumeric1, char, multispace0};
-use nom::character::is_alphabetic;
 use nom::combinator::{opt, recognize};
 use nom::error::ParseError;
 use nom::multi::{many0, many0_count, separated_list1};
@@ -48,13 +45,13 @@ fn square_brackets(input: &str) -> IResult<&str, &str> {
 }
 
 fn struct_type(input: &str) -> IResult<&str, Type> {
-  let (i, (v)) = delimited(char('{'), separated_list1(char(','), ws(key_type_pair)), char('}'))(input)?;
+  let (i, v) = delimited(char('{'), separated_list1(char(','), ws(key_type_pair)), char('}'))(input)?;
   let v: Vec<_> = v.into_iter().map(|(s, t)| Field::new(s, t)).collect();
   Ok((i, Type::AnonymousStruct(v)))
 }
 
 fn map_type(input: &str) -> IResult<&str, Type> {
-  let (i, ((_, ty))) = delimited(char('{'), ws(map_key_type_pair), char('}'))(input)?;
+  let (i, (_, ty)) = delimited(char('{'), ws(map_key_type_pair), char('}'))(input)?;
 
   Ok((
     i,
@@ -113,7 +110,7 @@ fn typename(input: &str) -> IResult<&str, Type> {
     "string" => Type::String,
     "datetime" => Type::Datetime,
     "object" => Type::Object,
-    x => Type::Custom(x.to_owned()),
+    x => Type::Named(x.to_owned()),
   };
   Ok((i, t))
 }
@@ -198,7 +195,6 @@ macro_rules! component {
 
 #[cfg(test)]
 mod test {
-  use std::collections::HashMap;
 
   use anyhow::Result;
 
@@ -211,7 +207,7 @@ mod test {
   #[case("bool [ ]", Type::Bool)]
   #[case("string[]", Type::String)]
   fn test_list_variants(#[case] input: &'static str, #[case] expected: Type) -> Result<()> {
-    let (i, t) = list_type(input)?;
+    let (_i, t) = list_type(input)?;
     assert_eq!(t, Type::List { ty: Box::new(expected) });
     Ok(())
   }
@@ -221,8 +217,8 @@ mod test {
   #[case("{myBool:bool}", Type::Bool)]
   #[case("{ myBool : bool }", Type::Bool)]
   fn test_struct_variants(#[case] input: &'static str, #[case] expected: Type) -> Result<()> {
-    let (i, t) = struct_type(input)?;
-    let fields = [Field::new("myBool", Type::Bool)];
+    let (_i, t) = struct_type(input)?;
+    let fields = [Field::new("myBool", expected)];
     assert_eq!(t, Type::AnonymousStruct(fields.into()));
     Ok(())
   }
@@ -243,8 +239,8 @@ mod test {
   #[case("string", Type::String)]
   #[case("datetime", Type::Datetime)]
   #[case("object", Type::Object)]
-  #[case("myType", Type::Custom("myType".to_owned()))]
-  #[case("name::myType", Type::Custom("name::myType".to_owned()))]
+  #[case("myType", Type::Named("myType".to_owned()))]
+  #[case("name::myType", Type::Named("name::myType".to_owned()))]
   fn test_parse_typename(#[case] as_str: &'static str, #[case] ty: Type) -> Result<()> {
     assert_eq!(typename(as_str)?, ("", ty));
     Ok(())
@@ -266,11 +262,11 @@ mod test {
   #[case("string", Type::String)]
   #[case("datetime", Type::Datetime)]
   #[case("object", Type::Object)]
-  #[case("myType[]", Type::List{ty:Box::new(Type::Custom("myType".to_owned()))})]
+  #[case("myType[]", Type::List{ty:Box::new(Type::Named("myType".to_owned()))})]
   #[case("{string: bool}", Type::Map{key:Box::new(Type::String),value:Box::new(Type::Bool)})]
   #[case("{string: bool[]}", Type::Map{key:Box::new(Type::String),value:Box::new(Type::List{ty:Box::new(Type::Bool)})})]
-  #[case("{string: name::myType}", Type::Map{key:Box::new(Type::String),value:Box::new(Type::Custom("name::myType".to_owned()))})]
-  #[case("name::myType", Type::Custom("name::myType".to_owned()))]
+  #[case("{string: name::myType}", Type::Map{key:Box::new(Type::String),value:Box::new(Type::Named("name::myType".to_owned()))})]
+  #[case("name::myType", Type::Named("name::myType".to_owned()))]
   fn test_parse_type(#[case] as_str: &'static str, #[case] ty: Type) -> Result<()> {
     assert_eq!(valid_type(as_str)?, ("", ty));
     Ok(())
@@ -295,8 +291,8 @@ mod test {
   #[case("{string:string}", Type::Map { key: Box::new(Type::String), value: Box::new(Type::String) })]
   #[case("{string:string[]}", Type::Map { key: Box::new(Type::String), value: Box::new(Type::List{ty:Box::new(Type::String)}) })]
   #[case("object", Type::Object)]
-  #[case("myType", Type::Custom("myType".to_owned()))]
-  #[case("name::myType", Type::Custom("name::myType".to_owned()))]
+  #[case("myType", Type::Named("myType".to_owned()))]
+  #[case("name::myType", Type::Named("name::myType".to_owned()))]
   fn test_parse(#[case] as_str: &'static str, #[case] ty: Type) -> Result<()> {
     assert_eq!(parse(as_str)?, ty);
     Ok(())

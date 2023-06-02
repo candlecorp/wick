@@ -4,6 +4,7 @@
 // Wick lints
 // Do not change anything between the START_LINTS and END_LINTS line.
 // This is automatically generated. Add exceptions after this section.
+#![allow(unknown_lints)]
 #![deny(
   clippy::expect_used,
   clippy::explicit_deref_methods,
@@ -35,7 +36,19 @@
   clippy::let_and_return,
   clippy::string_to_string,
   clippy::try_err,
-  clippy::if_then_some_else_none,
+  clippy::unused_async,
+  clippy::missing_enforced_import_renames,
+  clippy::nonstandard_macro_braces,
+  clippy::rc_mutex,
+  clippy::unwrap_or_else_default,
+  clippy::manual_split_once,
+  clippy::derivable_impls,
+  clippy::needless_option_as_deref,
+  clippy::iter_not_returning_iterator,
+  clippy::same_name_method,
+  clippy::manual_assert,
+  clippy::non_send_fields_in_send_ty,
+  clippy::equatable_if_let,
   bad_style,
   clashing_extern_declarations,
   dead_code,
@@ -69,10 +82,10 @@
   while_true,
   missing_docs
 )]
-#![allow(unused_attributes)]
+#![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs, unused)]
+#![allow(missing_docs)]
 
 #[cfg(feature = "parser")]
 #[macro_use]
@@ -90,9 +103,6 @@ mod signatures;
 pub use field::{Field, FieldValue};
 pub use signatures::*;
 pub use types::*;
-
-#[macro_use]
-mod macros;
 
 #[allow(clippy::trivially_copy_pass_by_ref)]
 fn is_false(b: &bool) -> bool {

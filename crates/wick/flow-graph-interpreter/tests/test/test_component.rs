@@ -206,8 +206,8 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
         println!("got echo: waiting for payload");
         while let (Some(Ok(message)), Some(Ok(component))) = (message.next().await, component.next().await) {
           println!("got echo: got compref: {:?}", component.payload());
-          let link: ComponentReference = component.deserialize().unwrap();
-          let message: String = message.deserialize().unwrap();
+          let link: ComponentReference = component.decode().unwrap();
+          let message: String = message.decode().unwrap();
           let packets = packet_stream!(("input", message));
           let mut response = callback(link, "reverse".to_owned(), packets, None, None, &Span::current())
             .await
@@ -227,7 +227,7 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
         println!("got reverse: waiting for payload");
         while let Some(Ok(payload)) = input.next().await {
           println!("got reverse: got payload");
-          let msg: String = payload.deserialize().unwrap();
+          let msg: String = payload.decode().unwrap();
           defer(vec![send(Packet::encode(
             "output",
             &msg.chars().rev().collect::<String>(),
@@ -245,7 +245,7 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
         println!("got uppercase: waiting for payload");
         while let Some(Ok(payload)) = input.next().await {
           println!("got uppercase: got payload");
-          let msg: String = payload.deserialize().unwrap();
+          let msg: String = payload.decode().unwrap();
           defer(vec![send(Packet::encode("output", &msg.to_ascii_uppercase()))]);
         }
         defer(vec![send(Packet::done("output"))]);
@@ -257,8 +257,8 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
       spawn(async move {
         let (mut left, mut right) = fan_out!(payload_stream, "left", "right");
         while let (Some(Ok(left)), Some(Ok(right))) = (left.next().await, right.next().await) {
-          let left: u64 = left.deserialize().unwrap();
-          let right: u64 = right.deserialize().unwrap();
+          let left: u64 = left.decode().unwrap();
+          let right: u64 = right.decode().unwrap();
           defer(vec![send(Packet::encode("output", left + right))]);
         }
         defer(vec![send(Packet::done("output"))]);
@@ -270,8 +270,8 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
       let (mut send, stream) = stream(1);
       let task = async move {
         while let (Some(input), Some(times)) = (input.next().await, times.next().await) {
-          let input: String = input?.deserialize()?;
-          let times: u64 = times?.deserialize()?;
+          let input: String = input?.decode()?;
+          let times: u64 = times?.decode()?;
           let mut messages = Vec::new();
           for _ in 0..times {
             messages.push(send(Packet::encode("output", &input)));
@@ -289,7 +289,7 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
       let (mut send, stream) = stream(1);
       let task = async move {
         while let Some(input) = input.next().await {
-          let input: String = input?.deserialize()?;
+          let input: String = input?.decode()?;
           let vowels: Vec<_> = input
             .chars()
             .filter(|c| matches!(c, 'a' | 'e' | 'i' | 'o' | 'u'))

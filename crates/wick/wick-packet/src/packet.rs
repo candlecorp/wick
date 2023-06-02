@@ -1,6 +1,5 @@
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use tracing::debug;
 use wasmrs::{BoxFlux, Metadata, Payload, PayloadError, RawPayload};
 use wick_interface_types::Type;
 
@@ -37,7 +36,10 @@ impl PartialEq for Packet {
 }
 
 impl Packet {
+  /// The port name that indicates a component-wide fatal error.
   pub const FATAL_ERROR: &str = "<component>";
+
+  /// Create a new packet for the given port with a raw [PacketPayload], wasmRS [Metadata], and [WickMetadata].
   pub fn new_raw(payload: PacketPayload, wasmrs: Metadata, metadata: WickMetadata) -> Self {
     Self {
       payload,
@@ -46,6 +48,7 @@ impl Packet {
     }
   }
 
+  /// Create a new packet for the given port with a raw [PacketPayload] value and given flags.
   pub fn new_for_port(port: impl AsRef<str>, payload: PacketPayload, flags: u8) -> Self {
     let md = Metadata::new(0);
     let wmd = WickMetadata::new(port, flags);
@@ -56,6 +59,7 @@ impl Packet {
     }
   }
 
+  /// Returns `true` if the packet contains data in the payload.
   pub fn has_data(&self) -> bool {
     match &self.payload {
       PacketPayload::Ok(Some(data)) => !data.is_empty(),
@@ -64,42 +68,52 @@ impl Packet {
     }
   }
 
+  /// Create a new fatal error packet for the component.
   pub fn component_error(err: impl AsRef<str>) -> Self {
     Self::new_for_port(Self::FATAL_ERROR, PacketPayload::fatal_error(err), 0)
   }
 
+  /// Create a new success packet for the given port with a raw [RawPayload] value.
   pub fn ok(port: impl AsRef<str>, payload: RawPayload) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(payload.data.map(Into::into)), 0)
   }
 
+  /// Create a new error packet for the given port with a raw [PacketError] value.
   pub fn raw_err(port: impl AsRef<str>, payload: PacketError) -> Self {
     Self::new_for_port(port, PacketPayload::Err(payload), 0)
   }
 
+  /// Create a new error packet for the given port.
   pub fn err(port: impl AsRef<str>, msg: impl AsRef<str>) -> Self {
     Self::new_for_port(port, PacketPayload::Err(PacketError::new(msg)), 0)
   }
 
+  /// Create a new done packet for the given port.
   pub fn done(port: impl AsRef<str>) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(None), DONE_FLAG)
   }
 
+  /// Create a new open bracket packet for the given port.
   pub fn open_bracket(port: impl AsRef<str>) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(None), OPEN_BRACKET)
   }
 
+  /// Create a close bracket packet for the given port.
   pub fn close_bracket(port: impl AsRef<str>) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(None), CLOSE_BRACKET)
   }
 
+  /// Get the context of a [crate::ContextTransport] on this packet.
   pub fn context(&self) -> Option<Base64Bytes> {
     self.extra.context.clone()
   }
 
+  /// Set the content of a [crate::ContextTransport] on this packet.
   pub fn set_context(&mut self, context: Base64Bytes) {
     self.extra.context = Some(context);
   }
 
+  /// Encode a value into a [Packet] for the given port.
   pub fn encode<T: Serialize>(port: impl AsRef<str>, data: T) -> Self {
     match wasmrs_codec::messagepack::serialize(&data) {
       Ok(bytes) => Self::new_for_port(port, PacketPayload::Ok(Some(bytes.into())), 0),
@@ -107,57 +121,68 @@ impl Packet {
     }
   }
 
+  /// Get the flags for this packet.
   pub fn flags(&self) -> u8 {
     self.extra.flags
   }
 
+  /// Get the operation index associated with this packet.
   pub fn index(&self) -> u32 {
     self.metadata.index
   }
 
-  /// Try to deserialize a [Packet] into the target type
-  pub fn deserialize<T: DeserializeOwned>(self) -> Result<T, Error> {
-    self.payload.deserialize()
+  /// Try to deserialize a [Packet] into the target type.
+  pub fn decode<T: DeserializeOwned>(self) -> Result<T, Error> {
+    self.payload.decode()
   }
 
-  /// Try to deserialize a [Packet] into the target type
-  pub fn deserialize_into(self, ty: Type) -> Result<TypeWrapper, Error> {
-    self.payload.deserialize_into(ty)
+  /// Partially decode a [Packet] and wrap it into a [TypeWrapper].
+  pub fn to_type_wrapper(self, ty: Type) -> Result<TypeWrapper, Error> {
+    self.payload.decode_into(ty)
   }
 
-  pub fn deserialize_generic(self) -> Result<serde_json::Value, Error> {
-    self.payload.deserialize()
+  /// Decode a [Packet] into a [serde_json::Value].
+  pub fn decode_value(self) -> Result<serde_json::Value, Error> {
+    self.payload.decode()
   }
 
+  /// Set the port for this packet.
   pub fn set_port(mut self, port: impl AsRef<str>) -> Self {
     self.extra.port = port.as_ref().to_owned();
     self
   }
 
+  /// Get the port for this packet.
   pub fn port(&self) -> &str {
     &self.extra.port
   }
 
+  /// Return `true` if this is a fatal, component wide error packet.
   pub fn is_fatal_error(&self) -> bool {
     self.port() == Self::FATAL_ERROR
   }
 
+  /// Get the inner payload of this packet.
   pub fn payload(&self) -> &PacketPayload {
     &self.payload
   }
 
+  /// Returns true if this packet is a done packet.
   pub fn is_done(&self) -> bool {
     self.extra.is_done()
   }
 
+  /// Returns true if this packet is an open bracket packet.
   pub fn is_open_bracket(&self) -> bool {
     self.extra.is_open_bracket()
   }
 
+  /// Returns true if this packet is a close bracket packet.
   pub fn is_close_bracket(&self) -> bool {
     self.extra.is_close_bracket()
   }
 
+  /// Returns the payload, panicking if it is an error.
   pub fn unwrap_payload(self) -> Option<Base64Bytes> {
     match self.payload {
       PacketPayload::Ok(v) => v,
@@ -165,6 +190,7 @@ impl Packet {
     }
   }
 
+  /// Returns the error, panicking if the packet was a success packet.
   pub fn unwrap_err(self) -> PacketError {
     match self.payload {
       PacketPayload::Err(err) => err,
@@ -172,6 +198,7 @@ impl Packet {
     }
   }
 
+  /// Return a simplified JSON representation of this packet.
   pub fn to_json(&self) -> serde_json::Value {
     if self.flags() > 0 {
       let mut map = serde_json::json!({
@@ -191,23 +218,6 @@ impl Packet {
         "payload": self.payload.to_json(),
       })
     }
-  }
-
-  pub fn from_kv_json(values: &[String]) -> Result<Vec<Packet>, Error> {
-    let mut packets = Vec::new();
-
-    for input in values {
-      match input.split_once('=') {
-        Some((port, value)) => {
-          debug!(port, value, "cli:args:port-data");
-          let val: serde_json::Value =
-            serde_json::from_str(value).map_err(|e| crate::Error::Decode(value.as_bytes().to_vec(), e.to_string()))?;
-          packets.push(Packet::encode(port, val));
-        }
-        None => return Err(Error::Component(format!("Invalid port=value pair: '{}'", input))),
-      }
-    }
-    Ok(packets)
   }
 }
 
@@ -232,15 +242,8 @@ impl PacketPayload {
     Self::Err(PacketError::new(err))
   }
 
-  pub fn serialize<T: Serialize>(data: T) -> Self {
-    match wasmrs_codec::messagepack::serialize(&data) {
-      Ok(bytes) => Self::Ok(Some(bytes.into())),
-      Err(err) => Self::Err(PacketError::new(err.to_string())),
-    }
-  }
-
   /// Try to deserialize a [Packet] into the target type
-  pub fn deserialize<T: DeserializeOwned>(self) -> Result<T, Error> {
+  pub fn decode<T: DeserializeOwned>(self) -> Result<T, Error> {
     match self {
       PacketPayload::Ok(Some(bytes)) => match wasmrs_codec::messagepack::deserialize(&bytes) {
         Ok(data) => Ok(data),
@@ -252,35 +255,35 @@ impl PacketPayload {
   }
 
   /// Try to deserialize a [Packet] into the target type
-  pub fn deserialize_into(self, sig: Type) -> Result<TypeWrapper, Error> {
+  pub fn decode_into(self, sig: Type) -> Result<TypeWrapper, Error> {
     let val = match sig {
-      Type::I8 => TypeWrapper::new(sig, self.deserialize::<i8>()?.into()),
-      Type::I16 => TypeWrapper::new(sig, self.deserialize::<i16>()?.into()),
-      Type::I32 => TypeWrapper::new(sig, self.deserialize::<i32>()?.into()),
-      Type::I64 => TypeWrapper::new(sig, self.deserialize::<i64>()?.into()),
-      Type::U8 => TypeWrapper::new(sig, self.deserialize::<u8>()?.into()),
-      Type::U16 => TypeWrapper::new(sig, self.deserialize::<u16>()?.into()),
-      Type::U32 => TypeWrapper::new(sig, self.deserialize::<u32>()?.into()),
-      Type::U64 => TypeWrapper::new(sig, self.deserialize::<u64>()?.into()),
-      Type::F32 => TypeWrapper::new(sig, self.deserialize::<f32>()?.into()),
-      Type::F64 => TypeWrapper::new(sig, self.deserialize::<f64>()?.into()),
-      Type::Bool => TypeWrapper::new(sig, self.deserialize::<bool>()?.into()),
-      Type::String => TypeWrapper::new(sig, self.deserialize::<String>()?.into()),
-      Type::Datetime => TypeWrapper::new(sig, self.deserialize::<String>()?.into()),
-      Type::Bytes => TypeWrapper::new(sig, self.deserialize::<Vec<u8>>()?.into()),
-      Type::Custom(_) => TypeWrapper::new(sig, self.deserialize::<serde_json::Value>()?),
-      Type::Ref { .. } => unimplemented!(),
-      Type::List { .. } => TypeWrapper::new(sig, self.deserialize::<Vec<serde_json::Value>>()?.into()),
-      Type::Optional { .. } => TypeWrapper::new(sig, self.deserialize::<Option<serde_json::Value>>()?.into()),
+      Type::I8 => TypeWrapper::new(sig, self.decode::<i8>()?.into()),
+      Type::I16 => TypeWrapper::new(sig, self.decode::<i16>()?.into()),
+      Type::I32 => TypeWrapper::new(sig, self.decode::<i32>()?.into()),
+      Type::I64 => TypeWrapper::new(sig, self.decode::<i64>()?.into()),
+      Type::U8 => TypeWrapper::new(sig, self.decode::<u8>()?.into()),
+      Type::U16 => TypeWrapper::new(sig, self.decode::<u16>()?.into()),
+      Type::U32 => TypeWrapper::new(sig, self.decode::<u32>()?.into()),
+      Type::U64 => TypeWrapper::new(sig, self.decode::<u64>()?.into()),
+      Type::F32 => TypeWrapper::new(sig, self.decode::<f32>()?.into()),
+      Type::F64 => TypeWrapper::new(sig, self.decode::<f64>()?.into()),
+      Type::Bool => TypeWrapper::new(sig, self.decode::<bool>()?.into()),
+      Type::String => TypeWrapper::new(sig, self.decode::<String>()?.into()),
+      Type::Datetime => TypeWrapper::new(sig, self.decode::<String>()?.into()),
+      Type::Bytes => TypeWrapper::new(sig, self.decode::<Vec<u8>>()?.into()),
+      Type::Named(_) => TypeWrapper::new(sig, self.decode::<serde_json::Value>()?),
+      Type::List { .. } => TypeWrapper::new(sig, self.decode::<Vec<serde_json::Value>>()?.into()),
+      Type::Optional { .. } => TypeWrapper::new(sig, self.decode::<Option<serde_json::Value>>()?.into()),
       Type::Map { .. } => TypeWrapper::new(
         sig,
-        serde_json::Value::Object(self.deserialize::<serde_json::Map<String, serde_json::Value>>()?),
+        serde_json::Value::Object(self.decode::<serde_json::Map<String, serde_json::Value>>()?),
       ),
+      #[allow(deprecated)]
       Type::Link { .. } => TypeWrapper::new(
         sig,
-        serde_json::Value::String(self.deserialize::<ComponentReference>()?.to_string()),
+        serde_json::Value::String(self.decode::<ComponentReference>()?.to_string()),
       ),
-      Type::Object => TypeWrapper::new(sig, self.deserialize::<serde_json::Value>()?),
+      Type::Object => TypeWrapper::new(sig, self.decode::<serde_json::Value>()?),
       Type::AnonymousStruct(_) => unimplemented!(),
     };
     Ok(val)
@@ -449,7 +452,7 @@ mod test {
   #[test]
   fn test_basic() -> Result<()> {
     let packet = Packet::encode("test", 10);
-    let res: i32 = packet.deserialize()?;
+    let res: i32 = packet.decode()?;
     assert_eq!(res, 10);
     Ok(())
   }
@@ -466,7 +469,7 @@ mod test {
   {
     let packet = Packet::encode("test", value);
     println!("{:?}", packet);
-    let res = packet.deserialize_generic()?;
+    let res = packet.decode_value()?;
     assert_eq!(res, expected);
     Ok(())
   }
@@ -476,7 +479,7 @@ mod test {
   fn test_from_b64(#[case] value: &str, #[case] expected: &[u8]) -> Result<()> {
     let packet = Packet::encode("test", value);
     println!("{:?}", packet);
-    let res = packet.deserialize_generic()?;
+    let res = packet.decode_value()?;
     let bytes: Base64Bytes = serde_json::from_value(res).unwrap();
     assert_eq!(bytes, expected);
     Ok(())

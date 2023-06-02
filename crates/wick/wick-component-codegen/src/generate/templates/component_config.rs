@@ -88,7 +88,7 @@ pub(crate) fn component_config(config: &mut config::Config, fields: Option<Vec<F
       fn root_config(&self) -> &'static#config_id;
     }
 
-    impl<T> RootConfigContext for wick_component::flow_component::Context<T> where T:std::fmt::Debug + wick_component::flow_component::LocalAwareSend {
+    impl<T> RootConfigContext for Context<T> where T:std::fmt::Debug + wick_component::flow_component::LocalAwareSend {
       fn root_config(&self) -> &'static#config_id {
         #[cfg(target_family = "wasm")]
         {get_root_config()}

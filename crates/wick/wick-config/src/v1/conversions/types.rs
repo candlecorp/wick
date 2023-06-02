@@ -157,7 +157,7 @@ impl TryFrom<v1::TypeSignature> for wick::Type {
       },
       v1::TypeSignature::Datetime(_) => TS::Datetime,
       v1::TypeSignature::Bytes(_) => TS::Bytes,
-      v1::TypeSignature::Custom(v) => TS::Custom(v.name),
+      v1::TypeSignature::Custom(v) => TS::Named(v.name),
       v1::TypeSignature::List(t) => TS::List {
         ty: Box::new((*t.ty).try_into()?),
       },
@@ -194,7 +194,7 @@ impl TryFrom<wick::Type> for v1::TypeSignature {
       }),
       wick::Type::Datetime => TS::Datetime(v1::Datetime {}),
       wick::Type::Bytes => TS::Bytes(v1::Bytes {}),
-      wick::Type::Custom(v) => TS::Custom(v1::Custom { name: v }),
+      wick::Type::Named(v) => TS::Custom(v1::Custom { name: v }),
       wick::Type::List { ty } => TS::List(v1::List {
         ty: Box::new((*ty).try_into()?),
       }),
@@ -202,9 +202,9 @@ impl TryFrom<wick::Type> for v1::TypeSignature {
         key: Box::new((*key).try_into()?),
         value: Box::new((*value).try_into()?),
       }),
+      #[allow(deprecated)]
       wick::Type::Link { .. } => unimplemented!(),
       wick::Type::Object => TS::Object(v1::Object {}),
-      wick::Type::Ref { .. } => unimplemented!(),
       wick::Type::AnonymousStruct(_) => unimplemented!(),
     };
     Ok(v)

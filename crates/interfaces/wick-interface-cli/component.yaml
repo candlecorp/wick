@@ -5,10 +5,15 @@ kind: wick/types@v1
 types:
   - name: Interactive
     kind: wick/type/struct@v1
+    description: >
+      A struct that describes if any parts of STDIO are interactive
     fields:
       - name: stdin
         type: bool
+        description: Is STDIN interactive?
       - name: stdout
         type: bool
+        description: Is STDOUT interactive?
       - name: stderr
         type: bool
+        description: Is STDERR interactive?

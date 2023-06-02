@@ -235,7 +235,7 @@ async fn exec(
   for arg in def.arguments() {
     let (ty, packet) = args.iter().find(|(_, p)| p.port() == arg).cloned().unwrap();
     let wrapper = match packet
-      .deserialize_into(ty.clone())
+      .to_type_wrapper(ty.clone())
       .map_err(|e| Error::Prepare(e.to_string()))
     {
       Ok(type_wrapper) => SqlWrapper(type_wrapper),

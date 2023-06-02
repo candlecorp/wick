@@ -74,7 +74,7 @@ mod tests {
     let args = to_vec(&["--input-a", "123"]);
     let packets = parse_args(&args)?;
     assert_eq!(packets[0], Packet::encode("input-a", 123));
-    assert_eq!(packets[0].clone().deserialize::<i32>().unwrap(), 123);
+    assert_eq!(packets[0].clone().decode::<i32>().unwrap(), 123);
     Ok(())
   }
 

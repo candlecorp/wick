@@ -92,7 +92,7 @@ pub(crate) async fn handle(
     //   utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
     // }
   } else {
-    let data = Packet::from_kv_json(&opts.data)?;
+    let data = crate::utils::packet_from_kv_json(&opts.data)?;
 
     let args = parse_args(&opts.args)?;
     let (tx, stream) = PacketStream::new_channels();

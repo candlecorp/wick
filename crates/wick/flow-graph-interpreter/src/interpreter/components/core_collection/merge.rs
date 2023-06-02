@@ -29,7 +29,7 @@ fn gen_signature(id: String, config: Config) -> (OperationSignature, StructDefin
     signature = signature.add_input(field.name, field.ty);
   }
 
-  signature = signature.add_output("output", Type::Ref { reference: id });
+  signature = signature.add_output("output", Type::Named(id));
 
   (signature, output_signature)
 }
@@ -62,7 +62,7 @@ impl Operation for Op {
         let output = if next.values().all(|p| p.has_data()) {
           next
             .into_iter()
-            .map(|(k, v)| Ok((k, v.deserialize_generic()?)))
+            .map(|(k, v)| Ok((k, v.decode_value()?)))
             .collect::<Result<HashMap<_, _>, wick_packet::Error>>()
             .map(|map| Packet::encode("output", map))
         } else {
@@ -120,7 +120,7 @@ mod test {
     println!("{:?}", packets);
     let _ = packets.pop().unwrap()?;
     let packet = packets.pop().unwrap()?;
-    let actual = packet.deserialize_generic()?;
+    let actual = packet.decode_value()?;
     let expected = json!({"input_a":"hello", "input_b": 1000});
     assert_eq!(actual, expected);
 

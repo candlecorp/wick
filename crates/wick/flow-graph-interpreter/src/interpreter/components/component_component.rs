@@ -23,6 +23,7 @@ impl ComponentComponent {
     for ns in list.inner().keys() {
       trace!(id = ns, "interpreter:registering component on 'component' ns");
       let mut comp_sig = OperationSignature::new(ns.clone());
+      #[allow(deprecated)]
       comp_sig
         .outputs
         .push(Field::new("ref", wick_interface_types::Type::Link { schemas: vec![] }));

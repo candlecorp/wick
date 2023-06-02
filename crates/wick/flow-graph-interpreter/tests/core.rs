@@ -60,7 +60,7 @@ async fn test_merge() -> Result<()> {
 
   let _ = outputs.pop();
   let wrapper = outputs.pop().unwrap().unwrap();
-  let actual = wrapper.deserialize_generic()?;
+  let actual = wrapper.decode_value()?;
   let expected = json!({"a": "first_value", "b": 2, "c": ["alpha", "beta"]});
   assert_eq!(actual, expected);
   interpreter.shutdown().await?;
@@ -78,7 +78,7 @@ async fn test_sender_merge() -> Result<()> {
 
   let _ = outputs.pop();
   let wrapper = outputs.pop().unwrap().unwrap();
-  let actual = wrapper.deserialize_generic()?;
+  let actual = wrapper.decode_value()?;
   let expected = json!({"a": true, "b": "Hello world", "c": 123456});
   assert_eq!(actual, expected);
   interpreter.shutdown().await?;
@@ -176,7 +176,7 @@ async fn first_packet_test(file: &str, packets: Vec<Packet>, expected: &str) -> 
 
   let _ = outputs.pop();
   let wrapper = outputs.pop().unwrap().unwrap();
-  let actual: String = wrapper.deserialize()?;
+  let actual: String = wrapper.decode()?;
   assert_eq!(actual, expected);
   interpreter.shutdown().await?;
 

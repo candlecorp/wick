@@ -88,7 +88,7 @@ mod tests {
 
     println!("doc_id: {:?}", actual);
     assert_eq!(actual, Packet::encode("MAIN_OUT", data));
-    Ok(actual.payload.deserialize().unwrap())
+    Ok(actual.payload.decode().unwrap())
   }
 
   #[test_logger::test(tokio::test)]

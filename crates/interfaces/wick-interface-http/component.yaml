@@ -11,126 +11,190 @@ package:
 types:
   - name: HttpMethod
     kind: wick/type/enum@v1
+    description: HTTP method enum
     variants:
       - name: GET
+        description: HTTP GET method
       - name: POST
+        description: HTTP POST method
       - name: PUT
+        description: HTTP PUT method
       - name: DELETE
+        description: HTTP DELETE method
       - name: PATCH
+        description: HTTP PATCH method
       - name: HEAD
+        description: HTTP HEAD method
       - name: OPTIONS
+        description: HTTP OPTIONS method
       - name: TRACE
+        description: HTTP TRACE method
   - name: HttpScheme
     kind: wick/type/enum@v1
+    description: HTTP scheme
     variants:
       - name: HTTP
+        description: HTTP scheme
       - name: HTTPS
+        description: HTTPS scheme
   - name: HttpVersion
     kind: wick/type/enum@v1
+    description: HTTP version
     variants:
       - name: HTTP_1_0
         value: '1.0'
+        description: HTTP 1.0 version
       - name: HTTP_1_1
         value: '1.1'
+        description: HTTP 1.1 version
       - name: HTTP_2_0
         value: '2.0'
+        description: HTTP 2.0 version
   - name: StatusCode
     kind: wick/type/enum@v1
+    description: HTTP status code
     variants:
       - name: Continue
         value: '100'
+        description: Continue status code
       - name: SwitchingProtocols
         value: '101'
+        description: SwitchingProtocols status code
       - name: OK
         value: '200'
+        description: HTTP OK status code
       - name: Created
         value: '201'
+        description: Created status code
       - name: Accepted
         value: '202'
+        description: Accepted status code
       - name: NonAuthoritativeInformation
         value: '203'
+        description: NonAuthoritativeInformation status code
       - name: NoContent
         value: '204'
+        description: NoContent status code
       - name: ResetContent
         value: '205'
+        description: ResetContent status code
       - name: PartialContent
         value: '206'
+        description: PartialContent status code
       - name: MultipleChoices
         value: '300'
+        description: MultipleChoices status code
       - name: MovedPermanently
         value: '301'
+        description: MovedPermanently status code
       - name: Found
         value: '302'
+        description: Found status code
       - name: SeeOther
         value: '303'
+        description: SeeOther status code
       - name: NotModified
         value: '304'
+        description: NotModified status code
       - name: TemporaryRedirect
         value: '307'
+        description: TemporaryRedirect status code
       - name: PermanentRedirect
         value: '308'
+        description: PermanentRedirect status code
       - name: BadRequest
         value: '400'
+        description: BadRequest status code
       - name: Unauthorized
         value: '401'
+        description: Unauthorized status code
       - name: PaymentRequired
         value: '402'
+        description: PaymentRequired status code
       - name: Forbidden
         value: '403'
+        description: Forbidden status code
       - name: NotFound
         value: '404'
+        description: NotFound status code
       - name: MethodNotAllowed
         value: '405'
+        description: MethodNotAllowed status code
       - name: NotAcceptable
         value: '406'
+        description: NotAcceptable status code
       - name: ProxyAuthenticationRequired
         value: '407'
+        description: ProxyAuthenticationRequired status code
       - name: RequestTimeout
         value: '408'
+        description: RequestTimeout status code
       - name: Conflict
         value: '409'
+        description: Conflict status code
       - name: Gone
         value: '410'
+        description: Gone status code
       - name: LengthRequired
         value: '411'
+        description: LengthRequired status code
       - name: PreconditionFailed
         value: '412'
+        description: PreconditionFailed status code
       - name: PayloadTooLarge
         value: '413'
+        description: PayloadTooLarge status code
       - name: URITooLong
         value: '414'
+        description: URITooLong status code
       - name: UnsupportedMediaType
         value: '415'
+        description: UnsupportedMediaType status code
       - name: RangeNotSatisfiable
         value: '416'
+        description: RangeNotSatisfiable status code
       - name: ExpectationFailed
         value: '417'
+        description: ExpectationFailed status code
       - name: ImATeapot
         value: '418'
+        description: ImATeapot status code
       - name: UnprocessableEntity
         value: '422'
+        description: UnprocessableEntity status code
       - name: Locked
         value: '423'
+        description: Locked status code
       - name: FailedDependency
         value: '424'
+        description: FailedDependency status code
       - name: TooManyRequests
         value: '429'
+        description: TooManyRequests status code
       - name: InternalServerError
         value: '500'
+        description: InternalServerError status code
       - name: NotImplemented
         value: '501'
+        description: NotImplemented status code
       - name: BadGateway
         value: '502'
+        description: BadGateway status code
       - name: ServiceUnavailable
         value: '503'
+        description: ServiceUnavailable status code
       - name: GatewayTimeout
         value: '504'
+        description: GatewayTimeout status code
       - name: HTTPVersionNotSupported
         value: '505'
+        description: HTTPVersionNotSupported status code
       - name: Unknown
         value: '-1'
+        description: Indicates an unknown status code
   - name: HttpResponse
     kind: wick/type/struct@v1
+    description: HTTP response
     fields:
       - name: version
         type: HttpVersion
@@ -143,6 +207,7 @@ types:
         description: All response headers. Supports duplicates.
   - name: HttpRequest
     kind: wick/type/struct@v1
+    description: HTTP request
     fields:
       - name: method
         type: HttpMethod

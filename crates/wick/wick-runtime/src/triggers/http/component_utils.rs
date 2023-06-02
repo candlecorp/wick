@@ -109,13 +109,13 @@ pub(super) async fn handle_request_middleware(
 
   if packet.port() == "response" {
     let response: wick_http::HttpResponse = packet
-      .deserialize()
+      .decode()
       .map_err(|e| HttpError::InvalidPreRequestResponse(e.to_string()))?;
 
     Ok(Some(Either::Response(response)))
   } else if packet.port() == "request" {
     let request: wick_http::HttpRequest = packet
-      .deserialize()
+      .decode()
       .map_err(|e| HttpError::InvalidPreRequestResponse(e.to_string()))?;
 
     Ok(Some(Either::Request(request)))
@@ -155,7 +155,7 @@ pub(super) async fn handle_response_middleware(
 
   if packet.port() == "response" {
     let response: wick_http::HttpResponse = packet
-      .deserialize()
+      .decode()
       .map_err(|e| HttpError::InvalidPostRequestResponse(e.to_string()))?;
 
     Ok(Some(response))
@@ -187,7 +187,7 @@ pub(super) async fn respond(
             continue;
           }
           let response: wick_interface_http::types::HttpResponse = p
-            .deserialize()
+            .decode()
             .map_err(|e| HttpError::Deserialize("response".to_owned(), e.to_string()))?;
           builder = convert_response(builder, response)?;
         } else if p.port() == "body" {
@@ -195,12 +195,12 @@ pub(super) async fn respond(
             continue;
           }
           if codec == Codec::Json {
-            let response: Value = p.deserialize().map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
+            let response: Value = p.decode().map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
             let as_str = response.to_string();
             let bytes = as_str.as_bytes();
             body.extend_from_slice(bytes);
           } else {
-            let response: Bytes = p.deserialize().map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
+            let response: Bytes = p.decode().map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
             body.extend_from_slice(&response);
           }
         }
@@ -245,13 +245,13 @@ pub(super) async fn stream_to_json(stream: PacketStream) -> Result<Value, HttpEr
           let val = match val {
             MapVal::RawVal(v) => {
               let response: Value = p
-                .deserialize_generic()
+                .decode_value()
                 .map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
               MapVal::RootArray(vec![v, response])
             }
             MapVal::RootArray(mut v) => {
               let response: Value = p
-                .deserialize_generic()
+                .decode_value()
                 .map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
               v.push(response);
               MapVal::RootArray(v)
@@ -260,7 +260,7 @@ pub(super) async fn stream_to_json(stream: PacketStream) -> Result<Value, HttpEr
           map.insert(port, val);
         } else {
           let response: Value = p
-            .deserialize_generic()
+            .decode_value()
             .map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
           map.insert(port, MapVal::RawVal(response));
         }

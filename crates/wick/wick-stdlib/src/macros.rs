@@ -14,7 +14,7 @@ macro_rules! request_response {
           let ($($ikey),*) = ($($ikey.next().await),*);
           #[allow(unused_parens)]
           if let ($(Some(Ok($ikey))),*) = ($($ikey),*) {
-            $(let $ikey = match $ikey.deserialize::<$ity>(){Ok(v)=>v,Err(e)=>break Some(e)};)*
+            $(let $ikey = match $ikey.decode::<$ity>(){Ok(v)=>v,Err(e)=>break Some(e)};)*
             let output = match $handler($($ikey,)*) { Ok(o)=>o, Err(e)=> break(Some(e))};
             tx.send(Packet::encode($okey, output))?;
           } else {

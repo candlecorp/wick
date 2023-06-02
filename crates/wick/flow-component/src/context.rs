@@ -5,8 +5,10 @@ use serde::Serialize;
 use wick_packet::{ContextTransport, InherentData};
 
 #[cfg(target_family = "wasm")]
+/// A conditional trait that implements Send if the target is not wasm.
 pub trait LocalAwareSend {}
 #[cfg(not(target_family = "wasm"))]
+/// A conditional trait that implements Send if the target is not wasm.
 pub trait LocalAwareSend: Send {}
 
 #[cfg(target_family = "wasm")]
@@ -16,14 +18,18 @@ impl<T> LocalAwareSend for T {}
 impl<T> LocalAwareSend for T where T: Send {}
 
 #[derive(Clone)]
+/// A context that is passed to a component's operations.
 pub struct Context<T>
 where
   T: std::fmt::Debug,
   T: LocalAwareSend,
 {
+  /// Operation-specific configuration.
   pub config: Arc<T>,
+  /// Inherent data passed to the operation.
   pub inherent: Option<InherentData>,
   #[cfg(feature = "invocation")]
+  /// A callback to invoke other components within the executing runtime.
   pub callback: Arc<crate::RuntimeCallback>,
 }
 
@@ -58,6 +64,7 @@ where
   T: LocalAwareSend,
 {
   #[cfg(feature = "invocation")]
+  /// Create a new context.
   pub fn new(config: T, inherent: Option<InherentData>, callback: Arc<crate::RuntimeCallback>) -> Self {
     Self {
       inherent,
@@ -67,15 +74,11 @@ where
   }
 
   #[cfg(not(feature = "invocation"))]
+  /// Create a new context.
   pub fn new(config: T, inherent: Option<InherentData>) -> Self {
     Self {
       inherent,
       config: Arc::new(config),
     }
   }
-}
-
-pub trait ProviderContext {
-  type Provided;
-  fn provided(&self) -> Self::Provided;
 }

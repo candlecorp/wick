@@ -77,7 +77,7 @@ impl Cli {
         match packet {
           Ok(p) => {
             if p.port() == "code" && p.has_data() {
-              let code: u32 = p.deserialize().unwrap();
+              let code: u32 = p.decode().unwrap();
               break StructuredOutput::new(format!("Exit code: {}", code), json!({ "code": code }));
             }
           }

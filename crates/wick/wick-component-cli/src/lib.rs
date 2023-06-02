@@ -82,12 +82,7 @@
   while_true,
   missing_docs
 )]
-#![allow(
-  unused_attributes,
-  clippy::derive_partial_eq_without_eq,
-  clippy::box_default,
-  missing_copy_implementations
-)]
+#![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
 #![allow()]

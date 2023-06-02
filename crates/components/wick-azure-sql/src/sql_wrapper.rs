@@ -28,11 +28,11 @@ impl<'a> IntoSql<'a> for SqlWrapper {
       wick_interface_types::Type::String => v.as_str().unwrap().to_owned().into_sql(),
       wick_interface_types::Type::Datetime => parse_date(v.as_str().unwrap()).into_sql(),
       wick_interface_types::Type::Bytes => unimplemented!("Bytes are not supported yet."),
-      wick_interface_types::Type::Custom(_) => unimplemented!("Custom types are not supported yet."),
-      wick_interface_types::Type::Ref { .. } => unimplemented!("References are not supported yet."),
+      wick_interface_types::Type::Named(_) => unimplemented!("Custom types are not supported yet."),
       wick_interface_types::Type::List { .. } => unimplemented!("Lists are not supported yet."),
       wick_interface_types::Type::Optional { .. } => unimplemented!("Optional values are not supported yet."),
       wick_interface_types::Type::Map { .. } => unimplemented!("Maps are not supported yet."),
+      #[allow(deprecated)]
       wick_interface_types::Type::Link { .. } => unimplemented!("Links are not supported yet."),
       wick_interface_types::Type::Object => unimplemented!("Objects are not supported yet."),
       wick_interface_types::Type::AnonymousStruct(_) => {

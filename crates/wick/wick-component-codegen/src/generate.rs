@@ -72,7 +72,9 @@ fn gen_trait_fns<'a>(
     let op_config = templates::op_config(config, &generic_config_id(), op);
     let op_output = templates::op_outputs(config, op);
     let trait_sig = templates::trait_signature(config, op);
+    let desc = format!("Types associated with the `{}` operation", op.name());
     quote! {
+      #[doc = #desc]
       pub mod #op_name {
         use super::*;
         #op_config
@@ -132,6 +134,7 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
   let components = f::gen_if(gen_config.components, || {}, {
     quote! {
       #[derive(Default, Clone)]
+      #[doc = "The struct that the component implementation hinges around"]
       pub struct #component_name;
       impl #component_name {
         #( #wrapper_fns )*
@@ -149,6 +152,7 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
 
     #root_config
 
+    #[doc = "Additional generated types"]
     #typedefs
     #( #trait_defs )*
     #components

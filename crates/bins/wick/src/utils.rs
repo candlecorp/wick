@@ -4,7 +4,7 @@ use futures::StreamExt;
 use serde_json::Value;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::config::{AssetReference, ComponentConfiguration, HttpConfigBuilder};
-use wick_packet::{GenericConfig, PacketStream};
+use wick_packet::{GenericConfig, Packet, PacketStream};
 
 pub(crate) fn merge_config(
   def: &ComponentConfiguration,
@@ -105,4 +105,20 @@ pub(crate) fn parse_config_string(source: Option<&str>) -> anyhow::Result<Option
     None => None,
   };
   Ok(component_config)
+}
+
+pub(crate) fn packet_from_kv_json(values: &[String]) -> anyhow::Result<Vec<Packet>> {
+  let mut packets = Vec::new();
+
+  for input in values {
+    match input.split_once('=') {
+      Some((port, value)) => {
+        debug!(port, value, "cli:args:port-data");
+        let val: Value = serde_json::from_str(value).map_err(|e| anyhow!("Could not parse JSON into a packet: {e}"))?;
+        packets.push(Packet::encode(port, val));
+      }
+      None => bail!("Invalid port=value pair: '{input}'"),
+    }
+  }
+  Ok(packets)
 }

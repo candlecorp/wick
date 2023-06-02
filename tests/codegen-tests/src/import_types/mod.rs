@@ -59,10 +59,30 @@ pub(crate) fn get_root_config() -> &'static RootConfig {
     &unsafe { &*cell.get() }.as_ref().unwrap().config
   })
 }
+pub(crate) trait RootConfigContext {
+  fn root_config(&self) -> &'static RootConfig;
+}
+impl<T> RootConfigContext for Context<T>
+where
+  T: std::fmt::Debug + wick_component::flow_component::LocalAwareSend,
+{
+  fn root_config(&self) -> &'static RootConfig {
+    #[cfg(target_family = "wasm")]
+    {
+      get_root_config()
+    }
+    #[cfg(not(target_family = "wasm"))]
+    {
+      unimplemented!("root_config is only available in wasm builds")
+    }
+  }
+}
+#[doc = "Additional generated types"]
 pub mod types {
   #[allow(unused)]
   use super::types;
   #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
+  #[doc = "hey"]
   pub struct LocalStruct {
     pub field1: String,
     pub inner: types::LocalStructInner,
@@ -77,9 +97,13 @@ pub mod types {
     use super::aaa;
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     pub struct HttpResponse {
+      #[doc = "HTTP version enum"]
       pub version: HttpVersion,
+      #[doc = "status code enum"]
       pub status: StatusCode,
+      #[doc = "All response headers. Supports duplicates."]
       pub headers: std::collections::HashMap<String, Vec<String>>,
+      #[doc = "Response body in bytes. optional."]
       pub body: bytes::Bytes,
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
@@ -90,6 +114,7 @@ pub mod types {
     }
     impl HttpVersion {
       #[allow(unused)]
+      #[doc = "Returns the value of the enum variant as a string."]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -137,6 +162,7 @@ pub mod types {
     }
     impl StatusCode {
       #[allow(unused)]
+      #[doc = "Returns the value of the enum variant as a string."]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -180,9 +206,13 @@ pub mod types {
     use super::zzz;
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     pub struct HttpResponse {
+      #[doc = "HTTP version enum"]
       pub version: HttpVersion,
+      #[doc = "status code enum"]
       pub status: StatusCode,
+      #[doc = "All response headers. Supports duplicates."]
       pub headers: std::collections::HashMap<String, Vec<String>>,
+      #[doc = "Response body in bytes. optional."]
       pub body: bytes::Bytes,
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
@@ -193,6 +223,7 @@ pub mod types {
     }
     impl HttpVersion {
       #[allow(unused)]
+      #[doc = "Returns the value of the enum variant as a string."]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -240,6 +271,7 @@ pub mod types {
     }
     impl StatusCode {
       #[allow(unused)]
+      #[doc = "Returns the value of the enum variant as a string."]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -283,9 +315,13 @@ pub mod types {
     use super::http;
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     pub struct HttpResponse {
+      #[doc = "HTTP version enum"]
       pub version: HttpVersion,
+      #[doc = "status code enum"]
       pub status: StatusCode,
+      #[doc = "All response headers. Supports duplicates."]
       pub headers: std::collections::HashMap<String, Vec<String>>,
+      #[doc = "Response body in bytes. optional."]
       pub body: bytes::Bytes,
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
@@ -296,6 +332,7 @@ pub mod types {
     }
     impl HttpVersion {
       #[allow(unused)]
+      #[doc = "Returns the value of the enum variant as a string."]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -343,6 +380,7 @@ pub mod types {
     }
     impl StatusCode {
       #[allow(unused)]
+      #[doc = "Returns the value of the enum variant as a string."]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -382,6 +420,7 @@ pub mod types {
     }
   }
 }
+#[doc = "Types associated with the `testop` operation"]
 pub mod testop {
   use super::*;
   #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
@@ -440,6 +479,7 @@ pub trait TestopOperation {
   ) -> std::result::Result<(), Self::Error>;
 }
 #[derive(Default, Clone)]
+#[doc = "The struct that the component implementation hinges around"]
 pub struct Component;
 impl Component {
   fn testop_wrapper(

@@ -7,9 +7,9 @@ async fn test_streammap() -> Result<()> {
   let mut map = StreamMap::from_stream(stream, ["a".to_owned(), "b".to_owned(), "c".to_owned()]);
   let mut set = map.next_set().await.unwrap().unwrap();
   assert_eq!(set.len(), 3);
-  assert_eq!(set.remove("a").unwrap().payload.deserialize::<i32>().unwrap(), 1);
-  assert_eq!(set.remove("b").unwrap().payload.deserialize::<i32>().unwrap(), 2);
-  assert_eq!(set.remove("c").unwrap().payload.deserialize::<i32>().unwrap(), 3);
+  assert_eq!(set.remove("a").unwrap().payload.decode::<i32>().unwrap(), 1);
+  assert_eq!(set.remove("b").unwrap().payload.decode::<i32>().unwrap(), 2);
+  assert_eq!(set.remove("c").unwrap().payload.decode::<i32>().unwrap(), 3);
 
   Ok(())
 }

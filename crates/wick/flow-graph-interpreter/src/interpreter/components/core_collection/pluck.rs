@@ -71,7 +71,7 @@ impl Operation for Op {
           let field = context.config.field.clone();
           next.and_then(move |packet| {
             if packet.has_data() {
-              let obj = packet.deserialize_generic()?;
+              let obj = packet.decode_value()?;
               let value = pluck(&obj, &field).map_or_else(
                 || Packet::err("output", format!("could not pluck field {}: not found", field)),
                 |value| Packet::encode("output", value),
@@ -138,7 +138,7 @@ mod test {
     println!("{:?}", packets);
     let _ = packets.pop().unwrap()?;
     let packet = packets.pop().unwrap()?;
-    assert_eq!(packet.deserialize::<String>()?, "hello");
+    assert_eq!(packet.decode::<String>()?, "hello");
 
     Ok(())
   }

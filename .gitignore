@@ -9,12 +9,16 @@ DEV.env
 # node/js
 node_modules
 
+# hugo
+.hugo_build.lock
+
 # general wick/wasm
 /build
 .wick/
 crates/wick-rpc/src/generated/wick.rs
 crates/**/src/generated/mod.rs
 /crates/integration/*/build
+
 
 # misc
 archive
