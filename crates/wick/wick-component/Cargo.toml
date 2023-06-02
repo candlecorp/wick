@@ -30,4 +30,4 @@ serde_json = { workspace = true }
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 serde = { workspace = true }
-anyhow = { version = "1" }
+anyhow = { workspace = true }

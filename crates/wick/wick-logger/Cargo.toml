@@ -25,4 +25,3 @@ thiserror = { workspace = true }
 tracing-opentelemetry = { workspace = true }
 opentelemetry = { workspace = true, features = ["rt-tokio"] }
 opentelemetry-otlp = { workspace = true, features = ["tokio"] }
-tokio-stream = { workspace = true }

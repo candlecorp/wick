@@ -28,7 +28,6 @@ once_cell = { workspace = true }
 parking_lot = { workspace = true }
 uuid = { workspace = true }
 futures = { workspace = true }
-option-utils = { workspace = true }
 derive_builder = { workspace = true }
 
 [dev-dependencies]
