@@ -1,0 +1,18 @@
+version: '3'
+services:
+  hugo:
+    image: klakegg/hugo:0.81.0-alpine
+    volumes:
+      - .:/hugo/themes/hugo-theme-techdoc
+    ports:
+      - 1313:1313
+    working_dir: /hugo/themes/hugo-theme-techdoc/exampleSite
+    command: "server --bind 0.0.0.0 -wD --ignoreCache --themesDir ../.. --minify"
+
+  node:
+    image: node:lts
+    volumes:
+      - .:/hugo/themes/hugo-theme-techdoc
+    working_dir: /hugo/themes/hugo-theme-techdoc
+    environment:
+      SHELL: /bin/bash

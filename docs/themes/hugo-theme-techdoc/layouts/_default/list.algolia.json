@@ -1,0 +1,48 @@
+{{/* Generates a valid Algolia search index */}}
+{{- $section := $.Site.GetPage "section" .Section }}
+{{- $validVars := $.Param "algolia.vars" | default slice -}}
+{{- $validParams := $.Param "algolia.params" | default slice -}}
+
+{{- range $i, $page := .Site.AllPages -}}
+  {{- $dot := . -}}
+  {{- if or (and ($page.IsDescendant $section) (and (not $page.Draft) (not $page.Params.private))) $section.IsHome -}}
+    {{ if $page.File }}
+      {{- .Scratch.SetInMap $page.File.Path "objectID" $page.File.UniqueID -}}
+    {{- end -}}
+
+    {{- .Scratch.SetInMap "temp" "date" $page.Date.UTC.Unix -}}
+    {{ if ne ( $page.PublishDate.Format "2006-01-02" ) "0001-01-01" }}
+      {{- .Scratch.SetInMap "temp" "publishdate" $page.PublishDate -}}
+    {{- end -}}
+    {{ if ne ( $page.Lastmod.Format "2006-01-02" ) "0001-01-01" }}
+      {{- .Scratch.SetInMap "temp" "lastmod" $page.Lastmod -}}
+    {{- end -}}
+    {{- .Scratch.SetInMap "temp" "content" ($page.Plain | truncate 2000) -}}
+    {{- .Scratch.SetInMap "temp" "title" $page.Title -}}
+    {{- .Scratch.SetInMap "temp" "permalink" $page.Permalink -}}
+    {{- .Scratch.SetInMap "temp" "description" $page.Description -}}
+
+    {{/* Include valid page vars */}}
+    {{- range $key, $param := (.Scratch.Get "temp") -}}
+      {{- if in $validVars $key -}}
+        {{ if $page.File }}
+          {{- $dot.Scratch.SetInMap $page.File.Path $key $param -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+
+    {{/* Include valid page params */}}
+    {{- range $key, $param := $page.Params -}}
+      {{- if in $validParams $key -}}
+        {{ if $page.File }}
+         {{- $dot.Scratch.SetInMap $page.File.Path $key $param -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{ if $page.File }}
+      {{- $.Scratch.SetInMap "index" $page.File.Path (.Scratch.Get $page.File.Path) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $.Scratch.GetSortedMapValues "index" | jsonify -}}
