@@ -20,6 +20,7 @@ jobs:
         uses: peaceiris/actions-hugo@v2
 
       - name: Build site
+        working-directory: ./docs
         run: hugo --minify
 
       - name: Publish Wick Package
