@@ -77,9 +77,6 @@ pub struct FlowOperation {
 
   /// Additional flows scoped to this operation.
   pub(crate) flows: Vec<FlowOperation>,
-
-  /// A list of component IDs to expose to this schematic.
-  pub(crate) components: Vec<String>,
 }
 
 impl From<FlowOperation> for config::OperationSignature {

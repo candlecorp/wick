@@ -12,5 +12,5 @@ package:
     - ./assets/test.js
     - ./assets/static/**/*
   registry:
-    registry: $DOCKER_REGISTRY
+    host: $DOCKER_REGISTRY
     namespace: default

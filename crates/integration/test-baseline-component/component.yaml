@@ -6,7 +6,7 @@ metadata:
   version: '1'
 package:
   registry:
-    registry: $DOCKER_REGISTRY
+    host: $DOCKER_REGISTRY
     namespace: test-component
 component:
   kind: wick/component/wasmrs@v1
@@ -57,12 +57,12 @@ tests:
         operation: add
         input:
           - name: left
-            data: 1
+            value: 1
           - name: right
-            data: 2
+            value: 2
         output:
           - name: output
-            data: 3
+            value: 3
           - name: output
             flags:
               done: true
@@ -70,12 +70,12 @@ tests:
         operation: add
         input:
           - name: left
-            data: 2000
+            value: 2000
           - name: right
-            data: 3292982
+            value: 3292982
         output:
           - name: output
-            data: 3294982
+            value: 3294982
           - name: output
             flags:
               done: true
@@ -85,10 +85,10 @@ tests:
           exponent: 5
         input:
           - name: input
-            data: 2
+            value: 2
         output:
           - name: output
-            data: 32
+            value: 32
           - name: output
             flags:
               done: true
@@ -96,7 +96,7 @@ tests:
         operation: validate
         input:
           - name: input
-            data: 'hello'
+            value: 'hello'
         output:
           - name: output
             error: Needs to be longer than 8 characters

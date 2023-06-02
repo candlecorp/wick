@@ -4,7 +4,7 @@ metadata:
   version: 0.1.0
 package:
   registry:
-    registry: $DOCKER_REGISTRY
+    host: $DOCKER_REGISTRY
     namespace: default
 kind: wick/types@v1
 types:
@@ -12,18 +12,18 @@ types:
     kind: wick/type/enum@v1
     variants:
       - name: HTTP_1_0
-        value: "1.0"
+        value: '1.0'
       - name: HTTP_1_1
-        value: "1.1"
+        value: '1.1'
       - name: HTTP_2_0
-        value: "2.0"
+        value: '2.0'
   - name: StatusCode
     kind: wick/type/enum@v1
     variants:
       - name: OK
-        value: "200"
+        value: '200'
       - name: Created
-        value: "201"
+        value: '201'
   - name: HttpResponse
     kind: wick/type/struct@v1
     fields:
@@ -34,7 +34,7 @@ types:
         type: StatusCode
         description: status code enum
       - name: headers
-        type: "{string: string[]}"
+        type: '{string: string[]}'
         description: All response headers. Supports duplicates.
       - name: body
         type: bytes

@@ -115,6 +115,7 @@ pub mod types {
     impl HttpVersion {
       #[allow(unused)]
       #[doc = "Returns the value of the enum variant as a string."]
+      #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -163,6 +164,7 @@ pub mod types {
     impl StatusCode {
       #[allow(unused)]
       #[doc = "Returns the value of the enum variant as a string."]
+      #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -224,6 +226,7 @@ pub mod types {
     impl HttpVersion {
       #[allow(unused)]
       #[doc = "Returns the value of the enum variant as a string."]
+      #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -272,6 +275,7 @@ pub mod types {
     impl StatusCode {
       #[allow(unused)]
       #[doc = "Returns the value of the enum variant as a string."]
+      #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -333,6 +337,7 @@ pub mod types {
     impl HttpVersion {
       #[allow(unused)]
       #[doc = "Returns the value of the enum variant as a string."]
+      #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
@@ -381,6 +386,7 @@ pub mod types {
     impl StatusCode {
       #[allow(unused)]
       #[doc = "Returns the value of the enum variant as a string."]
+      #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {

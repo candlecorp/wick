@@ -10,7 +10,6 @@ use wick_interface_types::TypeDefinition;
 pub use self::resources::*;
 pub use self::triggers::*;
 use super::common::component_definition::ComponentDefinition;
-use super::common::host_definition::HostConfig;
 use super::common::package_definition::PackageConfig;
 use super::{make_resolver, ImportBinding, ImportDefinition};
 use crate::error::ReferenceError;
@@ -40,9 +39,6 @@ pub struct AppConfiguration {
   pub(crate) resources: HashMap<String, ResourceBinding>,
   #[builder(default)]
   pub(crate) triggers: Vec<TriggerDefinition>,
-  #[asset(skip)]
-  #[builder(setter(strip_option), default)]
-  pub(crate) host: Option<HostConfig>,
   #[asset(skip)]
   #[builder(setter(skip))]
   #[property(skip)]

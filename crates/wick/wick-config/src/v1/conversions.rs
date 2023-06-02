@@ -113,7 +113,6 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
       metadata: def.metadata.try_map_into()?,
       host: def.host.try_map_into()?,
       name: def.name,
-      labels: def.labels,
       tests: def.tests.try_map_into()?,
       component: def.component.try_into()?,
       types: def.types.try_map_into()?,
@@ -147,7 +146,6 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
       metadata: def.metadata.try_map_into()?,
       host: def.host.try_map_into()?,
       name: def.name,
-      labels: def.labels,
       requires: def
         .requires
         .into_values()
@@ -216,7 +214,7 @@ impl TryFrom<v1::RegistryDefinition> for RegistryConfig {
 
   fn try_from(value: v1::RegistryDefinition) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      host: value.registry,
+      host: value.host,
       namespace: value.namespace,
     })
   }
@@ -227,7 +225,7 @@ impl TryFrom<RegistryConfig> for v1::RegistryDefinition {
 
   fn try_from(value: RegistryConfig) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      registry: value.host,
+      host: value.host,
       namespace: value.namespace,
     })
   }
@@ -248,10 +246,10 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentImplementation {
   }
 }
 
-impl TryFrom<v1::BoundInterface> for config::BoundInterface {
+impl TryFrom<v1::InterfaceBinding> for config::BoundInterface {
   type Error = ManifestError;
 
-  fn try_from(value: v1::BoundInterface) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: v1::InterfaceBinding) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       id: value.name,
       kind: value.interface.try_into()?,
@@ -317,7 +315,7 @@ impl TryFrom<WasmComponentImplementation> for v1::WasmComponentConfiguration {
   }
 }
 
-impl TryFrom<config::BoundInterface> for v1::BoundInterface {
+impl TryFrom<config::BoundInterface> for v1::InterfaceBinding {
   type Error = ManifestError;
 
   fn try_from(value: config::BoundInterface) -> std::result::Result<Self, Self::Error> {
@@ -362,7 +360,6 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
       source: None,
       metadata: def.metadata.try_map_into()?,
       name: def.name,
-      host: def.host.try_map_into()?,
       import: def
         .import
         .into_iter()
@@ -395,7 +392,6 @@ impl TryFrom<AppConfiguration> for v1::AppConfiguration {
         .collect::<Result<_>>()?,
       resources: value.resources.into_values().map(|v| v.into()).collect(),
       triggers: value.triggers.try_map_into()?,
-      host: value.host.try_map_into()?,
       package: value.package.try_map_into()?,
     })
   }
@@ -787,7 +783,6 @@ impl TryFrom<crate::v1::CompositeOperationDefinition> for config::FlowOperation 
       outputs: op.outputs.try_map_into()?,
       instances: instances?,
       expressions: expressions?,
-      components: op.components,
       config: op.with.try_map_into()?,
       flows: op.operations.try_map_into()?,
     })
@@ -1003,7 +998,7 @@ impl TryFrom<config::FlowOperation> for v1::CompositeOperationDefinition {
   type Error = ManifestError;
 
   fn try_from(value: config::FlowOperation) -> std::result::Result<Self, Self::Error> {
-    let instances: Vec<v1::InstanceBinding> = value.instances.into_iter().map(from_wat).collect();
+    let instances: Vec<v1::OperationInstance> = value.instances.into_iter().map(from_wat).collect();
     let connections: Result<Vec<v1::FlowExpression>> = value.expressions.try_map_into();
     Ok(Self {
       name: value.name,
@@ -1012,7 +1007,6 @@ impl TryFrom<config::FlowOperation> for v1::CompositeOperationDefinition {
       with: value.config.try_map_into()?,
       uses: instances,
       flow: connections?,
-      components: value.components,
       operations: value.flows.try_map_into()?,
     })
   }
@@ -1065,10 +1059,10 @@ impl TryFrom<ast::ConnectionTargetExpression> for v1::ConnectionTargetDefinition
   }
 }
 
-fn from_wat(value: (String, config::InstanceReference)) -> v1::InstanceBinding {
+fn from_wat(value: (String, config::InstanceReference)) -> v1::OperationInstance {
   let id = value.0;
   let value = value.1;
-  v1::InstanceBinding {
+  v1::OperationInstance {
     name: id,
     operation: v1::ComponentOperationExpression {
       name: value.name,
@@ -1104,9 +1098,9 @@ impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
   }
 }
 
-impl TryFrom<crate::v1::InstanceBinding> for config::InstanceReference {
+impl TryFrom<crate::v1::OperationInstance> for config::InstanceReference {
   type Error = ManifestError;
-  fn try_from(def: crate::v1::InstanceBinding) -> Result<Self> {
+  fn try_from(def: crate::v1::OperationInstance) -> Result<Self> {
     let ns = def.operation.component.component_id().unwrap_or("<anonymous>");
     let name = def.operation.name;
     Ok(config::InstanceReference {
@@ -1357,24 +1351,24 @@ impl From<v1::TestDefinition> for test_case::TestCase {
 impl From<v1::PacketData> for test_case::TestPacket {
   fn from(value: v1::PacketData) -> Self {
     match value {
-      v1::PacketData::PayloadData(v) => test_case::TestPacket::PayloadData(v.into()),
-      v1::PacketData::ErrorData(v) => test_case::TestPacket::ErrorData(v.into()),
+      v1::PacketData::SuccessPacket(v) => test_case::TestPacket::SuccessPacket(v.into()),
+      v1::PacketData::ErrorPacket(v) => test_case::TestPacket::ErrorPacket(v.into()),
     }
   }
 }
 
-impl From<v1::PayloadData> for config::SuccessPayload {
-  fn from(value: v1::PayloadData) -> Self {
+impl From<v1::SuccessPacket> for config::SuccessPayload {
+  fn from(value: v1::SuccessPacket) -> Self {
     Self {
       port: value.name,
       flags: value.flags.map_into(),
-      data: value.data,
+      data: value.value,
     }
   }
 }
 
-impl From<v1::ErrorData> for config::ErrorPayload {
-  fn from(value: v1::ErrorData) -> Self {
+impl From<v1::ErrorPacket> for config::ErrorPayload {
+  fn from(value: v1::ErrorPacket) -> Self {
     Self {
       port: value.name,
       flags: value.flags.map_into(),
@@ -1415,7 +1409,7 @@ impl From<test_case::TestCase> for v1::TestDefinition {
   }
 }
 
-impl From<test_case::ErrorPayload> for v1::ErrorData {
+impl From<test_case::ErrorPayload> for v1::ErrorPacket {
   fn from(value: test_case::ErrorPayload) -> Self {
     Self {
       name: value.port,
@@ -1425,12 +1419,12 @@ impl From<test_case::ErrorPayload> for v1::ErrorData {
   }
 }
 
-impl From<test_case::SuccessPayload> for v1::PayloadData {
+impl From<test_case::SuccessPayload> for v1::SuccessPacket {
   fn from(value: test_case::SuccessPayload) -> Self {
     Self {
       name: value.port,
       flags: value.flags.map_into(),
-      data: value.data,
+      value: value.data,
     }
   }
 }
@@ -1457,8 +1451,8 @@ impl From<test_case::InherentConfig> for v1::InherentData {
 impl From<test_case::TestPacket> for v1::PacketData {
   fn from(value: test_case::TestPacket) -> Self {
     match value {
-      test_case::TestPacket::PayloadData(v) => v1::PacketData::PayloadData(v.into()),
-      test_case::TestPacket::ErrorData(v) => v1::PacketData::ErrorData(v.into()),
+      test_case::TestPacket::SuccessPacket(v) => v1::PacketData::SuccessPacket(v.into()),
+      test_case::TestPacket::ErrorPacket(v) => v1::PacketData::ErrorPacket(v.into()),
     }
   }
 }

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Configuration on Candle Documentation</title>
+    <link>https://candle.dev/docs/configuration/</link>
+    <description>Recent content in Configuration on Candle Documentation</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://candle.dev/docs/configuration/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Version 1</title>
+      <link>https://candle.dev/docs/configuration/v1/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://candle.dev/docs/configuration/v1/</guid>
+      <description>wick-config::v1 WickConfig Configuration for Wick applications and components.
+Any of the following types:
+AppConfiguration ComponentConfiguration TypesConfiguration TestConfiguration LocationReference A reference to a location on disk, URL, or registry.
+Alias for: string
+LiquidJsonValue A liquid JSON template.
+Alias for: string
+Glob A glob pattern, ex: **/.html*
+Alias for: string
+AppConfiguration The Application configuration defines a standalone Wick application.
+Field name Type Description Required? Shortform? metadata Metadata Associated metadata for this component. name string The application&amp;rsquo;s name.</description>
+    </item>
+    
+    <item>
+      <title>Version 0</title>
+      <link>https://candle.dev/docs/configuration/v0/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://candle.dev/docs/configuration/v0/</guid>
+      <description>wick-config::v0. ## HostManifest A manifest defines the starting state of a Wick host and network.
++-+-+-+-+-+ | Field name | Type | Description | Required | Deprecated | | format | u32 | The configuration manifest format. | Yes | | | version | string | The version of the configuration. | | | | host | HostConfig| null | Additional host configuration. | | | | network | NetworkManifest | The configuration for a Wick network.</description>
+    </item>
+    
+  </channel>
+</rss>

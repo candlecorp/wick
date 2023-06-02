@@ -1,4 +1,4 @@
-namespace "wick-config::v0."
+namespace "wick::v0"
 
 "A manifest defines the starting state of a Wick host and network."
 type HostManifest {
@@ -87,9 +87,6 @@ type NetworkManifest {
   "The unique identifier for this Network."
   name: string?,
 
-  "The labels that apply to this network."
-  labels: {string: string},
-
   "The collection to use as the entrypoint when running as a standalone process."
   triggers: EntrypointDefinition?,
 
@@ -145,8 +142,6 @@ type SchematicManifest {
   "Schematic name."
   name: string @required,
 
-  "A list of collections the schematic uses."
-  collections: [string],
 
   "A map from component reference to its target."
   instances: {string: ComponentDefinition},

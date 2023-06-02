@@ -6,7 +6,7 @@ metadata:
   version: 0.0.1
 package:
   registry:
-    registry: registry.candle.dev
+    host: registry.candle.dev
     namespace: types
 types:
   - name: HttpMethod

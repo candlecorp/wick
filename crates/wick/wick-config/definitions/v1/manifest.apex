@@ -1,130 +1,191 @@
-namespace "wick-config::v1"
+namespace "wick::v1"
 
-"Configuration for Wick applications and components."
+"""
+Root configuration that can be any one of the possible Wick configuration formats.
+"""
 union WickConfig = AppConfiguration | ComponentConfiguration | TypesConfiguration | TestConfiguration
 
 "A reference to a location on disk, URL, or registry."
 alias LocationReference = string @skip
 
-"A liquid JSON template."
+"""
+A liquid JSON value. Liquid-JSON is a way of using Liquid templates in structured JSON-like data.
+
+See [liquid-json](https://crates.io/crates/liquid-json) for more information.
+"""
 alias LiquidJsonValue = string @skip
 
-"A glob pattern, ex: **/*.html"
+"A glob pattern, e.g. **/*.html"
 alias Glob = string @skip
 
-"The Application configuration defines a standalone Wick application."
+"Configuration for a standalone Wick application."
 type AppConfiguration @default @tagged("wick/app@v1") {
-  "Associated metadata for this component."
-  metadata: Metadata?,
-
   "The application's name."
   name: string,
 
-  "Configuration that controls how this application runs within a host."
-  host: HostConfig?,
-
-  "Components to import into the application's scope."
-  import: [ImportBinding],
-
-  "Resources that the application can access."
-  resources: [ResourceBinding],
-
-  "Configured triggers that drive the application's behavior."
-  triggers: [TriggerDefinition],
+  "Associated metadata for this component."
+  metadata: Metadata?,
 
   "Details about the package for this application."
   package: PackageDefinition?,
+
+  "Resources and configuration that the application and its components can access."
+  resources: [ResourceBinding],
+
+  "Components that to import and make available to the application."
+  import: [ImportBinding],
+
+  "Triggers to load and instantiate to drive the application's behavior."
+  triggers: [TriggerDefinition],
 }
 
+"Metadata to associate with an artifact."
+type Metadata {
+  "The version of the artifact."
+  version: string,
+  "A list of the authors."
+  authors: [string],
+  "A list of any vendors associated with the artifact."
+  vendors: [string],
+  "A short description."
+  description: string?,
+  "Where to find documentation."
+  documentation: string?,
+  "The license(s) for the artifact."
+  licenses: [string],
+  "An icon to associate with the artifact."
+  icon: LocationReference?,
+}
 
-"The package details for an application or component."
+"Configuration for packaging and publishing Wick configurations."
 type PackageDefinition @default {
   "The list of files and folders to be included with the package."
   files: [Glob]
-  "Configuration for publishing the package to a registry. This will be used if the package is published without any additional arguments on the command line. If a tag is specified on the command line, that tag will be used instead. "
+  "Configuration for publishing the package to a registry."
   registry: RegistryDefinition?
 }
 
 type RegistryDefinition @default {
-  "The registry to publish to."
-  registry: string = "registry.candle.dev"
-  "The namespace on the registry. ex: registry.candle.dev/<namespace>/<myWickApp>"
+  "The registry to publish to, e.g. registry.candle.dev"
+  host: string = "registry.candle.dev"
+  "The namespace on the registry. e.g.: [*your username*]"
   namespace: string
 }
 
-"Metadata for the component or application."
-type Metadata {
-  "The version of the component or application."
-  version: string,
-  "The authors of the component or application."
-  authors: [string],
-  "Any vendors associated with the component or application."
-  vendors: [string],
-  "A short description of the component or application."
-  description: string?,
-  "Where to find documentation for the component or application."
-  documentation: string?,
-  "The license(s) for the component or application."
-  licenses: [string],
-  "The icon for the component or application."
-  icon: LocationReference?,
+"An identifier bound to a resource."
+type ResourceBinding {
+  "The name of the binding."
+  name: string @required
+
+  "The resource to bind to."
+  resource: ResourceDefinition @required
 }
 
-"The possible types of resources."
+"An identifier bound to an imported component or type manifest."
+type ImportBinding {
+  "The name of the binding."
+  name: string @required
+
+  "The import to bind to."
+  component: ImportDefinition @required
+}
+
+"The possible types of resources. Resources are system-level resources and sensitive configuration."
+union ResourceDefinition = TcpPort | UdpPort | Url | Volume
+
+"A TCP port to bind to."
+type TcpPort @tagged("wick/resource/tcpport@v1") {
+  "The port to bind to."
+  port: u16
+  "The address to bind to."
+  address: string
+}
+
+"A UDP port to bind to."
+type UdpPort @tagged("wick/resource/udpport@v1") {
+  "The port to bind to."
+  port: u16
+  "The address to bind to."
+  address: string
+}
+
+"A filesystem or network volume resource."
+type Volume @tagged("wick/resource/volume@v1") {
+  "The path."
+  path: string @required
+}
+
+"A URL configured as a resource."
+type Url @tagged("wick/resource/url@v1") {
+  "The url string."
+  url: string @required
+}
+
+"Triggers that operate off events and translate environment data to components. Triggers are the way that Wick handles standard use cases and translates them into the component world."
 union TriggerDefinition = CliTrigger | HttpTrigger | TimeTrigger
 
-"A trigger called with a CLI context."
+"A trigger that runs when an application is called via the command line."
 type CliTrigger @tagged("wick/trigger/cli@v1") {
   "The operation that will act as the main entrypoint for this trigger."
   operation: ComponentOperationExpression @required @shortform
 }
 
-"A trigger called with a Time context."
+"A trigger that runs on a schedule similar to cron."
 type TimeTrigger @tagged("wick/trigger/time@v1") {
+  "The schedule to run the trigger with."
   schedule: Schedule @required
-  "The operation that will act as the main entrypoint for this trigger."
+
+  "The operation to execute on the schedule."
   operation: ComponentOperationExpression @required @shortform
+
   "Values passed to the operation as inputs"
   payload: [OperationInput] @required
 }
 
+"Input to use when calling an operation"
 type OperationInput {
-  "The name of the operation parameter."
+  "The name of the input."
   name: string @required
-  "The value to pass to the operation parameter."
+
+  "The value to pass."
   value: any @required
 }
 
+
+"The schedule to run the Time trigger with."
 type Schedule {
-  "schedule in cron format with second precision"
+  "Schedule in cron format with second precision. See [cron.help](https://cron.help) for more information."
   cron: string @required
-  "repeat n times, 0 means forever"
+
+  "repeat `n` times. Use `0` to repeat indefinitely"
   repeat: u16 = 0
 }
 
-"A reference to an operation with an explicit component definition."
+"A reference to an operation. This type can be shortened to <code>component_id::operation_name</code> with the short-form syntax."
 type ComponentOperationExpression @shortform {
   "The component that exports the operation."
   component: ComponentDefinition @required @shortform
-  "The operation to call."
+  "The operation name."
   name: string @required
-  "Configuration to tie to this operation"
+  "Configuration to pass to this operation on invocation."
   with: {string: any}?,
 }
 
-"An HTTP server that delegates to HTTP routers upon requests."
+"An HTTP server that delegates to HTTP routers on every request."
 type HttpTrigger @tagged("wick/trigger/http@v1") {
-  "The TcpPort reference to listen on for connections."
-  resource: string
+  "The TcpPort resource to listen on for connections."
+  resource: string @required
 
-  "The HttpRouters that should handle incoming requests"
+  "The router to handle incoming requests"
   routers: [HttpRouter]
 }
 
+"The types of routers that can be configured on the HttpTrigger."
 union HttpRouter = RawRouter | RestRouter | StaticRouter | ProxyRouter
 
+"A router that proxies to the configured URL when the path matches."
 type ProxyRouter @tagged("wick/router/proxy@v1") {
-  "The path to start serving this router from."
+  "The path that this router will trigger for."
   path: string @required
 
   "Middleware operations for this router."
@@ -137,8 +198,9 @@ type ProxyRouter @tagged("wick/router/proxy@v1") {
   strip_path: bool
 }
 
+"A router that can be configured to delegate to specific operations on a per-route, per-method basis."
 type RestRouter @tagged("wick/router/rest@v1") {
-  "The path to start serving this router from."
+  "The path that this router will trigger for."
   path: string @required
 
   "Additional tools and services to enable."
@@ -154,6 +216,23 @@ type RestRouter @tagged("wick/router/rest@v1") {
   info: Info?
 }
 
+"A route to serve and the operation that handles it."
+type Route {
+  "The path to serve this route from. See [URI documentation](/docs/configuration/uri) for more information on specifying query and path parameters."
+  uri: string @required
+  "The operation that will act as the main entrypoint for this route."
+  operation: ComponentOperationExpression @required @shortform
+  "The HTTP methods to serve this route for."
+  methods: [string]
+  "The name of the route, used for documentation and tooling."
+  name: string?
+  "A short description of the route."
+  description: string?
+  "A longer description of the route."
+  summary: string?
+}
+
+"Additional tools and services to enable."
 type Tools {
   "The path to serve the OpenAPI spec from"
   openapi: string?
@@ -177,15 +256,16 @@ type Info {
   documentation: Documentation?
 }
 
-"Documentation information for the API."
+"Information about where and how the API is documented."
 type Documentation {
   "The URL to the API's documentation."
   url:         string?
+
   "A short description of the documentation."
   description: string?
 }
 
-"The license information for the API."
+"Any licensing information for the API."
 type License {
   "The name of the license."
 	name: string?
@@ -193,7 +273,7 @@ type License {
 	url:  string?
 }
 
-"The contact information for the API."
+"Contact information to expose for the API."
 type Contact {
   "The name of the contact."
 	name: string?
@@ -203,24 +283,9 @@ type Contact {
 	email:  string?
 }
 
-"A route to serve and the operation that handles it."
-type Route {
-  "The name of the route, used for documentation and tooling."
-  name: string?
-  "The HTTP methods to serve this route for."
-  methods: [string]
-  "The path to serve this route from."
-  uri: string
-  "The operation that will act as the main entrypoint for this route."
-  operation: ComponentOperationExpression @required @shortform
-  "A short description of the route."
-  description: string?
-  "A longer description of the route."
-  summary: string?
-}
-
+"A router that serves static files."
 type StaticRouter @tagged("wick/router/static@v1") {
-  "The path to start serving this router from."
+  "The path that this router will trigger for."
   path: string @required
 
   "Middleware operations for this router."
@@ -233,9 +298,9 @@ type StaticRouter @tagged("wick/router/static@v1") {
   fallback: string?
 }
 
-"A RawHttpRouter delegates raw requests and bodies to operations based on the request path."
+"A router that delegates all requests to the configured operation, optionally encoding/decoding based on the specified codec."
 type RawRouter @tagged("wick/router/raw@v1") {
-  "The path to start serving this router from."
+  "The path that this router will trigger for."
   path: string @required
 
   "Middleware operations for this router."
@@ -254,37 +319,6 @@ type Middleware {
   request: [ComponentOperationExpression]
   "The middleware to apply to responses."
   response: [ComponentOperationExpression]
-}
-
-"The possible types of resources."
-union ResourceDefinition = TcpPort | UdpPort | Url | Volume
-
-"A TCP port to bind to."
-type TcpPort @tagged("wick/resource/tcpport@v1") {
-  "The port to bind to."
-  port: u16
-  "The address to bind to."
-  address: string
-}
-
-"A filesystem or network volume resource."
-type Volume @tagged("wick/resource/volume@v1") {
-  "The path."
-  path: string @required
-}
-
-"A UDP port to bind to."
-type UdpPort @tagged("wick/resource/udpport@v1") {
-  "The port to bind to."
-  port: u16
-  "The address to bind to."
-  address: string
-}
-
-"A URL configured as a resource."
-type Url @tagged("wick/resource/url@v1") {
-  "The url string."
-  url: string @required
 }
 
 "A type definition for a Wick Components and Operations"
@@ -320,42 +354,39 @@ type TestConfiguration @tagged("wick/tests@v1") {
 
 "A configuration for a Wick Component"
 type ComponentConfiguration @tagged("wick/component@v1") {
-  "The name of this component."
+  "The name of the component."
   name: string?
 
   "Associated metadata for this component."
   metadata: Metadata?
 
+  "Details about the package for this component."
+  package: PackageDefinition?,
+
   "Configuration for when wick hosts this component as a service."
   host: HostConfig?
 
-  "Resources that the application can access."
+  "Resources that the component can access."
   resources: [ResourceBinding]
 
-  "Components or types to import into the application's scope."
+  "Components or types to import into this component's scope."
   import: [ImportBinding]
 
   "Additional types to export and make available to the component."
   types: [TypeDefinition]
 
   "Interfaces the component requires to operate."
-  requires: [BoundInterface]
-
-  "The labels and values that apply to this manifest."
-  labels: {string: string}
+  requires: [InterfaceBinding]
 
   "Configuration specific to different kinds of components."
   component: ComponentKind @required
 
   "Assertions that can be run against the component to validate its behavior."
   tests: [TestConfiguration]
-
-  "Details about the package for this component."
-  package: PackageDefinition?,
 }
 
-"An interface bound to an ID."
-type BoundInterface {
+"An interface bound to an ID. Used in the require/provide relationship between components."
+type InterfaceBinding {
   "The name of the interface."
   name: string @required
 
@@ -363,7 +394,7 @@ type BoundInterface {
   interface: InterfaceDefinition @required
 }
 
-"A generic interface definition."
+"A interface definition. Used as a signature that components can require or provide."
 type InterfaceDefinition {
   "Types used by the interface's operations"
   types: [TypeDefinition]
@@ -372,44 +403,28 @@ type InterfaceDefinition {
   operations: [OperationDefinition]
 }
 
-"A component made out of other components"
+"A component made from connectiong other components."
 type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
-  "Global configuration to use when instantiating the component."
+  "Configuration necessary to provide when instantiating the component."
   with: [Field]
 
-  "A list of operations implemented by the Composite component."
+  "A list of operations exposed by the Composite component."
   operations: [CompositeOperationDefinition]
 }
 
-"A component made out of other components"
+"A component whose implementation is a WasmRS WebAssembly module."
 type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
-  "A reference to a local WebAssembly implementation"
+  "The path or OCI reference to the WebAssembly module"
   ref: LocationReference @rename("reference") @required
 
-  "Global configuration to use when instantiating the component."
+  "Configuration necessary to provide when instantiating the component."
   with: [Field]
 
   "A list of operations implemented by the WebAssembly module."
   operations: [OperationDefinition]
 }
 
-"An identifier bound to a resource."
-type ResourceBinding {
-  "The name of the binding."
-  name: string @required
-  "The resource to bind to."
-  resource: ResourceDefinition @required
-}
-
-"An identifier bound to an imported component or type manifest."
-type ImportBinding {
-  "The name of the binding."
-  name: string @required
-  "The import to bind to."
-  component: ImportDefinition @required
-}
-
-"Component implementation types"
+"Root component types. These are the components that can be instantiated and run."
 union ComponentKind = WasmComponentConfiguration | CompositeComponentConfiguration | SqlComponent | HttpClientComponent
 
 "Types of possible imports."
@@ -418,7 +433,7 @@ union ImportDefinition = TypesComponent | ManifestComponent | SqlComponent | Htt
 "Component types used when referencing operations or linking components."
 union ComponentDefinition = GrpcUrlComponent | ManifestComponent | ComponentReference | SqlComponent | HttpClientComponent
 
-"A types manifest to import into this component's scope."
+"A types configuration to import into this component's scope."
 type TypesComponent @tagged("wick/component/types@v1") {
   "The URL (and optional tag) or local file path to find the types manifest."
   ref: LocationReference @rename("reference")  @required
@@ -429,13 +444,13 @@ type TypesComponent @tagged("wick/component/types@v1") {
 
 "A reference to a component in the application's scope."
 type ComponentReference  @tagged("wick/component/reference@v1") {
-  "The id of the component to reference."
+  "The id of the referenced component."
   id: string  @required
 }
 
 "Host configuration options."
 type HostConfig @default {
-  "Whether or not to allow the :latest tag on remote artifacts."
+  "Whether or not to allow the `:latest` tag on remote artifacts."
   allow_latest: bool,
 
   "A list of registries to connect to insecurely (over HTTP vs HTTPS)."
@@ -482,13 +497,15 @@ type GrpcUrlComponent @tagged("wick/component/grpc@v1") {
 type ManifestComponent @tagged("wick/component/manifest@v1") {
   "The URL (and optional tag) or local file path to find the manifest."
   ref: LocationReference @rename("reference")  @required
+
   "Any configuration necessary for the component."
   with: {string: any}?,
+
   "External components to provide to the referenced component."
   provide: {string:string}
 }
 
-"A definition for a single composite operation."
+"Composite operations are operations whose implementations come from connecting other operations into a flow or series of pipelines."
 type CompositeOperationDefinition {
   "The name of the operation."
   name: string,
@@ -502,42 +519,39 @@ type CompositeOperationDefinition {
   "Types of the outputs to the operation."
   outputs: [Field],
 
-  "A list of components the schematic can use."
-  components: [string],
-
   "A map of IDs to specific operations."
-  uses: [InstanceBinding]
+  uses: [OperationInstance]
 
   "A list of connections from operation to operation."
   flow: [FlowExpression],
 
-  "Additional flow operations scoped to this operation."
+  "Additional `CompositeOperationDefinition`s to define as children."
   operations: [CompositeOperationDefinition]
 }
 
-"A flow operation, i.e. a connection from one operation to another."
+"A flow operation, i.e. a connection from one operation's outputs to another's inputs."
 union FlowExpression @shortform = ConnectionDefinition | BlockExpression
 
-"A list of FlowExpressions"
+"A list of FlowExpressions. Typically used only when expanding a shortform `FlowExpression` into multiple `FlowExpression`s."
 type BlockExpression {
   expressions: [FlowExpression] @required
 }
 
-"A connection between Operations and their ports. This can be specified in short-form syntax (where applicable)."
+"A connection between Operations and their ports. This can be specified in short-form syntax."
 type ConnectionDefinition {
-  "The upstream operation port."
+  "An upstream operation's output."
   from: ConnectionTargetDefinition @required
 
-  "The downstream operation port."
+  "A downstream operation's input."
   to: ConnectionTargetDefinition @required
 }
 
-"A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable)."
+"A connection target e.g. a specific input or output on an operation instance. This can be specified in shortform syntax."
 type ConnectionTargetDefinition {
-  "The instance ID of the operation."
+  "The instance ID of the component operation."
   instance: string @required,
 
-  "The operation port."
+  "The operation's input or output (depending on to/from)."
   port: string @required,
 
   "The default value to provide on this connection in the event of an error."
@@ -601,49 +615,61 @@ type Map {
 }
 type Object @nameonly("object") {}
 
-"Struct or Enum type definition."
+"A Struct or Enum type definition."
 union TypeDefinition = StructSignature | EnumSignature
 
+"A struct definition of named fields and types."
 type StructSignature @tagged("wick/type/struct@v1") {
   "The name of the struct."
    name: string,
+
   "The fields in this struct."
    fields: [Field],
+
   "The description of the struct."
   description: string?,
 }
 
+"An enum definition of named variants."
 type EnumSignature @tagged("wick/type/enum@v1") {
   "The name of the enum."
   name: string,
+
   "The variants in the enum."
   variants: [EnumVariant],
+
   "The description of the enum."
   description: string?,
 }
 
+"An enum variant."
 type EnumVariant {
   "The name of the variant."
   name: string,
+
   "The index of the variant."
   index: u32?,
+
   "The optional value of the variant."
   value: string?,
-  "The description of the variant."
+
+  "A description of the variant."
   description: string?,
 }
 
 "An identifier bound to a component's operation."
-type InstanceBinding {
+type OperationInstance {
   "The name of the binding."
   name: string @required
+
   "The operation to bind to."
   operation: ComponentOperationExpression @required @shortform
+
   "Data to associate with the reference, if any."
   with: {string: any}?,
 }
 
-"A test case for a component."
+"A test case for a component's operation."
 type TestDefinition {
   "The name of the test."
   name: string @required
@@ -664,47 +690,54 @@ type TestDefinition {
   output: [PacketData]
 }
 
-"Data inherent to transactions."
+"Data inherent to all invocations."
 type InherentData {
-  "An RNG seed."
+  "A random seed, i.e. to initialize a random number generator."
   seed: u64?
+
   "A timestamp."
   timestamp: u64?
 }
 
 "Either a success packet or an error packet."
-union PacketData @untagged = PayloadData | ErrorData
+union PacketData @untagged = SuccessPacket | ErrorPacket
 
-"A simplified representation of a Wick data packet & payload, used to write tests."
-type PayloadData {
-  "The name of the port to send the data to."
+"A simplified representation of a Wick data packet & payload, used when writing tests."
+type SuccessPacket {
+  "The name of the input or output this packet is going to or coming from."
   name: string @required
+
   "Any flags set on the packet."
   flags: PacketFlags?
+
   "The data to send."
-  data: any? @skip_env
+  value: any? @skip_env
 }
 
-type ErrorData {
-  "The name of the port to send the data to."
+type ErrorPacket {
+  "The name of the input or output this packet is going to or coming from."
   name: string @required
+
   "Any flags set on the packet."
   flags: PacketFlags?
+
   "The error message."
   error: string @required
 }
 
 "Flags set on a packet."
 type PacketFlags {
-  "When set, indicates the port should be considered closed."
+  "Indicates the port should be considered closed."
   done: bool
-  "When set, indicates the opening of a new substream context within the parent stream."
+
+  "Indicates the opening of a new substream context within the parent stream."
   open: bool
-  "When set, indicates the closing of a substream context within the parent stream."
+
+  "Indicates the closing of a substream context within the parent stream."
   close: bool
 }
 
-"A component made out of other components"
+"A dynamic component whose operations are SQL queries to a database."
 type SqlComponent @tagged("wick/component/sql@v1") {
   "The connect string URL resource for the database."
   resource: string
@@ -716,6 +749,7 @@ type SqlComponent @tagged("wick/component/sql@v1") {
   operations: [SqlOperationDefinition]
 }
 
+"A dynamic operation whose implementation is a SQL query."
 type SqlOperationDefinition {
   "The name of the operation."
   name: string
@@ -732,12 +766,12 @@ type SqlOperationDefinition {
   "The query to execute."
   query: string @required
 
-  "The arguments to the query, defined as a list of input names."
+  "The positional arguments to the query, defined as a list of input names."
   arguments: [string]
 }
 
 
-"A component made out of other components"
+"A component whose operations are HTTP requests."
 type HttpClientComponent @tagged("wick/component/http@v1") {
   "The URL base to use."
   resource: string
@@ -749,6 +783,7 @@ type HttpClientComponent @tagged("wick/component/http@v1") {
   operations: [HttpClientOperationDefinition]
 }
 
+"A dynamic operation whose implementation is an HTTP request. The outputs of HttpClientOperationDefinition are always `response` & `body`"
 type HttpClientOperationDefinition {
   "The name of the operation."
   name: string
@@ -777,18 +812,27 @@ type HttpClientOperationDefinition {
 
 "Codec to use when encoding/decoding data."
 enum Codec {
-  "JSON Codec"
+  "JSON data"
   Json = 0 as "json",
+
   "Raw"
   Raw = 1 as "raw",
+
   "Form Data"
   FormData = 2 as "form-data",
 }
 
 "Supported HTTP methods"
 enum HttpMethod {
+  "GET method"
   Get = 0 as "get",
+
+  "POST method"
   Post = 1 as "post",
+
+  "PUT method"
   Put = 2 as "put",
+
+  "DELETE method"
   Delete = 3 as "delete",
 }

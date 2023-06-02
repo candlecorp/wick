@@ -7,8 +7,6 @@ network:
       reference: ./manifests/v0/sub-network-child.yaml
   schematics:
     - name: parent
-      collections:
-        - subnet
       instances:
         child:
           id: subnet::child_schematic

@@ -2,7 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>https://candle.dev/docs/configuration/</loc>
+  </url><url>
     <loc>https://candle.dev/docs/overview/</loc>
+  </url><url>
+    <loc>https://candle.dev/docs/configuration/v1/</loc>
+  </url><url>
+    <loc>https://candle.dev/docs/configuration/v0/</loc>
   </url><url>
     <loc>https://candle.dev/docs/categories/</loc>
   </url><url>

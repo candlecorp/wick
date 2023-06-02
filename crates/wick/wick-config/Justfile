@@ -15,7 +15,10 @@ version VER="v1":
   apex-template definitions/{{VER}}/manifest.apex definitions/{{VER}}/templates/rust/root.hbs -p definitions/{{VER}}/templates/rust/partials > src/{{VER}}.rs
   apex-template definitions/{{VER}}/manifest.apex definitions/{{VER}}/templates/json-schema/manifest.hbs -p definitions/{{VER}}/templates/json-schema/partials > json-schema/{{VER}}/manifest.json
   prettier --write json-schema/{{VER}}/manifest.json
-  apex-template definitions/{{VER}}/manifest.apex definitions/{{VER}}/doc-templates/rust/root.hbs -p definitions/{{VER}}/doc-templates/rust/partials > docs/{{VER}}.html
+  just docs "{{VER}}"
+
+docs VER="v1":
+  apex-template definitions/{{VER}}/manifest.apex definitions/{{VER}}/doc-templates/rust/root.hbs -p definitions/{{VER}}/doc-templates/rust/partials > docs/{{VER}}.md;
 
 codegen:
   mkdir -p docs
@@ -23,6 +26,8 @@ codegen:
   just version v1
   just json-schema
   cargo +nightly fmt
+
+
 
 json-schema:
   ts-node definitions/json-schema.ts definitions/json-schema.json.tpl json-schema/v0/manifest.json json-schema/v1/manifest.json > json-schema/manifest.json

@@ -32,9 +32,9 @@ pub struct InherentConfig {
 /// Either a success packet or an error packet.
 pub enum TestPacket {
   /// A variant representing a [PayloadData] type.
-  PayloadData(SuccessPayload),
+  SuccessPacket(SuccessPayload),
   /// A variant representing a [ErrorData] type.
-  ErrorData(ErrorPayload),
+  ErrorPacket(ErrorPayload),
 }
 
 impl TestPacket {
@@ -42,8 +42,8 @@ impl TestPacket {
   #[must_use]
   pub fn port(&self) -> &str {
     match self {
-      TestPacket::PayloadData(data) => &data.port,
-      TestPacket::ErrorData(data) => &data.port,
+      TestPacket::SuccessPacket(data) => &data.port,
+      TestPacket::ErrorPacket(data) => &data.port,
     }
   }
 
@@ -51,8 +51,8 @@ impl TestPacket {
   #[must_use]
   pub fn flags(&self) -> Option<PacketFlags> {
     match self {
-      TestPacket::PayloadData(data) => data.flags,
-      TestPacket::ErrorData(data) => data.flags,
+      TestPacket::SuccessPacket(data) => data.flags,
+      TestPacket::ErrorPacket(data) => data.flags,
     }
   }
 
@@ -60,8 +60,8 @@ impl TestPacket {
   #[must_use]
   pub fn data(&self) -> Option<&Value> {
     match self {
-      TestPacket::PayloadData(data) => data.data.as_ref(),
-      TestPacket::ErrorData(_) => None,
+      TestPacket::SuccessPacket(data) => data.data.as_ref(),
+      TestPacket::ErrorPacket(_) => None,
     }
   }
 }

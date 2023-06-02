@@ -5,7 +5,7 @@ tests:
     operation: test-component
     input:
       - name: input
-        data: test
+        value: test
     output:
       - name: output
-        data: 'TEST: test'
+        value: 'TEST: test'

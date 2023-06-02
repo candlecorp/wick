@@ -5,14 +5,14 @@ metadata:
   description: Docs Site Hosting for Wick
   version: 0.0.1
   authors:
-    - "Wick Maintainers"
+    - 'Wick Maintainers'
   vendors:
-    - "Candle Corporation"
+    - 'Candle Corporation'
   licenses:
     - Apache-2.0
 package:
   registry:
-    registry: registry.candle.dev
+    host: registry.candle.dev
     namespace: wick
   files:
     - ./public

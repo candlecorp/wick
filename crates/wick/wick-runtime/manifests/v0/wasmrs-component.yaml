@@ -9,8 +9,6 @@ network:
         default_err: 'custom error'
   schematics:
     - name: test
-      collections:
-        - wapc
       instances:
         validate:
           id: wapc::validate

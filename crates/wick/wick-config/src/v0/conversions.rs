@@ -44,7 +44,6 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
       host: def.host.try_map_into()?,
       name: def.network.name,
       tests: Vec::new(),
-      labels: def.network.labels,
       metadata: None,
       resources: Default::default(),
       cached_types: Default::default(),
@@ -116,10 +115,9 @@ impl TryFrom<crate::v0::SchematicManifest> for config::FlowOperation {
       .map(|def| Ok(ast::FlowExpression::connection(def.try_into()?)))
       .collect();
     Ok(Self {
-      name: manifest.name.clone(),
+      name: manifest.name,
       instances: instances?,
       expressions: connections?,
-      components: manifest.collections,
       inputs: Default::default(),
       outputs: Default::default(),
       config: Default::default(),

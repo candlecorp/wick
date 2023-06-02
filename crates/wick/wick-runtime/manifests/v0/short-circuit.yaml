@@ -9,8 +9,6 @@ network:
         default_err: 'error from short-circuit.yaml'
   schematics:
     - name: short_circuit
-      collections:
-        - wapc
       instances:
         validate_password:
           id: wapc::validate
