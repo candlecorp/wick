@@ -27,23 +27,28 @@ wick-interface-types = { workspace = true, features = ["typeid"] }
 tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-uuid = { workspace = true, features = ["v4", "serde"], optional = true }
 thiserror = { workspace = true }
 wasmrs = { workspace = true }
 wasmrs-frames = { workspace = true, features = ["derive_serde"] }
 wasmrs-rx = { workspace = true }
 wasmrs-codec = { workspace = true }
-futures = { workspace = true }
+# futures = { workspace = true }
 bytes = { workspace = true, features = ["serde"] }
 parking_lot = { workspace = true }
 url = { workspace = true }
-# for features that require an async runtime
-tokio = { workspace = true, optional = true, features = ["rt"] }
-seeded-random = { workspace = true, optional = true }
 pin-project-lite = "0.2"
 base64-serde = "0.7.0"
 base64 = { workspace = true, default-features = false, features = ["alloc"] }
-# datetime feature
+tokio-stream = { workspace = true, default-features = false }
+#
+# feature = rt-tokio
+tokio = { workspace = true, optional = true, features = ["rt"] }
+#
+# feature = invocation
+seeded-random = { workspace = true, optional = true }
+uuid = { workspace = true, features = ["v4", "serde"], optional = true }
+#
+# feature = datetime
 chrono = { workspace = true, optional = true, default-features = false }
 
 [target.'cfg(target_family = "wasm")'.dependencies]

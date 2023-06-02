@@ -23,7 +23,7 @@ use wick_config::{FetchOptions, WickConfiguration};
 use wick_interface_types::TypeDefinition;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum Direction {
+pub(crate) enum Direction {
   In,
   Out,
 }
@@ -69,7 +69,7 @@ fn gen_trait_fns<'a>(
 ) -> Vec<TokenStream> {
   op.map(|op| {
     let op_name = id(&snake(op.name()));
-    let op_config = templates::op_config(config, op);
+    let op_config = templates::op_config(config, &generic_config_id(), op);
     let op_output = templates::op_outputs(config, op);
     let trait_sig = templates::trait_signature(config, op);
     quote! {

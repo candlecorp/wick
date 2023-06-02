@@ -4,6 +4,20 @@ name: test-component
 kind: wick/component@v1
 metadata:
   version: '1'
+requires:
+  - name: baseline
+    interface:
+      operations:
+        - name: power
+          with:
+            - name: exponent
+              type: u32
+          inputs:
+            - name: input
+              type: u64
+          outputs:
+            - name: output
+              type: u64
 import:
   - name: cli
     component:

@@ -1,6 +1,6 @@
 use console::set_colors_enabled;
 use wasmrs_guest::StreamExt;
-use wick_component::packet::{self as wick_packet, packet_stream};
+use wick_component::once;
 #[cfg(feature = "localgen")]
 mod generated;
 #[cfg(feature = "localgen")]
@@ -23,7 +23,7 @@ impl MainOperation for Component {
     mut args: WickStream<Vec<String>>,
     mut is_interactive: WickStream<types::cli::Interactive>,
     mut outputs: Self::Outputs,
-    _ctx: Context<Self::Config>,
+    ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
     set_colors_enabled(false);
     println!("\ncli:db: in WebAssembly CLI component");
@@ -33,14 +33,12 @@ impl MainOperation for Component {
 
       println!("cli:db: looking up user with id: {}.", console::style(id).green());
 
-      let packets = packet_stream!(("id", id));
-
       let provided = get_provided();
       println!(
         "cli:db: calling provided component operation at URL: {}",
         console::style(format!("{}get_user", provided.db.component())).green()
       );
-      let mut response = provided.db.get_user(packets)?;
+      let mut response = ctx.provided().db.get_user(once(id))?;
 
       println!("cli:db: call succeeded, waiting for response...");
 

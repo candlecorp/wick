@@ -17,7 +17,7 @@ pub(crate) fn gen_component_impls<'a>(
     || {},
     super::provided_struct(gen_config, &required),
   );
-  let response_streams = super::response_streams(gen_config, required);
+  let imported_components = super::imported_components(gen_config, required);
   let register_operations = register_operations(gen_config, component_name, ops);
   gen_config.add_dep(Dependency::WickPacket);
   gen_config.add_dep(Dependency::WasmRs);
@@ -31,7 +31,7 @@ pub(crate) fn gen_component_impls<'a>(
       #(#register_operations)*
     }
 
-    #response_streams
+    #imported_components
     #provided
 
   }

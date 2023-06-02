@@ -11,11 +11,12 @@ mod wick {
   wick_component::wick_import!();
 }
 use wick::*;
+use wick_component::once;
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl MainOperation for Component {
-  type Error = String;
+  type Error = anyhow::Error;
   type Outputs = main::Outputs;
   type Config = main::Config;
 
@@ -23,15 +24,21 @@ impl MainOperation for Component {
     mut args: WickStream<Vec<String>>,
     mut is_interactive: WickStream<types::cli::Interactive>,
     mut outputs: Self::Outputs,
-    _ctx: Context<Self::Config>,
+    ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
     while let (Some(Ok(args)), Some(Ok(tty))) = (args.next().await, is_interactive.next().await) {
-      // let stream = app.call("hello", PacketStream::default()).await.unwrap();
-
       println!(
         "args: {:?}, interactive: {{ stdin: {}, stdout: {}, stderr: {} }}",
         args, tty.stdin, tty.stdout, tty.stderr
       );
+
+      let mut provided_component_result = ctx.provided().baseline.power(PowerConfig { exponent: 3 }, once(2))?;
+
+      if let Some(Ok(result)) = provided_component_result.next().await {
+        println!("Got result for provided component: {}", result);
+      } else {
+        println!("Got no result for provided component.");
+      }
 
       let isatty = tty.stdin;
       if !isatty {

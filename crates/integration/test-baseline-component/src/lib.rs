@@ -77,9 +77,9 @@ impl ErrorOperation for Component {
   async fn error(
     mut input: WickStream<String>,
     _outputs: Self::Outputs,
-    _ctx: Context<Self::Config>,
+    ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
-    let config = get_root_config();
+    let config = ctx.root_config();
 
     println!("In error operation");
     while let Some(Ok(_)) = input.next().await {

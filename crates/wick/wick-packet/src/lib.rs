@@ -96,7 +96,7 @@ mod wrapped_type;
 pub mod validation;
 
 pub use collection_link::ComponentReference;
-pub use context::{ContextTransport, GenericConfig};
+pub use context::{ContextTransport, GenericConfig, InvocationRequest};
 #[cfg(feature = "datetime")]
 pub use datetime::{parse_date, NaiveDateTime};
 pub use entity::Entity;
@@ -107,7 +107,7 @@ pub use invocation::Invocation;
 pub use metadata::{Flags, WickMetadata, CLOSE_BRACKET, DONE_FLAG, OPEN_BRACKET};
 pub use output::Output;
 pub use packet::{from_raw_wasmrs, from_wasmrs, into_wasmrs, Packet, PacketError, PacketPayload};
-pub use packet_stream::{PacketSender, PacketStream};
+pub use packet_stream::{into_packet, PacketSender, PacketStream};
 pub use stream_map::StreamMap;
 pub use wasmrs::Metadata;
 pub use wasmrs_rx;
@@ -119,3 +119,6 @@ mod runtime;
 pub use b64_bytes::Base64Bytes;
 #[cfg(feature = "rt-tokio")]
 pub use runtime::split_stream;
+
+pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
+pub(crate) type Result<T> = std::result::Result<T, Error>;

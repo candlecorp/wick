@@ -4,7 +4,7 @@ args = [
   "--trace",
   "../../integration/test-baseline-component/component.yaml",
   "add",
-  "--config",
+  "--with",
   '{"default_err":"err from cli"}',
   "--",
   "--left=299999999999",

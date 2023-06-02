@@ -4,19 +4,17 @@ use wick_config::config::OperationSignature;
 use wick_interface_types::{StructDefinition, TypeDefinition};
 
 use crate::generate::dependency::Dependency;
-use crate::generate::ids::*;
 use crate::generate::templates::TypeOptions;
 use crate::generate::{config, f};
 
-pub(crate) fn op_config(config: &mut config::Config, op: &OperationSignature) -> TokenStream {
-  let config_name = config_id(op.name());
+pub(crate) fn op_config(config: &mut config::Config, config_name: &str, op: &OperationSignature) -> TokenStream {
   let (_, config_def) = super::type_def(
     config,
     &TypeDefinition::Struct(StructDefinition::new(config_name, op.config().to_vec())),
     TypeOptions::Defaults,
   );
 
-  let outputs = f::gen_if(
+  let config = f::gen_if(
     config.output_structs,
     || {
       config.add_dep(Dependency::WickPacket);
@@ -29,6 +27,6 @@ pub(crate) fn op_config(config: &mut config::Config, op: &OperationSignature) ->
   );
 
   quote! {
-    #outputs
+    #config
   }
 }

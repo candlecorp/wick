@@ -4,7 +4,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{Error, InherentData};
+use crate::{ComponentReference, Error, InherentData};
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct GenericConfig(HashMap<String, Value>);
@@ -66,20 +66,32 @@ impl TryFrom<Value> for GenericConfig {
   }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct ContextTransport<T>
 where
   T: std::fmt::Debug + Serialize,
 {
   pub config: T,
-  pub seed: Option<InherentData>,
+  pub inherent: Option<InherentData>,
+  pub invocation: Option<InvocationRequest>,
 }
 
 impl<T> ContextTransport<T>
 where
   T: std::fmt::Debug + Serialize,
 {
-  pub fn new(config: T, seed: Option<InherentData>) -> Self {
-    Self { config, seed }
+  pub fn new(config: T, inherent: Option<InherentData>) -> Self {
+    Self {
+      config,
+      inherent,
+      invocation: None,
+    }
   }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[must_use]
+pub struct InvocationRequest {
+  pub reference: ComponentReference,
+  pub operation: String,
 }

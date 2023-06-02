@@ -58,14 +58,14 @@ wick-azure-sql = { path = "./crates/components/wick-azure-sql", version = "0.1.0
 wick-sqlx = { path = "./crates/components/wick-sqlx", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
 # wasmrs
-wasmrs = { version = "0.11" }
-wasmrs-codec = { version = "0.11" }
-wasmrs-frames = { version = "0.11" }
-wasmrs-guest = { version = "0.11" }
-wasmrs-host = { version = "0.11" }
-wasmrs-runtime = { version = "0.11" }
-wasmrs-rx = { version = "0.11" }
-wasmrs-wasmtime = { version = "0.11" }
+wasmrs = { version = "0.12" }
+wasmrs-codec = { version = "0.12" }
+wasmrs-frames = { version = "0.12" }
+wasmrs-guest = { version = "0.12" }
+wasmrs-host = { version = "0.12" }
+wasmrs-runtime = { version = "0.12" }
+wasmrs-rx = { version = "0.12" }
+wasmrs-wasmtime = { version = "0.12" }
 #
 # Other
 ansi_term = "0.12"
@@ -150,7 +150,7 @@ thiserror = "1.0"
 time = "0.3"
 tokio = "1"
 tokio-postgres = "0.7"
-tokio-stream = "0.1"
+tokio-stream = { version = "0.1", default-features = false }
 tokio-util = "0.7"
 tonic = "0.9"
 tonic-build = { version = "0.9", default-features = false }
