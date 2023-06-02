@@ -6,9 +6,9 @@ cases:
       - name: input
         error: 'test'
       - name: input
-        data: 2
+        value: 2
       - name: input
-        data: hey
+        value: hey
     # outputs:
     #   - port: output
-    #     data: test
+    #     value: test

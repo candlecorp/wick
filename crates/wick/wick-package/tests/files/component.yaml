@@ -1,8 +1,8 @@
 ---
 kind: wick/component@v1
-name: "jinja"
+name: 'jinja'
 metadata:
-  version: "0.0.2"
+  version: '0.0.2'
 component:
   kind: wick/component/wasmrs@v1
   ref: ./test.fake.wasm
@@ -21,10 +21,10 @@ tests:
     operation: render
     input:
       - name: template
-        data: "Hello {{ name }}!"
+        value: 'Hello {{ name }}!'
       - name: data
         data:
-          name: "jinja"
+          name: 'jinja'
     output:
       - name: output
-        data: "Hello jinja!"
+        value: 'Hello jinja!'

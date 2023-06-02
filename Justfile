@@ -79,12 +79,12 @@ integration-setup:
 
 # Tear down the environment for integration tests
 integration-teardown:
-  # docker rm -f simple_registry
   just _run-integration-task down
 
 # Run codegen-related tasks
 codegen:
   just crates/wick/wick-config/codegen
+  cp crates/wick/wick-config/docs/v*.md docs/content/configuration/reference/
 
 # Run lints, license checks, formatting checks, et al.
 early-errors: licenses
@@ -118,6 +118,9 @@ check-unused:
 # Developer task to run a quick subset of tasks and tests.
 sanity: early-errors
   just unit-tests
+
+devdocs:
+  cd docs && hugo serve
 
 ##################################
 ### Private, dependency tasks. ###

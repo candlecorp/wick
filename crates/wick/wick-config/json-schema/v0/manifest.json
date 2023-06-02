@@ -173,15 +173,6 @@
 
           "type": "string"
         },
-        "labels": {
-          "description": "The labels that apply to this network.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "type": "string"
-            }
-          }
-        },
         "triggers": {
           "description": "The collection to use as the entrypoint when running as a standalone process.",
           "required": false,
@@ -275,13 +266,6 @@
           "description": "Schematic name.",
 
           "type": "string"
-        },
-        "collections": {
-          "description": "A list of collections the schematic uses.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         },
         "instances": {
           "description": "A map from component reference to its target.",

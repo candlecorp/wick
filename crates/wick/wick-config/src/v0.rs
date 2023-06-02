@@ -146,10 +146,6 @@ pub(crate) struct NetworkManifest {
   /// The unique identifier for this Network.
   #[serde(default)]
   pub(crate) name: Option<String>,
-  /// The labels that apply to this network.
-  #[serde(default)]
-  #[serde(skip_serializing_if = "HashMap::is_empty")]
-  pub(crate) labels: HashMap<String, String>,
   /// The collection to use as the entrypoint when running as a standalone process.
   #[serde(default)]
   pub(crate) triggers: Option<EntrypointDefinition>,
@@ -253,10 +249,6 @@ pub(crate) struct SchematicManifest {
   /// Schematic name.
   #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) name: String,
-  /// A list of collections the schematic uses.
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) collections: Vec<String>,
   /// A map from component reference to its target.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]

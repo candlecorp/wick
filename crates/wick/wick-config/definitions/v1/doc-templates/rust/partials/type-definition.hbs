@@ -1,30 +1,15 @@
 
-<h2 class="definition-name type-name">
-  <a name="{{name.value}}">{{name.value}}</a>
-</h2>
 
-{{#if description~}}
-<span class="description type-description">{{{description.value}}}</span>
-{{~/if}}
-
-<div class=fields>
+| Field name | Type | Description | Required? | Shortform? |
+|------------|------|-------------|-----------|------------|
+{{#withAnnotation "tagged"~}}
+| `kind` | `string` | must be `"{{arguments.0.value.value}}"` | Yes | |
+{{~/withAnnotation}}
 {{#each fields}}
-<div class=field>
-
-<h3 class=field-name>
-  <a name="{{name.value}}">{{name.value}}</a>
-</h3>
-
-{{#if description}}
-<span class="description field-description">{{{description.value}}}</span>
-{{/if}}
+| `{{name.value}}` | <code>{{> expand-type type}}</code> |
+  {{~#if description.value}}{{{description.value}}}{{else}}{{/if~}} |
+   {{~#switch type.kind}}{{#case "MapType"}}{{/case}}{{#case "ListType"}}{{/case}}{{#default}}{{#withAnnotation "required"}}Yes{{/withAnnotation}}{{/default}}{{/switch~}} |
+   {{~#withAnnotation "shortform"}}[Yes](/docs/configuration/v1/shortform#{{lowerCase ../type.name.value}}){{else}}{{#withType type}}{{#withAnnotation "shortform"}}[Yes](/docs/configuration/v1/shortform#{{lowerCase ../type.name.value}}){{/withAnnotation}}{{/withType}}{{/withAnnotation~}} |
+{{/each}}
 
 
-<ul class="field-notes">
-<li><span class="type field-note">Type: <span class=field-type>{{> expand-type type}}</span></span></li>
-{{#withAnnotation "required"}}<li><span class="annotation field-note">Required</span></li>{{/withAnnotation}}
-{{#withAnnotation "deprecated"}}<li><span class="annotation field-note">Deprecated</span></li>{{/withAnnotation}}
-</ul>
-</div>
-{{~/each~}}
-</div>

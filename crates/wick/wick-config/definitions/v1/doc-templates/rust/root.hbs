@@ -1,15 +1,36 @@
-<div class=manifest>
-{{~#each definitions~}}
-  <div class="definition">
-  {{~#switch kind~}}
+---
+title: "Version 1"
+weight: 1
+---
+
+{{#each definitions~}}
+  {{#ifCond kind "!=" "NamespaceDefinition"~}}
+  ## {{ name.value }}
+
+  {{#if description}}
+  <p>
+    <div style="font-style:italic">{{{description.value}}}</div>
+  </p>
+  {{/if}}
+
+  {{~#withAnnotation "shortform"}}
+  This type can be abbreviated with <a href="/docs/configuration/v1/shortform#{{lowerCase name.value}}">shortform syntax</a>
+  {{/withAnnotation}}
+  {{/ifCond}}
+
+  {{#switch kind~}}
     {{~#case "TypeDefinition"~}}{{~> type-definition~}}{{~/case~}}
     {{~#case "NamespaceDefinition"~}}{{~/case~}}
     {{~#case "EnumDefinition"~}}{{~> enum-definition~}}{{~/case~}}
+    {{~#case "UnionDefinition"~}}{{> union-definition}}{{~/case~}}
+    {{~#case "AliasDefinition"~}}{{> alias-definition}}{{~/case~}}
     {{~#default~}}
-    ## unhandled
-    panic!()
+    ## Unhandled definition kind: {{kind}}
+    {{panic .}}
     {{~/default~}}
-  {{~/switch~}}
-  </div>
-{{~/each~}}
-</div>
+  {{~/switch}}
+
+--------
+
+{{/each}}
+

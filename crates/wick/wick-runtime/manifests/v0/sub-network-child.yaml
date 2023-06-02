@@ -9,8 +9,6 @@ network:
         default_err: 'error from sub-network-child.yaml'
   schematics:
     - name: child_schematic
-      collections:
-        - wapc
       instances:
         validate:
           id: wapc::validate

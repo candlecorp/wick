@@ -50,9 +50,6 @@ pub struct ComponentConfiguration {
   pub(crate) host: Option<config::HostConfig>,
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) labels: HashMap<String, String>,
-  #[asset(skip)]
-  #[builder(default)]
   pub(crate) tests: Vec<TestConfiguration>,
   #[asset(skip)]
   #[builder(default)]
@@ -238,7 +235,6 @@ impl ComponentConfigurationBuilder {
     this
       .component(config.component)
       .host(config.host)
-      .labels(config.labels)
       .tests(config.tests)
       .types(config.types)
       .requires(config.requires)

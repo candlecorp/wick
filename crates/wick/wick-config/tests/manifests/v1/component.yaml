@@ -23,10 +23,10 @@ tests:
         operation: render
         input:
           - name: template
-            data: 'Hello {{ name }}!'
+            value: 'Hello {{ name }}!'
           - name: data
-            data:
+            value:
               name: 'jinja'
         output:
           - name: output
-            data: 'Hello jinja!'
+            value: 'Hello jinja!'

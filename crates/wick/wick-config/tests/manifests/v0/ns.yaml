@@ -7,8 +7,6 @@ network:
       namespace: schem
   schematics:
     - name: logger
-      collections:
-        - schem
       instances:
         something: wick::anything
       connections:

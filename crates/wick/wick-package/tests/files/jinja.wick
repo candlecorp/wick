@@ -1,9 +1,9 @@
 ---
 kind: wick/component@v1
-name: "jinja"
+name: 'jinja'
 metadata:
-  version: "2"
-  icon: "./assets/icon.png"
+  version: '2'
+  icon: './assets/icon.png'
 import:
   - name: include
     component:
@@ -13,7 +13,7 @@ package:
   files:
     - ./assets/**/*
   registry:
-    registry: $DOCKER_REGISTRY
+    host: $DOCKER_REGISTRY
     namespace: default
 component:
   kind: wick/component/composite@v1

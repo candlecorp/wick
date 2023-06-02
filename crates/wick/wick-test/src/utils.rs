@@ -7,7 +7,7 @@ use crate::error::TestError;
 /// Convert the [TestPacket] into a real [Packet].
 pub(crate) fn gen_packet(p: &TestPacket) -> Result<Packet, TestError> {
   let packet = match p {
-    TestPacket::PayloadData(data) => Packet::new_for_port(
+    TestPacket::SuccessPacket(data) => Packet::new_for_port(
       data.port(),
       PacketPayload::Ok(match data.data() {
         Some(data) => Some(
@@ -19,7 +19,7 @@ pub(crate) fn gen_packet(p: &TestPacket) -> Result<Packet, TestError> {
       }),
       convert_flags(data.flags()),
     ),
-    TestPacket::ErrorData(data) => Packet::new_for_port(
+    TestPacket::ErrorPacket(data) => Packet::new_for_port(
       data.port(),
       PacketPayload::Err(PacketError::new(data.error())),
       convert_flags(data.flags()),

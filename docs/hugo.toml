@@ -4,4 +4,11 @@ title = 'Candle Documentation'
 theme = 'hugo-theme-techdoc'
 
 [params]
-    menu_style = "open-menu"
+menu_style = "open-menu"
+
+[markup]
+defaultMarkdownHandler = 'goldmark'
+
+[markup.goldmark.renderer]
+unsafe = true
+xhtml = true

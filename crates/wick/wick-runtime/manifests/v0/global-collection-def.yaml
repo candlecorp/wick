@@ -8,8 +8,6 @@ network:
         default_err: 'error from global-collection-def.yaml'
   schematics:
     - name: first_schematic
-      collections:
-        - wapc
       instances:
         validate:
           id: wapc::validate
@@ -27,8 +25,6 @@ network:
             instance: <output>
             port: output
     - name: second_schematic
-      collections:
-        - wapc
       instances:
         validate:
           id: wapc::validate

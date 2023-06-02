@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Version 0 - Candle Documentation</title>
+<meta name="generator" content="Hugo 0.112.7">
+<link href="https://candle.dev/docs//index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://candle.dev/docs/configuration/v0/">
+<link rel="stylesheet" href="https://candle.dev/docs/css/theme.min.css">
+<link rel="stylesheet" href="https://candle.dev/docs/css/chroma.min.css">
+<script defer src="https://candle.dev/docs//js/fontawesome6/all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js" integrity="sha256-H3cjtrm/ztDeuhCN9I4yh4iN2Ybx/y1RM7rMmAesA0k=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js" integrity="sha256-4XodgW4TwIJuDtf+v6vDJ39FVxI0veC/kSCCmnFp7ck=" crossorigin="anonymous"></script>
+<script src="https://candle.dev/docs/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="Version 0" />
+<meta property="og:description" content="wick-config::v0. ## HostManifest A manifest defines the starting state of a Wick host and network.
+&#43;-&#43;-&#43;-&#43;-&#43;-&#43; | Field name | Type | Description | Required | Deprecated | | format | u32 | The configuration manifest format. | Yes | | | version | string | The version of the configuration. | | | | host | HostConfig| null | Additional host configuration. | | | | network | NetworkManifest | The configuration for a Wick network." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://candle.dev/docs/configuration/v0/" /><meta property="article:section" content="configuration" />
+
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Version 0"/>
+<meta name="twitter:description" content="wick-config::v0. ## HostManifest A manifest defines the starting state of a Wick host and network.
+&#43;-&#43;-&#43;-&#43;-&#43;-&#43; | Field name | Type | Description | Required | Deprecated | | format | u32 | The configuration manifest format. | Yes | | | version | string | The version of the configuration. | | | | host | HostConfig| null | Additional host configuration. | | | | network | NetworkManifest | The configuration for a Wick network."/>
+<meta itemprop="name" content="Version 0">
+<meta itemprop="description" content="wick-config::v0. ## HostManifest A manifest defines the starting state of a Wick host and network.
+&#43;-&#43;-&#43;-&#43;-&#43;-&#43; | Field name | Type | Description | Required | Deprecated | | format | u32 | The configuration manifest format. | Yes | | | version | string | The version of the configuration. | | | | host | HostConfig| null | Additional host configuration. | | | | network | NetworkManifest | The configuration for a Wick network.">
+
+<meta itemprop="wordCount" content="1043">
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>Candle Documentation</h1>
+</header>
+
+
+<div class="content-container">
+<main><h1>Version 0</h1>
+<h2 id="wick-configv0">wick-config::v0.</h2>
+<pre><code>## HostManifest
+</code></pre>
+<blockquote>
+<p>A manifest defines the starting state of a Wick host and network.</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| format | u32 | The configuration manifest format. | Yes |  |
+| version | string | The version of the configuration. |  |  |
+| host | <!-- raw HTML omitted -->HostConfig<!-- raw HTML omitted -->| null | Additional host configuration. |  |  |
+| network | <!-- raw HTML omitted -->NetworkManifest<!-- raw HTML omitted --> | The configuration for a Wick network. |  |  |
+| default_schematic | string| null | The default schematic to execute if none is provided. |  |  |
++-+-+-+-+-+</p>
+<pre><code>## HostConfig
+</code></pre>
+<blockquote>
+<p>Host configuration options.</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| allow_latest | bool | Whether or not to allow the :latest tag on remote artifacts. |  |  |
+| insecure_registries | string[] | A list of registries to connect to insecurely (over HTTP vs HTTPS). |  |  |
+| timeout | u64 | The timeout for network requests (in ms). |  |  |
+| id | string| null | The ID for this host, used to identify the host over the mesh. |  |  |
+| expose | string[] | The schematics to expose via RPC or the mesh, if any. |  |  |
+| mesh | <!-- raw HTML omitted -->MeshConfig<!-- raw HTML omitted -->| null | The mesh configuration. |  |  |
+| rpc | <!-- raw HTML omitted -->HttpConfig<!-- raw HTML omitted -->| null | Configuration for the GRPC server. |  |  |
+| http | <!-- raw HTML omitted -->HttpConfig<!-- raw HTML omitted -->| null | Configuration for the HTTP 1 server (development only). |  |  |
++-+-+-+-+-+</p>
+<pre><code>## HttpConfig
+</code></pre>
+<blockquote>
+<p>Configuration for HTTP/S servers.</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| enabled | bool | Enable/disable the server. |  |  |
+| port | u16| null | The port to bind to. |  |  |
+| address | string| null | The address to bind to. |  |  |
+| pem | string| null | Path to pem file for TLS. |  |  |
+| key | string| null | Path to key file for TLS. |  |  |
+| ca | string| null | Path to CA file. |  |  |
++-+-+-+-+-+</p>
+<pre><code>## MeshConfig
+</code></pre>
+<blockquote>
+<p>Configuration used to connect to the mesh.</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| enabled | bool | Enable/disable the mesh connection. |  |  |
+| address | string | The address of the NATS server. |  |  |
+| creds_path | string| null | The path to the NATS credsfile. |  |  |
+| token | string| null | The NATS token. |  |  |
++-+-+-+-+-+</p>
+<pre><code>## NetworkManifest
+</code></pre>
+<blockquote>
+<p>A Wick network definition.</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| name | string| null | The unique identifier for this Network. |  |  |
+| labels | Map&lt;string,string&gt; | The labels that apply to this network. |  |  |
+| triggers | <!-- raw HTML omitted -->EntrypointDefinition<!-- raw HTML omitted -->| null | The collection to use as the entrypoint when running as a standalone process. |  |  |
+| schematics | <!-- raw HTML omitted -->SchematicManifest<!-- raw HTML omitted -->[] | The links between capabilities and components. |  |  |
+| collections | <!-- raw HTML omitted -->CollectionDefinition<!-- raw HTML omitted -->[] | A list of component collections. |  |  |
++-+-+-+-+-+</p>
+<pre><code>## EntrypointDefinition
+</code></pre>
+<blockquote>
+<p>A collection definition for the main entrypoint.</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| reference | string | The reference/location of the collection. |  |  |
+| component | string | The component to use as the entrypoint. |  |  |
+| data | Map&lt;string,<!-- raw HTML omitted -->any<!-- raw HTML omitted -->&gt;| null | Data or configuration used to initialize the collection. |  |  |
++-+-+-+-+-+</p>
+<pre><code>## CollectionDefinition
+</code></pre>
+<blockquote>
+<p>A collection definition.</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| namespace | string | The local namespace for the collection. |  |  |
+| kind | <!-- raw HTML omitted -->CollectionKind<!-- raw HTML omitted --> | The kind/type of the collection. |  |  |
+| reference | string | The reference/location of the collection. |  |  |
+| data | Map&lt;string,<!-- raw HTML omitted -->any<!-- raw HTML omitted -->&gt;| null | Data or configuration used to initialize the collection. |  |  |
++-+-+-+-+-+</p>
+<pre><code>## CollectionKind
+</code></pre>
+<blockquote>
+<p>Kind of collection.</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| Native | unknown | Native collections included at compile-time in a Wick host. |  |  |
+| GrpcUrl | unknown | The URL for a separately managed GRPC endpoint. |  |  |
+| WaPC | unknown | A WaPC WebAssembly collection. |  |  |
+| Network | unknown | A local or remote Network definition. |  |  |
++-+-+-+-+-+</p>
+<pre><code>## SchematicManifest
+</code></pre>
+<blockquote>
+<p>A definition for an individual Wick schematic.</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| name | string | Schematic name. | Yes |  |
+| collections | string[] | A list of collections the schematic uses. |  |  |
+| instances | Map&lt;string,<!-- raw HTML omitted -->ComponentDefinition<!-- raw HTML omitted -->&gt; | A map from component reference to its target. |  |  |
+| connections | <!-- raw HTML omitted -->ConnectionDefinition<!-- raw HTML omitted -->[] | A list of connections from component to component. |  |  |
+| constraints | Map&lt;string,string&gt; | A map of constraints and values that limit where this schematic can run. |  |  |
++-+-+-+-+-+</p>
+<pre><code>## ComponentDefinition
+</code></pre>
+<blockquote>
+<p>A single component definition.</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| id | string | The ID of the component (i.e. the alias, key, or namespace). | Yes |  |
+| data | Map&lt;string,<!-- raw HTML omitted -->any<!-- raw HTML omitted -->&gt;| null | Data to associate with the reference. |  |  |
++-+-+-+-+-+</p>
+<pre><code>## ConnectionDefinition
+</code></pre>
+<blockquote>
+<p>A connection between components. This can be specified in short-form syntax (where applicable).</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| from | <!-- raw HTML omitted -->ConnectionTargetDefinition<!-- raw HTML omitted --> | The originating component from upstream. |  |  |
+| to | <!-- raw HTML omitted -->ConnectionTargetDefinition<!-- raw HTML omitted --> | The destination component (downstream). |  |  |
++-+-+-+-+-+</p>
+<pre><code>## ConnectionTargetDefinition
+</code></pre>
+<blockquote>
+<p>A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).</p>
+</blockquote>
+<p>+-+-+-+-+-+
+| Field name | Type | Description | Required | Deprecated |
+| instance | string | The instance name of the referenced component. | Yes |  |
+| port | string | The component's port. | Yes |  |
+| data | Map&lt;string,<!-- raw HTML omitted -->any<!-- raw HTML omitted -->&gt;| null | Data to associate with a connection. |  |  |
++-+-+-+-+-+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://candle.dev/docs/configuration/v1/" title="Version 1"><i class="fas fa-arrow-left" aria-hidden="true"></i>&nbsp;Prev - Version 1</a>
+<a class="nav nav-next" href="https://candle.dev/docs/overview/" title="Overview">Next - Overview <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main>
+<div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://candle.dev/docs/">Home</a></li>
+
+<li class="parent"><a href="https://candle.dev/docs/configuration/">Configuration</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://candle.dev/docs/configuration/v1/">Version 1</a></li>
+<li class="active"><a href="https://candle.dev/docs/configuration/v0/">Version 0</a></li>
+</ul>
+  
+</li>
+
+<li class=""><a href="https://candle.dev/docs/overview/">Overview</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://candle.dev/docs/overview/concepts/">Core Concepts</a></li>
+<li class=""><a href="https://candle.dev/docs/overview/streaming/">Streaming</a></li>
+</ul>
+  
+</li>
+
+<li class=""><a href="https://candle.dev/docs/getting-started/">Getting Started</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://candle.dev/docs/getting-started/installation/">Installation</a></li>
+<li class=""><a href="https://candle.dev/docs/getting-started/tutorial/">Tutorial</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>
