@@ -1,17 +1,18 @@
 use std::pin::Pin;
 use std::task::Poll;
 
-use futures::stream::{BoxStream, FusedStream};
-use futures::Stream;
 use pin_project_lite::pin_project;
+use tokio_stream::Stream;
 use tracing::Span;
 use wasmrs_rx::FluxChannel;
 
-use crate::{ContextTransport, GenericConfig, InherentData, Packet};
+use crate::{BoxError, ContextTransport, GenericConfig, InherentData, Packet, Result};
 
 pub type PacketSender = FluxChannel<Packet, crate::Error>;
 
 type ContextConfig = (GenericConfig, Option<InherentData>);
+
+pub(crate) type BoxStream<'a, T> = Pin<Box<dyn Stream<Item = T> + Send + 'a>>;
 
 #[cfg(target_family = "wasm")]
 pin_project! {
@@ -19,7 +20,7 @@ pin_project! {
   #[must_use]
   pub struct PacketStream {
     #[pin]
-    inner: std::sync::Arc<parking_lot::Mutex<dyn FusedStream<Item = Result<Packet, crate::Error>> + Unpin>>,
+    inner: std::sync::Arc<parking_lot::Mutex<dyn Stream<Item = Result<Packet>> + Unpin>>,
     config: std::sync::Arc<parking_lot::Mutex<Option<ContextConfig>>>,
     span: Span
   }
@@ -31,36 +32,36 @@ pin_project! {
   #[must_use]
   pub struct PacketStream {
     #[pin]
-    inner: std::sync::Arc<parking_lot::Mutex<dyn FusedStream<Item = Result<Packet, crate::Error>> + Send + Unpin>>,
+    inner: std::sync::Arc<parking_lot::Mutex<dyn Stream<Item = Result<Packet>> + Send + Unpin>>,
     config: std::sync::Arc<parking_lot::Mutex<Option<ContextConfig>>>,
     span: Span
   }
 }
 
-impl From<BoxStream<'static, Result<Packet, crate::Error>>> for PacketStream {
-  fn from(stream: BoxStream<'static, Result<Packet, crate::Error>>) -> Self {
+impl From<BoxStream<'static, Result<Packet>>> for PacketStream {
+  fn from(stream: BoxStream<'static, Result<Packet>>) -> Self {
     Self::new(stream)
   }
 }
 
 impl From<Vec<Packet>> for PacketStream {
   fn from(iter: Vec<Packet>) -> Self {
-    Self::new(Box::new(futures::stream::iter(iter.into_iter().map(Ok))))
+    Self::new(Box::new(tokio_stream::iter(iter.into_iter().map(Ok))))
   }
 }
 
 impl PacketStream {
   #[cfg(target_family = "wasm")]
-  pub fn new(rx: impl Stream<Item = Result<Packet, crate::Error>> + Unpin + 'static) -> Self {
+  pub fn new(rx: impl Stream<Item = Result<Packet>> + Unpin + 'static) -> Self {
     Self {
-      inner: std::sync::Arc::new(parking_lot::Mutex::new(futures::StreamExt::fuse(rx))),
+      inner: std::sync::Arc::new(parking_lot::Mutex::new(tokio_stream::StreamExt::fuse(rx))),
       config: Default::default(),
       span: Span::current(),
     }
   }
   #[cfg(not(target_family = "wasm"))]
-  pub fn new(rx: impl Stream<Item = Result<Packet, crate::Error>> + Unpin + Send + 'static) -> Self {
-    use futures::StreamExt;
+  pub fn new(rx: impl Stream<Item = Result<Packet>> + Unpin + Send + 'static) -> Self {
+    use tokio_stream::StreamExt;
 
     Self {
       inner: std::sync::Arc::new(parking_lot::Mutex::new(rx.fuse())),
@@ -73,8 +74,8 @@ impl PacketStream {
     self.span = span;
   }
 
-  pub fn set_context(&self, context: GenericConfig, seed: Option<InherentData>) {
-    self.config.lock().replace((context, seed));
+  pub fn set_context(&self, context: GenericConfig, inherent: Option<InherentData>) {
+    self.config.lock().replace((context, inherent));
   }
 
   pub fn new_channels() -> (PacketSender, Self) {
@@ -83,7 +84,7 @@ impl PacketStream {
   }
 
   pub fn empty() -> Self {
-    Self::new(Box::new(futures::stream::empty()))
+    Self::new(Box::new(tokio_stream::empty()))
   }
 }
 
@@ -94,7 +95,7 @@ impl std::fmt::Debug for PacketStream {
 }
 
 impl Stream for PacketStream {
-  type Item = Result<Packet, crate::Error>;
+  type Item = Result<Packet>;
 
   fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
     let config = self.config.lock().take();
@@ -137,6 +138,13 @@ impl Stream for PacketStream {
       poll
     }
   }
+}
+
+pub fn into_packet<T: serde::Serialize>(
+  name: impl AsRef<str>,
+) -> Box<dyn FnMut(std::result::Result<T, BoxError>) -> Result<Packet>> {
+  let name = name.as_ref().to_owned();
+  Box::new(move |x| Ok(x.map_or_else(|e| Packet::err(&name, e.to_string()), |x| Packet::encode(&name, &x))))
 }
 
 #[cfg(test)]

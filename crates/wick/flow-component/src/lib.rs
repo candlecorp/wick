@@ -87,10 +87,10 @@
 
 mod context;
 pub use context::*;
-#[cfg(feature = "traits")]
+#[cfg(feature = "invocation")]
 mod traits;
 
-#[cfg(feature = "traits")]
+#[cfg(feature = "invocation")]
 pub use traits::*;
 
 pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;

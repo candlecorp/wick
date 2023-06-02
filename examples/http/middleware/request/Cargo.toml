@@ -17,7 +17,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wick-component = { path = "../../../../crates/wick/wick-component" }
-wasmrs-guest = { version = "0.11", features = [] }
+wasmrs-guest = { version = "0.12", features = [] }
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"
 anyhow = { version = "1" }

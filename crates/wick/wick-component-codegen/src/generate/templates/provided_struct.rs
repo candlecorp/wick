@@ -34,7 +34,17 @@ pub(crate) fn provided_struct(_config: &Config, required: &[BoundInterface]) -> 
       Provided {
         #(#required_names,)*
       }
-
     }
+
+    pub(crate) trait ProvidedContext {
+      fn provided(&self) -> Provided;
+    }
+
+    impl<T> ProvidedContext for wick_component::flow_component::Context<T> where T:std::fmt::Debug{
+      fn provided(&self) -> Provided {
+        get_provided()
+      }
+    }
+
   }
 }

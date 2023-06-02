@@ -18,6 +18,7 @@ use wick_packet::{
   from_wasmrs,
   into_wasmrs,
   ComponentReference,
+  ContextTransport,
   Entity,
   GenericConfig,
   Invocation,
@@ -144,6 +145,9 @@ impl WasmHost {
     debug!(duration_μs = ?time.elapsed().as_micros(), "wasmtime initialize");
     if let Some(callback) = callback {
       let index = host.register_request_channel("wick", "__callback", make_host_callback(callback));
+      let cb_span = debug_span!("wasmrs event");
+      cb_span.follows_from(&span);
+      host.register_fire_and_forget("wick", "__event", make_event_callback(cb_span));
       trace!(index, "wasmrs callback index");
     }
     let ctx = host.new_context(128 * 1024, 128 * 1024).unwrap();
@@ -225,11 +229,20 @@ impl WasmHost {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[must_use]
-struct InvocationPayload {
-  reference: ComponentReference,
-  operation: String,
+fn make_event_callback(span: Span) -> OperationHandler<wasmrs::IncomingMono, ()> {
+  let func = move |incoming: wasmrs::IncomingMono| {
+    let span = span.clone();
+    tokio::spawn(async move {
+      #[allow(clippy::option_if_let_else)]
+      if let Ok(payload) = incoming.await {
+        span.in_scope(|| debug!("event callback {:?}", payload));
+      } else {
+        span.in_scope(|| warn!("event callback errored"));
+      }
+    });
+    Ok(())
+  };
+  Box::new(func)
 }
 
 fn make_host_callback(
@@ -244,8 +257,8 @@ fn make_host_callback(
     let span = span.clone();
     tokio::spawn(async move {
       let first = incoming.next().await;
-      let meta = if let Some(Ok(first)) = first {
-        match wasmrs_codec::messagepack::deserialize::<InvocationPayload>(&first.data) {
+      let ctx = if let Some(Ok(first)) = first {
+        match wasmrs_codec::messagepack::deserialize::<ContextTransport<Option<GenericConfig>>>(&first.data) {
           Ok(p) => p,
           Err(e) => {
             span.in_scope(|| error!("bad component ref invocation: {}", e));
@@ -258,8 +271,16 @@ fn make_host_callback(
         let _ = tx.error(wick_packet::Error::component_error("no payload"));
         return;
       };
+      if ctx.invocation.is_none() {
+        span.in_scope(|| error!("bad component ref invocation: no invocation metadata"));
+        let _ = tx.error(wick_packet::Error::component_error("no payload"));
+        return;
+      }
+      let config = ctx.config;
+      let meta = ctx.invocation.unwrap();
       let stream = from_wasmrs(incoming);
-      match cb(meta.reference, meta.operation, stream, None, None, &span).await {
+
+      match cb(meta.reference, meta.operation, stream, None, config, &span).await {
         Ok(mut response) => {
           while let Some(p) = response.next().await {
             let _ = tx.send_result(p);

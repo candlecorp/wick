@@ -1,4 +1,3 @@
-use futures::StreamExt;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use tracing::debug;
@@ -333,7 +332,7 @@ impl PacketError {
 
 #[must_use]
 pub fn into_wasmrs(index: u32, stream: PacketStream) -> BoxFlux<RawPayload, PayloadError> {
-  let s = StreamExt::map(stream, move |p| {
+  let s = tokio_stream::StreamExt::map(stream, move |p| {
     p.map(|p| {
       let md = wasmrs::Metadata::new_extra(index, p.extra.encode()).encode();
       match p.payload {
@@ -347,7 +346,7 @@ pub fn into_wasmrs(index: u32, stream: PacketStream) -> BoxFlux<RawPayload, Payl
 }
 
 pub fn from_raw_wasmrs(stream: BoxFlux<RawPayload, PayloadError>) -> PacketStream {
-  let s = StreamExt::map(stream, move |p| {
+  let s = tokio_stream::StreamExt::map(stream, move |p| {
     let p = p.map_or_else(
       |e| {
         if let Some(mut metadata) = e.metadata {
@@ -392,7 +391,7 @@ pub fn from_raw_wasmrs(stream: BoxFlux<RawPayload, PayloadError>) -> PacketStrea
 }
 
 pub fn from_wasmrs(stream: BoxFlux<Payload, PayloadError>) -> PacketStream {
-  let s = StreamExt::map(stream, move |p| {
+  let s = tokio_stream::StreamExt::map(stream, move |p| {
     let p = p.map_or_else(
       |e| {
         let md = wasmrs::Metadata::decode(&mut e.metadata.unwrap());

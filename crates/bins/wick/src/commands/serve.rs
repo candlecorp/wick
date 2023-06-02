@@ -22,8 +22,8 @@ pub(crate) struct ServeCommand {
   pub(crate) location: String,
 
   /// Pass configuration necessary to instantiate the component (JSON).
-  #[clap(long = "config", short = 'c', action)]
-  config: Option<String>,
+  #[clap(long = "with", short = 'w', action)]
+  with: Option<String>,
 }
 
 pub(crate) async fn handle(opts: ServeCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
@@ -36,7 +36,7 @@ pub(crate) async fn handle(opts: ServeCommand, _settings: wick_settings::Setting
     .try_component_config()?;
 
   let config = merge_config(&manifest, &opts.oci, Some(opts.cli));
-  let component_config = parse_config_string(opts.config.as_deref())?;
+  let component_config = parse_config_string(opts.with.as_deref())?;
 
   let mut host = ComponentHostBuilder::default()
     .manifest(config)

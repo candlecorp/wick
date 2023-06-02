@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{Entity, PacketStream};
+use crate::{Entity, PacketStream, Result};
 
 /// An implementation that encapsulates a collection link that components use to call out to components on other Wick collections.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -43,11 +43,16 @@ impl ComponentReference {
   }
 
   /// Make a call to the linked collection.
-  pub fn call(&self, operation: &str, stream: PacketStream) -> Result<PacketStream, crate::error::Error> {
+  pub fn call(
+    &self,
+    operation: &str,
+    stream: PacketStream,
+    config: Option<crate::GenericConfig>,
+  ) -> Result<PacketStream> {
     // let origin = self.origin.clone();
     // let target = Entity::operation(&self.target_ns, operation).url();
 
-    link_call(self.clone(), operation, stream)
+    link_call(self.clone(), operation, stream, config)
   }
 }
 
@@ -69,20 +74,24 @@ fn link_call(
   compref: ComponentReference,
   target_op: &str,
   input: PacketStream,
-) -> Result<PacketStream, crate::error::Error> {
-  use futures::StreamExt;
+  config: Option<crate::GenericConfig>,
+) -> Result<PacketStream> {
+  use tokio_stream::StreamExt;
   use wasmrs::RSocket;
   use wasmrs_guest::{FluxChannel, Observer};
 
-  use crate::Packet;
   let mut stream = crate::into_wasmrs(0, input);
   let (tx, rx) = FluxChannel::new_parts();
-  let first = InvocationPayload {
-    reference: compref,
-    operation: target_op.to_owned(),
+  let first = crate::ContextTransport {
+    config,
+    invocation: Some(crate::InvocationRequest {
+      reference: compref,
+      operation: target_op.to_owned(),
+    }),
+    inherent: None,
   };
 
-  let _ = tx.send_result(Packet::encode("", first).into());
+  let _ = tx.send_result(crate::Packet::encode("", first).into());
   let _ = wasmrs_guest::runtime::spawn("comp_ref", async move {
     loop {
       if let Some(payload) = stream.next().await {
@@ -105,6 +114,7 @@ fn link_call(
   _compref: ComponentReference,
   _target_op: &str,
   _input: PacketStream,
-) -> Result<PacketStream, crate::error::Error> {
+  _config: Option<crate::GenericConfig>,
+) -> Result<PacketStream> {
   unimplemented!("Link calls from native components is not implemented yet")
 }

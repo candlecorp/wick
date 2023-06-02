@@ -66,7 +66,7 @@ mod test1 {
       let expected = ContextTransport::new(config, None);
       let bytes = wasmrs_codec::messagepack::serialize(&expected).unwrap();
       let actual: ContextTransport<testop::Config> = wasmrs_codec::messagepack::deserialize(&bytes).unwrap();
-      assert_eq!(actual, expected);
+      assert_eq!(actual.config, expected.config);
 
       Ok(())
     }

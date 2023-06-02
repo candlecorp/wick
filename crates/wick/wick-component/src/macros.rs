@@ -191,7 +191,7 @@ macro_rules! propagate_if_error {
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use futures::StreamExt;
+  use tokio_stream::StreamExt;
   use wasmrs::PayloadError;
   use wasmrs_rx::FluxReceiver;
   use wick_packet::Packet;

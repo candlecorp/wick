@@ -17,8 +17,12 @@ pub(crate) fn component_id(r: &BoundInterface) -> String {
   format!("{}Component", &pascal(r.id()))
 }
 
-pub(crate) fn config_id(_name: &str) -> String {
+pub(crate) fn generic_config_id() -> String {
   "Config".to_owned()
+}
+
+pub(crate) fn named_config_id(name: &str) -> String {
+  format!("{}Config", pascal(name))
 }
 
 pub(crate) fn snake(s: &str) -> String {

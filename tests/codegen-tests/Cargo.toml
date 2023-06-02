@@ -13,7 +13,7 @@ publish = false
 [dependencies]
 wasmrs-guest = { workspace = true }
 wick-component = { workspace = true }
-flow-component = { workspace = true, features = ["traits"] }
+flow-component = { workspace = true, features = ["invocation"] }
 serde = { workspace = true, features = ["derive"] }
 async-trait = { workspace = true }
 bytes = { workspace = true }

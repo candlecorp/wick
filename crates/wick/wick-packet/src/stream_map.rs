@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use futures::StreamExt;
+use tokio_stream::StreamExt;
 
 use crate::{Error, Packet, PacketSender, PacketStream};
 pub(crate) type Result<T> = std::result::Result<T, Error>;

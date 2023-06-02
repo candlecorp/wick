@@ -137,7 +137,12 @@ impl Component for SqlXComponent {
             .operations()
             .iter()
             .find(|op| op.name() == invocation.target.operation_id())
-            .unwrap()
+            .ok_or_else(|| {
+              ComponentError::message(&format!(
+                "operation {} not found in this sql component",
+                invocation.target.operation_id()
+              ))
+            })?
             .clone();
           let client = ctx.db.clone();
           let stmt = ctx.queries.get(invocation.target.operation_id()).unwrap().clone();

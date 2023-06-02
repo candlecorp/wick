@@ -2094,9 +2094,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15ef6008ee7432fb417db6c531cfd61e3e39a9f5532eb9a4f382eb6ec9168928"
+checksum = "c839558462b394d53c045fd1761a49f300d8f08e120256f64a0b1aa9e2437adf"
 dependencies = [
  "bytes",
  "crossbeam-channel",
@@ -2116,9 +2116,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-codec"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54136e4afce57fe0bc79270f8876148d73d3e97a060ea35ef372c54ecad6f89e"
+checksum = "8854f99ee80c9e1c6a1a46b35e4373d533ae423c623a5e18285c64b901d92ab3"
 dependencies = [
  "heapless",
  "serde",
@@ -2128,9 +2128,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-frames"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac4fc5b6326c1bea2c46702264bda818a217261a368b1d26ea2e9ad66ee11ab2"
+checksum = "469a9922dda9380880ea4273cbaca65209fb95ddb1aea6c0ac76ede6cb2778ea"
 dependencies = [
  "bytes",
  "serde",
@@ -2138,9 +2138,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-guest"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f3cf06e25cb2b5590cb92a3aa0c73a69c8c601a7657d060f266aa71cdbb9aed"
+checksum = "be1025bbe96251d93a0026c50a63cccd1d74f9b1b5205b3919061cdde2114cf3"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -2158,9 +2158,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-runtime"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "351d409fa8cf257c8d8a68a6ca211bc1a72ac2663bddd3c638b2b79a3a57c4a0"
+checksum = "63dd95a35923a7afe0e7cc2d1a758aabf3778ce529e0f743d3a74f4641dd271c"
 dependencies = [
  "bytes",
  "crossbeam-channel",
@@ -2177,9 +2177,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-rx"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c845fcfe75d436196cc64adb78fd9f4e74115a7eb0451711f6368aedc4b00f2f"
+checksum = "f1459e451fadf5ec58e0f2249f20be50c75fa155fd135bae22effebe99e8636d"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2243,8 +2243,9 @@ name = "wick-component"
 version = "0.15.0"
 dependencies = [
  "flow-component",
- "futures",
  "paste",
+ "serde_json",
+ "tokio-stream",
  "wasmrs",
  "wasmrs-codec",
  "wasmrs-runtime",
@@ -2342,12 +2343,12 @@ dependencies = [
  "base64 0.21.2",
  "base64-serde",
  "bytes",
- "futures",
  "parking_lot",
  "pin-project-lite",
  "serde",
  "serde_json",
  "thiserror",
+ "tokio-stream",
  "tracing",
  "url",
  "wasmrs",

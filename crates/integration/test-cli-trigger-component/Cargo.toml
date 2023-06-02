@@ -20,11 +20,12 @@ localgen = []
 crate-type = ["cdylib"]
 
 [dependencies]
-wasmrs-guest = { version="0.11", features = [
+wasmrs-guest = { version="0.12", features = [
 ] }
 wick-component = { path = "../../wick/wick-component" }
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"
+anyhow = "1.0"
 
 [build-dependencies]
 wick-component-codegen = { path = "../../wick/wick-component-codegen" }

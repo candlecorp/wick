@@ -33,7 +33,7 @@ pub(crate) fn gen_wrapper_fn(config: &mut config::Config, component: &Ident, op:
   config.add_dep(Dependency::WickPacket);
   config.add_dep(Dependency::WasmRs);
   config.add_dep(Dependency::WasmRsRuntime);
-  let config_id = id(&config_id(op.name()));
+  let config_id = id(&generic_config_id());
 
   quote! {
     fn #wrapper_id(mut input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>) -> std::result::Result<wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>,Box<dyn std::error::Error + Send + Sync>> {

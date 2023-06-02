@@ -75,6 +75,19 @@
 #![allow(missing_docs)]
 
 pub mod macros;
-pub use futures::stream::StreamExt;
+pub use serde_json::to_value;
+pub use tokio_stream::{empty, iter as iter_raw, once as once_raw, StreamExt};
 pub use {flow_component, paste, wasmrs, wasmrs_codec, wasmrs_runtime as runtime, wasmrs_rx, wick_packet as packet};
+
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
+
+pub fn once<T>(value: T) -> impl tokio_stream::Stream<Item = Result<T, BoxError>> {
+  tokio_stream::once(Ok(value))
+}
+
+pub fn iter<I, O>(i: I) -> impl tokio_stream::Stream<Item = Result<O, BoxError>>
+where
+  I: IntoIterator<Item = O>,
+{
+  tokio_stream::iter(i.into_iter().map(|i| Ok(i)))
+}

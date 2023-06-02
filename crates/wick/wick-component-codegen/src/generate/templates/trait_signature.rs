@@ -28,6 +28,7 @@ pub(crate) fn trait_signature(config: &mut config::Config, op: &OperationSignatu
       config.add_dep(Dependency::AsyncTrait);
     },
     quote! {
+
       #[async_trait::async_trait(?Send)]
       #[cfg(target_family = "wasm")]
       pub trait #trait_name {

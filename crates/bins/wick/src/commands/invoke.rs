@@ -60,8 +60,8 @@ pub(crate) struct InvokeCommand {
   seed: Option<u64>,
 
   /// Pass configuration necessary to instantiate the component (JSON).
-  #[clap(long = "config", short = 'c', action)]
-  config: Option<String>,
+  #[clap(long = "with", short = 'w', action)]
+  with: Option<String>,
 
   /// Arguments to pass as inputs to a component.
   #[clap(last(true), action)]
@@ -101,7 +101,7 @@ pub(crate) async fn handle(opts: InvokeCommand, settings: wick_settings::Setting
 
   let component = opts.operation;
 
-  let component_config = parse_config_string(opts.config.as_deref())?;
+  let component_config = parse_config_string(opts.with.as_deref())?;
 
   let mut host = ComponentHostBuilder::default()
     .manifest(config)

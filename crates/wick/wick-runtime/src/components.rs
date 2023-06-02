@@ -95,6 +95,7 @@ pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
         origin = %origin_url,
         target = %target_id,
         engine_id = %engine_id,
+        config = ?config,
         "link_call"
       );
     });

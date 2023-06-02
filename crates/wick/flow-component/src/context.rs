@@ -23,7 +23,7 @@ where
 {
   pub config: Arc<T>,
   pub inherent: Option<InherentData>,
-  #[cfg(feature = "traits")]
+  #[cfg(feature = "invocation")]
   pub callback: Arc<crate::RuntimeCallback>,
 }
 
@@ -44,9 +44,9 @@ where
 {
   fn from(value: ContextTransport<T>) -> Self {
     Self {
-      inherent: value.seed,
+      inherent: value.inherent,
       config: Arc::new(value.config),
-      #[cfg(feature = "traits")]
+      #[cfg(feature = "invocation")]
       callback: crate::panic_callback(),
     }
   }
@@ -57,7 +57,7 @@ where
   T: std::fmt::Debug,
   T: LocalAwareSend,
 {
-  #[cfg(feature = "traits")]
+  #[cfg(feature = "invocation")]
   pub fn new(config: T, inherent: Option<InherentData>, callback: Arc<crate::RuntimeCallback>) -> Self {
     Self {
       inherent,
@@ -66,11 +66,16 @@ where
     }
   }
 
-  #[cfg(not(feature = "traits"))]
+  #[cfg(not(feature = "invocation"))]
   pub fn new(config: T, inherent: Option<InherentData>) -> Self {
     Self {
       inherent,
       config: Arc::new(config),
     }
   }
+}
+
+pub trait ProviderContext {
+  type Provided;
+  fn provided(&self) -> Self::Provided;
 }

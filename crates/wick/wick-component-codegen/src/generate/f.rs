@@ -46,7 +46,7 @@ fn from_json(value: &Value) -> TokenStream {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub(crate) fn sanitize_list(list: Vec<impl ToTokens>) -> TokenStream {
+pub(crate) fn maybe_parens(list: Vec<impl ToTokens>) -> TokenStream {
   if list.len() == 1 {
     quote! { #(#list),* }
   } else {
