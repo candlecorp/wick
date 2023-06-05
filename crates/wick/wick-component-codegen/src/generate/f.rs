@@ -10,17 +10,39 @@ use super::config;
 use crate::generate::ids::{id, snake};
 use crate::generate::{expand_type, Direction};
 
-pub(crate) fn field_pair(config: &mut config::Config, imported: bool) -> impl FnMut(&Field) -> TokenStream + '_ {
-  move |f| {
-    let name = id(&snake(&f.name));
-    let ty = expand_type(config, Direction::In, imported, &f.ty);
-    let desc = f
+pub(crate) fn field_pair(
+  config: &mut config::Config,
+  imported: bool,
+  serde: bool,
+) -> impl FnMut(&Field) -> TokenStream + '_ {
+  move |field: &Field| {
+    let name = &field.name;
+    let id = id(&snake(&name));
+    let ty = expand_type(config, Direction::In, imported, &field.ty);
+    let desc = field
       .description
       .as_ref()
       .map_or_else(|| quote! {}, |desc| quote! {#[doc = #desc]});
+    let serde = if serde {
+      let default = (!field.required).then(|| quote! {#[serde(default)]});
+      let skip_if = match field.ty() {
+        wick_interface_types::Type::List { .. } => quote! { #[serde(skip_serializing_if = "Vec::is_empty")] },
+        wick_interface_types::Type::Optional { .. } => quote! { #[serde(skip_serializing_if = "Option::is_none")] },
+        wick_interface_types::Type::Map { .. } => quote! { #[serde(skip_serializing_if = "HashMap::is_empty")] },
+        _ => quote! {},
+      };
+
+      quote! {
+        #[serde(rename = #name)]
+        #default
+        #skip_if
+      }
+    } else {
+      quote! {}
+    };
     quote! {
       #desc
-      pub #name: #ty
+      pub #id: #ty
     }
   }
 }

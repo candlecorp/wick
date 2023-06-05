@@ -26,8 +26,8 @@ pub(crate) fn gen_component_impls<'a>(
     #[no_mangle]
     #[cfg(target_family = "wasm")]
     extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {
-      wasmrs_guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
-      wasmrs_guest::register_request_response("wick", "__setup", Box::new(__setup));
+      wick_component::wasmrs_guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
+      wick_component::wasmrs_guest::register_request_response("wick", "__setup", Box::new(__setup));
       #(#register_operations)*
     }
 
@@ -47,7 +47,7 @@ fn register_operations<'a>(
     let string = op.name();
 
     quote! {
-      wasmrs_guest::register_request_channel("wick", #string, Box::new(#component::#name));
+      wick_component::wasmrs_guest::register_request_channel("wick", #string, Box::new(#component::#name));
     }
   })
   .collect()

@@ -1,6 +1,7 @@
 #[macro_export]
 macro_rules! wick_import {
   () => {
+    pub use wick_component::prelude::*;
     include!(concat!(env!("OUT_DIR"), "/mod.rs"));
   };
 }
