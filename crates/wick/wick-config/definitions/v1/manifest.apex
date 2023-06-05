@@ -67,7 +67,7 @@ type PackageDefinition @default {
 
 type RegistryDefinition @default {
   "The registry to publish to, e.g. registry.candle.dev"
-  host: string = "registry.candle.dev"
+  host: string = "registry.candle.dev"  @alias("registry")
   "The namespace on the registry. e.g.: [*your username*]"
   namespace: string
 }
@@ -711,7 +711,7 @@ type SuccessPacket {
   flags: PacketFlags?
 
   "The data to send."
-  value: any? @skip_env
+  value: any? @skip_env @alias("data")
 }
 
 type ErrorPacket {
