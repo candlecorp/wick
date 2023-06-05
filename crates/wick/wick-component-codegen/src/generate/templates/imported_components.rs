@@ -14,7 +14,7 @@ use crate::generate::{f, Direction};
 use crate::*;
 
 pub(crate) fn imported_components(config: &mut Config, required: Vec<BoundInterface>) -> TokenStream {
-  let fields = required
+  let components = required
     .into_iter()
     .map(|v| {
       let name = id(&format!("{}Component", &pascal(v.id())));
@@ -41,7 +41,7 @@ pub(crate) fn imported_components(config: &mut Config, required: Vec<BoundInterf
     })
     .collect_vec();
   quote! {
-      #(#fields),*
+      #(#components)*
 
   }
 }
