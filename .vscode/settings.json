@@ -37,7 +37,16 @@
     "--"
   ],
   "rust-analyzer.showUnlinkedFileNotification": false,
-  "[just]": {
-    "editor.renderWhitespace": "all"
-  }
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  },
+  "[yaml]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "files.trimTrailingWhitespace": true,
+  "files.eol": "\n",
+  "editor.formatOnSave": true,
+  "prettier.singleQuote": true
 }
