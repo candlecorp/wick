@@ -89,16 +89,24 @@
 
 pub mod macros;
 pub use serde_json::to_value;
-pub use tokio_stream::{empty, iter as iter_raw, once as once_raw, StreamExt};
+pub use tokio_stream::{empty, iter as iter_raw, once as once_raw, Stream, StreamExt};
+#[cfg(target_family = "wasm")]
+pub use wasmrs_guest;
 pub use {flow_component, paste, wasmrs, wasmrs_codec, wasmrs_runtime as runtime, wasmrs_rx, wick_packet as packet};
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
-pub fn once<T>(value: T) -> impl tokio_stream::Stream<Item = Result<T, BoxError>> {
+pub fn once<T>(value: T) -> impl Stream<Item = Result<T, BoxError>> {
   tokio_stream::once(Ok(value))
 }
 
-pub fn iter<I, O>(i: I) -> impl tokio_stream::Stream<Item = Result<O, BoxError>>
+pub mod prelude {
+  pub use serde_json::Value;
+
+  pub use crate::{iter, once, propagate_if_error, BoxError, Stream, StreamExt};
+}
+
+pub fn iter<I, O>(i: I) -> impl Stream<Item = Result<O, BoxError>>
 where
   I: IntoIterator<Item = O>,
 {

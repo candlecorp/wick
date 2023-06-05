@@ -1,6 +1,5 @@
 use console::set_colors_enabled;
-use wasmrs_guest::StreamExt;
-use wick_component::once;
+
 #[cfg(feature = "localgen")]
 mod generated;
 #[cfg(feature = "localgen")]

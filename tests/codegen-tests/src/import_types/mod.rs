@@ -9,9 +9,9 @@ pub use wick_component::flow_component::Context;
 #[no_mangle]
 #[cfg(target_family = "wasm")]
 extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {
-  wasmrs_guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
-  wasmrs_guest::register_request_response("wick", "__setup", Box::new(__setup));
-  wasmrs_guest::register_request_channel("wick", "testop", Box::new(Component::testop_wrapper));
+  wick_component::wasmrs_guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
+  wick_component::wasmrs_guest::register_request_response("wick", "__setup", Box::new(__setup));
+  wick_component::wasmrs_guest::register_request_channel("wick", "testop", Box::new(Component::testop_wrapper));
 }
 #[cfg(target_family = "wasm")]
 thread_local! { static __CONFIG : std :: cell :: UnsafeCell < Option < SetupPayload >> = std :: cell :: UnsafeCell :: new (None) ; }

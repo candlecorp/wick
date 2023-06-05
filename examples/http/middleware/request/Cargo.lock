@@ -1322,7 +1322,6 @@ dependencies = [
  "anyhow",
  "async-trait",
  "serde",
- "wasmrs-guest",
  "wick-component",
  "wick-component-codegen",
 ]
@@ -2066,9 +2065,9 @@ checksum = "ed9d5b4305409d1fc9482fee2d7f9bcbf24b3972bf59817ef757e23982242a93"
 
 [[package]]
 name = "wasm-msgpack"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2ee7e61cbba6505b736aff4ae10e1d477a1688817a1eb1f7a329ef6366f9aab"
+checksum = "c566f7770882bb305d56f393e411f4a15b3b3e8404be914d183cc3cd35c3f733"
 dependencies = [
  "byteorder",
  "heapless",
@@ -2246,8 +2245,10 @@ dependencies = [
  "paste",
  "serde_json",
  "tokio-stream",
+ "wasm-msgpack",
  "wasmrs",
  "wasmrs-codec",
+ "wasmrs-guest",
  "wasmrs-runtime",
  "wasmrs-rx",
  "wick-packet",

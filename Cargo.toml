@@ -75,6 +75,7 @@ wasmrs-host = { version = "0.12" }
 wasmrs-runtime = { version = "0.12" }
 wasmrs-rx = { version = "0.12" }
 wasmrs-wasmtime = { version = "0.12" }
+wasm-msgpack = { version = "~0.6.2" }
 #
 # Other
 #

@@ -1,5 +1,5 @@
 use futures::TryStreamExt;
-use wasmrs_guest::StreamExt;
+
 #[cfg(feature = "localgen")]
 mod generated;
 #[cfg(feature = "localgen")]

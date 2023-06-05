@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
-use wasmrs_guest::*;
 mod wick {
   wick_component::wick_import!();
 }
 use wick::*;
-use wick_component::propagate_if_error;
 
 use self::wick::types::http;
 

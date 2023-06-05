@@ -66,11 +66,6 @@ pub(super) fn expand_type(
       config.add_dep(Dependency::Chrono);
       quote! {chrono::NaiveDateTime}
     }
-    // wick_interface_types::TypeSignature::Stream { ty } => {
-    //   let ty = expand_type(config, dir, imported, ty);
-    //   config.add_dep(Dependency::WasmRsRx);
-    //   quote! { WickStream<#ty> }
-    // }
     wick_interface_types::Type::Object => {
       config.add_dep(Dependency::SerdeJson);
       quote! { Value }
@@ -91,7 +86,7 @@ pub(crate) fn expand_input_fields(
       let name = id(&snake(input.name()));
       let ty = expand_type(config, direction, raw, &input.ty);
       quote! {
-        #name: impl wasmrs_guest::Stream<Item = Result<#ty, wick_component::BoxError>> + 'static
+        #name: impl wick_component::Stream<Item = Result<#ty, wick_component::BoxError>> + 'static
       }
     })
     .collect_vec()
