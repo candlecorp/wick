@@ -37,6 +37,9 @@ pub(crate) struct {{name.value}} {
       #[serde(default)]
       {{/if}}
     {{/unlessAnnotation}}
+    {{#withAnnotation "alias"}}
+    #[serde(alias = "{{arguments.0.value.value}}")]
+    {{/withAnnotation}}
     {{#switch type.kind}}
       {{#case "MapType"}}
         #[serde(skip_serializing_if = "HashMap::is_empty")]

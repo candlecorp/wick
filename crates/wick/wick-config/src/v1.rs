@@ -157,6 +157,7 @@ pub(crate) struct RegistryDefinition {
   /// The registry to publish to, e.g. registry.candle.dev
 
   #[serde(default = "REGISTRY_DEFINITION_HOST")]
+  #[serde(alias = "registry")]
   #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) host: String,
   /// The namespace on the registry. e.g.: [*your username*]
@@ -1466,6 +1467,7 @@ pub(crate) struct SuccessPacket {
   /// The data to send.
 
   #[serde(default)]
+  #[serde(alias = "data")]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) value: Option<Value>,
 }
