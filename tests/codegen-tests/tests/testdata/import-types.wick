@@ -5,15 +5,15 @@ import:
   - name: http
     component:
       kind: wick/component/types@v1
-      ref: ./types-config.wick
+      ref: ../../../../crates/interfaces/wick-interface-http/component.yaml
   - name: AAA
     component:
       kind: wick/component/types@v1
-      ref: ./types-config.wick
+      ref: ../../../../crates/interfaces/wick-interface-http/component.yaml
   - name: ZZZ
     component:
       kind: wick/component/types@v1
-      ref: ./types-config.wick
+      ref: ../../../../crates/interfaces/wick-interface-http/component.yaml
 types:
   - name: LocalStruct
     kind: wick/type/struct@v1
@@ -34,6 +34,15 @@ types:
 component:
   kind: wick/component/composite@v1
   operations:
+    - name: echo
+      inputs:
+        - name: input
+          type: http::HttpRequest
+      outputs:
+        - name: output
+          type: http::HttpRequest
+      flow:
+        - <>.input -> <>.output
     - name: testop
       with:
         - name: A
@@ -47,5 +56,23 @@ component:
         - name: output
           type: string
       flow:
-        - <> -> test::whatever[A].input
-        - A.output -> <>
+        - <>.message -> <>.output
+tests:
+  - name: type_test
+    cases:
+      - name: codegenned-defaults
+        operation: echo
+        input:
+          - name: input
+            value:
+              method: Get
+              scheme: Http
+              path: '/'
+              uri: 'http://localhost:8080/'
+        output:
+          - name: output
+            value:
+              method: Get
+              scheme: Http
+              path: '/'
+              uri: 'http://localhost:8080/'
