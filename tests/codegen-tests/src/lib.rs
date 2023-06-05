@@ -18,6 +18,24 @@ mod test1 {
       Ok(())
     }
   }
+
+  # [cfg_attr (target_family = "wasm" , async_trait :: async_trait (? Send))]
+  #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+  impl EchoOperation for Component {
+    type Error = anyhow::Error;
+    type Outputs = echo::Outputs;
+    type Config = echo::Config;
+
+    #[allow(unused)]
+    async fn echo(
+      message: WickStream<types::http::HttpRequest>,
+      outputs: Self::Outputs,
+      ctx: Context<Self::Config>,
+    ) -> Result<(), Self::Error> {
+      Ok(())
+    }
+  }
+
   #[cfg(test)]
   mod test {
 
@@ -45,7 +63,6 @@ mod test1 {
         version: http::HttpVersion::Http11,
         status: http::StatusCode::Ok,
         headers: Default::default(),
-        body: Default::default(),
       };
       let packets = tokio_stream::iter(vec![Ok(response)]).boxed();
       let tx = FluxChannel::new();
