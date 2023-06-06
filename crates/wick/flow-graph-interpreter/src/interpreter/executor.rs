@@ -38,14 +38,13 @@ impl SchematicExecutor {
   pub(crate) async fn invoke(
     &self,
     invocation: Invocation,
-    seed: Seed,
     components: Arc<HandlerMap>,
     self_component: Arc<dyn Component + Send + Sync>,
     callback: Arc<RuntimeCallback>,
   ) -> Result<PacketStream> {
     invocation.trace(|| debug!(schematic = self.name(), ?invocation,));
 
-    let seed = invocation.seed().map_or(seed, Seed::unsafe_new);
+    let seed = Seed::unsafe_new(invocation.seed());
 
     let mut transaction = Transaction::new(
       self.schematic.clone(),

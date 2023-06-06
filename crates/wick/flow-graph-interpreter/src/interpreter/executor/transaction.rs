@@ -37,7 +37,6 @@ pub struct Transaction {
   instances: Vec<Arc<InstanceHandler>>,
   id: Uuid,
   start_time: Instant,
-  rng: Random,
   finished: AtomicBool,
   span: tracing::Span,
   callback: Arc<RuntimeCallback>,
@@ -98,7 +97,6 @@ impl Transaction {
       id,
       span,
       finished: AtomicBool::new(false),
-      rng,
       callback,
     }
   }
@@ -163,17 +161,7 @@ impl Transaction {
 
     self.prime_input_ports(self.schematic.input().index(), incoming)?;
 
-    let inherent_data = self.invocation.inherent.unwrap_or_else(|| InherentData {
-      seed: self.rng.gen(),
-      timestamp: SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis()
-        .try_into()
-        .unwrap(),
-    });
-
-    self.prime_inherent(inherent_data)?;
+    self.prime_inherent(&self.invocation.inherent)?;
 
     self.stats.mark("start_done");
     Ok(())
@@ -196,7 +184,7 @@ impl Transaction {
     Ok(())
   }
 
-  fn prime_inherent(&self, inherent_data: InherentData) -> Result<()> {
+  fn prime_inherent(&self, inherent_data: &InherentData) -> Result<()> {
     let inherent = self.instance(INHERENT_COMPONENT).clone();
     let seed_name = "seed";
     if let Ok(port) = inherent.find_input(seed_name) {

@@ -72,7 +72,7 @@ where
   T: std::fmt::Debug + Serialize,
 {
   pub config: T,
-  pub inherent: Option<InherentData>,
+  pub inherent: InherentData,
   pub invocation: Option<InvocationRequest>,
 }
 
@@ -80,7 +80,7 @@ impl<T> ContextTransport<T>
 where
   T: std::fmt::Debug + Serialize,
 {
-  pub fn new(config: T, inherent: Option<InherentData>) -> Self {
+  pub fn new(config: T, inherent: InherentData) -> Self {
     Self {
       config,
       inherent,

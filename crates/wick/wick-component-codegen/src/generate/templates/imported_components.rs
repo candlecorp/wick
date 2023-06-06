@@ -23,13 +23,15 @@ pub(crate) fn imported_components(config: &mut Config, required: Vec<BoundInterf
 
       config.add_dep(Dependency::WickPacket);
       quote! {
+        #[allow(unused)]
         pub struct #name {
           component: wick_packet::ComponentReference,
+          inherent: wick_component::flow_component::InherentContext
         }
         #(#configs)*
         impl #name {
-          pub fn new(component: wick_packet::ComponentReference) -> Self {
-            Self { component }
+          pub fn new(component: wick_packet::ComponentReference, inherent: wick_component::flow_component::InherentContext) -> Self {
+            Self { component, inherent }
           }
           #[allow(unused)]
           pub fn component(&self) -> &wick_packet::ComponentReference {
@@ -70,14 +72,14 @@ fn operation_impls(config: &mut Config, ops: &HashMap<String, OperationSignature
       let types = f::maybe_parens(response_stream_types);
 
       quote! {
+        #[allow(unused)]
         pub fn #name(&self, #op_config_id #(#inputs),*) -> std::result::Result<#types,wick_packet::Error> {
-          use wick_component::StreamExt;
           #(#encode_inputs)*
           let stream = wick_component::empty();
           let stream = #merge_inputs;
           let stream = wick_packet::PacketStream::new(Box::pin(stream));
 
-          let mut stream = self.component.call(#op_name, stream, #set_context)?;
+          let mut stream = self.component.call(#op_name, stream, #set_context, self.inherent.clone().into())?;
           Ok(wick_component::payload_fan_out!(stream, raw: false, wick_component::BoxError, [#(#fan_out),*]))
         }
       }

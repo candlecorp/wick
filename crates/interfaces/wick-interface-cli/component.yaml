@@ -2,6 +2,10 @@
 ---
 name: cli
 kind: wick/types@v1
+package:
+  registry:
+    host: registry.candle.dev
+    namespace: types
 types:
   - name: Interactive
     kind: wick/type/struct@v1

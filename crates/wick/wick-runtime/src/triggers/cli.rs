@@ -11,7 +11,7 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use tokio_stream::StreamExt;
 use tracing::{Instrument, Span};
-use wick_packet::{packet_stream, Entity, Invocation};
+use wick_packet::{packet_stream, Entity, InherentData, Invocation};
 
 use super::{build_trigger_runtime, resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::*;
@@ -63,7 +63,7 @@ impl Cli {
       Entity::server("cli_channel"),
       Entity::operation(cli_binding.id(), config.operation().name()),
       packet_stream,
-      None,
+      InherentData::unsafe_default(),
       &Span::current(),
     );
     let mut runtime = build_trigger_runtime(&app_config, Span::current())?;

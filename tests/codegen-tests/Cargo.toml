@@ -20,22 +20,10 @@ bytes = { workspace = true }
 anyhow = { version = "1" }
 
 [dev-dependencies]
-wick-packet = { workspace = true }
+wick-packet = { workspace = true, features = ["test"] }
 wick-interface-types = { workspace = true, features = ["parser"] }
 anyhow = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt"] }
 tokio-stream = { workspace = true }
 
 [build-dependencies]
-# wick-rpc = { workspace = true }
-# tracing = { workspace = true }
-# futures = { workspace = true }
-# test-logger = { workspace = true }
-# tokio = { workspace = true, features = ["macros", "process", "rt"] }
-# wick-logger = { workspace = true }
-# clap = { version = "3.0", features = ["derive", "env"] }
-# pretty_assertions = { workspace = true }
-# wick-component-cli = { workspace = true }
-# tonic = { workspace = true }
-# wick-invocation-server = { workspace = true }
-# tokio-stream = { workspace = true }

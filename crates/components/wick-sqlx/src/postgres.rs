@@ -26,7 +26,7 @@ mod integration_test {
   use futures::StreamExt;
   use serde_json::json;
   use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
-  use wick_config::config::{Metadata, ResourceDefinition};
+  use wick_config::config::ResourceDefinition;
   use wick_interface_types::{Field, Type};
   use wick_packet::{packet_stream, Invocation, Packet};
 
@@ -65,7 +65,7 @@ mod integration_test {
       ),
     );
 
-    let component = SqlXComponent::new(config, Metadata::default(), &app_config.resolver())?;
+    let component = SqlXComponent::new(config, None, &app_config.resolver())?;
 
     component.init().await.unwrap();
 

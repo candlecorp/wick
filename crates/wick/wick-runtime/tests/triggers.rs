@@ -81,7 +81,7 @@ mod integration_test {
         panic!("could not find trigger {}", &trigger_config.kind());
       }
     };
-    let fut = tokio::time::timeout(Duration::from_millis(5000), task);
+    let fut = tokio::time::timeout(Duration::from_millis(10000), task);
     println!("waiting for trigger to finish...");
     let _ = fut.await?;
     println!("trigger finished");

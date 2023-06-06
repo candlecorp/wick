@@ -11,7 +11,6 @@ use std::time::Duration;
 
 use flow_component::{Component, RuntimeCallback};
 use parking_lot::Mutex;
-use seeded_random::{Random, Seed};
 use tracing::{trace_span, Span};
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
@@ -35,7 +34,6 @@ use crate::{NamespaceHandler, Observer, SharedHandler};
 #[must_use]
 #[derive()]
 pub struct Interpreter {
-  rng: Random,
   program: Program,
   event_loop: EventLoop,
   signature: ComponentSignature,
@@ -62,7 +60,6 @@ impl std::fmt::Debug for Interpreter {
 
 impl Interpreter {
   pub fn new(
-    seed: Option<Seed>,
     network: Network,
     namespace: Option<String>,
     components: Option<HandlerMap>,
@@ -72,7 +69,6 @@ impl Interpreter {
     let span = trace_span!("interpreter");
     span.follows_from(parent_span);
     let _guard = span.enter();
-    let rng = seed.map_or_else(Random::new, Random::from_seed);
     let mut handlers = components.unwrap_or_default();
     debug!(handlers = ?handlers.keys(), "initializing interpreter");
     let mut exposed_ops = HashMap::new();
@@ -103,7 +99,7 @@ impl Interpreter {
 
     // Make the self:: component
     let components = Arc::new(handlers);
-    let self_component = SchematicComponent::new(components.clone(), program.state(), &dispatcher, rng.seed());
+    let self_component = SchematicComponent::new(components.clone(), program.state(), &dispatcher);
     let self_signature = self_component.signature().clone();
 
     debug!(?self_signature, "signature");
@@ -118,7 +114,6 @@ impl Interpreter {
     drop(_guard);
 
     Ok(Self {
-      rng,
       program,
       dispatcher,
       signature: self_signature,
@@ -188,7 +183,6 @@ impl Interpreter {
       executor
         .invoke(
           invocation,
-          self.rng.seed(),
           self.components.clone(),
           self.self_component.clone(),
           self.get_callback(),

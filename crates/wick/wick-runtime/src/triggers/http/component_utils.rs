@@ -12,7 +12,7 @@ use tokio_stream::StreamExt;
 use tracing::Span;
 use wick_config::config::components::Codec;
 use wick_interface_http::types as wick_http;
-use wick_packet::{packets, Entity, GenericConfig, Invocation, Observer, Packet, PacketStream};
+use wick_packet::{packets, Entity, GenericConfig, InherentData, Invocation, Observer, Packet, PacketStream};
 
 use super::conversions::convert_response;
 use super::HttpError;
@@ -26,7 +26,14 @@ pub(super) async fn handle(
   req: Request<Body>,
 ) -> Result<PacketStream, HttpError> {
   let (tx, rx) = PacketStream::new_channels();
-  let invocation = Invocation::new(Entity::server("http_client"), target, rx, None, &Span::current());
+
+  let invocation = Invocation::new(
+    Entity::server("http_client"),
+    target,
+    rx,
+    InherentData::unsafe_default(),
+    &Span::current(),
+  );
 
   let stream = engine
     .invoke(invocation, None)
@@ -86,7 +93,13 @@ pub(super) async fn handle_request_middleware(
   req: &wick_http::HttpRequest,
 ) -> Result<Option<Either>, HttpError> {
   let packets = packets!(("request", req));
-  let invocation = Invocation::new(Entity::server("http_client"), target, packets, None, &Span::current());
+  let invocation = Invocation::new(
+    Entity::server("http_client"),
+    target,
+    packets,
+    InherentData::unsafe_default(),
+    &Span::current(),
+  );
 
   let mut stream = engine
     .invoke(invocation, operation_config)
@@ -132,7 +145,13 @@ pub(super) async fn handle_response_middleware(
   res: &wick_http::HttpResponse,
 ) -> Result<Option<wick_http::HttpResponse>, HttpError> {
   let packets = packets!(("request", req), ("response", res));
-  let invocation = Invocation::new(Entity::server("http_client"), target, packets, None, &Span::current());
+  let invocation = Invocation::new(
+    Entity::server("http_client"),
+    target,
+    packets,
+    InherentData::unsafe_default(),
+    &Span::current(),
+  );
 
   let mut stream = engine
     .invoke(invocation, operation_config)

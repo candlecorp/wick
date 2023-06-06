@@ -112,7 +112,7 @@ impl Collection {
   pub fn new(seed: Seed) -> Self {
     let sig = component! {
         name: "wick-stdlib",
-        version: "0.1.0",
+        version: Some("0.1.0"),
         operations: {
           "core::error" => {
             inputs: { "input" => "string" },

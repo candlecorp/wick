@@ -161,7 +161,7 @@ pub(crate) async fn init_manifest_component(
     config::ComponentImplementation::Sql(c) => {
       init_hlc_component(
         id,
-        metadata,
+        metadata.cloned(),
         wick_config::config::HighLevelComponent::Sql(c.clone()),
         manifest.resolver(),
       )
@@ -170,7 +170,7 @@ pub(crate) async fn init_manifest_component(
     config::ComponentImplementation::HttpClient(c) => {
       init_hlc_component(
         id,
-        metadata,
+        metadata.cloned(),
         wick_config::config::HighLevelComponent::HttpClient(c.clone()),
         manifest.resolver(),
       )
@@ -205,7 +205,7 @@ pub(crate) fn initialize_native_component(namespace: String, seed: Seed) -> Comp
 
 pub(crate) async fn init_hlc_component(
   id: String,
-  metadata: Metadata,
+  metadata: Option<Metadata>,
   component: wick_config::config::HighLevelComponent,
   resolver: Box<Resolver>,
 ) -> ComponentInitResult {

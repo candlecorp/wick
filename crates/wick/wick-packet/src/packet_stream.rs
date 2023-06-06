@@ -10,7 +10,7 @@ use crate::{BoxError, ContextTransport, GenericConfig, InherentData, Packet, Res
 
 pub type PacketSender = FluxChannel<Packet, crate::Error>;
 
-type ContextConfig = (GenericConfig, Option<InherentData>);
+type ContextConfig = (GenericConfig, InherentData);
 
 pub(crate) type BoxStream<'a, T> = Pin<Box<dyn Stream<Item = T> + Send + 'a>>;
 
@@ -74,7 +74,7 @@ impl PacketStream {
     self.span = span;
   }
 
-  pub fn set_context(&self, context: GenericConfig, inherent: Option<InherentData>) {
+  pub fn set_context(&self, context: GenericConfig, inherent: InherentData) {
     self.config.lock().replace((context, inherent));
   }
 

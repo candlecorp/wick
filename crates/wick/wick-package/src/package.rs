@@ -108,7 +108,7 @@ fn process_assets(
 /// Represents a Wick package, including its files and metadata.
 #[derive(Debug, Clone)]
 pub struct WickPackage {
-  kind: wick_oci_utils::WickPackageKind,
+  kind: wick_config::config::ConfigurationKind,
   name: String,
   version: String,
   files: Vec<PackageFile>,
@@ -146,45 +146,42 @@ impl WickPackage {
       .map_or_else(|| PathBuf::from("/"), |v| v.to_path_buf());
     let extra_files;
 
-    let (kind, name, version, annotations, parent_dir, media_type, registry) = match &config {
+    if config.metadata().is_none() {
+      return Err(Error::NoMetadata(path.to_string_lossy().to_string()));
+    }
+
+    let annotations = metadata_to_annotations(config.metadata().unwrap());
+    let kind = config.kind();
+    let name = config.name().to_owned().ok_or(Error::NoName)?;
+    let media_type = match kind {
+      wick_config::config::ConfigurationKind::App => media_types::APPLICATION,
+      wick_config::config::ConfigurationKind::Component => media_types::COMPONENT,
+      wick_config::config::ConfigurationKind::Types => media_types::TYPES,
+      wick_config::config::ConfigurationKind::Tests => unreachable!(),
+    };
+    let registry = config.package().and_then(|package| package.registry().cloned());
+
+    let (version, parent_dir) = match &config {
       WickConfiguration::App(config) => {
-        let name = config.name().to_owned();
         let version = config.version();
-        let annotations = metadata_to_annotations(&config.metadata());
-        let media_type = media_types::APPLICATION;
-        let kind = wick_oci_utils::WickPackageKind::APPLICATION;
 
         extra_files = config.package_files().to_owned();
 
-        let registry = config.package().and_then(|package| package.registry().cloned());
-
-        (kind, name, version, annotations, parent_dir, media_type, registry)
+        (version, parent_dir)
       }
       WickConfiguration::Component(config) => {
-        let name = config.name().cloned().ok_or(Error::NoName)?;
         let version = config.version();
-        let annotations = metadata_to_annotations(&config.metadata());
-        let media_type = media_types::COMPONENT;
-        let kind = wick_oci_utils::WickPackageKind::COMPONENT;
 
         extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
 
-        let registry = config.package().and_then(|package| package.registry().cloned());
-
-        (kind, name, version, annotations, parent_dir, media_type, registry)
+        (version, parent_dir)
       }
       WickConfiguration::Types(config) => {
-        let name = config.name().cloned().ok_or(Error::NoName)?;
         let version = config.version();
-        let annotations = metadata_to_annotations(&config.metadata());
-        let media_type = media_types::TYPES;
-        let kind = wick_oci_utils::WickPackageKind::TYPES;
 
         extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
 
-        let registry = config.package().and_then(|package| package.registry().cloned());
-
-        (kind, name, version, annotations, parent_dir, media_type, registry)
+        (version, parent_dir)
       }
       _ => return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string())),
     };
@@ -232,8 +229,8 @@ impl WickPackage {
 
     Ok(Self {
       kind,
-      name: name.clone(),
-      version: version.clone(),
+      name: name.to_owned(),
+      version: version.map(|v| v.to_owned()).ok_or(Error::NoVersion)?,
       files: wick_files,
       annotations,
       absolute_path: full_path,
@@ -283,7 +280,12 @@ impl WickPackage {
   /// The username and password are optional. If not provided, the function falls back to anonymous authentication.
   pub async fn push(&mut self, reference: &str, options: &OciOptions) -> Result<String, Error> {
     let config = wick_oci_utils::WickOciConfig {
-      kind: self.kind,
+      kind: match self.kind {
+        wick_config::config::ConfigurationKind::App => wick_oci_utils::WickPackageKind::APPLICATION,
+        wick_config::config::ConfigurationKind::Component => wick_oci_utils::WickPackageKind::COMPONENT,
+        wick_config::config::ConfigurationKind::Types => wick_oci_utils::WickPackageKind::TYPES,
+        wick_config::config::ConfigurationKind::Tests => unreachable!(),
+      },
       root: self.root.clone(),
     };
     let image_config_contents = serde_json::to_string(&config).unwrap();

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use bb8::Pool;
 use bb8_tiberius::ConnectionManager;
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
-use futures::StreamExt;
+use futures::{Future, StreamExt};
 use parking_lot::Mutex;
 use serde_json::{Map, Value};
 use tiberius::{Query, Row};
@@ -47,11 +47,15 @@ pub struct AzureSqlComponent {
 
 impl AzureSqlComponent {
   #[allow(clippy::needless_pass_by_value)]
-  pub fn new(config: SqlComponentConfig, metadata: Metadata, resolver: &Resolver) -> Result<Self, ComponentError> {
+  pub fn new(
+    config: SqlComponentConfig,
+    metadata: Option<Metadata>,
+    resolver: &Resolver,
+  ) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
     let mut sig = component! {
       name: "wick/component/sql",
-      version: metadata.version(),
+      version: metadata.map(|v|v.version().to_owned()),
       operations: config.operation_signatures(),
     };
 
@@ -149,7 +153,7 @@ impl Component for AzureSqlComponent {
     &self.signature
   }
 
-  fn init(&self) -> std::pin::Pin<Box<dyn futures::Future<Output = Result<(), ComponentError>> + Send + 'static>> {
+  fn init(&self) -> std::pin::Pin<Box<dyn Future<Output = Result<(), ComponentError>> + Send + 'static>> {
     let ctx = self.context.clone();
     let addr = self.url_resource.clone();
     let config = self.config.clone();

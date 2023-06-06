@@ -24,7 +24,8 @@
   "rust-analyzer.cargo.features": [
     "wick-rpc/client",
     "wick-packet/datetime",
-    "wick-packet/invocation"
+    "wick-packet/invocation",
+    "wick-packet/std"
   ],
   "rust-analyzer.rustfmt.overrideCommand": [
     "rustup",

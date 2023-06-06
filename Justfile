@@ -156,8 +156,8 @@ _run-integration-task *args='':
     "./etc/integration/httpbin.sh"
   ]
   for bin in bins:
-    print("Running {}".format([bin] + sys.argv[1:]))
-    # subprocess.call([bin] + sys.argv[1:])
+    if subprocess.call([bin] + sys.argv[1:]) != 0:
+      exit(1)
 
 _run-wasm-task task:
   #!{{python}}
@@ -170,7 +170,8 @@ _run-wasm-task task:
     "examples/http/middleware/request"
   ]
   for dir in wasm:
-    subprocess.call(["just", "{}/{{task}}".format(dir)])
+    if subprocess.call(["just", "{}/{{task}}".format(dir)]) != 0:
+      exit(1)
 
 # Run `wick` tests for db components
 _wick-db-tests:

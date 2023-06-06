@@ -22,7 +22,7 @@ impl ComponentReference {
     &self,
     operation: &str,
     packets: impl Into<PacketStream>,
-    inherent: Option<crate::InherentData>,
+    inherent: crate::InherentData,
     follows_from: &tracing::Span,
   ) -> crate::Invocation {
     let target = crate::Entity::operation(self.target.component_id(), operation);
@@ -48,11 +48,9 @@ impl ComponentReference {
     operation: &str,
     stream: PacketStream,
     config: Option<crate::GenericConfig>,
+    previous_inherent: crate::InherentData,
   ) -> Result<PacketStream> {
-    // let origin = self.origin.clone();
-    // let target = Entity::operation(&self.target_ns, operation).url();
-
-    link_call(self.clone(), operation, stream, config)
+    link_call(self.clone(), operation, stream, config, previous_inherent)
   }
 }
 
@@ -75,6 +73,7 @@ fn link_call(
   target_op: &str,
   input: PacketStream,
   config: Option<crate::GenericConfig>,
+  previous_inherent: crate::InherentData,
 ) -> Result<PacketStream> {
   use tokio_stream::StreamExt;
   use wasmrs::RSocket;
@@ -88,7 +87,7 @@ fn link_call(
       reference: compref,
       operation: target_op.to_owned(),
     }),
-    inherent: None,
+    inherent: previous_inherent,
   };
 
   let _ = tx.send_result(crate::Packet::encode("", first).into());
@@ -115,6 +114,7 @@ fn link_call(
   _target_op: &str,
   _input: PacketStream,
   _config: Option<crate::GenericConfig>,
+  _previous_inherent: crate::InherentData,
 ) -> Result<PacketStream> {
   unimplemented!("Link calls from native components is not implemented yet")
 }

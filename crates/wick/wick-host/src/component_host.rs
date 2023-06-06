@@ -148,12 +148,7 @@ impl ComponentHost {
     Ok(metadata)
   }
 
-  pub async fn request(
-    &self,
-    operation: &str,
-    stream: PacketStream,
-    data: Option<InherentData>,
-  ) -> Result<PacketStream> {
+  pub async fn request(&self, operation: &str, stream: PacketStream, data: InherentData) -> Result<PacketStream> {
     match &self.runtime {
       Some(runtime) => {
         let invocation = Invocation::new(
@@ -242,7 +237,7 @@ mod test {
     host.start(None).await?;
     let passed_data = "logging output";
     let stream = packet_stream!(("input", passed_data));
-    let stream = host.request("logger", stream, None).await?;
+    let stream = host.request("logger", stream, InherentData::unsafe_default()).await?;
 
     let mut messages: Vec<_> = stream.collect().await;
     assert_eq!(messages.len(), 2);

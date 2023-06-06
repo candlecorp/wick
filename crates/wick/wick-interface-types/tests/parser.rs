@@ -83,12 +83,12 @@ fn test_component_macro() -> Result<()> {
   let expected = ComponentSignature {
     name: Some("test-native-component".to_owned()),
     operations: opmap,
-    metadata: ComponentMetadata::new("0.1.0"),
+    metadata: ComponentMetadata::new(Some("0.1.0")),
     ..Default::default()
   };
   let actual = component! {
       name: "test-native-component",
-      version: "0.1.0",
+      version: Some("0.1.0"),
       operations: {
         "test-component" => {
           inputs: {"input" => "string"},

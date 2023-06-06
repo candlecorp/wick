@@ -11,7 +11,7 @@ use tokio::task::JoinHandle;
 use tracing::{trace, Span};
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::{ComponentSignature, OperationSignature, Type};
-use wick_packet::{fan_out, packet_stream, ComponentReference, Invocation, Packet, PacketStream};
+use wick_packet::{fan_out, packet_stream, ComponentReference, InherentData, Invocation, Packet, PacketStream};
 
 pub struct TestComponent(ComponentSignature);
 impl TestComponent {
@@ -26,6 +26,7 @@ impl TestComponent {
           .add_output("output", Type::String),
       )
       .add_operation(
+        #[allow(deprecated)]
         OperationSignature::new("call")
           .add_input("component", Type::Link { schemas: vec![] })
           .add_input("message", Type::String)
@@ -94,6 +95,7 @@ impl TestComponent {
           .add_output("output", Type::String),
       )
       .add_operation(
+        #[allow(deprecated)]
         OperationSignature::new("ref_to_string")
           .add_input("link", Type::Link { schemas: vec![] })
           .add_output("output", Type::String),
@@ -209,9 +211,16 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
           let link: ComponentReference = component.decode().unwrap();
           let message: String = message.decode().unwrap();
           let packets = packet_stream!(("input", message));
-          let mut response = callback(link, "reverse".to_owned(), packets, None, None, &Span::current())
-            .await
-            .unwrap();
+          let mut response = callback(
+            link,
+            "reverse".to_owned(),
+            packets,
+            InherentData::unsafe_default(),
+            None,
+            &Span::current(),
+          )
+          .await
+          .unwrap();
           while let Some(Ok(res)) = response.next().await {
             defer(vec![send(res.set_port("output"))]);
           }

@@ -32,7 +32,7 @@ impl MainOperation for Component {
 
       println!("cli:db: looking up user with id: {}.", console::style(id).green());
 
-      let provided = get_provided();
+      let provided = ctx.provided();
       println!(
         "cli:db: calling provided component operation at URL: {}",
         console::style(format!("{}get_user", provided.db.component())).green()

@@ -173,9 +173,8 @@ impl WasmHost {
     let index = ctx
       .get_export("wick", component_name)
       .map_err(|_| crate::Error::OperationNotFound(component_name.to_owned(), ctx.get_exports()))?;
-    if let Some(config) = config {
-      invocation.packets.set_context(config, inherent);
-    }
+
+    invocation.packets.set_context(config.unwrap_or_default(), inherent);
 
     let s = into_wasmrs(index, invocation.packets);
     let out = ctx.request_channel(Box::pin(s));
@@ -279,8 +278,9 @@ fn make_host_callback(
       let config = ctx.config;
       let meta = ctx.invocation.unwrap();
       let stream = from_wasmrs(incoming);
+      let inherent = ctx.inherent.next();
 
-      match cb(meta.reference, meta.operation, stream, None, config, &span).await {
+      match cb(meta.reference, meta.operation, stream, inherent, config, &span).await {
         Ok(mut response) => {
           while let Some(p) = response.next().await {
             let _ = tx.send_result(p);

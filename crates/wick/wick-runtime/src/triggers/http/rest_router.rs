@@ -8,7 +8,7 @@ use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
 use tracing::{Instrument, Span};
 use wick_config::config::{ComponentOperationExpression, ImportBinding, RestRouterConfig, WickRouter};
-use wick_packet::{Entity, Invocation, Packet};
+use wick_packet::{Entity, InherentData, Invocation, Packet};
 mod route;
 
 use super::{HttpError, RawRouter};
@@ -132,7 +132,7 @@ impl RestHandler {
         Entity::server("http_client"),
         Entity::operation(route.component.id(), route.operation.name()),
         packets,
-        None,
+        InherentData::unsafe_default(),
         &span,
       );
 

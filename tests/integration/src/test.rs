@@ -24,7 +24,7 @@ impl Default for NativeComponent {
   fn default() -> Self {
     let sig = component! {
       name: "test-native-component",
-      version: "0.1.0",
+      version: Some("0.1.0"),
       operations: {
         "error" => {
           inputs: {"input" => "string"},
@@ -121,7 +121,7 @@ mod tests {
 
     let expected = ComponentSignature {
       name: Some("test-native-component".to_owned()),
-      metadata: ComponentMetadata::new("0.1.0"),
+      metadata: ComponentMetadata::new(Some("0.1.0")),
       operations: vec![
         OperationSignature {
           name: "error".to_string(),

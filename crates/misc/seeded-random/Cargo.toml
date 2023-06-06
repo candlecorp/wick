@@ -9,7 +9,7 @@ repository = "https://github.com/candlecorp/wick"
 [features]
 default = ["rng"]
 rng = ["rand/rand_chacha", "rand/small_rng"]
-std = ["rand/std"]
+std = ["rand/std", "rand/std_rng"]
 uuid = ["uuid/v4"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -17,10 +17,13 @@ maintenance = { status = "actively-developed" }
 
 [features]
 default = []
-invocation = ["uuid", "seeded-random/rng"]
+invocation = ["uuid", "rng"]
 rt-tokio = ["tokio/rt"]
 datetime = ["chrono"]
 validation = []
+rng = ["seeded-random/rng"]
+std = ["seeded-random/std"]
+test = ["invocation", "std"]
 
 [dependencies]
 wick-interface-types = { workspace = true, features = ["typeid"] }
