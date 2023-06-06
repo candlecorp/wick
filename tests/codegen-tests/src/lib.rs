@@ -69,7 +69,7 @@ mod test1 {
       let outputs = testop::Outputs::new(tx);
       let ctx = Context::new(
         testop::Config::default(),
-        InherentData::unsafe_default(),
+        &InherentData::unsafe_default(),
         panic_callback(),
       );
 

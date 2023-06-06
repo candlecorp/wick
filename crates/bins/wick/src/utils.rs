@@ -97,7 +97,7 @@ pub(crate) fn parse_config_string(source: Option<&str>) -> anyhow::Result<Option
   let component_config = match source {
     Some(c) => Some(
       GenericConfig::try_from(
-        serde_json::from_str::<Value>(&c)
+        serde_json::from_str::<Value>(c)
           .map_err(|e| anyhow::anyhow!("Failed to parse config argument as JSON: {}", e))?,
       )
       .map_err(|e| anyhow::anyhow!("Failed to parse config: {}", e))?,

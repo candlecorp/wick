@@ -75,7 +75,7 @@ impl Clone for InherentContext {
   fn clone(&self) -> Self {
     Self {
       rng: Random::from_seed(self.rng.seed()),
-      timestamp: self.timestamp.clone(),
+      timestamp: self.timestamp,
     }
   }
 }
@@ -105,7 +105,7 @@ where
 {
   #[cfg(feature = "invocation")]
   /// Create a new context.
-  pub fn new(config: T, inherent: InherentData, callback: Arc<crate::RuntimeCallback>) -> Self {
+  pub fn new(config: T, inherent: &InherentData, callback: Arc<crate::RuntimeCallback>) -> Self {
     Self {
       inherent: InherentContext {
         rng: Random::from_seed(Seed::unsafe_new(inherent.seed)),

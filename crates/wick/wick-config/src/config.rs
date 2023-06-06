@@ -115,6 +115,7 @@ impl WickConfiguration {
     resolve_configuration(src, source)
   }
 
+  #[must_use]
   pub fn name(&self) -> Option<&str> {
     match self {
       WickConfiguration::Component(v) => v.name().map(|s| s.as_str()),
@@ -124,6 +125,7 @@ impl WickConfiguration {
     }
   }
 
+  #[must_use]
   pub fn metadata(&self) -> Option<&Metadata> {
     match self {
       WickConfiguration::Component(v) => v.metadata(),
@@ -142,6 +144,7 @@ impl WickConfiguration {
     }
   }
 
+  #[must_use]
   pub fn version(&self) -> Option<&str> {
     match self {
       WickConfiguration::Component(v) => v.version(),
@@ -151,6 +154,7 @@ impl WickConfiguration {
     }
   }
 
+  #[must_use]
   pub fn package(&self) -> Option<&PackageConfig> {
     match self {
       WickConfiguration::Component(v) => v.package(),

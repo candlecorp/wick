@@ -71,6 +71,10 @@ impl PortList {
     self.inner.len()
   }
 
+  pub(crate) fn is_empty(&self) -> bool {
+    self.inner.is_empty()
+  }
+
   pub(super) fn receive(&self, port: &PortReference, value: PacketType) {
     self.inner[port.port_index()].buffer(value);
   }
@@ -145,6 +149,10 @@ impl InputPorts {
     Self {
       inner: PortList::new(ports),
     }
+  }
+
+  pub(super) fn is_empty(&self) -> bool {
+    self.inner.is_empty()
   }
 
   pub(super) fn receive(&self, port: &PortReference, value: PacketType) {

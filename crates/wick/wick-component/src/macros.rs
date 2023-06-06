@@ -103,6 +103,36 @@ macro_rules! payload_fan_out {
       }
 
     };
+    ($stream:expr, raw:$raw:tt, $error:ty, $config:ty, [ ]) => {
+      {
+        let (config_tx,config_rx) = $crate::runtime::oneshot();
+
+        $crate::runtime::spawn("payload_fan_out",async move {
+          #[allow(unused)]
+          use $crate::StreamExt;
+          let mut config_tx = Some(config_tx);
+          loop {
+            if let Some(Ok(payload)) = $stream.next().await {
+              let mut packet: $crate::packet::Packet = payload.into();
+              if let Some(config_tx) = config_tx.take() {
+                if let Some(context) = packet.context() {
+                  let config: Result<$crate::packet::ContextTransport<$config>, _> = $crate::wasmrs_codec::messagepack::deserialize(&context).map_err(|_e|$crate::flow_component::ComponentError::message("Cound not deserialize Context"));
+                  let _ = config_tx.send(config.map($crate::flow_component::Context::from));
+                } else {
+                  packet = $crate::packet::Packet::component_error("No context attached to first invocation packet");
+                }
+              }
+            } else {
+              break;
+            }
+          }
+        });
+        let config_mono = Box::pin(config_rx);
+        config_mono
+        }
+    };
+
+
     ($stream:expr, raw:$raw:tt, $error:ty, $config:ty, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
       {
           $crate::paste::paste! {

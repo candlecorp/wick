@@ -92,6 +92,22 @@ impl ErrorOperation for Component {
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
+impl UuidOperation for Component {
+  type Error = String;
+  type Outputs = uuid::Outputs;
+  type Config = uuid::Config;
+
+  async fn uuid(mut outputs: Self::Outputs, ctx: Context<Self::Config>) -> Result<(), Self::Error> {
+    let uuid = ctx.inherent.rng.uuid().to_string();
+    outputs.output.send(&uuid);
+    outputs.output.done();
+
+    Ok(())
+  }
+}
+
+#[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
 impl ValidateOperation for Component {
   type Error = String;
   type Outputs = validate::Outputs;

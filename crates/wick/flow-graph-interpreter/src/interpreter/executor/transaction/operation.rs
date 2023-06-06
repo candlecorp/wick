@@ -226,7 +226,11 @@ impl InstanceHandler {
     let associated_data = associated_data.clone();
 
     self.increment_pending();
-    let stream = PacketStream::new(Box::new(self.sender.take_rx().unwrap()));
+    let stream = if self.inputs.is_empty() {
+      PacketStream::noop()
+    } else {
+      PacketStream::new(Box::new(self.sender.take_rx().unwrap()))
+    };
     invocation.attach_stream(stream);
     let cb = callback.clone();
 

@@ -152,7 +152,7 @@ impl WickPackage {
 
     let annotations = metadata_to_annotations(config.metadata().unwrap());
     let kind = config.kind();
-    let name = config.name().to_owned().ok_or(Error::NoName)?;
+    let name = config.name().ok_or(Error::NoName)?;
     let media_type = match kind {
       wick_config::config::ConfigurationKind::App => media_types::APPLICATION,
       wick_config::config::ConfigurationKind::Component => media_types::COMPONENT,

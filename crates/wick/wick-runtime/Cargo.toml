@@ -68,3 +68,4 @@ tokio = { workspace = true, features = ["time", "rt-multi-thread", "macros"] }
 reqwest = { workspace = true }
 wasmrs-codec = { workspace = true }
 rstest = { workspace = true }
+wick-packet = { workspace = true, features = ["test"] }

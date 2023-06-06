@@ -59,6 +59,7 @@ impl PacketStream {
       span: Span::current(),
     }
   }
+
   #[cfg(not(target_family = "wasm"))]
   pub fn new(rx: impl Stream<Item = Result<Packet>> + Unpin + Send + 'static) -> Self {
     use tokio_stream::StreamExt;
@@ -68,6 +69,10 @@ impl PacketStream {
       config: Default::default(),
       span: Span::current(),
     }
+  }
+
+  pub fn noop() -> Self {
+    Self::new(Box::new(tokio_stream::once(Ok(Packet::no_input()))))
   }
 
   pub fn set_span(&mut self, span: Span) {

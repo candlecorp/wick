@@ -23,7 +23,11 @@ pub(crate) fn gen_wrapper_fn(config: &mut config::Config, component: &Ident, op:
     .collect_vec();
   let inputs = op.inputs().iter().map(|i| id(&snake(&i.name))).collect_vec();
   let outputs_name = id(&op_outputs_name(op));
-  let sanitized_input_names = quote! {(config, #(#inputs,)*)};
+  let sanitized_input_names = if inputs.is_empty() {
+    quote! {config}
+  } else {
+    quote! {(config, #(#inputs,)*)}
+  };
 
   let raw = if config.raw {
     quote! {raw:true}

@@ -29,6 +29,22 @@ async fn good_wasm_component_v1() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn flow_with_inputless_component() -> Result<()> {
+  common_test(
+    "./manifests/v1/flow_with_inputless_component.yaml",
+    packet_stream!(("input", "hello world")),
+    "test",
+    vec![
+      Packet::encode("uuid", "aa38fc21-01bd-ade2-254b-185bf88a15f7"),
+      Packet::done("uuid"),
+      Packet::encode("output", "hello world"),
+      Packet::done("output"),
+    ],
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
 #[ignore = "signature check needs to be re-enabled for this test to pass"]
 async fn bad_wasm_component_v1() -> Result<()> {
   let path = "./manifests/v1/bad-wasmrs-component.yaml";

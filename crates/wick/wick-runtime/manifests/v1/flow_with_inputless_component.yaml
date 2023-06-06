@@ -1,0 +1,22 @@
+---
+name: 'test'
+kind: wick/component@v1
+metadata:
+  version: '0.0.2'
+import:
+  - name: baseline
+    component:
+      kind: wick/component/manifest@v1
+      ref: ../../../../integration/test-baseline-component/component.yaml
+      with:
+        default_err: '...'
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: test
+      uses:
+        - name: uuid
+          operation: baseline::uuid
+      flow:
+        - <>.input -> <>.output
+        - uuid.output -> <>.uuid
