@@ -5,7 +5,6 @@ use flow_component::panic_callback;
 use flow_graph_interpreter::graph::from_def;
 use flow_graph_interpreter::Interpreter;
 pub use observer::JsonWriter;
-use seeded_random::Seed;
 pub use test_component::TestComponent;
 use wick_packet::{Entity, GenericConfig, Packet};
 
@@ -46,13 +45,13 @@ pub(crate) async fn base_setup(
   .unwrap();
 
   let mut interpreter = Interpreter::new(
-    Some(Seed::unsafe_new(1)),
     network,
     None,
     Some(collections),
     panic_callback(),
     &tracing::Span::current(),
   )?;
+
   interpreter.start(options, None).await;
   let stream = wick_packet::PacketStream::new(Box::new(futures::stream::iter(packets.into_iter().map(Ok))));
   let invocation = Invocation::test("test", entity, stream, None)?;

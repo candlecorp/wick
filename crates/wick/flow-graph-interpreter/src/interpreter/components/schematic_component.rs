@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use parking_lot::Mutex;
-use seeded_random::{Random, Seed};
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream};
@@ -25,7 +24,6 @@ pub(crate) struct SchematicComponent {
   schematics: Arc<Vec<SchematicExecutor>>,
   components: Arc<HandlerMap>,
   self_collection: Mutex<Option<Arc<Self>>>,
-  rng: Random,
 }
 
 impl SchematicComponent {
@@ -33,7 +31,6 @@ impl SchematicComponent {
     components: Arc<HandlerMap>,
     state: &ProgramState,
     dispatcher: &InterpreterDispatchChannel,
-    seed: Seed,
   ) -> Arc<Self> {
     let schematics: Arc<Vec<SchematicExecutor>> = Arc::new(
       state
@@ -49,7 +46,6 @@ impl SchematicComponent {
       schematics,
       self_collection: Mutex::new(None),
       components,
-      rng: Random::from_seed(seed),
     });
     collection.update_self_collection();
     collection
@@ -84,7 +80,6 @@ impl Component for SchematicComponent {
       .map(|s| {
         s.invoke(
           invocation,
-          self.rng.seed(),
           self.components.clone(),
           self.clone_self_collection(),
           callback,

@@ -182,9 +182,9 @@ impl From<wick_packet::Invocation> for rpc::Invocation {
       target: inv.target.url(),
       id: inv.id.as_hyphenated().to_string(),
       tx_id: inv.tx_id.as_hyphenated().to_string(),
-      inherent: inv.inherent.map(|d| rpc::InherentData {
-        seed: d.seed,
-        timestamp: d.timestamp,
+      inherent: Some(rpc::InherentData {
+        seed: inv.inherent.seed,
+        timestamp: inv.inherent.timestamp,
       }),
     }
   }
@@ -193,16 +193,17 @@ impl From<wick_packet::Invocation> for rpc::Invocation {
 impl TryFrom<rpc::Invocation> for wick_packet::Invocation {
   type Error = RpcError;
   fn try_from(inv: rpc::Invocation) -> Result<Self> {
+    let inherent = inv.inherent.ok_or(RpcError::NoInherentData)?;
     Ok(Self {
       origin: Entity::from_str(&inv.origin).map_err(|_e| RpcError::TypeConversion)?,
       target: Entity::from_str(&inv.target).map_err(|_e| RpcError::TypeConversion)?,
 
       id: uuid::Uuid::from_str(&inv.id).map_err(|e| RpcError::UuidParseError(inv.id, e))?,
       tx_id: uuid::Uuid::from_str(&inv.tx_id).map_err(|e| RpcError::UuidParseError(inv.tx_id, e))?,
-      inherent: inv.inherent.map(|d| InherentData {
-        seed: d.seed,
-        timestamp: d.timestamp,
-      }),
+      inherent: InherentData {
+        seed: inherent.seed,
+        timestamp: inherent.timestamp,
+      },
       span: tracing::Span::current(),
       packets: PacketStream::empty(),
     })

@@ -13,7 +13,7 @@ use structured_output::StructuredOutput;
 use tokio::time::Duration;
 use tokio_stream::StreamExt;
 use tracing::Span;
-use wick_packet::{Entity, Packet};
+use wick_packet::{Entity, InherentData, Packet};
 
 use super::{build_trigger_runtime, Trigger, TriggerKind};
 use crate::dev::prelude::*;
@@ -34,7 +34,7 @@ async fn invoke_operation(
     Entity::server("schedule_client"),
     Entity::operation("0", operation.as_str()),
     packets,
-    None,
+    InherentData::unsafe_default(),
     &Span::current(),
   );
 

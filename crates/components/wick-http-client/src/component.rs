@@ -45,7 +45,7 @@ impl HttpClientComponent {
   #[allow(clippy::needless_pass_by_value)]
   pub fn new(
     config: HttpClientComponentConfig,
-    metadata: Metadata,
+    metadata: Option<Metadata>,
     resolver: &Resolver,
   ) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
@@ -55,7 +55,7 @@ impl HttpClientComponent {
       .into();
 
     let mut sig = ComponentSignature::new("wick/component/http");
-    sig.metadata.version = Some(metadata.version().to_owned());
+    sig.metadata.version = metadata.map(|v| v.version().to_owned());
     sig.operations = config.operation_signatures();
 
     Ok(Self {
@@ -447,7 +447,7 @@ mod test {
     component_config: HttpClientComponentConfig,
   ) -> HttpClientComponent {
     let resolver = app_config.resolver();
-    let component = HttpClientComponent::new(component_config, Metadata::default(), &resolver).unwrap();
+    let component = HttpClientComponent::new(component_config, None, &resolver).unwrap();
     component.init().await.unwrap();
     component
   }

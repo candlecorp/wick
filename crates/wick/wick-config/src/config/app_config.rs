@@ -113,14 +113,14 @@ impl AppConfiguration {
 
   /// Return the version of the application.
   #[must_use]
-  pub fn version(&self) -> String {
-    self.metadata.clone().map(|m| m.version).unwrap_or_default()
+  pub fn version(&self) -> Option<&str> {
+    self.metadata.as_ref().map(|m| m.version.as_str())
   }
 
   /// Return the metadata of the component.
   #[must_use]
-  pub fn metadata(&self) -> config::Metadata {
-    self.metadata.clone().unwrap()
+  pub fn metadata(&self) -> Option<&config::Metadata> {
+    self.metadata.as_ref()
   }
 
   #[must_use]

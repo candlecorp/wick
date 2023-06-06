@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use seeded_random::{Random, Seed};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use wick_packet::{ContextTransport, InherentData};
@@ -27,7 +28,7 @@ where
   /// Operation-specific configuration.
   pub config: Arc<T>,
   /// Inherent data passed to the operation.
-  pub inherent: Option<InherentData>,
+  pub inherent: InherentContext,
   #[cfg(feature = "invocation")]
   /// A callback to invoke other components within the executing runtime.
   pub callback: Arc<crate::RuntimeCallback>,
@@ -50,10 +51,49 @@ where
 {
   fn from(value: ContextTransport<T>) -> Self {
     Self {
-      inherent: value.inherent,
+      inherent: InherentContext {
+        rng: Random::from_seed(Seed::unsafe_new(value.inherent.seed)),
+        timestamp: value.inherent.timestamp,
+      },
       config: Arc::new(value.config),
       #[cfg(feature = "invocation")]
       callback: crate::panic_callback(),
+    }
+  }
+}
+
+#[derive(Debug)]
+/// Inherent data passed to an operation.
+pub struct InherentContext {
+  /// A random number generator initialized from the invocation seed.
+  pub rng: Random,
+  /// The timestamp of the invocation.
+  pub timestamp: u64,
+}
+
+impl Clone for InherentContext {
+  fn clone(&self) -> Self {
+    Self {
+      rng: Random::from_seed(self.rng.seed()),
+      timestamp: self.timestamp.clone(),
+    }
+  }
+}
+
+impl From<InherentContext> for InherentData {
+  fn from(value: InherentContext) -> Self {
+    Self {
+      seed: value.rng.gen(),
+      timestamp: value.timestamp,
+    }
+  }
+}
+
+impl From<InherentData> for InherentContext {
+  fn from(value: InherentData) -> Self {
+    Self {
+      rng: Random::from_seed(Seed::unsafe_new(value.seed)),
+      timestamp: value.timestamp,
     }
   }
 }
@@ -65,9 +105,12 @@ where
 {
   #[cfg(feature = "invocation")]
   /// Create a new context.
-  pub fn new(config: T, inherent: Option<InherentData>, callback: Arc<crate::RuntimeCallback>) -> Self {
+  pub fn new(config: T, inherent: InherentData, callback: Arc<crate::RuntimeCallback>) -> Self {
     Self {
-      inherent,
+      inherent: InherentContext {
+        rng: Random::from_seed(Seed::unsafe_new(inherent.seed)),
+        timestamp: inherent.timestamp,
+      },
       config: Arc::new(config),
       callback,
     }
@@ -75,9 +118,12 @@ where
 
   #[cfg(not(feature = "invocation"))]
   /// Create a new context.
-  pub fn new(config: T, inherent: Option<InherentData>) -> Self {
+  pub fn new(config: T, inherent: InherentData) -> Self {
     Self {
-      inherent,
+      inherent: InherentContext {
+        rng: Random::from_seed(Seed::unsafe_new(inherent.seed)),
+        timestamp: inherent.timestamp,
+      },
       config: Arc::new(config),
     }
   }

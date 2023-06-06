@@ -121,7 +121,7 @@ pub(crate) async fn handle(opts: InvokeCommand, settings: wick_settings::Setting
     }
   }
 
-  let inherent_data = opts.seed.map(|seed| {
+  let inherent_data = opts.seed.map_or_else(InherentData::unsafe_default, |seed| {
     InherentData::new(
       seed,
       SystemTime::now()

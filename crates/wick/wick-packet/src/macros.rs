@@ -2,7 +2,8 @@
 macro_rules! packet_stream {
   ($(($port:expr, $value:expr)),*) => {{
     let packets = $crate::packets!($(($port, $value)),*);
-    wick_packet::PacketStream::new(Box::new(futures::stream::iter(packets.into_iter().map(Ok))))
+    let packets :$crate::PacketStream = packets.into();
+    packets
   }};
 }
 

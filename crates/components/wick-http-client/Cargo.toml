@@ -36,3 +36,4 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 wick-logger = { workspace = true }
 test-logger = { workspace = true }
 pretty_assertions = { workspace = true }
+wick-packet = { workspace = true, features = ["test"] }

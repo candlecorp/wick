@@ -111,7 +111,7 @@ impl Operation for Op {
 mod test {
   use anyhow::Result;
   use flow_component::panic_callback;
-  use wick_packet::{packet_stream, Entity};
+  use wick_packet::{packet_stream, Entity, InherentData};
 
   use super::*;
 
@@ -131,7 +131,10 @@ mod test {
     ));
     let inv = Invocation::test(file!(), Entity::test("noop"), stream, None)?;
     let mut packets = op
-      .handle(inv, Context::new(config, None, panic_callback()))
+      .handle(
+        inv,
+        Context::new(config, InherentData::unsafe_default(), panic_callback()),
+      )
       .await?
       .collect::<Vec<_>>()
       .await;

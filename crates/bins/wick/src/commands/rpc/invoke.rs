@@ -64,7 +64,7 @@ pub(crate) async fn handle(
   let origin = Entity::server(crate::BIN_NAME);
   let target = Entity::local(&opts.component);
 
-  let inherent_data = opts.seed.map(|seed| {
+  let inherent_data = opts.seed.map_or_else(InherentData::unsafe_default, |seed| {
     InherentData::new(
       seed,
       SystemTime::now()

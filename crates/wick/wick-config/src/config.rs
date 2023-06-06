@@ -115,12 +115,48 @@ impl WickConfiguration {
     resolve_configuration(src, source)
   }
 
+  pub fn name(&self) -> Option<&str> {
+    match self {
+      WickConfiguration::Component(v) => v.name().map(|s| s.as_str()),
+      WickConfiguration::App(v) => Some(v.name()),
+      WickConfiguration::Types(v) => v.name().map(|s| s.as_str()),
+      WickConfiguration::Tests(v) => v.name().map(|s| s.as_str()),
+    }
+  }
+
+  pub fn metadata(&self) -> Option<&Metadata> {
+    match self {
+      WickConfiguration::Component(v) => v.metadata(),
+      WickConfiguration::App(v) => v.metadata(),
+      WickConfiguration::Types(v) => v.metadata(),
+      WickConfiguration::Tests(_v) => None,
+    }
+  }
+
   pub fn kind(&self) -> ConfigurationKind {
     match self {
       WickConfiguration::Component(_) => ConfigurationKind::Component,
       WickConfiguration::App(_) => ConfigurationKind::App,
       WickConfiguration::Types(_) => ConfigurationKind::Types,
       WickConfiguration::Tests(_) => ConfigurationKind::Tests,
+    }
+  }
+
+  pub fn version(&self) -> Option<&str> {
+    match self {
+      WickConfiguration::Component(v) => v.version(),
+      WickConfiguration::App(v) => v.version(),
+      WickConfiguration::Types(v) => v.version(),
+      WickConfiguration::Tests(_) => None,
+    }
+  }
+
+  pub fn package(&self) -> Option<&PackageConfig> {
+    match self {
+      WickConfiguration::Component(v) => v.package(),
+      WickConfiguration::App(v) => v.package(),
+      WickConfiguration::Types(v) => v.package(),
+      WickConfiguration::Tests(_) => None,
     }
   }
 

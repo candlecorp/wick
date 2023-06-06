@@ -12,7 +12,7 @@ description = "The runtime for the Wick project."
 [dependencies]
 cron = { workspace = true }
 chrono = { workspace = true }
-wick-packet = { workspace = true, features = ["validation"] }
+wick-packet = { workspace = true, features = ["validation", "rng", "std"] }
 flow-graph = { workspace = true }
 flow-graph-interpreter = { workspace = true }
 flow-component = { workspace = true }

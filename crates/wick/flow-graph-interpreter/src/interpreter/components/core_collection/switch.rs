@@ -174,6 +174,7 @@ impl Operation for Op {
         );
         trace!(operation = op, "core:switch:route");
         let span = invocation.span.clone();
+        let inherent = invocation.inherent.next();
         let stream = router.entry(op.clone()).or_insert_with(|| {
           let target = path_to_entity(op).unwrap(); // unwrap ok because the config has been pre-validated.
           let op_id = target.operation_id().to_owned();
@@ -182,7 +183,7 @@ impl Operation for Op {
           let tx = tx.clone();
           let callback = callback.clone();
           tokio::spawn(async move {
-            match callback(link, op_id, route_rx, None, None, &span).await {
+            match callback(link, op_id, route_rx, inherent, None, &span).await {
               Ok(mut call_rx) => {
                 while let Some(packet) = call_rx.next().await {
                   let _ = tx.send_result(packet);

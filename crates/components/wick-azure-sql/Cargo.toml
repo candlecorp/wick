@@ -43,3 +43,4 @@ wick-logger = { workspace = true }
 test-logger = { workspace = true }
 anyhow = { workspace = true }
 pretty_assertions = { workspace = true }
+wick-packet = { workspace = true, features = ["test"] }

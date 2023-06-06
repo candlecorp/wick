@@ -1,5 +1,7 @@
 pub use async_trait::async_trait;
 #[allow(unused)]
+pub(crate) use wick_component::prelude::*;
+#[allow(unused)]
 pub(crate) use wick_component::wasmrs_rx::{Observable, Observer};
 pub use wick_component::{packet as wick_packet, runtime, wasmrs, wasmrs_codec, wasmrs_rx};
 #[allow(unused)]

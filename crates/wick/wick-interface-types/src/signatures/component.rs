@@ -125,9 +125,9 @@ pub struct ComponentMetadata {
 }
 
 impl ComponentMetadata {
-  pub fn new(version: impl AsRef<str>) -> Self {
+  pub fn new(version: Option<impl AsRef<str>>) -> Self {
     Self {
-      version: Some(version.as_ref().to_owned()),
+      version: version.map(|v| v.as_ref().to_owned()),
     }
   }
 }

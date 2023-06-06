@@ -13,7 +13,7 @@ pub struct UnitTest<'a> {
   pub actual: Vec<Packet>,
 }
 
-pub(crate) fn get_payload(test: &UnitTest) -> (PacketStream, Option<InherentData>) {
+pub(crate) fn get_payload(test: &UnitTest) -> (PacketStream, InherentData) {
   let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
   let mut not_done = HashSet::new();
   for packet in test.test.inputs() {
@@ -34,21 +34,27 @@ pub(crate) fn get_payload(test: &UnitTest) -> (PacketStream, Option<InherentData
     tx.send(Ok(Packet::done(port))).unwrap();
   }
   let stream = PacketStream::new(Box::new(UnboundedReceiverStream::new(rx)));
-  if let Some(inherent) = test.test.inherent() {
-    if let Some(seed) = inherent.seed() {
-      return (
-        stream,
-        Some(InherentData::new(
-          seed,
-          SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis()
-            .try_into()
-            .unwrap(),
-        )),
-      );
-    }
-  }
-  (stream, None)
+  let (seed, timestamp) = if let Some(inherent) = test.test.inherent() {
+    let seed = inherent.seed().unwrap_or(0);
+    let timestamp = inherent.timestamp().unwrap_or(
+      SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+        .try_into()
+        .unwrap(),
+    );
+    (seed, timestamp)
+  } else {
+    (
+      0,
+      SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+        .try_into()
+        .unwrap(),
+    )
+  };
+  (stream, InherentData::new(seed, timestamp))
 }

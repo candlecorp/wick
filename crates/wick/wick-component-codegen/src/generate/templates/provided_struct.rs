@@ -13,7 +13,7 @@ pub(crate) fn provided_struct(_config: &Config, required: &[BoundInterface]) -> 
       let name = id(&snake(r.id()));
       let orig_name = r.id();
       let response_name = id(&component_id(r));
-      quote! { #name : #response_name::new(config.provided.get(#orig_name).cloned().unwrap()) }
+      quote! { #name : #response_name::new(config.provided.get(#orig_name).cloned().unwrap(), inherent.clone()) }
     })
     .collect_vec();
   let fields = required
@@ -25,11 +25,12 @@ pub(crate) fn provided_struct(_config: &Config, required: &[BoundInterface]) -> 
     })
     .collect_vec();
   quote! {
+    #[allow(unused)]
     pub(crate) struct Provided {
       #(#fields),*
     }
 
-    pub(crate) fn get_provided() -> Provided {
+    pub(crate) fn get_provided(inherent: wick_component::flow_component::InherentContext) -> Provided {
       let config = get_config();
       Provided {
         #(#required_names,)*
@@ -42,7 +43,7 @@ pub(crate) fn provided_struct(_config: &Config, required: &[BoundInterface]) -> 
 
     impl<T> ProvidedContext for wick_component::flow_component::Context<T> where T:std::fmt::Debug{
       fn provided(&self) -> Provided {
-        get_provided()
+        get_provided(self.inherent.clone())
       }
     }
 

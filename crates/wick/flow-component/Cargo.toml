@@ -19,5 +19,6 @@ futures = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tracing = { workspace = true }
+seeded-random = { workspace = true, features = ["rng"] }
 
 [dev-dependencies]

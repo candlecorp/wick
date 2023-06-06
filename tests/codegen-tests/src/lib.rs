@@ -43,7 +43,7 @@ mod test1 {
     use flow_component::{panic_callback, Context};
     use types::http;
     use wasmrs_guest::{FluxChannel, StreamExt};
-    use wick_packet::ContextTransport;
+    use wick_packet::{ContextTransport, InherentData};
 
     use super::*;
     use crate::import_types::types::http::HttpResponse;
@@ -67,7 +67,11 @@ mod test1 {
       let packets = tokio_stream::iter(vec![Ok(response)]).boxed();
       let tx = FluxChannel::new();
       let outputs = testop::Outputs::new(tx);
-      let ctx = Context::new(testop::Config::default(), None, panic_callback());
+      let ctx = Context::new(
+        testop::Config::default(),
+        InherentData::unsafe_default(),
+        panic_callback(),
+      );
 
       Component::testop(packets, outputs, ctx).await?;
       Ok(())
@@ -80,7 +84,7 @@ mod test1 {
         a: "value".to_owned(),
         b: 2,
       };
-      let expected = ContextTransport::new(config, None);
+      let expected = ContextTransport::new(config, InherentData::unsafe_default());
       let bytes = wasmrs_codec::messagepack::serialize(&expected).unwrap();
       let actual: ContextTransport<testop::Config> = wasmrs_codec::messagepack::deserialize(&bytes).unwrap();
       assert_eq!(actual.config, expected.config);

@@ -144,6 +144,10 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
 
   let expanded = quote! {
     #imports
+
+    #[allow(unused)]
+    pub(crate) use wick_component::prelude::*;
+
     #[allow(unused)]
     pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, Box<dyn std::error::Error + Send + Sync>>;
     pub use wick_component::flow_component::Context;

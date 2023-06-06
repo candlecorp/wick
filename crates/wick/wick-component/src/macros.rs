@@ -1,7 +1,6 @@
 #[macro_export]
 macro_rules! wick_import {
   () => {
-    pub use wick_component::prelude::*;
     include!(concat!(env!("OUT_DIR"), "/mod.rs"));
   };
 }
@@ -115,17 +114,18 @@ macro_rules! payload_fan_out {
           let (config_tx,config_rx) = $crate::runtime::oneshot();
 
         $crate::runtime::spawn("payload_fan_out",async move {
+          #[allow(unused)]
           use $crate::StreamExt;
           let mut config_tx = Some(config_tx);
           loop {
-            if let Some(Ok( payload)) = $stream.next().await {
-              let packet: $crate::packet::Packet = payload.into();
+            if let Some(Ok(payload)) = $stream.next().await {
+              let mut packet: $crate::packet::Packet = payload.into();
               if let Some(config_tx) = config_tx.take() {
                 if let Some(context) = packet.context() {
                   let config: Result<$crate::packet::ContextTransport<$config>, _> = $crate::wasmrs_codec::messagepack::deserialize(&context).map_err(|_e|$crate::flow_component::ComponentError::message("Cound not deserialize Context"));
                   let _ = config_tx.send(config.map($crate::flow_component::Context::from));
                 } else {
-                  let _ = config_tx.send(Ok($crate::packet::ContextTransport::new(<$config>::default(),None).into()));
+                  packet = $crate::packet::Packet::component_error("No context attached to first invocation packet");
                 }
               }
 
@@ -193,18 +193,16 @@ macro_rules! propagate_if_error {
 mod test {
   use anyhow::Result;
   use tokio_stream::StreamExt;
-  use wasmrs::PayloadError;
-  use wasmrs_rx::FluxReceiver;
-  use wick_packet::Packet;
+  use wick_packet::{packet_stream, InherentData};
   #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
   struct Config {}
 
   #[tokio::test]
   async fn test_basic() -> Result<()> {
-    let mut stream: FluxReceiver<Packet, PayloadError> =
-      payload_stream!(("foo", 1), ("bar", 2), ("foo", 3), ("bar", 4), ("foo", 5), ("bar", 6));
+    let mut stream = packet_stream!(("foo", 1), ("bar", 2), ("foo", 3), ("bar", 4), ("foo", 5), ("bar", 6));
+    stream.set_context(Default::default(), InherentData::unsafe_default());
     let (_config, mut foo_rx, mut bar_rx) =
-      payload_fan_out!(stream, raw: false,anyhow::Error, Config, [("foo", i32), ("bar", i32)]);
+      payload_fan_out!(stream, raw: false, anyhow::Error, Config, [("foo", i32), ("bar", i32)]);
     assert_eq!(foo_rx.next().await.unwrap().unwrap(), 1);
     assert_eq!(bar_rx.next().await.unwrap().unwrap(), 2);
     assert_eq!(foo_rx.next().await.unwrap().unwrap(), 3);

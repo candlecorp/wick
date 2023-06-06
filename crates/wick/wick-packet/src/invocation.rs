@@ -18,7 +18,7 @@ pub struct Invocation {
   /// The transaction id, to map together a string of invocations.
   pub tx_id: Uuid,
   /// Inherent data associated with the transaction.
-  pub inherent: Option<InherentData>,
+  pub inherent: InherentData,
   /// The trace span associated with the invocation.
   pub span: Span,
   /// The stream of incoming [crate::Packet]s associated with the invocation.
@@ -31,7 +31,7 @@ impl Invocation {
     origin: impl Into<Entity>,
     target: impl Into<Entity>,
     packets: impl Into<PacketStream>,
-    inherent: Option<InherentData>,
+    inherent: InherentData,
     following_span: &Span,
   ) -> Invocation {
     let tx_id = get_uuid();
@@ -56,7 +56,7 @@ impl Invocation {
   pub fn new_empty(
     origin: impl Into<Entity>,
     target: impl Into<Entity>,
-    inherent: Option<InherentData>,
+    inherent: InherentData,
     following_span: &Span,
   ) -> Invocation {
     let tx_id = get_uuid();
@@ -80,7 +80,7 @@ impl Invocation {
     origin: O,
     target: T,
     packets: impl Into<PacketStream>,
-    inherent: Option<InherentData>,
+    inherent: InherentData,
     following_span: &Span,
   ) -> Result<Invocation, ParseError>
   where
@@ -99,6 +99,7 @@ impl Invocation {
   }
 
   /// Creates an invocation with a new transaction id.
+  #[cfg(feature = "test")]
   pub fn test<T, TE>(
     name: &str,
     target: T,
@@ -109,6 +110,8 @@ impl Invocation {
     T: TryInto<Entity, Error = TE>,
     TE: std::error::Error + Send + Sync + 'static,
   {
+    let inherent = inherent.unwrap_or_else(InherentData::unsafe_default);
+
     Ok(Invocation::new(
       Entity::test(name),
       target.try_into().map_err(|e| ParseError::Conversion(Box::new(e)))?,
@@ -132,13 +135,13 @@ impl Invocation {
       target,
       id: invocation_id,
       tx_id: self.tx_id,
-      inherent: self.inherent.map(|i| InherentData {
-        seed: seeded_random::Seed::unsafe_new(i.seed).rng().gen(),
+      inherent: InherentData {
+        seed: seeded_random::Seed::unsafe_new(self.inherent.seed).rng().gen(),
         timestamp: SystemTime::now()
           .duration_since(SystemTime::UNIX_EPOCH)
           .unwrap()
           .as_millis() as u64,
-      }),
+      },
       packets: PacketStream::empty(),
       span,
     }
@@ -156,14 +159,14 @@ impl Invocation {
 
   /// Get the seed associated with an invocation if it exists.
   #[must_use]
-  pub fn seed(&self) -> Option<u64> {
-    self.inherent.map(|i| i.seed)
+  pub fn seed(&self) -> u64 {
+    self.inherent.seed
   }
 
   /// Get the timestamp associated with an invocation if it exists.
   #[must_use]
-  pub fn timestamp(&self) -> Option<u64> {
-    self.inherent.map(|i| i.timestamp)
+  pub fn timestamp(&self) -> u64 {
+    self.inherent.timestamp
   }
 
   /// Utility function to get the target [Entity] URL.

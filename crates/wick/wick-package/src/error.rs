@@ -25,6 +25,10 @@ pub enum Error {
   #[error("Can not find file at {0}.")]
   NotFound(String),
 
+  /// Metadata required for this operation.
+  #[error("Must specify metadata & version when performing package actions: {0}")]
+  NoMetadata(String),
+
   /// Failed to read downloaded package
   #[error("Failed to read downloaded package: {0}")]
   PackageReadFailed(String),
@@ -48,6 +52,10 @@ pub enum Error {
   /// Tried to publish a component that didn't have a name
   #[error("Published components must be named")]
   NoName,
+
+  /// Tried to publish a component that didn't have a version
+  #[error("Published components must have a version")]
+  NoVersion,
 
   /// General Configuration error
   #[error(transparent)]

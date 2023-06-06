@@ -67,7 +67,7 @@ pub type RuntimeCallback = dyn Fn(
     ComponentReference,
     String,
     PacketStream,
-    Option<InherentData>,
+    InherentData,
     Option<GenericConfig>,
     &tracing::Span,
   ) -> BoxFuture<'static, Result<PacketStream, ComponentError>>

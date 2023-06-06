@@ -19,6 +19,10 @@ pub enum RpcError {
   #[error("Internal Error: {0}")]
   InternalError(String),
 
+  /// No inherent data found in RPC message.
+  #[error("No inherent data found in RPC message")]
+  NoInherentData,
+
   /// Conversion error between types.
   #[error("Could not convert type to or from gRPC to wick.")]
   TypeConversion,

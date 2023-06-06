@@ -10,7 +10,7 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use tracing::Span;
 use uuid::Uuid;
-use wick_config::config::{ComponentConfiguration, ComponentKind, Metadata};
+use wick_config::config::{ComponentConfiguration, ComponentKind};
 use wick_config::Resolver;
 use wick_packet::GenericConfig;
 
@@ -171,15 +171,9 @@ impl RuntimeService {
     let callback = make_link_callback(init.id);
     assert_constraints(&config.constraints, &components)?;
 
-    let mut interpreter = flow_graph_interpreter::Interpreter::new(
-      Some(init.seed()),
-      graph,
-      Some(ns.clone()),
-      Some(components),
-      callback,
-      &span,
-    )
-    .map_err(|e| EngineError::InterpreterInit(source.map(Into::into), Box::new(e)))?;
+    let mut interpreter =
+      flow_graph_interpreter::Interpreter::new(graph, Some(ns.clone()), Some(components), callback, &span)
+        .map_err(|e| EngineError::InterpreterInit(source.map(Into::into), Box::new(e)))?;
 
     let options = InterpreterOptions {
       output_timeout: config.timeout,
@@ -348,9 +342,7 @@ pub(crate) async fn instantiate_import(
         config::ComponentDefinition::Reference(_) => unreachable!(),
         config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
         config::ComponentDefinition::HighLevelComponent(hlc) => {
-          init_hlc_component(id, Metadata::default(), hlc.clone(), opts.resolver)
-            .await
-            .map(Some)
+          init_hlc_component(id, None, hlc.clone(), opts.resolver).await.map(Some)
         }
         config::ComponentDefinition::Native(_) => Ok(None),
       }
@@ -377,7 +369,7 @@ mod test {
       Self {
         signature: component! {
           name: "test",
-          version: "0.0.1",
+          version: Some("0.0.1"),
           operations: {
             "testop" => {
               inputs: {
