@@ -117,8 +117,8 @@ impl CoreCollection {
 macro_rules! core_op {
   ($type:ty, $inv:expr, $name:expr, $callback:expr, $data:ident) => {{
     let config = <$type>::decode_config($data)?;
-    let inherent = $inv.inherent.unsafe_clone();
-    $name.handle($inv, Context::new(config, inherent, $callback)).await
+    let ctx = Context::new(config, &$inv.inherent, $callback);
+    $name.handle($inv, ctx).await
   }};
 }
 

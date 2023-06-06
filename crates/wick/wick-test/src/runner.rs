@@ -48,7 +48,7 @@ async fn run_unit<'a>(
   component: SharedComponent,
 ) -> Result<TestBlock, TestError> {
   let span = debug_span!("unit test", name = def.test.name());
-  let (stream, inherent) = get_payload(def);
+  let (stream, inherent) = get_payload(def)?;
   let test_name = get_description(def);
   let mut test_block = TestBlock::new(Some(test_name.clone()));
   let prefix = |msg: &str| format!("{}: {}", test_name, if msg.is_empty() { "wick test" } else { msg });

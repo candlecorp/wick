@@ -37,7 +37,8 @@ impl PartialEq for Packet {
 
 impl Packet {
   /// The port name that indicates a component-wide fatal error.
-  pub const FATAL_ERROR: &str = "<component>";
+  pub const FATAL_ERROR: &str = "<error>";
+  pub const NO_INPUT: &str = "<>";
 
   /// Create a new packet for the given port with a raw [PacketPayload], wasmRS [Metadata], and [WickMetadata].
   pub fn new_raw(payload: PacketPayload, wasmrs: Metadata, metadata: WickMetadata) -> Self {
@@ -66,6 +67,10 @@ impl Packet {
       PacketPayload::Ok(None) => false,
       PacketPayload::Err(_) => false,
     }
+  }
+
+  pub fn no_input() -> Self {
+    Self::encode(Self::NO_INPUT, ())
   }
 
   /// Create a new fatal error packet for the component.

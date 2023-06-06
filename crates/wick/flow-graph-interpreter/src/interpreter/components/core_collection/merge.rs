@@ -115,7 +115,7 @@ mod test {
     let mut packets = op
       .handle(
         inv,
-        Context::new(config, InherentData::unsafe_default(), panic_callback()),
+        Context::new(config, &InherentData::unsafe_default(), panic_callback()),
       )
       .await?
       .collect::<Vec<_>>()

@@ -166,7 +166,6 @@ impl WasmHost {
   pub fn call(&self, invocation: Invocation, config: Option<GenericConfig>) -> Result<PacketStream> {
     let _span = self.span.enter();
     let component_name = invocation.target.operation_id();
-    debug!(component = component_name, "wasm invoke");
     let inherent = invocation.inherent;
     let now = Instant::now();
     let ctx = self.ctx.clone();
@@ -181,7 +180,7 @@ impl WasmHost {
     trace!(
       component = component_name,
       duration_μs = ?now.elapsed().as_micros(),
-      "wasm call finished"
+      "received stream"
     );
     Ok(from_raw_wasmrs(out))
   }

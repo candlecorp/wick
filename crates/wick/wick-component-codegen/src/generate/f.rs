@@ -17,7 +17,7 @@ pub(crate) fn field_pair(
 ) -> impl FnMut(&Field) -> TokenStream + '_ {
   move |field: &Field| {
     let name = &field.name;
-    let id = id(&snake(&name));
+    let id = id(&snake(name));
     let ty = expand_type(config, Direction::In, imported, &field.ty);
     let desc = field
       .description

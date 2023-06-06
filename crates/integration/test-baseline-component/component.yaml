@@ -48,6 +48,10 @@ component:
       outputs:
         - name: output
           type: string
+    - name: uuid
+      outputs:
+        - name: output
+          type: string
 tests:
   - name: baseline
     with:
@@ -100,3 +104,10 @@ tests:
         output:
           - name: output
             error: Needs to be longer than 8 characters
+      - name: uuid
+        operation: uuid
+        inherent:
+          seed: 1234
+        output:
+          - name: output
+            value: '99e87b0e-9158-531e-eeb5-03ff15266e2b'

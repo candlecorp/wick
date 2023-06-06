@@ -112,7 +112,7 @@ async fn test_multi_sender() -> Result<()> {
 #[test_logger::test(tokio::test)]
 async fn test_subflows() -> Result<()> {
   first_packet_test(
-    "./tests/manifests/v1/private-flows.yaml",
+    "./tests/manifests/v1/children-operations.yaml",
     packets!(("input", "hello WORLD")),
     "DLROW OLLEH",
   )
