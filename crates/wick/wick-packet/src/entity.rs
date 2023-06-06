@@ -9,15 +9,15 @@ use crate::error::ParseError as Error;
 /// The entity being referenced across systems or services.
 #[must_use]
 pub enum Entity {
-  /// A [SystemEntity] with the name "invalid". Used only for situations where a default is necessary.
+  /// An invalid entity. Used only for situations where a default is necessary.
   Invalid,
-  /// A [SystemEntity] with the name "test". Used as the originating entity for tests.
+  /// A "test" entity. Used as the originating entity for tests.
   Test(String),
-  /// A client entity used for requests.
+  /// A server or host entity (i.e. for requests).
   Server(String),
-  /// A component or anything that can be invoked like a component.
+  /// An operation or anything that can be invoked like an operation.
   Operation(String, String),
-  /// A collection of components.
+  /// A component that hosts a collection of operations.
   Component(String),
 }
 

@@ -1,0 +1,21 @@
+kind: wick/component@v1
+name: http_client_example
+metadata:
+  version: 0.0.1
+  description: Example showing how to use the HTTP Client component to make HTTP requests from Wick.
+  licenses:
+    - Apache-2.0
+resources:
+  - name: BASEURL
+    resource:
+      kind: wick/resource/url@v1
+      url: http://$HTTPBIN
+component:
+  kind: wick/component/http@v1
+  resource: BASEURL
+  operations:
+    - name: httpbin_get
+      inputs:
+        - name: message
+          type: string
+      path: /get?msg={{message}}

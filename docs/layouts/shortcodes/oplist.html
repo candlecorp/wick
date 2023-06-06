@@ -1,0 +1,17 @@
+{{- with .Page.Params.file -}}
+{{- else -}}
+  {{ errorf "missing value for param 'file': %s" .Position }}
+{{- end -}}
+
+{{- $root_obj := .Page.Params.file | readFile | unmarshal -}}
+
+{{- $names := slice -}}
+
+{{- range $op := index $root_obj (slice "component" "operations") -}}{{$names = append $names (slice $op.name)}}{{- end -}}
+
+{{- if eq (len $names) 1 -}}
+  1 operation:
+{{- else -}}
+  {{- len $names }} operations:
+{{- end }}
+*{{ delimit $names ", " -}}*

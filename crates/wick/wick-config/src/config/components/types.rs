@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use crate::config;
 
 /// A Wick types manifest to import types from.

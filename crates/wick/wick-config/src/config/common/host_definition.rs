@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::net::Ipv4Addr;
 
 use crate::config;

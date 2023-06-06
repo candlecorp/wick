@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, property::Property)]
@@ -31,9 +32,9 @@ pub struct InherentConfig {
 #[derive(Debug, Clone, PartialEq)]
 /// Either a success packet or an error packet.
 pub enum TestPacket {
-  /// A variant representing a [PayloadData] type.
+  /// A variant representing a [SuccessPayload] type.
   SuccessPacket(SuccessPayload),
-  /// A variant representing a [ErrorData] type.
+  /// A variant representing a [ErrorPayload] type.
   ErrorPacket(ErrorPayload),
 }
 
@@ -80,6 +81,7 @@ pub struct SuccessPayload {
 
 #[derive(Debug, Clone, PartialEq, property::Property)]
 #[property(get(public), set(private), mut(disable))]
+/// A simplified representation of a Wick error packet & payload, used to write tests.
 pub struct ErrorPayload {
   /// The name of the port to send the data to.
   pub(crate) port: String,

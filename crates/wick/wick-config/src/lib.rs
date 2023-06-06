@@ -85,7 +85,7 @@
 #![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)]
+#![allow()]
 
 #[macro_use]
 extern crate derive_builder;
@@ -96,6 +96,7 @@ mod helpers;
 mod import_cache;
 
 pub use default::{parse_default, process_default, ERROR_STR};
+/// The main configuration module.
 pub mod config;
 /// Wick Manifest error.
 pub mod error;
@@ -106,16 +107,18 @@ pub(crate) mod v1;
 /// The crate's error type.
 pub type Error = crate::error::ManifestError;
 
-pub use config::{app_config, common, component_config, test_config, types_config, WickConfiguration};
+pub use config::WickConfiguration;
 pub use wick_asset_reference::Error as AssetError;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 pub use wick_asset_reference::{normalize_path, FetchOptions};
 
-pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
+/// The type associated with a resolver function.
 pub type Resolver = dyn Fn(&str) -> Option<config::OwnedConfigurationItem> + Send + Sync;
 
+// Todo: flesh out per-component validation of configuration.
+#[doc(hidden)]
 pub trait ConfigValidation {
   type Config;
   fn validate(config: &Self::Config, resolver: &Resolver) -> std::result::Result<(), flow_component::ComponentError>;

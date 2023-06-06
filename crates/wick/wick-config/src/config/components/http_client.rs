@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::collections::HashMap;
 
 use crate::config;
@@ -68,6 +69,7 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
 #[property(get(public), set(private), mut(disable))]
 #[builder(setter(into))]
 #[must_use]
+/// An operation whose implementation is an HTTP request.
 pub struct HttpClientOperationDefinition {
   /// The name of the operation.
   pub(crate) name: String,
@@ -177,9 +179,13 @@ impl HttpClientOperationDefinition {
 #[derive(Debug, Clone, Copy, PartialEq)]
 /// Supported HTTP methods
 pub enum HttpMethod {
+  /// HTTP GET method
   Get = 0,
+  /// HTTP POST method
   Post = 1,
+  /// HTTP PUT method
   Put = 2,
+  /// HTTP DELETE method
   Delete = 3,
 }
 

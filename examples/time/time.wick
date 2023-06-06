@@ -1,17 +1,28 @@
 ---
 kind: wick/app@v1
+name: sample_time_trigger
+metadata:
+  description: Example showing how to use the Time Trigger to create a cron-like service that delegates to Wick components.
+  version: 0.0.1
+  authors:
+    - 'Wick Maintainers'
+  vendors:
+    - 'Candle Corporation'
+  licenses:
+    - Apache-2.0
+import:
+  - name: comp
+    component:
+      kind: wick/component/manifest@v1
+      ref: ../../integration/test-baseline-component/component.yaml
 triggers:
   - kind: wick/trigger/time@v1
     schedule:
-      cron: "*/1 * * * * *"
+      cron: '*/1 * * * * *'
       repeat: 5
     payload:
       - name: left
         value: 2
       - name: right
         value: 5
-    operation:
-      name: add
-      component:
-        kind: wick/component/manifest@v1
-        ref: ../../integration/test-baseline-component/component.yaml
+    operation: comp::add

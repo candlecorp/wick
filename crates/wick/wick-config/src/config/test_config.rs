@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::path::{Path, PathBuf};
 
 use asset_container::AssetManager;
@@ -8,18 +9,25 @@ use crate::config;
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(crate::config::AssetReference))]
 #[must_use]
+/// A Wick tests configuration.
+///
+/// A tests configuration is a collection of shareable and reusable unit tests against wick components and operations.
 pub struct TestConfiguration {
   #[asset(skip)]
+  /// The name of the tests configuration.
   pub(crate) name: Option<String>,
 
   #[asset(skip)]
   #[property(skip)]
+  /// The source (i.e. url or file on disk) of the configuration.
   pub(crate) source: Option<PathBuf>,
 
   #[asset(skip)]
+  /// The configuration with which to initialize the component before running tests.
   pub(crate) config: Option<wick_packet::GenericConfig>,
 
   #[asset(skip)]
+  /// A suite of test cases to run against component operations.
   pub(crate) cases: Vec<config::TestCase>,
 }
 

@@ -5,14 +5,20 @@ use crate::config;
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(asset(config::AssetReference))]
 #[must_use]
+/// A root-level wick component implementation.
 pub enum ComponentImplementation {
+  /// A wasm component.
   Wasm(config::WasmComponentImplementation),
+  /// A composite component.
   Composite(config::CompositeComponentImplementation),
+  /// A sql component.
   Sql(config::components::SqlComponentConfig),
+  /// An http client component.
   HttpClient(config::components::HttpClientComponentConfig),
 }
 
 impl ComponentImplementation {
+  /// Get the kind of component represented by this configuration.
   pub fn kind(&self) -> ComponentKind {
     match self {
       ComponentImplementation::Wasm(_) => ComponentKind::Wasm,
@@ -23,6 +29,7 @@ impl ComponentImplementation {
   }
 
   #[must_use]
+  /// Get the operation signatures for this component.
   pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
     match self {
       ComponentImplementation::Wasm(w) => w.operation_signatures(),
@@ -33,6 +40,7 @@ impl ComponentImplementation {
   }
 
   #[must_use]
+  /// Get the default name for this component.
   pub fn default_name(&self) -> &'static str {
     match self {
       ComponentImplementation::Wasm(_) => panic!("Wasm components must be named"),
@@ -43,6 +51,7 @@ impl ComponentImplementation {
   }
 
   #[must_use]
+  /// Get the associated configuration for this component.
   pub fn config(&self) -> Option<&[Field]> {
     match self {
       ComponentImplementation::Wasm(c) => Some(c.config()),
@@ -61,10 +70,15 @@ impl Default for ComponentImplementation {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[must_use]
+/// The kind of component represented by ComponentImplementation.
 pub enum ComponentKind {
+  /// A wasm component.
   Wasm,
+  /// A composite component.
   Composite,
+  /// A sql component.
   Sql,
+  /// An http client component.
   HttpClient,
 }
 

@@ -1,0 +1,25 @@
+{{ with .Page.Params.file }}
+{{ else }}
+  {{ errorf "missing value for param 'file': %s" .Position }}
+{{ end }}
+
+{{ $yaml := .Page.Params.file | readFile | unmarshal }}
+
+{{ $kind := index $yaml "kind"  }}
+
+{{ $fields := "kind,name" }}
+
+{{ $other := dict  }}
+
+{{ range $k := (split $fields ",") }}
+  {{ $other = merge $other (dict $k (index $yaml $k)) }}
+{{ end }}
+
+{{ $yaml = $other | transform.Remarshal "yaml" }}
+
+This app configuration starts off with the common Application `kind` and a name field.
+
+{{ highlight $yaml "yaml"}}
+
+
+

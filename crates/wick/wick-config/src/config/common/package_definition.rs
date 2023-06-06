@@ -1,3 +1,5 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
+
 use wick_asset_reference::AssetReference;
 
 use super::Glob;
@@ -19,6 +21,7 @@ pub struct PackageConfig {
 
 #[derive(Debug, Default, Builder, Clone, PartialEq, property::Property)]
 #[property(get(public), set(private), mut(disable))]
+/// Configuration for publishing the package to a registry.
 pub struct RegistryConfig {
   /// The registry to publish to.
   #[builder(default)]

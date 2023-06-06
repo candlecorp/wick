@@ -1,0 +1,67 @@
+{{ with .Page.Params.file }}
+{{ else }}
+  {{ errorf "missing value for param 'file': %s" .Position }}
+{{ end }}
+
+{{ $file := .Page.Params.file | readFile }}
+
+
+{{/* path: the path to the value to extract */}}
+{{ $param_path := .Get "path" | default ""}}
+
+{{/* highlight: whether to syntax highlight the output */}}
+{{ $param_highlight := .Get "highlight" | default true}}
+
+{{/* context: whether to use the last path part as a dict key to retain context for the value */}}
+{{ $param_context := .Get "context" | default false}}
+
+{{ $root_obj := $file | unmarshal }}
+{{ $new_obj := dict }}
+
+{{ $last_obj := $root_obj }}
+{{ $last_path_part := "" }}
+
+{{ range $pathpart := split $param_path "." }}
+  {{ $where := (findRE `^(\w+)=(.+)$` $pathpart) }}
+  {{/*
+    if our pathpart looks like "key=value", use it in a where clause to filter the list
+  */}}
+  {{ if gt (len $where) 0 }}
+    {{ $whereparts := split (index $where 0) "=" }}
+    {{ $param_patheyname := index $whereparts 0 }}
+    {{ $param_patheyvalue := index $whereparts 1 }}
+    {{ $match := where $last_obj $param_patheyname $param_patheyvalue }}
+
+    {{ $last_obj = index $match 0 }}
+    {{ $new_obj = $match }}
+  {{ else }}
+    {{ $last_path_part = $pathpart }}
+    {{ with index $last_obj $pathpart }}
+      {{ if reflect.IsMap . }}
+        {{ $new_obj = . }}
+        {{ $last_obj = . }}
+      {{ else }}
+        {{ $last_obj = . }}
+        {{ $new_obj = dict $pathpart . }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end  }}
+
+{{ if reflect.IsSlice $new_obj }}
+  {{ $new_obj = dict $last_path_part $new_obj }}
+{{ else }}
+  {{ if $param_context }}
+    {{ $new_obj = dict $last_path_part $new_obj }}
+  {{ end }}
+{{ end }}
+
+{{ $yaml := $new_obj | transform.Remarshal "yaml" }}
+
+{{ if $param_highlight }}
+{{ $yaml = highlight $yaml "yaml" }}
+{{ end }}
+
+{{ $yaml }}
+
+

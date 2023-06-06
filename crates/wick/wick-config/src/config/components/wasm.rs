@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::collections::HashMap;
 
 use crate::config;

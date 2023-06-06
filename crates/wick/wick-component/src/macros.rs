@@ -1,3 +1,15 @@
+/// This macro is used to include the generated code from a `wick-component-codegen` build step.
+///
+/// # Example
+///
+/// ```
+/// # use wick_component::prelude::*;
+///
+/// // Useful way of importing code and keeping it separate from your own code.
+/// mod wick {
+/// wick_import!();
+/// }
+///
 #[macro_export]
 macro_rules! wick_import {
   () => {
@@ -5,40 +17,7 @@ macro_rules! wick_import {
   };
 }
 
-#[macro_export]
-macro_rules! payloads {
-    ($(($port:expr, $value:expr)),*) => {
-      {
-        let mut msgs = std::vec::Vec::new();
-        let mut ports = std::collections::HashSet::new();
-        $(
-          ports.insert($port.to_owned());
-          let md = wasmrs::Metadata::new_extra(0, $crate::WickMetadata::new($port));
-          msgs.push(wasmrs::Payload::new_data(Some(md), Some(serialize(&output).unwrap().into())));
-        )*
-        for port in ports {
-          let md = wasmrs::Metadata::new_extra(0, $crate::WickMetadata::new_done($port));
-          msgs.push(wasmrs::Payload::new_data(Some(md), None));
-        }
-        msgs
-      }
-    };
-}
-
-#[macro_export]
-macro_rules! payload_stream {
-  ($(($port:expr, $value:expr)),*) => {{
-    use $crate::wasmrs_rx::Observer;
-
-    let packets = $crate::packet::packets!($(($port, $value)),*);
-    let (tx,rx) = $crate::wasmrs_rx::FluxChannel::new_parts();
-    for p in packets {
-      tx.send(p).unwrap();
-    }
-    rx
-  }};
-}
-
+#[doc(hidden)]
 #[macro_export]
 macro_rules! handle_port {
   (raw: true, $packet:ident, $tx:ident, $port:expr, $ty:ty) => {{
@@ -61,6 +40,7 @@ macro_rules! handle_port {
   }};
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! payload_fan_out {
     ($stream:expr, raw:$raw:tt, $error:ty, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {

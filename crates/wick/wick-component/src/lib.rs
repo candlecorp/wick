@@ -85,14 +85,17 @@
 #![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)]
+#![allow()]
 
+/// Macros used by wick components and generated code.
 pub mod macros;
 #[cfg(feature = "bytes")]
+/// Re-export of the bytes crate.
 pub use bytes;
 #[cfg(feature = "datetime")]
+/// Re-exported methods used for `datetime` types.
 pub mod datetime {
-
+  /// Re-export of the chrono crate.
   pub use chrono;
   pub use chrono::format::strftime;
   pub use chrono::offset::TimeZone;
@@ -104,9 +107,12 @@ pub mod datetime {
 pub use serde_json::{from_slice, from_str, from_value, json, to_value, Map};
 pub use tokio_stream::{empty, iter as iter_raw, once as once_raw, Stream, StreamExt};
 #[cfg(target_family = "wasm")]
+/// Re-export of wasmrs.
 pub use wasmrs_guest;
+/// Re-exported crates;
 pub use {flow_component, paste, wasmrs, wasmrs_codec, wasmrs_runtime as runtime, wasmrs_rx, wick_packet as packet};
 
+/// Generic boxed-error type.
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 /// Create a stream of `Result<T, BoxError>` that yields one value and ends.
@@ -148,6 +154,7 @@ where
   tokio_stream::iter(i.into_iter().map(|i| Ok(i)))
 }
 
+/// Useful userland utilities that can be exported via `use wick_component::prelude::*`
 pub mod prelude {
   pub use serde_json::Value;
 

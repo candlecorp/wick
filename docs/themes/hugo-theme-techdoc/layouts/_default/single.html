@@ -1,6 +1,7 @@
 {{- define "main" -}}
 <h1>{{ .Title }}</h1>
 {{- partial "table-of-contents.html" . -}}
+{{- partial "configuration-reference.html" . -}}
 {{- .Content -}}
 {{- partial "edit-meta.html" . -}}
 {{- partial "pagination.html" . -}}

@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -8,7 +9,7 @@ use wick_asset_reference::AssetReference;
 
 #[derive(Debug, Clone, Default, property::Property)]
 #[property(get(public), set(private), mut(disable))]
-
+/// A glob pattern for finding assets.
 pub struct Glob {
   pub(crate) glob: String,
   #[property(skip)]
@@ -18,6 +19,7 @@ pub struct Glob {
 }
 
 impl Glob {
+  /// Create a new [Glob] instance from a glob pattern.
   pub fn new(glob: impl AsRef<str>) -> Self {
     Self {
       glob: glob.as_ref().to_owned(),

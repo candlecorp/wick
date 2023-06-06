@@ -1,8 +1,11 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
+
 use wick_interface_types::Field;
 
 #[derive(Debug, Builder, Clone, property::Property)]
 #[property(get(public), set(private), mut(disable))]
 #[builder(setter(into))]
+/// The generic definition of an Operation without any implementation details.
 pub struct OperationSignature {
   /// The name of the schematic.
   pub(crate) name: String,

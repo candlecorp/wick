@@ -28,7 +28,7 @@ impl PartialEq for OperationSignature {
 }
 
 impl OperationSignature {
-  /// Create a new [ComponentSignature] with the passed name.
+  /// Create a new [OperationSignature] with the passed name.
   pub fn new<T: AsRef<str>>(name: T) -> Self {
     Self {
       name: name.as_ref().to_owned(),

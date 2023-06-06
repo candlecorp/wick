@@ -1,0 +1,9 @@
+
+{{ if $.Page.Params.refs }}
+  <h4>Configuration References</h4>
+  <ul>
+  {{ range $el := $.Page.Params.refs }}
+    <li><a href="/configuration/reference/v1/#{{ $el.ref }}" aria-description="Configuration reference">{{ $el.name }}</a></li>
+  {{ end }}
+  </ul>
+{{ end }}

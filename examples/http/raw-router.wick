@@ -2,12 +2,12 @@
 kind: wick/app@v1
 name: serve_http_component
 metadata:
-  description: Serve raw HTTP with a WASM component
+  description: Example showing how to use the Raw Router to delegate an http request to any arbitrary Wick Component.
   version: 0.0.1
   authors:
-    - "Wick Maintainers"
+    - 'Wick Maintainers'
   vendors:
-    - "Candle Corporation"
+    - 'Candle Corporation'
   licenses:
     - Apache-2.0
 resources:
@@ -16,14 +16,15 @@ resources:
       kind: wick/resource/tcpport@v1
       port: 8999
       address: 0.0.0.0
+import:
+  - name: test_component
+    component:
+      kind: wick/component/manifest@v1
+      ref: ../../crates/integration/test-http-trigger-component/component.yaml
 triggers:
   - kind: wick/trigger/http@v1
     resource: http
     routers:
       - kind: wick/router/raw@v1
         path: /
-        operation:
-          name: http_handler
-          component:
-            kind: wick/component/manifest@v1
-            ref: ../../crates/integration/test-http-trigger-component/component.yaml
+        operation: test_component::http_handler

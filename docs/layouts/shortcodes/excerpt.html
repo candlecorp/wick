@@ -1,0 +1,22 @@
+{{ with .Page.Params.file }}
+{{ else }}
+  {{ errorf "missing value for param 'file': %s" .Position }}
+{{ end }}
+
+{{ $file := .Page.Params.file | readFile }}
+
+{{ $fields := .Get "fields" | default ""}}
+
+{{ $yaml := $file | unmarshal }}
+
+{{ $excert := dict  }}
+
+{{ range $k := (split $fields ",") }}
+  {{ $excert = merge $excert (dict (split $k ".") (index $yaml $k)) }}
+{{ end }}
+
+{{ $yaml = $excert | transform.Remarshal "yaml" }}
+
+{{ highlight $yaml "yaml"}}
+
+

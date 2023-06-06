@@ -9,7 +9,7 @@ use flow_expression_parser::ast::{
   InstanceTarget,
 };
 use tracing::debug;
-use wick_config::component_config::CompositeComponentImplementation;
+use wick_config::config::CompositeComponentImplementation;
 use wick_config::error::ManifestError;
 use wick_config::*;
 

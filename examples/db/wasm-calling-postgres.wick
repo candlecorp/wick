@@ -1,5 +1,14 @@
-name: mycli
+name: db_cli
 kind: wick/app@v1
+metadata:
+  description: Example showing how to wire together a WebAssembly component with a SQL component into a CLI Trigger.
+  version: 0.0.1
+  authors:
+    - 'Wick Maintainers'
+  vendors:
+    - 'Candle Corporation'
+  licenses:
+    - Apache-2.0
 resources:
   - name: DBADDR
     resource:
@@ -19,12 +28,12 @@ import:
           query: SELECT name FROM users WHERE id = $1
           arguments:
             - id
+  - name: CLI
+    component:
+      kind: wick/component/manifest@v1
+      ref: ../../crates/integration/test-cli-with-db/component.yaml
+      provide:
+        db: MYDB
 triggers:
   - kind: wick/trigger/cli@v1
-    operation:
-      name: main
-      component:
-        kind: wick/component/manifest@v1
-        ref: ../../crates/integration/test-cli-with-db/component.yaml
-        provide:
-          db: MYDB
+    operation: CLI::main

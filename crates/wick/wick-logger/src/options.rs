@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 #[derive(Debug, Default, Clone)]
-/// Logging options that can be used directly or via [Args].
+/// Logging options.
 pub struct LoggingOptions {
   /// Turns on verbose logging.
   pub verbose: bool,

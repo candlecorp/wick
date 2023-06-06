@@ -1,8 +1,12 @@
 use core::panic;
 use std::path::PathBuf;
 
-use wick_config::component_config::CompositeComponentImplementation;
-use wick_config::config::{ComponentConfiguration, ComponentDefinition, ImportDefinition};
+use wick_config::config::{
+  ComponentConfiguration,
+  ComponentDefinition,
+  CompositeComponentImplementation,
+  ImportDefinition,
+};
 use wick_config::error::ManifestError;
 use wick_config::*;
 

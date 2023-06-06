@@ -46,7 +46,7 @@ impl Random {
   }
 
   #[must_use]
-  /// Function that delegates to [rand::rng::Rng::gen()]
+  /// Function that delegates to [rand::Rng::gen()]
   pub fn gen<T>(&self) -> T
   where
     Standard: Distribution<T>,
@@ -65,7 +65,7 @@ impl Random {
     self.gen()
   }
 
-  /// Utility function to generate a new [Vec<u8>]
+  /// Utility function to generate a new [Vec] of bytes.
   pub fn bytes(&self, length: usize) -> Vec<u8> {
     let mut bytes: Vec<u8> = Vec::with_capacity(length);
     let mut rng = self.rng.write();
@@ -108,7 +108,7 @@ impl Random {
     builder.into_uuid()
   }
 
-  /// Utility function that delegates to [rand::rng::Rng::gen_range()]
+  /// Utility function that delegates to [rand::Rng::gen_range()]
   pub fn range(&self, min: u32, max: u32) -> u32 {
     let mut rng = self.rng.write();
     rng.gen_range(min..max)

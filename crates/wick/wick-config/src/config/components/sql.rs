@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use crate::config::{self, ErrorBehavior};
 
 #[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
@@ -43,6 +44,7 @@ impl From<SqlOperationDefinition> for wick_interface_types::OperationSignature {
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
+/// An operation whose implementation is a SQL query to execute on a database.
 pub struct SqlOperationDefinition {
   /// The name of the operation.
   #[asset(skip)]
@@ -76,13 +78,4 @@ pub struct SqlOperationDefinition {
   #[asset(skip)]
   #[builder(default)]
   pub(crate) on_error: ErrorBehavior,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, derive_asset_container::AssetManager)]
-#[asset(asset(config::AssetReference))]
-pub enum DatabaseKind {
-  MsSql = 0,
-  Postgres = 1,
-  Mysql = 2,
-  Sqlite = 3,
 }

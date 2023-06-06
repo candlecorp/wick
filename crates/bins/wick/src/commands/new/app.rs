@@ -44,7 +44,7 @@ pub(crate) async fn handle(
       match trigger {
         TriggerType::Time => {
           config.triggers_mut().push(config::TriggerDefinition::Time(
-            config::app_config::TimeTriggerConfigBuilder::default().build().unwrap(),
+            config::TimeTriggerConfigBuilder::default().build().unwrap(),
           ));
         }
         TriggerType::Http => {

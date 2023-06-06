@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -13,21 +14,31 @@ use crate::config;
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]
 #[must_use]
+/// A Wick types configuration.
+///
+/// A types configuration is a collection of shareable types and operation signatures used to generated
+/// code for components and other types.
 pub struct TypesConfiguration {
   #[asset(skip)]
   #[builder(setter(strip_option), default)]
+  /// The name of the types configuration.
   pub(crate) name: Option<String>,
   #[asset(skip)]
   #[property(skip)]
+  /// The source (i.e. url or file on disk) of the configuration.
   pub(crate) source: Option<PathBuf>,
   #[asset(skip)]
   #[builder(default)]
+  /// Any metadata associated with the configuration.
   pub(crate) metadata: Option<config::Metadata>,
   #[asset(skip)]
+  /// A list of types defined in this configuration.
   pub(crate) types: Vec<TypeDefinition>,
   #[asset(skip)]
+  /// A list of operation signatures defined in this configuration.
   pub(crate) operations: HashMap<String, OperationSignature>,
   #[builder(default)]
+  /// The package configuration for this configuration.
   pub(crate) package: Option<PackageConfig>,
 }
 
