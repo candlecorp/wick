@@ -1,9 +1,10 @@
-pub mod app_config;
-pub mod common;
-pub mod component_config;
+pub(crate) mod app_config;
+pub(crate) mod common;
+pub(crate) mod component_config;
+/// Specific component-level configuration and types.
 pub mod components;
-pub mod test_config;
-pub mod types_config;
+pub(crate) mod test_config;
+pub(crate) mod types_config;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -22,11 +23,16 @@ use crate::utils::from_yaml;
 use crate::{v0, v1, Error, Resolver};
 
 #[derive(Debug, Clone, Copy)]
+/// The kind of configuration loaded.
 #[must_use]
 pub enum ConfigurationKind {
+  /// An [app_config::AppConfiguration] configuration.
   App,
+  /// A [component_config::ComponentConfiguration] configuration.
   Component,
+  /// A [types_config::TypesConfiguration] configuration.
   Types,
+  /// A [test_config::TestConfiguration] configuration.
   Tests,
 }
 
@@ -56,21 +62,51 @@ async fn fetch_all(
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(asset(AssetReference))]
-
+/// A catch-all enum for root-level Wick configurations.
 pub enum WickConfiguration {
+  /// A [component_config::ComponentConfiguration] configuration.
   Component(ComponentConfiguration),
+  /// An [app_config::AppConfiguration] configuration.
   App(AppConfiguration),
+  /// A [types_config::TypesConfiguration] configuration.
   Types(TypesConfiguration),
+  /// A [test_config::TestConfiguration] configuration.
   Tests(TestConfiguration),
 }
 
 impl WickConfiguration {
+  /// Fetch a configuration and all referenced assets from a path.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// use wick_config::WickConfiguration;
+  /// use wick_asset_reference::FetchOptions;
+  ///
+  /// let opts = FetchOptions::default();
+  ///
+  /// let manifest = WickConfiguration::fetch_all("path/to/manifest.yaml", opts).await?;
+  /// ```
   pub async fn fetch_all(path: impl Into<String> + Send, options: FetchOptions) -> Result<Self, Error> {
     let config = Self::fetch(path, options.clone()).await?;
     config.fetch_assets(options).await?;
     Ok(config)
   }
 
+  /// Fetch a configuration from a path.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  ///
+  /// use wick_config::WickConfiguration;
+  /// use wick_asset_reference::FetchOptions;
+  ///
+  /// let opts = FetchOptions::default();
+  ///
+  /// let manifest = WickConfiguration::fetch("path/to/manifest.yaml", opts).await?;
+  /// ```
+  ///
   pub async fn fetch(path: impl Into<String> + Send, options: FetchOptions) -> Result<Self, Error> {
     let path = path.into();
     let location = AssetReference::new(&path);
@@ -102,16 +138,63 @@ impl WickConfiguration {
     }
   }
 
+  /// Load a configuration from raw bytes. Pass in an optional source to track where the bytes came from.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  ///
+  /// use wick_config::WickConfiguration;
+  ///
+  /// let path = PathBuf::from("path/to/manifest.yaml");
+  ///
+  /// let bytes = std::fs::read(&path)?;
+  ///
+  /// let manifest = WickConfiguration::load_from_bytes(bytes, &Some(path))?;
+  ///
+  /// ```
   pub fn load_from_bytes(bytes: &[u8], source: &Option<PathBuf>) -> Result<Self, Error> {
     let string = &String::from_utf8(bytes.to_vec()).map_err(|_| Error::Utf8)?;
 
     resolve_configuration(string, source)
   }
 
+  /// Load a configuration from a string. Pass in an optional source to track where the string came from.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  ///
+  /// use wick_config::WickConfiguration;
+  ///
+  /// let path = PathBuf::from("path/to/manifest.yaml");
+  ///
+  /// let string = std::fs::read_to_string(&path)?;
+  ///
+  /// let manifest = WickConfiguration::load_from_string(string, &Some(path))?;
+  ///
+  /// ```
+  ///
   pub fn from_yaml(src: &str, source: &Option<PathBuf>) -> Result<Self, Error> {
     resolve_configuration(src, source)
   }
 
+  /// Convert a WickConfiguration into V1 configuration yaml source.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  ///
+  /// use wick_config::WickConfiguration;
+  /// use wick_asset_reference::FetchOptions;
+  ///
+  /// let opts = FetchOptions::default();
+  ///
+  /// let manifest = WickConfiguration::fetch_all("path/to/manifest.yaml", opts).await?;
+  ///
+  /// let v1_yaml = manifest.into_v1_yaml()?;
+  ///
+  /// ```
   pub fn into_v1_yaml(self) -> Result<String, Error> {
     let v1_manifest = match self {
       WickConfiguration::Component(c) => v1::WickConfig::ComponentConfiguration(c.try_into()?),
@@ -123,6 +206,7 @@ impl WickConfiguration {
     Ok(serde_yaml::to_string(&v1_manifest).unwrap())
   }
 
+  /// Get the name (if any) associated with the inner configuration.
   #[must_use]
   pub fn name(&self) -> Option<&str> {
     match self {
@@ -133,6 +217,7 @@ impl WickConfiguration {
     }
   }
 
+  /// Get the metadata (if any) associated with the inner configuration.
   #[must_use]
   pub fn metadata(&self) -> Option<&Metadata> {
     match self {
@@ -143,6 +228,7 @@ impl WickConfiguration {
     }
   }
 
+  /// Get the kind of the inner configuration.
   pub fn kind(&self) -> ConfigurationKind {
     match self {
       WickConfiguration::Component(_) => ConfigurationKind::Component,
@@ -152,6 +238,7 @@ impl WickConfiguration {
     }
   }
 
+  /// Get the version (if any) associated with the inner configuration.
   #[must_use]
   pub fn version(&self) -> Option<&str> {
     match self {
@@ -162,6 +249,7 @@ impl WickConfiguration {
     }
   }
 
+  /// Get the package configuration (if any) associated with the inner configuration.
   #[must_use]
   pub fn package(&self) -> Option<&PackageConfig> {
     match self {
@@ -172,6 +260,7 @@ impl WickConfiguration {
     }
   }
 
+  /// Unwrap the inner [ComponentConfiguration], returning an error if it is anything else.
   pub fn try_component_config(self) -> Result<ComponentConfiguration, Error> {
     match self {
       WickConfiguration::Component(v) => Ok(v),
@@ -182,6 +271,7 @@ impl WickConfiguration {
     }
   }
 
+  /// Unwrap the inner [AppConfiguration], returning an error if it is anything else.
   pub fn try_app_config(self) -> Result<AppConfiguration, Error> {
     match self {
       WickConfiguration::App(v) => Ok(v),
@@ -189,6 +279,7 @@ impl WickConfiguration {
     }
   }
 
+  /// Unwrap the inner [TestConfiguration], returning an error if it is anything else.
   pub fn try_test_config(self) -> Result<TestConfiguration, Error> {
     match self {
       WickConfiguration::Tests(v) => Ok(v),
@@ -199,6 +290,7 @@ impl WickConfiguration {
     }
   }
 
+  /// Unwrap the inner [TypesConfiguration], returning an error if it is anything else.
   pub fn try_types_config(self) -> Result<TypesConfiguration, Error> {
     match self {
       WickConfiguration::Types(v) => Ok(v),
@@ -237,6 +329,7 @@ impl WickConfiguration {
     Ok(manifest)
   }
 
+  /// Set the source of the configuration if it is not already set on load.
   pub fn set_source(&mut self, src: &Path) {
     match self {
       WickConfiguration::Component(v) => v.set_source(src),
@@ -246,6 +339,7 @@ impl WickConfiguration {
     }
   }
 
+  /// Get the source of the configuration.
   #[must_use]
   pub fn source(&self) -> Option<&Path> {
     match self {

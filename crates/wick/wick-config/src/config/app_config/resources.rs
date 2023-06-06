@@ -19,7 +19,7 @@ pub struct ResourceBinding {
 }
 
 impl ResourceBinding {
-  /// Create a new [CollectionDefinition] with specified name and type.
+  /// Create a new [ResourceBinding] with specified name and [ResourceDefinition].
   pub fn new(name: impl AsRef<str>, kind: ResourceDefinition) -> Self {
     Self {
       id: name.as_ref().to_owned(),

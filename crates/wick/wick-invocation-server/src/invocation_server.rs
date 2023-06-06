@@ -12,7 +12,7 @@ use wick_rpc::rpc::invocation_service_server::InvocationService;
 use wick_rpc::rpc::{InvocationRequest, ListResponse, Packet, StatsResponse};
 use wick_rpc::{rpc, DurationStatistics, Statistics};
 
-/// A GRPC server for implementers of [wick_rpc::RpcHandler].
+/// A GRPC server for implementers of [flow_component::Component].
 pub struct InvocationServer {
   /// The component that will handle incoming requests.
   pub collection: SharedComponent,

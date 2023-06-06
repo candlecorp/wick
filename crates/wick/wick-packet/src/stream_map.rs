@@ -31,7 +31,7 @@ impl StreamMap {
     self.0.keys()
   }
 
-  /// Take the next packet from the stream keyed by [key].
+  /// Take the next packet from the stream keyed by `key`.
   pub async fn next_for(&mut self, key: &str) -> Option<Result<Packet>> {
     let stream = self.0.get_mut(key)?;
     stream.next().await
@@ -64,7 +64,7 @@ impl StreamMap {
   }
 
   #[cfg(feature = "rt-tokio")]
-  /// Turn a single [PacketStream] into a [StreamMap] keyed by the passed [ports].
+  /// Turn a single [PacketStream] into a [StreamMap] keyed by the passed `ports`.
   pub fn from_stream(mut stream: PacketStream, ports: impl IntoIterator<Item = String>) -> Self {
     use wasmrs_rx::Observer;
 

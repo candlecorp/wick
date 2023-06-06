@@ -1,8 +1,8 @@
 ---
 kind: wick/app@v1
-name: serve_http_component
+name: static_file_server
 metadata:
-  description: Serve raw HTTP with a WASM component
+  description: Example showing how to use the static router to serve serve static files with Wick. This example serves the current working directory as the root of the server.
   version: 0.0.1
   authors:
     - 'Wick Maintainers'

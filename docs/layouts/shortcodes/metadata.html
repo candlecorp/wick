@@ -1,0 +1,17 @@
+{{ with .Page.Params.file }}
+{{ else }}
+  {{ errorf "missing value for param 'file': %s" .Position }}
+{{ end }}
+
+{{ with .Get "field" }}
+{{ else }}
+  {{ errorf "missing value for param 'field': %s" .Position }}
+{{ end }}
+
+{{ $yaml := .Page.Params.file | readFile | unmarshal }}
+
+{{ $metadata := index $yaml "metadata"  }}
+
+{{ $field := .Get "field" }}
+
+{{ index $metadata $field  }}

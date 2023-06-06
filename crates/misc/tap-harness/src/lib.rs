@@ -191,7 +191,7 @@ where
 }
 
 #[derive(Default, Debug)]
-/// A [TestBlock] organizes [TestCase] under one description.
+/// A [TestBlock] organizes test cases together under one umbrella.
 pub struct TestBlock {
   desc: Option<String>,
   tests: Vec<TestCase>,
@@ -252,7 +252,7 @@ impl TestBlock {
     self.tests.len()
   }
 
-  /// Execute the [TestBlock]'s [TestCase]s.
+  /// Execute the [TestBlock]'s test cases.
   pub fn run(&mut self) -> Vec<TapTest> {
     let mut tests: Vec<TapTest> = vec![];
     for test_case in self.tests.iter_mut() {

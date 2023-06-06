@@ -1,5 +1,5 @@
 kind: wick/component@v1
-name: hello-composite.wick
+name: hello-composite
 metadata:
   version: 0.0.1
   description: Basic "Hello World" example with a composite component

@@ -28,7 +28,7 @@ pub enum InstanceTarget {
 }
 
 impl InstanceTarget {
-  /// Returns [self] unless self is [InstanceTarget::Default], in which case it returns [other].
+  /// Returns [self] unless self is [InstanceTarget::Default], in which case it returns `other`.
   pub fn or(self, other: InstanceTarget) -> InstanceTarget {
     match self {
       InstanceTarget::Default => other,

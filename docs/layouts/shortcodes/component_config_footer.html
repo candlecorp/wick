@@ -1,0 +1,49 @@
+{{ with .Page.Params.file }}
+{{ else }}
+  {{ errorf "missing value for param 'file': %s" .Position }}
+{{ end }}
+
+{{ $yaml := .Page.Params.file | readFile }}
+
+{{ $config := $yaml | unmarshal }}
+
+{{ $url_path := replace .Page.Params.file "data/" "" }}
+
+The full configuration is located at <a href="{{ $.Site.Params.wick_repo }}/tree/main/{{ $url_path }}">{{ $url_path }}</a>.
+
+### Running on the CLI with `wick invoke`
+
+Run this component on the command line by cloning the <a href="{{ $.Site.Params.wick_repo }}">wick repository</a> and using `wick invoke`.
+
+*Note: Use `cargo run -p wick-cli -- invoke` to run `wick` from source.*
+
+Clone the repository with
+
+{{ $cmd := print "git clone " $.Site.Params.wick_repo " && cd wick\nwick invoke " $url_path " [operation_name] -- --[input_name]=[value]  --[input_name]=[value]" }}
+
+{{ highlight (print "git clone " $.Site.Params.wick_repo " && cd wick") "sh"}}
+
+{{ $ops := index $config (slice "component" "operations")}}
+
+*Notice: the arguments to the operation come **after** the `--`.*
+
+{{ range $op := $ops }}
+  Invoke the operation **`{{ $op.name }}`** with the following command:
+  {{ $cmd := print "wick invoke " $url_path " " $op.name " -- "}}
+  {{ $inputs := index $op "inputs"}}
+  {{ range $input := $inputs }}
+    {{$cmd = print $cmd "--" $input.name "=[...] " }}
+  {{ end }}
+  {{ highlight $cmd "sh" }}
+{{end}}
+
+
+{{ $yaml := .Page.Params.file | readFile }}
+
+{{ $url_path := replace .Page.Params.file "data/" "" }}
+
+### Complete Example
+
+The full example configuration is included below,
+
+{{ highlight $yaml "yaml"}}

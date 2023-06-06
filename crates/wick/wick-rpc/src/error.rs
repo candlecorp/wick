@@ -27,7 +27,7 @@ pub enum RpcError {
   #[error("Could not convert type to or from gRPC to wick.")]
   TypeConversion,
 
-  /// Invalid [crate::rpc::component::ComponentKind].
+  /// Invalid ComponentKind.
   #[error("Invalid component kind {0}")]
   InvalidComponentKind(i32),
 
@@ -109,7 +109,7 @@ impl From<String> for RpcError {
   }
 }
 
-/// The error type that [RpcClient] methods produce.
+/// The error type that [crate::RpcClient] methods produce.
 #[derive(thiserror::Error, Debug)]
 pub enum RpcClientError {
   /// An error originating from a List RPC call.

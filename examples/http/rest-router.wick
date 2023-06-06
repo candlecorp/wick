@@ -1,8 +1,10 @@
 ---
 kind: wick/app@v1
-name: serve_http_component
+name: rest_api_app
 metadata:
-  description: Serve raw HTTP with a WASM component
+  description: |
+    This example shows how to use the REST router to define a REST API that
+    delegates implementations to arbitrary Wick component's.
   version: 0.0.1
   authors:
     - 'Wick Maintainers'

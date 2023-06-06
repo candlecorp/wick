@@ -1,0 +1,24 @@
+{{ with .Page.Params.file }}
+{{ else }}
+  {{ errorf "missing value for param 'file': %s" .Position }}
+{{ end }}
+
+{{ $yaml := .Page.Params.file | readFile }}
+
+{{ $url_path := replace .Page.Params.file "data/" "" }}
+
+The full configuration is located at <a href="{{ $.Site.Params.wick_repo }}/tree/main/{{ $url_path }}">{{ $url_path }}</a>. Run this application locally by cloning the <a href="{{ $.Site.Params.wick_repo }}">wick repository</a> and using `wick run` (or `cargo run -p wick-cli -- run` to run from source)
+
+{{ $cmd := print "git clone " $.Site.Params.wick_repo " && cd wick\nwick run " $url_path }}
+
+{{ highlight $cmd "sh"}}
+
+{{ $url_path := replace .Page.Params.file "data/" "" }}
+
+### Complete Example
+
+> Note: Examples may require environment variables and execution from within the wick project's root to access any local files.
+
+The full example configuration is included below,
+
+{{ highlight $yaml "yaml"}}

@@ -26,7 +26,7 @@ impl PartialEq for StructDefinition {
 }
 
 impl StructDefinition {
-  /// Constructor for [StructSignature]
+  /// Constructor for [StructDefinition]
   pub fn new<T: AsRef<str>>(name: T, fields: Vec<Field>) -> Self {
     Self {
       name: name.as_ref().to_owned(),

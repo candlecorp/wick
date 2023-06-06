@@ -7,9 +7,8 @@ use parking_lot::RwLock;
 use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::TypeDefinition;
 
-use crate::common::{ImportBinding, ImportDefinition};
+use crate::config::{ImportBinding, ImportDefinition, TypesConfiguration};
 use crate::error::ManifestError;
-use crate::types_config::TypesConfiguration;
 use crate::WickConfiguration;
 
 #[derive(Default, Clone, Debug, derive_asset_container::AssetManager)]

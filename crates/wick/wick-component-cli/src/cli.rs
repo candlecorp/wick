@@ -71,17 +71,13 @@ pub fn print_info(info: &ServerState) {
     info!("GRPC server bound to {} on port {}", addr.ip(), addr.port());
   }
 
-  // if info.mesh.is_some() {
-  //   something_started = true;
-  //   info!("Host connected to mesh with id '{}'", info.id);
-  // }
   if !something_started {
     warn!("No server information available, did you intend to start a host without GRPC or a mesh connection?");
     warn!("If not, try passing the flag --rpc or --mesh to explicitly enable those features.");
   }
 }
 
-/// Starts an RPC server for the passed [wick_rpc::RpcHandler].
+/// Starts an RPC server for the passed [SharedComponent].
 pub async fn start_server(collection: SharedComponent, opts: Option<Options>) -> Result<ServerState> {
   debug!("Starting server with options: {:?}", opts);
 
@@ -120,7 +116,7 @@ enum ServerMessage {
   Close,
 }
 
-/// Start a server with the passed [wick_rpc::RpcHandler] and keep it.
+/// Start a server with the passed [SharedComponent] and keep it
 /// running until the process receives a SIGINT (^C).
 pub async fn init_cli(collection: SharedComponent, opts: Option<Options>) -> Result<()> {
   let state = start_server(collection, opts).await?;

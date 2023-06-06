@@ -20,7 +20,7 @@ pub struct EnumDefinition {
 }
 
 impl EnumDefinition {
-  /// Constructor for [EnumSignature]
+  /// Constructor for [EnumDefinition]
   pub fn new<T: AsRef<str>>(name: T, variants: Vec<EnumVariant>) -> Self {
     Self {
       name: name.as_ref().to_owned(),

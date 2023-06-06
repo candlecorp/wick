@@ -1,7 +1,6 @@
 use flow_component::BoxFuture;
 use tap_harness::TestRunner;
-use wick_config::config::TestCase;
-use wick_config::test_config::TestConfiguration;
+use wick_config::config::{TestCase, TestConfiguration};
 use wick_packet::GenericConfig;
 
 use crate::{run_test, TestError, UnitTest};

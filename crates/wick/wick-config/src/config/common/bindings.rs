@@ -1,3 +1,5 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
+
 use super::{ComponentDefinition, ComponentImplementation, HighLevelComponent, ImportDefinition, InterfaceDefinition};
 use crate::config::components::WasmComponent;
 use crate::config::{self};
@@ -37,7 +39,7 @@ impl From<ComponentImplementation> for ImportDefinition {
 }
 
 impl ImportBinding {
-  /// Create a new [CollectionDefinition] with specified name and type.
+  /// Create a new [ImportBinding] with specified name and [ImportDefinition].
   pub fn new(name: impl AsRef<str>, kind: ImportDefinition) -> Self {
     Self {
       id: name.as_ref().to_owned(),

@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use crate::config::AssetReference;
 
 #[derive(Debug, Default, Builder, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
@@ -35,6 +36,7 @@ pub struct Metadata {
 }
 
 impl Metadata {
+  /// Create a new [Metadata] instance from a version string.
   pub fn new(version: impl AsRef<str>) -> Self {
     Self {
       version: version.as_ref().to_owned(),

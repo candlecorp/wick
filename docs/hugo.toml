@@ -2,9 +2,12 @@ baseURL = 'https://candle.dev/docs/'
 languageCode = 'en-us'
 title = 'Candle Documentation'
 theme = 'hugo-theme-techdoc'
+canonifyURLs = true
+enableInlineShortcodes = true
 
 [params]
 menu_style = "open-menu"
+wick_repo = "https://github.com/candlecorp/wick"
 
 [markup]
 defaultMarkdownHandler = 'goldmark'
@@ -12,3 +15,20 @@ defaultMarkdownHandler = 'goldmark'
 [markup.goldmark.renderer]
 unsafe = true
 xhtml = true
+
+[markup.highlight]
+anchorLineNos = false
+codeFences = true
+guessSyntax = false
+lineAnchors = ''
+lineNoStart = 1
+lineNos = false
+lineNumbersInTable = true
+noClasses = true
+noHl = false
+style = 'onedark'
+tabWidth = 4
+
+[mediatypes.'application/yaml']
+delimiter = '.'
+suffixes = ['yaml', 'yml', 'wick']

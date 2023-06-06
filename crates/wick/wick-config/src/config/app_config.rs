@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 pub(super) mod resources;
@@ -22,31 +23,45 @@ use crate::{config, v1, Resolver, Result};
 #[asset(asset(AssetReference))]
 #[builder(setter(into))]
 #[must_use]
-/// The internal representation of a Wick manifest.
+/// A Wick application configuration.
+///
+/// An application configuration defines a wick application, its trigger, imported component, etc and can be executed
+/// via `wick run`.
 pub struct AppConfiguration {
   #[asset(skip)]
+  /// The name of the application.
   pub(crate) name: String,
 
   #[asset(skip)]
   #[builder(setter(strip_option), default)]
   #[property(skip)]
+  /// The source (i.e. url or file on disk) of the configuration.
   pub(crate) source: Option<PathBuf>,
 
   #[builder(setter(strip_option), default)]
+  /// The metadata for the application.
   pub(crate) metadata: Option<config::Metadata>,
 
+  #[builder(setter(strip_option), default)]
+  /// The package configuration for this application.
+  pub(crate) package: Option<PackageConfig>,
+
   #[builder(default)]
+  /// The components that make up the application.
   pub(crate) import: HashMap<String, ImportBinding>,
 
   #[builder(default)]
+  /// Any resources this application defines.
   pub(crate) resources: HashMap<String, ResourceBinding>,
 
   #[builder(default)]
+  /// The triggers that initialize upon a `run` and make up the application.
   pub(crate) triggers: Vec<TriggerDefinition>,
 
   #[asset(skip)]
   #[builder(setter(skip))]
   #[property(skip)]
+  #[doc(hidden)]
   pub(crate) type_cache: ImportCache,
 
   #[asset(skip)]
@@ -55,10 +70,8 @@ pub struct AppConfiguration {
   #[asset(skip)]
   #[builder(default)]
   #[property(skip)]
+  #[doc(hidden)]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
-
-  #[builder(setter(strip_option), default)]
-  pub(crate) package: Option<PackageConfig>,
 }
 
 impl AppConfiguration {
@@ -142,6 +155,7 @@ impl AppConfiguration {
       .insert(name.as_ref().to_owned(), ImportBinding::new(name.as_ref(), import));
   }
 
+  /// Generate V1 configuration yaml from this configuration.
   pub fn into_v1_yaml(self) -> Result<String> {
     let v1_manifest: v1::AppConfiguration = self.try_into()?;
     Ok(serde_yaml::to_string(&v1_manifest).unwrap())

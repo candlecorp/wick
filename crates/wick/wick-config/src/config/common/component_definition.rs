@@ -1,3 +1,4 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
 use wick_packet::GenericConfig;
@@ -79,9 +80,11 @@ impl std::str::FromStr for ComponentOperationExpression {
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
 pub enum HighLevelComponent {
+  /// A SQL Component.
   #[asset(skip)]
   Sql(config::components::SqlComponentConfig),
   #[asset(skip)]
+  /// An HTTP Client Component.
   HttpClient(config::components::HttpClientComponentConfig),
 }
 

@@ -5,8 +5,27 @@ mod types;
 use flow_expression_parser::ast::{self, InstancePort, InstanceTarget};
 use option_utils::OptionUtils;
 
+use crate::config::components::{self, ComponentReference, GrpcUrlComponent, ManifestComponent};
+use crate::config::package_definition::{PackageConfig, RegistryConfig};
+use crate::config::{
+  self,
+  test_case,
+  test_config,
+  types_config,
+  ComponentConfiguration,
+  ComponentDefinition,
+  ComponentImplementation,
+  ComponentOperationExpression,
+  CompositeComponentImplementation,
+  ExecutionSettings,
+  HighLevelComponent,
+  HostConfig,
+  OperationSignature,
+  ScheduleConfig,
+  WasmComponentImplementation,
+};
 // use flow_expression_parser::parse_id;
-use crate::app_config::{
+use crate::config::{
   AppConfiguration,
   CliConfig,
   HttpRouterConfig,
@@ -22,29 +41,9 @@ use crate::app_config::{
   TriggerDefinition,
   UdpPort,
 };
-use crate::component_config::{CompositeComponentImplementation, WasmComponentImplementation};
-use crate::config::common::{
-  test_case,
-  ComponentDefinition,
-  ComponentOperationExpression,
-  HostConfig,
-  OperationSignature,
-};
-use crate::config::components::{self, ComponentReference, GrpcUrlComponent, ManifestComponent};
-use crate::config::package_definition::{PackageConfig, RegistryConfig};
-use crate::config::{
-  self,
-  test_config,
-  types_config,
-  ComponentConfiguration,
-  ComponentImplementation,
-  ExecutionSettings,
-  HighLevelComponent,
-  ScheduleConfig,
-};
 use crate::error::ManifestError;
 use crate::utils::{opt_str_to_ipv4addr, VecMapInto, VecTryMapInto};
-use crate::{common, v1, Result, WickConfiguration};
+use crate::{v1, Result, WickConfiguration};
 
 impl TryFrom<v1::WickConfig> for WickConfiguration {
   type Error = ManifestError;
@@ -901,7 +900,7 @@ impl TryFrom<config::ImportDefinition> for v1::ImportDefinition {
   type Error = ManifestError;
   fn try_from(def: config::ImportDefinition) -> Result<Self> {
     Ok(match def {
-      crate::common::ImportDefinition::Component(comp) => match comp {
+      crate::config::ImportDefinition::Component(comp) => match comp {
         ComponentDefinition::Native(_) => unreachable!("Native components are not allowed in imports"),
         #[allow(deprecated)]
         ComponentDefinition::Wasm(_) => unreachable!("Wasm components are not allowed in v1 imports"),
@@ -913,7 +912,7 @@ impl TryFrom<config::ImportDefinition> for v1::ImportDefinition {
           HighLevelComponent::HttpClient(c) => v1::ImportDefinition::HttpClientComponent(c.try_into()?),
         },
       },
-      crate::common::ImportDefinition::Types(c) => v1::ImportDefinition::TypesComponent(c.try_into()?),
+      crate::config::ImportDefinition::Types(c) => v1::ImportDefinition::TypesComponent(c.try_into()?),
     })
   }
 }
@@ -1630,18 +1629,18 @@ impl TryFrom<components::SqlOperationDefinition> for v1::SqlOperationDefinition 
   }
 }
 
-impl TryFrom<common::ErrorBehavior> for v1::ErrorBehavior {
+impl TryFrom<config::ErrorBehavior> for v1::ErrorBehavior {
   type Error = crate::Error;
-  fn try_from(value: common::ErrorBehavior) -> Result<Self> {
+  fn try_from(value: config::ErrorBehavior) -> Result<Self> {
     Ok(match value {
-      common::ErrorBehavior::Commit => Self::Commit,
-      common::ErrorBehavior::Ignore => Self::Ignore,
-      common::ErrorBehavior::Rollback => Self::Rollback,
+      config::ErrorBehavior::Commit => Self::Commit,
+      config::ErrorBehavior::Ignore => Self::Ignore,
+      config::ErrorBehavior::Rollback => Self::Rollback,
     })
   }
 }
 
-impl TryFrom<v1::ErrorBehavior> for common::ErrorBehavior {
+impl TryFrom<v1::ErrorBehavior> for config::ErrorBehavior {
   type Error = crate::Error;
   fn try_from(value: v1::ErrorBehavior) -> Result<Self> {
     Ok(match value {

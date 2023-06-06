@@ -51,8 +51,8 @@ impl From<FlowOperation> for wick_interface_types::OperationSignature {
 #[derive(Debug, Clone, Builder, Default, property::Property)]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
 #[builder(setter(into))]
-/// The SchematicDefinition struct is a normalized representation of a Wick [SchematicManifest].
-/// It handles the job of translating manifest versions into a consistent data structure.
+/// A FlowOperation is an operation definition whose implementation is defined by
+/// connecting other components together in a flow or set of pipelines.
 #[must_use]
 pub struct FlowOperation {
   /// The name of the schematic.

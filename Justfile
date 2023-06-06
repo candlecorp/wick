@@ -125,8 +125,14 @@ check-unused:
 sanity: early-errors
   just unit-tests
 
+# Run the development hugo server
 devdocs:
-  cd docs && hugo serve
+  cd docs && hugo serve --disableFastRender --cleanDestinationDir --ignoreCache --gc
+
+# Run `cargo doc` to generate rust documentation and copy it to the docs site
+rustdoc:
+  RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo +nightly doc --workspace --no-deps
+  rsync -av --delete --exclude=".*" target/doc/ docs/static/rustdoc/
 
 ##################################
 ### Private, dependency tasks. ###
