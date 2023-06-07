@@ -14,6 +14,7 @@ pub use self::resources::*;
 pub use self::triggers::*;
 use super::common::component_definition::ComponentDefinition;
 use super::common::package_definition::PackageConfig;
+use super::components::TypesComponent;
 use super::{ImportBinding, ImportDefinition};
 use crate::error::{ManifestError, ReferenceError};
 use crate::import_cache::{setup_cache, ImportCache};
@@ -107,6 +108,16 @@ impl AppConfiguration {
   /// Get the package files
   pub fn package_files(&self) -> Assets<AssetReference> {
     self.package.assets()
+  }
+
+  /// Resolve an imported type by name.
+  #[must_use]
+  pub fn resolve_type(&self, name: &str) -> Option<TypeDefinition> {
+    self
+      .cached_types
+      .read()
+      .as_ref()
+      .and_then(|types| types.iter().find(|t| t.name() == name).cloned())
   }
 
   /// Get the configuration item a binding points to.
@@ -216,6 +227,8 @@ impl AppConfiguration {
 pub enum ConfigurationItem<'a> {
   /// A component definition.
   Component(&'a ComponentDefinition),
+  /// A component definition.
+  Types(&'a TypesComponent),
   /// A resource definition.
   Resource(&'a ResourceDefinition),
 }
@@ -228,6 +241,15 @@ impl<'a> ConfigurationItem<'a> {
       _ => Err(ReferenceError::Component),
     }
   }
+
+  /// Get the types definition or return an error.
+  pub fn try_types(&self) -> std::result::Result<&'a TypesComponent, ReferenceError> {
+    match self {
+      Self::Types(c) => Ok(c),
+      _ => Err(ReferenceError::Types),
+    }
+  }
+
   /// Get the resource definition or return an error.
   pub fn try_resource(&self) -> std::result::Result<&'a ResourceDefinition, ReferenceError> {
     match self {

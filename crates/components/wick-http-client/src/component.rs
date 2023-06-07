@@ -10,14 +10,12 @@ use serde_json::{Map, Value};
 use tracing::Span;
 use url::Url;
 use wick_config::config::components::{
-  Codec,
   ComponentConfig,
   HttpClientComponentConfig,
   HttpClientOperationDefinition,
-  HttpMethod,
   OperationConfig,
 };
-use wick_config::config::{LiquidJsonConfig, Metadata, UrlResource};
+use wick_config::config::{Codec, HttpMethod, LiquidJsonConfig, Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{ComponentSignature, OperationSignatures};
 use wick_packet::{Base64Bytes, FluxChannel, Invocation, Observer, Packet, PacketSender, PacketStream, RuntimeConfig};

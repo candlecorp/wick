@@ -25,7 +25,9 @@
     "wick-rpc/client",
     "wick-packet/datetime",
     "wick-packet/invocation",
-    "wick-packet/std"
+    "wick-packet/std",
+    "wick-interface-http/localgen",
+    "wick-interface-cli/localgen"
   ],
   "rust-analyzer.rustfmt.overrideCommand": [
     "rustup",

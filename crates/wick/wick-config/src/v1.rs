@@ -426,7 +426,9 @@ pub(crate) struct RestRouter {
 /// A route to serve and the operation that handles it.
 pub(crate) struct Route {
   /// The path to serve this route from. See [URI documentation](/docs/configuration/uri) for more information on specifying query and path parameters.
-  pub(crate) uri: String,
+
+  #[serde(alias = "uri")]
+  pub(crate) sub_path: String,
   /// The operation that will act as the main entrypoint for this route.
 
   #[serde(serialize_with = "crate::v1::helpers::serialize_component_expression")]
@@ -436,7 +438,7 @@ pub(crate) struct Route {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) methods: Vec<String>,
+  pub(crate) methods: Vec<HttpMethod>,
   /// The name of the route, used for documentation and tooling.
 
   #[serde(default)]
@@ -458,11 +460,10 @@ pub(crate) struct Route {
 #[serde(deny_unknown_fields)]
 /// Additional tools and services to enable.
 pub(crate) struct Tools {
-  /// The path to serve the OpenAPI spec from
+  /// Set to true to generate an OpenAPI specification and serve it at *router_path*/openapi.json
 
   #[serde(default)]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) openapi: Option<String>,
+  pub(crate) openapi: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -497,8 +498,7 @@ pub(crate) struct Info {
   /// The version of the API.
 
   #[serde(default)]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) version: Option<String>,
+  pub(crate) version: String,
   /// The URL to the API&#x27;s terms of service.
 
   #[serde(default)]
@@ -527,10 +527,7 @@ pub(crate) struct Documentation {
 /// Any licensing information for the API.
 pub(crate) struct License {
   /// The name of the license.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) name: Option<String>,
+  pub(crate) name: String,
   /// The URL to the license.
 
   #[serde(default)]

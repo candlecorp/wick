@@ -121,6 +121,11 @@ pub enum ReferenceError {
   /// The referenced item was not a component.
   #[error("Referenced item is not a component")]
   Component,
+
+  /// The referenced item was not an imported types configuration.
+  #[error("Referenced item is not an imported types configuration")]
+  Types,
+
   /// The referenced item was not a resource.
   #[error("Referenced item is not a resource")]
   Resource,

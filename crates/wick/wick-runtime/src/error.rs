@@ -15,6 +15,9 @@ pub enum RuntimeError {
   #[error("Trigger {0} requested resource '{1}' which could not be found")]
   ResourceNotFound(TriggerKind, String),
 
+  #[error("Trigger {0} referenced import '{1}' which could not be found")]
+  NotFound(String, String),
+
   #[error("Trigger {0} requires resource kind {1}, not {2}")]
   InvalidResourceType(TriggerKind, ResourceKind, ResourceKind),
 

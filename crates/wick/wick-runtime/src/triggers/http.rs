@@ -21,9 +21,9 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use tokio::task::JoinHandle;
 use tracing::Span;
-use wick_config::config::components::Codec;
 use wick_config::config::{
   AppConfiguration,
+  Codec,
   ImportBinding,
   ProxyRouterConfig,
   RawRouterConfig,
@@ -34,7 +34,7 @@ use wick_config::config::{
 use wick_packet::{Entity, RuntimeConfig};
 
 use self::static_router::StaticRouter;
-use super::{resolve_or_import, resolve_ref, Trigger, TriggerKind};
+use super::{resolve_or_import_component, resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
 use crate::runtime::RuntimeConstraint;
@@ -194,6 +194,7 @@ struct RouterOperation {
   component: String,
   codec: Codec,
   config: Option<RuntimeConfig>,
+  path: String,
 }
 
 #[derive(Debug, Clone)]
@@ -236,6 +237,8 @@ impl Http {
     let routers = span.in_scope(|| {
       let mut routers = Vec::new();
       for (i, router) in config.routers().iter().enumerate() {
+        info!(path = router.path(), kind = %router.kind(), "registering http router");
+
         let (router_bindings, router, constraints) = match router {
           config::HttpRouterConfig::RawRouter(r) => register_raw_router(i, &app_config, r)?,
           config::HttpRouterConfig::StaticRouter(r) => register_static_router(i, resources.clone(), &app_config, r)?,
@@ -277,7 +280,7 @@ fn resolve_middleware_components(
   let mut bindings = Vec::new();
   if let Some(middleware) = router.middleware() {
     for (i, operation) in middleware.request().iter().enumerate() {
-      let (name, binding) = resolve_or_import(
+      let (name, binding) = resolve_or_import_component(
         app_config,
         format!("{}_request_middleware_{}", router_index, i),
         operation,
@@ -288,7 +291,7 @@ fn resolve_middleware_components(
       request_operations.push((name, operation.config().and_then(|v| v.value().cloned())));
     }
     for (i, operation) in middleware.response().iter().enumerate() {
-      let (name, binding) = resolve_or_import(
+      let (name, binding) = resolve_or_import_component(
         app_config,
         format!("{}_request_middleware_{}", router_index, i),
         operation,
@@ -318,6 +321,7 @@ fn register_raw_router(
     component: index_to_router_id(index),
     codec: router_config.codec().copied().unwrap_or_default(),
     config: router_config.operation().config().and_then(|v| v.value().cloned()),
+    path: router_config.path().to_owned(),
   };
 
   let constraint = RuntimeConstraint::Operation {
@@ -400,6 +404,8 @@ fn register_rest_router(
   let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
   let mut routes = Vec::new();
   for (i, route) in router_config.routes().iter().enumerate() {
+    info!(sub_path = route.sub_path(), "registering rest route");
+
     let route_component = resolve_ref(app_config, route.operation().component())?;
     let route_binding =
       config::ImportBinding::component(format!("{}_{}", index_to_router_id(index), i), route_component);
@@ -407,7 +413,7 @@ fn register_rest_router(
     let route = RestRoute::new(route.clone(), route_binding.clone(), config).map_err(|e| {
       RuntimeError::InitializationFailed(format!(
         "could not intitialize rest router for route {}: {}",
-        route.uri(),
+        route.sub_path(),
         e
       ))
     })?;
@@ -415,7 +421,8 @@ fn register_rest_router(
     routes.push(route);
   }
 
-  let router = RestRouter::new(router_config.clone(), routes);
+  let router = RestRouter::new(app_config, router_config.clone(), routes)
+    .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
   let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
   bindings.push(router_binding);
@@ -508,10 +515,12 @@ impl Trigger for Http {
     let instance = self
       .handle(app_config, config, resources, span.clone(), &socket)
       .await?;
+
     let output = StructuredOutput::new(
       format!("HTTP Server started on {}", instance.addr),
       json!({"ip": instance.addr.ip(),"port": instance.addr.port()}),
     );
+
     span.in_scope(|| info!(address=%instance.addr,"http trigger started"));
 
     self.instance.lock().replace(instance);

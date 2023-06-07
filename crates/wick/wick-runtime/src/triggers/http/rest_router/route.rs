@@ -4,15 +4,28 @@ use wick_interface_types::{Field, FieldValue, Type};
 use crate::triggers::http::HttpError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum PathPart {
+pub(crate) enum PathPart {
   Literal(String),
   Param(Field),
 }
 
+impl PathPart {
+  pub(crate) fn is_param(&self) -> bool {
+    matches!(self, Self::Param(_))
+  }
+
+  pub(crate) fn param(&self) -> Option<&Field> {
+    match self {
+      Self::Param(field) => Some(field),
+      _ => None,
+    }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct Route {
-  path_parts: Vec<PathPart>,
-  query_params: Vec<Field>,
+pub(crate) struct Route {
+  pub(crate) path_parts: Vec<PathPart>,
+  pub(crate) query_params: Vec<Field>,
 }
 
 pub(super) type MatchedValues = (Vec<FieldValue>, Vec<FieldValue>);

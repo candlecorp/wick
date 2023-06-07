@@ -76,11 +76,14 @@ impl AppHost {
 
           let task = tokio::spawn(async move {
             span.in_scope(|| trace!("initializing trigger"));
-            if let Err(e) = inner.run(name, app_config, config, resources, span.clone()).await {
-              span.in_scope(|| error!("trigger failed to start: {}", e));
-            } else {
-              span.in_scope(|| debug!("trigger initialized"));
-            };
+            match inner.run(name, app_config, config, resources, span.clone()).await {
+              Ok(_output) => {
+                span.in_scope(|| debug!("trigger initialized"));
+              }
+              Err(e) => {
+                span.in_scope(|| error!("trigger failed to start: {}", e));
+              }
+            }
             Ok(())
           });
           triggers.add((loader, task));

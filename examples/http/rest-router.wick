@@ -23,13 +23,29 @@ import:
     component:
       kind: wick/component/manifest@v1
       ref: ./rest-router/component.wick
+  - name: openapi
+    component:
+      kind: wick/component/manifest@v1
+      ref: registry.candle.dev/common/openapi-ui:1
+      with:
+        schema_url: /openapi.json
 triggers:
   - kind: wick/trigger/http@v1
     resource: http
     routers:
+      - kind: wick/router/raw@v1
+        path: /openapi-ui
+        codec: Raw
+        operation: openapi::serve
       - kind: wick/router/rest@v1
         path: /
+        tools:
+          openapi: true
+        info:
+          title: 'Sample REST API'
+          description: 'A sample REST API'
+          version: '0.0.1'
         routes:
-          - uri: '/this/{first:string}/some/{second:u32}?third:string[]&fourth:bool'
+          - sub_path: '/this/{first:string}/some/{second:u32}?third:string[]&fourth:bool'
             operation: sample::echo
             description: 'Echoes inputs first, second, third, and fourth back as JSON'

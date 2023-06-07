@@ -34,7 +34,48 @@ pub enum HttpRouterConfig {
   ProxyRouter(ProxyRouterConfig),
 }
 
+impl HttpRouterConfig {
+  #[must_use]
+  pub fn kind(&self) -> HttpRouterKind {
+    match self {
+      Self::RawRouter(_) => HttpRouterKind::RawRouter,
+      Self::RestRouter(_) => HttpRouterKind::RestRouter,
+      Self::StaticRouter(_) => HttpRouterKind::StaticRouter,
+      Self::ProxyRouter(_) => HttpRouterKind::ProxyRouter,
+    }
+  }
+
+  #[must_use]
+  pub fn path(&self) -> &str {
+    match self {
+      Self::RawRouter(r) => r.path(),
+      Self::RestRouter(r) => r.path(),
+      Self::StaticRouter(r) => r.path(),
+      Self::ProxyRouter(r) => r.path(),
+    }
+  }
+}
+
 pub trait WickRouter {
   fn middleware(&self) -> Option<&Middleware>;
   fn path(&self) -> &str;
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum HttpRouterKind {
+  RawRouter,
+  RestRouter,
+  StaticRouter,
+  ProxyRouter,
+}
+
+impl std::fmt::Display for HttpRouterKind {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Self::RawRouter => write!(f, "raw"),
+      Self::RestRouter => write!(f, "rest"),
+      Self::StaticRouter => write!(f, "static"),
+      Self::ProxyRouter => write!(f, "proxy"),
+    }
+  }
 }

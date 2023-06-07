@@ -227,11 +227,11 @@ type RestRouter @tagged("wick/router/rest@v1") {
 "A route to serve and the operation that handles it."
 type Route {
   "The path to serve this route from. See [URI documentation](/docs/configuration/uri) for more information on specifying query and path parameters."
-  uri: string @required
+  sub_path: string @required @alias("uri")
   "The operation that will act as the main entrypoint for this route."
   operation: ComponentOperationExpression @required @shortform @custom_serializer("crate::v1::helpers::serialize_component_expression")
   "The HTTP methods to serve this route for."
-  methods: [string]
+  methods: [HttpMethod]
   "The name of the route, used for documentation and tooling."
   name: string?
   "A short description of the route."
@@ -240,10 +240,12 @@ type Route {
   summary: string?
 }
 
+
+
 "Additional tools and services to enable."
 type Tools {
-  "The path to serve the OpenAPI spec from"
-  openapi: string?
+  "Set to true to generate an OpenAPI specification and serve it at *router_path*/openapi.json"
+  openapi: bool
 }
 
 "Information about the router to use when generating documentation and other tools."
@@ -259,7 +261,7 @@ type Info {
   "The license information for the API."
 	license:      License?
   "The version of the API."
-	version:      string?
+	version:      string
   "The URL to the API's terms of service."
   documentation: Documentation?
 }
@@ -276,7 +278,7 @@ type Documentation {
 "Any licensing information for the API."
 type License {
   "The name of the license."
-	name: string?
+	name: string @required
   "The URL to the license."
 	url:  string?
 }

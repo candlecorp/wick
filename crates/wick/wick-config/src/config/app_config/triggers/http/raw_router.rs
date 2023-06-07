@@ -14,7 +14,7 @@ pub struct RawRouterConfig {
   #[property(get(disable))]
   pub(crate) middleware: Option<super::middleware::Middleware>,
   #[asset(skip)]
-  pub(crate) codec: Option<config::components::Codec>,
+  pub(crate) codec: Option<config::common::Codec>,
   pub(crate) operation: ComponentOperationExpression,
 }
 

@@ -81,6 +81,7 @@ impl RawHandler {
       req,
       self.remote_addr,
       self.config.config.clone(),
+      &self.config.path,
     )
     .await;
     respond(codec, stream).await

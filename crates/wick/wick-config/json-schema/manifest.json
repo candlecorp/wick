@@ -1027,7 +1027,7 @@
         "additionalProperties": false,
         "type": "object",
         "properties": {
-          "uri": {
+          "sub_path": {
             "description": "The path to serve this route from. See [URI documentation](/docs/configuration/uri) for more information on specifying query and path parameters.",
             "type": "string"
           },
@@ -1046,7 +1046,7 @@
             "description": "The HTTP methods to serve this route for.",
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/$defs/v1/HttpMethod"
             }
           },
           "name": {
@@ -1066,7 +1066,7 @@
           }
         },
         "required": [
-          "uri",
+          "sub_path",
           "operation"
         ]
       },
@@ -1076,9 +1076,8 @@
         "type": "object",
         "properties": {
           "openapi": {
-            "description": "The path to serve the OpenAPI spec from",
-            "required": false,
-            "type": "string"
+            "description": "Set to true to generate an OpenAPI specification and serve it at *router_path*/openapi.json",
+            "type": "boolean"
           }
         },
         "required": []
@@ -1115,7 +1114,6 @@
           },
           "version": {
             "description": "The version of the API.",
-            "required": false,
             "type": "string"
           },
           "documentation": {
@@ -1151,7 +1149,6 @@
         "properties": {
           "name": {
             "description": "The name of the license.",
-            "required": false,
             "type": "string"
           },
           "url": {
@@ -1160,7 +1157,9 @@
             "type": "string"
           }
         },
-        "required": []
+        "required": [
+          "name"
+        ]
       },
       "Contact": {
         "$anchor": "#v1/Contact",

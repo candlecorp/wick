@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::Args;
 use structured_output::StructuredOutput;
-use wick_config::config::components::{Codec, HttpClientComponentConfigBuilder, HttpClientOperationDefinitionBuilder};
-use wick_config::config::{self, ComponentConfiguration, ResourceBinding, ResourceDefinition, UrlResource};
+use wick_config::config::components::{HttpClientComponentConfigBuilder, HttpClientOperationDefinitionBuilder};
+use wick_config::config::{self, Codec, ComponentConfiguration, ResourceBinding, ResourceDefinition, UrlResource};
 use wick_interface_types::{Field, Type};
 
 use crate::io::File;
@@ -49,7 +49,7 @@ pub(crate) async fn handle(
       .resource(resource_name)
       .operations([HttpClientOperationDefinitionBuilder::default()
         .name("operation_name".to_owned())
-        .method(config::components::HttpMethod::Get)
+        .method(config::HttpMethod::Get)
         .path("/user/{id:string}".to_owned())
         .inputs([Field::new("id", Type::String)])
         .build()

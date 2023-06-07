@@ -49,8 +49,8 @@ pub enum EngineError {
 pub enum ConstraintFailure {
   #[error("component {} not found", .0.component_id())]
   ComponentNotFound(Entity),
-  #[error("operation {} not found in component {1}",.0.component_id(),.0.operation_id())]
-  OperationNotFound(Entity),
+  #[error("operation {} not found in component {} (out of [{}])",.0.operation_id(),.0.component_id(), .1.join(", "))]
+  OperationNotFound(Entity, Vec<String>),
   #[error("input named {1} not found in operation {0}")]
   InputNotFound(Entity, String),
   #[error("output named {1} not found in operation {0}")]
