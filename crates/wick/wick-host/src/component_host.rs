@@ -205,6 +205,7 @@ mod test {
   use anyhow::Result;
   use futures::StreamExt;
   use http::Uri;
+  use option_utils::OptionUtils;
   use wick_config::config::HttpConfigBuilder;
   use wick_config::WickConfiguration;
   use wick_invocation_server::connect_rpc_client;
@@ -255,12 +256,19 @@ mod test {
     let file = PathBuf::from("manifests/logger.yaml");
     let mut def = WickConfiguration::load_from_file(&file).await?.try_component_config()?;
 
-    def.host_mut().rpc_mut().replace(
-      HttpConfigBuilder::default()
-        .enabled(true)
-        .address(Ipv4Addr::from_str("127.0.0.1").unwrap())
-        .build()?,
-    );
+    if def.host().is_none() {
+      def.set_host(Some(Default::default()));
+    }
+
+    def.host_mut().inner_mut(|h| {
+      h.rpc_mut().replace(
+        HttpConfigBuilder::default()
+          .enabled(true)
+          .address(Ipv4Addr::from_str("127.0.0.1").unwrap())
+          .build()
+          .unwrap(),
+      );
+    });
 
     let mut host = ComponentHostBuilder::default().manifest(def).build()?;
     host.start(None).await?;

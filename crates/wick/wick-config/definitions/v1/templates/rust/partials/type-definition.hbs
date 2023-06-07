@@ -14,12 +14,15 @@ pub(crate) fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}()
 {{else}}
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 {{/withAnnotation}}
+{{#withAnnotation "into_string"}}
+#[serde(into = "String")]
+{{/withAnnotation}}
 #[serde(deny_unknown_fields)]
 {{#if description}}
 /// {{{description.value}}}
 {{/if}}
 {{#withAnnotation "nameonly"}}
-pub(crate) struct {{../name.value}}();
+pub(crate) struct {{../name.value}};
 {{else}}
 pub(crate) struct {{name.value}} {
   {{#each fields}}

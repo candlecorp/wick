@@ -16,6 +16,8 @@ exclude = [
   "tests/template",
   "tests/testdata",
   "examples/http/middleware/request",
+  "examples/http/wasm-http-call/wasm-component",
+  "examples/cli/cli-maker",
 ]
 
 [workspace.dependencies]

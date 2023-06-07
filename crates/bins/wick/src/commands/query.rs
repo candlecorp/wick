@@ -6,10 +6,13 @@ use anyhow::Result;
 use clap::Args;
 use jaq_core::{parse, Ctx, Definitions, RcIter, Val};
 use markup_converter::{Format, Transcoder};
+use serde_json::{json, Value};
+use structured_output::StructuredOutput;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct QueryCommand {
+#[group(skip)]
+pub(crate) struct Options {
   /// Option to print raw output.
   #[clap(short = 'r', long = "raw", action)]
   raw_output: bool,
@@ -47,7 +50,11 @@ impl FromStr for MarkupKind {
   }
 }
 
-pub(crate) async fn handle(opts: QueryCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
+pub(crate) async fn handle(
+  opts: Options,
+  _settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<StructuredOutput> {
   let input = if let Some(path) = opts.path {
     match opts.kind {
       None => Transcoder::from_path(&path)?.to_json()?,
@@ -88,6 +95,10 @@ pub(crate) async fn handle(opts: QueryCommand, _settings: wick_settings::Setting
     return Err(anyhow!("Errors parsing queries"));
   }
 
+  let mut lines = Vec::new();
+  let mut json = Vec::new();
+
+  #[allow(clippy::option_if_let_else)]
   if let Some(filters) = filters {
     // start out only from core filters,
     // which do not include filters in the standard library
@@ -102,12 +113,11 @@ pub(crate) async fn handle(opts: QueryCommand, _settings: wick_settings::Setting
 
     for val in out {
       match val {
-        Ok(result) => match result {
-          Val::Str(s) if opts.raw_output => println!("{}", s),
-          _ => {
-            println!("{}", result);
-          }
-        },
+        Ok(result) => {
+          let result: Value = result.into();
+          lines.push(result.to_string());
+          json.push(result);
+        }
         Err(e) => error!("Error: {}", e),
       };
     }
@@ -115,5 +125,5 @@ pub(crate) async fn handle(opts: QueryCommand, _settings: wick_settings::Setting
     debug!("No queries successfully parsed");
   }
 
-  Ok(())
+  Ok(StructuredOutput::new(lines.join("\n"), json!({"results":json})))
 }

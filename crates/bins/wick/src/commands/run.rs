@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
+use serde_json::json;
+use structured_output::StructuredOutput;
 use tracing::Instrument;
 use wick_config::{FetchOptions, WickConfiguration};
 use wick_host::AppHostBuilder;
@@ -10,7 +12,8 @@ use crate::options::get_auth_for_scope;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct RunCommand {
+#[group(skip)]
+pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) oci: crate::oci::Options,
 
@@ -27,7 +30,11 @@ pub(crate) struct RunCommand {
   args: Vec<String>,
 }
 
-pub(crate) async fn handle(opts: RunCommand, settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
+pub(crate) async fn handle(
+  opts: Options,
+  settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<StructuredOutput> {
   span.in_scope(|| trace!(args = ?opts.args, "rest args"));
 
   let configured_creds = settings.credentials.iter().find(|c| opts.path.starts_with(&c.scope));
@@ -67,5 +74,5 @@ pub(crate) async fn handle(opts: RunCommand, settings: wick_settings::Settings, 
 
   host.wait_for_done().instrument(span.clone()).await?;
 
-  Ok(())
+  Ok(StructuredOutput::new("", json!({})))
 }

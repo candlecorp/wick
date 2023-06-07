@@ -3,6 +3,7 @@ use std::time::SystemTime;
 
 use anyhow::Result;
 use clap::Args;
+use structured_output::StructuredOutput;
 use wick_component_cli::parse_args;
 use wick_packet::{Entity, InherentData, Invocation, Observer, Packet, PacketStream};
 
@@ -10,7 +11,8 @@ use crate::utils;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct RpcInvokeCommand {
+#[group(skip)]
+pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,
 
@@ -48,10 +50,10 @@ pub(crate) struct RpcInvokeCommand {
 }
 
 pub(crate) async fn handle(
-  opts: RpcInvokeCommand,
+  opts: Options,
   _settings: wick_settings::Settings,
   span: tracing::Span,
-) -> Result<()> {
+) -> Result<StructuredOutput> {
   let mut client = wick_rpc::make_rpc_client(
     format!("http://{}:{}", opts.connection.address, opts.connection.port),
     opts.connection.pem,
@@ -116,5 +118,5 @@ pub(crate) async fn handle(
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
 
-  Ok(())
+  Ok(StructuredOutput::new("", serde_json::json!({})))
 }

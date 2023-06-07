@@ -1871,7 +1871,7 @@
             "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
           }
         },
-        "input": {
+        "inputs": {
           "description": "The inputs to the test.",
 
           "type": "array",
@@ -1879,7 +1879,7 @@
             "$ref": "#/$defs/v1/PacketData"
           }
         },
-        "output": {
+        "outputs": {
           "description": "The expected outputs of the operation.",
 
           "type": "array",

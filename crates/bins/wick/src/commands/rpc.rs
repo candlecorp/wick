@@ -10,15 +10,15 @@ pub(crate) mod stats;
 pub(crate) enum SubCommands {
   /// Invoke a component in a collection.
   #[clap(name = "invoke")]
-  Invoke(invoke::RpcInvokeCommand),
+  Invoke(invoke::Options),
 
   /// Query a collection for a list of its components.
   #[clap(name = "list")]
-  List(list::RpcListCommand),
+  List(list::Options),
 
   /// Query a collection for its runtime statistics.
   #[clap(name = "stats")]
-  Stats(stats::RpcStatsCommand),
+  Stats(stats::Options),
 }
 
 #[derive(Debug, Clone, Args)]

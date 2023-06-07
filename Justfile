@@ -56,6 +56,12 @@ unit-tests: _check_nextest _codegen-tests
 integration-tests: _check_nextest _codegen-tests
   cargo nextest run -E 'not (test(slow_test))'
   cargo test --manifest-path tests/template/Cargo.toml
+  just _wick-http-tests
+  just _wick-db-tests
+
+# Run tests via `wick test`
+wick-tests:
+  just _wick-http-tests
   just _wick-db-tests
 
 # Run tests suitable for CI
@@ -167,7 +173,8 @@ _run-wasm-task task:
     "crates/integration/test-http-trigger-component",
     "crates/integration/test-cli-trigger-component",
     "crates/integration/test-cli-with-db",
-    "examples/http/middleware/request"
+    "examples/http/middleware/request",
+    "examples/http/wasm-http-call/wasm-component",
   ]
   for dir in wasm:
     if subprocess.call(["just", "{}/{{task}}".format(dir)]) != 0:
@@ -178,6 +185,9 @@ _wick-db-tests:
   cargo run -p wick-cli -- test ./examples/db/flow-with-postgres.wick
   cargo run -p wick-cli -- test ./examples/db/postgres-numeric.wick
 
+# Run `wick` tests for http components
+_wick-http-tests:
+  cargo run -p wick-cli -- test ./examples/http/wasm-http-call/harness.wick
 
 # Run component-codegen unit tests
 _codegen-tests:

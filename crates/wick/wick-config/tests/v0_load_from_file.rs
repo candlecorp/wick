@@ -44,7 +44,7 @@ async fn load_minimal() -> Result<(), ManifestError> {
 async fn load_noversion_yaml() -> Result<(), ManifestError> {
   let result = load("./tests/manifests/v0/noversion.yaml").await;
   println!("result: {:?}", result);
-  assert!(matches!(result, Err(ManifestError::NoFormat)));
+  assert!(matches!(result, Err(ManifestError::NoFormat(_))));
   Ok(())
 }
 

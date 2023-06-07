@@ -1,0 +1,50 @@
+---
+kind: wick/app@v1
+name: serve_http_component
+metadata:
+  description: Serve raw HTTP with a WASM component
+  version: 0.0.1
+  authors:
+    - 'Wick Maintainers'
+  vendors:
+    - 'Candle Corporation'
+  licenses:
+    - Apache-2.0
+resources:
+  - name: http
+    resource:
+      kind: wick/resource/tcpport@v1
+      port: ${HTTP_PORT:-8999}
+      address: 0.0.0.0
+import:
+  - name: sample
+    component:
+      kind: wick/component/manifest@v1
+      ref: ../http/rest-router/component.wick
+triggers:
+  - kind: wick/trigger/time@v1
+    schedule:
+      cron: '*/1 * * * * *'
+      repeat: 5
+    payload:
+      - name: left
+        value: 2
+      - name: right
+        value: 5
+    operation:
+      name: add
+      component:
+        kind: wick/component/manifest@v1
+        ref: ../../crates/integration/test-baseline-component/component.yaml
+        with:
+          default_err: 'error from dual-trigger.wick'
+  - kind: wick/trigger/http@v1
+    resource: http
+    routers:
+      - kind: wick/router/rest@v1
+        path: /
+        routes:
+          # - uri: '/this/{first:string}/some/{second:u32}?third:string[]&fourth:bool' # TODO: fix broken test
+          - uri: '/this/{first:string}/some/{second:u32}?third:string&fourth:bool'
+            operation: sample::echo
+            description: 'Echoes inputs first, second, third, and fourth back as JSON'

@@ -5,6 +5,8 @@ use std::time::SystemTime;
 use anyhow::Result;
 use clap::Args;
 use seeded_random::Seed;
+use serde_json::json;
+use structured_output::StructuredOutput;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_component_cli::parse_args;
 use wick_config::{FetchOptions, WickConfiguration};
@@ -16,7 +18,8 @@ use crate::utils::{self, merge_config, parse_config_string};
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct InvokeCommand {
+#[group(skip)]
+pub(crate) struct Options {
   #[clap(flatten)]
   wasi: crate::wasm::WasiOptions,
 
@@ -68,7 +71,11 @@ pub(crate) struct InvokeCommand {
   args: Vec<String>,
 }
 
-pub(crate) async fn handle(opts: InvokeCommand, settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
+pub(crate) async fn handle(
+  opts: Options,
+  settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<StructuredOutput> {
   let configured_creds = settings.credentials.iter().find(|c| opts.path.starts_with(&c.scope));
 
   let (username, password) = get_auth_for_scope(
@@ -174,9 +181,10 @@ pub(crate) async fn handle(opts: InvokeCommand, settings: wick_settings::Setting
     let stream = PacketStream::new(futures::stream::iter(packets));
 
     let stream = host.request(&component, stream, inherent_data).await?;
+
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
   host.stop().await;
 
-  Ok(())
+  Ok(StructuredOutput::new("", json!({})))
 }

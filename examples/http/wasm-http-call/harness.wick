@@ -1,0 +1,38 @@
+kind: wick/component@v1
+name: harness
+metadata:
+  version: 0.0.1
+  description: A component that wires together the wasm and client components
+  licenses:
+    - Apache-2.0
+import:
+  - name: wasm
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./wasm-component/component.wick
+      provide:
+        client: client
+  - name: client
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./client.wick
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: example
+      flow:
+        - <input>.id -> wasm::request[a].id
+        - <input>.name -> a.name
+        - a.output.form -> <>.output
+tests:
+  - cases:
+      - name: basic_test
+        operation: example
+        inputs:
+          - name: id
+            value: '1'
+          - name: name
+            value: wick
+        outputs:
+          - name: output
+            value: { 'id': '1', 'name': 'wick' }

@@ -8,3 +8,19 @@ pub(crate) struct LocationReference(
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 
 pub(crate) struct Glob(pub(super) String);
+
+#[allow(clippy::from_over_into)]
+impl Into<String> for super::TypeSignature {
+  fn into(self) -> String {
+    let ty: wick_interface_types::Type = self.try_into().unwrap();
+    ty.to_string()
+  }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<String> for super::ConnectionDefinition {
+  fn into(self) -> String {
+    let ty: flow_expression_parser::ast::ConnectionExpression = self.try_into().unwrap();
+    ty.to_string()
+  }
+}

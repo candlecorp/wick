@@ -6,6 +6,9 @@
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 {{/ifCond}}
 #[serde(deny_unknown_fields)]
+{{#withAnnotation "into_string"}}
+#[serde(into = "String")]
+{{/withAnnotation}}
 {{#withAnnotation "untagged"}}
 #[serde(untagged)]
 {{else}}

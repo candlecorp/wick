@@ -3,7 +3,8 @@ use wick_asset_reference::AssetReference;
 use super::OperationInputConfig;
 use crate::config::ComponentOperationExpression;
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, Builder)]
+#[builder(setter(into))]
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(AssetReference))]
 /// Normalized representation of a Time trigger configuration.

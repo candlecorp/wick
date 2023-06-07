@@ -136,6 +136,12 @@ pub struct ConnectionExpression {
   to: ConnectionTargetExpression,
 }
 
+impl std::fmt::Display for ConnectionExpression {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{} -> {}", self.from, self.to)
+  }
+}
+
 impl ConnectionExpression {
   /// Create a new [ConnectionExpression] from two [ConnectionTargetExpression]s.
   pub fn new(mut from: ConnectionTargetExpression, mut to: ConnectionTargetExpression) -> Self {
@@ -323,6 +329,18 @@ pub struct ConnectionTargetExpression {
   instance: InstanceTarget,
   port: InstancePort,
   data: Option<HashMap<String, Value>>,
+}
+
+impl std::fmt::Display for ConnectionTargetExpression {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    #[allow(clippy::option_if_let_else)]
+    if let Some(_data) = &self.data {
+      // TODO: Implement data syntax. There's no way of stringifying this yet.
+      Err(std::fmt::Error::default())
+    } else {
+      write!(f, "{}.{}", self.instance, self.port)
+    }
+  }
 }
 
 impl ConnectionTargetExpression {

@@ -16,7 +16,7 @@ use wick_interface_types::ComponentSignature;
 use wick_packet::{
   from_raw_wasmrs,
   from_wasmrs,
-  into_wasmrs,
+  packetstream_to_wasmrs,
   ComponentReference,
   ContextTransport,
   Entity,
@@ -175,7 +175,7 @@ impl WasmHost {
 
     invocation.packets.set_context(config.unwrap_or_default(), inherent);
 
-    let s = into_wasmrs(index, invocation.packets);
+    let s = packetstream_to_wasmrs(index, invocation.packets);
     let out = ctx.request_channel(Box::pin(s));
     trace!(
       component = component_name,
@@ -291,7 +291,7 @@ fn make_host_callback(
         }
       }
     });
-    Ok(into_wasmrs(0, PacketStream::new(Box::new(rx))))
+    Ok(packetstream_to_wasmrs(0, PacketStream::new(Box::new(rx))))
   };
   Box::new(func)
 }

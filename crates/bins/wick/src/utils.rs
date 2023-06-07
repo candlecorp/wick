@@ -12,7 +12,8 @@ pub(crate) fn merge_config(
   server_cli_opts: Option<DefaultCliOptions>,
 ) -> ComponentConfiguration {
   let mut merged_manifest = def.clone();
-  let host_config = merged_manifest.host_mut();
+  let mut host_config = merged_manifest.host().cloned().unwrap_or_default();
+
   host_config.set_allow_latest(local_cli_opts.allow_latest || host_config.allow_latest());
   host_config.set_insecure_registries(
     vec![
@@ -60,6 +61,7 @@ pub(crate) fn merge_config(
       );
     };
   }
+  merged_manifest.set_host(Some(host_config));
 
   merged_manifest
 }
@@ -71,6 +73,7 @@ fn log_override<T: std::fmt::Debug>(field: &str, from: &mut T, to: T) {
 
 pub(crate) async fn print_stream_json(
   mut stream: PacketStream,
+
   filter: &[String],
   _terse: bool,
   raw: bool,
@@ -87,7 +90,8 @@ pub(crate) async fn print_stream_json(
       tracing::debug!(port = %packet.port(), "filtering out");
       continue;
     }
-    println!("{}", packet.to_json());
+    let json = packet.to_json();
+    println!("{}", json);
   }
   trace!("stream complete");
   Ok(())

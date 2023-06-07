@@ -152,7 +152,17 @@ fn connection_expression(input: &str) -> IResult<&str, ConnectionExpression> {
       )))
     }
     // Otherwise we've got ports so let's use em.
-    (from_port, to) => (i, ((from.0, from_port.unwrap()), (to.0, to.1.unwrap()))),
+    (from_port, to) => (
+      i,
+      (
+        (from.0, from_port.unwrap()),
+        (
+          to.0,
+          to.1
+            .ok_or_else(|| nom::Err::Error(nom::error::Error::new(input, nom::error::ErrorKind::AlphaNumeric)))?,
+        ),
+      ),
+    ),
   };
   Ok((
     i,

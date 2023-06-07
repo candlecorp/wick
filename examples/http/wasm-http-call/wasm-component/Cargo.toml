@@ -1,0 +1,25 @@
+[package]
+name = "wasm-http-call"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.release]
+strip = "symbols"
+codegen-units = 1
+debug = false
+lto = true
+opt-level = "z"
+panic = "abort"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wick-component = { path = "../../../../crates/wick/wick-component" }
+serde = { version = "1", features = ["derive"] }
+async-trait = "0.1"
+anyhow = { version = "1" }
+
+[build-dependencies]
+wick-component-codegen = { path = "../../../../crates/wick/wick-component-codegen" }

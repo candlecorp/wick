@@ -202,9 +202,7 @@ where
   }
 
   // use our visitor to deserialize an `ActualValue`
-  let a = deserializer.deserialize_any(JsonStringVisitor);
-  println!("Ok did something: {:?}", a);
-  a
+  deserializer.deserialize_any(JsonStringVisitor)
 }
 
 fn expand_jsonval(value: Value) -> Result<Value, shellexpand::LookupError<std::env::VarError>> {

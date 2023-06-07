@@ -104,6 +104,24 @@ impl TryFrom<v1::TypesConfiguration> for types_config::TypesConfiguration {
   }
 }
 
+impl TryFrom<types_config::TypesConfiguration> for v1::TypesConfiguration {
+  type Error = ManifestError;
+
+  fn try_from(value: types_config::TypesConfiguration) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      name: value.name,
+      metadata: value.metadata.try_map_into()?,
+      types: value.types.try_map_into()?,
+      operations: value
+        .operations
+        .into_values()
+        .map(TryInto::try_into)
+        .collect::<Result<_>>()?,
+      package: value.package.try_map_into()?,
+    })
+  }
+}
+
 impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
   type Error = ManifestError;
 
@@ -1340,8 +1358,8 @@ impl From<v1::TestDefinition> for test_case::TestCase {
     Self {
       name: value.name,
       operation: value.operation,
-      inputs: value.input.map_into(),
-      outputs: value.output.map_into(),
+      inputs: value.inputs.map_into(),
+      outputs: value.outputs.map_into(),
       inherent: value.inherent.map_into(),
       config: value.with.map_into(),
     }
@@ -1401,8 +1419,8 @@ impl From<test_case::TestCase> for v1::TestDefinition {
     Self {
       name: value.name,
       operation: value.operation,
-      input: value.inputs.map_into(),
-      output: value.outputs.map_into(),
+      inputs: value.inputs.map_into(),
+      outputs: value.outputs.map_into(),
       inherent: value.inherent.map_into(),
       with: value.config.map_into(),
     }

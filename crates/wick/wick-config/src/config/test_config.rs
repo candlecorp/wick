@@ -5,7 +5,7 @@ use asset_container::AssetManager;
 use crate::config;
 
 #[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
-#[property(get(public), set(private), mut(disable))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(crate::config::AssetReference))]
 #[must_use]
 pub struct TestConfiguration {

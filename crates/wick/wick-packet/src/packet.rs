@@ -339,7 +339,7 @@ impl PacketError {
 }
 
 #[must_use]
-pub fn into_wasmrs(index: u32, stream: PacketStream) -> BoxFlux<RawPayload, PayloadError> {
+pub fn packetstream_to_wasmrs(index: u32, stream: PacketStream) -> BoxFlux<RawPayload, PayloadError> {
   let s = tokio_stream::StreamExt::map(stream, move |p| {
     p.map(|p| {
       let md = wasmrs::Metadata::new_extra(index, p.extra.encode()).encode();

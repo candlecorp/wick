@@ -115,6 +115,17 @@ impl WickConfiguration {
     resolve_configuration(src, source)
   }
 
+  pub fn into_v1_yaml(self) -> Result<String, Error> {
+    let v1_manifest = match self {
+      WickConfiguration::Component(c) => v1::WickConfig::ComponentConfiguration(c.try_into()?),
+      WickConfiguration::App(c) => v1::WickConfig::AppConfiguration(c.try_into()?),
+      WickConfiguration::Types(c) => v1::WickConfig::TypesConfiguration(c.try_into()?),
+      WickConfiguration::Tests(c) => v1::WickConfig::TestConfiguration(c.try_into()?),
+    };
+
+    Ok(serde_yaml::to_string(&v1_manifest).unwrap())
+  }
+
   #[must_use]
   pub fn name(&self) -> Option<&str> {
     match self {
@@ -265,7 +276,7 @@ fn resolve_configuration(src: &str, source: &Option<PathBuf>) -> Result<WickConf
   let version = if raw_kind.is_some() {
     1
   } else {
-    let raw_version = raw_version.ok_or(Error::NoFormat)?;
+    let raw_version = raw_version.ok_or(Error::NoFormat(source.clone()))?;
     raw_version
       .as_i64()
       .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) })
@@ -286,7 +297,7 @@ fn resolve_configuration(src: &str, source: &Option<PathBuf>) -> Result<WickConf
       }
       Ok(config)
     }
-    -1 => Err(Error::NoFormat),
+    -1 => Err(Error::NoFormat(source.clone())),
     _ => Err(Error::VersionError(version.to_string())),
   }
 }

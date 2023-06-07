@@ -1,7 +1,7 @@
 use crate::config;
 
 #[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
-#[property(get(public), set(private), mut(public, suffix = "_mut"))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
 /// A component made out of other components
@@ -12,6 +12,7 @@ pub struct SqlComponentConfig {
 
   /// Whether or not to use TLS.
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) tls: bool,
 
   /// A list of operations to expose on this component.
@@ -49,10 +50,12 @@ pub struct SqlOperationDefinition {
 
   /// Types of the inputs to the operation.
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) inputs: Vec<wick_interface_types::Field>,
 
   /// Types of the outputs to the operation.
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) outputs: Vec<wick_interface_types::Field>,
 
   /// The configuration the operation needs.
@@ -66,6 +69,7 @@ pub struct SqlOperationDefinition {
 
   /// The arguments to the query, defined as a list of input names.
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) arguments: Vec<String>,
 }
 

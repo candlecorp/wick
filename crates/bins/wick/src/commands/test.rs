@@ -4,6 +4,8 @@ use anyhow::Result;
 use clap::Args;
 use futures::TryFutureExt;
 use seeded_random::Seed;
+use serde_json::{json, Value};
+use structured_output::StructuredOutput;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
@@ -13,7 +15,8 @@ use crate::utils::merge_config;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct TestCommand {
+#[group(skip)]
+pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) oci: crate::oci::Options,
 
@@ -41,7 +44,11 @@ pub(crate) struct TestCommand {
   filter: Vec<String>,
 }
 
-pub(crate) async fn handle(opts: TestCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
+pub(crate) async fn handle(
+  opts: Options,
+  _settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<StructuredOutput> {
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);
@@ -90,13 +97,21 @@ pub(crate) async fn handle(opts: TestCommand, _settings: wick_settings::Settings
 
   let runners = suite.run(factory).await?;
 
+  let mut lines: Vec<String> = Vec::new();
+  let mut output: Vec<Value> = Vec::new();
+  let mut num_failed = 0;
+
   for harness in runners {
-    harness.print();
-    let num_failed = harness.num_failed();
-    if num_failed > 0 {
-      return Err(anyhow!("{} tests failed", num_failed));
-    }
+    lines.extend(harness.get_tap_lines().clone().into_iter());
+    output.push(json!({"tap_output":harness.get_tap_lines()}));
+
+    num_failed += harness.num_failed();
   }
 
-  Ok(())
+  let structout = StructuredOutput::new(
+    lines.join("\n"),
+    json!({"success": num_failed ==0, "failures": num_failed, "output": output}),
+  );
+
+  Ok(structout)
 }

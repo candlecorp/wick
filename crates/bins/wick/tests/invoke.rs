@@ -3,7 +3,7 @@ static DIR: &str = "invoke";
 #[rstest::rstest]
 #[case("v1-wasmrs.toml")]
 #[case("stdin.toml")]
-fn wick_run(#[case] file: &'static str) {
+fn wick_invoke(#[case] file: &'static str) {
   let kind = "unit";
   let file = format!("tests/{}/{}/{}", kind, DIR, file);
 
