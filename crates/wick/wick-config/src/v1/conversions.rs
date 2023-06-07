@@ -589,8 +589,8 @@ impl TryFrom<v1::Route> for config::RestRoute {
   fn try_from(value: v1::Route) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       name: value.name,
-      methods: value.methods,
-      uri: value.uri,
+      methods: value.methods.map_into(),
+      sub_path: value.sub_path,
       operation: value.operation.try_into()?,
       description: value.description,
       summary: value.summary,
@@ -604,8 +604,8 @@ impl TryFrom<config::RestRoute> for v1::Route {
   fn try_from(value: config::RestRoute) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       name: value.name,
-      methods: value.methods,
-      uri: value.uri,
+      methods: value.methods.map_into(),
+      sub_path: value.sub_path,
       operation: value.operation.try_into()?,
       description: value.description,
       summary: value.summary,
@@ -982,17 +982,17 @@ impl TryFrom<config::components::HttpClientComponentConfig> for v1::HttpClientCo
   }
 }
 
-impl From<config::components::Codec> for v1::Codec {
-  fn from(value: config::components::Codec) -> Self {
+impl From<config::common::Codec> for v1::Codec {
+  fn from(value: config::common::Codec) -> Self {
     match value {
-      config::components::Codec::Json => Self::Json,
-      config::components::Codec::Raw => Self::Raw,
-      config::components::Codec::FormData => Self::FormData,
+      config::common::Codec::Json => Self::Json,
+      config::common::Codec::Raw => Self::Raw,
+      config::common::Codec::FormData => Self::FormData,
     }
   }
 }
 
-impl From<v1::Codec> for config::components::Codec {
+impl From<v1::Codec> for config::common::Codec {
   fn from(value: v1::Codec) -> Self {
     match value {
       v1::Codec::Json => Self::Json,
@@ -1570,7 +1570,7 @@ impl TryFrom<v1::HttpClientOperationDefinition> for components::HttpClientOperat
   }
 }
 
-impl From<v1::HttpMethod> for components::HttpMethod {
+impl From<v1::HttpMethod> for config::HttpMethod {
   fn from(value: v1::HttpMethod) -> Self {
     match value {
       v1::HttpMethod::Get => Self::Get,
@@ -1581,13 +1581,13 @@ impl From<v1::HttpMethod> for components::HttpMethod {
   }
 }
 
-impl From<components::HttpMethod> for v1::HttpMethod {
-  fn from(value: components::HttpMethod) -> Self {
+impl From<config::HttpMethod> for v1::HttpMethod {
+  fn from(value: config::HttpMethod) -> Self {
     match value {
-      components::HttpMethod::Get => Self::Get,
-      components::HttpMethod::Post => Self::Post,
-      components::HttpMethod::Put => Self::Put,
-      components::HttpMethod::Delete => Self::Delete,
+      config::HttpMethod::Get => Self::Get,
+      config::HttpMethod::Post => Self::Post,
+      config::HttpMethod::Put => Self::Put,
+      config::HttpMethod::Delete => Self::Delete,
     }
   }
 }

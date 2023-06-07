@@ -1,5 +1,6 @@
 use wick_asset_reference::AssetReference;
 
+use crate::config::common::HttpMethod;
 use crate::config::ComponentOperationExpression;
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
@@ -34,9 +35,11 @@ impl super::WickRouter for RestRouterConfig {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, property::Property)]
+#[property(get(public), set(disable), mut(disable))]
+#[allow(missing_copy_implementations)]
 pub struct Tools {
-  /// The path to serve the OpenAPI spec from
-  pub(crate) openapi: Option<String>,
+  /// Set to true to generate an OpenAPI specification and serve it at *router_path*/openapi.json
+  pub(crate) openapi: bool,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, property::Property)]
@@ -54,7 +57,7 @@ pub struct Info {
   /// The license information for the API.
   pub(crate) license: Option<License>,
   /// The version of the API.
-  pub(crate) version: Option<String>,
+  pub(crate) version: String,
   /// The URL to the API&#x27;s terms of service.
   pub(crate) documentation: Option<Documentation>,
 }
@@ -74,7 +77,7 @@ pub struct Documentation {
 /// The license information for the API.
 pub struct License {
   /// The name of the license.
-  pub(crate) name: Option<String>,
+  pub(crate) name: String,
   /// The URL to the license.
   pub(crate) url: Option<String>,
 }
@@ -101,10 +104,10 @@ pub struct RestRoute {
   pub(crate) name: Option<String>,
   /// The HTTP methods to serve this route for.
   #[asset(skip)]
-  pub(crate) methods: Vec<String>,
+  pub(crate) methods: Vec<HttpMethod>,
   /// The path to serve this route from.
   #[asset(skip)]
-  pub(crate) uri: String,
+  pub(crate) sub_path: String,
   /// The operation that will act as the main entrypoint for this route.
   pub(crate) operation: ComponentOperationExpression,
   /// A short description of the route.

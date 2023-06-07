@@ -11,12 +11,12 @@ pub(crate) fn expect_signature_match(
   expected: &ComponentSignature,
 ) -> Result<(), EngineError> {
   if actual != expected {
-    debug!(
-      expected = serde_json::to_string(expected).unwrap(),
-      actual = serde_json::to_string(actual).unwrap(),
-      "signature mismatch"
-    );
     // Disabling for now.
+    // debug!(
+    //   expected = serde_json::to_string(expected).unwrap(),
+    //   actual = serde_json::to_string(actual).unwrap(),
+    //   "signature mismatch"
+    // );
     // return Err(EngineError::ComponentSignature(
     //   expected_src.map_or_else(|| PathBuf::from("unknown"), Into::into),
     //   actual_src.map_or_else(|| PathBuf::from("unknown"), Into::into),

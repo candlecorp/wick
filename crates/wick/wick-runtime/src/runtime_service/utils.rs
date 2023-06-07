@@ -18,9 +18,12 @@ pub(super) fn assert_constraints(
         .get(entity.component_id())
         .ok_or_else(|| EngineError::InvalidConstraint(ConstraintFailure::ComponentNotFound(entity.clone())))?;
       let sig = handler.component().signature();
-      let op = sig
-        .get_operation(entity.operation_id())
-        .ok_or_else(|| EngineError::InvalidConstraint(ConstraintFailure::OperationNotFound(entity.clone())))?;
+      let op = sig.get_operation(entity.operation_id()).ok_or_else(|| {
+        EngineError::InvalidConstraint(ConstraintFailure::OperationNotFound(
+          entity.clone(),
+          sig.operations.iter().map(|o| o.name().to_owned()).collect(),
+        ))
+      })?;
       for field in &signature.inputs {
         op.inputs
           .iter()

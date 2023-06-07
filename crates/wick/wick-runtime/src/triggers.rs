@@ -66,7 +66,7 @@ pub fn get_trigger_loader(name: &TriggerKind) -> Option<TriggerLoader> {
   TRIGGER_LOADER_REGISTRY.lock().get(name).cloned()
 }
 
-pub(crate) fn resolve_or_import(
+pub(crate) fn resolve_or_import_component(
   app_config: &AppConfiguration,
   optional_name: impl AsRef<str>,
   operation: &ComponentOperationExpression,

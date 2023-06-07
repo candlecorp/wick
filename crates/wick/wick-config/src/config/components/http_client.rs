@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use wick_interface_types::OperationSignatures;
 
 use super::{ComponentConfig, OperationConfig};
-use crate::config;
+use crate::config::{self, Codec, HttpMethod};
 
 #[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
@@ -202,45 +202,5 @@ impl HttpClientOperationDefinition {
       .headers(headers)
       .method(HttpMethod::Delete);
     builder
-  }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-/// Supported HTTP methods
-pub enum HttpMethod {
-  /// HTTP GET method
-  Get = 0,
-  /// HTTP POST method
-  Post = 1,
-  /// HTTP PUT method
-  Put = 2,
-  /// HTTP DELETE method
-  Delete = 3,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-/// Codec to use when encoding/decoding data.
-pub enum Codec {
-  /// JSON Codec
-  Json = 0,
-  /// Raw
-  Raw = 1,
-  /// Form Data
-  FormData = 2,
-}
-
-impl Default for Codec {
-  fn default() -> Self {
-    Self::Json
-  }
-}
-
-impl std::fmt::Display for Codec {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      Codec::Json => write!(f, "json"),
-      Codec::Raw => write!(f, "raw"),
-      Codec::FormData => write!(f, "form-data"),
-    }
   }
 }

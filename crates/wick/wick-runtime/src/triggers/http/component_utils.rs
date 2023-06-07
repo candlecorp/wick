@@ -11,7 +11,7 @@ use hyper::{Body, Request, Response, StatusCode};
 use serde_json::{Map, Value};
 use tokio_stream::StreamExt;
 use tracing::Span;
-use wick_config::config::components::Codec;
+use wick_config::config::Codec;
 use wick_interface_http::types as wick_http;
 use wick_packet::{
   packets,
@@ -37,6 +37,7 @@ pub(super) async fn handle(
   req: Request<Body>,
   remote_addr: SocketAddr,
   config: Option<RuntimeConfig>,
+  path_prefix: &str,
 ) -> Result<PacketStream, HttpError> {
   let (tx, rx) = PacketStream::new_channels();
 
@@ -52,7 +53,8 @@ pub(super) async fn handle(
     .invoke(invocation, config)
     .await
     .map_err(|e| HttpError::OperationError(e.to_string()));
-  let (req, mut body) = request_and_body_to_wick(req, remote_addr)?;
+  let (mut req, mut body) = request_and_body_to_wick(req, remote_addr)?;
+  req.path = req.path.trim_start_matches(path_prefix).to_owned();
 
   let packets = packets!(("request", req));
   for packet in packets {

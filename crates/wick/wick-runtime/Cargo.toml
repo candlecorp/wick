@@ -10,26 +10,48 @@ description = "The runtime for the Wick project."
 [features]
 
 [dependencies]
-cron = { workspace = true }
-chrono = { workspace = true }
-wick-packet = { workspace = true, features = ["validation", "rng", "std"] }
+#
+# Core wick deps
+#
 flow-graph = { workspace = true }
 flow-graph-interpreter = { workspace = true }
 flow-component = { workspace = true }
+wick-packet = { workspace = true, features = ["validation", "rng", "std"] }
 wick-interface-types = { workspace = true, features = ["value"] }
 wick-config = { workspace = true }
 wick-component-wasm = { workspace = true }
 wick-stdlib = { workspace = true }
 wick-rpc = { workspace = true }
 wick-interface-http = { workspace = true }
-seeded-random = { workspace = true }
-structured-output = { workspace = true }
+#
 # High level components
+#
 wick-sql = { workspace = true }
 wick-http-client = { workspace = true }
+#
+# For Time trigger
+#
+cron = { workspace = true }
+#
+# For HTTP Trigger
+#
+hyper = { workspace = true, features = ["runtime", "server"] }
+hyper-staticfile = { workspace = true }
+hyper-reverse-proxy = { workspace = true }
+url = { workspace = true }
+bytes = { workspace = true }
+openapiv3 = { workspace = true }
+#
+# For CLI Trigger
+#
+atty = { workspace = true }
+#
 # The rest
+#
+seeded-random = { workspace = true }
+structured-output = { workspace = true }
+chrono = { workspace = true }
 tokio = { workspace = true, features = [
-  "macros",
   "time",
   "sync",
   "signal",
@@ -45,12 +67,6 @@ thiserror = { workspace = true }
 tokio-stream = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
-atty = { workspace = true }
-hyper = { workspace = true, features = ["runtime", "server"] }
-url = { workspace = true }
-bytes = { workspace = true }
-hyper-staticfile = { workspace = true }
-hyper-reverse-proxy = { workspace = true }
 derive_builder = { workspace = true }
 
 [dev-dependencies]

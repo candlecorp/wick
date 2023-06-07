@@ -138,12 +138,15 @@ pub(crate) fn resolve(
   env: Option<&HashMap<String, String>>,
 ) -> Option<Result<OwnedConfigurationItem>> {
   if let Some(import) = imports.get(name) {
-    if let ImportDefinition::Component(component) = &import.kind {
-      let mut component = component.clone();
-      return Some(match component.render_config(runtime_config, env) {
-        Ok(_) => Ok(OwnedConfigurationItem::Component(component)),
-        Err(e) => Err(e),
-      });
+    match &import.kind {
+      ImportDefinition::Component(component) => {
+        let mut component = component.clone();
+        return Some(match component.render_config(runtime_config, env) {
+          Ok(_) => Ok(OwnedConfigurationItem::Component(component)),
+          Err(e) => Err(e),
+        });
+      }
+      ImportDefinition::Types(_) => todo!(),
     }
   }
   if let Some(resource) = resources.get(name) {
