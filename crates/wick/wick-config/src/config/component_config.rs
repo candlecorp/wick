@@ -20,7 +20,7 @@ use crate::{config, v1, Error, Resolver, Result};
 
 #[derive(Debug, Default, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
 #[builder(derive(Debug), setter(into))]
-#[property(get(public), set(disable), mut(disable))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
@@ -53,7 +53,6 @@ pub struct ComponentConfiguration {
   pub(crate) tests: Vec<TestConfiguration>,
   #[asset(skip)]
   #[builder(default)]
-  #[property(skip)]
   pub(crate) metadata: Option<config::Metadata>,
   #[asset(skip)]
   #[builder(setter(skip))]
@@ -86,11 +85,6 @@ impl ComponentConfiguration {
       ComponentImplementation::Sql(_) => Default::default(),
       ComponentImplementation::HttpClient(_) => Default::default(),
     }
-  }
-
-  /// Set the name of the component
-  pub fn set_name(&mut self, name: String) {
-    self.name = Some(name);
   }
 
   /// Get the package files
@@ -136,20 +130,6 @@ impl ComponentConfiguration {
     self.import.get(name)
   }
 
-  /// Retrieve a mutable host configuration. This will create a default host configuration if one
-  /// does not exist.
-  pub fn host_mut(&mut self) -> &mut config::HostConfig {
-    if self.host.is_none() {
-      self.host = Some(config::HostConfig::default());
-    }
-    self.host.as_mut().unwrap()
-  }
-
-  /// Get the configuration related to the specific [ComponentKind].
-  pub fn component_mut(&mut self) -> &mut ComponentImplementation {
-    &mut self.component
-  }
-
   /// Get the kind of this component implementation.
   pub fn kind(&self) -> ComponentKind {
     self.component.kind()
@@ -173,12 +153,6 @@ impl ComponentConfiguration {
     self.metadata.as_ref().map(|m| m.version.as_str())
   }
 
-  /// Return the metadata of the component.
-  #[must_use]
-  pub fn metadata(&self) -> Option<&config::Metadata> {
-    self.metadata.as_ref()
-  }
-
   /// Return the underlying version of the source manifest.
   #[must_use]
   pub fn source(&self) -> Option<&Path> {
@@ -197,6 +171,10 @@ impl ComponentConfiguration {
       },
       |types| Ok(types.clone()),
     )
+  }
+
+  pub fn types_mut(&mut self) -> &mut Vec<TypeDefinition> {
+    &mut self.types
   }
 
   /// Fetch/cache anything critical to the first use of this configuration.

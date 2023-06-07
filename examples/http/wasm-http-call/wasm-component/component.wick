@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://github.com/candlecorp/wick/releases/download/nightly/schema.json
+---
+name: 'wasm-http-call'
+kind: wick/component@v1
+metadata:
+  version: '0.0.1'
+import:
+  - name: http
+    component:
+      kind: wick/component/types@v1
+      ref: ../../../../crates/interfaces/wick-interface-http/component.yaml
+requires:
+  - name: client
+    interface:
+      operations:
+        - name: post_op
+          inputs:
+            - name: id
+              type: string
+            - name: name
+              type: string
+          outputs:
+            - name: response
+              type: http::HttpResponse
+            - name: body
+              type: object
+component:
+  kind: wick/component/wasmrs@v1
+  ref: build/wasm_http_call.signed.wasm
+  operations:
+    - name: request
+      inputs:
+        - name: id
+          type: string
+        - name: name
+          type: string
+      outputs:
+        - name: output
+          type: object

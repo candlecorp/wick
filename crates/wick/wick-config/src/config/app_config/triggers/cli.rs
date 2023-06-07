@@ -2,7 +2,8 @@ use wick_asset_reference::AssetReference;
 
 use crate::config::ComponentOperationExpression;
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, Builder)]
+#[builder(setter(into))]
 #[asset(asset(AssetReference))]
 #[property(get(public), set(private), mut(disable))]
 

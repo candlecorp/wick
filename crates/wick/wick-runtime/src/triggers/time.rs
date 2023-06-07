@@ -176,17 +176,15 @@ impl Trigger for Time {
   }
 
   async fn wait_for_done(&self) {
-    info!("Scheduler started waiting for SIGINT");
     let handler = self.handler.lock().take().unwrap();
     match handler.await {
       Ok(_) => {
-        info!("Cron done");
+        info!("cron done");
       }
       Err(e) => {
-        error!("Cron error: {}", e);
+        error!("cron error: {}", e);
       }
     }
-    debug!("SIGINT received");
   }
 }
 

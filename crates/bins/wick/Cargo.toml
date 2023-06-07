@@ -26,6 +26,7 @@ wick-wascap = { workspace = true }
 wick-oci-utils = { workspace = true }
 wick-package = { workspace = true }
 wick-logger = { workspace = true }
+flow-expression-parser = { workspace = true }
 seeded-random = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
 tracing = { workspace = true }
@@ -41,6 +42,8 @@ atty = { workspace = true }
 jaq-core = { workspace = true }
 markup-converter = { workspace = true }
 openssl = { workspace = true, features = ["vendored"], optional = true }
+option-utils = { workspace = true }
+structured-output = { workspace = true }
 
 [dev-dependencies]
 test_bin = { workspace = true }

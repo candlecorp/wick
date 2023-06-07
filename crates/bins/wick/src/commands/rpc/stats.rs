@@ -1,20 +1,23 @@
 use anyhow::Result;
 use clap::Args;
+use serde_json::json;
+use structured_output::StructuredOutput;
 use wick_rpc::rpc::StatsRequest;
 use wick_rpc::Statistics;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct RpcStatsCommand {
+#[group(skip)]
+pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,
 }
 
 pub(crate) async fn handle(
-  opts: RpcStatsCommand,
+  opts: Options,
   _settings: wick_settings::Settings,
   span: tracing::Span,
-) -> Result<()> {
+) -> Result<StructuredOutput> {
   let _span = span.enter();
   let mut client = wick_rpc::make_rpc_client(
     format!("http://{}:{}", opts.connection.address, opts.connection.port),
@@ -33,7 +36,8 @@ pub(crate) async fn handle(
     converted.push(item.into());
   }
 
-  println!("{}", serde_json::to_string(&converted)?);
-
-  Ok(())
+  Ok(StructuredOutput::new(
+    serde_json::to_string(&converted)?,
+    json! ({"stats": converted }),
+  ))
 }

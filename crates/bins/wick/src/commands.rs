@@ -1,7 +1,7 @@
-pub(crate) mod init;
 pub(crate) mod invoke;
 pub(crate) mod key;
 pub(crate) mod list;
+pub(crate) mod new;
 pub(crate) mod query;
 pub(crate) mod registry;
 pub(crate) mod rpc;
@@ -12,6 +12,7 @@ pub(crate) mod wasm;
 
 use clap::{Parser, Subcommand};
 
+use crate::options::GlobalOptions;
 use crate::LoggingOptions;
 
 #[derive(Parser, Debug, Clone)]
@@ -21,6 +22,8 @@ use crate::LoggingOptions;
   version,
 )]
 pub(crate) struct Cli {
+  #[clap(flatten)]
+  pub(crate) output: GlobalOptions,
   #[clap(flatten)]
   pub(crate) logging: LoggingOptions,
   #[clap(subcommand)]
@@ -32,23 +35,23 @@ pub(crate) enum CliCommand {
   // Core commands
   /// Start a persistent host from a manifest.
   #[clap(name = "serve")]
-  Serve(serve::ServeCommand),
+  Serve(serve::Options),
   /// Load a manifest and execute an entrypoint component (temporarily disabled).
   #[clap(name = "run")]
-  Run(run::RunCommand),
+  Run(run::Options),
   /// Invoke a component from a manifest or wasm module.
   #[clap(name = "invoke")]
-  Invoke(invoke::InvokeCommand),
+  Invoke(invoke::Options),
   /// Print the components in a manifest or wasm module.
   #[clap(name = "list")]
-  List(list::ListCommand),
+  List(list::Options),
   /// Execute a component with test data and assert its output.
   #[clap(name = "test")]
-  Test(test::TestCommand),
+  Test(test::Options),
 
-  /// Initialize a new project.
-  #[clap(name = "init")]
-  Init(init::InitCommand),
+  /// Create new app and component configurations.
+  #[clap(subcommand, name = "new")]
+  New(new::SubCommands),
 
   /// Commands for WebAssembly component.
   #[clap(subcommand, name = "wasm")]
@@ -68,7 +71,7 @@ pub(crate) enum CliCommand {
 
   /// Command to query JSON, YAML, or TOML file.
   #[clap(name = "query")]
-  Query(query::QueryCommand),
+  Query(query::Options),
 }
 
 #[cfg(test)]

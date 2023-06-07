@@ -86,6 +86,8 @@
 // !!END_LINTS
 // Add exceptions here
 
+use std::thread::sleep;
+
 use anyhow::Result;
 #[macro_use]
 extern crate tracing;
@@ -102,9 +104,10 @@ mod options;
 mod panic;
 
 pub(crate) use options::LoggingOptions;
+use structured_output::StructuredOutput;
 
 use self::commands::*;
-use self::options::apply_log_settings;
+use self::options::{apply_log_settings, GlobalOptions};
 
 static BIN_NAME: &str = "wick";
 static BIN_DESC: &str = "wick runtime executable";
@@ -120,10 +123,42 @@ fn main() {
   runtime.shutdown_background();
 
   let code = match result {
-    Ok(_) => 0,
-    Err(e) => {
-      eprintln!("\n{} exited with error: {}", BIN_NAME, e);
-      eprintln!("Run with --info, --debug, or --trace for more information.");
+    Ok((options, output)) => {
+      let (json, code) = if let Some(success) = output.json.as_object().unwrap().get("success") {
+        if success.as_bool().unwrap() {
+          (output.json.clone(), 0)
+        } else {
+          (output.json.clone(), 1)
+        }
+      } else {
+        (serde_json::json!({"success":true,"output":&output.json}), 0)
+      };
+
+      if options.json {
+        println!("{}", serde_json::to_string(&json).unwrap());
+      } else {
+        let output = output.to_string();
+        if !output.is_empty() {
+          println!("{}", output);
+        }
+      }
+      code
+    }
+    Err((options, e)) => {
+      let json = serde_json::json!({"error": e.to_string(),"success":false});
+
+      if options.json {
+        println!("{}", serde_json::to_string(&json).unwrap());
+      } else {
+        // Separate the error from the rest of the output with a few blank lines.
+        for _ in 0..8 {
+          println!();
+          sleep(std::time::Duration::from_millis(20));
+        }
+
+        println!("\n{} exited with error: {}", BIN_NAME, e);
+        println!("Run with --info, --debug, or --trace for more information.");
+      }
       1
     }
   };
@@ -131,13 +166,14 @@ fn main() {
   std::process::exit(code);
 }
 
-async fn async_start() -> Result<()> {
+async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptions, anyhow::Error)> {
   #[cfg(debug_assertions)]
   panic::setup(human_panic::PanicStyle::Debug);
   #[cfg(not(debug_assertions))]
   panic::setup(human_panic::PanicStyle::Human);
 
   let mut cli = Cli::parse();
+  let options = cli.output.clone();
 
   // Do a preliminary logger init to catch any logs from the local settings.
   let log_options: wick_logger::LoggingOptions = cli.logging.name(BIN_NAME).into();
@@ -150,21 +186,28 @@ async fn async_start() -> Result<()> {
   // Initialize the global logger
   let logger = wick_logger::init(&logger_opts);
 
-  let res = tokio::spawn(async_main(cli, settings)).await?;
+  let res = tokio::spawn(async_main(cli, settings)).await;
   tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-  match &res {
-    Ok(_) => {
-      info!("Done");
+  let res = match res {
+    Ok(Ok(output)) => {
+      debug!("Done");
+      Ok((options, output))
+    }
+    Ok(Err(e)) => {
+      error!("Error: {}", e);
+      Err((options, anyhow!("{}", e)))
     }
     Err(e) => {
-      error!("Error: {}", e);
+      error!("Internal Error: {}", e);
+      Err((options, anyhow!("{}", e)))
     }
   };
   logger.flush();
+
   res
 }
 
-async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<()> {
+async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<StructuredOutput> {
   let span = trace_span!(target:"cli","cli");
 
   match cli.command {
@@ -173,7 +216,6 @@ async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<()> {
     CliCommand::Run(cmd) => commands::run::handle(cmd, settings, span).await,
     CliCommand::Invoke(cmd) => commands::invoke::handle(cmd, settings, span).await,
     CliCommand::Test(cmd) => commands::test::handle(cmd, settings, span).await,
-    CliCommand::Init(cmd) => commands::init::handle(cmd, settings, span).await,
     CliCommand::Wasm(cmd) => match cmd {
       commands::wasm::SubCommands::Sign(cmd) => commands::wasm::sign::handle(cmd, settings, span).await,
       commands::wasm::SubCommands::Inspect(cmd) => commands::wasm::inspect::handle(cmd, settings, span).await,
@@ -194,6 +236,15 @@ async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<()> {
       commands::rpc::SubCommands::Stats(cmd) => commands::rpc::stats::handle(cmd, settings, span).await,
     },
     CliCommand::Query(cmd) => commands::query::handle(cmd, settings, span).await,
+    CliCommand::New(cmd) => match cmd {
+      new::SubCommands::Component(cmd) => match cmd {
+        new::component::SubCommands::Http(cmd) => new::component::http::handle(cmd, settings, span).await,
+        new::component::SubCommands::Composite(cmd) => new::component::composite::handle(cmd, settings, span).await,
+        new::component::SubCommands::Sql(cmd) => new::component::sql::handle(cmd, settings, span).await,
+        new::component::SubCommands::WasmRS(cmd) => new::component::wasmrs::handle(cmd, settings, span).await,
+      },
+      new::SubCommands::App(cmd) => commands::new::app::handle(cmd, settings, span).await,
+    },
   }
 }
 

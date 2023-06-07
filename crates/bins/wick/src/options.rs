@@ -2,6 +2,14 @@ use clap::Args;
 use wick_settings::Credential;
 
 #[derive(Args, Debug, Default, Clone)]
+/// Global output options.
+pub(crate) struct GlobalOptions {
+  /// Print CLI output as JSON.
+  #[clap(long = "json", short = 'j', global = true, action)]
+  pub(crate) json: bool,
+}
+
+#[derive(Args, Debug, Default, Clone)]
 /// Logging options that can be used directly or via [Args].
 pub(crate) struct LoggingOptions {
   /// Silences log output.

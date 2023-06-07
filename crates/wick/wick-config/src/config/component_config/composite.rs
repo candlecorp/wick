@@ -6,28 +6,25 @@ use wick_packet::GenericConfig;
 
 use crate::config::{self};
 
-#[derive(Debug, Default, Clone, derive_asset_container::AssetManager, property::Property)]
-#[property(get(public), set(private), mut(disable))]
+#[derive(Debug, Default, Clone, derive_asset_container::AssetManager, Builder, property::Property)]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
+#[builder(setter(into))]
 #[asset(asset(crate::config::AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct CompositeComponentImplementation {
   /// The configuration for the component.
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) config: Vec<Field>,
 
   /// The operations defined by the component.
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) operations: HashMap<String, FlowOperation>,
 }
 
 impl CompositeComponentImplementation {
-  #[must_use]
-  /// Get a map of [FlowOperation]s from the [CompositeComponentConfiguration]
-  pub fn operations_mut(&mut self) -> &mut HashMap<String, FlowOperation> {
-    &mut self.operations
-  }
-
   /// Get a [FlowOperation] by name.
   #[must_use]
   pub fn flow(&self, name: &str) -> Option<&FlowOperation> {
@@ -53,6 +50,7 @@ impl From<FlowOperation> for wick_interface_types::OperationSignature {
 
 #[derive(Debug, Clone, Builder, Default, property::Property)]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
+#[builder(setter(into))]
 /// The SchematicDefinition struct is a normalized representation of a Wick [SchematicManifest].
 /// It handles the job of translating manifest versions into a consistent data structure.
 #[must_use]
@@ -61,21 +59,27 @@ pub struct FlowOperation {
   pub(crate) name: String,
 
   /// A list of the input types for the operation.
+  #[builder(default)]
   pub(crate) inputs: Vec<Field>,
 
   /// A list of the input types for the operation.
+  #[builder(default)]
   pub(crate) outputs: Vec<Field>,
 
   /// Any configuration required for the component to operate.
+  #[builder(default)]
   pub(crate) config: Vec<Field>,
 
   /// A mapping of instance names to the components they refer to.
+  #[builder(default)]
   pub(crate) instances: HashMap<String, InstanceReference>,
 
   /// A list of connections from and to ports on instances defined in the instance map.
+  #[builder(default)]
   pub(crate) expressions: Vec<ast::FlowExpression>,
 
   /// Additional flows scoped to this operation.
+  #[builder(default)]
   pub(crate) flows: Vec<FlowOperation>,
 }
 

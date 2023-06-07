@@ -10,7 +10,7 @@ use super::OperationSignature;
 use crate::config;
 
 #[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
-#[property(get(public), set(private), mut(disable))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]
 #[must_use]
 pub struct TypesConfiguration {
@@ -22,7 +22,6 @@ pub struct TypesConfiguration {
   pub(crate) source: Option<PathBuf>,
   #[asset(skip)]
   #[builder(default)]
-  #[property(skip)]
   pub(crate) metadata: Option<config::Metadata>,
   #[asset(skip)]
   pub(crate) types: Vec<TypeDefinition>,
@@ -61,12 +60,6 @@ impl TypesConfiguration {
   #[must_use]
   pub fn version(&self) -> Option<&str> {
     self.metadata.as_ref().map(|m| m.version.as_str())
-  }
-
-  /// Return the metadata of the component.
-  #[must_use]
-  pub fn metadata(&self) -> Option<&config::Metadata> {
-    self.metadata.as_ref()
   }
 
   /// Get the package files

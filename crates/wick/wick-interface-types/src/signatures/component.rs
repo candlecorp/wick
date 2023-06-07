@@ -120,7 +120,7 @@ impl From<ComponentVersion> for u32 {
 /// The Wick features this collection supports.
 pub struct ComponentMetadata {
   /// Version of the component.
-  #[serde(skip_serializing_if = "Option::is_none  ")]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub version: Option<String>,
 }
 

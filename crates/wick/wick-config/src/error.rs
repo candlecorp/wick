@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use thiserror::Error;
 
 use crate::config::{self};
@@ -28,8 +30,8 @@ pub enum ManifestError {
   TypeNotFound(String),
 
   /// No format version or kind found in the parsed manifest.
-  #[error("Manifest needs a format version (v0) or kind (v1+)")]
-  NoFormat,
+  #[error("Manifest {} needs a format version (v0) or kind (v1+)", .0.as_ref().map_or("<raw>".to_owned(), |v|v.display().to_string()))]
+  NoFormat(Option<PathBuf>),
 
   /// Manifest not found at the specified path.
   #[error("File not found {0}")]
@@ -49,7 +51,7 @@ pub enum ManifestError {
 
   /// Error deserializing YAML manifest.
   #[error("Could not parse manifest {} as YAML: {1} at line {}, column {}", .0.as_ref().map_or("<raw>".to_owned(), |v|v.display().to_string()), .2.as_ref().map_or("unknown".to_owned(),|l|l.line().to_string()), .2.as_ref().map_or("unknown".to_owned(),|l|l.column().to_string()))]
-  YamlError(Option<std::path::PathBuf>, String, Option<serde_yaml::Location>),
+  YamlError(Option<PathBuf>, String, Option<serde_yaml::Location>),
 
   /// Error parsing or serializing Sender data.
   #[error("Error parsing or serializing Sender data: {0}")]

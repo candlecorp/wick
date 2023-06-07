@@ -12,7 +12,8 @@ mod raw_router;
 mod rest_router;
 mod static_router;
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property, Builder)]
+#[builder(setter(into))]
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(AssetReference))]
 #[must_use]

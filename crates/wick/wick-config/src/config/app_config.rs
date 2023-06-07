@@ -18,7 +18,7 @@ use crate::utils::RwOption;
 use crate::{config, v1, Resolver, Result};
 
 #[derive(Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property)]
-#[property(get(public), set(disable), mut(disable))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]
 #[builder(setter(into))]
 #[must_use]
@@ -31,7 +31,6 @@ pub struct AppConfiguration {
   #[property(skip)]
   pub(crate) source: Option<PathBuf>,
   #[builder(setter(strip_option), default)]
-  #[property(skip)]
   pub(crate) metadata: Option<config::Metadata>,
   #[builder(default)]
   pub(crate) import: HashMap<String, ImportBinding>,
@@ -62,11 +61,6 @@ impl AppConfiguration {
       options,
     )
     .await
-  }
-
-  /// Set the name of the component
-  pub fn set_name(&mut self, name: String) {
-    self.name = name;
   }
 
   /// Get the package files
@@ -115,12 +109,6 @@ impl AppConfiguration {
   #[must_use]
   pub fn version(&self) -> Option<&str> {
     self.metadata.as_ref().map(|m| m.version.as_str())
-  }
-
-  /// Return the metadata of the component.
-  #[must_use]
-  pub fn metadata(&self) -> Option<&config::Metadata> {
-    self.metadata.as_ref()
   }
 
   #[must_use]

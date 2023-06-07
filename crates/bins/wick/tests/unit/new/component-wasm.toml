@@ -1,0 +1,5 @@
+bin.name = "wick"
+args = ["new", "component", "wasmrs", "--json", "test", "--dry-run"]
+stdout = """
+{"output":{"files":["test.wick"]},"success":true}
+"""

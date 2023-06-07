@@ -1,5 +1,10 @@
+use std::fmt::Write;
+
 use anyhow::Result;
 use clap::Args;
+use option_utils::OptionUtils;
+use serde_json::json;
+use structured_output::StructuredOutput;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
@@ -8,19 +13,21 @@ use wick_interface_types::Field;
 use crate::utils::merge_config;
 
 #[derive(Debug, Clone, Args)]
-pub(crate) struct ListCommand {
+#[group(skip)]
+pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) oci: crate::oci::Options,
 
   /// The path or OCI URL to a wick manifest or wasm file.
   #[clap(action)]
   pub(crate) location: String,
-
-  #[clap(long = "json", action)]
-  pub(crate) json: bool,
 }
 
-pub(crate) async fn handle(opts: ListCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
+pub(crate) async fn handle(
+  opts: Options,
+  _settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<StructuredOutput> {
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);
@@ -33,26 +40,37 @@ pub(crate) async fn handle(opts: ListCommand, _settings: wick_settings::Settings
 
   let mut config = merge_config(&manifest, &opts.oci, Some(server_options));
   // Disable everything but the mesh
-  config.host_mut().set_rpc(None);
+  config.host_mut().inner_mut(|h| {
+    h.set_rpc(None);
+  });
 
   let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 
   host.start_engine(None).await?;
   let signature = host.get_signature()?;
 
-  if opts.json {
-    let json = serde_json::to_string(&signature)?;
-    println!("{}", json);
-  } else {
-    fn print_component(label: &str, indent: &str, inputs: &[Field], outputs: &[Field]) {
-      let inputs = inputs.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", ");
-      let outputs = outputs.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", ");
-      println!("{}{}({}) -> ({})", indent, label, inputs, outputs);
-    }
-    for op in signature.operations {
-      print!("Component: ");
-      print_component(&op.name, "", &op.inputs, &op.outputs);
-    }
+  let mut output = String::new();
+  for op in &signature.operations {
+    write!(&mut output, "Component: ")?;
+    write_line(&mut output, &op.name, "", &op.inputs, &op.outputs)?;
   }
-  Ok(())
+
+  Ok(StructuredOutput::new(
+    output,
+    json!({
+      "result": signature,
+    }),
+  ))
+}
+
+fn write_line(
+  mut buff: impl Write,
+  label: &str,
+  indent: &str,
+  inputs: &[Field],
+  outputs: &[Field],
+) -> std::fmt::Result {
+  let inputs = inputs.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", ");
+  let outputs = outputs.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", ");
+  write!(buff, "{}{}({}) -> ({})", indent, label, inputs, outputs)
 }

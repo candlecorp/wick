@@ -1,5 +1,7 @@
 use anyhow::Result;
 use clap::Args;
+use serde_json::json;
+use structured_output::StructuredOutput;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
@@ -7,7 +9,8 @@ use wick_host::ComponentHostBuilder;
 use crate::utils::{merge_config, parse_config_string};
 
 #[derive(Debug, Clone, Args)]
-pub(crate) struct ServeCommand {
+#[group(skip)]
+pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) cli: DefaultCliOptions,
 
@@ -26,7 +29,11 @@ pub(crate) struct ServeCommand {
   with: Option<String>,
 }
 
-pub(crate) async fn handle(opts: ServeCommand, _settings: wick_settings::Settings, span: tracing::Span) -> Result<()> {
+pub(crate) async fn handle(
+  opts: Options,
+  _settings: wick_settings::Settings,
+  span: tracing::Span,
+) -> Result<StructuredOutput> {
   let fetch_options = wick_config::config::FetchOptions::new()
     .allow_latest(opts.oci.allow_latest)
     .allow_insecure(&opts.oci.insecure_registries);
@@ -59,5 +66,5 @@ pub(crate) async fn handle(opts: ServeCommand, _settings: wick_settings::Setting
   let _ = tokio::signal::ctrl_c().await;
   info!("Ctrl-C received, shutting down");
   host.stop().await;
-  Ok(())
+  Ok(StructuredOutput::new("", json!({})))
 }

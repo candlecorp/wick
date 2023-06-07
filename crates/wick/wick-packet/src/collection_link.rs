@@ -79,7 +79,7 @@ fn link_call(
   use wasmrs::RSocket;
   use wasmrs_guest::{FluxChannel, Observer};
 
-  let mut stream = crate::into_wasmrs(0, input);
+  let mut stream = crate::packetstream_to_wasmrs(0, input);
   let (tx, rx) = FluxChannel::new_parts();
   let first = crate::ContextTransport {
     config,

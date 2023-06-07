@@ -4,14 +4,16 @@ use wick_interface_types::Field;
 
 use crate::config::{self, OperationSignature};
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property)]
-#[property(get(public), set(private), mut(disable))]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, Builder, property::Property)]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
+#[builder(setter(into))]
 #[asset(asset(config::AssetReference))]
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct WasmComponentImplementation {
   /// The configuration for the component.
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) config: Vec<Field>,
 
   /// The location of the component.
@@ -19,6 +21,7 @@ pub struct WasmComponentImplementation {
 
   /// The operations defined by the component.
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) operations: HashMap<String, OperationSignature>,
 }
 

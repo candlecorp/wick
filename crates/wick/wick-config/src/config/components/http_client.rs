@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::config;
 
 #[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
-#[property(get(public), set(private), mut(public, suffix = "_mut"))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
 #[must_use]

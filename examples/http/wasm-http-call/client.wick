@@ -1,0 +1,31 @@
+kind: wick/component@v1
+name: client
+metadata:
+  version: 0.0.1
+  description: New HTTP Client wick component
+  licenses:
+    - Apache-2.0
+resources:
+  - name: HTTP_URL
+    resource:
+      kind: wick/resource/url@v1
+      url: http://$HTTPBIN/
+component:
+  kind: wick/component/http@v1
+  resource: HTTP_URL
+  codec: Json
+  operations:
+    - name: post_op
+      inputs:
+        - name: id
+          type: string
+        - name: name
+          type: string
+      method: Post
+      codec: FormData
+      path: /post
+      headers:
+        'Content-Type': ['application/x-www-form-urlencoded']
+      body:
+        id: '{{id}}'
+        name: '{{name}}'

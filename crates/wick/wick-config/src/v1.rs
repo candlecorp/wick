@@ -1055,7 +1055,7 @@ pub(crate) struct CompositeOperationDefinition {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-#[serde(tag = "kind")]
+#[serde(untagged)]
 /// A flow operation, i.e. a connection from one operation's outputs to another's inputs.
 pub(crate) enum FlowExpression {
   /// A variant representing a [ConnectionDefinition] type.
@@ -1074,6 +1074,7 @@ pub(crate) struct BlockExpression {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(into = "String")]
 #[serde(deny_unknown_fields)]
 /// A connection between Operations and their ports. This can be specified in short-form syntax.
 pub(crate) struct ConnectionDefinition {
@@ -1154,6 +1155,7 @@ pub(crate) struct Field {
 
 #[derive(Debug, Clone, serde_with::DeserializeFromStr, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
+#[serde(into = "String")]
 #[serde(tag = "kind")]
 pub(crate) enum TypeSignature {
   /// A variant representing a [I8] type.
@@ -1198,59 +1200,59 @@ pub(crate) enum TypeSignature {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct I8();
+pub(crate) struct I8;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct I16();
+pub(crate) struct I16;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct I32();
+pub(crate) struct I32;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct I64();
+pub(crate) struct I64;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct U8();
+pub(crate) struct U8;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct U16();
+pub(crate) struct U16;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct U32();
+pub(crate) struct U32;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct U64();
+pub(crate) struct U64;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct F32();
+pub(crate) struct F32;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct F64();
+pub(crate) struct F64;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Bool();
+pub(crate) struct Bool;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct StringType();
+pub(crate) struct StringType;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Datetime();
+pub(crate) struct Datetime;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Bytes();
+pub(crate) struct Bytes;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -1286,7 +1288,7 @@ pub(crate) struct Map {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Object();
+pub(crate) struct Object;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -1415,13 +1417,15 @@ pub(crate) struct TestDefinition {
   /// The inputs to the test.
 
   #[serde(default)]
+  #[serde(alias = "input")]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) input: Vec<PacketData>,
+  pub(crate) inputs: Vec<PacketData>,
   /// The expected outputs of the operation.
 
   #[serde(default)]
+  #[serde(alias = "output")]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) output: Vec<PacketData>,
+  pub(crate) outputs: Vec<PacketData>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

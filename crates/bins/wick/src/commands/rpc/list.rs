@@ -1,18 +1,21 @@
 use anyhow::Result;
 use clap::Args;
+use serde_json::json;
+use structured_output::StructuredOutput;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct RpcListCommand {
+#[group(skip)]
+pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) connection: super::ConnectOptions,
 }
 
 pub(crate) async fn handle(
-  opts: RpcListCommand,
+  opts: Options,
   _settings: wick_settings::Settings,
   span: tracing::Span,
-) -> Result<()> {
+) -> Result<StructuredOutput> {
   let _span = span.enter();
   let mut client = wick_rpc::make_rpc_client(
     format!("http://{}:{}", opts.connection.address, opts.connection.port),
@@ -25,7 +28,8 @@ pub(crate) async fn handle(
 
   let list = client.list().await?;
 
-  println!("{}", serde_json::to_string(&list)?);
-
-  Ok(())
+  Ok(StructuredOutput::new(
+    serde_json::to_string(&list)?,
+    json! ({"list": list }),
+  ))
 }

@@ -4,6 +4,8 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Args;
+use serde_json::json;
+use structured_output::StructuredOutput;
 use tracing::Instrument;
 use wick_config::WickConfiguration;
 use wick_wascap::{sign_buffer_with_claims, ClaimsOptions};
@@ -11,7 +13,8 @@ use wick_wascap::{sign_buffer_with_claims, ClaimsOptions};
 use crate::keys::{get_module_keys, GenerateCommon};
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
-pub(crate) struct WasmSignCommand {
+#[group(skip)]
+pub(crate) struct Options {
   /// WebAssembly module location.
   #[clap(action)]
   pub(crate) source: String,
@@ -38,10 +41,10 @@ pub(crate) struct WasmSignCommand {
 
 #[allow(clippy::unused_async)]
 pub(crate) async fn handle(
-  opts: WasmSignCommand,
+  opts: Options,
   _settings: wick_settings::Settings,
   span: tracing::Span,
-) -> Result<()> {
+) -> Result<StructuredOutput> {
   span.in_scope(|| {
     debug!("Signing module");
     debug!("Reading from {}", opts.interface);
@@ -103,14 +106,19 @@ pub(crate) async fn handle(
   span.in_scope(|| debug!("Destination : {}", destination));
 
   let mut outfile = File::create(&destination).unwrap();
+
   span.in_scope(|| match outfile.write(&signed) {
     Ok(_) => {
       info!("Successfully signed {}", destination,);
+      Ok(StructuredOutput::new(
+        format!("Successfully signed: {}", destination),
+        json!({
+          "file": destination
+        }),
+      ))
     }
     Err(e) => {
-      error!("Error signing: {}", e);
+      bail!("Error signing: {}", e)
     }
-  });
-
-  Ok(())
+  })
 }

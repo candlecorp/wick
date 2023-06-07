@@ -188,6 +188,27 @@ macro_rules! payload_fan_out {
     };
 }
 
+/// Unwrap a [Result] value to its [Result::Ok] value or propagate the error to the downstream inputs and
+/// short circuit the logic.
+///
+///
+/// Takes a [Result] value, a generated component's Outputs, and an action to perform on error (`break`, `continue`, or `return expr`).
+///
+/// If the [Result] is [Ok], the [Result::Ok] value is returned.
+///
+/// If the [Result] is [Err], the error is propagated to the passed outputs,
+/// and the logic is short circuited with the passed action.
+///
+/// # Example
+///
+/// ```
+/// let results: Vec<Result<i32, ()>> = vec![Ok(1),Err(()),Ok(2)];
+/// while let Some(result) = results.next() {
+///   let value = propagate_if_error!(result, outputs, continue);
+///   println!("{}", value);
+/// }
+/// ```
+///
 #[macro_export]
 macro_rules! propagate_if_error {
   ($result:expr, $outputs:ident, continue) => {

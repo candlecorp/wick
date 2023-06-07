@@ -96,19 +96,47 @@ pub use {flow_component, paste, wasmrs, wasmrs_codec, wasmrs_runtime as runtime,
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
+/// Create a stream of `Result<T, BoxError>` that yields one value and ends.
+///
+/// # Example
+///
+/// ```
+/// # use wick_component::prelude::*;
+///
+/// let mut stream = once(42);
+/// assert_eq!(stream.next().await, Some(Ok(42)));
+/// assert_eq!(stream.next().await, None);
+/// ```
+///
 pub fn once<T>(value: T) -> impl Stream<Item = Result<T, BoxError>> {
   tokio_stream::once(Ok(value))
+}
+
+/// Create a stream of `Result<T, BoxError>` from an iterator of type T.
+///
+/// This is a convenience function for creating a Result/TryStream from an iterator of `Ok` values.
+///
+/// # Example
+///
+/// ```
+/// # use wick_component::prelude::*;
+///
+/// let mut stream = iter(vec![1, 2, 3]);
+/// assert_eq!(stream.next().await, Some(Ok(1)));
+/// assert_eq!(stream.next().await, Some(Ok(2)));
+/// assert_eq!(stream.next().await, Some(Ok(3)));
+/// assert_eq!(stream.next().await, None);
+/// ```
+///
+pub fn iter<I, O>(i: I) -> impl Stream<Item = Result<O, BoxError>>
+where
+  I: IntoIterator<Item = O>,
+{
+  tokio_stream::iter(i.into_iter().map(|i| Ok(i)))
 }
 
 pub mod prelude {
   pub use serde_json::Value;
 
   pub use crate::{iter, once, propagate_if_error, BoxError, Stream, StreamExt};
-}
-
-pub fn iter<I, O>(i: I) -> impl Stream<Item = Result<O, BoxError>>
-where
-  I: IntoIterator<Item = O>,
-{
-  tokio_stream::iter(i.into_iter().map(|i| Ok(i)))
 }

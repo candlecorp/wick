@@ -530,15 +530,15 @@ type CompositeOperationDefinition {
 }
 
 "A flow operation, i.e. a connection from one operation's outputs to another's inputs."
-union FlowExpression @shortform = ConnectionDefinition | BlockExpression
+union FlowExpression @shortform @untagged = ConnectionDefinition | BlockExpression
 
 "A list of FlowExpressions. Typically used only when expanding a shortform `FlowExpression` into multiple `FlowExpression`s."
-type BlockExpression {
+type BlockExpression  {
   expressions: [FlowExpression] @required
 }
 
 "A connection between Operations and their ports. This can be specified in short-form syntax."
-type ConnectionDefinition {
+type ConnectionDefinition @into_string {
   "An upstream operation's output."
   from: ConnectionTargetDefinition @required
 
@@ -583,7 +583,7 @@ type Field {
   description: string?,
 }
 
-union TypeSignature @shortform @shortformonly = I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | Bool | StringType | Optional | Datetime | Bytes | Custom | List | Map | Object
+union TypeSignature @into_string @shortform @shortformonly = I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | Bool | StringType | Optional | Datetime | Bytes | Custom | List | Map | Object
 
 type I8 @nameonly("i8") {}
 type I16 @nameonly("i16") {}
@@ -684,10 +684,10 @@ type TestDefinition {
   with: {string: any}?
 
   "The inputs to the test."
-  input: [PacketData]
+  inputs: [PacketData] @alias("input")
 
   "The expected outputs of the operation."
-  output: [PacketData]
+  outputs: [PacketData] @alias("output")
 }
 
 "Data inherent to all invocations."
