@@ -128,6 +128,8 @@ async fn handle(
     }
     let inputs = Value::Object(inputs);
 
+    invocation.trace(|| trace!(inputs=?inputs, "request inputs"));
+
     let body = match opdef.body() {
       Some(body) => match body.render(&inputs) {
         Ok(p) => Some(p),
