@@ -24,7 +24,7 @@ pub(crate) struct Cli {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
-struct IsInteractive {
+struct Interactive {
   stdin: bool,
   stdout: bool,
   stderr: bool,
@@ -52,13 +52,13 @@ impl Cli {
     let cli_component = resolve_ref(&app_config, config.operation().component())?;
     let cli_binding = ImportBinding::component("cli", cli_component);
 
-    let is_interactive = IsInteractive {
+    let is_interactive = Interactive {
       stdin: atty::is(atty::Stream::Stdin),
       stdout: atty::is(atty::Stream::Stdout),
       stderr: atty::is(atty::Stream::Stderr),
     };
 
-    let packet_stream = packet_stream!(("args", args), ("isInteractive", is_interactive));
+    let packet_stream = packet_stream!(("args", args), ("interactive", is_interactive));
     let invocation = Invocation::new(
       Entity::server("cli_channel"),
       Entity::operation(cli_binding.id(), config.operation().name()),

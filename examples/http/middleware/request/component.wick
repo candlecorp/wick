@@ -8,7 +8,7 @@ import:
   - name: http
     component:
       kind: wick/component/types@v1
-      ref: 'registry.candle.dev/common/http:0.0.1'
+      ref: ../../../../crates/interfaces/wick-interface-http/component.yaml
 component:
   kind: wick/component/wasmrs@v1
   ref: build/request.signed.wasm

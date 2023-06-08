@@ -9,10 +9,11 @@ description = "Create components to execute in Wick runtimes"
 [features]
 default = []
 invocation = ["wick-packet/invocation"]
+uuid = ["seeded-random/uuid"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-wick-packet = { workspace = true }
+wick-packet = { workspace = true, features = ["datetime"] }
 wick-interface-types = { workspace = true }
 serde_json = { workspace = true }
 futures = { workspace = true }

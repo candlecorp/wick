@@ -15,6 +15,10 @@ homepage = "https://candle.dev"
 maintenance = { status = "actively-developed" }
 
 [features]
+default = ["json"]
+datetime = ["chrono/serde", "wick-packet/datetime"]
+uuid = ["flow-component/uuid"]
+json = []
 
 [dependencies]
 wick-packet = { workspace = true, default-features = false }
@@ -27,6 +31,8 @@ tokio-stream = { workspace = true }
 paste = { workspace = true }
 serde_json = { workspace = true }
 wasm-msgpack = { workspace = true, features = ["std"] }
+chrono = { workspace = true, features = ["std"], optional = true }
+bytes = { workspace = true, optional = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasmrs-guest = { workspace = true }

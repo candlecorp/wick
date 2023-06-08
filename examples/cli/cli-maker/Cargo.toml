@@ -1,5 +1,5 @@
 [package]
-name = "test-http-trigger-component"
+name = "cli-maker"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,20 +12,14 @@ lto = true
 opt-level = "z"
 panic = "abort"
 
-[features]
-default = []
-localgen = []
-
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-wick-component = { path = "../../wick/wick-component", features = ["bytes"] }
+wick-component = { path = "../../../crates/wick/wick-component" }
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"
-bytes = "1.4"
-futures = "0.3"
-serde_json = "1.0.94"
+anyhow = { version = "1" }
 
 [build-dependencies]
-wick-component-codegen = { path = "../../wick/wick-component-codegen" }
+wick-component-codegen = { path = "../../../crates/wick/wick-component-codegen" }

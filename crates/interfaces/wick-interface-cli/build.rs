@@ -7,6 +7,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   {
     wick_component_codegen::configure()
       .out_dir("src/generated")
+      .components(false)
       .generate("component.yaml")?;
 
     let fmt = std::process::Command::new("cargo")

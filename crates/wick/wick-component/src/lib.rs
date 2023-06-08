@@ -88,7 +88,20 @@
 #![allow(missing_docs)]
 
 pub mod macros;
-pub use serde_json::to_value;
+#[cfg(feature = "bytes")]
+pub use bytes;
+#[cfg(feature = "datetime")]
+pub mod datetime {
+
+  pub use chrono;
+  pub use chrono::format::strftime;
+  pub use chrono::offset::TimeZone;
+  pub use chrono::serde::ts_milliseconds;
+  pub use chrono::{DateTime as ChronoDateTime, Utc};
+  pub use wick_packet::{date_from_millis, DateTime};
+}
+#[cfg(feature = "json")]
+pub use serde_json::{from_slice, from_str, from_value, json, to_value};
 pub use tokio_stream::{empty, iter as iter_raw, once as once_raw, Stream, StreamExt};
 #[cfg(target_family = "wasm")]
 pub use wasmrs_guest;

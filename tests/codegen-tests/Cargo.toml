@@ -12,12 +12,13 @@ publish = false
 
 [dependencies]
 wasmrs-guest = { workspace = true }
-wick-component = { workspace = true }
+wick-component = { workspace = true, features = ["datetime"] }
 flow-component = { workspace = true, features = ["invocation"] }
 serde = { workspace = true, features = ["derive"] }
 async-trait = { workspace = true }
 bytes = { workspace = true }
 anyhow = { version = "1" }
+serde_json = { workspace = true }
 
 [dev-dependencies]
 wick-packet = { workspace = true, features = ["test"] }

@@ -17,13 +17,14 @@ import:
 types:
   - name: LocalStruct
     kind: wick/type/struct@v1
-
     description: 'hey'
     fields:
       - name: field1
         type: string
       - name: inner
         type: LocalStructInner
+      - name: time
+        type: datetime
   - name: LocalStructInner
     kind: wick/type/struct@v1
     fields:
@@ -38,11 +39,16 @@ component:
       inputs:
         - name: input
           type: http::HttpRequest
+        - name: time
+          type: datetime
       outputs:
         - name: output
           type: http::HttpRequest
+        - name: time
+          type: datetime
       flow:
         - <>.input -> <>.output
+        - <>.time -> <>.time
     - name: testop
       with:
         - name: A
@@ -62,17 +68,29 @@ tests:
     cases:
       - name: codegenned-defaults
         operation: echo
-        input:
+        inputs:
           - name: input
             value:
               method: Get
               scheme: Http
               path: '/'
               uri: 'http://localhost:8080/'
-        output:
+              remote_addr: 0.0.0.0
+          - name: time
+            value: '2020-07-05T11:39:39.352802472Z'
+        outputs:
           - name: output
             value:
               method: Get
               scheme: Http
               path: '/'
               uri: 'http://localhost:8080/'
+              remote_addr: 0.0.0.0
+          - name: output
+            flags:
+              done: true
+          - name: time
+            value: '2020-07-05T11:39:39.352802472Z'
+          - name: time
+            flags:
+              done: true

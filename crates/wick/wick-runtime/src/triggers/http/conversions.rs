@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::str::FromStr;
 
 use hyper::http::response::Builder;
@@ -88,7 +89,10 @@ pub(super) fn headers_to_wick(headers: &hyper::http::HeaderMap) -> Result<HashMa
   Ok(map)
 }
 
-pub(super) fn request_and_body_to_wick<B>(req: Request<B>) -> Result<(wick_http::HttpRequest, B), HttpError>
+pub(super) fn request_and_body_to_wick<B>(
+  req: Request<B>,
+  remote_addr: SocketAddr,
+) -> Result<(wick_http::HttpRequest, B), HttpError>
 where
   B: Send + Sync + 'static,
 {
@@ -102,12 +106,13 @@ where
       uri: uri_to_wick(req.uri())?,
       version: version_to_wick(req.version())?,
       headers: headers_to_wick(req.headers())?,
+      remote_addr: remote_addr.to_string(),
     },
     req.into_body(),
   ))
 }
 
-pub(super) fn request_to_wick<B>(req: &Request<B>) -> Result<wick_http::HttpRequest, HttpError>
+pub(super) fn request_to_wick<B>(req: &Request<B>, remote_addr: SocketAddr) -> Result<wick_http::HttpRequest, HttpError>
 where
   B: Send + Sync + 'static,
 {
@@ -120,6 +125,7 @@ where
     uri: uri_to_wick(req.uri())?,
     version: version_to_wick(req.version())?,
     headers: headers_to_wick(req.headers())?,
+    remote_addr: remote_addr.to_string(),
   })
 }
 
@@ -182,4 +188,20 @@ pub(super) fn convert_to_wick_response(res: Response<Body>) -> Result<(wick_http
     },
     body,
   ))
+}
+
+#[cfg(test)]
+mod test {
+  use anyhow::Result;
+
+  use super::*;
+
+  #[test]
+  fn test_queryparams() -> Result<()> {
+    let uri = Uri::from_static("http://localhost:8080/oidc/callback?code=0.AX0AW62NddvKnU2xw9eh4XLjBRG6sJD_e-FBg1_2xnhMOqcBAAA.AgABAAIAAAD--DLA3VO7QrddgJg7WevrAgDs_wUA9P_a9_u2vYzM5uuK5PDlBJvfDxCepuj-VRXZ-nF62AgxQz2Irlv47oXyyAIlDav9OOsvP_W_GGa3K0CezRZYxPKR5z4yWx_4q_c3GHC4bLGILYCJc2d7lZiyznKTOcHE33E6TlcFULxgmCYnHHblQmBNqKvCDXYqCbcxBT5jy_umsXVPoL4u1BywYnMW6joj7wGCr3JVknlN-TNya_qmnnTKxj7DPsMISmrKoQzz_PWVTGF3jf6qAccGrCiJkgb_F2A5FigkY2BIzwLUHxRAjMyFgik9JErYlTYc6IjPTH-PLSkqctWwSNHAfI4DShDqFcMKmGU1S4ASQ1hgMv3_keRaMffuhMklhYCbB2Xb-p1pQ5D44uPRryIKKYI0PfAqHmE95qIT91SyuD1GeP0n4AZDJtGR7XJ3YTjVX9rJCayi6i4LGv3PfV-WMJuKS4L6YHKuHJMK-rQBB0QZI4Rig1XaQBAU0YXg5zmuR5LjSsFvoiM-MJHZ6dEHg2P21ErGXDEDOi8MwFWRDI2NZorRv9LwM3ixYPeQo2gWW1Fz6K2JSsJdocrGnBmz2XAViUbeNgamkTsvkdxbQnjoaipw0cCCfYc-qHpgLnSXRv9RTqOIiC4l8Tt4YQUNXA&state=3dd445c8-0256-1dfd-e427-8d336ac2974f&session_state=6c5616bb-b5e8-4271-8003-8e66c84755d4#");
+
+    let params = query_params_to_wick(uri.query())?;
+    assert!(params.contains_key("code"));
+    Ok(())
+  }
 }

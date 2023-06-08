@@ -135,7 +135,7 @@ types:
             key: string
             value: { list: { type: string } }
         description: All response headers. Supports duplicates.
-      - name: headersRaw
+      - name: headers_raw
         type: string
         description: All response headers, as a single string in case duplicate headers exist.
       - name: body
@@ -154,7 +154,7 @@ types:
         type: string
         required: false
         description: domain/port and any authentication from request line. optional
-      - name: queryParameters
+      - name: query_parameters
         type:
           map:
             key: string
@@ -176,7 +176,7 @@ types:
             key: string
             value: { list: { type: string } }
         description: All request headers. Duplicates are comma separated.
-      - name: headersRaw
+      - name: headers_raw
         type: string
         description: All request headers, as a single string.
       - name: body

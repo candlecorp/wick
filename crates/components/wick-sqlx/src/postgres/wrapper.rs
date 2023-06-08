@@ -48,8 +48,7 @@ impl<'q> Encode<'q, Postgres> for SqlWrapper {
         Encode::<Postgres>::encode(v, buf)
       }
       Type::Datetime => {
-        let v = v.as_str().unwrap();
-        let datetime = parse_date(v);
+        let datetime = parse_date(v.as_str().unwrap()).unwrap();
         Encode::<Postgres>::encode(datetime, buf)
       }
       Type::Named(_) => unimplemented!("custom types not yet handled"),

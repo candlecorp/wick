@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use bytes::Bytes;
@@ -24,6 +25,7 @@ pub(super) async fn handle(
   codec: Codec,
   engine: Arc<Runtime>,
   req: Request<Body>,
+  remote_addr: SocketAddr,
 ) -> Result<PacketStream, HttpError> {
   let (tx, rx) = PacketStream::new_channels();
 
@@ -39,7 +41,7 @@ pub(super) async fn handle(
     .invoke(invocation, None)
     .await
     .map_err(|e| HttpError::OperationError(e.to_string()));
-  let (req, mut body) = request_and_body_to_wick(req)?;
+  let (req, mut body) = request_and_body_to_wick(req, remote_addr)?;
 
   let packets = packets!(("request", req));
   for packet in packets {
