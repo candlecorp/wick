@@ -4,11 +4,18 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use serde_json::Value;
 use wick_config::config::OperationSignature;
-use wick_interface_types::Field;
+use wick_interface_types::{Field, Type};
 
 use super::config;
 use crate::generate::ids::{id, snake};
 use crate::generate::{expand_type, Direction};
+
+fn is_defaultable(ty: &Type) -> bool {
+  matches!(
+    ty,
+    Type::List { .. } | Type::Optional { .. } | Type::Map { .. } | Type::Object
+  )
+}
 
 pub(crate) fn field_pair(
   config: &mut config::Config,
@@ -23,18 +30,28 @@ pub(crate) fn field_pair(
       .description
       .as_ref()
       .map_or_else(|| quote! {}, |desc| quote! {#[doc = #desc]});
+
     let serde = if serde {
-      let default = (!field.required).then(|| quote! {#[serde(default)]});
+      let default = (!field.required || is_defaultable(field.ty())).then(|| quote! {#[serde(default)]});
       let skip_if = match field.ty() {
         wick_interface_types::Type::List { .. } => quote! { #[serde(skip_serializing_if = "Vec::is_empty")] },
         wick_interface_types::Type::Optional { .. } => quote! { #[serde(skip_serializing_if = "Option::is_none")] },
-        wick_interface_types::Type::Map { .. } => quote! { #[serde(skip_serializing_if = "HashMap::is_empty")] },
+        wick_interface_types::Type::Map { .. } => {
+          quote! { #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")] }
+        }
+        _ => quote! {},
+      };
+
+      // No longer used, keeping this here because it almost certainly will be used again.
+      #[allow(clippy::match_single_binding)]
+      let deserialize_with = match field.ty() {
         _ => quote! {},
       };
 
       quote! {
         #[serde(rename = #name)]
         #default
+        #deserialize_with
         #skip_if
       }
     } else {
@@ -42,6 +59,7 @@ pub(crate) fn field_pair(
     };
     quote! {
       #desc
+      #serde
       pub #id: #ty
     }
   }

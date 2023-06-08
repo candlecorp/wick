@@ -64,7 +64,7 @@ pub(super) fn expand_type(
     }
     wick_interface_types::Type::Datetime => {
       config.add_dep(Dependency::Chrono);
-      quote! {chrono::NaiveDateTime}
+      quote! {wick_component::datetime::DateTime}
     }
     wick_interface_types::Type::Object => {
       config.add_dep(Dependency::SerdeJson);

@@ -26,7 +26,7 @@
           "type": { "list": { "type": "string" } }
         },
         {
-          "name": "isInteractive",
+          "name": "Interactive",
           "type": "string"
         },
         {

@@ -110,10 +110,9 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
         IsNull::No
       }
       Type::Datetime => {
-        let v = v.as_str().unwrap();
-        let datetime = parse_date(v);
+        let datetime = parse_date(v.as_str().unwrap()).unwrap();
 
-        let days_duration = datetime.date() - NaiveDate::from_ymd_opt(1900, 1, 1).unwrap();
+        let days_duration = datetime.date_naive() - NaiveDate::from_ymd_opt(1900, 1, 1).unwrap();
         let ms_duration = datetime.time() - NaiveTime::from_hms_opt(0, 0, 0).unwrap();
         let days = days_duration.num_days() as i32;
         let ms: i32 = (ms_duration.num_milliseconds() / 300) as i32;

@@ -28,7 +28,7 @@ component:
       inputs:
         - name: args
           type: 'string[]'
-        - name: isInteractive
+        - name: interactive
           type: cli::Interactive
       outputs:
         - name: code

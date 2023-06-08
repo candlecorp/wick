@@ -107,7 +107,8 @@ impl Service<Request<Body>> for ResponseService {
       let response = match router {
         Some(h) => match h {
           HttpRouter::Raw(r) => {
-            let (wick_request_object, early_response) = run_request_middleware(&req, engine.clone(), &r).await?;
+            let (wick_request_object, early_response) =
+              run_request_middleware(&req, engine.clone(), &r, remote_addr).await?;
             // if we have an early response, skip the main handler.
             let response = if let Some(response) = early_response {
               response
@@ -155,11 +156,12 @@ async fn run_request_middleware<B>(
   req: &Request<B>,
   engine: Arc<Runtime>,
   r: &RawRouterHandler,
+  remote_addr: SocketAddr,
 ) -> Result<(wick_interface_http::types::HttpRequest, Option<Response<Body>>), HttpError>
 where
   B: Send + Sync + 'static,
 {
-  let mut wick_req = request_to_wick(req)?;
+  let mut wick_req = request_to_wick(req, remote_addr)?;
   for (entity, config) in &r.middleware.request {
     let response = handle_request_middleware(entity.clone(), config.clone(), engine.clone(), &wick_req).await?;
     match response {

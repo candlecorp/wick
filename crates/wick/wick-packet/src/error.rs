@@ -57,6 +57,14 @@ pub enum Error {
 
   #[error("Data provided for component '{0}' does not match expected signature, {1}")]
   Signature(String, String),
+
+  #[cfg(feature = "datetime")]
+  #[error("Error parsing date '{0}', date must be an RFC 3339 formatted string")]
+  ParseDate(String),
+
+  #[cfg(feature = "datetime")]
+  #[error("Error parsing date '{0}', date must be milliseconds from the UNIX epoch")]
+  ParseDateMillis(u64),
 }
 
 impl Error {

@@ -29,6 +29,7 @@ mod test1 {
     #[allow(unused)]
     async fn echo(
       message: WickStream<types::http::HttpRequest>,
+      time: WickStream<datetime::DateTime>,
       outputs: Self::Outputs,
       ctx: Context<Self::Config>,
     ) -> Result<(), Self::Error> {
@@ -43,6 +44,7 @@ mod test1 {
     use flow_component::{panic_callback, Context};
     use types::http;
     use wasmrs_guest::{FluxChannel, StreamExt};
+    use wick_component::datetime::TimeZone;
     use wick_packet::{ContextTransport, InherentData};
 
     use super::*;
@@ -50,14 +52,38 @@ mod test1 {
 
     #[tokio::test]
     async fn test_typegen() -> Result<()> {
-      // Don't delete, it tests that local structs are genned correctly.
-      let _local_type = types::LocalStruct {
+      let date = datetime::Utc.with_ymd_and_hms(2023, 6, 8, 17, 02, 52).unwrap();
+      let date_str = date.to_rfc3339();
+
+      println!("date: {}", date_str);
+
+      let expected = types::LocalStruct {
         field1: "value".to_owned(),
         inner: types::LocalStructInner {
           field1: "value".to_owned(),
           field2: "value".to_owned(),
         },
+        time: date,
       };
+
+      let bytes = wasmrs_codec::messagepack::serialize(&expected).unwrap();
+
+      let actual: types::LocalStruct = wasmrs_codec::messagepack::deserialize(&bytes).unwrap();
+
+      assert_eq!(expected, actual);
+
+      let json = serde_json::json!({
+        "field1": "value",
+        "inner": {
+          "field1": "value",
+          "field2": "value"
+        },
+        "time":date_str
+      });
+
+      let actual: types::LocalStruct = serde_json::from_value(json).unwrap();
+
+      assert_eq!(expected, actual);
 
       let response = HttpResponse {
         version: http::HttpVersion::Http11,

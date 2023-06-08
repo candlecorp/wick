@@ -3,7 +3,7 @@
 name: http
 kind: wick/types@v1
 metadata:
-  version: 0.0.1
+  version: 0.2.0
 package:
   registry:
     host: registry.candle.dev
@@ -218,7 +218,7 @@ types:
       - name: authority
         type: string
         description: domain/port and any authentication from request line. optional
-      - name: queryParameters
+      - name: query_parameters
         type: '{string: string[]}'
         description: query parameters from request line. optional
       - name: path
@@ -232,4 +232,7 @@ types:
         description: HTTP version enum
       - name: headers
         type: '{string: string[]}'
-        description: All request headers. Duplicates are comma separated.
+        description: All request headers. Duplicates are comma separated
+      - name: remote_addr
+        type: string
+        description: The remote address of the connected client

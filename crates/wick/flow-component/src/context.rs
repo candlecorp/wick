@@ -3,7 +3,7 @@ use std::sync::Arc;
 use seeded_random::{Random, Seed};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use wick_packet::{ContextTransport, InherentData};
+use wick_packet::{date_from_millis, ContextTransport, DateTime, InherentData};
 
 #[cfg(target_family = "wasm")]
 /// A conditional trait that implements Send if the target is not wasm.
@@ -53,7 +53,7 @@ where
     Self {
       inherent: InherentContext {
         rng: Random::from_seed(Seed::unsafe_new(value.inherent.seed)),
-        timestamp: value.inherent.timestamp,
+        timestamp: date_from_millis(value.inherent.timestamp).unwrap(),
       },
       config: Arc::new(value.config),
       #[cfg(feature = "invocation")]
@@ -68,7 +68,7 @@ pub struct InherentContext {
   /// A random number generator initialized from the invocation seed.
   pub rng: Random,
   /// The timestamp of the invocation.
-  pub timestamp: u64,
+  pub timestamp: DateTime,
 }
 
 impl Clone for InherentContext {
@@ -84,7 +84,7 @@ impl From<InherentContext> for InherentData {
   fn from(value: InherentContext) -> Self {
     Self {
       seed: value.rng.gen(),
-      timestamp: value.timestamp,
+      timestamp: value.timestamp.timestamp_millis() as _,
     }
   }
 }
@@ -93,7 +93,7 @@ impl From<InherentData> for InherentContext {
   fn from(value: InherentData) -> Self {
     Self {
       rng: Random::from_seed(Seed::unsafe_new(value.seed)),
-      timestamp: value.timestamp,
+      timestamp: date_from_millis(value.timestamp).unwrap(),
     }
   }
 }
@@ -109,7 +109,7 @@ where
     Self {
       inherent: InherentContext {
         rng: Random::from_seed(Seed::unsafe_new(inherent.seed)),
-        timestamp: inherent.timestamp,
+        timestamp: date_from_millis(inherent.timestamp).unwrap(),
       },
       config: Arc::new(config),
       callback,
@@ -122,7 +122,7 @@ where
     Self {
       inherent: InherentContext {
         rng: Random::from_seed(Seed::unsafe_new(inherent.seed)),
-        timestamp: inherent.timestamp,
+        timestamp: date_from_millis(inherent.timestamp).unwrap(),
       },
       config: Arc::new(config),
     }

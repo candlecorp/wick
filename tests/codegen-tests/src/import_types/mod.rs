@@ -3,7 +3,7 @@ pub use async_trait::async_trait;
 pub(crate) use wick_component::prelude::*;
 #[allow(unused)]
 pub(crate) use wick_component::wasmrs_rx::{Observable, Observer};
-pub use wick_component::{packet as wick_packet, runtime, wasmrs, wasmrs_codec, wasmrs_rx};
+pub use wick_component::{datetime, packet as wick_packet, runtime, wasmrs, wasmrs_codec, wasmrs_rx};
 #[allow(unused)]
 pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, Box<dyn std::error::Error + Send + Sync>>;
 pub use wick_component::flow_component::Context;
@@ -86,12 +86,18 @@ pub mod types {
   #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
   #[doc = "hey"]
   pub struct LocalStruct {
+    #[serde(rename = "field1")]
     pub field1: String,
+    #[serde(rename = "inner")]
     pub inner: types::LocalStructInner,
+    #[serde(rename = "time")]
+    pub time: wick_component::datetime::DateTime,
   }
   #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
   pub struct LocalStructInner {
+    #[serde(rename = "field1")]
     pub field1: String,
+    #[serde(rename = "field2")]
     pub field2: String,
   }
   pub mod aaa {
@@ -172,30 +178,50 @@ pub mod types {
     #[doc = "HTTP request"]
     pub struct HttpRequest {
       #[doc = "method from request line enum"]
+      #[serde(rename = "method")]
       pub method: HttpMethod,
       #[doc = "scheme from request line enum"]
+      #[serde(rename = "scheme")]
       pub scheme: HttpScheme,
       #[doc = "domain/port and any authentication from request line. optional"]
+      #[serde(rename = "authority")]
       pub authority: String,
       #[doc = "query parameters from request line. optional"]
+      #[serde(rename = "query_parameters")]
+      #[serde(default)]
+      #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub query_parameters: std::collections::HashMap<String, Vec<String>>,
       #[doc = "path from request line (not including query parameters)"]
+      #[serde(rename = "path")]
       pub path: String,
       #[doc = "full URI from request line"]
+      #[serde(rename = "uri")]
       pub uri: String,
       #[doc = "HTTP version enum"]
+      #[serde(rename = "version")]
       pub version: HttpVersion,
-      #[doc = "All request headers. Duplicates are comma separated."]
+      #[doc = "All request headers. Duplicates are comma separated"]
+      #[serde(rename = "headers")]
+      #[serde(default)]
+      #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
+      #[doc = "The remote address of the connected client"]
+      #[serde(rename = "remote_addr")]
+      pub remote_addr: String,
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP response"]
     pub struct HttpResponse {
       #[doc = "HTTP version enum"]
+      #[serde(rename = "version")]
       pub version: HttpVersion,
       #[doc = "status code enum"]
+      #[serde(rename = "status")]
       pub status: StatusCode,
       #[doc = "All response headers. Supports duplicates."]
+      #[serde(rename = "headers")]
+      #[serde(default)]
+      #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
@@ -647,30 +673,50 @@ pub mod types {
     #[doc = "HTTP request"]
     pub struct HttpRequest {
       #[doc = "method from request line enum"]
+      #[serde(rename = "method")]
       pub method: HttpMethod,
       #[doc = "scheme from request line enum"]
+      #[serde(rename = "scheme")]
       pub scheme: HttpScheme,
       #[doc = "domain/port and any authentication from request line. optional"]
+      #[serde(rename = "authority")]
       pub authority: String,
       #[doc = "query parameters from request line. optional"]
+      #[serde(rename = "query_parameters")]
+      #[serde(default)]
+      #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub query_parameters: std::collections::HashMap<String, Vec<String>>,
       #[doc = "path from request line (not including query parameters)"]
+      #[serde(rename = "path")]
       pub path: String,
       #[doc = "full URI from request line"]
+      #[serde(rename = "uri")]
       pub uri: String,
       #[doc = "HTTP version enum"]
+      #[serde(rename = "version")]
       pub version: HttpVersion,
-      #[doc = "All request headers. Duplicates are comma separated."]
+      #[doc = "All request headers. Duplicates are comma separated"]
+      #[serde(rename = "headers")]
+      #[serde(default)]
+      #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
+      #[doc = "The remote address of the connected client"]
+      #[serde(rename = "remote_addr")]
+      pub remote_addr: String,
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP response"]
     pub struct HttpResponse {
       #[doc = "HTTP version enum"]
+      #[serde(rename = "version")]
       pub version: HttpVersion,
       #[doc = "status code enum"]
+      #[serde(rename = "status")]
       pub status: StatusCode,
       #[doc = "All response headers. Supports duplicates."]
+      #[serde(rename = "headers")]
+      #[serde(default)]
+      #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
@@ -1122,30 +1168,50 @@ pub mod types {
     #[doc = "HTTP request"]
     pub struct HttpRequest {
       #[doc = "method from request line enum"]
+      #[serde(rename = "method")]
       pub method: HttpMethod,
       #[doc = "scheme from request line enum"]
+      #[serde(rename = "scheme")]
       pub scheme: HttpScheme,
       #[doc = "domain/port and any authentication from request line. optional"]
+      #[serde(rename = "authority")]
       pub authority: String,
       #[doc = "query parameters from request line. optional"]
+      #[serde(rename = "query_parameters")]
+      #[serde(default)]
+      #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub query_parameters: std::collections::HashMap<String, Vec<String>>,
       #[doc = "path from request line (not including query parameters)"]
+      #[serde(rename = "path")]
       pub path: String,
       #[doc = "full URI from request line"]
+      #[serde(rename = "uri")]
       pub uri: String,
       #[doc = "HTTP version enum"]
+      #[serde(rename = "version")]
       pub version: HttpVersion,
-      #[doc = "All request headers. Duplicates are comma separated."]
+      #[doc = "All request headers. Duplicates are comma separated"]
+      #[serde(rename = "headers")]
+      #[serde(default)]
+      #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
+      #[doc = "The remote address of the connected client"]
+      #[serde(rename = "remote_addr")]
+      pub remote_addr: String,
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP response"]
     pub struct HttpResponse {
       #[doc = "HTTP version enum"]
+      #[serde(rename = "version")]
       pub version: HttpVersion,
       #[doc = "status code enum"]
+      #[serde(rename = "status")]
       pub status: StatusCode,
       #[doc = "All response headers. Supports duplicates."]
+      #[serde(rename = "headers")]
+      #[serde(default)]
+      #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
@@ -1528,16 +1594,19 @@ pub mod echo {
   pub struct Outputs {
     #[allow(unused)]
     pub(crate) output: wick_packet::Output<types::http::HttpRequest>,
+    pub(crate) time: wick_packet::Output<wick_component::datetime::DateTime>,
   }
   impl Outputs {
     pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
       Self {
         output: wick_packet::Output::new("output", channel.clone()),
+        time: wick_packet::Output::new("time", channel.clone()),
       }
     }
     #[allow(unused)]
     pub fn broadcast_err(&mut self, err: impl AsRef<str>) {
       self.output.error(&err);
+      self.time.error(&err);
     }
   }
 }
@@ -1550,6 +1619,7 @@ pub trait EchoOperation {
   #[allow(unused)]
   async fn echo(
     input: WickStream<types::http::HttpRequest>,
+    time: WickStream<wick_component::datetime::DateTime>,
     outputs: Self::Outputs,
     ctx: wick_component::flow_component::Context<Self::Config>,
   ) -> std::result::Result<(), Self::Error>;
@@ -1563,6 +1633,7 @@ pub trait EchoOperation {
   #[allow(unused)]
   async fn echo(
     input: WickStream<types::http::HttpRequest>,
+    time: WickStream<wick_component::datetime::DateTime>,
     outputs: Self::Outputs,
     ctx: wick_component::flow_component::Context<Self::Config>,
   ) -> std::result::Result<(), Self::Error>;
@@ -1572,7 +1643,9 @@ pub mod testop {
   use super::*;
   #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
   pub struct Config {
+    #[serde(rename = "A")]
     pub a: String,
+    #[serde(rename = "B")]
     pub b: u32,
   }
   impl Default for Config {
@@ -1638,7 +1711,7 @@ impl Component {
     let (channel, rx) = wasmrs_rx::FluxChannel::<wasmrs::RawPayload, wasmrs::PayloadError>::new_parts();
     let outputs = echo::Outputs::new(channel.clone());
     runtime::spawn("echo_wrapper", async move {
-      let (config, input) = wick_component :: payload_fan_out ! (input , raw : false , Box < dyn std :: error :: Error + Send + Sync > , echo :: Config , [("input" , types :: http :: HttpRequest) ,]);
+      let (config, input, time) = wick_component :: payload_fan_out ! (input , raw : false , Box < dyn std :: error :: Error + Send + Sync > , echo :: Config , [("input" , types :: http :: HttpRequest) , ("time" , wick_component :: datetime :: DateTime) ,]);
       let config = match config.await {
         Ok(Ok(config)) => config,
         _ => {
@@ -1646,7 +1719,7 @@ impl Component {
           return;
         }
       };
-      if let Err(e) = Component::echo(Box::pin(input), outputs, config).await {
+      if let Err(e) = Component::echo(Box::pin(input), Box::pin(time), outputs, config).await {
         let _ = channel.send_result(wick_packet::Packet::component_error(e.to_string()).into());
       }
     });

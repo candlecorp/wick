@@ -146,7 +146,7 @@ types:
       - name: authority
         type: string
         description: domain/port and any authentication from request line. optional
-      - name: queryParameters
+      - name: query_parameters
         type: '{string: string[]}'
         description: query parameters from request line. optional
       - name: path

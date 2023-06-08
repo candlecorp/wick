@@ -50,15 +50,13 @@ where
             s.serialize_some(&v)
         }
         "TIMESTAMP" => {
-            let v: sqlx::types::chrono::NaiveDateTime = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            let v = v.format("%Y-%m-%dT%H:%M:%S.%f").to_string();
-            s.serialize_str(&v)
-        }
-        "TIMESTAMPTZ" => {
-            use sqlx::types::chrono;
-            let v: chrono::DateTime::<chrono::Utc> = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+            let v: wick_packet::DateTime = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_str(&v.to_rfc3339())
         }
+        "TIMESTAMPTZ" => {
+          let v: wick_packet::DateTime = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+          s.serialize_str(&v.to_rfc3339())
+      }
         "UUID" => {
             let v: String = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
             s.serialize_str(&v)

@@ -33,11 +33,11 @@ impl RawComponentRouter {
 impl RawRouter for RawComponentRouter {
   fn handle(
     &self,
-    _remote_addr: SocketAddr,
+    remote_addr: SocketAddr,
     runtime: Arc<Runtime>,
     request: Request<Body>,
   ) -> BoxFuture<Result<Response<Body>, HttpError>> {
-    let handler = RawHandler::new(self.config.clone(), runtime);
+    let handler = RawHandler::new(self.config.clone(), runtime, remote_addr);
     let span = debug_span!("handling");
     span.follows_from(&self.span);
 
@@ -57,11 +57,16 @@ impl RawRouter for RawComponentRouter {
 struct RawHandler {
   config: Arc<RouterOperation>,
   engine: Arc<Runtime>,
+  remote_addr: SocketAddr,
 }
 
 impl RawHandler {
-  fn new(config: Arc<RouterOperation>, engine: Arc<Runtime>) -> Self {
-    RawHandler { config, engine }
+  fn new(config: Arc<RouterOperation>, engine: Arc<Runtime>, remote_addr: SocketAddr) -> Self {
+    RawHandler {
+      config,
+      engine,
+      remote_addr,
+    }
   }
 
   /// Serve a request.
@@ -74,6 +79,7 @@ impl RawHandler {
       config.codec,
       engine,
       req,
+      self.remote_addr,
     )
     .await;
     respond(codec, stream).await

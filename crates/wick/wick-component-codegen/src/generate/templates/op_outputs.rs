@@ -16,6 +16,7 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
       self.#field_name.error(&err);
     }
   });
+
   let output_port_fields = op
     .outputs()
     .iter()

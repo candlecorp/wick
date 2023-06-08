@@ -28,7 +28,7 @@ impl ToTokens for Dependency {
         tokens.extend(quote! { pub use wick_component::runtime; });
       }
       Dependency::Chrono => {
-        tokens.extend(quote! { pub use chrono; });
+        tokens.extend(quote! { pub use wick_component::datetime; });
       }
 
       Dependency::WasmRs => {
@@ -44,7 +44,7 @@ impl ToTokens for Dependency {
         #[cfg(not(target_family="wasm"))]
         pub use serde_json::Value;
       }),
-      Dependency::Bytes => tokens.extend(quote! { pub use bytes::Bytes; }),
+      Dependency::Bytes => tokens.extend(quote! { pub use wick_component::bytes::Bytes; }),
       Dependency::AsyncTrait => tokens.extend(quote! { pub use async_trait::async_trait; }),
       Dependency::WickComponent => tokens.extend(quote! {
         pub use wick_component;

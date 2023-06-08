@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
 use serde_json::{Number, Value};
 use tiberius::{ColumnData, FromSql, IntoSql};
 use wick_packet::{parse_date, TypeWrapper};
@@ -26,7 +26,7 @@ impl<'a> IntoSql<'a> for SqlWrapper {
       wick_interface_types::Type::F64 => v.as_f64().unwrap().into_sql(),
       wick_interface_types::Type::Bool => v.as_bool().unwrap().into_sql(),
       wick_interface_types::Type::String => v.as_str().unwrap().to_owned().into_sql(),
-      wick_interface_types::Type::Datetime => parse_date(v.as_str().unwrap()).into_sql(),
+      wick_interface_types::Type::Datetime => parse_date(v.as_str().unwrap()).unwrap().into_sql(),
       wick_interface_types::Type::Bytes => unimplemented!("Bytes are not supported yet."),
       wick_interface_types::Type::Named(_) => unimplemented!("Custom types are not supported yet."),
       wick_interface_types::Type::List { .. } => unimplemented!("Lists are not supported yet."),
@@ -85,7 +85,7 @@ impl<'a> FromSql<'a> for FromSqlWrapper {
       ColumnData::DateTime(_)
       | ColumnData::SmallDateTime(_)
       | ColumnData::DateTime2(_)
-      | ColumnData::DateTimeOffset(_) => NaiveDateTime::from_sql(col)?.map(|d| Value::String(d.to_string())),
+      | ColumnData::DateTimeOffset(_) => DateTime::<Utc>::from_sql(col)?.map(|d| Value::String(d.to_string())),
 
       ColumnData::Time(_) => NaiveTime::from_sql(col)?.map(|d| Value::String(d.to_string())),
       ColumnData::Date(_) => NaiveDate::from_sql(col)?.map(|d| Value::String(d.to_string())),
