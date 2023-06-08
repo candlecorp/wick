@@ -16,8 +16,8 @@ pub(crate) struct RegistryPushCommand {
   #[clap(flatten)]
   pub(crate) oci_opts: crate::oci::Options,
 
-  #[clap(long = "latest", action)]
-  pub(crate) latest: bool,
+  #[clap(long = "tag")]
+  pub(crate) tags: Vec<String>,
 }
 
 #[allow(clippy::unused_async)]
@@ -56,20 +56,18 @@ pub(crate) async fn handle(
   span.in_scope(|| info!(reference, "pushing artifact"));
   span.in_scope(|| debug!(options=?oci_opts, reference= &reference, "pushing reference"));
 
-  let url = if opts.latest {
-    // there must be a better way than cloning the package here, feel free to fix it.
-    let url = package.clone().push(&reference, &oci_opts).await?;
-
-    span.in_scope(|| info!(%url, "artifact pushed"));
-
-    let reference = package.tagged_reference("latest").unwrap();
-    span.in_scope(|| info!(reference, "pushing latest tag"));
-
-    package.push(&reference, &oci_opts).await?;
-    url
+  let url = if !opts.tags.is_empty() {
+    for tag in &opts.tags {
+      let mut pack = package.clone();
+      let tagged_reference = pack.tagged_reference(tag).unwrap();
+      span.in_scope(|| info!(reference = &tagged_reference, "pushing tag"));
+      pack.push(&tagged_reference, &oci_opts).await?;
+    }
+    package.push(&reference, &oci_opts).await?
   } else {
     package.push(&reference, &oci_opts).await?
   };
+
   span.in_scope(|| info!(%url, "artifact pushed"));
 
   Ok(())
