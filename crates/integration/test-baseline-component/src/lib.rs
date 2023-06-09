@@ -164,3 +164,26 @@ impl std::error::Error for LengthError {
 
 static MINIMUM_LENGTH: usize = 8;
 static MAXIMUM_LENGTH: usize = 512;
+
+#[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
+impl StrftimeOperation for Component {
+  type Error = String;
+  type Outputs = strftime::Outputs;
+  type Config = strftime::Config;
+
+  async fn strftime(
+    mut input: WickStream<datetime::DateTime>,
+    mut outputs: Self::Outputs,
+    ctx: Context<Self::Config>,
+  ) -> Result<(), Self::Error> {
+    let fmt = &ctx.config.format;
+    while let Some(input) = input.next().await {
+      let input = propagate_if_error!(input, outputs, continue);
+      let output = input.format(fmt).to_string();
+      outputs.output.send(&output);
+    }
+    outputs.output.done();
+    Ok(())
+  }
+}

@@ -15,10 +15,11 @@ grpc = ['wick-rpc', 'tonic/tls', 'wick-invocation-server', 'wick-config']
 mesh = ['wick-rpc', 'wick-config']
 
 [dependencies]
-flow-component = { workspace = true }
+flow-component = { workspace = true, features = ["invocation"] }
 wick-rpc = { workspace = true, optional = true }
 wick-config = { workspace = true, optional = true }
-wick-packet = { workspace = true }
+wick-interface-types = { workspace = true }
+wick-packet = { workspace = true, features = ["datetime"] }
 wick-invocation-server = { workspace = true, optional = true }
 cfg-if = { workspace = true }
 tonic = { workspace = true, optional = true }

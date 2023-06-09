@@ -20,7 +20,7 @@ localgen = []
 crate-type = ["cdylib"]
 
 [dependencies]
-wick-component = { path = "../../wick/wick-component" }
+wick-component = { path = "../../wick/wick-component", features = ["datetime"] }
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"
 seeded-random = { path = "../../misc/seeded-random", default-features = false, features = [
