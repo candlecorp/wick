@@ -19,7 +19,7 @@ default:
 # Build optimized wick binary
 install:
   @echo "Building release version of wick..."
-  @echo "Use `just install-debug` to build debug version."
+  @echo "Use 'just install-debug' to build debug version."
   cargo install --path crates/bins/wick
 
 # Build wick binary with debug symbols and additional output
