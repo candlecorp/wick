@@ -42,9 +42,11 @@ pub(crate) fn field_pair(
         _ => quote! {},
       };
 
-      // No longer used, keeping this here because it almost certainly will be used again.
       #[allow(clippy::match_single_binding)]
       let deserialize_with = match field.ty() {
+        wick_interface_types::Type::Datetime => quote! {
+          #[serde(deserialize_with = "wick_component::datetime::serde::from_str_or_integer")]
+        },
         _ => quote! {},
       };
 

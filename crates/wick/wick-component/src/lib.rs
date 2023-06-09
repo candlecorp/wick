@@ -98,7 +98,7 @@ pub mod datetime {
   pub use chrono::offset::TimeZone;
   pub use chrono::serde::ts_milliseconds;
   pub use chrono::{DateTime as ChronoDateTime, Utc};
-  pub use wick_packet::{date_from_millis, DateTime};
+  pub use wick_packet::{date_from_millis, serde, DateTime};
 }
 #[cfg(feature = "json")]
 pub use serde_json::{from_slice, from_str, from_value, json, to_value};

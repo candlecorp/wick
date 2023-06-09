@@ -143,7 +143,7 @@ impl Packet {
 
   /// Partially decode a [Packet] and wrap it into a [TypeWrapper].
   pub fn to_type_wrapper(self, ty: Type) -> Result<TypeWrapper, Error> {
-    self.payload.decode_into(ty)
+    self.payload.type_wrapper(ty)
   }
 
   /// Decode a [Packet] into a [serde_json::Value].
@@ -259,8 +259,8 @@ impl PacketPayload {
     }
   }
 
-  /// Try to deserialize a [Packet] into the target type
-  pub fn decode_into(self, sig: Type) -> Result<TypeWrapper, Error> {
+  /// Partially process a [Packet] as [Type].
+  pub fn type_wrapper(self, sig: Type) -> Result<TypeWrapper, Error> {
     let val = match sig {
       Type::I8 => TypeWrapper::new(sig, self.decode::<i8>()?.into()),
       Type::I16 => TypeWrapper::new(sig, self.decode::<i16>()?.into()),

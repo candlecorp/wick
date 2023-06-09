@@ -111,7 +111,7 @@ pub mod validation;
 pub use collection_link::ComponentReference;
 pub use context::{ContextTransport, GenericConfig, InvocationRequest};
 #[cfg(feature = "datetime")]
-pub use datetime::{date_from_millis, parse_date, DateTime};
+pub use datetime::{date_from_millis, parse_date, serde, DateTime};
 pub use entity::Entity;
 pub use error::{Error, ParseError};
 pub use inherent::InherentData;

@@ -52,6 +52,16 @@ component:
       outputs:
         - name: output
           type: string
+    - name: strftime
+      with:
+        - name: format
+          type: string
+      inputs:
+        - name: input
+          type: datetime
+      outputs:
+        - name: output
+          type: string
 tests:
   - name: baseline
     with:
@@ -59,12 +69,12 @@ tests:
     cases:
       - name: add 1 and 2
         operation: add
-        input:
+        inputs:
           - name: left
             value: 1
           - name: right
             value: 2
-        output:
+        outputs:
           - name: output
             value: 3
           - name: output
@@ -72,12 +82,12 @@ tests:
               done: true
       - name: add 2000 and 3292982
         operation: add
-        input:
+        inputs:
           - name: left
             value: 2000
           - name: right
             value: 3292982
-        output:
+        outputs:
           - name: output
             value: 3294982
           - name: output
@@ -87,10 +97,10 @@ tests:
         operation: power
         with:
           exponent: 5
-        input:
+        inputs:
           - name: input
             value: 2
-        output:
+        outputs:
           - name: output
             value: 32
           - name: output
@@ -98,16 +108,26 @@ tests:
               done: true
       - name: validate
         operation: validate
-        input:
+        inputs:
           - name: input
             value: 'hello'
-        output:
+        outputs:
           - name: output
             error: Needs to be longer than 8 characters
+      - name: time format
+        operation: strftime
+        with:
+          format: '%Y-%m-%d'
+        inputs:
+          - name: input
+            value: 1686327041827
+        outputs:
+          - name: output
+            value: 2023-6-9
       - name: uuid
         operation: uuid
         inherent:
           seed: 1234
-        output:
+        outputs:
           - name: output
             value: '99e87b0e-9158-531e-eeb5-03ff15266e2b'

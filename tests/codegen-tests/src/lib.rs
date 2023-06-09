@@ -78,7 +78,7 @@ mod test1 {
           "field1": "value",
           "field2": "value"
         },
-        "time":date_str
+        "time":date.timestamp_millis()
       });
 
       let actual: types::LocalStruct = serde_json::from_value(json).unwrap();

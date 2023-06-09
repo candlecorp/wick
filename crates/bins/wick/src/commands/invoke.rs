@@ -119,14 +119,17 @@ pub(crate) async fn handle(
   host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
-  let target_schematic = signature.get_operation(&component);
+  let op_signature = signature.get_operation(&component);
 
   let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
-  if let Some(target_schematic) = target_schematic {
+  if let Some(target_schematic) = op_signature {
     if target_schematic.inputs.is_empty() {
       check_stdin = false;
     }
+  } else {
+    bail!("Operation '{}' not found in component '{}'", component, opts.path);
   }
+  let op_signature = op_signature.unwrap();
 
   let inherent_data = opts.seed.map_or_else(InherentData::unsafe_default, |seed| {
     InherentData::new(
@@ -162,7 +165,7 @@ pub(crate) async fn handle(
   } else {
     let data = crate::utils::packet_from_kv_json(&opts.data)?;
 
-    let args = parse_args(&opts.args)?;
+    let args = parse_args(&opts.args, op_signature)?;
     trace!(args= ?args, "parsed CLI arguments");
     let mut packets = Vec::new();
     let mut seen_ports = HashSet::new();
