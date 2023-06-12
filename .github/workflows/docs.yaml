@@ -24,10 +24,10 @@ jobs:
         run: hugo --minify
 
       - name: Publish Wick Package
-        uses: candlecorp/wick-push-action@v0.0.2
+        uses: candlecorp/wick-push-action@v0.0.3
         id: push
         with:
           path: "docs/docs.wick"
-          latest: "true"
           username: ${{ secrets.CANDLE_REG_USERNAME }}
           password: ${{ secrets.CANDLE_REG_PASSWORD }}
+          tags: latest
