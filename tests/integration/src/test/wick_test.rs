@@ -31,7 +31,7 @@ async fn baseline_component() -> Result<()> {
         .build()
         .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
       host
-        .start_engine(None)
+        .start_runtime(None)
         .await
         .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
       let component: SharedComponent = Arc::new(wick_host::HostComponent::new(host));

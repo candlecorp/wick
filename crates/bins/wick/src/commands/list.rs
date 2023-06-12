@@ -46,7 +46,7 @@ pub(crate) async fn handle(
 
   let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 
-  host.start_engine(None).await?;
+  host.start_runtime(None).await?;
   let signature = host.get_signature()?;
 
   let mut output = String::new();

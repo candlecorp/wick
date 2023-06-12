@@ -22,7 +22,7 @@ pub struct InvocationServer {
 
 impl std::fmt::Debug for InvocationServer {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("InvocationServer").field("stats", &self.stats).finish()
+    f.debug_struct("InvocationServer").finish()
   }
 }
 

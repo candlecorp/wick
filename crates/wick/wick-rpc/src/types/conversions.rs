@@ -19,9 +19,10 @@ impl TryFrom<rpc::ComponentSignature> for wick::ComponentSignature {
       name: Some(v.name),
       format: match v.format {
         0 => wick::ComponentVersion::V0,
+        1 => wick::ComponentVersion::V1,
         _ => {
           return Err(RpcError::Component(format!(
-            "Invalid collection version ({}) for this runtime",
+            "Invalid component version ({}) for this runtime",
             v.format
           )))
         }

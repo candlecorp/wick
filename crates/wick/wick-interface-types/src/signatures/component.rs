@@ -60,8 +60,8 @@ impl ComponentSignature {
 
   #[must_use]
   /// Get the [OperationSignature] for the requested component.
-  pub fn get_operation(&self, field: &str) -> Option<&OperationSignature> {
-    self.operations.iter().find(|op| op.name == field)
+  pub fn get_operation(&self, operation_name: &str) -> Option<&OperationSignature> {
+    self.operations.iter().find(|op| op.name == operation_name)
   }
 
   /// Add a [OperationSignature] to the collection.

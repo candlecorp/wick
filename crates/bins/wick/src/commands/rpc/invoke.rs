@@ -63,6 +63,8 @@ pub(crate) async fn handle(
   )
   .await?;
 
+  let signature = client.list().await?;
+
   let origin = Entity::server(crate::BIN_NAME);
   let target = Entity::local(&opts.component);
 
@@ -77,6 +79,11 @@ pub(crate) async fn handle(
         .unwrap(),
     )
   });
+
+  let op_sig = signature
+    .get(0)
+    .and_then(|sig| sig.get_operation(&opts.component))
+    .ok_or_else(|| anyhow::anyhow!("operation not found: {}", opts.component))?;
 
   let check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
 
@@ -96,7 +103,7 @@ pub(crate) async fn handle(
   } else {
     let data = crate::utils::packet_from_kv_json(&opts.data)?;
 
-    let args = parse_args(&opts.args)?;
+    let args = parse_args(&opts.args, op_sig)?;
     let (tx, stream) = PacketStream::new_channels();
     let mut seen_ports = HashSet::new();
     for packet in args {

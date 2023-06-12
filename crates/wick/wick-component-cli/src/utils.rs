@@ -35,16 +35,15 @@ pub fn parse_args(args: &[String], sig: &OperationSignature) -> Result<Vec<Packe
       // Strings must be explicit because a bare number will be parsed as a number.
       Type::Datetime | Type::String => {
         if is_valid(value) {
-          coerce_string(name, value, input.ty())?.into()
+          coerce_string(name, value, input.ty())?
         } else {
           // if it's not valid JSON then it's a bare string.
           value.into()
         }
       }
       // serde_json does an adequate job on the rest.
-      _ => encode::<Value>(name, value, input.ty())?.into(),
+      _ => encode::<Value>(name, value, input.ty())?,
     };
-    println!("value: {:?}", value);
     // Note on above: complex objects with embedded Datetime/Strings
     // may not be parsed correctly but that's an edge case we're ignoring for now.
 

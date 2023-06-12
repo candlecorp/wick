@@ -3,6 +3,7 @@
 mod test;
 
 use anyhow::Result;
+use flow_component::Component;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use wick_packet::{packets, Packet};

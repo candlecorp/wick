@@ -9,7 +9,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use flow_component::{Component, RuntimeCallback};
+use flow_component::{Component, ComponentError, RuntimeCallback};
+use futures::{FutureExt, TryFutureExt};
 use parking_lot::Mutex;
 use tracing::{trace_span, Span};
 use tracing_futures::Instrument;
@@ -73,14 +74,19 @@ impl Interpreter {
     debug!(handlers = ?handlers.keys(), "initializing interpreter");
     let mut exposed_ops = HashMap::new();
 
-    for handler in handlers.inner().values() {
-      if handler.is_exposed() {
-        for op in &handler.component.signature().operations {
-          trace!(operation = op.name, "interpreter:exposing operation");
-          exposed_ops.insert(op.name.clone(), handler.component.clone());
-        }
-      }
+    let exposed = handlers.inner().values().filter(|h| h.is_exposed()).collect::<Vec<_>>();
+    if exposed.len() > 1 {
+      return Err(Error::MultipleExposedComponents(
+        exposed.iter().map(|h| h.namespace().to_owned()).collect(),
+      ));
     }
+    let signature = exposed.get(0).map(|handler| {
+      for op in &handler.component.signature().operations {
+        trace!(operation = op.name, "interpreter:exposing operation");
+        exposed_ops.insert(op.name.clone(), handler.component.clone());
+      }
+      handler.component.signature().clone()
+    });
     handlers.add_core(&network)?;
     handlers.add(NamespaceHandler::new(NS_NULL, Box::new(NullComponent::new())))?;
 
@@ -100,9 +106,12 @@ impl Interpreter {
     // Make the self:: component
     let components = Arc::new(handlers);
     let self_component = SchematicComponent::new(components.clone(), program.state(), &dispatcher);
-    let self_signature = self_component.signature().clone();
 
-    debug!(?self_signature, "signature");
+    // If we expose a component, expose its signature as our own.
+    // Otherwise expose our self signature.
+    let signature = signature.unwrap_or_else(|| self_component.signature().clone());
+
+    debug!(?signature, "signature");
 
     let event_loop = EventLoop::new(channel);
     let mut handled_opts = program.operations().iter().map(|s| s.name()).collect::<Vec<_>>();
@@ -116,7 +125,7 @@ impl Interpreter {
     Ok(Self {
       program,
       dispatcher,
-      signature: self_signature,
+      signature,
       components,
       self_component,
       event_loop,
@@ -193,52 +202,13 @@ impl Interpreter {
   }
 
   pub async fn invoke(&self, invocation: Invocation, config: Option<GenericConfig>) -> Result<PacketStream, Error> {
-    let known_targets = || {
-      let mut hosted: Vec<_> = self.components.inner().keys().cloned().collect();
-      if let Some(ns) = &self.namespace {
-        hosted.push(ns.clone());
-      }
-      hosted
-    };
-    let span = trace_span!("invoke", tx_id = %invocation.tx_id);
     let cb = self.get_callback();
-    span.in_scope(|| trace!(?invocation, "invoking"));
-    let stream = match &invocation.target {
-      Entity::Operation(ns, name) => {
-        if ns == NS_SELF || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
-          if let Some(component) = self.exposed_ops.get(name) {
-            span.in_scope(|| trace!(entity=%invocation.target, "invoke::exposed::operation"));
-            return Ok(
-              component
-                .handle(invocation, config, cb)
-                .instrument(span)
-                .await
-                .map_err(ExecutionError::ComponentError)?,
-            );
-          }
-          span.in_scope(|| trace!(entity=%invocation.target, "invoke::composite::operation"));
-          self.invoke_operation(invocation).instrument(span).await?
-        } else {
-          span.in_scope(|| trace!(entity=%invocation.target, "invoke::instance::operation"));
-          self
-            .components
-            .get(ns)
-            .ok_or_else(|| Error::TargetNotFound(invocation.target.clone(), known_targets()))?
-            .component
-            .handle(invocation, config, cb)
-            .instrument(span)
-            .await
-            .map_err(ExecutionError::ComponentError)?
-        }
-      }
-      _ => return Err(Error::TargetNotFound(invocation.target, known_targets())),
-    };
+    let stream = self
+      .handle(invocation, config, cb)
+      .await
+      .map_err(ExecutionError::ComponentError)?;
 
     Ok(stream)
-  }
-
-  pub fn get_export_signature(&self) -> &ComponentSignature {
-    &self.signature
   }
 
   pub async fn start(
@@ -249,7 +219,7 @@ impl Interpreter {
     self.event_loop.start(options.unwrap_or_default(), observer).await;
   }
 
-  pub async fn shutdown(&self) -> Result<(), Error> {
+  pub async fn stop(&self) -> Result<(), Error> {
     let shutdown = self.event_loop.shutdown().await;
     if let Err(error) = &shutdown {
       self.span.in_scope(|| error!(%error,"error shutting down event loop"));
@@ -269,6 +239,77 @@ impl Interpreter {
     }
 
     shutdown
+  }
+}
+
+impl Component for Interpreter {
+  fn handle(
+    &self,
+    invocation: Invocation,
+    config: Option<GenericConfig>,
+    cb: Arc<RuntimeCallback>,
+  ) -> flow_component::BoxFuture<Result<PacketStream, ComponentError>> {
+    let known_targets = || {
+      let mut hosted: Vec<_> = self.components.inner().keys().cloned().collect();
+      if let Some(ns) = &self.namespace {
+        hosted.push(ns.clone());
+      }
+      hosted
+    };
+    let span = trace_span!("invoke", tx_id = %invocation.tx_id);
+    span.in_scope(|| trace!(?invocation, "invoking"));
+    let from_exposed = self.exposed_ops.get(invocation.target.operation_id());
+
+    Box::pin(async move {
+      let stream = match &invocation.target {
+        Entity::Operation(ns, _) => {
+          if ns == NS_SELF || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
+            if let Some(component) = from_exposed {
+              span.in_scope(|| trace!(entity=%invocation.target, "invoke::exposed::operation"));
+              return component
+                .handle(invocation, config, cb)
+                .instrument(span)
+                .await
+                .map_err(ComponentError::new);
+            }
+            span.in_scope(|| trace!(entity=%invocation.target, "invoke::composite::operation"));
+            self
+              .invoke_operation(invocation)
+              .instrument(span)
+              .await
+              .map_err(ComponentError::new)?
+          } else {
+            span.in_scope(|| trace!(entity=%invocation.target, "invoke::instance::operation"));
+            self
+              .components
+              .get(ns)
+              .ok_or_else(|| Error::TargetNotFound(invocation.target.clone(), known_targets()))
+              .map_err(ComponentError::new)?
+              .component
+              .handle(invocation, config, cb)
+              .instrument(span)
+              .await
+              .map_err(ComponentError::new)?
+          }
+        }
+        _ => {
+          return Err(ComponentError::new(Error::TargetNotFound(
+            invocation.target,
+            known_targets(),
+          )))
+        }
+      };
+
+      Ok::<_, ComponentError>(stream)
+    })
+  }
+
+  fn signature(&self) -> &ComponentSignature {
+    &self.signature
+  }
+
+  fn shutdown(&self) -> flow_component::BoxFuture<Result<(), ComponentError>> {
+    self.stop().map_err(ComponentError::new).boxed()
   }
 }
 

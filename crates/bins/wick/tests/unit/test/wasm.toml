@@ -1,7 +1,7 @@
 bin.name = "wick"
 args = ["test", "../../integration/test-baseline-component/component.yaml"]
 stdout = """
-1..5 # Test
+1..6 # Test
 # (test name='add 1 and 2', operation='add')
 ok 1 (test name='add 1 and 2', operation='add'): invocation succeeded
 # (test name='add 2000 and 3292982', operation='add')
@@ -10,6 +10,8 @@ ok 2 (test name='add 2000 and 3292982', operation='add'): invocation succeeded
 ok 3 (test name='2^5', operation='power'): invocation succeeded
 # (test name='validate', operation='validate')
 ok 4 (test name='validate', operation='validate'): invocation succeeded
+# (test name='time format', operation='strftime')
+ok 5 (test name='time format', operation='strftime'): invocation succeeded
 # (test name='uuid', operation='uuid')
-ok 5 (test name='uuid', operation='uuid'): invocation succeeded
+ok 6 (test name='uuid', operation='uuid'): invocation succeeded
 """

@@ -116,20 +116,18 @@ pub(crate) async fn handle(
     .span(span)
     .build()?;
 
-  host.start_engine(opts.seed.map(Seed::unsafe_new)).await?;
+  host.start_runtime(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
-  let op_signature = signature.get_operation(&component);
+  let op_signature = signature
+    .get_operation(&component)
+    .ok_or_else(|| anyhow::anyhow!("operation not found: {}", component))?;
 
-  let mut check_stdin = !opts.no_input && opts.data.is_empty() && opts.args.is_empty();
-  if let Some(target_schematic) = op_signature {
-    if target_schematic.inputs.is_empty() {
-      check_stdin = false;
-    }
+  let check_stdin = if op_signature.inputs.is_empty() {
+    false
   } else {
-    bail!("Operation '{}' not found in component '{}'", component, opts.path);
-  }
-  let op_signature = op_signature.unwrap();
+    !opts.no_input && opts.data.is_empty() && opts.args.is_empty()
+  };
 
   let inherent_data = opts.seed.map_or_else(InherentData::unsafe_default, |seed| {
     InherentData::new(
