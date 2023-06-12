@@ -13,7 +13,17 @@ use tokio_stream::StreamExt;
 use tracing::Span;
 use wick_config::config::components::Codec;
 use wick_interface_http::types as wick_http;
-use wick_packet::{packets, Entity, GenericConfig, InherentData, Invocation, Observer, Packet, PacketStream};
+use wick_packet::{
+  packets,
+  Entity,
+  GenericConfig,
+  InherentData,
+  Invocation,
+  Observer,
+  Packet,
+  PacketPayload,
+  PacketStream,
+};
 
 use super::conversions::convert_response;
 use super::HttpError;
@@ -258,6 +268,9 @@ pub(super) async fn stream_to_json(stream: PacketStream) -> Result<Value, HttpEr
   while let Some(packet) = stream.next().await {
     match packet {
       Ok(p) => {
+        if let PacketPayload::Err(err) = p.payload() {
+          return Err(HttpError::InvalidResponse(err.msg().to_owned()));
+        }
         if !p.has_data() {
           continue;
         }

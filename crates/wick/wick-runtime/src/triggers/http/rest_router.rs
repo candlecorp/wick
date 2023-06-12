@@ -193,3 +193,56 @@ impl RestRoute {
     })
   }
 }
+
+#[cfg(test)]
+mod test {
+
+  // "port_limited" tests are grouped together and run on a single thread to prevent port contention
+  mod port_limited {
+
+    use anyhow::Result;
+
+    use super::super::*;
+    use crate::resources::Resource;
+    use crate::test::load_test_manifest;
+    use crate::triggers::http::Http;
+    use crate::Trigger;
+
+    static PORT: &str = "9005";
+
+    #[test_logger::test(tokio::test)]
+    async fn rest_errors() -> Result<()> {
+      std::env::set_var("HTTP_PORT", PORT);
+      let app_config = load_test_manifest("rest-router-errors.wick").await?.try_app_config()?;
+
+      let trigger = Http::default();
+      let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
+      let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
+      let trigger_config = app_config.triggers()[0].clone();
+      trigger
+        .run(
+          "test".to_owned(),
+          app_config,
+          trigger_config,
+          resources,
+          Span::current(),
+        )
+        .await?;
+
+      let client = reqwest::Client::new();
+      let res = client
+        .post(format!("http://0.0.0.0:{}/bad_op", PORT))
+        .body(r#"{"message": "my json message"}"#)
+        .send()
+        .await?;
+
+      assert!(res.status() != 404);
+      let body = res.text().await?;
+      println!("Response body: \"{}\"", body);
+      assert!(body.contains("no field named 'nonexistant'"));
+
+      trigger.shutdown_gracefully().await?;
+      Ok(())
+    }
+  }
+}

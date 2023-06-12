@@ -1,7 +1,9 @@
+mod parsers;
+
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{alpha1, alphanumeric1, char, digit1, multispace0};
-use nom::combinator::{eof, recognize};
+use nom::combinator::{eof, map, recognize};
 use nom::error::ParseError;
 use nom::multi::{many0, many1};
 use nom::sequence::{delimited, pair, preceded, terminated};
@@ -95,14 +97,21 @@ fn instance(input: &str) -> IResult<&str, InstanceTarget> {
 }
 
 pub(crate) fn instance_port(input: &str) -> IResult<&str, InstancePort> {
-  let (i, (name, parts)) = pair(identifier, many0(preceded(char('.'), alt((identifier, digit1)))))(input)?;
+  let (i, (name, parts)) = pair(
+    identifier,
+    many0(preceded(
+      char('.'),
+      alt((
+        map(identifier, |r: &str| r.to_owned()),
+        map(digit1, |r: &str| r.to_owned()),
+        parsers::parse_string,
+      )),
+    )),
+  )(input)?;
   if parts.is_empty() {
     Ok((i, InstancePort::Named(name.to_owned())))
   } else {
-    Ok((
-      i,
-      InstancePort::Path(name.to_owned(), parts.into_iter().map(|x| x.to_owned()).collect()),
-    ))
+    Ok((i, InstancePort::Path(name.to_owned(), parts.into_iter().collect())))
   }
 }
 
@@ -337,13 +346,14 @@ mod tests {
     "this.output.field.other.0 -> <>.output",
     flow_expr_conn(InstTgt::named("this"), InstPort::path("output",vec!["field".to_owned(),"other".to_owned(), "0".to_owned()]), InstTgt::Default, InstPort::named("output"))
   )]
-  // #[case(
-  //   "this.output.field -> other.input",
-  //   flow_block(&[
-  //     flow_expr_conn(InstTgt::named("this"), "output", anon("core::pluck"), "input"),
-  //     flow_expr_conn(anon("core::pluck"), "output",named("other"), "input",)
-  //   ])
-  // )]
+  #[case(
+    "this.output.\"field\" -> <>.output",
+    flow_expr_conn(InstTgt::named("this"), InstPort::path("output",vec!["field".to_owned()]), InstTgt::Default, InstPort::named("output"))
+  )]
+  #[case(
+    "this.output.\"field with spaces and \\\" quotes\" -> <>.output",
+    flow_expr_conn(InstTgt::named("this"), InstPort::path("output",vec!["field with spaces and \" quotes".to_owned()]), InstTgt::Default, InstPort::named("output"))
+  )]
   fn test_flow_expression(#[case] input: &'static str, #[case] expected: FE) -> Result<()> {
     let (t, actual) = flow_expression(input)?;
     assert_eq!(actual, expected);

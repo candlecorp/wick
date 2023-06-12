@@ -73,7 +73,7 @@ impl Operation for Op {
             if packet.has_data() {
               let obj = packet.decode_value()?;
               let value = pluck(&obj, &field).map_or_else(
-                || Packet::err("output", format!("could not pluck field {}: not found", field)),
+                || Packet::err("output", format!("no field named '{}' in data", field)),
                 |value| Packet::encode("output", value),
               );
 
