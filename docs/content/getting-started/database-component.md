@@ -93,4 +93,35 @@ This would return a json object conatining all the relevant data for user id 1.
 
 ### Done!
 
-And just like that, we've got a database hooked up and are making calls to it. You can use this same structure to hook up to any database and make as many calls you'd like.
+Here is what the complete `db.wick` file would look like:
+
+```yaml
+name: demo_db
+kind: wick/component@v1
+resources:
+  - name: MYDATABASE
+    resource:
+      kind: wick/resource/url@v1
+      url: postgres://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME
+component:
+  kind: wick/component/sql@v1
+  resource: MYDATABASE
+  tls: false
+  operations:
+   - name: get_user
+      inputs:
+        - name: id
+          type: i32
+      outputs:
+        - name: output
+          type: object
+      arguments:
+        - id
+      query: |
+        SELECT * FROM users WHERE id = $1
+
+```
+
+And just like that, we've got a database hooked up and are making calls to it. You can use this same structure to hook up to any database and make as many calls you'd like. To see more database examples, check out our [database examples](https://github.com/candlecorp/wick/tree/main/examples/db)
+
+Note: Wick now also has `wick new component sql` command that will help you get started with a database component. It will create a new `.wick` file with the database resource and a sample operation.

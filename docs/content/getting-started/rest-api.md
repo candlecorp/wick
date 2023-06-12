@@ -50,4 +50,31 @@ With those 3 fields, we have set a uri destination and assigned an operation to 
 
 ### Done!
 
-This is essentailly all you need to create rest API routes in Wick. To see how it all works, check out our full web application demo.
+Here is what your complete `demo.wick` file would look like:
+
+```yaml
+kind: wick/app@v1
+name: rest_demo
+resources:
+  - name: http
+    resource:
+      kind: wick/resource/tcpport@v1
+      port: 8999
+      address:
+triggers:
+  - kind: wick/trigger/http@v1
+    resource: http
+    routers:
+      - kind: wick/router/rest@v1
+        path: /api/
+        routes:
+         - uri: "desired url endpoint"
+           operation: <component name>::<operation name>
+           methods:
+             - POST
+
+```
+
+This is essentailly all you need to create rest API routes in Wick. To see how it all works, check out our http example applications [here](https://github.com/candlecorp/wick/tree/main/examples/http).
+
+Note: You can use `wick new component http` to help you get started with an http component. It will create a new `.wick` file with the http resource and a sample operation.
