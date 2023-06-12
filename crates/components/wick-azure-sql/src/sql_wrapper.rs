@@ -9,7 +9,7 @@ pub(crate) struct SqlWrapper(pub(crate) TypeWrapper);
 impl<'a> IntoSql<'a> for SqlWrapper {
   fn into_sql(self) -> ColumnData<'a> {
     let v = self.0.inner();
-    println!("type sig is {:?}", self.0.type_signature());
+
     match self.0.type_signature() {
       wick_interface_types::Type::I8 => {
         let v = to_int::<i16>(v).unwrap();
