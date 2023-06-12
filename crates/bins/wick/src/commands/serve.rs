@@ -51,7 +51,7 @@ pub(crate) async fn handle(
     .span(span)
     .build()?;
 
-  host.start(Some(0)).await?;
+  host.start(None).await?;
   info!("Host started");
   #[allow(clippy::option_if_let_else)]
   match host.get_server_info() {

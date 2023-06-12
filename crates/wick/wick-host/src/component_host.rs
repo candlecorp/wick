@@ -52,8 +52,11 @@ impl ComponentHost {
     self.span.in_scope(|| debug!("host starting"));
 
     // self.mesh = self.get_mesh().await?;
-    self.start_engine(seed.map(Seed::unsafe_new)).await?;
+    self.span.in_scope(|| trace!("starting runtime"));
+    self.start_runtime(seed.map(Seed::unsafe_new)).await?;
+    self.span.in_scope(|| trace!("starting servers"));
     let state = self.start_servers().await?;
+    self.span.in_scope(|| trace!("host started"));
     self.server_metadata = Some(state);
 
     Ok(())
@@ -96,26 +99,26 @@ impl ComponentHost {
     self.runtime.as_ref().ok_or(Error::NoEngine).map(|engine| engine.uid)
   }
 
-  pub async fn start_engine(&mut self, seed: Option<Seed>) -> Result<()> {
+  pub async fn start_runtime(&mut self, seed: Option<Seed>) -> Result<()> {
     ensure!(
       self.runtime.is_none(),
       crate::Error::InvalidHostState("Host already has a engine running".into())
     );
 
-    let mut engine_builder = RuntimeBuilder::from_definition(self.manifest.clone());
+    let mut rt_builder = RuntimeBuilder::from_definition(self.manifest.clone());
     let span = debug_span!("host");
     span.follows_from(&self.span);
-    engine_builder = engine_builder.span(span);
-    engine_builder = engine_builder.namespace(self.get_host_id());
-    engine_builder = engine_builder.config(self.config.clone());
-    engine_builder = engine_builder.allow_latest(self.manifest.allow_latest());
+    rt_builder = rt_builder.span(span);
+    rt_builder = rt_builder.namespace(self.get_host_id());
+    rt_builder = rt_builder.config(self.config.clone());
+    rt_builder = rt_builder.allow_latest(self.manifest.allow_latest());
     if let Some(insecure) = self.manifest.insecure_registries() {
-      engine_builder = engine_builder.allowed_insecure(insecure.to_vec());
+      rt_builder = rt_builder.allowed_insecure(insecure.to_vec());
     }
 
-    let engine = engine_builder.build(seed).await?;
+    let runtime = rt_builder.build(seed).await?;
 
-    self.runtime = Some(engine);
+    self.runtime = Some(runtime);
     Ok(())
   }
 

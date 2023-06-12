@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
+use flow_component::Component;
 use flow_graph_interpreter::{HandlerMap, InterpreterOptions, NamespaceHandler};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -141,7 +142,6 @@ impl RuntimeService {
       if let Some(main_component) = instantiate_import(&binding, component_init).await? {
         let reported_sig = main_component.component().signature();
         let manifest_sig = config.manifest.signature()?;
-        span.in_scope(|| debug!("manifest_sig: {:?}", config.manifest));
 
         expect_signature_match(
           config.manifest.source(),
@@ -263,7 +263,7 @@ fn assert_constraints(constraints: &[RuntimeConstraint], components: &HandlerMap
 
 impl InvocationHandler for RuntimeService {
   fn get_signature(&self) -> std::result::Result<ComponentSignature, ComponentError> {
-    let mut signature = self.interpreter.get_export_signature().clone();
+    let mut signature = self.interpreter.signature().clone();
     signature.name = Some(self.id.as_hyphenated().to_string());
 
     Ok(signature)
@@ -385,7 +385,7 @@ mod test {
     }
   }
 
-  impl flow_component::Component for TestComponent {
+  impl Component for TestComponent {
     fn handle(
       &self,
       _invocation: Invocation,

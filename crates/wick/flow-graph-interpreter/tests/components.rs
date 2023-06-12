@@ -1,6 +1,7 @@
 mod test;
 
 use anyhow::Result;
+use flow_component::Component;
 use pretty_assertions::assert_eq;
 use wick_packet::{packets, ComponentReference, Entity, Packet};
 

@@ -24,6 +24,8 @@ pub enum Error {
   DuplicateNamespace(String),
   #[error(transparent)]
   OperationInit(#[from] OpInitError),
+  #[error("Interpreter can only expose one component at a time, found multiple: {}", .0.join(", "))]
+  MultipleExposedComponents(Vec<String>),
 }
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]

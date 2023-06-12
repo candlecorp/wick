@@ -117,9 +117,9 @@ impl RpcClient {
     response
       .components
       .into_iter()
-      .map(TryInto::try_into)
+      .map(wick_interface_types::ComponentSignature::try_from)
       .collect::<Result<_, _>>()
-      .map_err(|_| RpcClientError::TypeConversion)
+      .map_err(|e| RpcClientError::TypeConversion(e.to_string()))
   }
 
   /// Send an invoke RPC command with a raw RPC [Invocation] object.

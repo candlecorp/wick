@@ -133,8 +133,8 @@ pub enum RpcClientError {
   ConversionFailed(RpcError),
 
   /// Conversion error between types.
-  #[error("Could not convert type to or from gRPC to wick.")]
-  TypeConversion,
+  #[error("Could not convert type to or from gRPC to wick: {0}")]
+  TypeConversion(String),
 
   /// General IO error
   #[error("I/O error: {0}")]

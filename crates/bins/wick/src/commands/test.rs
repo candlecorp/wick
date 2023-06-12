@@ -86,7 +86,7 @@ pub(crate) async fn handle(
         .build()
         .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
       host
-        .start_engine(opts.seed.map(Seed::unsafe_new))
+        .start_runtime(opts.seed.map(Seed::unsafe_new))
         .await
         .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
       let component: SharedComponent = Arc::new(wick_host::HostComponent::new(host));

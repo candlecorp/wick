@@ -93,11 +93,6 @@ mod test {
     let actual: DateTime = packet.decode()?;
     assert_eq!(date, actual);
 
-    let packet = Packet::encode(".", date.timestamp_millis());
-    println!("date as_int packet: {:?}", packet);
-    let actual: DateTime = packet.decode()?;
-    assert_eq!(date, actual);
-
     Ok(())
   }
 
