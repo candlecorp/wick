@@ -1,0 +1,23 @@
+---
+kind: wick/app@v1
+resources:
+  - name: http
+    resource:
+      kind: wick/resource/tcpport@v1
+      port: ${HTTP_PORT:-8999}
+      address: 0.0.0.0
+import:
+  - name: component
+    component:
+      kind: wick/component/manifest@v1
+      ref: rest-router-errors/component.wick
+triggers:
+  - kind: wick/trigger/http@v1
+    resource: http
+    routers:
+      - kind: wick/router/rest@v1
+        path: /
+        routes:
+          - uri: /bad_op
+            operation: component::bad_op
+            methods: [POST]

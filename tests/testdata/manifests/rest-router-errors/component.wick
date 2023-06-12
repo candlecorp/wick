@@ -1,0 +1,13 @@
+kind: wick/component@v1
+name: component.wick
+metadata:
+  version: 0.0.1
+  description: New composite wick component
+  licenses:
+    - Apache-2.0
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: bad_op
+      flow:
+        - <input>.input.nonexistant -> <output>.output

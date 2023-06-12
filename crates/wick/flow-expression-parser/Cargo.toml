@@ -13,7 +13,7 @@ regex = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-nom = { workspace = true }
+nom = { workspace = true, features = ["alloc"] }
 
 [dev-dependencies]
 anyhow = { workspace = true }
