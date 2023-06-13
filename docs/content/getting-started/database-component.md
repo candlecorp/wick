@@ -105,9 +105,7 @@ resources:
   - name: MYDATABASE
     resource:
       kind: wick/resource/url@v1
-      url: postgres://$
-
-DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME
+      url: postgres://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME
 component:
   kind: wick/component/sql@v1
   resource: MYDATABASE
