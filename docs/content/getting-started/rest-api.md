@@ -3,7 +3,7 @@ title: Rest APIs
 ---
 Setup your own rest APIs
 ==
-Wick provides an easy solution for Rest APIs as well. To set up a rest API, lets start with a `demo.wick` file. This is a standard Wick application config file.
+Wick provides an easy solution for Rest APIs as well. To set up a rest API, lets start with a `demo.wick` file. This is a standard [Wick application config]( {{< ref "configuration/reference/v1#appconfiguration" >}}) file.
 
 To start off, like all `.wick` files, we declare the name and kind of our app/component.
 ```yaml
@@ -11,7 +11,7 @@ kind: wick/app@v1
 name: rest_demo
 ```
 
-Wick sets up Rest APIs as http triggers. In order to use this we need to declare an http resource for our app. We can set the port that will be exposed and the address. (0.0.0.0 binds to localhost)
+Wick sets up Rest APIs as http triggers. In order to use this we need to declare an http [`resource`]( {{< ref "configuration/reference/v1#resourcedefinition" >}}) for our app. We can set the port that will be exposed and the address. (0.0.0.0 binds to localhost)
 
 ```yaml
 resources:
@@ -21,7 +21,7 @@ resources:
       port: 8999
       address: 0.0.0.0
 ```
-Now that we have declared our applications needs, we can setup rest `triggers`.
+Now that we have declared our applications needs, we can setup rest [`triggers`]( {{< ref "configuration/reference/v1#triggerdefinition" >}}).
 
 
 ```yaml
@@ -34,9 +34,9 @@ triggers:
         routes:
 ```
 
-Our trigger is setup using the http resource we provided our app above. Under `routers`, we have our rest router with the ability to set its path and routes.
+Our trigger is setup using the http resource we provided our app above. Under [`routers`]( {{< ref "configuration/reference/v1#httprouter" >}}), we have our rest router with the ability to set its path and routes.
 
-`Routes` is where we get to add and define our rest apis. Let's take a look at the structure of Wick rest routes.
+[`Routes`]( {{< ref "configuration/reference/v1#route" >}}) is where we get to add and define our rest apis. Let's take a look at the structure of Wick rest routes.
 
 ```yaml
 routes:
@@ -60,7 +60,7 @@ resources:
     resource:
       kind: wick/resource/tcpport@v1
       port: 8999
-      address:
+      address: 0.0.0.0
 triggers:
   - kind: wick/trigger/http@v1
     resource: http
@@ -76,5 +76,3 @@ triggers:
 ```
 
 This is essentailly all you need to create rest API routes in Wick. To see how it all works, check out our http example applications [here](https://github.com/candlecorp/wick/tree/main/examples/http).
-
-Note: You can use `wick new component http` to help you get started with an http component. It will create a new `.wick` file with the http resource and a sample operation.
