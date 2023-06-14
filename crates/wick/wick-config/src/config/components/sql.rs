@@ -1,4 +1,4 @@
-use crate::config;
+use crate::config::{self, ErrorBehavior};
 
 #[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
@@ -71,6 +71,11 @@ pub struct SqlOperationDefinition {
   #[asset(skip)]
   #[builder(default)]
   pub(crate) arguments: Vec<String>,
+
+  /// The query to execute.
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) on_error: ErrorBehavior,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, derive_asset_container::AssetManager)]

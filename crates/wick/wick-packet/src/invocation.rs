@@ -186,6 +186,12 @@ impl Invocation {
     self.span.in_scope(f)
   }
 
+  /// Mark a span as following from this invocation.
+  pub fn following_span(&self, span: Span) -> Span {
+    span.follows_from(&self.span);
+    span
+  }
+
   pub fn make_response(&self) -> (PacketSender, PacketStream) {
     let (tx, mut rx) = PacketStream::new_channels();
     let span = debug_span!("invocation-response", id=%self.id, target=%self.target);

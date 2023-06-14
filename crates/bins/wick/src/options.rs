@@ -49,7 +49,7 @@ impl From<&LoggingOptions> for wick_logger::LoggingOptions {
   fn from(value: &LoggingOptions) -> Self {
     Self {
       verbose: value.verbose == 1,
-      silly: value.verbose == 2,
+      silly: value.verbose >= 2,
       level: if value.quiet {
         wick_logger::LogLevel::Quiet
       } else if value.trace {
@@ -76,20 +76,20 @@ impl From<&mut LoggingOptions> for wick_logger::LoggingOptions {
 }
 
 pub(crate) fn apply_log_settings(settings: &wick_settings::Settings, options: &mut LoggingOptions) {
-  if settings.trace.level == wick_settings::LogLevel::Debug {
-    options.debug = true;
-  }
-  if settings.trace.level == wick_settings::LogLevel::Trace {
-    options.trace = true;
+  if !(options.debug || options.trace) {
+    options.debug = settings.trace.level == wick_settings::LogLevel::Debug;
+    options.trace = settings.trace.level == wick_settings::LogLevel::Trace;
   }
   if settings.trace.level == wick_settings::LogLevel::Off {
     options.quiet = true;
   }
-  if settings.trace.modifier == wick_settings::LogModifier::Verbose {
-    options.verbose = 1;
-  }
-  if settings.trace.modifier == wick_settings::LogModifier::Silly {
-    options.verbose = 2;
+  if options.verbose == 0 {
+    if settings.trace.modifier == wick_settings::LogModifier::Verbose {
+      options.verbose = 1;
+    }
+    if settings.trace.modifier == wick_settings::LogModifier::Silly {
+      options.verbose = 2;
+    }
   }
   if options.otlp_endpoint.is_none() {
     options.otlp_endpoint = settings.trace.otlp.clone();
@@ -113,13 +113,16 @@ pub(crate) fn get_auth_for_scope(
       }
     };
   }
+
   if override_username.is_some() {
     debug!("overriding username from arguments.");
     username = override_username.map(|v| v.to_owned());
   }
+
   if override_password.is_some() {
     debug!("overriding password from arguments.");
     password = override_password.map(|v| v.to_owned());
   }
+
   (username, password)
 }

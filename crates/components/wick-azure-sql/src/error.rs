@@ -35,8 +35,26 @@ pub enum Error {
   #[error("Failed to get connection from pool: {0}")]
   PoolConnection(String),
 
+  #[error("Failed to start DB transaction")]
+  TxStart,
+
+  #[error("Failed to commit DB transaction")]
+  TxCommit,
+
+  #[error("Failed to rollback DB transaction")]
+  TxRollback,
+
+  #[error("Operation failed: {0}")]
+  OperationFailed(String),
+
   #[error("Query failed: {0}")]
   Failed(String),
+
+  #[error("Missing input")]
+  MissingInput,
+
+  #[error(transparent)]
+  ComponentError(wick_packet::Error),
 }
 
 impl From<Error> for ComponentError {

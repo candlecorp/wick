@@ -44,7 +44,7 @@ use crate::config::{
 };
 use crate::error::ManifestError;
 use crate::utils::{opt_str_to_ipv4addr, VecMapInto, VecTryMapInto};
-use crate::{v1, Result, WickConfiguration};
+use crate::{common, v1, Result, WickConfiguration};
 
 impl TryFrom<v1::WickConfig> for WickConfiguration {
   type Error = ManifestError;
@@ -1544,6 +1544,7 @@ impl TryFrom<v1::SqlOperationDefinition> for components::SqlOperationDefinition 
       query: value.query,
       arguments: value.arguments,
       config: value.with.try_map_into()?,
+      on_error: value.on_error.unwrap_or_default().try_into()?,
     })
   }
 }
@@ -1617,7 +1618,30 @@ impl TryFrom<components::SqlOperationDefinition> for v1::SqlOperationDefinition 
       outputs: value.outputs.try_map_into()?,
       query: value.query,
       arguments: value.arguments,
+      on_error: Some(value.on_error.try_into()?),
       with: value.config.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<common::ErrorBehavior> for v1::ErrorBehavior {
+  type Error = crate::Error;
+  fn try_from(value: common::ErrorBehavior) -> Result<Self> {
+    Ok(match value {
+      common::ErrorBehavior::Commit => Self::Commit,
+      common::ErrorBehavior::Ignore => Self::Ignore,
+      common::ErrorBehavior::Rollback => Self::Rollback,
+    })
+  }
+}
+
+impl TryFrom<v1::ErrorBehavior> for common::ErrorBehavior {
+  type Error = crate::Error;
+  fn try_from(value: v1::ErrorBehavior) -> Result<Self> {
+    Ok(match value {
+      v1::ErrorBehavior::Commit => Self::Commit,
+      v1::ErrorBehavior::Ignore => Self::Ignore,
+      v1::ErrorBehavior::Rollback => Self::Rollback,
     })
   }
 }

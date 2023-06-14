@@ -69,15 +69,14 @@ wick-azure-sql = { path = "./crates/components/wick-azure-sql", version = "0.1.0
 wick-sqlx = { path = "./crates/components/wick-sqlx", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
 # wasmrs
-wasmrs = { version = "0.12" }
-wasmrs-codec = { version = "0.12" }
-wasmrs-frames = { version = "0.12" }
-wasmrs-guest = { version = "0.12" }
-wasmrs-host = { version = "0.12" }
-wasmrs-runtime = { version = "0.12" }
-wasmrs-rx = { version = "0.12" }
-wasmrs-wasmtime = { version = "0.12" }
-wasm-msgpack = { version = "~0.6.2" }
+wasmrs = { version = "0.12.1" }
+wasmrs-codec = { version = "0.12.1" }
+wasmrs-frames = { version = "0.12.1" }
+wasmrs-guest = { version = "0.12.1" }
+wasmrs-host = { version = "0.12.1" }
+wasmrs-runtime = { version = "0.12.1" }
+wasmrs-rx = { version = "0.12.1" }
+wasmrs-wasmtime = { version = "0.12.1" }
 #
 # Other
 #

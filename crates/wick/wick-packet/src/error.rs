@@ -1,7 +1,7 @@
 use crate::PacketError;
 
 /// Errors originating from WASM components.
-#[derive(Debug, thiserror::Error, PartialEq)]
+#[derive(Debug, thiserror::Error, PartialEq, Clone)]
 pub enum Error {
   /// Thrown when a user attempts to retrieve a stream for a port that doesn't exist.
   #[error("No stream found for port '{0}'")]

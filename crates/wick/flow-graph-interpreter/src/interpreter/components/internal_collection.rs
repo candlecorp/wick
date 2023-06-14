@@ -1,6 +1,6 @@
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use flow_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
-use wick_interface_types::{ComponentSignature, OperationSignature, Type};
+use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream};
 
 use crate::constants::*;
@@ -15,13 +15,7 @@ pub(crate) struct InternalCollection {
 
 impl Default for InternalCollection {
   fn default() -> Self {
-    let signature = ComponentSignature::new(NS_INTERNAL).version("0.0.0").add_operation(
-      OperationSignature::new(INTERNAL_ID_INHERENT)
-        .add_input("seed", Type::U64)
-        .add_input("timestamp", Type::U64)
-        .add_output("seed", Type::U64)
-        .add_output("timestamp", Type::U64),
-    );
+    let signature = ComponentSignature::new(NS_INTERNAL).version("0.0.0");
 
     Self { signature }
   }
@@ -37,7 +31,7 @@ impl Component for InternalCollection {
     invocation.trace(|| trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL));
     let op = invocation.target.operation_id().to_owned();
 
-    let is_oneshot = op == SCHEMATIC_INPUT || op == INTERNAL_ID_INHERENT;
+    let is_oneshot = op == SCHEMATIC_INPUT;
     let task = async move {
       if op == SCHEMATIC_OUTPUT {
         panic!("Output component should not be executed");

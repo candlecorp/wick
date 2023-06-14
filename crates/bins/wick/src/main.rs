@@ -210,6 +210,8 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
 async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<StructuredOutput> {
   let span = trace_span!(target:"cli","cli");
 
+  span.in_scope(|| trace!(cli_options=?cli, settings=?settings,"starting cli"));
+
   match cli.command {
     CliCommand::Serve(cmd) => commands::serve::handle(cmd, settings, span).await,
     CliCommand::List(cmd) => commands::list::handle(cmd, settings, span).await,

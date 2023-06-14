@@ -42,7 +42,8 @@ impl SchematicExecutor {
     self_component: Arc<dyn Component + Send + Sync>,
     callback: Arc<RuntimeCallback>,
   ) -> Result<PacketStream> {
-    invocation.trace(|| debug!(schematic = self.name(), ?invocation,));
+    invocation
+      .trace(|| debug!(operation = self.name(), origin=%invocation.origin,target=%invocation.target,"invoking"));
 
     let seed = Seed::unsafe_new(invocation.seed());
 

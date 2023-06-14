@@ -1569,6 +1569,53 @@ pub(crate) struct SqlOperationDefinition {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) arguments: Vec<String>,
+  /// What to do when an error occurs.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) on_error: Option<ErrorBehavior>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// What to do when an error occurs.
+pub(crate) enum ErrorBehavior {
+  /// The operation will commit what has succeeded.
+  Commit = 0,
+  /// The operation will rollback changes.
+  Rollback = 1,
+  /// Errors will be ignored.
+  Ignore = 2,
+}
+
+impl Default for ErrorBehavior {
+  fn default() -> Self {
+    Self::from_u16(0).unwrap()
+  }
+}
+
+impl FromPrimitive for ErrorBehavior {
+  fn from_i64(n: i64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Commit,
+      1 => Self::Rollback,
+      2 => Self::Ignore,
+      _ => {
+        return None;
+      }
+    })
+  }
+
+  fn from_u64(n: u64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Commit,
+      1 => Self::Rollback,
+      2 => Self::Ignore,
+      _ => {
+        return None;
+      }
+    })
+  }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

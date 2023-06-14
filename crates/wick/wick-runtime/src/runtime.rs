@@ -19,6 +19,10 @@ pub struct Runtime {
   timeout: Duration,
 }
 
+fn default_timeout() -> Duration {
+  Duration::from_secs(10)
+}
+
 #[derive(Debug, derive_builder::Builder)]
 #[builder(pattern = "owned", name = "RuntimeBuilder", setter(into), build_fn(skip))]
 #[must_use]
@@ -35,7 +39,7 @@ pub struct RuntimeInit {
   #[builder(default)]
   pub(crate) allowed_insecure: Vec<String>,
 
-  #[builder(default = "Duration::from_secs(5)")]
+  #[builder(default = "default_timeout")]
   pub(crate) timeout: Duration,
 
   #[builder(setter(strip_option))]
@@ -187,7 +191,7 @@ impl RuntimeBuilder {
         allow_latest: self.allow_latest.unwrap_or_default(),
         allowed_insecure: self.allowed_insecure.unwrap_or_default(),
         native_components: self.native_components.unwrap_or_default(),
-        timeout: self.timeout.unwrap_or_else(|| Duration::from_secs(5)),
+        timeout: self.timeout.unwrap_or_else(default_timeout),
         namespace: self.namespace.unwrap_or_default(),
         constraints: self.constraints.unwrap_or_default(),
         span,

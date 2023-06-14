@@ -43,9 +43,9 @@ mod test1 {
     use anyhow::Result;
     use flow_component::{panic_callback, Context};
     use types::http;
-    use wasmrs_guest::{FluxChannel, StreamExt};
     use wick_component::datetime::TimeZone;
-    use wick_packet::{ContextTransport, InherentData};
+    use wick_component::prelude::*;
+    use wick_packet::{ContextTransport, FluxChannel, InherentData};
 
     use super::*;
     use crate::import_types::types::http::HttpResponse;
@@ -90,7 +90,7 @@ mod test1 {
         status: http::StatusCode::Ok,
         headers: Default::default(),
       };
-      let packets = tokio_stream::iter(vec![Ok(response)]).boxed();
+      let packets = once(response);
       let tx = FluxChannel::new();
       let outputs = testop::Outputs::new(tx);
       let ctx = Context::new(
@@ -99,7 +99,7 @@ mod test1 {
         panic_callback(),
       );
 
-      Component::testop(packets, outputs, ctx).await?;
+      Component::testop(Box::pin(packets), outputs, ctx).await?;
       Ok(())
     }
 

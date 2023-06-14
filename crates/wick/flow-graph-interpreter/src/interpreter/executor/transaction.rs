@@ -9,7 +9,7 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wasmrs_rx::Observer;
-use wick_packet::{InherentData, Invocation, Packet, PacketError, PacketSender, PacketStream};
+use wick_packet::{Invocation, Packet, PacketError, PacketSender, PacketStream};
 
 use self::operation::InstanceHandler;
 use super::error::ExecutionError;
@@ -161,8 +161,6 @@ impl Transaction {
 
     self.prime_input_ports(self.schematic.input().index(), incoming)?;
 
-    self.prime_inherent(&self.invocation.inherent)?;
-
     self.stats.mark("start_done");
     Ok(())
   }
@@ -181,26 +179,6 @@ impl Transaction {
         }
       }
     });
-    Ok(())
-  }
-
-  fn prime_inherent(&self, inherent_data: &InherentData) -> Result<()> {
-    let inherent = self.instance(INHERENT_COMPONENT).clone();
-    let seed_name = "seed";
-    if let Ok(port) = inherent.find_input(seed_name) {
-      trace!("priming inherent seed");
-
-      let fut = accept_inputs(
-        self.id(),
-        port,
-        inherent,
-        self.channel.clone(),
-        vec![Packet::encode(seed_name, inherent_data.seed), Packet::done(seed_name)],
-      );
-      tokio::spawn(fut);
-    } else {
-      inherent.cleanup();
-    }
     Ok(())
   }
 
@@ -313,18 +291,6 @@ impl Transaction {
       .await;
     }
     Ok(())
-  }
-}
-
-pub(crate) async fn accept_inputs(
-  tx_id: Uuid,
-  port: PortReference,
-  instance: Arc<InstanceHandler>,
-  channel: InterpreterDispatchChannel,
-  msgs: Vec<Packet>,
-) {
-  for payload in msgs {
-    accept_input(tx_id, port, &instance, &channel, payload).await;
   }
 }
 

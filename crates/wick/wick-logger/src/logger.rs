@@ -232,6 +232,7 @@ where
               .with_thread_names(true)
               .with_ansi(with_color)
               .with_target(true)
+              .with_timer(timer)
               .with_filter(get_levelfilter(opts))
               .with_filter(wick_filter(opts)),
           ),
@@ -246,9 +247,9 @@ where
           Some(
             tracing_subscriber::fmt::layer()
               .with_writer(stderr_writer)
+              .with_thread_names(false)
               .with_ansi(with_color)
               .with_target(false)
-              .with_thread_names(false)
               .with_timer(timer)
               .with_filter(get_levelfilter(opts))
               .with_filter(wick_filter(opts)),
