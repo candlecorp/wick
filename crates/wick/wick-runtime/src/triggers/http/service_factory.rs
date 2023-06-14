@@ -125,7 +125,7 @@ impl Service<Request<Body>> for ResponseService {
                       "internal error",
                     );
                   });
-                  make_ise(e)
+                  make_ise(None)
                 }
               }
             };
@@ -204,9 +204,12 @@ async fn run_response_middleware(
   Ok(response)
 }
 
-fn make_ise(e: impl std::fmt::Display) -> Response<Body> {
+fn make_ise(e: Option<String>) -> Response<Body> {
   Builder::new()
     .status(StatusCode::INTERNAL_SERVER_ERROR)
-    .body(Body::from(e.to_string()))
+    .body(Body::from(
+      e.map(|msg| format!("{}. Check log for details", msg))
+        .unwrap_or_else(|| "Internal Server Error. Check log for details".to_owned()),
+    ))
     .unwrap()
 }

@@ -199,3 +199,13 @@ impl Default for Codec {
     Self::Json
   }
 }
+
+impl std::fmt::Display for Codec {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Codec::Json => write!(f, "json"),
+      Codec::Raw => write!(f, "raw"),
+      Codec::FormData => write!(f, "form-data"),
+    }
+  }
+}
