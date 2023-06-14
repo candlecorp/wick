@@ -30,7 +30,6 @@ wasmrs-runtime = { workspace = true }
 tokio-stream = { workspace = true }
 paste = { workspace = true }
 serde_json = { workspace = true }
-wasm-msgpack = { workspace = true, features = ["std"] }
 chrono = { workspace = true, features = ["std"], optional = true }
 bytes = { workspace = true, optional = true }
 

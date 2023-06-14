@@ -8,15 +8,5 @@ network:
         logger:
           id: wick::core::log
       connections:
-        - from:
-            instance: <input>
-            port: schem_input
-          to:
-            instance: logger
-            port: input
-        - from:
-            instance: logger
-            port: output
-          to:
-            instance: <output>
-            port: schem_output
+        - <>[schem_input] => logger[input]
+        - logger[output] => <>[schem_output]

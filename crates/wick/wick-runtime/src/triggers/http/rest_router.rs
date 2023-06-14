@@ -117,7 +117,8 @@ impl RestHandler {
 
       let body_bytes = to_bytes(body).await.unwrap_or_default();
       let body = String::from_utf8_lossy(&body_bytes);
-      span.in_scope(|| trace!(route = %uri, len=body_bytes.len(), data=%body, "body"));
+
+      span.in_scope(|| trace!(route = %uri, len=body_bytes.len(), "body"));
 
       let payload: serde_json::Value = if body.trim().is_empty() {
         serde_json::Value::Null
@@ -125,7 +126,6 @@ impl RestHandler {
         serde_json::from_str(&body).map_err(HttpError::InvalidBody)?
       };
 
-      span.in_scope(|| trace!(route = %uri, len=body_bytes.len(), data=%body, "body"));
       packets.push(Packet::encode("input", payload));
 
       let mut port_names: Vec<_> = packets.iter().map(|p| p.port().to_owned()).collect();

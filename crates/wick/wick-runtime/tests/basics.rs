@@ -38,20 +38,6 @@ async fn senders() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
-async fn no_inputs() -> Result<()> {
-  common_test(
-    "./manifests/v0/no-inputs.yaml",
-    PacketStream::empty(),
-    "uuid",
-    vec![
-      Packet::encode("output", "611830d3-641a-68f9-4a69-0dcc25d1f4b0"),
-      Packet::done("output"),
-    ],
-  )
-  .await
-}
-
-#[test_logger::test(tokio::test)]
 async fn nested_schematics() -> Result<()> {
   common_test(
     "./manifests/v0/nested-schematics.yaml",

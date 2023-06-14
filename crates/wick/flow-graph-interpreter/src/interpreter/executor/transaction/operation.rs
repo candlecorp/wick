@@ -6,6 +6,7 @@ use std::time::Duration;
 use flow_component::{Component, RuntimeCallback};
 use flow_graph::{NodeIndex, PortReference};
 use tokio_stream::StreamExt;
+use tracing::Span;
 use tracing_futures::Instrument;
 use uuid::Uuid;
 use wasmrs_rx::{FluxChannel, Observer};
@@ -103,10 +104,6 @@ impl InstanceHandler {
 
   pub(super) fn take_output(&self, port: &PortReference) -> Option<Packet> {
     self.outputs.take(port)
-  }
-
-  pub(super) fn cleanup(&self) {
-    self.sender.complete();
   }
 
   pub(super) fn take_input(&self, port: &PortReference) -> Option<Packet> {
@@ -215,8 +212,6 @@ impl InstanceHandler {
     options: &InterpreterOptions,
     callback: Arc<RuntimeCallback>,
   ) -> Result<()> {
-    let span = trace_span!("op-start", otel.name=%self.entity());
-
     let identifier = self.id().to_owned();
     let entity = self.entity();
     let namespace = self.namespace().to_owned();
@@ -225,8 +220,13 @@ impl InstanceHandler {
 
     let associated_data = associated_data.clone();
 
+    let span = invocation.following_span(trace_span!(
+      "operation exec", component = %format!("{} ({})", identifier, entity)
+    ));
+
     self.increment_pending();
     let stream = if self.inputs.is_empty() {
+      invocation.trace(|| debug!(%entity, "operation has no inputs, starting with noop packet"));
       PacketStream::noop()
     } else {
       PacketStream::new(Box::new(self.sender.take_rx().unwrap()))
@@ -257,7 +257,10 @@ impl InstanceHandler {
       })
     };
 
-    let outer_result = fut.instrument(span).await.map_err(ExecutionError::OperationFailure);
+    let outer_result = fut
+      .instrument(span.clone())
+      .await
+      .map_err(ExecutionError::OperationFailure);
 
     let stream = match outer_result {
       Ok(Ok(result)) => result,
@@ -280,16 +283,11 @@ impl InstanceHandler {
         return Ok(());
       }
     };
-    let span = trace_span!(
-      "output_task", component = %format!("{} ({})", identifier, entity)
-    );
+
     let timeout = options.output_timeout;
     tokio::spawn(async move {
-      if let Err(error) = output_handler(tx_id, &self, stream, channel, timeout)
-        .instrument(span)
-        .await
-      {
-        error!(%error, "error in output handler");
+      if let Err(error) = output_handler(tx_id, &self, stream, channel, timeout, span.clone()).await {
+        span.in_scope(|| error!(%error, "error in output handler"));
       }
     });
     Ok(())
@@ -313,8 +311,9 @@ async fn output_handler(
   mut stream: PacketStream,
   channel: InterpreterDispatchChannel,
   timeout: Duration,
+  span: Span,
 ) -> Result<()> {
-  trace!("starting output task");
+  span.in_scope(|| trace!("starting output task"));
 
   let mut num_received = 0;
   let reason = loop {
@@ -324,7 +323,7 @@ async fn output_handler(
       Ok(Some(message)) => {
         num_received += 1;
         if let Err(e) = message {
-          warn!(error=?e,"component-wide error");
+          span.in_scope(|| warn!(error=?e,"component-wide error"));
           channel
             .dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(e.to_string()))
             .await;
@@ -332,12 +331,22 @@ async fn output_handler(
         }
         let message = message.unwrap();
         if message.is_fatal_error() {
-          warn!(error=?message,"component-wide error");
+          span.in_scope(|| warn!(error=?message,"component-wide error"));
           channel.dispatch_op_err(tx_id, instance.index(), message.payload).await;
           break CompletionStatus::Error;
         }
 
-        let port = instance.find_output(message.port())?;
+        if message.is_noop() {
+          continue;
+        }
+
+        let port = match instance.find_output(message.port()) {
+          Ok(port) => port,
+          Err(e) => {
+            span.in_scope(|| warn!(error=?e,port=message.port(),data=?message.payload(),"invalid port name, this is likely due to a misconfigured or broken component"));
+            return Err(e);
+          }
+        };
 
         if message.is_done() {
           hanging.remove(&port);
@@ -345,13 +354,13 @@ async fn output_handler(
           hanging.insert(port, message.port().to_owned());
         }
 
-        trace!(port=%message.port(),"received output packet");
+        span.in_scope(|| trace!(port=%message.port(),"received output packet"));
 
         instance.buffer_out(&port, message);
         channel.dispatch_data(tx_id, port).await;
       }
       Err(error) => {
-        warn!(%error,"timeout");
+        span.in_scope(|| warn!(%error,"timeout"));
         let msg = format!("Operation {} timed out waiting for upstream data.", instance.entity());
         channel
           .dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(msg))
@@ -361,17 +370,17 @@ async fn output_handler(
       Ok(None) => {
         if num_received == 0 && instance.outputs().len() > 0 {
           let err = "component failed to produce output";
-          warn!(error = err, "stream complete");
+          span.in_scope(|| warn!(error = err, "stream complete"));
           channel
             .dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(err))
             .await;
           break CompletionStatus::Error;
         }
         for (portref, port) in hanging {
-          debug!(%port,"auto-closing port");
+          span.in_scope(|| debug!(%port,"auto-closing port"));
           instance.buffer_out(&portref, Packet::done(port));
         }
-        trace!("stream complete");
+        span.in_scope(|| trace!("stream complete"));
         break CompletionStatus::Finished;
       }
     }

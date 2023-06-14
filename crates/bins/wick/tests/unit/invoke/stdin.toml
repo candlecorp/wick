@@ -3,8 +3,9 @@ args = [
   "invoke",
   "tests/unit/invoke/log.yaml",
   "logger",
-  "--data=schem_input=\"testing123\"",
   "--trace",
+  "--",
+  "--schem_input=\"testing123\"",
 ]
 stdin = "Hello\nworld"
 stdout = "Logger: testing123\n...\n"

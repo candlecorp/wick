@@ -1,6 +1,7 @@
 pub(crate) mod bindings;
 pub(crate) mod component_definition;
 pub(crate) mod component_implementation;
+pub(crate) mod error_behavior;
 pub(crate) mod glob;
 pub(crate) mod host_definition;
 pub(crate) mod import_definition;
@@ -13,6 +14,7 @@ pub(crate) mod test_case;
 pub use self::bindings::*;
 pub use self::component_definition::*;
 pub use self::component_implementation::*;
+pub use self::error_behavior::*;
 pub use self::glob::*;
 pub use self::host_definition::*;
 pub use self::import_definition::*;

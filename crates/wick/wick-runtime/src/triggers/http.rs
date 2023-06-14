@@ -499,11 +499,14 @@ impl Trigger for Http {
       }
     };
 
-    let instance = self.handle(app_config, config, resources, span, &socket).await?;
+    let instance = self
+      .handle(app_config, config, resources, span.clone(), &socket)
+      .await?;
     let output = StructuredOutput::new(
       format!("HTTP Server started on {}", instance.addr),
       json!({"ip": instance.addr.ip(),"port": instance.addr.port()}),
     );
+    span.in_scope(|| info!(address=%instance.addr,"http trigger started"));
 
     self.instance.lock().replace(instance);
 

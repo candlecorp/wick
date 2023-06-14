@@ -768,6 +768,19 @@ type SqlOperationDefinition {
 
   "The positional arguments to the query, defined as a list of input names."
   arguments: [string]
+
+  "What to do when an error occurs."
+  on_error: ErrorBehavior?
+}
+
+"What to do when an error occurs."
+enum ErrorBehavior {
+  "The operation will commit what has succeeded."
+  Commit = 0 as "commit",
+  "The operation will rollback changes."
+  Rollback = 1 as "rollback",
+  "Errors will be ignored."
+  Ignore = 2 as "ignore",
 }
 
 

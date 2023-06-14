@@ -2070,9 +2070,20 @@
           "items": {
             "type": "string"
           }
+        },
+        "on_error": {
+          "description": "What to do when an error occurs.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/ErrorBehavior"
         }
       },
       "required": ["query"]
+    },
+
+    "ErrorBehavior": {
+      "$anchor": "#v1/ErrorBehavior",
+      "enum": ["Commit", "Rollback", "Ignore"]
     },
 
     "HttpClientComponent": {

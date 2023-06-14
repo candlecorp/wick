@@ -48,18 +48,18 @@ tests:
   - cases:
       - name: native_types
         operation: native_types
-        input:
+        inputs:
           - name: i16
-            data: 32767
+            value: 32767
           - name: i32
-            data: 2147483647
+            value: 2147483647
           - name: i64
-            data: 9223372036854775807
+            value: 9223372036854775807
           - name: f32
-            data: 3.4028234663852886e+38
-        output:
+            value: 3.4028234663852886e+38
+        outputs:
           - name: output
-            data:
+            value:
               i16: 32767
               i32: 2147483647
               i64: 9223372036854775807
@@ -69,18 +69,18 @@ tests:
               done: true
       - name: coerced_types
         operation: coerced_types
-        input:
+        inputs:
           - name: u16
-            data: 32767
+            value: 32767
           - name: u32
-            data: 2147483647
+            value: 2147483647
           - name: u64
-            data: 9223372036854775807
+            value: 9223372036854775807
           - name: f64
-            data: 3.4028234663852886e+38
-        output:
+            value: 3.4028234663852886e+38
+        outputs:
           - name: output
-            data:
+            value:
               i16: 32767
               i32: 2147483647
               i64: 9223372036854775807

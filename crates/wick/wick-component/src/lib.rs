@@ -101,7 +101,7 @@ pub mod datetime {
   pub use wick_packet::{date_from_millis, serde, DateTime};
 }
 #[cfg(feature = "json")]
-pub use serde_json::{from_slice, from_str, from_value, json, to_value};
+pub use serde_json::{from_slice, from_str, from_value, json, to_value, Map};
 pub use tokio_stream::{empty, iter as iter_raw, once as once_raw, Stream, StreamExt};
 #[cfg(target_family = "wasm")]
 pub use wasmrs_guest;

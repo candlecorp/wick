@@ -162,6 +162,11 @@ impl Packet {
     &self.extra.port
   }
 
+  /// Return `true` if this is a No-Op packet. No action should be taken.
+  pub fn is_noop(&self) -> bool {
+    self.port() == Self::NO_INPUT
+  }
+
   /// Return `true` if this is a fatal, component wide error packet.
   pub fn is_fatal_error(&self) -> bool {
     self.port() == Self::FATAL_ERROR
@@ -335,6 +340,14 @@ impl PacketError {
   #[must_use]
   pub fn msg(&self) -> &str {
     &self.msg
+  }
+}
+
+impl std::error::Error for PacketError {}
+
+impl std::fmt::Display for PacketError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str(&self.msg)
   }
 }
 

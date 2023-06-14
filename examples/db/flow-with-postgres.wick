@@ -17,15 +17,15 @@ tests:
     cases:
       - name: assert_test_user
         operation: get_user
-        input:
+        inputs:
           - name: id
-            data: 1
+            value: 1
           - name: id
             flags:
               done: true
-        output:
+        outputs:
           - name: output
-            data:
+            value:
               email: test_users@example.com
               id: 1
               name: Test User

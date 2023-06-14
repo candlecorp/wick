@@ -1,7 +1,6 @@
 pub mod types {
   use wick_packet::GenericConfig;
 
-  pub(crate) static INHERENT_COMPONENT: usize = 2;
   pub(crate) type Network = flow_graph::Network<GenericConfig>;
   pub(crate) type Operation = flow_graph::Node<GenericConfig>;
   pub(crate) type OperationPort = flow_graph::NodePort;
@@ -19,14 +18,13 @@ use flow_expression_parser::ast::{
   InstancePort,
   InstanceTarget,
 };
-use flow_expression_parser::parse::CORE_ID;
 use flow_graph::NodeReference;
 use serde_json::Value;
 use types::*;
 use wick_config::config::{ComponentImplementation, FlowOperation};
 use wick_packet::GenericConfig;
 
-use crate::constants::{INTERNAL_ID_INHERENT, NS_CORE, NS_INTERNAL, NS_NULL};
+use crate::constants::{NS_CORE, NS_NULL};
 
 #[derive(Debug)]
 #[must_use]
@@ -64,10 +62,6 @@ fn register_operation(
   let name = scope.join("::");
   debug!(%name, "registering operation");
   let mut schematic = Schematic::new(name);
-
-  let index = schematic.add_inherent(CORE_ID, NodeReference::new(NS_INTERNAL, INTERNAL_ID_INHERENT), None);
-
-  trace!(index, name = INTERNAL_ID_INHERENT, "added inherent component");
 
   for (name, def) in flow.instances().iter() {
     schematic.add_external(
