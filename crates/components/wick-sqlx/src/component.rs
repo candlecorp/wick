@@ -192,6 +192,7 @@ impl Component for SqlXComponent {
 
           if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), type_wrappers, stmt.clone()).await {
             error!(error = %e, "error executing query");
+            let _ = tx.send(Packet::component_error(e.to_string()));
           }
         }
       });

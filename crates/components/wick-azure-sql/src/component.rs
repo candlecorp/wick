@@ -141,6 +141,7 @@ impl Component for AzureSqlComponent {
 
           if let Err(e) = exec(pool.clone(), tx.clone(), opdef.clone(), type_wrappers, stmt.clone()).await {
             error!(error = %e, "error executing query");
+            let _ = tx.send(Packet::component_error(e.to_string()));
           }
         }
       });
@@ -271,7 +272,6 @@ async fn exec(
       let _ = tx.send(packet);
     }
   }
-  let _ = tx.send(Packet::done("output"));
 
   Ok(())
 }
