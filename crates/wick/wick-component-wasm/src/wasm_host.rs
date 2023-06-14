@@ -150,7 +150,8 @@ impl WasmHost {
       host.register_fire_and_forget("wick", "__event", make_event_callback(cb_span));
       trace!(index, "wasmrs callback index");
     }
-    let ctx = host.new_context(128 * 1024, 128 * 1024).unwrap();
+    let buffer_size: u32 = 5 * 1024 * 1024;
+    let ctx = host.new_context(buffer_size, buffer_size).unwrap();
 
     drop(_span);
     Ok(Self {

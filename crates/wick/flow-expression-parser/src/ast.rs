@@ -295,7 +295,12 @@ impl std::fmt::Display for InstancePort {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
       InstancePort::Named(name) => write!(f, "{}", name),
-      InstancePort::Path(name, path) => write!(f, "{}.{}", name, path.join(".")),
+      InstancePort::Path(name, path) => write!(
+        f,
+        "{}.{}",
+        name,
+        path.iter().map(|v| format!("\"{}\"", v)).collect::<Vec<_>>().join(".")
+      ),
     }
   }
 }

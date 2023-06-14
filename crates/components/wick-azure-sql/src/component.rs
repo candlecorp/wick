@@ -144,6 +144,7 @@ impl Component for AzureSqlComponent {
             let _ = tx.send(Packet::component_error(e.to_string()));
           }
         }
+        let _ = tx.send(Packet::done("output"));
       });
 
       Ok(rx)

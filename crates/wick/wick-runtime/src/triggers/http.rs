@@ -65,6 +65,9 @@ enum HttpError {
   #[error("Missing query parameters: {}", .0.join(", "))]
   MissingQueryParameters(Vec<String>),
 
+  #[error("Could not decode body as JSON: {0}")]
+  InvalidBody(serde_json::Error),
+
   #[error("Invalid status code: {0}")]
   InvalidStatusCode(String),
 
