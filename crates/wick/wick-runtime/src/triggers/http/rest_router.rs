@@ -105,7 +105,8 @@ impl RestHandler {
       let Some((path_params, query_params)) = route.route.compare(path, request.uri().query())? else {
         continue
       };
-      span.in_scope(|| debug!(route = %request.uri(), "handling"));
+      let uri = request.uri().clone();
+      span.in_scope(|| debug!(route = %uri, "handling"));
       let mut packets: Vec<_> = path_params
         .iter()
         .chain(query_params.iter())
@@ -115,11 +116,16 @@ impl RestHandler {
       let (_, body) = request.into_parts();
 
       let body_bytes = to_bytes(body).await.unwrap_or_default();
+      let body = String::from_utf8_lossy(&body_bytes);
+      span.in_scope(|| trace!(route = %uri, len=body_bytes.len(), data=%body, "body"));
 
-      let payload = match serde_json::from_slice(&body_bytes) {
-        Ok(json) => json,
-        Err(_e) => serde_json::json!({}),
+      let payload: serde_json::Value = if body.trim().is_empty() {
+        serde_json::Value::Null
+      } else {
+        serde_json::from_str(&body).map_err(HttpError::InvalidBody)?
       };
+
+      span.in_scope(|| trace!(route = %uri, len=body_bytes.len(), data=%body, "body"));
       packets.push(Packet::encode("input", payload));
 
       let mut port_names: Vec<_> = packets.iter().map(|p| p.port().to_owned()).collect();
@@ -239,7 +245,7 @@ mod test {
       assert!(res.status() != 404);
       let body = res.text().await?;
       println!("Response body: \"{}\"", body);
-      assert!(body.contains("no field named 'nonexistant'"));
+      assert!(body.contains("Internal Server Error"));
 
       trigger.shutdown_gracefully().await?;
       Ok(())

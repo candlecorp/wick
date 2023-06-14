@@ -147,8 +147,11 @@ fn expand_port_paths(
       let (from_inst, from_port, _) = from.into_parts();
       let (to_inst, to_port, _) = to.into_parts();
       if let InstancePort::Path(name, parts) = from_port {
-        let id = format!("{}_pluck_{}_{}", schematic.name(), name, parts.join(","));
-        let config = GenericConfig::from(HashMap::from([("field".to_owned(), Value::String(parts.join(".")))]));
+        let id = format!("{}_pluck_{}_[{}]", schematic.name(), name, parts.join(","));
+        let config = GenericConfig::from(HashMap::from([(
+          "path".to_owned(),
+          Value::Array(parts.into_iter().map(Value::String).collect()),
+        )]));
         schematic.add_external(&id, NodeReference::new("core", "pluck"), Some(config));
         *expression = FlowExpression::block(BlockExpression::new(vec![
           FlowExpression::connection(ConnectionExpression::new(

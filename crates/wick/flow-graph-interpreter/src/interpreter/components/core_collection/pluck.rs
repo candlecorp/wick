@@ -17,7 +17,8 @@ impl std::fmt::Debug for Op {
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub(crate) struct Config {
-  field: String,
+  #[serde(alias = "field")]
+  field: Vec<String>,
 }
 
 impl Op {
@@ -35,11 +36,11 @@ impl Op {
   }
 }
 
-fn _pluck<'a>(val: &'a Value, path: &[&str], idx: usize) -> Option<&'a Value> {
+fn _pluck<'a>(val: &'a Value, path: &[String], idx: usize) -> Option<&'a Value> {
   if idx == path.len() {
     Some(val)
   } else {
-    let part = path[idx];
+    let part = &path[idx];
     match val {
       Value::Object(map) => map.get(part).and_then(|next| _pluck(next, path, idx + 1)),
       Value::Array(list) => {
@@ -51,8 +52,7 @@ fn _pluck<'a>(val: &'a Value, path: &[&str], idx: usize) -> Option<&'a Value> {
   }
 }
 
-fn pluck<'a>(val: &'a Value, path: &str) -> Option<&'a Value> {
-  let path = path.split('.').collect::<Vec<_>>();
+fn pluck<'a>(val: &'a Value, path: &[String]) -> Option<&'a Value> {
   _pluck(val, &path, 0)
 }
 
@@ -73,7 +73,12 @@ impl Operation for Op {
             if packet.has_data() {
               let obj = packet.decode_value()?;
               let value = pluck(&obj, &field).map_or_else(
-                || Packet::err("output", format!("no field named '{}' in data", field)),
+                || {
+                  Packet::err(
+                    "output",
+                    format!("could not retrieve data from object path [{}]", field.join(",")),
+                  )
+                },
                 |value| Packet::encode("output", value),
               );
 
@@ -99,11 +104,24 @@ impl Operation for Op {
 
   fn decode_config(data: Option<wick_packet::GenericConfig>) -> Result<Self::Config, ComponentError> {
     let config = data.ok_or_else(|| {
-      ComponentError::message("Merge component requires configuration, please specify configuration.")
+      ComponentError::message("Pluck component requires configuration, please specify configuration.")
     })?;
-    Ok(Self::Config {
-      field: config.get_into("field").map_err(ComponentError::new)?,
-    })
+    for (k, v) in config.into_iter() {
+      if k == "field" {
+        let field: String = serde_json::from_value(v).map_err(ComponentError::new)?;
+        warn!("pluck should be configured with 'path' as an array of strings, 'field' is deprecated and will be removed in a future release.");
+        return Ok(Self::Config {
+          field: field.split(".").map(|s| s.to_string()).collect(),
+        });
+      }
+      if k == "path" {
+        let field: Vec<String> = serde_json::from_value(v).map_err(ComponentError::new)?;
+        return Ok(Self::Config { field });
+      }
+    }
+    Err(ComponentError::message(
+      "invalid configuration for pluck, 'path' field is required",
+    ))
   }
 }
 
@@ -116,10 +134,41 @@ mod test {
   use super::*;
 
   #[tokio::test]
-  async fn test_basic() -> Result<()> {
+  async fn test_deprecated() -> Result<()> {
     let op = Op::new();
     let config = serde_json::json!({
       "field": "pluck_this"
+    });
+    let config = Op::decode_config(Some(config.try_into()?))?;
+    let stream = packet_stream!((
+      "input",
+      serde_json::json!({
+        "pluck_this": "hello",
+        "dont_pluck_this": "unused",
+      })
+    ));
+    let inv = Invocation::test(file!(), Entity::test("noop"), stream, None)?;
+    let mut packets = op
+      .handle(
+        inv,
+        Context::new(config, &InherentData::unsafe_default(), panic_callback()),
+      )
+      .await?
+      .collect::<Vec<_>>()
+      .await;
+    println!("{:?}", packets);
+    let _ = packets.pop().unwrap()?;
+    let packet = packets.pop().unwrap()?;
+    assert_eq!(packet.decode::<String>()?, "hello");
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn test_basic() -> Result<()> {
+    let op = Op::new();
+    let config = serde_json::json!({
+      "path": ["pluck_this"]
     });
     let config = Op::decode_config(Some(config.try_into()?))?;
     let stream = packet_stream!((
@@ -159,7 +208,16 @@ mod test {
       }
     });
 
-    let val = pluck(&json, "first.second.third.0.fourth");
+    let val = pluck(
+      &json,
+      &[
+        "first".to_owned(),
+        "second".to_owned(),
+        "third".to_owned(),
+        "0".to_owned(),
+        "fourth".to_owned(),
+      ],
+    );
     assert_eq!(val, Some(&serde_json::json!("first element")));
 
     Ok(())

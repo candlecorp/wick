@@ -63,7 +63,7 @@ fn component_id(input: &str) -> IResult<&str, InstanceTarget> {
   Ok((i, t))
 }
 
-fn identifier(input: &str) -> IResult<&str, &str> {
+pub(crate) fn identifier(input: &str) -> IResult<&str, &str> {
   recognize(pair(alt((alpha1, tag("_"))), many0(alt((alphanumeric1, tag("_"))))))(input)
 }
 
@@ -184,6 +184,7 @@ fn connection_expression(input: &str) -> IResult<&str, ConnectionExpression> {
 
 pub(crate) fn flow_expression(input: &str) -> IResult<&str, FlowExpression> {
   let (i, expr) = terminated(connection_expression, alt((eof, ws(tag(";")))))(input)?;
+
   Ok((i, FlowExpression::ConnectionExpression(Box::new(expr))))
 }
 
@@ -288,6 +289,19 @@ mod tests {
   }
 
   #[rstest]
+  #[case("foo", InstancePort::named("foo"))]
+  #[case("foo.hey", InstancePort::path("foo", vec!["hey".to_owned()]))]
+  #[case("foo.hey.0.this", InstancePort::path("foo", vec!["hey".to_owned(),"0".to_owned(),"this".to_owned()]))]
+  #[case("input.\"Raw String Field #\"", InstancePort::path("input", vec!["Raw String Field #".to_owned()]))]
+  fn test_instance_port(#[case] input: &'static str, #[case] expected: InstancePort) -> Result<()> {
+    let (i, actual) = instance_port(input)?;
+
+    assert_eq!(expected, actual);
+    assert_eq!(i, "");
+    Ok(())
+  }
+
+  #[rstest]
   #[case("comp::op[INLINE].foo -> <>.output", ((InstTgt::path("comp::op","INLINE"), "foo"),(InstTgt::Default, "output")))]
   #[case("<> -> ref1.port", ((InstTgt::Default, "port"),(InstTgt::named("ref1"), "port")))]
   #[case("ref1.in -> ref2.out", ((InstTgt::named("ref1"), "in"),(InstTgt::named("ref2"), "out")))]
@@ -351,8 +365,8 @@ mod tests {
     flow_expr_conn(InstTgt::named("this"), InstPort::path("output",vec!["field".to_owned()]), InstTgt::Default, InstPort::named("output"))
   )]
   #[case(
-    "this.output.\"field with spaces and \\\" quotes\" -> <>.output",
-    flow_expr_conn(InstTgt::named("this"), InstPort::path("output",vec!["field with spaces and \" quotes".to_owned()]), InstTgt::Default, InstPort::named("output"))
+    "this.output.\"field with spaces and \\\" quotes and symbols ,*|#\" -> <>.output",
+    flow_expr_conn(InstTgt::named("this"), InstPort::path("output",vec!["field with spaces and \" quotes and symbols ,*|#".to_owned()]), InstTgt::Default, InstPort::named("output"))
   )]
   fn test_flow_expression(#[case] input: &'static str, #[case] expected: FE) -> Result<()> {
     let (t, actual) = flow_expression(input)?;

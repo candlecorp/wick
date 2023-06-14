@@ -34,6 +34,17 @@ async fn test_pluck_shorthand() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn test_pluck_shorthand2() -> Result<()> {
+  first_packet_test_op(
+    "test2",
+    "./tests/manifests/v1/core-pluck-shorthand.yaml",
+    packets!(("input", json!({ "Raw String Field #" : "Hello world!"}))),
+    "Hello world!",
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
 async fn test_drop() -> Result<()> {
   first_packet_test(
     "./tests/manifests/v1/core-drop.yaml",
@@ -171,7 +182,11 @@ async fn test_switch_bool_default() -> Result<()> {
 }
 
 async fn first_packet_test(file: &str, packets: Vec<Packet>, expected: &str) -> Result<()> {
-  let (interpreter, mut outputs) = test::common_setup(file, "test", packets).await?;
+  first_packet_test_op("test", file, packets, expected).await
+}
+
+async fn first_packet_test_op(op_name: &str, file: &str, packets: Vec<Packet>, expected: &str) -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(file, op_name, packets).await?;
 
   assert_eq!(outputs.len(), 2);
 

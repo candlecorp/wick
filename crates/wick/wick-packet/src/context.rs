@@ -35,6 +35,11 @@ impl GenericConfig {
   pub fn iter(&self) -> impl Iterator<Item = (&String, &Value)> {
     self.0.iter()
   }
+
+  /// Get an iterator over the owned keys and values in the configuration.
+  pub fn into_iter(self) -> impl Iterator<Item = (String, Value)> {
+    self.0.into_iter()
+  }
 }
 
 impl From<HashMap<String, Value>> for GenericConfig {

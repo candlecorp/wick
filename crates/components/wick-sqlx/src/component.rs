@@ -195,6 +195,7 @@ impl Component for SqlXComponent {
             let _ = tx.send(Packet::component_error(e.to_string()));
           }
         }
+        let _ = tx.send(Packet::done("output"));
       });
 
       Ok(rx)
@@ -327,7 +328,6 @@ async fn exec(
     let packet = Packet::encode("output", row);
     let _ = tx.send(packet);
   }
-  let _ = tx.send(Packet::done("output"));
 
   Ok(())
 }
