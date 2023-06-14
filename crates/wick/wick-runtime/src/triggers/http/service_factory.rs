@@ -132,7 +132,10 @@ impl Service<Request<Body>> for ResponseService {
             run_response_middleware(wick_request_object, response, engine.clone(), &r).await?
           }
         },
-        None => make_ise(""),
+        None => Builder::new()
+          .status(StatusCode::NOT_FOUND)
+          .body(Body::default())
+          .unwrap(),
       };
       let status: u16 = response.status().into();
 
