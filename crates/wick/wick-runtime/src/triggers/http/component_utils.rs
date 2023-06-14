@@ -214,6 +214,9 @@ pub(super) async fn respond(
     match packet {
       Ok(p) => {
         if p.port() == "response" {
+          if let PacketPayload::Err(e) = p.payload() {
+            return Err(HttpError::OutputStream(p.port().to_owned(), e.msg().to_owned()));
+          }
           if p.is_done() {
             continue;
           }
@@ -222,21 +225,24 @@ pub(super) async fn respond(
             .map_err(|e| HttpError::Deserialize("response".to_owned(), e.to_string()))?;
           builder = convert_response(builder, response)?;
         } else if p.port() == "body" {
+          if let PacketPayload::Err(e) = p.payload() {
+            return Err(HttpError::OutputStream(p.port().to_owned(), e.msg().to_owned()));
+          }
           if !p.has_data() {
             continue;
           }
           if codec == Codec::Json {
-            let response: Value = p.decode().map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
+            let response: Value = p.decode().map_err(|e| HttpError::Codec(codec, e.to_string()))?;
             let as_str = response.to_string();
             let bytes = as_str.as_bytes();
             body.extend_from_slice(bytes);
           } else {
-            let response: Bytes = p.decode().map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
+            let response: Bytes = p.decode().map_err(|e| HttpError::Codec(codec, e.to_string()))?;
             body.extend_from_slice(&response);
           }
         }
       }
-      Err(e) => return Err(HttpError::InvalidResponse(e.to_string())),
+      Err(e) => return Err(HttpError::OperationError(e.to_string())),
     }
   }
   builder = reset_header(builder, CONTENT_LENGTH, body.len());
@@ -269,7 +275,7 @@ pub(super) async fn stream_to_json(stream: PacketStream) -> Result<Value, HttpEr
     match packet {
       Ok(p) => {
         if let PacketPayload::Err(err) = p.payload() {
-          return Err(HttpError::InvalidResponse(err.msg().to_owned()));
+          return Err(HttpError::OutputStream(p.port().to_owned(), err.msg().to_owned()));
         }
         if !p.has_data() {
           continue;
@@ -280,13 +286,13 @@ pub(super) async fn stream_to_json(stream: PacketStream) -> Result<Value, HttpEr
             MapVal::RawVal(v) => {
               let response: Value = p
                 .decode_value()
-                .map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
+                .map_err(|e| HttpError::Codec(Codec::Json, e.to_string()))?;
               MapVal::RootArray(vec![v, response])
             }
             MapVal::RootArray(mut v) => {
               let response: Value = p
                 .decode_value()
-                .map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
+                .map_err(|e| HttpError::Codec(Codec::Json, e.to_string()))?;
               v.push(response);
               MapVal::RootArray(v)
             }
@@ -295,11 +301,11 @@ pub(super) async fn stream_to_json(stream: PacketStream) -> Result<Value, HttpEr
         } else {
           let response: Value = p
             .decode_value()
-            .map_err(|e| HttpError::InvalidResponse(e.to_string()))?;
+            .map_err(|e| HttpError::Codec(Codec::Json, e.to_string()))?;
           map.insert(port, MapVal::RawVal(response));
         }
       }
-      Err(e) => return Err(HttpError::InvalidResponse(e.to_string())),
+      Err(e) => return Err(HttpError::OperationError(e.to_string())),
     }
   }
   let json = Value::Object(

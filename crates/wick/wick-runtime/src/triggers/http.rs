@@ -52,18 +52,27 @@ enum HttpError {
 
   #[error("Operation error: {0}")]
   OperationError(String),
+
+  #[error("Error in stream for '{0}': {1}")]
+  OutputStream(String, String),
+
   #[error("Unsupported HTTP method: {0}")]
   UnsupportedMethod(String),
+
   #[error("Unsupported HTTP version: {0}")]
   UnsupportedVersion(String),
+
   #[error("Missing query parameters: {}", .0.join(", "))]
   MissingQueryParameters(Vec<String>),
+
   #[error("Invalid status code: {0}")]
   InvalidStatusCode(String),
+
   #[error("Invalid parameter value: {0}")]
   InvalidParameter(String),
-  #[error("Invalid response: {0}")]
-  InvalidResponse(String),
+
+  #[error("Could not serialize output into '{0}' codec: {1}")]
+  Codec(Codec, String),
 
   #[error("Invalid header name: {0}")]
   InvalidHeaderName(String),
