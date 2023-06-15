@@ -77,7 +77,7 @@ mod integration_test {
     let pg = init_mssql_component().await?;
     let input = packet_stream!(("input", 1_i32));
     let inv = Invocation::test("postgres", "wick://__local__/test", input, None)?;
-    let response = pg.handle(inv, None, panic_callback()).await.unwrap();
+    let response = pg.handle(inv, Default::default(), panic_callback()).await.unwrap();
     let packets: Vec<_> = response.collect().await;
 
     assert_eq!(

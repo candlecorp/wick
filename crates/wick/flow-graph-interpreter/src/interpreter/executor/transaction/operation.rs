@@ -213,12 +213,16 @@ impl InstanceHandler {
     callback: Arc<RuntimeCallback>,
   ) -> Result<()> {
     let identifier = self.id().to_owned();
+
     let entity = self.entity();
     let namespace = self.namespace().to_owned();
 
-    let associated_data = self.schematic.nodes()[self.index()].data();
+    let associated_data = self.schematic.nodes()[self.index()].data().clone();
 
-    let associated_data = associated_data.clone();
+    let timeout = associated_data
+      .settings
+      .and_then(|v| v.timeout)
+      .unwrap_or(options.output_timeout);
 
     let span = invocation.following_span(trace_span!(
       "operation exec", component = %format!("{} ({})", identifier, entity)
@@ -238,7 +242,7 @@ impl InstanceHandler {
       let clone = self.self_collection.clone();
       tokio::spawn(async move {
         clone
-          .handle(invocation, associated_data, cb)
+          .handle(invocation, associated_data.config, cb)
           .await
           .map_err(ExecutionError::ComponentError)
       })
@@ -251,7 +255,7 @@ impl InstanceHandler {
         .clone();
       tokio::spawn(async move {
         clone
-          .handle(invocation, associated_data, cb)
+          .handle(invocation, associated_data.config, cb)
           .await
           .map_err(ExecutionError::ComponentError)
       })
@@ -284,7 +288,6 @@ impl InstanceHandler {
       }
     };
 
-    let timeout = options.output_timeout;
     tokio::spawn(async move {
       if let Err(error) = output_handler(tx_id, &self, stream, channel, timeout, span.clone()).await {
         span.in_scope(|| error!(%error, "error in output handler"));
@@ -361,7 +364,11 @@ async fn output_handler(
       }
       Err(error) => {
         span.in_scope(|| warn!(%error,"timeout"));
-        let msg = format!("Operation {} timed out waiting for upstream data.", instance.entity());
+        let msg = format!(
+          "Transaction timed out waiting for output from operation {} ({})",
+          instance.id(),
+          instance.entity()
+        );
         channel
           .dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(msg))
           .await;

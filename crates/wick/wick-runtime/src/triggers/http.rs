@@ -190,6 +190,7 @@ struct RouterOperation {
   operation: String,
   component: String,
   codec: Codec,
+  config: Option<GenericConfig>,
 }
 
 #[derive(Debug, Clone)]
@@ -313,6 +314,7 @@ fn register_raw_router(
     operation: router_config.operation().name().to_owned(),
     component: index_to_router_id(index),
     codec: router_config.codec().copied().unwrap_or_default(),
+    config: router_config.operation().config().cloned(),
   };
 
   let constraint = RuntimeConstraint::Operation {

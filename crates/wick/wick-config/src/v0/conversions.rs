@@ -133,7 +133,8 @@ impl TryFrom<crate::v0::ComponentDefinition> for config::InstanceReference {
     Ok(config::InstanceReference {
       component_id: ns.to_owned(),
       name: name.to_owned(),
-      data: def.data.map(Into::into),
+      data: def.data.map_into(),
+      settings: None,
     })
   }
 }
@@ -152,7 +153,7 @@ impl TryFrom<crate::v0::ConnectionTargetDefinition> for ast::ConnectionTargetExp
   type Error = ManifestError;
 
   fn try_from(def: crate::v0::ConnectionTargetDefinition) -> Result<Self> {
-    Ok(ast::ConnectionTargetExpression::new_default(
+    Ok(ast::ConnectionTargetExpression::new_data(
       InstanceTarget::from_str(&def.instance)?,
       InstancePort::named(def.port),
       def.data,

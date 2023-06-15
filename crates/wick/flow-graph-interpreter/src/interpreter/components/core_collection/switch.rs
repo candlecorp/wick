@@ -183,7 +183,7 @@ impl Operation for Op {
           let tx = tx.clone();
           let callback = callback.clone();
           tokio::spawn(async move {
-            match callback(link, op_id, route_rx, inherent, None, &span).await {
+            match callback(link, op_id, route_rx, inherent, Default::default(), &span).await {
               Ok(mut call_rx) => {
                 while let Some(packet) = call_rx.next().await {
                   let _ = tx.send_result(packet);

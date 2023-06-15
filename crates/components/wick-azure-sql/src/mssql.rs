@@ -96,7 +96,7 @@ mod integration_test {
     let db = init_mssql_component().await?;
     let input = packet_stream!(("input", 1_i32));
     let inv = Invocation::test("mssql", "wick://__local__/test", input, None)?;
-    let response = db.handle(inv, None, panic_callback()).await.unwrap();
+    let response = db.handle(inv, Default::default(), panic_callback()).await.unwrap();
     let packets: Vec<_> = response.collect().await;
 
     assert_eq!(

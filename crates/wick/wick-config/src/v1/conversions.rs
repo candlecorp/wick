@@ -39,6 +39,7 @@ use crate::config::{
   types_config,
   ComponentConfiguration,
   ComponentImplementation,
+  ExecutionSettings,
   HighLevelComponent,
   ScheduleConfig,
 };
@@ -366,6 +367,7 @@ impl TryFrom<v1::ComponentOperationExpression> for ComponentOperationExpression 
       name: literal.name,
       component: literal.component.try_into()?,
       config: literal.with.map_into(),
+      settings: literal.timeout.map(ExecutionSettings::from_timeout_millis),
     })
   }
 }
@@ -738,6 +740,7 @@ impl TryFrom<ComponentOperationExpression> for v1::ComponentOperationExpression 
       name: value.name,
       component: value.component.try_into()?,
       with: value.config.map_into(),
+      timeout: value.settings.and_then(|t| t.timeout_millis()),
     })
   }
 }
@@ -1016,7 +1019,11 @@ impl TryFrom<config::FlowOperation> for v1::CompositeOperationDefinition {
   type Error = ManifestError;
 
   fn try_from(value: config::FlowOperation) -> std::result::Result<Self, Self::Error> {
-    let instances: Vec<v1::OperationInstance> = value.instances.into_iter().map(from_wat).collect();
+    let instances: Vec<v1::OperationInstance> = value
+      .instances
+      .into_iter()
+      .map(|(n, v)| new_operation_instance(n, v))
+      .collect();
     let connections: Result<Vec<v1::FlowExpression>> = value.expressions.try_map_into();
     Ok(Self {
       name: value.name,
@@ -1077,17 +1084,17 @@ impl TryFrom<ast::ConnectionTargetExpression> for v1::ConnectionTargetDefinition
   }
 }
 
-fn from_wat(value: (String, config::InstanceReference)) -> v1::OperationInstance {
-  let id = value.0;
-  let value = value.1;
+fn new_operation_instance(id: String, value: config::InstanceReference) -> v1::OperationInstance {
   v1::OperationInstance {
     name: id,
     operation: v1::ComponentOperationExpression {
       name: value.name,
       component: v1::ComponentDefinition::ComponentReference(v1::ComponentReference { id: value.component_id }),
-      with: value.data.map_into(),
+      with: None,
+      timeout: None,
     },
-    with: None,
+    timeout: value.settings.and_then(|v| v.timeout.map(|v| v.as_millis() as _)),
+    with: value.data.map_into(),
   }
 }
 
@@ -1125,6 +1132,7 @@ impl TryFrom<crate::v1::OperationInstance> for config::InstanceReference {
       component_id: ns.to_owned(),
       name,
       data: def.with.map_into(),
+      settings: def.timeout.map(ExecutionSettings::from_timeout_millis),
     })
   }
 }
@@ -1204,7 +1212,7 @@ impl TryFrom<crate::v1::ConnectionTargetDefinition> for ast::ConnectionTargetExp
   type Error = ManifestError;
 
   fn try_from(def: crate::v1::ConnectionTargetDefinition) -> Result<Self> {
-    Ok(ast::ConnectionTargetExpression::new_default(
+    Ok(ast::ConnectionTargetExpression::new_data(
       InstanceTarget::from_str(&def.instance)?,
       InstancePort::from_str(&def.port)?,
       def.data,

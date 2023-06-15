@@ -2,7 +2,7 @@ use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
 use wick_packet::GenericConfig;
 
-use crate::config;
+use crate::config::{self, ExecutionSettings};
 
 /// A reference to an operation.
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
@@ -18,15 +18,34 @@ pub struct ComponentOperationExpression {
   /// Configuration to associate with this operation.
   #[asset(skip)]
   pub(crate) config: Option<GenericConfig>,
+  /// Per-operation settings that override global execution settings.
+  #[asset(skip)]
+  pub(crate) settings: Option<ExecutionSettings>,
 }
 
 impl ComponentOperationExpression {
   /// Create a new [ComponentOperationExpression] with specified operation and component.
-  pub fn new(operation: impl AsRef<str>, component: ComponentDefinition) -> Self {
+  pub fn new_default(operation: impl AsRef<str>, component: ComponentDefinition) -> Self {
     Self {
       name: operation.as_ref().to_owned(),
       component,
-      config: None,
+      config: Default::default(),
+      settings: Default::default(),
+    }
+  }
+
+  /// Create a new [ComponentOperationExpression] with specified operation and component.
+  pub fn new(
+    operation: impl AsRef<str>,
+    component: ComponentDefinition,
+    config: Option<GenericConfig>,
+    settings: Option<ExecutionSettings>,
+  ) -> Self {
+    Self {
+      name: operation.as_ref().to_owned(),
+      component,
+      config,
+      settings,
     }
   }
 }
@@ -49,7 +68,8 @@ impl std::str::FromStr for ComponentOperationExpression {
     Ok(Self {
       name: operation,
       component: ComponentDefinition::Reference(config::components::ComponentReference { id: component }),
-      config: None,
+      config: Default::default(),
+      settings: Default::default(),
     })
   }
 }

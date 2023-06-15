@@ -36,6 +36,7 @@ pub(super) async fn handle(
   engine: Arc<Runtime>,
   req: Request<Body>,
   remote_addr: SocketAddr,
+  config: Option<GenericConfig>,
 ) -> Result<PacketStream, HttpError> {
   let (tx, rx) = PacketStream::new_channels();
 
@@ -48,7 +49,7 @@ pub(super) async fn handle(
   );
 
   let stream = engine
-    .invoke(invocation, None)
+    .invoke(invocation, config)
     .await
     .map_err(|e| HttpError::OperationError(e.to_string()));
   let (req, mut body) = request_and_body_to_wick(req, remote_addr)?;

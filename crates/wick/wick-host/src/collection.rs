@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use wick_interface_types::*;
-use wick_packet::{Invocation, PacketStream};
+use wick_packet::{GenericConfig, Invocation, PacketStream};
 
 use crate::ComponentHost;
 
@@ -45,7 +45,7 @@ impl Component for HostComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    data: Option<wick_packet::GenericConfig>,
+    data: Option<GenericConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, ComponentError>> {
     let fut = self.host.invoke(invocation, data);
@@ -90,7 +90,9 @@ mod tests {
     let job_payload = packet_stream![("input", input)];
 
     let invocation = Invocation::test(file!(), Entity::local("logger"), job_payload, None)?;
-    let mut outputs = collection.handle(invocation, None, panic_callback()).await?;
+    let mut outputs = collection
+      .handle(invocation, Default::default(), panic_callback())
+      .await?;
     let output = outputs.next().await.unwrap().unwrap();
 
     println!("output: {:?}", output);

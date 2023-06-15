@@ -1,6 +1,6 @@
 use flow_component::{Component, ComponentError, Context, Operation, RuntimeCallback};
 use wick_interface_types::{ComponentSignature, TypeDefinition};
-use wick_packet::{Invocation, PacketStream};
+use wick_packet::{GenericConfig, Invocation, PacketStream};
 
 use crate::constants::*;
 use crate::graph::types::Network;
@@ -78,7 +78,7 @@ impl CoreCollection {
         }
 
         let result = match operation.cref().name() {
-          merge::Op::ID => match merge::Op::decode_config(operation.data().clone()) {
+          merge::Op::ID => match merge::Op::decode_config(operation.data().config.clone()) {
             Ok(config) => {
               let id = dyn_component_id(merge::Op::ID, schematic.name(), operation.id());
               debug!(%id,"adding dynamic type signature for merge component");
@@ -90,7 +90,7 @@ impl CoreCollection {
             }
             Err(e) => Err(OpInitError::new(e, DynamicOperation::Merge)),
           },
-          switch::Op::ID => match switch::Op::decode_config(operation.data().clone()) {
+          switch::Op::ID => match switch::Op::decode_config(operation.data().config.clone()) {
             Ok(config) => {
               let op_sig = this.switch.gen_signature(graph, config);
 
@@ -126,7 +126,7 @@ impl Component for CoreCollection {
   fn handle(
     &self,
     invocation: Invocation,
-    data: Option<wick_packet::GenericConfig>,
+    data: Option<GenericConfig>,
     callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, namespace = NS_CORE));

@@ -171,7 +171,11 @@ impl Interpreter {
     local_first_callback
   }
 
-  async fn invoke_operation(&self, invocation: Invocation) -> Result<PacketStream, Error> {
+  async fn invoke_operation(
+    &self,
+    invocation: Invocation,
+    _config: Option<GenericConfig>,
+  ) -> Result<PacketStream, Error> {
     let dispatcher = self.dispatcher.clone();
     let name = invocation.target.operation_id().to_owned();
     let op = self
@@ -274,7 +278,7 @@ impl Component for Interpreter {
             }
             span.in_scope(|| trace!(entity=%invocation.target, "invoke::composite::operation"));
             self
-              .invoke_operation(invocation)
+              .invoke_operation(invocation, config)
               .instrument(span)
               .await
               .map_err(ComponentError::new)?

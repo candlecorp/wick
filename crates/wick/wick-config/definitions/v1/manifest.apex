@@ -169,6 +169,8 @@ type ComponentOperationExpression @shortform {
   name: string @required
   "Configuration to pass to this operation on invocation."
   with: {string: any}?,
+  "Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely."
+  timeout: u64?,
 }
 
 "An HTTP server that delegates to HTTP routers on every request."
@@ -667,6 +669,9 @@ type OperationInstance {
 
   "Data to associate with the reference, if any."
   with: {string: any}?,
+
+  "Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely."
+  timeout: u64?,
 }
 
 "A test case for a component's operation."

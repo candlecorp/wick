@@ -11,7 +11,7 @@ type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send
 
 use tracing::Span;
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, Type};
-use wick_packet::{Invocation, PacketStream};
+use wick_packet::{GenericConfig, Invocation, PacketStream};
 fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentConfiguration> {
   Ok(wick_config::WickConfiguration::load_from_file_sync(path.as_ref())?.try_component_config()?)
 }
@@ -21,7 +21,7 @@ impl Component for SignatureTestCollection {
   fn handle(
     &self,
     _invocation: Invocation,
-    _config: Option<wick_packet::GenericConfig>,
+    _config: Option<GenericConfig>,
     _callback: std::sync::Arc<flow_component::RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     todo!()

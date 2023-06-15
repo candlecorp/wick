@@ -38,7 +38,7 @@ async fn invoke_operation(
     &Span::current(),
   );
 
-  let mut response = runtime.invoke(invocation, None).await?;
+  let mut response = runtime.invoke(invocation, Default::default()).await?;
   while let Some(packet) = response.next().await {
     trace!(?packet, "trigger:time:response");
   }

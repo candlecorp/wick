@@ -27,6 +27,52 @@ async fn test_echo() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn test_timeout_ok() -> Result<()> {
+  let sleep_for = 250;
+  let (interpreter, mut outputs) = test::base_setup(
+    "./tests/manifests/v1/component-timeout.yaml",
+    Entity::local("test"),
+    packets!(("input", sleep_for)),
+    None,
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _wrapper = outputs.pop().unwrap(); //done signal
+  let wrapper = outputs.pop().unwrap();
+  let slept_for: u64 = wrapper?.decode()?;
+  assert!(slept_for >= sleep_for);
+
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_timeout_fail() -> Result<()> {
+  let sleep_for = 1000;
+  let (interpreter, mut outputs) = test::base_setup(
+    "./tests/manifests/v1/component-timeout.yaml",
+    Entity::local("test"),
+    packets!(("input", sleep_for)),
+    None,
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _wrapper = outputs.pop().unwrap(); //done signal
+  let wrapper = outputs.pop().unwrap()?;
+  let packet = wrapper;
+  assert!(packet.unwrap_err().msg().contains("timed out"));
+
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
 async fn test_anon_nodes() -> Result<()> {
   let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v1/inline-node-ids.yaml",
@@ -162,7 +208,7 @@ async fn test_external_direct() -> Result<()> {
     "./tests/manifests/v0/external.yaml",
     Entity::operation("test", "echo"),
     packets!(("input", "hello world")),
-    None,
+    Default::default(),
   )
   .await?;
 

@@ -81,13 +81,14 @@ pub fn from_manifest(network_def: &wick_config::config::ComponentConfiguration) 
   let network_def = network_def.try_composite()?;
 
   for flow in network_def.operations().values() {
-    let mut schematic: Schematic<GenericConfig> = Schematic::new(flow.name().to_owned());
+    let mut schematic: Schematic<GenericConfig> =
+      Schematic::new(flow.name().to_owned(), Default::default(), Default::default());
 
     for (name, def) in flow.instances().iter() {
       schematic.add_external(
         name,
         NodeReference::new(def.component_id(), def.name()),
-        def.data().cloned(),
+        def.data().cloned().unwrap_or_default(),
       );
     }
 
@@ -105,7 +106,7 @@ pub fn from_manifest(network_def: &wick_config::config::ComponentConfiguration) 
         if let Some(node) = schematic.find_mut(from.instance().id().unwrap()) {
           println!("{:?}", node);
           let from_port = node.add_output(from.port().name());
-          schematic.connect(from_port, to_port, None)?;
+          schematic.connect(from_port, to_port, Default::default())?;
         } else {
           // panic!();
         }

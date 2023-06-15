@@ -76,7 +76,7 @@ mod tests {
     let stream = packet_stream![("input", "hello")];
     let invocation = Invocation::test(file!(), target, stream, None)?;
 
-    let packets = engine_invoke_async(nuid, invocation, None).await?;
+    let packets = engine_invoke_async(nuid, invocation, Default::default()).await?;
     let mut packets: Vec<_> = packets.collect().await;
     debug!("{:?}", packets);
     assert_eq!(packets.len(), 2);

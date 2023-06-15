@@ -16,7 +16,7 @@ type Result<T> = std::result::Result<T, RuntimeError>;
 pub struct Runtime {
   pub uid: Uuid,
   inner: Arc<RuntimeService>,
-  timeout: Duration,
+  _timeout: Duration,
 }
 
 fn default_timeout() -> Duration {
@@ -56,7 +56,7 @@ pub struct RuntimeInit {
 
 impl Runtime {
   pub async fn new(seed: Seed, config: RuntimeInit) -> Result<Self> {
-    let timeout = config.timeout;
+    let _timeout = config.timeout;
     let init = Initialize::new(seed, config);
 
     let service = RuntimeService::new(init)
@@ -65,7 +65,7 @@ impl Runtime {
     Ok(Self {
       uid: service.id,
       inner: service,
-      timeout,
+      _timeout,
     })
   }
 
@@ -73,9 +73,7 @@ impl Runtime {
     let time = std::time::SystemTime::now();
     trace!(start_time=%time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() ,"invocation start");
 
-    let response = tokio::time::timeout(self.timeout, self.inner.invoke(invocation, config)?)
-      .await
-      .map_err(|_| RuntimeError::Timeout)??;
+    let response = self.inner.invoke(invocation, config)?.await?;
     trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"invocation complete");
 
     Ok(response.ok()?)
