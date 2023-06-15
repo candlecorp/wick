@@ -90,7 +90,7 @@ pub struct Node<DATA> {
   pub name: String,
   kind: NodeKind,
   index: NodeIndex,
-  data: Option<DATA>,
+  data: DATA,
   inputs: PortList,
   outputs: PortList,
 }
@@ -105,7 +105,7 @@ impl<DATA> Node<DATA>
 where
   DATA: Clone,
 {
-  pub(crate) fn new<T: AsStr>(name: T, index: NodeIndex, kind: NodeKind, data: Option<DATA>) -> Self {
+  pub(crate) fn new<T: AsStr>(name: T, index: NodeIndex, kind: NodeKind, data: DATA) -> Self {
     Self {
       name: name.as_ref().to_owned(),
       kind,
@@ -135,13 +135,8 @@ where
   }
 
   #[must_use]
-  pub fn data(&self) -> &Option<DATA> {
+  pub fn data(&self) -> &DATA {
     &self.data
-  }
-
-  #[must_use]
-  pub fn has_data(&self) -> bool {
-    self.data.is_some()
   }
 
   pub fn inputs(&self) -> &[NodePort] {

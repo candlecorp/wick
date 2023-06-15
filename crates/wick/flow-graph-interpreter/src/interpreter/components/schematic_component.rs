@@ -4,7 +4,7 @@ use flow_component::{Component, ComponentError, RuntimeCallback};
 use parking_lot::Mutex;
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Invocation, PacketStream};
+use wick_packet::{GenericConfig, Invocation, PacketStream};
 
 use crate::constants::*;
 use crate::interpreter::channel::InterpreterDispatchChannel;
@@ -67,7 +67,7 @@ impl Component for SchematicComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _config: Option<wick_packet::GenericConfig>,
+    _config: Option<GenericConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, namespace = NS_SELF));

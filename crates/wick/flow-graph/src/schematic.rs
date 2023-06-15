@@ -43,10 +43,15 @@ impl<DATA> Schematic<DATA>
 where
   DATA: Clone,
 {
-  pub fn new<T: AsStr>(name: T) -> Self {
+  pub fn new<T: AsStr>(name: T, input_data: DATA, output_data: DATA) -> Self {
     let nodes = vec![
-      Node::new(SCHEMATIC_INPUT, SCHEMATIC_INPUT_INDEX, NodeKind::input(), None),
-      Node::new(SCHEMATIC_OUTPUT, SCHEMATIC_OUTPUT_INDEX, NodeKind::output(), None),
+      Node::new(SCHEMATIC_INPUT, SCHEMATIC_INPUT_INDEX, NodeKind::input(), input_data),
+      Node::new(
+        SCHEMATIC_OUTPUT,
+        SCHEMATIC_OUTPUT_INDEX,
+        NodeKind::output(),
+        output_data,
+      ),
     ];
     let node_indices = HashMap::from([
       (SCHEMATIC_INPUT.to_owned(), SCHEMATIC_INPUT_INDEX),
@@ -200,17 +205,17 @@ where
       .map(|indices| Connections::new(self, indices.clone()))
   }
 
-  pub fn add_external<T: AsStr>(&mut self, name: T, reference: NodeReference, data: Option<DATA>) -> NodeIndex {
+  pub fn add_external<T: AsStr>(&mut self, name: T, reference: NodeReference, data: DATA) -> NodeIndex {
     let name = name.as_ref().to_owned();
     self.add_node(name, NodeKind::External(reference), data)
   }
 
-  pub fn add_inherent<T: AsStr>(&mut self, name: T, reference: NodeReference, data: Option<DATA>) -> NodeIndex {
+  pub fn add_inherent<T: AsStr>(&mut self, name: T, reference: NodeReference, data: DATA) -> NodeIndex {
     let name = name.as_ref().to_owned();
     self.add_node(name, NodeKind::Inherent(reference), data)
   }
 
-  fn add_node(&mut self, name: String, kind: NodeKind, data: Option<DATA>) -> NodeIndex {
+  fn add_node(&mut self, name: String, kind: NodeKind, data: DATA) -> NodeIndex {
     let existing_index = self.node_map.get(&name);
 
     match existing_index {
@@ -225,7 +230,7 @@ where
     }
   }
 
-  pub fn connect(&mut self, from: PortReference, to: PortReference, data: Option<DATA>) -> Result<(), Error> {
+  pub fn connect(&mut self, from: PortReference, to: PortReference, data: DATA) -> Result<(), Error> {
     let connection_index = self.connections.len();
     let downstream_node = &mut self.nodes[to.node_index];
     downstream_node.connect_input(to.port_index, connection_index)?;

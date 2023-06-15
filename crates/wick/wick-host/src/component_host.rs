@@ -161,7 +161,7 @@ impl ComponentHost {
           data,
           &self.span,
         );
-        Ok(runtime.invoke(invocation, None).await?)
+        Ok(runtime.invoke(invocation, Default::default()).await?)
       }
       None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }

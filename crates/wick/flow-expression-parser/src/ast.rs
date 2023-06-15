@@ -359,7 +359,7 @@ impl ConnectionTargetExpression {
   }
 
   /// Create a new [ConnectionTargetExpression] with default data
-  pub fn new_default(
+  pub fn new_data(
     instance: InstanceTarget,
     port: impl Into<InstancePort>,
     data: Option<HashMap<String, Value>>,

@@ -4,7 +4,7 @@ use flow_expression_parser::ast::{self};
 use wick_interface_types::Field;
 use wick_packet::GenericConfig;
 
-use crate::config::{self};
+use crate::config::{self, ExecutionSettings};
 
 #[derive(Debug, Default, Clone, derive_asset_container::AssetManager, Builder, property::Property)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
@@ -106,6 +106,8 @@ pub struct InstanceReference {
   pub(crate) component_id: String,
   /// Data associated with the component instance.
   pub(crate) data: Option<GenericConfig>,
+  /// Per-operation settings that override global execution settings.
+  pub(crate) settings: Option<ExecutionSettings>,
 }
 
 impl InstanceReference {

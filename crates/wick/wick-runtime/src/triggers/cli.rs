@@ -70,7 +70,7 @@ impl Cli {
     runtime.add_import(cli_binding);
     let runtime = runtime.build(None).await?;
 
-    let mut response = runtime.invoke(invocation, None).await?;
+    let mut response = runtime.invoke(invocation, Default::default()).await?;
     let output = loop {
       if let Some(packet) = response.next().await {
         trace!(?packet, "trigger:cli:response");

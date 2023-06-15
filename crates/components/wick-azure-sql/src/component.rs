@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use bb8::{Pool, PooledConnection};
 use bb8_tiberius::ConnectionManager;
@@ -195,43 +195,12 @@ async fn handle_stream(
   stmt: Arc<(String, String)>,
   span: Span,
 ) -> Result<(), Error> {
-  use std::time::Duration;
-  #[derive(Debug, Clone)]
-  struct Stats {
-    start: SystemTime,
-    packet_wait_duration: Vec<Duration>,
-    loop_duration: Vec<Duration>,
-    exec_duration: Vec<Duration>,
-    other_duration: Vec<Duration>,
-    end: SystemTime,
-  }
-  impl Default for Stats {
-    fn default() -> Self {
-      Self {
-        start: SystemTime::now(),
-        packet_wait_duration: Vec::new(),
-        loop_duration: Vec::new(),
-        exec_duration: Vec::new(),
-        other_duration: Vec::new(),
-        end: SystemTime::now(),
-      }
-    }
-  }
-  let mut stats = Stats::default();
-  stats.start = SystemTime::now();
   'outer: loop {
     let mut incoming_packets = Vec::new();
-    let loop_start = SystemTime::now();
 
-    let st = SystemTime::now();
     for input in &mut input_streams {
       incoming_packets.push(input.next().await);
     }
-    stats
-      .packet_wait_duration
-      .push(SystemTime::now().duration_since(st).unwrap());
-
-    let st = SystemTime::now();
 
     let num_done = incoming_packets.iter().filter(|r| r.is_none()).count();
     if num_done > 0 {
@@ -255,10 +224,8 @@ async fn handle_stream(
       let ty = fields.iter().find(|f| f.name() == packet.port()).unwrap().ty().clone();
       type_wrappers.push((ty, packet));
     }
-    stats.other_duration.push(SystemTime::now().duration_since(st).unwrap());
 
-    let st = SystemTime::now();
-    exec(
+    let _ = exec(
       client,
       tx.clone(),
       opdef.clone(),
@@ -267,22 +234,7 @@ async fn handle_stream(
       span.clone(),
     )
     .await?;
-    stats.exec_duration.push(SystemTime::now().duration_since(st).unwrap());
-    stats
-      .loop_duration
-      .push(SystemTime::now().duration_since(loop_start).unwrap());
   }
-  stats.end = SystemTime::now();
-  fn avg(durations: &[Duration]) -> Duration {
-    let sum: Duration = durations.iter().sum();
-    let len = durations.len() as u32;
-    sum / len
-  }
-  println!("avg packet wait: {:?}", avg(&stats.packet_wait_duration));
-  println!("avg exec: {:?}", avg(&stats.exec_duration));
-  println!("avg other: {:?}", avg(&stats.other_duration));
-  println!("avg total loop: {:?}", avg(&stats.loop_duration));
-  println!("total: {:?}", stats.end.duration_since(stats.start).unwrap());
   Ok(())
 }
 
@@ -293,7 +245,8 @@ async fn exec(
   args: Vec<(Type, Packet)>,
   stmt: Arc<(String, String)>,
   span: Span,
-) -> Result<(), Error> {
+) -> Result<Duration, Error> {
+  let start = SystemTime::now();
   span.in_scope(|| trace!(stmt = %stmt.0, "executing query"));
 
   let mut bound_args: Vec<SqlWrapper> = Vec::new();
@@ -331,8 +284,9 @@ async fn exec(
       let _ = tx.send(packet);
     }
   }
+  let duration = SystemTime::now().duration_since(start).unwrap();
 
-  Ok(())
+  Ok(duration)
 }
 
 impl ConfigValidation for AzureSqlComponent {

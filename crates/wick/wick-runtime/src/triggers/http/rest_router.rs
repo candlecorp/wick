@@ -143,7 +143,7 @@ impl RestHandler {
       );
 
       let stream = runtime
-        .invoke(invocation, None)
+        .invoke(invocation, route.config.operation().config().cloned())
         .instrument(span)
         .await
         .map_err(|e| HttpError::OperationError(e.to_string()))?;

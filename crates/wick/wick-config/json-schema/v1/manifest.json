@@ -437,6 +437,12 @@
           "patternProperties": {
             "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
           }
+        },
+        "timeout": {
+          "description": "Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely.",
+          "required": false,
+
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
         }
       },
       "required": ["component", "name"]
@@ -1836,6 +1842,12 @@
           "patternProperties": {
             "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
           }
+        },
+        "timeout": {
+          "description": "Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely.",
+          "required": false,
+
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
         }
       },
       "required": ["name", "operation"]

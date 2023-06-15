@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use anyhow::{anyhow, Result};
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
@@ -11,7 +11,16 @@ use tokio::task::JoinHandle;
 use tracing::{trace, Span};
 use wasmrs_rx::{FluxChannel, Observer};
 use wick_interface_types::{ComponentSignature, OperationSignature, Type};
-use wick_packet::{fan_out, packet_stream, ComponentReference, InherentData, Invocation, Packet, PacketStream};
+use wick_packet::{
+  fan_out,
+  packet_stream,
+  ComponentReference,
+  GenericConfig,
+  InherentData,
+  Invocation,
+  Packet,
+  PacketStream,
+};
 
 pub struct TestComponent(ComponentSignature);
 impl TestComponent {
@@ -24,6 +33,11 @@ impl TestComponent {
         OperationSignature::new("echo")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
+      )
+      .add_operation(
+        OperationSignature::new("wait")
+          .add_input("input", Type::U64)
+          .add_output("output", Type::U64),
       )
       .add_operation(
         #[allow(deprecated)]
@@ -169,7 +183,7 @@ impl Component for TestComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _config: Option<wick_packet::GenericConfig>,
+    _config: Option<GenericConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let operation = invocation.target.operation_id();
@@ -185,16 +199,31 @@ impl Component for TestComponent {
 fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Result<PacketStream> {
   let mut payload_stream = invocation.packets;
   let operation = invocation.target.operation_id();
+  println!("got {}", operation);
   match operation {
     "echo" => {
       let (mut send, stream) = stream(1);
-      println!("got echo");
+      spawn(async move {
+        let mut input = fan_out!(payload_stream, "input");
+        while let Some(Ok(payload)) = input.next().await {
+          defer(vec![send(payload.set_port("output"))]);
+        }
+        defer(vec![send(Packet::done("output"))]);
+      });
+      Ok(stream)
+    }
+    "wait" => {
+      let (mut send, stream) = stream(1);
       spawn(async move {
         let mut input = fan_out!(payload_stream, "input");
         println!("got echo: waiting for payload");
         while let Some(Ok(payload)) = input.next().await {
-          println!("got echo: got payload");
-          defer(vec![send(payload.set_port("output"))]);
+          let millis = payload.decode::<u64>().unwrap();
+          let before = SystemTime::now();
+          tokio::time::sleep(Duration::from_millis(millis)).await;
+          let slept_for = SystemTime::now().duration_since(before).unwrap().as_millis() as u64;
+          println!("slept for {}ms", slept_for);
+          defer(vec![send(Packet::encode("output", &slept_for))]);
         }
         defer(vec![send(Packet::done("output"))]);
       });
@@ -202,12 +231,10 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
     }
     "call" => {
       let (mut send, stream) = stream(1);
-      println!("got echo");
       spawn(async move {
         let (mut message, mut component) = fan_out!(payload_stream, "message", "component");
-        println!("got echo: waiting for payload");
         while let (Some(Ok(message)), Some(Ok(component))) = (message.next().await, component.next().await) {
-          println!("got echo: got compref: {:?}", component.payload());
+          println!("got compref: {:?}", component.payload());
           let link: ComponentReference = component.decode().unwrap();
           let message: String = message.decode().unwrap();
           let packets = packet_stream!(("input", message));
@@ -216,7 +243,7 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
             "reverse".to_owned(),
             packets,
             InherentData::unsafe_default(),
-            None,
+            Default::default(),
             &Span::current(),
           )
           .await
@@ -230,12 +257,9 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
     }
     "reverse" => {
       let (mut send, stream) = stream(1);
-      println!("got reverse");
       spawn(async move {
         let mut input = fan_out!(payload_stream, "input");
-        println!("got reverse: waiting for payload");
         while let Some(Ok(payload)) = input.next().await {
-          println!("got reverse: got payload");
           let msg: String = payload.decode().unwrap();
           defer(vec![send(Packet::encode(
             "output",
@@ -248,12 +272,9 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
     }
     "uppercase" => {
       let (mut send, stream) = stream(1);
-      println!("got uppercase");
       spawn(async move {
         let mut input = fan_out!(payload_stream, "input");
-        println!("got uppercase: waiting for payload");
         while let Some(Ok(payload)) = input.next().await {
-          println!("got uppercase: got payload");
           let msg: String = payload.decode().unwrap();
           defer(vec![send(Packet::encode("output", &msg.to_ascii_uppercase()))]);
         }
@@ -358,143 +379,6 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
       Ok(stream)
     }
 
-    // "concat" => {
-    //   let left: String = invocation.payload.take("left").unwrap();
-    //   let right: String = invocation.payload.take("right").unwrap();
-    //   let result = format!("{}{}", left, right);
-
-    //   let (mut send, stream) = stream(1);
-
-    //   defer(vec![
-    //     send(TransportWrapper::new("output", MessageTransport::success(&result))),
-    //     send(TransportWrapper::done("output")),
-    //   ]);
-
-    //   Ok(stream)
-    // }
-    // "concat-five" => {
-    //   let one: String = invocation.payload.take("one").unwrap();
-    //   let two: String = invocation.payload.take("two").unwrap();
-    //   let three: String = invocation.payload.take("three").unwrap();
-    //   let four: String = invocation.payload.take("four").unwrap();
-    //   let five: String = invocation.payload.take("five").unwrap();
-    //   let result = format!("{}{}{}{}{}", one, two, three, four, five);
-
-    //   let (mut send, stream) = stream(1);
-
-    //   defer(vec![
-    //     send(TransportWrapper::new("output", MessageTransport::success(&result))),
-    //     send(TransportWrapper::done("output")),
-    //   ]);
-
-    //   Ok(stream)
-    // }
-    // "timeout-nodone" => {
-    //   let input: String = invocation.payload.take("input").unwrap();
-
-    //   let (mut send, stream) = stream(1);
-
-    //   defer(vec![
-    //     send(TransportWrapper::new("output", MessageTransport::success(&input))),
-    //     send(TransportWrapper::done("output")),
-    //   ]);
-
-    //   Ok(stream)
-    // }
-    // "join" => {
-    //   let left: String = invocation.payload.take("left").unwrap();
-    //   let right: String = invocation.payload.take("right").unwrap();
-    //   let result = format!("{}{}", left, right);
-
-    //   let (mut send, stream) = stream(1);
-
-    //   defer(vec![
-    //     send(TransportWrapper::new("output", MessageTransport::success(&result))),
-    //     send(TransportWrapper::done("output")),
-    //   ]);
-
-    //   Ok(stream)
-    // }
-    // "ref_to_string" => {
-    //   let link: ComponentReference = invocation.payload.take("link").unwrap();
-    //   let result = link.to_string();
-
-    //   let (mut send, stream) = stream(1);
-
-    //   defer(vec![
-    //     send(TransportWrapper::new("output", MessageTransport::success(&result))),
-    //     send(TransportWrapper::done("output")),
-    //   ]);
-
-    //   Ok(stream)
-    // }
-    // "no-inputs" => {
-    //   let (mut send, stream) = stream(1);
-
-    //   defer(vec![
-    //     send(TransportWrapper::new(
-    //       "output",
-    //       MessageTransport::success(&"Hello world".to_owned()),
-    //     )),
-    //     send(TransportWrapper::done("output")),
-    //   ]);
-
-    //   Ok(stream)
-    // }
-    // "reverse" => {
-    //   println!("Reverse payload {:?}", invocation.payload);
-    //   let input: String = invocation.payload.take("input").unwrap();
-
-    //   let (mut send, stream) = stream(1);
-
-    //   defer(vec![
-    //     send(TransportWrapper::new(
-    //       "output",
-    //       MessageTransport::success(&input.chars().rev().collect::<String>()),
-    //     )),
-    //     send(TransportWrapper::done("output")),
-    //   ]);
-
-    //   Ok(stream)
-    // }
-    // "copy" => {
-    //   println!("Reverse payload {:?}", invocation.payload);
-    //   let input: String = invocation.payload.take("input").unwrap();
-    //   let times: u64 = invocation.payload.take("times").unwrap();
-    //   let mut futs = vec![];
-
-    //   let (mut send, stream) = stream(1);
-    //   for _ in 0..times {
-    //     futs.push(send(TransportWrapper::new("output", MessageTransport::success(&input))));
-    //   }
-
-    //   futs.push(send(TransportWrapper::done("output")));
-
-    //   defer(futs);
-
-    //   Ok(stream)
-    // }
-    // "exception" => {
-    //   let input = invocation.payload.remove("input").unwrap();
-    //   println!("test::exception got {}", input);
-
-    //   let (mut send, stream) = stream(1);
-
-    //   defer(vec![
-    //     send(TransportWrapper::new(
-    //       "output",
-    //       MessageTransport::Failure(Failure::Exception("test::exception".to_owned())),
-    //     )),
-    //     send(TransportWrapper::done("output")),
-    //   ]);
-
-    //   Ok(stream)
-    // }
-    // "panic" => {
-    //   let input = invocation.payload.remove("input").unwrap();
-    //   println!("test::panic got {}", input);
-    //   panic!();
-    // }
     _ => Err(anyhow::anyhow!("Operation {} not handled", operation)),
   }
 }

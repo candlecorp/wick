@@ -133,7 +133,10 @@ impl InvocationService for InvocationServer {
 
     let op_id = invocation.target.operation_id().to_owned();
 
-    let result = self.collection.handle(invocation, None, panic_callback()).await;
+    let result = self
+      .collection
+      .handle(invocation, Default::default(), panic_callback())
+      .await;
     if let Err(e) = result {
       let message = e.to_string();
       error!("Invocation failed: {}", message);

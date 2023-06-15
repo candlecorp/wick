@@ -356,6 +356,11 @@ pub(crate) struct ComponentOperationExpression {
   #[serde(skip_serializing_if = "Option::is_none")]
   #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
   pub(crate) with: Option<HashMap<String, Value>>,
+  /// Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) timeout: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1389,6 +1394,11 @@ pub(crate) struct OperationInstance {
   #[serde(skip_serializing_if = "Option::is_none")]
   #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
   pub(crate) with: Option<HashMap<String, Value>>,
+  /// Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) timeout: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

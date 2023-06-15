@@ -9,6 +9,7 @@ pub(crate) mod interface;
 pub(crate) mod metadata;
 pub(crate) mod operation_definition;
 pub(crate) mod package_definition;
+pub(crate) mod settings;
 pub(crate) mod test_case;
 
 pub use self::bindings::*;
@@ -22,4 +23,5 @@ pub use self::interface::*;
 pub use self::metadata::*;
 pub use self::operation_definition::*;
 pub use self::package_definition::*;
+pub use self::settings::*;
 pub use self::test_case::*;

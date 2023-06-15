@@ -1,14 +1,27 @@
 pub mod types {
-  use wick_packet::GenericConfig;
+  use super::AssociatedData;
 
-  pub(crate) type Network = flow_graph::Network<GenericConfig>;
-  pub(crate) type Operation = flow_graph::Node<GenericConfig>;
+  pub(crate) type Network = flow_graph::Network<AssociatedData>;
+  pub(crate) type Operation = flow_graph::Node<AssociatedData>;
   pub(crate) type OperationPort = flow_graph::NodePort;
-  pub(crate) type Schematic = flow_graph::Schematic<GenericConfig>;
-  pub(crate) type Port<'a> = flow_graph::iterators::Port<'a, GenericConfig>;
+  pub(crate) type Schematic = flow_graph::Schematic<AssociatedData>;
+  pub(crate) type Port<'a> = flow_graph::iterators::Port<'a, AssociatedData>;
+}
+use std::collections::HashMap;
+pub(crate) type AssociatedData = OperationSettings;
+
+#[derive(Debug, Clone, Default)]
+pub struct OperationSettings {
+  pub(crate) config: Option<GenericConfig>,
+  pub(crate) settings: Option<ExecutionSettings>,
 }
 
-use std::collections::HashMap;
+impl OperationSettings {
+  /// Initialize a new OperationSettings with the specified config and settings.
+  pub(crate) fn new(config: Option<GenericConfig>, settings: Option<ExecutionSettings>) -> Self {
+    Self { config, settings }
+  }
+}
 
 use flow_expression_parser::ast::{
   BlockExpression,
@@ -21,7 +34,7 @@ use flow_expression_parser::ast::{
 use flow_graph::NodeReference;
 use serde_json::Value;
 use types::*;
-use wick_config::config::{ComponentImplementation, FlowOperation};
+use wick_config::config::{ComponentImplementation, ExecutionSettings, FlowOperation};
 use wick_packet::GenericConfig;
 
 use crate::constants::{NS_CORE, NS_NULL};
@@ -60,14 +73,14 @@ fn register_operation(
     register_operation(scope, network, flow)?;
   }
   let name = scope.join("::");
-  debug!(%name, "registering operation");
-  let mut schematic = Schematic::new(name);
+  let mut schematic = Schematic::new(name, Default::default(), Default::default());
 
   for (name, def) in flow.instances().iter() {
+    debug!(%name, config=?def.data(),settings=?def.settings(), "registering operation");
     schematic.add_external(
       name,
       NodeReference::new(def.component_id(), def.name()),
-      def.data().cloned(),
+      OperationSettings::new(def.data().cloned(), def.settings().cloned()),
     );
   }
 
@@ -112,7 +125,7 @@ fn process_connection_expression(
 
   if let Some(component) = schematic.find_mut(from.instance().id().unwrap()) {
     let from_port = component.add_output(from.port().name());
-    schematic.connect(from_port, to_port, None)?;
+    schematic.connect(from_port, to_port, Default::default())?;
   } else {
     panic!("Can't find component {}", from.instance());
   }
@@ -146,7 +159,11 @@ fn expand_port_paths(
           "path".to_owned(),
           Value::Array(parts.into_iter().map(Value::String).collect()),
         )]));
-        schematic.add_external(&id, NodeReference::new("core", "pluck"), Some(config));
+        schematic.add_external(
+          &id,
+          NodeReference::new("core", "pluck"),
+          OperationSettings::new(Some(config), None),
+        );
         *expression = FlowExpression::block(BlockExpression::new(vec![
           FlowExpression::connection(ConnectionExpression::new(
             ConnectionTargetExpression::new(from_inst, InstancePort::named(&name)),
@@ -206,7 +223,7 @@ fn expand_operation(
     #[allow(clippy::option_if_let_else)]
     if let Some(id) = id {
       let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
-      schematic.add_external(id, NodeReference::new(component_id, op), None);
+      schematic.add_external(id, NodeReference::new(component_id, op), Default::default());
     } else {
       todo!()
     }
@@ -217,7 +234,7 @@ fn expand_operation(
     InstanceTarget::Path(path, id) => {
       if let Some(id) = id {
         let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
-        schematic.add_external(id, NodeReference::new(component_id, op), None);
+        schematic.add_external(id, NodeReference::new(component_id, op), Default::default());
       } else if let Some((ports, generated_id)) = anonymous_path_ids.get_mut(path) {
         if ports.contains(to_port.name()) {
           return Err(flow_graph::error::Error::AmbiguousOperation(path.clone()));
@@ -230,7 +247,7 @@ fn expand_operation(
       *inline_id += 1;
       let id_str = format!("drop_{}", inline_id);
       id.replace(id_str.clone());
-      schematic.add_external(id_str, NodeReference::new(NS_NULL, "drop"), None);
+      schematic.add_external(id_str, NodeReference::new(NS_NULL, "drop"), Default::default());
     }
     _ => {}
   }

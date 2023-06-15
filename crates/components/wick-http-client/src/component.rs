@@ -505,7 +505,7 @@ mod test {
       let packets = packet_stream!(("input", "SENTINEL"), ("number", [123, 345, 678]));
       let invocation = Invocation::test("test_post_request", Entity::local(POST_OP), packets, Default::default())?;
       let mut stream = comp
-        .handle(invocation, None, panic_callback())
+        .handle(invocation, Default::default(), panic_callback())
         .await?
         .collect::<Vec<_>>()
         .await;

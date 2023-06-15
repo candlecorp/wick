@@ -7,14 +7,14 @@ pub struct Connection<DATA> {
   pub(crate) from: PortReference,
   pub(crate) to: PortReference,
   pub(crate) index: ConnectionIndex,
-  pub(crate) data: Option<DATA>,
+  pub(crate) data: DATA,
 }
 
 impl<DATA> Connection<DATA>
 where
   DATA: Clone,
 {
-  pub(crate) fn new(from: PortReference, to: PortReference, index: ConnectionIndex, data: Option<DATA>) -> Self {
+  pub(crate) fn new(from: PortReference, to: PortReference, index: ConnectionIndex, data: DATA) -> Self {
     Self { from, to, index, data }
   }
 
@@ -34,7 +34,7 @@ where
   }
 
   #[must_use]
-  pub fn data(&self) -> &Option<DATA> {
+  pub fn data(&self) -> &DATA {
     &self.data
   }
 }

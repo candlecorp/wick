@@ -1,7 +1,7 @@
 use flow_component::{Component, RuntimeCallback};
 use tracing::Instrument;
 use uuid::Uuid;
-use wick_packet::{Invocation, PacketStream};
+use wick_packet::{GenericConfig, Invocation, PacketStream};
 
 use crate::dev::prelude::*;
 
@@ -29,7 +29,7 @@ impl Component for EngineComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    config: Option<wick_packet::GenericConfig>,
+    config: Option<GenericConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target_url = invocation.target_url();
@@ -80,7 +80,9 @@ mod tests {
     let stream = packet_stream!(("MAIN_IN", data));
 
     let invocation = Invocation::test(file!(), Entity::local("simple"), stream, None)?;
-    let outputs = component.handle(invocation, None, panic_callback()).await?;
+    let outputs = component
+      .handle(invocation, Default::default(), panic_callback())
+      .await?;
     let mut packets: Vec<_> = outputs.collect().await;
     println!("packets: {:#?}", packets);
     let _ = packets.pop();

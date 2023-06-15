@@ -238,6 +238,7 @@ impl FromStr for v1::ComponentOperationExpression {
       name: operation,
       component: crate::v1::ComponentDefinition::ComponentReference(crate::v1::ComponentReference { id }),
       with: None,
+      timeout: None,
     })
   }
 }
@@ -275,13 +276,31 @@ where
       ))
     }
 
+    fn visit_string<E>(self, v: String) -> std::result::Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      Ok(crate::v1::ComponentDefinition::ComponentReference(
+        crate::v1::ComponentReference { id: v },
+      ))
+    }
+
     fn visit_map<A>(self, map: A) -> std::result::Result<Self::Value, A::Error>
     where
       A: serde::de::MapAccess<'de>,
     {
       crate::v1::ComponentDefinition::deserialize(serde::de::value::MapAccessDeserializer::new(map))
     }
+
+    fn visit_borrowed_str<E>(self, v: &'de str) -> std::result::Result<Self::Value, E>
+    where
+      E: serde::de::Error,
+    {
+      Ok(crate::v1::ComponentDefinition::ComponentReference(
+        crate::v1::ComponentReference { id: v.to_owned() },
+      ))
+    }
   }
 
-  deserializer.deserialize_map(Visitor)
+  deserializer.deserialize_any(Visitor)
 }

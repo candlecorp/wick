@@ -3,7 +3,7 @@ use std::sync::Arc;
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use futures::StreamExt;
 use wick_interface_types::{component, ComponentSignature};
-use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream};
+use wick_packet::{fan_out, GenericConfig, Invocation, Observer, Packet, PacketStream};
 use wick_rpc::dispatch;
 
 mod wick_component_cli;
@@ -44,7 +44,7 @@ impl Component for NativeComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _data: Option<wick_packet::GenericConfig>,
+    _data: Option<GenericConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let target = invocation.target_url();
@@ -101,7 +101,9 @@ mod tests {
     let entity = Entity::local("test-component");
     let invocation = Invocation::test(file!(), entity, input_stream, None)?;
 
-    let outputs = collection.handle(invocation, None, panic_callback()).await?;
+    let outputs = collection
+      .handle(invocation, Default::default(), panic_callback())
+      .await?;
     let mut packets: Vec<_> = outputs.collect().await;
     let output = packets.pop().unwrap().unwrap();
 

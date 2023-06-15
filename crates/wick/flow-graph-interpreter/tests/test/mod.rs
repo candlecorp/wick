@@ -16,7 +16,7 @@ pub(crate) async fn common_setup(
   op: &str,
   packets: Vec<Packet>,
 ) -> anyhow::Result<(Interpreter, Vec<Result<Packet, wick_packet::Error>>)> {
-  base_setup(manifest, Entity::local(op), packets, None).await
+  base_setup(manifest, Entity::local(op), packets, Default::default()).await
 }
 
 #[allow(unused)]
