@@ -2,64 +2,38 @@ use std::path::PathBuf;
 
 use oci_distribution::secrets::RegistryAuth;
 
-#[derive(Default)]
+#[derive(getset::Getters, getset::Setters, Clone)]
 #[must_use]
 pub struct OciOptions {
+  #[getset(get = "pub", set = "pub")]
   pub(crate) allow_latest: bool,
+  #[getset(get = "pub", set = "pub")]
   pub(crate) allow_insecure: Vec<String>,
+  #[getset(get = "pub", set = "pub")]
   pub(crate) username: Option<String>,
+  #[getset(get = "pub", set = "pub")]
   pub(crate) password: Option<String>,
-  pub(crate) base_dir: Option<PathBuf>,
-  pub(crate) cache_dir: Option<PathBuf>,
+  #[getset(get = "pub", set = "pub")]
+  pub(crate) cache_dir: PathBuf,
+  #[getset(get = "pub", set = "pub")]
   pub(crate) overwrite: bool,
 }
 
+impl Default for OciOptions {
+  fn default() -> Self {
+    let xdg = wick_xdg::Settings::new();
+    Self {
+      allow_latest: false,
+      allow_insecure: vec![],
+      username: None,
+      password: None,
+      cache_dir: xdg.global().cache().clone(),
+      overwrite: false,
+    }
+  }
+}
+
 impl OciOptions {
-  pub fn allow_latest(mut self, allow_latest: bool) -> Self {
-    self.allow_latest = allow_latest;
-    self
-  }
-
-  pub fn allow_insecure(mut self, allow_insecure: Vec<String>) -> Self {
-    self.allow_insecure = allow_insecure;
-    self
-  }
-
-  pub fn cache_dir(mut self, cache_dir: Option<PathBuf>) -> Self {
-    self.cache_dir = cache_dir;
-    self
-  }
-
-  pub fn base_dir(mut self, base_dir: Option<PathBuf>) -> Self {
-    self.base_dir = base_dir;
-    self
-  }
-
-  pub fn username(mut self, username: Option<String>) -> Self {
-    self.username = username;
-    self
-  }
-
-  pub fn password(mut self, password: Option<String>) -> Self {
-    self.password = password;
-    self
-  }
-
-  pub fn overwrite(mut self, overwrite: bool) -> Self {
-    self.overwrite = overwrite;
-    self
-  }
-
-  #[must_use]
-  pub fn get_cache_dir(&self) -> Option<&PathBuf> {
-    self.cache_dir.as_ref()
-  }
-
-  #[must_use]
-  pub fn get_base_dir(&self) -> Option<&PathBuf> {
-    self.base_dir.as_ref()
-  }
-
   #[must_use]
   pub fn get_auth(&self) -> RegistryAuth {
     match (self.username.as_ref(), self.password.as_ref()) {

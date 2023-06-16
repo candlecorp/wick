@@ -7,6 +7,7 @@ pub(crate) mod registry;
 pub(crate) mod rpc;
 pub(crate) mod run;
 pub(crate) mod serve;
+pub(crate) mod show;
 pub(crate) mod test;
 pub(crate) mod wasm;
 
@@ -52,6 +53,10 @@ pub(crate) enum CliCommand {
   /// Create new app and component configurations.
   #[clap(subcommand, name = "new")]
   New(new::SubCommands),
+
+  /// Show information about wick's configuration or manifest details.
+  #[clap(subcommand, name = "show")]
+  Show(show::SubCommands),
 
   /// Commands for WebAssembly component.
   #[clap(subcommand, name = "wasm")]

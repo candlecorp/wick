@@ -26,6 +26,10 @@ use crate::RuntimeBuilder;
 
 fn build_trigger_runtime(config: &AppConfiguration, span: Span) -> Result<RuntimeBuilder, Infallible> {
   let mut rt = RuntimeBuilder::default();
+  if let Some(fetch_opts) = config.options() {
+    rt = rt.allow_latest(*fetch_opts.allow_latest());
+    rt = rt.allowed_insecure(fetch_opts.allow_insecure().clone());
+  }
   for import in config.imports().values() {
     rt.add_import(import.clone());
   }

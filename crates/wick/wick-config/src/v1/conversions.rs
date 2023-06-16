@@ -379,6 +379,7 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
       source: None,
       metadata: def.metadata.try_map_into()?,
       name: def.name,
+      options: None,
       import: def
         .import
         .into_iter()

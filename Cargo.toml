@@ -105,6 +105,7 @@ dyn-clone = "1.0"
 env_logger = "0.10"
 futures = "0.3"
 getrandom = { version = "0.2", default-features = false }
+getset = "0.1"
 glob = "0.3"
 heck = "0.4"
 human-panic = "1.1"

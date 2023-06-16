@@ -119,9 +119,11 @@ pub(crate) async fn init_manifest_component(
     .span
     .in_scope(|| trace!(namespace = %id, ?opts, "registering composite component"));
 
-  let options = FetchOptions::new()
-    .allow_latest(opts.allow_latest)
-    .allow_insecure(&opts.allowed_insecure);
+  let mut options = FetchOptions::default();
+
+  options
+    .set_allow_latest(opts.allow_latest)
+    .set_allow_insecure(opts.allowed_insecure.clone());
 
   let manifest = WickConfiguration::fetch(kind.reference().path()?.to_string_lossy(), options)
     .instrument(opts.span.clone())

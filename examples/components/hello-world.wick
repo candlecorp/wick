@@ -1,0 +1,27 @@
+kind: wick/component@v1
+name: hello-composite.wick
+metadata:
+  version: 0.0.1
+  description: Basic "Hello World" example with a composite component
+  licenses:
+    - Apache-2.0
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: greeting
+      uses:
+        - name: static_data
+          operation: core::sender
+          with:
+            output: 'Hello, world!'
+      flow:
+        - static_data.output -> <output>.output
+tests:
+  - name: basic
+    cases:
+      - name: default
+        operation: greeting
+        inputs: []
+        outputs:
+          - name: output
+            value: 'Hello, world!'

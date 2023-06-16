@@ -38,7 +38,7 @@ pub enum ManifestError {
   FileNotFound(String),
 
   /// Could not load file.
-  #[error("Could not read file {0}")]
+  #[error("Could not load file {0}")]
   LoadError(String),
 
   /// Thrown when a specific type of configuration was expected but a different type was found.

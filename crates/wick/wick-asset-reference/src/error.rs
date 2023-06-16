@@ -17,13 +17,17 @@ pub enum Error {
   #[error("Pulling asset {} failed: {1}", .0.display())]
   PullFailed(PathBuf, String),
 
-  /// Could not find file during path normalization.
-  #[error("Could not read file at path {0}: {1}")]
+  /// Local path normalization failed.
+  #[error("Normalization failed for path '{0}': {1}")]
   NormalizationFailure(String, String),
 
   /// Could not find file or directory.
   #[error("File or directory {} not found", .0.display())]
   NotFound(PathBuf),
+
+  /// Could not resolve a location to a filesystem path or an OCI reference.
+  #[error("Could not resolve {0} to a filesystem location or an OCI reference")]
+  Unresolvable(String),
 
   /// Error returned when a file path does not reside in a target directory.
   #[error("File {} does not reside in target directory {1}", .0.display())]

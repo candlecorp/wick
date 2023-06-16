@@ -23,3 +23,16 @@ fn generic_metadata(description: &str) -> config::Metadata {
     .build()
     .unwrap()
 }
+
+fn wickify_filename(name: &str) -> String {
+  if name.contains('.') {
+    name.to_owned()
+  } else {
+    format!("{}.wick", name)
+  }
+}
+
+fn sanitize_name(name: &str) -> String {
+  let non_char = regex::Regex::new(r"[^a-zA-Z0-9_]+").unwrap();
+  non_char.replace_all(name.trim_end_matches(".wick"), "_").into_owned()
+}

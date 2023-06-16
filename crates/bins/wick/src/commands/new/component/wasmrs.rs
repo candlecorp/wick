@@ -29,12 +29,14 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let _span = span.enter();
+  let name = crate::commands::new::sanitize_name(&opts.name);
+
   let files: Result<Vec<File>> = span.in_scope(|| {
-    info!("Initializing wick http component: {}", opts.name);
+    info!("Initializing wick http component: {}", name);
     info!("Note: WebAssembly components are often better suited by cloning a boilerplate project. See https://github.com/candlecorp/wick for directions.");
 
     let mut config = ComponentConfiguration::default();
-    config.set_name(opts.name.clone());
+    config.set_name(name.clone());
 
     let example_typedef = TypeDefinition::Struct(StructDefinition::new(
       "user_object",
@@ -50,7 +52,7 @@ pub(crate) async fn handle(
     config.set_metadata(crate::commands::new::generic_metadata("New WebAssembly wick component"));
 
     let component = WasmComponentImplementationBuilder::default()
-      .reference(config::AssetReference::new(format!("./build/{}", opts.name)))
+      .reference(config::AssetReference::new(format!("./build/{}", &name)))
       .operations([(
         "operation_name".to_owned(),
         OperationSignatureBuilder::default()
@@ -68,7 +70,7 @@ pub(crate) async fn handle(
     let config = wick_config::WickConfiguration::Component(config);
 
     Ok(vec![File::new(
-      format!("{}.wick", opts.name),
+      crate::commands::new::wickify_filename(&opts.name),
       config.into_v1_yaml()?.into(),
     )])
   });

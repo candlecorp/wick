@@ -24,10 +24,10 @@ pub struct PullResult {
 pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, Error> {
   let (image_ref, protocol) = crate::utils::parse_reference_and_protocol(reference, &options.allow_insecure)?;
 
-  let cache_dir = get_cache_directory(reference, options.get_cache_dir().cloned())?;
-  let download_dir = options.get_base_dir().map_or_else(|| cache_dir, |v| v.clone());
+  let cache_dir = get_cache_directory(reference, &options.cache_dir)?;
+  // let download_dir = options.directories.artifacts();
 
-  let manifest_file = download_dir.join(AssetManifest::FILENAME);
+  let manifest_file = cache_dir.join(AssetManifest::FILENAME);
   debug!("manifest_file: {:?}", manifest_file);
   if manifest_file.exists() {
     debug!(cache_hit = true, "remote asset");
@@ -39,10 +39,10 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
       //exit if statement and continue
     } else {
       //check if manifest.root file exists, if it does then return otherwise continue
-      let root_file = download_dir.join(&manifest.unwrap().root);
+      let root_file = cache_dir.join(&manifest.unwrap().root);
       if root_file.exists() {
         return Ok(PullResult {
-          base_dir: download_dir,
+          base_dir: cache_dir.clone(),
           root_path: root_file,
         });
       }
@@ -93,7 +93,7 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
     }
   };
 
-  let download_dir = create_directory_structure(download_dir).await?;
+  create_directory_structure(&cache_dir).await?;
 
   let mut root_file: Option<String> = None;
 
@@ -104,7 +104,7 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
       .as_ref()
       .and_then(|v| v.get(annotations::TITLE).cloned())
       .ok_or(Error::NoTitle)?;
-    let layer_path = download_dir.join(&layer_title);
+    let layer_path = cache_dir.join(&layer_title);
 
     // If canonicalize succeeds, the path exists and we would overwrite it.
     if let Ok(path) = layer_path.canonicalize() {
@@ -120,7 +120,7 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
       .annotations
       .and_then(|v| v.get(annotations::TITLE).cloned())
       .ok_or(Error::NoTitle)?;
-    let layer_path = download_dir.join(&layer_title);
+    let layer_path = cache_dir.join(&layer_title);
     let parent_dir = layer_path.parent().ok_or(Error::InvalidLayerPath(layer_path.clone()))?;
 
     if layer.media_type == media_types::TARGZ {
@@ -170,11 +170,11 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
   let root_file = root_file.ok_or_else(|| Error::PackageReadFailed("No root file found".to_owned()))?;
   let manifest = AssetManifest::new(PathBuf::from(&root_file), version);
   let contents = serde_json::to_string(&manifest).unwrap();
-  tokio::fs::write(download_dir.join(AssetManifest::FILENAME), contents).await?;
+  tokio::fs::write(cache_dir.join(AssetManifest::FILENAME), contents).await?;
 
   debug!(path = root_file, "Root file");
   Ok(PullResult {
-    base_dir: download_dir,
+    base_dir: cache_dir.clone(),
     root_path: PathBuf::from(root_file),
   })
 }

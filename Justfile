@@ -58,8 +58,9 @@ integration-tests: _check_nextest _codegen-tests
   cargo test --manifest-path tests/template/Cargo.toml
   just wick-tests
 
-# Run tests via `wick test`
+# Tests run via `wick test`
 wick-tests:
+  just _wick-component-tests
   just _wick-http-tests
   just _wick-db-tests
 
@@ -187,6 +188,10 @@ _wick-db-tests:
 # Run `wick` tests for http components
 _wick-http-tests:
   cargo run -p wick-cli -- test ./examples/http/wasm-http-call/harness.wick
+
+# Run `wick` tests for generic components
+_wick-component-tests:
+  cargo run -p wick-cli -- test ./examples/components/hello-world.wick
 
 # Run component-codegen unit tests
 _codegen-tests:

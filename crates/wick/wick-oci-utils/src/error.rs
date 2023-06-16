@@ -90,6 +90,10 @@ pub enum OciError {
   #[error("Invalid layer path '{0}', layer path must contain at least one forward slash.")]
   InvalidLayerPath(PathBuf),
 
+  /// Passed cache location could not be found.
+  #[error("Invalid cache location '{0}'")]
+  InvalidCache(wick_xdg::Error),
+
   /// Failed to read downloaded package
   #[error("Failed to read downloaded package: {0}")]
   PackageReadFailed(String),

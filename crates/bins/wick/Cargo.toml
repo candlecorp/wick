@@ -13,7 +13,7 @@ cross = ["openssl/vendored"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-wick-xdg = { workspace = true }
+wick-xdg = { workspace = true, features = ["serde"] }
 wick-settings = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
@@ -31,6 +31,7 @@ seeded-random = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
 tracing = { workspace = true }
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }
 anyhow = { workspace = true }
 dialoguer = { workspace = true, features = ["password"] }
 human-panic = { workspace = true }
@@ -44,12 +45,12 @@ markup-converter = { workspace = true }
 openssl = { workspace = true, features = ["vendored"], optional = true }
 option-utils = { workspace = true }
 structured-output = { workspace = true }
+regex = { workspace = true }
 
 [dev-dependencies]
 test_bin = { workspace = true }
 trycmd = { workspace = true }
 test-logger = { workspace = true }
-regex = { workspace = true }
 tokio = { workspace = true, features = ["process"] }
 rstest = { workspace = true }
 

@@ -9,6 +9,7 @@ use structured_output::StructuredOutput;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
+use wick_oci_utils::OciOptions;
 use wick_test::{ComponentFactory, SharedComponent, TestSuite};
 
 use crate::utils::merge_config;
@@ -49,18 +50,15 @@ pub(crate) async fn handle(
   _settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
-  let fetch_options = wick_config::config::FetchOptions::new()
-    .allow_latest(opts.oci.allow_latest)
-    .allow_insecure(&opts.oci.insecure_registries);
-
-  let root_manifest = WickConfiguration::fetch_all(&opts.location, fetch_options.clone())
+  let oci_opts: OciOptions = opts.oci.clone().into();
+  let root_manifest = WickConfiguration::fetch_all(&opts.location, oci_opts.clone())
     .await?
     .try_component_config()?;
 
   let mut suite = TestSuite::from_configuration(root_manifest.tests());
 
   let test_files: Vec<_> = futures::future::join_all(opts.tests.iter().map(|path| {
-    WickConfiguration::fetch_all(path, fetch_options.clone())
+    WickConfiguration::fetch_all(path, oci_opts.clone())
       .and_then(|config| futures::future::ready(config.try_test_config()))
   }))
   .await
@@ -108,10 +106,10 @@ pub(crate) async fn handle(
     num_failed += harness.num_failed();
   }
 
-  let structout = StructuredOutput::new(
+  let output = StructuredOutput::new(
     lines.join("\n"),
     json!({"success": num_failed ==0, "failures": num_failed, "output": output}),
   );
 
-  Ok(structout)
+  Ok(output)
 }

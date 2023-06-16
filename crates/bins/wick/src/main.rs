@@ -247,6 +247,9 @@ async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<Struc
       },
       new::SubCommands::App(cmd) => commands::new::app::handle(cmd, settings, span).await,
     },
+    CliCommand::Show(cmd) => match cmd {
+      show::SubCommands::Env(cmd) => commands::show::env::handle(cmd, settings, span).await,
+    },
   }
 }
 

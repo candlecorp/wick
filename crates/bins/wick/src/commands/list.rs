@@ -28,9 +28,7 @@ pub(crate) async fn handle(
   _settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
-  let fetch_options = wick_config::config::FetchOptions::new()
-    .allow_latest(opts.oci.allow_latest)
-    .allow_insecure(&opts.oci.insecure_registries);
+  let fetch_options: wick_oci_utils::OciOptions = opts.oci.clone().into();
 
   let manifest = WickConfiguration::fetch_all(&opts.location, fetch_options)
     .await?
@@ -47,7 +45,12 @@ pub(crate) async fn handle(
   let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 
   host.start_runtime(None).await?;
-  let signature = host.get_signature()?;
+  let mut signature = host.get_signature()?;
+
+  // If we have a name from the manifest, override the host id the component host generates.
+  if let Some(name) = manifest.name() {
+    signature.name = Some(name.clone());
+  }
 
   let mut output = String::new();
   for op in &signature.operations {
