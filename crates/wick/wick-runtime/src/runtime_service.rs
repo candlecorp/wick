@@ -2,7 +2,6 @@ pub(crate) mod error;
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
 
 use flow_component::Component;
 use flow_graph_interpreter::{HandlerMap, InterpreterOptions, NamespaceHandler};
@@ -58,7 +57,6 @@ impl Initialize {
       config,
       allow_latest: self.config.allow_latest,
       allowed_insecure: self.config.allowed_insecure.clone(),
-      timeout: self.config.timeout,
       resolver: self.config.manifest.resolver(),
       span: self.config.span.clone(),
     }
@@ -175,10 +173,7 @@ impl RuntimeService {
       flow_graph_interpreter::Interpreter::new(graph, Some(ns.clone()), Some(components), callback, &span)
         .map_err(|e| EngineError::InterpreterInit(source.map(Into::into), Box::new(e)))?;
 
-    let options = InterpreterOptions {
-      output_timeout: config.timeout,
-      ..Default::default()
-    };
+    let options = InterpreterOptions { ..Default::default() };
     interpreter.start(Some(options), None).await;
 
     let engine = Arc::new(RuntimeService {
@@ -207,7 +202,6 @@ impl RuntimeService {
       config: opts.config,
       allow_latest: opts.allow_latest,
       allowed_insecure: opts.allowed_insecure,
-      timeout: opts.timeout,
       namespace,
       constraints: Default::default(),
       span: child_span,
@@ -299,7 +293,6 @@ pub(crate) struct ComponentInitOptions {
   pub(crate) runtime_id: Uuid,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
-  pub(crate) timeout: Duration,
   pub(crate) config: Option<GenericConfig>,
   pub(crate) resolver: Box<Resolver>,
   #[allow(unused)]
@@ -313,7 +306,6 @@ impl std::fmt::Debug for ComponentInitOptions {
       .field("runtime_id", &self.runtime_id)
       .field("allow_latest", &self.allow_latest)
       .field("allowed_insecure", &self.allowed_insecure)
-      .field("timeout", &self.timeout)
       .finish()
   }
 }

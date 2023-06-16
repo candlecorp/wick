@@ -1,5 +1,4 @@
 use std::net::Ipv4Addr;
-use std::time::Duration;
 
 use crate::config;
 
@@ -16,10 +15,6 @@ pub struct HostConfig {
   /// The list of registries to connect via HTTP rather than HTTPS.
   #[builder(default)]
   pub(crate) insecure_registries: Vec<String>,
-
-  /// The timeout for network requests.
-  #[builder(default)]
-  pub(crate) timeout: Duration,
 
   /// Configuration for the GRPC server.
   #[builder(setter(strip_option), default)]

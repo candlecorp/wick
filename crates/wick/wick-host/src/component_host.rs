@@ -138,7 +138,6 @@ impl ComponentHost {
         enabled: config.enabled(),
       }),
       id: self.get_host_id().to_owned(),
-      timeout: *host_config.timeout(),
     };
 
     let collection = from_registry(nuid);

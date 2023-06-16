@@ -458,9 +458,6 @@ type HostConfig @default {
   "A list of registries to connect to insecurely (over HTTP vs HTTPS)."
   insecure_registries: [string],
 
-  "The timeout for network requests (in ms)."
-  timeout: u64 = 5000,
-
   "Configuration for the GRPC server."
   rpc: HttpConfig?
 }

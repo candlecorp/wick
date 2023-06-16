@@ -1228,11 +1228,6 @@
             "type": "string"
           }
         },
-        "timeout": {
-          "description": "The timeout for network requests (in ms).",
-
-          "oneOf": [{ "type": "number" }, { "type": "string" }]
-        },
         "rpc": {
           "description": "Configuration for the GRPC server.",
           "required": false,

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::str::FromStr;
-use std::time::Duration;
 
 use flow_expression_parser::ast::{self, InstancePort, InstanceTarget};
 use flow_expression_parser::parse_id;
@@ -167,7 +166,6 @@ impl TryFrom<crate::v0::HostConfig> for config::HostConfig {
     Ok(Self {
       allow_latest: def.allow_latest,
       insecure_registries: def.insecure_registries,
-      timeout: Duration::from_millis(def.timeout),
       rpc: def.rpc.and_then(|v| v.try_into().ok()),
     })
   }

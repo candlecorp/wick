@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use futures::StreamExt;
 use serde_json::Value;
 use wick_component_cli::options::DefaultCliOptions;
@@ -24,9 +22,6 @@ pub(crate) fn merge_config(
   );
 
   if let Some(cli_opts) = server_cli_opts {
-    if let Some(to) = cli_opts.timeout {
-      log_override("timeout", host_config.timeout_mut(), Duration::from_millis(to));
-    }
     #[allow(clippy::option_if_let_else)]
     if let Some(manifest_opts) = host_config.rpc_mut().as_mut() {
       if !manifest_opts.enabled() {

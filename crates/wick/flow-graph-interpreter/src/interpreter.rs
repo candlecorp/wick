@@ -326,8 +326,6 @@ pub struct InterpreterOptions {
   pub error_on_missing: bool,
   /// Timeout after which a component that has received no output is considered dead.
   pub output_timeout: Duration,
-  /// Timeout after which a transaction that has had no events is considered hung.
-  pub hung_tx_timeout: Duration,
 }
 
 impl Default for InterpreterOptions {
@@ -336,7 +334,6 @@ impl Default for InterpreterOptions {
       error_on_hung: false,
       error_on_missing: false,
       output_timeout: Duration::from_secs(5),
-      hung_tx_timeout: Duration::from_millis(500),
     }
   }
 }

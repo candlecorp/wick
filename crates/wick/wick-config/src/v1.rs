@@ -911,11 +911,6 @@ pub(crate) struct ComponentReference {
   pub(crate) id: String,
 }
 
-#[allow(non_snake_case)]
-pub(crate) fn HOST_CONFIG_TIMEOUT() -> u64 {
-  5000
-}
-
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Host configuration options.
@@ -930,11 +925,6 @@ pub(crate) struct HostConfig {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) insecure_registries: Vec<String>,
-  /// The timeout for network requests (in ms).
-
-  #[serde(default = "HOST_CONFIG_TIMEOUT")]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) timeout: u64,
   /// Configuration for the GRPC server.
 
   #[serde(default)]
