@@ -207,9 +207,9 @@ async fn run_response_middleware(
 fn make_ise(e: Option<String>) -> Response<Body> {
   Builder::new()
     .status(StatusCode::INTERNAL_SERVER_ERROR)
-    .body(Body::from(
-      e.map(|msg| format!("{}. Check log for details", msg))
-        .unwrap_or_else(|| "Internal Server Error. Check log for details".to_owned()),
-    ))
+    .body(Body::from(e.map_or_else(
+      || "Internal Server Error. Check log for details".to_owned(),
+      |msg| format!("{}. Check log for details", msg),
+    )))
     .unwrap()
 }

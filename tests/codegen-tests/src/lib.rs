@@ -52,7 +52,7 @@ mod test1 {
 
     #[tokio::test]
     async fn test_typegen() -> Result<()> {
-      let date = datetime::Utc.with_ymd_and_hms(2023, 6, 8, 17, 02, 52).unwrap();
+      let date = datetime::Utc.with_ymd_and_hms(2023, 6, 8, 17, 2, 52).unwrap();
       let date_str = date.to_rfc3339();
 
       println!("date: {}", date_str);

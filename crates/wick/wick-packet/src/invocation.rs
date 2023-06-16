@@ -187,6 +187,7 @@ impl Invocation {
   }
 
   /// Mark a span as following from this invocation.
+  #[must_use]
   pub fn following_span(&self, span: Span) -> Span {
     span.follows_from(&self.span);
     span

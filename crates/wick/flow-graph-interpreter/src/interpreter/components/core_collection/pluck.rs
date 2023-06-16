@@ -53,7 +53,7 @@ fn _pluck<'a>(val: &'a Value, path: &[String], idx: usize) -> Option<&'a Value> 
 }
 
 fn pluck<'a>(val: &'a Value, path: &[String]) -> Option<&'a Value> {
-  _pluck(val, &path, 0)
+  _pluck(val, path, 0)
 }
 
 impl Operation for Op {
@@ -106,12 +106,12 @@ impl Operation for Op {
     let config = data.ok_or_else(|| {
       ComponentError::message("Pluck component requires configuration, please specify configuration.")
     })?;
-    for (k, v) in config.into_iter() {
+    for (k, v) in config {
       if k == "field" {
         let field: String = serde_json::from_value(v).map_err(ComponentError::new)?;
         warn!("pluck should be configured with 'path' as an array of strings, 'field' is deprecated and will be removed in a future release.");
         return Ok(Self::Config {
-          field: field.split(".").map(|s| s.to_string()).collect(),
+          field: field.split('.').map(|s| s.to_owned()).collect(),
         });
       }
       if k == "path" {

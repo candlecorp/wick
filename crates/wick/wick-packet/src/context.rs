@@ -35,9 +35,13 @@ impl GenericConfig {
   pub fn iter(&self) -> impl Iterator<Item = (&String, &Value)> {
     self.0.iter()
   }
+}
 
-  /// Get an iterator over the owned keys and values in the configuration.
-  pub fn into_iter(self) -> impl Iterator<Item = (String, Value)> {
+impl IntoIterator for GenericConfig {
+  type Item = (String, Value);
+  type IntoIter = std::collections::hash_map::IntoIter<String, Value>;
+
+  fn into_iter(self) -> Self::IntoIter {
     self.0.into_iter()
   }
 }

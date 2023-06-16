@@ -49,5 +49,7 @@
   "files.trimTrailingWhitespace": true,
   "files.eol": "\n",
   "editor.formatOnSave": true,
-  "prettier.singleQuote": true
+  "prettier.singleQuote": true,
+  "rust-analyzer.assist.emitMustUse": true,
+  "rust-analyzer.check.command": "clippy"
 }
