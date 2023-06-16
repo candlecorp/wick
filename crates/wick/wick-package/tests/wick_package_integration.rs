@@ -19,10 +19,11 @@ mod integration_test {
     tokio::fs::create_dir_all(&tempdir).await.unwrap();
 
     println!("Using tempdir: {:?}", tempdir);
-    let options = OciOptions::default()
-      .overwrite(true)
-      .base_dir(Some(tempdir.clone()))
-      .allow_insecure(vec![host.to_owned()]);
+    let mut options = OciOptions::default();
+    options
+      .set_overwrite(true)
+      .set_cache_dir(tempdir.clone())
+      .set_allow_insecure(vec![host.to_owned()]);
 
     // Run the push operation
     let package_path = Path::new("./tests/files/jinja.wick");

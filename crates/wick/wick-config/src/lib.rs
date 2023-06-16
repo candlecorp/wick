@@ -111,7 +111,7 @@ pub use wick_asset_reference::Error as AssetError;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
-pub use wick_asset_reference::{normalize_path, normalize_path_str, FetchOptions};
+pub use wick_asset_reference::{normalize_path, FetchOptions};
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 pub type Resolver = dyn Fn(&str) -> Option<config::OwnedConfigurationItem> + Send + Sync;

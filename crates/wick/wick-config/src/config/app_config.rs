@@ -26,26 +26,37 @@ use crate::{config, v1, Resolver, Result};
 pub struct AppConfiguration {
   #[asset(skip)]
   pub(crate) name: String,
+
   #[asset(skip)]
   #[builder(setter(strip_option), default)]
   #[property(skip)]
   pub(crate) source: Option<PathBuf>,
+
   #[builder(setter(strip_option), default)]
   pub(crate) metadata: Option<config::Metadata>,
+
   #[builder(default)]
   pub(crate) import: HashMap<String, ImportBinding>,
+
   #[builder(default)]
   pub(crate) resources: HashMap<String, ResourceBinding>,
+
   #[builder(default)]
   pub(crate) triggers: Vec<TriggerDefinition>,
+
   #[asset(skip)]
   #[builder(setter(skip))]
   #[property(skip)]
   pub(crate) type_cache: ImportCache,
+
+  #[asset(skip)]
+  pub(crate) options: Option<FetchOptions>,
+
   #[asset(skip)]
   #[builder(default)]
   #[property(skip)]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
+
   #[builder(setter(strip_option), default)]
   pub(crate) package: Option<PackageConfig>,
 }

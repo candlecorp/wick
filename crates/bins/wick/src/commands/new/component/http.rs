@@ -25,13 +25,14 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let _span = span.enter();
+  let name = crate::commands::new::sanitize_name(&opts.name);
   let files: Result<Vec<File>> = span.in_scope(|| {
-    info!("Initializing wick http component: {}", opts.name);
+    info!("Initializing wick http component: {}", name);
 
     let resource_name = "HTTP_URL";
 
     let mut config = ComponentConfiguration::default();
-    config.set_name(opts.name.clone());
+    config.set_name(name.clone());
 
     config.resources_mut().insert(
       resource_name.to_owned(),
@@ -61,7 +62,7 @@ pub(crate) async fn handle(
     let config = wick_config::WickConfiguration::Component(config);
 
     Ok(vec![File::new(
-      format!("{}.wick", opts.name),
+      crate::commands::new::wickify_filename(&opts.name),
       config.into_v1_yaml()?.into(),
     )])
   });

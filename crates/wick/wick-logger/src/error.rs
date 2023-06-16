@@ -17,7 +17,7 @@ pub enum LoggerError {
 
   /// Error resolving platform-specific configuration.
   #[error("Error resolving platform-specific configuration: {0}")]
-  Platform(#[from] wick_xdg::error::Error),
+  Platform(#[from] wick_xdg::Error),
 
   /// General initialization error.
   #[error("Could not initialize logger: {0}")]

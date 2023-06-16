@@ -43,7 +43,7 @@ pub(super) async fn start_rpc_server(
 
   let mut builder = Server::builder();
 
-  let fetch_opts = FetchOptions::new();
+  let fetch_opts = FetchOptions::default();
 
   if let (Some(pem), Some(key)) = (&options.pem, &options.key) {
     let server_pem = pem.bytes(&fetch_opts).await?;

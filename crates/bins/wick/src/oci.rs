@@ -22,16 +22,12 @@ pub(crate) struct Options {
 
 impl From<Options> for wick_config::FetchOptions {
   fn from(value: Options) -> Self {
-    let fetch_options = wick_config::FetchOptions::default();
-    let mut fetch_options = fetch_options
-      .allow_latest(value.allow_latest)
-      .allow_insecure(&value.insecure_registries);
-    if let Some(username) = value.username {
-      fetch_options = fetch_options.oci_username(username);
-    }
-    if let Some(password) = value.password {
-      fetch_options = fetch_options.oci_password(password);
-    }
+    let mut fetch_options = wick_config::FetchOptions::default();
+    fetch_options
+      .set_allow_latest(value.allow_latest)
+      .set_allow_insecure(value.insecure_registries.clone())
+      .set_username(value.username)
+      .set_password(value.password);
 
     fetch_options
   }

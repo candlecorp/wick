@@ -140,8 +140,8 @@ pub enum WickPackageKind {
 }
 
 /// Retrieve a payload from an OCI url.
-pub async fn fetch_oci_bytes(img: &str, allow_latest: bool, allowed_insecure: &[String]) -> Result<Vec<u8>, OciError> {
-  if !allow_latest && img.ends_with(":latest") {
+pub async fn fetch_oci_bytes(img: &str, options: &OciOptions) -> Result<Vec<u8>, OciError> {
+  if !options.allow_latest && img.ends_with(":latest") {
     return Err(OciError::LatestDisallowed(img.to_owned()));
   }
   debug!(image = img, "oci remote");
@@ -154,7 +154,7 @@ pub async fn fetch_oci_bytes(img: &str, allow_latest: bool, allowed_insecure: &[
     })
   });
 
-  let protocol = oci_distribution::client::ClientProtocol::HttpsExcept(allowed_insecure.to_vec());
+  let protocol = oci_distribution::client::ClientProtocol::HttpsExcept(options.allow_insecure.clone());
   let config = oci_distribution::client::ClientConfig {
     protocol,
     ..Default::default()

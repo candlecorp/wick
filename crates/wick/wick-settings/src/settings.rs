@@ -125,20 +125,20 @@ impl Settings {
     let _span = tracing::debug_span!("settings").entered();
     let extensions = vec!["yaml", "yml"];
 
-    let mut config_locations = Vec::new();
-    if let Some(path) = wick_xdg::Files::UserConfigFile.path() {
-      config_locations.push(path.to_string_lossy().to_string());
-    }
-    config_locations.push(wick_xdg::Files::CONFIG_FILE_NAME.to_owned());
+    let xdg = wick_xdg::Settings::new();
+
+    let config_locations = vec![
+      xdg.config_dir().join(xdg.configfile_basename()),
+      PathBuf::from(xdg.configfile_basename()),
+    ];
 
     tracing::debug!(
-      paths = ?config_locations.iter().map(|v| format!("{}.({})",v,extensions.join(","))).collect::<Vec<_>>(),
+      paths = ?config_locations.iter().map(|v| format!("{}.({})",v.display(),extensions.join(","))).collect::<Vec<_>>(),
       "searching for config files"
     );
 
     let mut files = Vec::new();
     for path in config_locations {
-      let path = PathBuf::from(path);
       for ext in &extensions {
         let mut path = path.clone();
         path.set_extension(ext);

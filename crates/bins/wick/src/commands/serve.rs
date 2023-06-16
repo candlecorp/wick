@@ -34,9 +34,7 @@ pub(crate) async fn handle(
   _settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
-  let fetch_options = wick_config::config::FetchOptions::new()
-    .allow_latest(opts.oci.allow_latest)
-    .allow_insecure(&opts.oci.insecure_registries);
+  let fetch_options: wick_oci_utils::OciOptions = opts.oci.clone().into();
 
   let manifest = WickConfiguration::fetch_all(&opts.location, fetch_options)
     .await?

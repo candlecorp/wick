@@ -16,8 +16,8 @@ pub(crate) struct Options {
   pub(crate) reference: String,
 
   /// Directory to store the pulled artifacts.
-  #[clap(action)]
-  pub(crate) output: Option<PathBuf>,
+  #[clap(action, default_value = ".")]
+  pub(crate) output: PathBuf,
 
   /// Force overwriting of files.
   #[clap(short = 'f', long = "force", action)]
@@ -63,13 +63,14 @@ pub(crate) async fn handle(
     opts.oci_opts.password.as_deref(),
   );
 
-  let oci_opts = wick_oci_utils::OciOptions::default()
-    .allow_insecure(opts.oci_opts.insecure_registries)
-    .allow_latest(true)
-    .username(username)
-    .password(password)
-    .overwrite(opts.force)
-    .base_dir(opts.output);
+  let mut oci_opts = wick_oci_utils::OciOptions::default();
+  oci_opts
+    .set_allow_insecure(opts.oci_opts.insecure_registries)
+    .set_allow_latest(true)
+    .set_username(username)
+    .set_password(password)
+    .set_overwrite(opts.force)
+    .set_cache_dir(opts.output);
 
   span.in_scope(|| debug!(options=?oci_opts, reference= opts.reference, "pulling reference"));
 

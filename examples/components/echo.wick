@@ -1,0 +1,24 @@
+kind: wick/component@v1
+name: hello-composite.wick
+metadata:
+  version: 0.0.1
+  description: Simple composite component that echos input back as output
+  licenses:
+    - Apache-2.0
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: echo
+      flow:
+        - <input>.input -> <output>.output
+tests:
+  - name: basic
+    cases:
+      - name: default
+        operation: echo
+        inputs:
+          - name: input
+            value: 'Hello, world!'
+        outputs:
+          - name: output
+            value: 'Hello, world!'

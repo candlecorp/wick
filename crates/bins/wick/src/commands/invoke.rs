@@ -9,7 +9,7 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_component_cli::parse_args;
-use wick_config::{FetchOptions, WickConfiguration};
+use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
 use wick_packet::{InherentData, Packet, PacketStream};
 
@@ -83,19 +83,19 @@ pub(crate) async fn handle(
     opts.oci.username.as_deref(),
     opts.oci.password.as_deref(),
   );
+  let env = wick_xdg::Settings::new();
 
-  let mut fetch_opts = FetchOptions::default()
-    .allow_insecure(opts.oci.insecure_registries.clone())
-    .allow_latest(true);
-  if let Some(username) = username {
-    fetch_opts = fetch_opts.oci_username(username);
-  }
-  if let Some(password) = password {
-    fetch_opts = fetch_opts.oci_password(password);
-  }
+  let mut fetch_opts: wick_oci_utils::OciOptions = opts.oci.clone().into();
+  fetch_opts.set_username(username).set_password(password);
 
-  if !PathBuf::from(&opts.path).exists() {
-    fetch_opts = fetch_opts.artifact_dir(wick_xdg::Directories::GlobalCache.basedir()?);
+  let path = PathBuf::from(&opts.path);
+
+  if !path.exists() {
+    fetch_opts.set_cache_dir(env.global().cache().clone());
+  } else {
+    let mut path_dir = path.clone();
+    path_dir.pop();
+    fetch_opts.set_cache_dir(path_dir.join(env.local().cache()));
   };
 
   let manifest = WickConfiguration::fetch_all(&opts.path, fetch_opts)

@@ -11,8 +11,9 @@ use tokio::io::AsyncReadExt;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::Stream;
 use tracing::debug;
+use wick_oci_utils::OciOptions;
 
-use crate::{normalize_path_str, Error};
+use crate::{normalize_path, Error};
 
 #[derive(Debug, Clone)]
 #[must_use]
@@ -25,72 +26,6 @@ pub struct AssetReference {
 impl std::fmt::Display for AssetReference {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.location)
-  }
-}
-
-#[derive(Debug, Default, Clone)]
-#[must_use]
-pub struct FetchOptions {
-  pub(crate) allow_latest: bool,
-  pub(crate) oci_username: Option<String>,
-  pub(crate) oci_password: Option<String>,
-  pub(crate) allow_insecure: Vec<String>,
-  pub(crate) artifact_dir: Option<PathBuf>,
-}
-
-impl FetchOptions {
-  pub fn new() -> Self {
-    Self::default()
-  }
-
-  pub fn allow_latest(mut self, allow_latest: bool) -> Self {
-    self.allow_latest = allow_latest;
-    self
-  }
-
-  pub fn allow_insecure(mut self, allow_insecure: impl AsRef<[String]>) -> Self {
-    self.allow_insecure = allow_insecure.as_ref().to_owned();
-    self
-  }
-
-  pub fn artifact_dir(mut self, dir: PathBuf) -> Self {
-    self.artifact_dir = Some(dir);
-    self
-  }
-
-  pub fn oci_username(mut self, username: impl AsRef<str>) -> Self {
-    self.oci_username = Some(username.as_ref().to_owned());
-    self
-  }
-
-  pub fn oci_password(mut self, password: impl AsRef<str>) -> Self {
-    self.oci_password = Some(password.as_ref().to_owned());
-    self
-  }
-
-  #[must_use]
-  pub fn get_oci_password(&self) -> Option<&str> {
-    self.oci_password.as_deref()
-  }
-
-  #[must_use]
-  pub fn get_oci_username(&self) -> Option<&str> {
-    self.oci_username.as_deref()
-  }
-
-  #[must_use]
-  pub fn get_artifact_dir(&self) -> Option<&PathBuf> {
-    self.artifact_dir.as_ref()
-  }
-
-  #[must_use]
-  pub fn get_allow_latest(&self) -> bool {
-    self.allow_latest
-  }
-
-  #[must_use]
-  pub fn get_allow_insecure(&self) -> &[String] {
-    &self.allow_insecure
   }
 }
 
@@ -132,14 +67,16 @@ impl AssetReference {
     self.baseurl.read().clone()
   }
 
+  #[allow(clippy::option_if_let_else)]
   pub fn path(&self) -> Result<PathBuf, Error> {
     if let Some(cache_loc) = self.cache_location.read().as_ref() {
       Ok(cache_loc.clone())
-    } else if self.location.starts_with('@') {
-      Ok(PathBuf::from(self.location.trim_start_matches('@')))
-    } else {
-      let url = normalize_path_str(self.location.as_ref(), self.baseurl())?;
+    } else if let Ok(url) = normalize_path(self.location.as_ref(), self.baseurl()) {
       Ok(url)
+    } else if wick_oci_utils::parse_reference(self.location.as_str()).is_ok() {
+      Ok(PathBuf::from(&self.location))
+    } else {
+      Err(Error::Unresolvable(self.location.clone()))
     }
   }
 
@@ -153,7 +90,7 @@ impl AssetReference {
     self.path().map_or(false, |path| path.is_dir())
   }
 
-  pub async fn bytes(&self, options: &FetchOptions) -> Result<Bytes, Error> {
+  pub async fn bytes(&self, options: &OciOptions) -> Result<Bytes, Error> {
     match self.fetch(options.clone()).await {
       Ok(bytes) => Ok(bytes.into()),
       Err(_err) => Err(Error::LoadError(self.path()?)),
@@ -225,14 +162,14 @@ impl AssetReference {
 
   fn retrieve_as_oci_with_progress(
     &self,
-    options: FetchOptions,
+    options: OciOptions,
   ) -> std::pin::Pin<Box<dyn Stream<Item = Progress> + Send + '_>> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
     let location = self.location.clone();
     tokio::spawn(async move {
       let location = location.as_str();
       let _ = tx.send(Progress::new(location, Status::Progress { num: 0, total: 0 }));
-      match wick_oci_utils::fetch_oci_bytes(location, options.allow_latest, &options.allow_insecure).await {
+      match wick_oci_utils::fetch_oci_bytes(location, &options).await {
         Ok(bytes) => {
           let _ = tx.send(Progress::new(
             location,
@@ -253,7 +190,7 @@ impl AssetReference {
 }
 
 impl Asset for AssetReference {
-  type Options = FetchOptions;
+  type Options = OciOptions;
 
   #[allow(clippy::expect_used)]
   fn update_baseurl(&self, baseurl: &Path) {
@@ -269,7 +206,7 @@ impl Asset for AssetReference {
     *self.baseurl.write() = Some(baseurl);
   }
 
-  fn fetch_with_progress(&self, options: FetchOptions) -> std::pin::Pin<Box<dyn Stream<Item = Progress> + Send + '_>> {
+  fn fetch_with_progress(&self, options: OciOptions) -> std::pin::Pin<Box<dyn Stream<Item = Progress> + Send + '_>> {
     let path = self.path();
 
     debug!(path = ?path, "fetching asset with progress");
@@ -293,7 +230,7 @@ impl Asset for AssetReference {
 
   fn fetch(
     &self,
-    options: FetchOptions,
+    options: OciOptions,
   ) -> std::pin::Pin<Box<dyn Future<Output = Result<Vec<u8>, assets::Error>> + Send + Sync>> {
     let path = self.path();
     let location = self.location().to_owned();
@@ -331,14 +268,8 @@ impl Asset for AssetReference {
   }
 }
 
-async fn retrieve_remote(location: &str, options: FetchOptions) -> Result<(PathBuf, Vec<u8>), Error> {
-  let oci_opts = wick_oci_utils::OciOptions::default()
-    .cache_dir(options.get_artifact_dir().cloned())
-    .allow_insecure(options.allow_insecure)
-    .allow_latest(options.allow_latest)
-    .username(options.oci_username)
-    .password(options.oci_password);
-  let result = wick_oci_utils::package::pull(location, &oci_opts)
+async fn retrieve_remote(location: &str, options: OciOptions) -> Result<(PathBuf, Vec<u8>), Error> {
+  let result = wick_oci_utils::package::pull(location, &options)
     .await
     .map_err(|e| Error::PullFailed(PathBuf::from(location), e.to_string()))?;
   let cache_location = result.base_dir.join(result.root_path);

@@ -5,7 +5,7 @@ use clap::Args;
 use serde_json::json;
 use structured_output::StructuredOutput;
 use tracing::Instrument;
-use wick_config::{FetchOptions, WickConfiguration};
+use wick_config::WickConfiguration;
 use wick_host::AppHostBuilder;
 
 use crate::options::get_auth_for_scope;
@@ -35,6 +35,7 @@ pub(crate) async fn handle(
   settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
+  let xdg = wick_xdg::Settings::new();
   span.in_scope(|| trace!(args = ?opts.args, "rest args"));
 
   let configured_creds = settings.credentials.iter().find(|c| opts.path.starts_with(&c.scope));
@@ -45,24 +46,25 @@ pub(crate) async fn handle(
     opts.oci.password.as_deref(),
   );
 
-  let mut fetch_opts = FetchOptions::default()
-    .allow_insecure(opts.oci.insecure_registries)
-    .allow_latest(true);
-  if let Some(username) = username {
-    fetch_opts = fetch_opts.oci_username(username);
-  }
-  if let Some(password) = password {
-    fetch_opts = fetch_opts.oci_password(password);
-  }
+  let mut fetch_opts: wick_oci_utils::OciOptions = opts.oci.clone().into();
+  fetch_opts.set_username(username).set_password(password);
 
-  if !PathBuf::from(&opts.path).exists() {
-    fetch_opts = fetch_opts.artifact_dir(wick_xdg::Directories::GlobalCache.basedir()?);
+  let path = PathBuf::from(&opts.path);
+
+  if !path.exists() {
+    fetch_opts.set_cache_dir(xdg.global().cache().clone());
+  } else {
+    let mut path_dir = path.clone();
+    path_dir.pop();
+    fetch_opts.set_cache_dir(path_dir.join(xdg.local().cache()));
   };
 
-  let app_config = WickConfiguration::fetch_all(&opts.path, fetch_opts)
+  let mut app_config = WickConfiguration::fetch_all(&opts.path, fetch_opts.clone())
     .instrument(span.clone())
     .await?
     .try_app_config()?;
+
+  app_config.set_options(fetch_opts);
 
   let mut host = AppHostBuilder::default()
     .manifest(app_config.clone())
@@ -70,7 +72,7 @@ pub(crate) async fn handle(
     .build()?;
 
   host.start(opts.seed)?;
-  span.in_scope(|| debug!("Waiting on triggers to finish or interrupt..."));
+  span.in_scope(|| debug!("Waiting on triggers to finish..."));
 
   host.wait_for_done().instrument(span.clone()).await?;
 

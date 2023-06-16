@@ -85,15 +85,74 @@
 #![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)]
-
-/// This crate's error module.
-pub mod error;
+#![allow()]
 
 mod directories;
-pub use directories::*;
+mod directory;
+mod error;
+mod file;
 
-mod files;
-pub use files::*;
+use std::path::PathBuf;
 
-const PROJECT_ID: &str = "wick";
+pub use directories::Directories;
+pub use error::Error;
+
+#[derive(Debug, Clone, getset::Getters)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+/// A one-stop shop for all the environment-specific configuration for the Wick project.
+pub struct Settings {
+  /// Local directories for wick to store and retrieve files.
+  #[getset(get = "pub")]
+  local: Directories,
+  /// Global directories for wick to store and retrieve files.
+  #[getset(get = "pub")]
+  global: Directories,
+  /// The global state directory wick uses to store data while running.
+  #[cfg_attr(feature = "serde", serde(serialize_with = "display_path"))]
+  #[getset(get = "pub")]
+  data: PathBuf,
+  /// The location to look for user configuration.
+  #[cfg_attr(feature = "serde", serde(serialize_with = "display_path"))]
+  #[getset(get = "pub")]
+  config_dir: PathBuf,
+  /// The basename of the user configuration file.
+  #[getset(get = "pub")]
+  configfile_basename: String,
+}
+#[cfg(feature = "serde")]
+fn display_path<S>(value: impl AsRef<std::path::Path>, serializer: S) -> Result<S::Ok, S::Error>
+where
+  S: serde::Serializer,
+{
+  serializer.collect_str(value.as_ref().to_string_lossy().as_ref())
+}
+
+impl Default for Settings {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
+impl Settings {
+  #[must_use]
+  ///
+  pub fn new() -> Self {
+    Self {
+      local: Directories::new(&directory::relative_root()),
+      global: Directories::new(&directory::global_root()),
+      data: directory::global_data_dir(),
+      config_dir: directory::user_config_dir(),
+      configfile_basename: file::CONFIG_FILE_NAME.to_owned(),
+    }
+  }
+
+  #[must_use]
+  /// Returns the local directories if condition is true, otherwise returns the global directories.
+  pub fn local_if(&self, condition: bool) -> &Directories {
+    if condition {
+      &self.local
+    } else {
+      &self.global
+    }
+  }
+}

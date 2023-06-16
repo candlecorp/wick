@@ -24,6 +24,8 @@ regex = { workspace = true }
 once_cell = { workspace = true }
 tar = { workspace = true }
 flate2 = { workspace = true }
+derive_builder = { workspace = true }
+getset = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

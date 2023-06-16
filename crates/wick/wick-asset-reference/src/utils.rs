@@ -6,12 +6,8 @@ use crate::Error;
 
 type Result<T> = std::result::Result<T, Error>;
 
-pub fn normalize_path(path: &std::path::Path, base: Option<PathBuf>) -> Result<PathBuf> {
-  normalize_path_str(path, base)
-}
-
 #[allow(clippy::option_if_let_else)]
-pub fn normalize_path_str(path: &std::path::Path, base: Option<PathBuf>) -> Result<PathBuf> {
+pub fn normalize_path(path: &std::path::Path, base: Option<PathBuf>) -> Result<PathBuf> {
   let url = match base {
     Some(full_url) => {
       let p = PathBuf::from(&full_url).join(path);

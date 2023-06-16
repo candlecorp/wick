@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use oci_distribution::Reference;
@@ -32,7 +32,7 @@ pub fn parse_reference_and_protocol(
   ))
 }
 
-pub(crate) fn get_cache_directory(input: &str, basedir: Option<PathBuf>) -> Result<PathBuf, Error> {
+pub(crate) fn get_cache_directory(input: &str, basedir: impl AsRef<Path>) -> Result<PathBuf, Error> {
   let image_ref_result = Reference::from_str(input);
   let image_ref = match image_ref_result {
     Ok(image_ref) => image_ref,
@@ -51,23 +51,20 @@ pub(crate) fn get_cache_directory(input: &str, basedir: Option<PathBuf>) -> Resu
   if parts.len() != 4 {
     return Err(Error::InvalidReference(input.to_owned()));
   }
-  let mut basedir = basedir.unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
-  debug!(path = %basedir.display(), "Base cache directory");
 
   // Create the wick_components directory if it doesn't exist
-  basedir.push(wick_xdg::Cache::Assets.basedir());
-  let target_dir = basedir.join(registry).join(org).join(repo).join(version);
+  let target_dir = basedir.as_ref().join(registry).join(org).join(repo).join(version);
   Ok(target_dir)
 }
 
-pub(crate) async fn create_directory_structure(dir: PathBuf) -> Result<PathBuf, Error> {
+pub(crate) async fn create_directory_structure(dir: &Path) -> Result<(), Error> {
   fs::create_dir_all(&dir)
     .await
-    .map_err(|e| Error::CreateDir(dir.clone(), e))?;
+    .map_err(|e| Error::CreateDir(dir.to_path_buf(), e))?;
 
   debug!(path = %dir.display(), "Directory created");
 
-  Ok(dir)
+  Ok(())
 }
 
 static WICK_REF_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\w+/\w+:(\d+\.\d+\.\d+(-\w+)?|latest)?$").unwrap());
@@ -88,13 +85,13 @@ mod tests {
   fn test_directory_structure() {
     let input = "localhost:5555/test/integration:0.0.3";
 
-    let expected_dir = Path::new(".wick/remote/localhost/test/integration/0.0.3");
-    let result = get_cache_directory(input, Some("".into())).unwrap();
+    let expected_dir = Path::new("localhost/test/integration/0.0.3");
+    let result = get_cache_directory(input, "").unwrap();
     assert_eq!(result, expected_dir);
 
     let input = "example.com/myorg/myrepo:1.0.0";
-    let expected_dir = Path::new("/foo/bar/.wick/remote/example.com/myorg/myrepo/1.0.0");
-    let result = get_cache_directory(input, Some("/foo/bar".into())).unwrap();
+    let expected_dir = Path::new("/foo/bar/example.com/myorg/myrepo/1.0.0");
+    let result = get_cache_directory(input, "/foo/bar").unwrap();
     assert_eq!(result, expected_dir);
   }
 

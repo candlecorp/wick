@@ -12,8 +12,8 @@ pub use wick_component::flow_component::Context;
 extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {
   wick_component::wasmrs_guest::init(guest_buffer_size, host_buffer_size, max_host_frame_len);
   wick_component::wasmrs_guest::register_request_response("wick", "__setup", Box::new(__setup));
-  wick_component::wasmrs_guest::register_request_channel("wick", "echo", Box::new(Component::echo_wrapper));
   wick_component::wasmrs_guest::register_request_channel("wick", "testop", Box::new(Component::testop_wrapper));
+  wick_component::wasmrs_guest::register_request_channel("wick", "echo", Box::new(Component::echo_wrapper));
 }
 #[cfg(target_family = "wasm")]
 thread_local! { static __CONFIG : std :: cell :: UnsafeCell < Option < SetupPayload >> = std :: cell :: UnsafeCell :: new (None) ; }
@@ -1587,58 +1587,6 @@ pub mod types {
     }
   }
 }
-#[doc = "Types associated with the `echo` operation"]
-pub mod echo {
-  use super::*;
-  #[derive(Debug, Clone, Default, serde :: Serialize, serde :: Deserialize, PartialEq)]
-  pub struct Config {}
-  pub struct Outputs {
-    #[allow(unused)]
-    pub(crate) output: wick_packet::Output<types::http::HttpRequest>,
-    pub(crate) time: wick_packet::Output<wick_component::datetime::DateTime>,
-  }
-  impl Outputs {
-    pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
-      Self {
-        output: wick_packet::Output::new("output", channel.clone()),
-        time: wick_packet::Output::new("time", channel.clone()),
-      }
-    }
-    #[allow(unused)]
-    pub fn broadcast_err(&mut self, err: impl AsRef<str>) {
-      self.output.error(&err);
-      self.time.error(&err);
-    }
-  }
-}
-# [async_trait :: async_trait (? Send)]
-#[cfg(target_family = "wasm")]
-pub trait EchoOperation {
-  type Error: std::fmt::Display;
-  type Outputs;
-  type Config: std::fmt::Debug;
-  #[allow(unused)]
-  async fn echo(
-    input: WickStream<types::http::HttpRequest>,
-    time: WickStream<wick_component::datetime::DateTime>,
-    outputs: Self::Outputs,
-    ctx: wick_component::flow_component::Context<Self::Config>,
-  ) -> std::result::Result<(), Self::Error>;
-}
-#[async_trait::async_trait]
-#[cfg(not(target_family = "wasm"))]
-pub trait EchoOperation {
-  type Error: std::fmt::Display + Send;
-  type Outputs: Send;
-  type Config: std::fmt::Debug + Send;
-  #[allow(unused)]
-  async fn echo(
-    input: WickStream<types::http::HttpRequest>,
-    time: WickStream<wick_component::datetime::DateTime>,
-    outputs: Self::Outputs,
-    ctx: wick_component::flow_component::Context<Self::Config>,
-  ) -> std::result::Result<(), Self::Error>;
-}
 #[doc = "Types associated with the `testop` operation"]
 pub mod testop {
   use super::*;
@@ -1699,33 +1647,62 @@ pub trait TestopOperation {
     ctx: wick_component::flow_component::Context<Self::Config>,
   ) -> std::result::Result<(), Self::Error>;
 }
+#[doc = "Types associated with the `echo` operation"]
+pub mod echo {
+  use super::*;
+  #[derive(Debug, Clone, Default, serde :: Serialize, serde :: Deserialize, PartialEq)]
+  pub struct Config {}
+  pub struct Outputs {
+    #[allow(unused)]
+    pub(crate) output: wick_packet::Output<types::http::HttpRequest>,
+    pub(crate) time: wick_packet::Output<wick_component::datetime::DateTime>,
+  }
+  impl Outputs {
+    pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+      Self {
+        output: wick_packet::Output::new("output", channel.clone()),
+        time: wick_packet::Output::new("time", channel.clone()),
+      }
+    }
+    #[allow(unused)]
+    pub fn broadcast_err(&mut self, err: impl AsRef<str>) {
+      self.output.error(&err);
+      self.time.error(&err);
+    }
+  }
+}
+# [async_trait :: async_trait (? Send)]
+#[cfg(target_family = "wasm")]
+pub trait EchoOperation {
+  type Error: std::fmt::Display;
+  type Outputs;
+  type Config: std::fmt::Debug;
+  #[allow(unused)]
+  async fn echo(
+    input: WickStream<types::http::HttpRequest>,
+    time: WickStream<wick_component::datetime::DateTime>,
+    outputs: Self::Outputs,
+    ctx: wick_component::flow_component::Context<Self::Config>,
+  ) -> std::result::Result<(), Self::Error>;
+}
+#[async_trait::async_trait]
+#[cfg(not(target_family = "wasm"))]
+pub trait EchoOperation {
+  type Error: std::fmt::Display + Send;
+  type Outputs: Send;
+  type Config: std::fmt::Debug + Send;
+  #[allow(unused)]
+  async fn echo(
+    input: WickStream<types::http::HttpRequest>,
+    time: WickStream<wick_component::datetime::DateTime>,
+    outputs: Self::Outputs,
+    ctx: wick_component::flow_component::Context<Self::Config>,
+  ) -> std::result::Result<(), Self::Error>;
+}
 #[derive(Default, Clone)]
 #[doc = "The struct that the component implementation hinges around"]
 pub struct Component;
 impl Component {
-  fn echo_wrapper(
-    mut input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
-  ) -> std::result::Result<
-    wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>,
-    Box<dyn std::error::Error + Send + Sync>,
-  > {
-    let (channel, rx) = wasmrs_rx::FluxChannel::<wasmrs::RawPayload, wasmrs::PayloadError>::new_parts();
-    let outputs = echo::Outputs::new(channel.clone());
-    runtime::spawn("echo_wrapper", async move {
-      let (config, input, time) = wick_component :: payload_fan_out ! (input , raw : false , Box < dyn std :: error :: Error + Send + Sync > , echo :: Config , [("input" , types :: http :: HttpRequest) , ("time" , wick_component :: datetime :: DateTime) ,]);
-      let config = match config.await {
-        Ok(Ok(config)) => config,
-        _ => {
-          let _ = channel.send_result(wick_packet::Packet::component_error("Component sent invalid context").into());
-          return;
-        }
-      };
-      if let Err(e) = Component::echo(Box::pin(input), Box::pin(time), outputs, config).await {
-        let _ = channel.send_result(wick_packet::Packet::component_error(e.to_string()).into());
-      }
-    });
-    Ok(Box::pin(rx))
-  }
   fn testop_wrapper(
     mut input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
   ) -> std::result::Result<
@@ -1744,6 +1721,29 @@ impl Component {
         }
       };
       if let Err(e) = Component::testop(Box::pin(message), outputs, config).await {
+        let _ = channel.send_result(wick_packet::Packet::component_error(e.to_string()).into());
+      }
+    });
+    Ok(Box::pin(rx))
+  }
+  fn echo_wrapper(
+    mut input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
+  ) -> std::result::Result<
+    wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>,
+    Box<dyn std::error::Error + Send + Sync>,
+  > {
+    let (channel, rx) = wasmrs_rx::FluxChannel::<wasmrs::RawPayload, wasmrs::PayloadError>::new_parts();
+    let outputs = echo::Outputs::new(channel.clone());
+    runtime::spawn("echo_wrapper", async move {
+      let (config, input, time) = wick_component :: payload_fan_out ! (input , raw : false , Box < dyn std :: error :: Error + Send + Sync > , echo :: Config , [("input" , types :: http :: HttpRequest) , ("time" , wick_component :: datetime :: DateTime) ,]);
+      let config = match config.await {
+        Ok(Ok(config)) => config,
+        _ => {
+          let _ = channel.send_result(wick_packet::Packet::component_error("Component sent invalid context").into());
+          return;
+        }
+      };
+      if let Err(e) = Component::echo(Box::pin(input), Box::pin(time), outputs, config).await {
         let _ = channel.send_result(wick_packet::Packet::component_error(e.to_string()).into());
       }
     });

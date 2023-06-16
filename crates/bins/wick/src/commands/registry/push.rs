@@ -48,11 +48,12 @@ pub(crate) async fn handle(
     opts.oci_opts.password.as_deref(),
   );
 
-  let oci_opts = wick_oci_utils::OciOptions::default()
-    .allow_insecure(opts.oci_opts.insecure_registries)
-    .allow_latest(true)
-    .username(username)
-    .password(password);
+  let mut oci_opts = wick_oci_utils::OciOptions::default();
+  oci_opts
+    .set_allow_insecure(opts.oci_opts.insecure_registries)
+    .set_allow_latest(true)
+    .set_username(username)
+    .set_password(password);
 
   let reference = package.registry_reference().unwrap(); // unwrap OK because we know we have a reg from above.
 
