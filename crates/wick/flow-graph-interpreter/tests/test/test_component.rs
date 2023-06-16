@@ -223,7 +223,7 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
           tokio::time::sleep(Duration::from_millis(millis)).await;
           let slept_for = SystemTime::now().duration_since(before).unwrap().as_millis() as u64;
           println!("slept for {}ms", slept_for);
-          defer(vec![send(Packet::encode("output", &slept_for))]);
+          defer(vec![send(Packet::encode("output", slept_for))]);
         }
         defer(vec![send(Packet::done("output"))]);
       });

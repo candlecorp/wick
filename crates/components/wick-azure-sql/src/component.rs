@@ -123,7 +123,7 @@ impl Component for AzureSqlComponent {
         let duration = SystemTime::now().duration_since(start).unwrap();
         invocation.trace(|| {
           debug!(?duration, target=%invocation.target,"mssql operation complete");
-        })
+        });
       });
 
       Ok(rx)
@@ -176,14 +176,14 @@ async fn handle_call(
       _ => {}
     }
     return Err(Error::OperationFailed(e.to_string()));
-  } else {
-    match error_behavior {
-      ErrorBehavior::Commit | ErrorBehavior::Rollback => {
-        client.simple_query("COMMIT").await.map_err(|_| Error::TxCommit)?;
-      }
-      _ => {}
-    }
   }
+  match error_behavior {
+    ErrorBehavior::Commit | ErrorBehavior::Rollback => {
+      client.simple_query("COMMIT").await.map_err(|_| Error::TxCommit)?;
+    }
+    _ => {}
+  }
+
   Ok(())
 }
 
@@ -203,15 +203,13 @@ async fn handle_stream(
     }
 
     let num_done = incoming_packets.iter().filter(|r| r.is_none()).count();
-    if num_done > 0 {
-      if num_done != opdef.inputs().len() {
-        return Err(Error::MissingInput);
-      }
+    if num_done > 0 && num_done != opdef.inputs().len() {
+      return Err(Error::MissingInput);
     }
     let incoming_packets = incoming_packets.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
 
     if let Some(Err(e)) = incoming_packets.iter().find(|r| r.is_err()) {
-      return Err(Error::ComponentError(e.to_owned()));
+      return Err(Error::ComponentError(e.clone()));
     }
     let fields = opdef.inputs();
     let mut type_wrappers = Vec::new();
