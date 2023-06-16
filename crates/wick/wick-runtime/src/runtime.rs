@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use std::time::Duration;
 
 use seeded_random::Seed;
 use tracing::Span;
@@ -16,11 +15,6 @@ type Result<T> = std::result::Result<T, RuntimeError>;
 pub struct Runtime {
   pub uid: Uuid,
   inner: Arc<RuntimeService>,
-  _timeout: Duration,
-}
-
-fn default_timeout() -> Duration {
-  Duration::from_secs(10)
 }
 
 #[derive(Debug, derive_builder::Builder)]
@@ -39,9 +33,6 @@ pub struct RuntimeInit {
   #[builder(default)]
   pub(crate) allowed_insecure: Vec<String>,
 
-  #[builder(default = "default_timeout")]
-  pub(crate) timeout: Duration,
-
   #[builder(setter(strip_option))]
   pub(crate) namespace: Option<String>,
 
@@ -56,7 +47,6 @@ pub struct RuntimeInit {
 
 impl Runtime {
   pub async fn new(seed: Seed, config: RuntimeInit) -> Result<Self> {
-    let _timeout = config.timeout;
     let init = Initialize::new(seed, config);
 
     let service = RuntimeService::new(init)
@@ -65,7 +55,6 @@ impl Runtime {
     Ok(Self {
       uid: service.id,
       inner: service,
-      _timeout,
     })
   }
 
@@ -104,7 +93,6 @@ impl std::fmt::Debug for RuntimeBuilder {
       .field("allow_latest", &self.allow_latest)
       .field("allowed_insecure", &self.allowed_insecure)
       .field("manifest", &self.manifest)
-      .field("timeout", &self.timeout)
       .field("namespace", &self.namespace)
       .field("native_components", &self.native_components)
       .finish()
@@ -189,7 +177,6 @@ impl RuntimeBuilder {
         allow_latest: self.allow_latest.unwrap_or_default(),
         allowed_insecure: self.allowed_insecure.unwrap_or_default(),
         native_components: self.native_components.unwrap_or_default(),
-        timeout: self.timeout.unwrap_or_else(default_timeout),
         namespace: self.namespace.unwrap_or_default(),
         constraints: self.constraints.unwrap_or_default(),
         span,

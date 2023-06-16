@@ -50,11 +50,6 @@
             "type": "string"
           }
         },
-        "timeout": {
-          "description": "The timeout for network requests (in ms).",
-
-          "type": "number"
-        },
         "id": {
           "description": "The ID for this host, used to identify the host over the mesh.",
           "required": false,

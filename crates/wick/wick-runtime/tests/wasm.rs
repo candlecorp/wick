@@ -48,7 +48,7 @@ async fn flow_with_inputless_component() -> Result<()> {
 #[ignore = "signature check needs to be re-enabled for this test to pass"]
 async fn bad_wasm_component_v1() -> Result<()> {
   let path = "./manifests/v1/bad-wasmrs-component.yaml";
-  let result = init_engine_from_yaml(path, None, std::time::Duration::from_secs(1)).await;
+  let result = init_engine_from_yaml(path, None).await;
   assert!(result.is_err());
   println!("Error: {:?}", result.err().unwrap());
   // let result = result.err().unwrap().source().unwrap();
@@ -65,7 +65,7 @@ async fn bad_wasm_component() -> Result<()> {
     vec![
       Packet::err(
         "output",
-        "Operation wick://wapc/error timed out waiting for upstream data.",
+        "Transaction timed out waiting for output from operation error (wick://wapc/error)",
       ),
       Packet::done("output"),
     ],

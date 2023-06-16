@@ -23,7 +23,7 @@ pub(crate) struct EventLoop {
 
 impl EventLoop {
   pub(crate) const WAKE_TIMEOUT: Duration = Duration::from_millis(500);
-  pub(crate) const HUNG_TX_TIMEOUT: Duration = Duration::from_millis(20000);
+  pub(crate) const HUNG_TX_TIMEOUT: Duration = Duration::from_secs(60 * 5);
 
   pub(super) fn new(channel: InterpreterChannel) -> Self {
     let dispatcher = channel.dispatcher();

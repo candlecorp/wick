@@ -1,6 +1,5 @@
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
-use std::time::Duration;
 
 use clap::Args;
 use serde::{Deserialize, Serialize};
@@ -12,8 +11,6 @@ pub struct Options {
   pub rpc: Option<ServerOptions>,
   /// The ID of the server.
   pub id: String,
-  /// The timeout for invocations.
-  pub timeout: Duration,
 }
 
 impl Default for Options {
@@ -21,7 +18,6 @@ impl Default for Options {
     Self {
       id: uuid::Uuid::new_v4().as_hyphenated().to_string(),
       rpc: Default::default(),
-      timeout: Default::default(),
     }
   }
 }
@@ -87,11 +83,7 @@ impl From<DefaultCliOptions> for Options {
       .id
       .unwrap_or_else(|| uuid::Uuid::new_v4().as_hyphenated().to_string());
 
-    Options {
-      rpc,
-      timeout: Duration::from_millis(opts.timeout.unwrap_or(5000)),
-      id,
-    }
+    Options { rpc, id }
   }
 }
 
@@ -126,7 +118,7 @@ pub struct DefaultCliOptions {
   #[clap(long = "id", env = env::WICK_COLLECTION_ID, action)]
   pub id: Option<String>,
 
-  /// The timeout for outbound requests in ms.
+  /// The timeout for operations in ms.
   #[clap(long = "timeout", env = env::WICK_TIMEOUT, action)]
   pub timeout: Option<u64>,
 

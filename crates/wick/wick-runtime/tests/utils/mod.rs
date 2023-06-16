@@ -1,23 +1,16 @@
-use std::time::Duration;
-
 use futures::stream::StreamExt;
 use tracing::debug;
 use wick_config::WickConfiguration;
 use wick_packet::{Entity, GenericConfig, InherentData, Invocation, Packet, PacketStream};
 use wick_runtime::{Runtime, RuntimeBuilder};
 
-pub async fn init_engine_from_yaml(
-  path: &str,
-  config: Option<GenericConfig>,
-  timeout: Duration,
-) -> anyhow::Result<(Runtime, uuid::Uuid)> {
+pub async fn init_engine_from_yaml(path: &str, config: Option<GenericConfig>) -> anyhow::Result<(Runtime, uuid::Uuid)> {
   let host_def = WickConfiguration::load_from_file(path).await?.try_component_config()?;
   debug!("Manifest loaded");
 
   let builder = RuntimeBuilder::from_definition(host_def)
     .config(config)
-    .namespace("__TEST__")
-    .timeout(timeout);
+    .namespace("__TEST__");
 
   let engine = builder.build(None).await?;
 
@@ -55,7 +48,7 @@ pub async fn base_test(
   config: Option<GenericConfig>,
 ) -> anyhow::Result<()> {
   let cwd = std::env::current_dir()?;
-  let (engine, _) = init_engine_from_yaml(path, config, Duration::from_secs(1)).await?;
+  let (engine, _) = init_engine_from_yaml(path, config).await?;
   let inherent = InherentData::new(1, 1000);
 
   let target = if target.component_id() == Entity::LOCAL {

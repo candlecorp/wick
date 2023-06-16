@@ -52,10 +52,6 @@
               "type": "string"
             }
           },
-          "timeout": {
-            "description": "The timeout for network requests (in ms).",
-            "type": "number"
-          },
           "id": {
             "description": "The ID for this host, used to identify the host over the mesh.",
             "required": false,
@@ -1608,17 +1604,6 @@
             "items": {
               "type": "string"
             }
-          },
-          "timeout": {
-            "description": "The timeout for network requests (in ms).",
-            "oneOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "string"
-              }
-            ]
           },
           "rpc": {
             "description": "Configuration for the GRPC server.",
