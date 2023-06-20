@@ -2,21 +2,21 @@
 title: Database
 ---
 
-Connect and talk to a database
+Connect and Talk to a Database
 ===
 
-Getting a database hooked up and making calls to the database is an extremely simple process in Wick. Let's go through it:
+Getting a database connected and making calls to the database is an extremely simple process in Wick. Let's go through it:
 
-In order to connect and talk to a database, we will be creating a Wick component. You can start with a new `.wick` file. Let's call our file `db.wick`.
+To connect and talk to a database, we need to create a Wick component. Start with a new `.wick` file and name it `db.wick`.
 
 ```yaml
 name: demo_db
 kind: wick/component@v1
 ```
 
-After naming and declaring the [`kind`]( {{< ref "configuration/reference/v1#componentconfiguration" >}}) of the component, we can get hooked up to our database (you will need your own database up and running).
+After naming and declaring the {{<v1ref "componentconfiguration">}}kind{{</v1ref>}} of the component, we can establish a connection to our database (ensure that your own database is up and running).
 
-We declare our database as a [`resource`]( {{< ref "configuration/reference/v1#componentconfiguration" >}}). Resources are what a component relies on to execute its operations.
+We declare our database as a {{<v1ref "componentconfiguration">}}resource{{</v1ref>}}. Resources are what a component relies on to execute its operations.
 
 ```yaml
 resources:
@@ -26,9 +26,9 @@ resources:
       url: postgres://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME
 ```
 
-All we need to do is name [our resource]( {{< ref "configuration/reference/v1#resourcebinding" >}}) so we can reference it in other places in our app, declare its `kind`, and provide the database URL.
+In this section, we bind {{<v1ref "resourcebinding">}}our resource{{</v1ref>}}, declare its `kind`, and provide the database URL.
 
-The last thing we need is to finish declaring our [sql component]( {{< ref "configuration/reference/v1#sqlcomponent" >}}) and assign to it the database resource.
+The next step is to complete the declaration of our {{<v1ref "sqlcomponent">}}SQL component{{</v1ref>}} and assign the database resource to it.
 
 ```yaml
 component:
@@ -37,13 +37,13 @@ component:
   tls: false
 ```
 
-And that's all you need to hook up to a database!
+And that's all you need to do to connect to a database!
 
-### Making database calls
+### Making Database Calls
 
-Now let's see how to make calls to the database.
+Now, let's see how to make calls to the database.
 
-We will be defining these queries in our [`operations`]( {{< ref "configuration/reference/v1#sqloperationdefinition" >}}) section of the YAML.
+We define these queries in the {{<v1ref "sqloperationdefinition">}}operations{{</v1ref>}} section of the YAML.
 
 ```yaml
 component:
@@ -64,29 +64,29 @@ component:
         SELECT * FROM users WHERE id = $1
 ```
 
-After naming the operation, each one consists of four fields: inputs, outputs, arguments, and the query.
+For each operation, we name it and provide details such as inputs, outputs, arguments, and the query.
 
-***inputs + outputs:*** We named and declared the type of input and output. The `type: object` serves as our `any` type for our output.
+***inputs + outputs:*** We name and declare the type of input and output. The `type: object` serves as the `any` type for the output.
 
-***arguments:*** Sets up the sequence of your inputs. The order of the arguments here will be the order of the inputs in your query.
+***arguments:*** Sets up the sequence of inputs. The order of the arguments here will match the order of the inputs in your query.
 
-***query:*** Insert the database query here. (Note: You would replace the values with $1, $2, $3, etc. based on the order of your arguments.)
+***query:*** Insert the database query here. (Note: Replace the values with $1, $2, $3, etc. based on the order of your arguments.)
 
-Hooking up and setting up calls to a database is as simple as that in Wick! You can follow the same `operations` structure to add as many unique calls to the database as you'd like, each with their own inputs and outputs.
+Connecting to a database and making calls to it is as simple as that in Wick! You can use the same `operations` structure to add as many unique calls to the database as you like, each with their own inputs and outputs.
 
 ### Invoking
 
-Lastly, let's just go over how to run any of our operations we create.
+Lastly, let's go over how to run any of the operations we created.
 
-It would be a simple `invoke` call on the command line following this structure:
+You can use the `invoke` command on the command line with the following structure:
 
 ```
 wick invoke <file name> <operation name> -- --args
 ```
 
-You can use `wick invoke --trace` instead for debugging purposes.
+For debugging purposes, you can use `wick invoke --trace`.
 
-Our command line prompt for the file we just made would be:
+For the file we just created, the command line prompt would be:
 
 ```
 wick invoke db.wick get_user -- --id=1
@@ -124,6 +124,6 @@ component:
         SELECT * FROM users WHERE id = $1
 ```
 
-And just like that, we've got a database hooked up and are making calls to it. You can use this same structure to hook up to any database and make as many calls as you'd like. To see more database examples, check out our [examples repo](https://github.com/candlecorp/wick/tree/main/examples/db).
+And just like that, we've connected to a database and are making calls to it. You can use this same structure to connect to any database and make as many calls as you need. For more database examples, check out our [examples repository](https://github.com/candlecorp/wick/tree/main/examples/db).
 
-Note: Wick now also has the `wick new component sql` command that will help you get started with a database component. It will create a new `.wick` file with the database resource and a sample operation.
+Note: Wick now also includes the `wick new component sql` command, which helps you get started with a database component. It creates a new .wick file with the database resource and a sample operation.

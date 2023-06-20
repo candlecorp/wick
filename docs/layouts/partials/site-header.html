@@ -1,0 +1,9 @@
+<header style="display: flex; justify-content: space-between;">
+    <h1 style="align-self:self-end">{{ .Site.Title }}</h1>
+    {{- with .Site.Params.logo -}}
+    <img style="max-height:2.5rem" src="{{ . }}"></img>
+    {{- end -}}
+    {{ with .Site.Params.description }}
+    <p class="description">{{ . }}</p>
+    {{end}}
+</header>
