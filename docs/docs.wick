@@ -3,7 +3,7 @@ kind: wick/app@v1
 name: wick_docs
 metadata:
   description: Docs Site Hosting for Wick
-  version: 0.0.1
+  version: 0.0.2
   authors:
     - 'Wick Maintainers'
   vendors:
