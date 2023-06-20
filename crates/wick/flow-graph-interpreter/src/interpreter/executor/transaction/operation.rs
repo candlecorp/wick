@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use flow_component::{Component, RuntimeCallback};
+use flow_component::{Component, ComponentError, RuntimeCallback};
 use flow_graph::{NodeIndex, PortReference};
 use tokio_stream::StreamExt;
 use tracing::Span;
@@ -15,7 +15,7 @@ use wick_packet::{Entity, Invocation, Packet, PacketError, PacketPayload, Packet
 use self::port::{InputPorts, OutputPorts, PortStatus};
 use crate::constants::*;
 use crate::graph::types::*;
-use crate::graph::Reference;
+use crate::graph::{OperationConfig, Reference};
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::error::ExecutionError;
@@ -211,16 +211,27 @@ impl InstanceHandler {
     channel: InterpreterDispatchChannel,
     options: &InterpreterOptions,
     callback: Arc<RuntimeCallback>,
+    config: OperationConfig,
   ) -> Result<()> {
     let identifier = self.id().to_owned();
 
     let entity = self.entity();
     let namespace = self.namespace().to_owned();
 
-    let associated_data = self.schematic.nodes()[self.index()].data().clone();
+    let mut associated_data = self.schematic.nodes()[self.index()].data().clone();
+    associated_data.config.set_root(config.root().cloned());
+    if associated_data.config.value().is_none() {
+      associated_data.config.set_value(config.value().cloned());
+    }
+
+    let config = associated_data
+      .config
+      .render()
+      .map_err(|e| ExecutionError::ComponentError(ComponentError::new(e)))?;
 
     let timeout = associated_data
       .settings
+      .as_ref()
       .and_then(|v| v.timeout)
       .unwrap_or(options.output_timeout);
 
@@ -242,7 +253,7 @@ impl InstanceHandler {
       let clone = self.self_collection.clone();
       tokio::spawn(async move {
         clone
-          .handle(invocation, associated_data.config, cb)
+          .handle(invocation, config, cb)
           .await
           .map_err(ExecutionError::ComponentError)
       })
@@ -255,7 +266,7 @@ impl InstanceHandler {
         .clone();
       tokio::spawn(async move {
         clone
-          .handle(invocation, associated_data.config, cb)
+          .handle(invocation, config, cb)
           .await
           .map_err(ExecutionError::ComponentError)
       })

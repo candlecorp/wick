@@ -8,24 +8,36 @@ use super::program::validator::error::{OperationInvalid, ValidationError};
 pub enum Error {
   #[error(transparent)]
   ExecutionError(#[from] ExecutionError),
+
   #[error("{}", .0.iter().map(|e|e.to_string()).collect::<Vec<_>>().join(", "))]
   ValidationError(Vec<OperationInvalid>),
+
   #[error("Early error: {:?}", .0)]
   EarlyError(ValidationError),
+
   #[error("Could not find operation '{}' ({0}). Known operations are: {}",.0.operation_id(), .1.join(", "))]
   OpNotFound(Entity, Vec<String>),
+
   #[error("Could not find target '{}' ({0}). Namespaces handled by this resource are: {}", .0.operation_id(), .1.join(", "))]
   TargetNotFound(Entity, Vec<String>),
+
   #[error("Error shutting down component: {0}")]
   ComponentShutdown(String),
+
   #[error("Shutdown failed: {0}")]
   Shutdown(String),
+
   #[error("Namespace '{0}' already exists, can not overwrite")]
   DuplicateNamespace(String),
+
   #[error(transparent)]
   OperationInit(#[from] OpInitError),
+
   #[error("Interpreter can only expose one component at a time, found multiple: {}", .0.join(", "))]
-  MultipleExposedComponents(Vec<String>),
+  ExposedLimit(Vec<String>),
+
+  #[error("Could not render operation configuration: {0}")]
+  Configuration(String),
 }
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]

@@ -22,7 +22,7 @@ resources:
   - name: DIR
     resource:
       kind: wick/resource/volume@v1
-      path: $PWD
+      path: '{{ ctx.env.PWD }}'
   - name: PROXY_URL
     resource:
       kind: wick/resource/url@v1

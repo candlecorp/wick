@@ -18,7 +18,9 @@ use tokio::fs::read_to_string;
 use tracing::debug;
 pub use types_config::*;
 pub use wick_asset_reference::{AssetReference, FetchOptions};
+use wick_packet::RuntimeConfig;
 
+use crate::error::ManifestError;
 use crate::utils::from_yaml;
 use crate::{v0, v1, Error, Resolver};
 
@@ -228,6 +230,17 @@ impl WickConfiguration {
     }
   }
 
+  /// Get the runtime configuration (if any) associated with the inner configuration.
+  #[must_use]
+  pub fn root_config(&self) -> Option<&RuntimeConfig> {
+    match self {
+      WickConfiguration::Component(v) => v.root_config(),
+      WickConfiguration::App(v) => v.root_config(),
+      WickConfiguration::Types(_v) => None,
+      WickConfiguration::Tests(_v) => None,
+    }
+  }
+
   /// Get the kind of the inner configuration.
   pub fn kind(&self) -> ConfigurationKind {
     match self {
@@ -298,6 +311,16 @@ impl WickConfiguration {
         ConfigurationKind::Types,
         self.kind(),
       )),
+    }
+  }
+
+  /// Initialize the configuration with the given environment variables.
+  pub fn initialize(&mut self, env: Option<&HashMap<String, String>>) -> Result<(), Error> {
+    match self {
+      WickConfiguration::Component(v) => v.initialize(env),
+      WickConfiguration::App(v) => v.initialize(env),
+      WickConfiguration::Types(_) => Ok(()),
+      WickConfiguration::Tests(_) => Ok(()),
     }
   }
 
@@ -388,16 +411,34 @@ fn resolve_configuration(src: &str, source: &Option<PathBuf>) -> Result<WickConf
 pub(crate) fn make_resolver(
   imports: HashMap<String, ImportBinding>,
   resources: HashMap<String, ResourceBinding>,
+  runtime_config: Option<RuntimeConfig>,
+  env: Option<HashMap<String, String>>,
 ) -> Box<Resolver> {
-  Box::new(move |name| {
-    if let Some(import) = imports.get(name) {
-      if let ImportDefinition::Component(component) = &import.kind {
-        return Some(OwnedConfigurationItem::Component(component.clone()));
-      }
+  Box::new(move |name| resolve(name, &imports, &resources, runtime_config.as_ref(), env.as_ref()))
+}
+
+pub(crate) fn resolve(
+  name: &str,
+  imports: &HashMap<String, ImportBinding>,
+  resources: &HashMap<String, ResourceBinding>,
+  runtime_config: Option<&RuntimeConfig>,
+  env: Option<&HashMap<String, String>>,
+) -> Option<Result<OwnedConfigurationItem, ManifestError>> {
+  if let Some(import) = imports.get(name) {
+    if let ImportDefinition::Component(component) = &import.kind {
+      let mut component = component.clone();
+      return Some(match component.render(runtime_config, env) {
+        Ok(_) => Ok(OwnedConfigurationItem::Component(component)),
+        Err(e) => Err(e),
+      });
     }
-    if let Some(resource) = resources.get(name) {
-      return Some(OwnedConfigurationItem::Resource(resource.kind.clone()));
-    }
-    None
-  })
+  }
+  if let Some(resource) = resources.get(name) {
+    let mut resource = resource.kind.clone();
+    return Some(match resource.render(runtime_config, env) {
+      Ok(_) => Ok(OwnedConfigurationItem::Resource(resource)),
+      Err(e) => Err(e),
+    });
+  }
+  None
 }

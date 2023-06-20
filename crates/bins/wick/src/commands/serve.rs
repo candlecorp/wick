@@ -40,14 +40,11 @@ pub(crate) async fn handle(
     .await?
     .try_component_config()?;
 
-  let config = merge_config(&manifest, &opts.oci, Some(opts.cli));
-  let component_config = parse_config_string(opts.with.as_deref())?;
+  let mut config = merge_config(&manifest, &opts.oci, Some(opts.cli));
+  let with_config = parse_config_string(opts.with.as_deref())?;
+  config.set_root_config(with_config);
 
-  let mut host = ComponentHostBuilder::default()
-    .manifest(config)
-    .config(component_config)
-    .span(span)
-    .build()?;
+  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 
   host.start(None).await?;
   info!("Host started");

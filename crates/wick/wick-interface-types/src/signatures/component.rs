@@ -27,8 +27,8 @@ pub struct ComponentSignature {
   /// A list of [OperationSignature]s in this component.
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub operations: Vec<OperationSignature>,
-  /// The component's configuration for this implementation.
 
+  /// The component's configuration for this implementation.
   #[serde(default, skip_serializing_if = "Vec::is_empty")]
   pub config: Vec<Field>,
 }
@@ -40,12 +40,7 @@ impl PartialEq for ComponentSignature {
     let config_equal = contents_equal(&self.config, &other.config);
     let wellknown_equal = contents_equal(&self.wellknown, &other.wellknown);
 
-    self.format == other.format
-      && self.metadata == other.metadata
-      && types_equal
-      && operations_equal
-      && config_equal
-      && wellknown_equal
+    self.format == other.format && types_equal && operations_equal && config_equal && wellknown_equal
   }
 }
 

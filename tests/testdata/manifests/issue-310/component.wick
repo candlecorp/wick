@@ -13,7 +13,7 @@ import:
   - name: baseline
     component:
       kind: wick/component/manifest@v1
-      ref: $DOCKER_REGISTRY/test-component/baseline:1
+      ref: 'registry.candle.dev/test-component/baseline:1'
       with:
         default_err: 'error from issue-310'
 component:

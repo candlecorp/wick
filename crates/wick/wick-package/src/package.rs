@@ -270,9 +270,15 @@ impl WickPackage {
   }
 
   #[must_use]
-  /// Returns the registry.
+  /// Returns the registry configuration.
   pub fn registry(&self) -> Option<&RegistryConfig> {
     self.registry.as_ref()
+  }
+
+  #[must_use]
+  /// Returns a mutable reference to registry configuration.
+  pub fn registry_mut(&mut self) -> Option<&mut RegistryConfig> {
+    self.registry.as_mut()
   }
 
   /// Pushes the WickPackage to a specified registry using the provided reference, username, and password.

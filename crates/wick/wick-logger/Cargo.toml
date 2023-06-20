@@ -7,10 +7,14 @@ license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
 description = "Wick's logging library"
 
+[features]
+console = ["console-subscriber"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 wick-xdg = { workspace = true }
 tracing = { workspace = true }
+console-subscriber = { workspace = true, optional = true }
 tracing-subscriber = { workspace = true, features = [
   "env-filter",
   "fmt",

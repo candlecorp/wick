@@ -1,7 +1,7 @@
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use wasmrs_rx::Observer;
 use wick_interface_types::{ComponentSignature, Field, OperationSignature};
-use wick_packet::{ComponentReference, Entity, GenericConfig, Invocation, Packet, PacketStream};
+use wick_packet::{ComponentReference, Entity, Invocation, Packet, PacketStream, RuntimeConfig};
 
 use crate::constants::*;
 use crate::{BoxFuture, HandlerMap};
@@ -37,7 +37,7 @@ impl Component for ComponentComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _config: Option<GenericConfig>,
+    _config: Option<RuntimeConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     trace!(target = %invocation.target, namespace = NS_COMPONENTS);

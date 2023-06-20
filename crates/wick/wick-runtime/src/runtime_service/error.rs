@@ -39,6 +39,9 @@ pub enum EngineError {
 
   #[error("Internal error: {0}")]
   InternalError(InternalError),
+
+  #[error(transparent)]
+  Configuration(wick_packet::Error),
 }
 
 #[derive(Error, Debug)]

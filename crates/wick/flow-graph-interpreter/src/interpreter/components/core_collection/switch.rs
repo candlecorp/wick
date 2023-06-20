@@ -1,13 +1,13 @@
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
-use flow_component::{ComponentError, Context, Operation};
+use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use futures::{FutureExt, StreamExt};
 use parking_lot::Mutex;
 use serde_json::Value;
 use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, Type};
-use wick_packet::{ComponentReference, Entity, Invocation, PacketSender, PacketStream};
+use wick_packet::{ComponentReference, Entity, Invocation, PacketSender, PacketStream, RuntimeConfig};
 
 use crate::constants::NS_CORE;
 use crate::graph::types::Network;
@@ -106,6 +106,7 @@ impl Op {
 impl Operation for Op {
   const ID: &'static str = "switch";
   type Config = Config;
+
   #[allow(clippy::too_many_lines)]
   fn handle(
     &self,
@@ -212,16 +213,21 @@ impl Operation for Op {
     context.push(DISCRIMINANT.to_owned());
     context
   }
+}
 
-  fn decode_config(data: Option<wick_packet::GenericConfig>) -> Result<Self::Config, ComponentError> {
+impl RenderConfiguration for Op {
+  type Config = Config;
+  type ConfigSource = RuntimeConfig;
+
+  fn decode_config(data: Option<Self::ConfigSource>) -> Result<Self::Config, ComponentError> {
     let config = data.ok_or_else(|| {
-      ComponentError::message("Merge component requires configuration, please specify configuration.")
+      ComponentError::message("Switch component requires configuration, please specify configuration.")
     })?;
     Ok(Self::Config {
-      context: config.get_into("context").map_err(ComponentError::new)?,
-      outputs: config.get_into("outputs").map_err(ComponentError::new)?,
-      cases: config.get_into("cases").map_err(ComponentError::new)?,
-      default: config.get_into("default").map_err(ComponentError::new)?,
+      context: config.coerce_key("context").map_err(ComponentError::new)?,
+      outputs: config.coerce_key("outputs").map_err(ComponentError::new)?,
+      cases: config.coerce_key("cases").map_err(ComponentError::new)?,
+      default: config.coerce_key("default").map_err(ComponentError::new)?,
     })
   }
 }

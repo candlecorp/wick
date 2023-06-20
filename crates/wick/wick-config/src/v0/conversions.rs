@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use flow_expression_parser::ast::{self, InstancePort, InstanceTarget};
 use flow_expression_parser::parse_id;
+use liquid_json::LiquidJsonValue;
 use option_utils::OptionUtils;
 use serde_json::Value;
 
@@ -48,6 +49,7 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
       cached_types: Default::default(),
       type_cache: Default::default(),
       package: Default::default(),
+      root_config: Default::default(),
     })
   }
 }
@@ -155,7 +157,9 @@ impl TryFrom<crate::v0::ConnectionTargetDefinition> for ast::ConnectionTargetExp
     Ok(ast::ConnectionTargetExpression::new_data(
       InstanceTarget::from_str(&def.instance)?,
       InstancePort::named(def.port),
-      def.data,
+      def
+        .data
+        .map(|v| v.into_iter().map(|(k, v)| (k, LiquidJsonValue::new(v))).collect()),
     ))
   }
 }

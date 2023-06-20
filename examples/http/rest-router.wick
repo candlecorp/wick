@@ -16,7 +16,7 @@ resources:
   - name: http
     resource:
       kind: wick/resource/tcpport@v1
-      port: ${HTTP_PORT:-8999}
+      port: '{{ ctx.env.HTTP_PORT | default: 8999 }}'
       address: 0.0.0.0
 import:
   - name: sample

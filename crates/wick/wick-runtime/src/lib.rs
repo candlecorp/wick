@@ -105,13 +105,11 @@ pub use components::engine_component::EngineComponent;
 pub use components::error::ComponentError;
 pub use runtime::{Runtime, RuntimeBuilder};
 pub use runtime_service::error::EngineError;
-pub use runtime_service::ComponentFactory;
 pub use triggers::{get_trigger_loader, Trigger};
 
 pub type Error = error::RuntimeError;
 
-/// The reserved namespace for Wick's initial native API.
+/// The reserved namespace for Wick's initial stdlib.
 pub const V0_NAMESPACE: &str = "wick";
 
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
-// type BoxFuture<'a, T> = futures::future::BoxFuture<'a, T>;

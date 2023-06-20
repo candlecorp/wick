@@ -20,9 +20,9 @@ use wick_packet::{
   ComponentReference,
   ContextTransport,
   Entity,
-  GenericConfig,
   Invocation,
   PacketStream,
+  RuntimeConfig,
 };
 use wick_wascap::{Claims, CollectionClaims};
 
@@ -164,7 +164,7 @@ impl WasmHost {
   }
 
   #[allow(clippy::needless_pass_by_value)]
-  pub fn call(&self, invocation: Invocation, config: Option<GenericConfig>) -> Result<PacketStream> {
+  pub fn call(&self, invocation: Invocation, config: Option<RuntimeConfig>) -> Result<PacketStream> {
     let _span = self.span.enter();
     let component_name = invocation.target.operation_id();
     let inherent = invocation.inherent;
@@ -257,7 +257,7 @@ fn make_host_callback(
     tokio::spawn(async move {
       let first = incoming.next().await;
       let ctx = if let Some(Ok(first)) = first {
-        match wasmrs_codec::messagepack::deserialize::<ContextTransport<Option<GenericConfig>>>(&first.data) {
+        match wasmrs_codec::messagepack::deserialize::<ContextTransport<Option<RuntimeConfig>>>(&first.data) {
           Ok(p) => p,
           Err(e) => {
             span.in_scope(|| error!("bad component ref invocation: {}", e));
@@ -301,11 +301,11 @@ fn make_host_callback(
 #[must_use]
 pub struct SetupPayload {
   provided: HashMap<String, ComponentReference>,
-  config: GenericConfig,
+  config: RuntimeConfig,
 }
 
 impl SetupPayload {
-  pub fn new(origin: &Entity, provided: HashMap<String, String>, config: Option<GenericConfig>) -> Self {
+  pub fn new(origin: &Entity, provided: HashMap<String, String>, config: Option<RuntimeConfig>) -> Self {
     let provided = provided
       .into_iter()
       .map(|(k, v)| {

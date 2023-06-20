@@ -19,6 +19,9 @@ pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) oci_opts: crate::oci::Options,
 
+  #[clap(long = "registry", action)]
+  pub(crate) registry: Option<String>,
+
   #[clap(long = "tag")]
   pub(crate) tags: Vec<String>,
 }
@@ -35,10 +38,14 @@ pub(crate) async fn handle(
     .instrument(span.clone())
     .await?;
 
-  let Some(registry) =  package.registry() else  {
+  let Some(registry) = package.registry_mut() else  {
       span.in_scope(||error!("No registry provided in package"));
       return Err(anyhow!("No registry provided in package"));
   };
+
+  if let Some(reg_override) = opts.registry {
+    registry.set_host(reg_override);
+  }
 
   let configured_creds = settings.credentials.iter().find(|c| c.scope == registry.host());
 

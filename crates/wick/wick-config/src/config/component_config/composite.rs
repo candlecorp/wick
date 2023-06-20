@@ -2,9 +2,8 @@ use std::collections::HashMap;
 
 use flow_expression_parser::ast::{self};
 use wick_interface_types::Field;
-use wick_packet::GenericConfig;
 
-use crate::config::{self, ExecutionSettings};
+use crate::config::{self, ExecutionSettings, LiquidJsonConfig};
 
 #[derive(Debug, Default, Clone, derive_asset_container::AssetManager, Builder, property::Property)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
@@ -13,15 +12,15 @@ use crate::config::{self, ExecutionSettings};
 #[must_use]
 /// The internal representation of a Wick manifest.
 pub struct CompositeComponentImplementation {
-  /// The configuration for the component.
-  #[asset(skip)]
-  #[builder(default)]
-  pub(crate) config: Vec<Field>,
-
   /// The operations defined by the component.
   #[asset(skip)]
   #[builder(default)]
   pub(crate) operations: HashMap<String, FlowOperation>,
+
+  /// The configuration for the component.
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) config: Vec<Field>,
 }
 
 impl CompositeComponentImplementation {
@@ -42,6 +41,7 @@ impl From<FlowOperation> for wick_interface_types::OperationSignature {
   fn from(operation: FlowOperation) -> Self {
     Self {
       name: operation.name,
+      config: operation.config,
       inputs: operation.inputs,
       outputs: operation.outputs,
     }
@@ -105,7 +105,7 @@ pub struct InstanceReference {
   /// The id of the component.
   pub(crate) component_id: String,
   /// Data associated with the component instance.
-  pub(crate) data: Option<GenericConfig>,
+  pub(crate) data: Option<LiquidJsonConfig>,
   /// Per-operation settings that override global execution settings.
   pub(crate) settings: Option<ExecutionSettings>,
 }

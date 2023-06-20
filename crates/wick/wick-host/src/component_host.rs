@@ -12,7 +12,7 @@ use wick_component_cli::options::{Options as HostOptions, ServerOptions};
 use wick_component_cli::ServerState;
 use wick_config::config::ComponentConfiguration;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Entity, GenericConfig, InherentData, Invocation, PacketStream};
+use wick_packet::{Entity, InherentData, Invocation, PacketStream, RuntimeConfig};
 use wick_runtime::{EngineComponent, Runtime, RuntimeBuilder};
 
 use crate::{Error, Result};
@@ -37,8 +37,6 @@ pub struct ComponentHost {
   runtime: Option<Runtime>,
   #[builder(default)]
   manifest: ComponentConfiguration,
-  #[builder(default)]
-  config: Option<GenericConfig>,
   #[builder(default, setter(strip_option))]
   server_metadata: Option<ServerState>,
   #[builder(default = "tracing::Span::current()")]
@@ -110,7 +108,7 @@ impl ComponentHost {
     span.follows_from(&self.span);
     rt_builder = rt_builder.span(span);
     rt_builder = rt_builder.namespace(self.get_host_id());
-    rt_builder = rt_builder.config(self.config.clone());
+    rt_builder = rt_builder.root_config(self.manifest.root_config().cloned());
     rt_builder = rt_builder.allow_latest(self.manifest.allow_latest());
     if let Some(insecure) = self.manifest.insecure_registries() {
       rt_builder = rt_builder.allowed_insecure(insecure.to_vec());
@@ -150,7 +148,13 @@ impl ComponentHost {
     Ok(metadata)
   }
 
-  pub async fn request(&self, operation: &str, stream: PacketStream, data: InherentData) -> Result<PacketStream> {
+  pub async fn request(
+    &self,
+    operation: &str,
+    config: Option<RuntimeConfig>,
+    stream: PacketStream,
+    data: InherentData,
+  ) -> Result<PacketStream> {
     match &self.runtime {
       Some(runtime) => {
         let invocation = Invocation::new(
@@ -160,13 +164,13 @@ impl ComponentHost {
           data,
           &self.span,
         );
-        Ok(runtime.invoke(invocation, Default::default()).await?)
+        Ok(runtime.invoke(invocation, config).await?)
       }
       None => Err(crate::Error::InvalidHostState("No engine available".into())),
     }
   }
 
-  pub async fn invoke(&self, invocation: Invocation, data: Option<GenericConfig>) -> Result<PacketStream> {
+  pub async fn invoke(&self, invocation: Invocation, data: Option<RuntimeConfig>) -> Result<PacketStream> {
     match &self.runtime {
       Some(runtime) => Ok(runtime.invoke(invocation, data).await?),
       None => Err(crate::Error::InvalidHostState("No engine available".into())),
@@ -240,7 +244,9 @@ mod test {
     host.start(None).await?;
     let passed_data = "logging output";
     let stream = packet_stream!(("input", passed_data));
-    let stream = host.request("logger", stream, InherentData::unsafe_default()).await?;
+    let stream = host
+      .request("logger", None, stream, InherentData::unsafe_default())
+      .await?;
 
     let mut messages: Vec<_> = stream.collect().await;
     assert_eq!(messages.len(), 2);

@@ -469,6 +469,7 @@ version = "0.5.0"
 dependencies = [
  "anyhow",
  "futures 0.3.28",
+ "liquid-json",
  "seeded-random",
  "serde",
  "serde_json",
@@ -482,6 +483,7 @@ name = "flow-expression-parser"
 version = "0.5.0"
 dependencies = [
  "lazy_static",
+ "liquid-json",
  "nom",
  "regex",
  "serde",
@@ -976,9 +978,9 @@ dependencies = [
 
 [[package]]
 name = "liquid-json"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3fa84b645d05cf0eb96104b6202d0f304d3536dad406af50aa6359efd9f9e74"
+checksum = "8d297cffc15f80264ef919488290fb0cefd3f9bdc4e96688a523fef12ab5fa10"
 dependencies = [
  "liquid",
  "liquid-core",
@@ -2431,6 +2433,7 @@ dependencies = [
  "base64-serde",
  "bytes 1.4.0",
  "chrono",
+ "liquid-json",
  "parking_lot",
  "pin-project-lite",
  "serde",

@@ -5,8 +5,19 @@ import:
     component:
       kind: wick/component/manifest@v1
       ref: ./postgres-component.wick
+      with:
+        password: '{{ ctx.root_config.password }}'
+        host: '{{ ctx.root_config.host }}'
+        port: '{{ ctx.root_config.port }}'
 component:
   kind: wick/component/composite@v1
+  with:
+    - name: password
+      type: string
+    - name: host
+      type: string
+    - name: port
+      type: string
   operations:
     - name: get_user
       flow:
@@ -14,6 +25,10 @@ component:
         - a.output -> <>
 tests:
   - name: base
+    with:
+      password: '{{ctx.env.TEST_PASSWORD}}'
+      host: '{{ctx.env.TEST_HOST}}'
+      port: '{{ctx.env.POSTGRES_PORT}}'
     cases:
       - name: assert_test_user
         operation: get_user

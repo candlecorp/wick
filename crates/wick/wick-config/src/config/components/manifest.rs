@@ -1,7 +1,7 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::collections::HashMap;
 
-use crate::config;
+use crate::config::{self, LiquidJsonConfig};
 
 /// A separate Wick manifest to use as a collection.
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
@@ -13,7 +13,7 @@ pub struct ManifestComponent {
   pub(crate) reference: config::AssetReference,
   /// The configuration for the component.
   #[asset(skip)]
-  pub(crate) config: Option<wick_packet::GenericConfig>,
+  pub(crate) config: Option<LiquidJsonConfig>,
   /// The components to provide to the referenced component.
   #[asset(skip)]
   pub(crate) provide: HashMap<String, String>,

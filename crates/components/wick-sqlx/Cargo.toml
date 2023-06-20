@@ -15,6 +15,7 @@ flow-component = { workspace = true }
 wick-config = { workspace = true }
 wick-rpc = { workspace = true }
 wick-interface-types = { workspace = true, features = ["parser"] }
+url = { workspace = true }
 # v0.7.0-alpha
 # sqlx = { workspace = true, features = [
 #   "runtime-tokio",

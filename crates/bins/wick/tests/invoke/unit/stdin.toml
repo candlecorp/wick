@@ -1,7 +1,7 @@
 bin.name = "wick"
 args = [
   "invoke",
-  "tests/unit/invoke/log.yaml",
+  "tests/invoke/unit/log.yaml",
   "logger",
   "--trace",
   "--",

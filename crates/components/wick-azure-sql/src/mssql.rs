@@ -3,22 +3,24 @@
 use bb8::Pool;
 use bb8_tiberius::ConnectionManager;
 use tiberius::{AuthMethod, Config};
+use url::Url;
 use wick_config::config::components::SqlComponentConfig;
-use wick_config::config::UrlResource;
 
 use crate::Error;
 
-pub(crate) async fn connect(_config: SqlComponentConfig, addr: &UrlResource) -> Result<Pool<ConnectionManager>, Error> {
+pub(crate) async fn connect(_config: SqlComponentConfig, addr: &Url) -> Result<Pool<ConnectionManager>, Error> {
   debug!(connect = %addr, "connecting to mssql");
   let mut config = Config::new();
 
   let db = addr.path().trim_start_matches('/');
   config.database(db);
-  config.host(addr.host());
+  if let Some(host) = addr.host() {
+    config.host(host.to_string());
+  }
   if let Some(port) = addr.port() {
     config.port(port);
   }
-  if let (Some(user), Some(password)) = (addr.username(), addr.password()) {
+  if let (user, Some(password)) = (addr.username(), addr.password()) {
     config.authentication(AuthMethod::sql_server(user, password));
   }
   config.trust_cert();
@@ -84,7 +86,7 @@ mod integration_test {
       ),
     );
 
-    let component = AzureSqlComponent::new(config, None, &app_config.resolver())?;
+    let component = AzureSqlComponent::new(config, None, None, &app_config.resolver())?;
 
     component.init().await?;
 

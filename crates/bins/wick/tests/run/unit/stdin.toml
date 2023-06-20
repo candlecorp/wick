@@ -1,7 +1,7 @@
 bin.name = "wick"
 args = [
   "run",
-  "tests/unit/run/imported-component.args.yaml",
+  "tests/run/unit/imported-component.args.yaml",
   "--",
   "arg1",
   "22",

@@ -46,22 +46,26 @@ fn test_typemap() -> Result<()> {
 fn test_op_macro() -> Result<()> {
   let actual = operation! {
     "test-component" => {
+      config: {},
       inputs: {"input"=>"string",},
       outputs: {"output"=>"string",},
     }
   };
   let expected = OperationSignature {
     name: "test-component".to_owned(),
+    config: Default::default(),
     inputs: fields! {"input"=>"string"},
     outputs: fields! {"output"=>"string"},
   };
   assert_eq!(actual, expected);
   let actual = operation! {"math::subtract" => {
+    config: {},
     inputs: { "left" => "u64", "right" => "u64",},
     outputs: { "output" => "u64" ,},
   }};
   let expected = OperationSignature {
     name: "math::subtract".to_owned(),
+    config: Default::default(),
     inputs: fields! {"left"=>"u64","right"=>"u64"},
     outputs: fields! {"output"=>"u64"},
   };
@@ -75,6 +79,7 @@ fn test_component_macro() -> Result<()> {
   let mut opmap = Vec::default();
   opmap.push(operation! {
     "test-component" => {
+      config: {},
       inputs: {"input"=>"string"},
       outputs: {"output"=>"string"},
     }
@@ -91,6 +96,7 @@ fn test_component_macro() -> Result<()> {
       version: Some("0.1.0"),
       operations: {
         "test-component" => {
+          config: {},
           inputs: {"input" => "string"},
           outputs: {"output" => "string"},
         }

@@ -6,11 +6,11 @@ use tokio_stream::Stream;
 use tracing::Span;
 use wasmrs_rx::FluxChannel;
 
-use crate::{BoxError, ContextTransport, GenericConfig, InherentData, Packet, Result};
+use crate::{BoxError, ContextTransport, InherentData, Packet, Result, RuntimeConfig};
 
 pub type PacketSender = FluxChannel<Packet, crate::Error>;
 
-type ContextConfig = (GenericConfig, InherentData);
+type ContextConfig = (RuntimeConfig, InherentData);
 
 pub(crate) type BoxStream<'a, T> = Pin<Box<dyn Stream<Item = T> + Send + 'a>>;
 
@@ -79,7 +79,7 @@ impl PacketStream {
     self.span = span;
   }
 
-  pub fn set_context(&self, context: GenericConfig, inherent: InherentData) {
+  pub fn set_context(&self, context: RuntimeConfig, inherent: InherentData) {
     self.config.lock().replace((context, inherent));
   }
 

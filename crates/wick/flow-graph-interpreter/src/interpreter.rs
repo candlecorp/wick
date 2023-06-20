@@ -15,13 +15,12 @@ use parking_lot::Mutex;
 use tracing::{trace_span, Span};
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Entity, GenericConfig, Invocation, PacketStream};
+use wick_packet::{Entity, Invocation, PacketStream, RuntimeConfig};
 
 use self::channel::InterpreterDispatchChannel;
 use self::components::HandlerMap;
 use self::error::Error;
 use self::event_loop::EventLoop;
-use self::executor::SchematicExecutor;
 use self::program::Program;
 use crate::constants::*;
 use crate::graph::types::*;
@@ -63,6 +62,7 @@ impl Interpreter {
   pub fn new(
     network: Network,
     namespace: Option<String>,
+    config: Option<RuntimeConfig>,
     components: Option<HandlerMap>,
     callback: Arc<RuntimeCallback>,
     parent_span: &Span,
@@ -76,7 +76,7 @@ impl Interpreter {
 
     let exposed = handlers.inner().values().filter(|h| h.is_exposed()).collect::<Vec<_>>();
     if exposed.len() > 1 {
-      return Err(Error::MultipleExposedComponents(
+      return Err(Error::ExposedLimit(
         exposed.iter().map(|h| h.namespace().to_owned()).collect(),
       ));
     }
@@ -105,7 +105,7 @@ impl Interpreter {
 
     // Make the self:: component
     let components = Arc::new(handlers);
-    let self_component = SchematicComponent::new(components.clone(), program.state(), &dispatcher);
+    let self_component = SchematicComponent::new(components.clone(), program.state(), config, &dispatcher);
 
     // If we expose a component, expose its signature as our own.
     // Otherwise expose our self signature.
@@ -171,41 +171,7 @@ impl Interpreter {
     local_first_callback
   }
 
-  async fn invoke_operation(
-    &self,
-    invocation: Invocation,
-    _config: Option<GenericConfig>,
-  ) -> Result<PacketStream, Error> {
-    let dispatcher = self.dispatcher.clone();
-    let name = invocation.target.operation_id().to_owned();
-    let op = self
-      .program
-      .operations()
-      .iter()
-      .find(|s| s.name() == name)
-      .ok_or_else(|| {
-        Error::OpNotFound(
-          invocation.target.clone(),
-          self.program.operations().iter().map(|s| s.name().to_owned()).collect(),
-        )
-      })?;
-    let span = self.span.clone();
-
-    let executor = SchematicExecutor::new(op.clone(), dispatcher.clone());
-    Ok(
-      executor
-        .invoke(
-          invocation,
-          self.components.clone(),
-          self.self_component.clone(),
-          self.get_callback(),
-        )
-        .instrument(span)
-        .await?,
-    )
-  }
-
-  pub async fn invoke(&self, invocation: Invocation, config: Option<GenericConfig>) -> Result<PacketStream, Error> {
+  pub async fn invoke(&self, invocation: Invocation, config: Option<RuntimeConfig>) -> Result<PacketStream, Error> {
     let cb = self.get_callback();
     let stream = self
       .handle(invocation, config, cb)
@@ -250,7 +216,7 @@ impl Component for Interpreter {
   fn handle(
     &self,
     invocation: Invocation,
-    config: Option<GenericConfig>,
+    config: Option<RuntimeConfig>,
     cb: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, ComponentError>> {
     let known_targets = || {
@@ -278,10 +244,9 @@ impl Component for Interpreter {
             }
             span.in_scope(|| trace!(entity=%invocation.target, "invoke::composite::operation"));
             self
-              .invoke_operation(invocation, config)
-              .instrument(span)
-              .await
-              .map_err(ComponentError::new)?
+              .self_component
+              .handle(invocation, config, self.get_callback())
+              .await?
           } else {
             span.in_scope(|| trace!(entity=%invocation.target, "invoke::instance::operation"));
             self

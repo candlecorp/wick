@@ -29,6 +29,9 @@ mod integration_test {
     let package_path = Path::new("./tests/files/mytypes.wick");
     println!("Package path: {:?}", package_path);
     let mut package = WickPackage::from_path(package_path).await.unwrap();
+    // Set the host to the whatever docker registry the tests are using.
+    package.registry_mut().map(|r| r.set_host(host));
+
     let num_files = package.list_files().len();
     assert_eq!(num_files, 1, "Mismatch in hard coded number of files");
 

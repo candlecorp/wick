@@ -2,7 +2,7 @@ use futures::StreamExt;
 use serde_json::Value;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::config::{AssetReference, ComponentConfiguration, HttpConfigBuilder};
-use wick_packet::{GenericConfig, Packet, PacketStream};
+use wick_packet::{Packet, PacketStream, RuntimeConfig};
 
 pub(crate) fn merge_config(
   def: &ComponentConfiguration,
@@ -76,26 +76,35 @@ pub(crate) async fn print_stream_json(
   if !filter.is_empty() {
     trace!("filtering only {:?}", filter);
   }
-  while let Some(Ok(packet)) = stream.next().await {
-    trace!(message = ?packet, "output");
-    if (packet.is_done()) && !raw {
-      continue;
+  while let Some(packet) = stream.next().await {
+    match packet {
+      Ok(packet) => {
+        trace!(message = ?packet, "output");
+        if (packet.is_done()) && !raw {
+          continue;
+        }
+        if !filter.is_empty() && !filter.iter().any(|name| name == packet.port()) {
+          tracing::debug!(port = %packet.port(), "filtering out");
+          continue;
+        }
+        let json = packet.to_json();
+        println!("{}", json);
+      }
+      Err(e) => {
+        error!(error = %e, "error in stream");
+        let packet = Packet::component_error(e.to_string());
+        println!("{}", packet.to_json());
+      }
     }
-    if !filter.is_empty() && !filter.iter().any(|name| name == packet.port()) {
-      tracing::debug!(port = %packet.port(), "filtering out");
-      continue;
-    }
-    let json = packet.to_json();
-    println!("{}", json);
   }
   trace!("stream complete");
   Ok(())
 }
 
-pub(crate) fn parse_config_string(source: Option<&str>) -> anyhow::Result<Option<GenericConfig>> {
+pub(crate) fn parse_config_string(source: Option<&str>) -> anyhow::Result<Option<RuntimeConfig>> {
   let component_config = match source {
     Some(c) => Some(
-      GenericConfig::try_from(
+      RuntimeConfig::try_from(
         serde_json::from_str::<Value>(c)
           .map_err(|e| anyhow::anyhow!("Failed to parse config argument as JSON: {}", e))?,
       )

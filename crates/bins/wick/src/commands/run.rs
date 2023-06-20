@@ -9,6 +9,7 @@ use wick_config::WickConfiguration;
 use wick_host::AppHostBuilder;
 
 use crate::options::get_auth_for_scope;
+use crate::utils::parse_config_string;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
@@ -24,6 +25,10 @@ pub(crate) struct Options {
   /// Pass a seed along with the invocation.
   #[clap(long = "seed", short = 's', env = "WICK_SEED", action)]
   seed: Option<u64>,
+
+  /// Pass configuration necessary to instantiate the application or its resources (JSON).
+  #[clap(long = "with", short = 'w', action)]
+  with: Option<String>,
 
   /// Arguments to pass as inputs to a CLI trigger in the application.
   #[clap(last(true), action)]
@@ -65,6 +70,11 @@ pub(crate) async fn handle(
     .try_app_config()?;
 
   app_config.set_options(fetch_opts);
+
+  let with_config = parse_config_string(opts.with.as_deref())?;
+
+  app_config.set_root_config(with_config);
+  app_config.initialize(Some(&std::env::vars().collect()))?;
 
   let mut host = AppHostBuilder::default()
     .manifest(app_config.clone())

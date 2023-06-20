@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use wick_interface_types::*;
-use wick_packet::{GenericConfig, Invocation, PacketStream};
+use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
 use crate::ComponentHost;
 
@@ -45,7 +45,7 @@ impl Component for HostComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    data: Option<GenericConfig>,
+    data: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, ComponentError>> {
     let fut = self.host.invoke(invocation, data);

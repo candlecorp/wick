@@ -64,6 +64,7 @@ message Operation {
   }
   string name = 1;
   OperationKind kind = 2;
+  repeated Field config = 5;
   repeated Field inputs = 3;
   repeated Field outputs = 4;
 }

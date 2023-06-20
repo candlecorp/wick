@@ -1,7 +1,5 @@
-use flow_component::{Component, RuntimeCallback};
 use tracing::Instrument;
 use uuid::Uuid;
-use wick_packet::{GenericConfig, Invocation, PacketStream};
 
 use crate::dev::prelude::*;
 
@@ -29,8 +27,8 @@ impl Component for EngineComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    config: Option<GenericConfig>,
-    _callback: std::sync::Arc<RuntimeCallback>,
+    config: Option<RuntimeConfig>,
+    _callback: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target_url = invocation.target_url();
 

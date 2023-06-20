@@ -4,10 +4,10 @@ use seeded_random::Seed;
 use tracing::Span;
 use uuid::Uuid;
 use wick_config::config::{ComponentConfiguration, ComponentConfigurationBuilder};
-use wick_packet::{Entity, GenericConfig};
+use wick_packet::{Entity, RuntimeConfig};
 
 use crate::dev::prelude::*;
-use crate::runtime_service::{ComponentFactory, ComponentRegistry, Initialize};
+use crate::runtime_service::{ComponentFactory, ComponentRegistry, ServiceInit};
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 #[derive(Debug, Clone)]
@@ -20,12 +20,13 @@ pub struct Runtime {
 #[derive(Debug, derive_builder::Builder)]
 #[builder(pattern = "owned", name = "RuntimeBuilder", setter(into), build_fn(skip))]
 #[must_use]
+#[allow(unreachable_pub)]
 pub struct RuntimeInit {
   #[builder(default)]
   pub(crate) manifest: ComponentConfiguration,
 
   #[builder(default)]
-  pub(crate) config: Option<GenericConfig>,
+  pub(crate) root_config: Option<RuntimeConfig>,
 
   #[builder(default)]
   pub(crate) allow_latest: bool,
@@ -46,10 +47,10 @@ pub struct RuntimeInit {
 }
 
 impl Runtime {
-  pub async fn new(seed: Seed, config: RuntimeInit) -> Result<Self> {
-    let init = Initialize::new(seed, config);
+  pub(crate) async fn new(seed: Seed, config: RuntimeInit) -> Result<Self> {
+    let init = ServiceInit::new(seed, config);
 
-    let service = RuntimeService::new(init)
+    let service = RuntimeService::start(init)
       .await
       .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
     Ok(Self {
@@ -58,14 +59,14 @@ impl Runtime {
     })
   }
 
-  pub async fn invoke(&self, invocation: Invocation, config: Option<GenericConfig>) -> Result<PacketStream> {
+  pub async fn invoke(&self, invocation: Invocation, config: Option<RuntimeConfig>) -> Result<PacketStream> {
     let time = std::time::SystemTime::now();
     trace!(start_time=%time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() ,"invocation start");
 
     let response = self.inner.invoke(invocation, config)?.await?;
     trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"invocation complete");
 
-    Ok(response.ok()?)
+    response.ok()
   }
 
   pub async fn shutdown(&self) -> Result<()> {
@@ -173,7 +174,7 @@ impl RuntimeBuilder {
       seed.unwrap_or_else(new_seed),
       RuntimeInit {
         manifest: definition,
-        config: self.config.unwrap_or_default(),
+        root_config: self.root_config.unwrap_or_default(),
         allow_latest: self.allow_latest.unwrap_or_default(),
         allowed_insecure: self.allowed_insecure.unwrap_or_default(),
         native_components: self.native_components.unwrap_or_default(),

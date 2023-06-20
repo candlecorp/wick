@@ -14,6 +14,9 @@ requires:
     interface:
       operations:
         - name: post_op
+          with:
+            - name: message
+              type: string
           inputs:
             - name: id
               type: string

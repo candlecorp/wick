@@ -1,8 +1,8 @@
-use flow_component::{ComponentError, Context, Operation};
+use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use futures::{FutureExt, StreamExt};
 use serde_json::Value;
 use wick_interface_types::{operation, OperationSignature};
-use wick_packet::{Invocation, Packet, PacketStream, StreamMap};
+use wick_packet::{Invocation, Packet, PacketStream, RuntimeConfig, StreamMap};
 
 use crate::BoxFuture;
 pub(crate) struct Op {
@@ -25,6 +25,9 @@ impl Op {
   pub(crate) fn new() -> Self {
     Self {
       signature: operation!(Op::ID=>{
+        config: {
+          "path" => "string[]"
+        },
         inputs: {
           "input" => "object"
         },
@@ -59,6 +62,7 @@ fn pluck<'a>(val: &'a Value, path: &[String]) -> Option<&'a Value> {
 impl Operation for Op {
   const ID: &'static str = "pluck";
   type Config = Config;
+
   fn handle(
     &self,
     invocation: Invocation,
@@ -101,11 +105,17 @@ impl Operation for Op {
   fn input_names(&self, _config: &Self::Config) -> Vec<String> {
     self.signature.inputs.iter().map(|n| n.name.clone()).collect()
   }
+}
 
-  fn decode_config(data: Option<wick_packet::GenericConfig>) -> Result<Self::Config, ComponentError> {
+impl RenderConfiguration for Op {
+  type Config = Config;
+  type ConfigSource = RuntimeConfig;
+
+  fn decode_config(data: Option<Self::ConfigSource>) -> Result<Self::Config, ComponentError> {
     let config = data.ok_or_else(|| {
       ComponentError::message("Pluck component requires configuration, please specify configuration.")
     })?;
+
     for (k, v) in config {
       if k == "field" {
         let field: String = serde_json::from_value(v).map_err(ComponentError::new)?;
@@ -127,8 +137,11 @@ impl Operation for Op {
 
 #[cfg(test)]
 mod test {
+  use std::collections::HashMap;
+
   use anyhow::Result;
   use flow_component::panic_callback;
+  use serde_json::json;
   use wick_packet::{packet_stream, Entity, InherentData};
 
   use super::*;
@@ -136,10 +149,9 @@ mod test {
   #[tokio::test]
   async fn test_deprecated() -> Result<()> {
     let op = Op::new();
-    let config = serde_json::json!({
-      "field": "pluck_this"
-    });
-    let config = Op::decode_config(Some(config.try_into()?))?;
+    let config = HashMap::from([("field".to_owned(), json!("pluck_this"))]);
+    let config = Op::decode_config(Some(config.into()))?;
+
     let stream = packet_stream!((
       "input",
       serde_json::json!({
@@ -167,10 +179,9 @@ mod test {
   #[tokio::test]
   async fn test_basic() -> Result<()> {
     let op = Op::new();
-    let config = serde_json::json!({
-      "path": ["pluck_this"]
-    });
-    let config = Op::decode_config(Some(config.try_into()?))?;
+    let config = HashMap::from([("path".to_owned(), json!(["pluck_this"]))]);
+    let config = Op::decode_config(Some(config.into()))?;
+
     let stream = packet_stream!((
       "input",
       serde_json::json!({

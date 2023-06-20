@@ -354,14 +354,16 @@ impl std::fmt::Display for PacketError {
 #[must_use]
 pub fn packetstream_to_wasmrs(index: u32, stream: PacketStream) -> BoxFlux<RawPayload, PayloadError> {
   let s = tokio_stream::StreamExt::map(stream, move |p| {
-    p.map(|p| {
-      let md = wasmrs::Metadata::new_extra(index, p.extra.encode()).encode();
-      match p.payload {
-        PacketPayload::Ok(b) => Ok(wasmrs::RawPayload::new_data(Some(md), b.map(Into::into))),
-        PacketPayload::Err(e) => Err(wasmrs::PayloadError::application_error(e.msg(), Some(md))),
-      }
-    })
-    .unwrap_or(Err(PayloadError::application_error("failed", None)))
+    p.map_or_else(
+      |e| Err(PayloadError::application_error(e.to_string(), None)),
+      |p| {
+        let md = wasmrs::Metadata::new_extra(index, p.extra.encode()).encode();
+        match p.payload {
+          PacketPayload::Ok(b) => Ok(wasmrs::RawPayload::new_data(Some(md), b.map(Into::into))),
+          PacketPayload::Err(e) => Err(wasmrs::PayloadError::application_error(e.msg(), Some(md))),
+        }
+      },
+    )
   });
   Box::pin(s)
 }

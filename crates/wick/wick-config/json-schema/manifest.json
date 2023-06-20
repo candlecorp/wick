@@ -363,6 +363,25 @@
         "type": "string"
       },
       "LiquidJsonValue": {
+        "oneOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "object"
+          },
+          {
+            "type": "array"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ]
+      },
+      "LiquidTemplate": {
         "type": "string"
       },
       "Glob": {
@@ -570,18 +589,11 @@
           },
           "port": {
             "description": "The port to bind to.",
-            "oneOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "string"
-              }
-            ]
+            "$ref": "#/$defs/v1/LiquidTemplate"
           },
           "address": {
             "description": "The address to bind to.",
-            "type": "string"
+            "$ref": "#/$defs/v1/LiquidTemplate"
           }
         },
         "required": []
@@ -600,18 +612,11 @@
           },
           "port": {
             "description": "The port to bind to.",
-            "oneOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "string"
-              }
-            ]
+            "$ref": "#/$defs/v1/LiquidTemplate"
           },
           "address": {
             "description": "The address to bind to.",
-            "type": "string"
+            "$ref": "#/$defs/v1/LiquidTemplate"
           }
         },
         "required": []
@@ -630,7 +635,7 @@
           },
           "path": {
             "description": "The path.",
-            "type": "string"
+            "$ref": "#/$defs/v1/LiquidTemplate"
           }
         },
         "required": [
@@ -651,7 +656,7 @@
           },
           "url": {
             "description": "The url string.",
-            "type": "string"
+            "$ref": "#/$defs/v1/LiquidTemplate"
           }
         },
         "required": [
@@ -808,7 +813,9 @@
             "required": false,
             "type": "object",
             "patternProperties": {
-              "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+              "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+                "$ref": "#/$defs/v1/LiquidJsonValue"
+              }
             }
           },
           "timeout": {
@@ -1295,7 +1302,9 @@
             "required": false,
             "type": "object",
             "patternProperties": {
-              "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+              "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+                "$ref": "#/$defs/v1/LiquidJsonValue"
+              }
             }
           },
           "cases": {
@@ -1437,18 +1446,18 @@
               "wick/component/composite@v1"
             ]
           },
-          "with": {
-            "description": "Configuration necessary to provide when instantiating the component.",
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/v1/Field"
-            }
-          },
           "operations": {
             "description": "A list of operations exposed by the Composite component.",
             "type": "array",
             "items": {
               "$ref": "#/$defs/v1/CompositeOperationDefinition"
+            }
+          },
+          "with": {
+            "description": "Configuration necessary to provide when instantiating the component.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
             }
           }
         },
@@ -1678,7 +1687,9 @@
             "required": false,
             "type": "object",
             "patternProperties": {
-              "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+              "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+                "$ref": "#/$defs/v1/LiquidJsonValue"
+              }
             }
           }
         },
@@ -1707,7 +1718,9 @@
             "required": false,
             "type": "object",
             "patternProperties": {
-              "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+              "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+                "$ref": "#/$defs/v1/LiquidJsonValue"
+              }
             }
           },
           "provide": {
@@ -1844,7 +1857,9 @@
             "required": false,
             "type": "object",
             "patternProperties": {
-              "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+              "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+                "$ref": "#/$defs/v1/LiquidJsonValue"
+              }
             }
           }
         },
@@ -2223,7 +2238,9 @@
             "required": false,
             "type": "object",
             "patternProperties": {
-              "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+              "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+                "$ref": "#/$defs/v1/LiquidJsonValue"
+              }
             }
           },
           "timeout": {
@@ -2267,7 +2284,9 @@
             "required": false,
             "type": "object",
             "patternProperties": {
-              "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+              "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+                "$ref": "#/$defs/v1/LiquidJsonValue"
+              }
             }
           },
           "inputs": {
@@ -2348,7 +2367,8 @@
           },
           "value": {
             "description": "The data to send.",
-            "required": false
+            "required": false,
+            "$ref": "#/$defs/v1/LiquidJsonValue"
           }
         },
         "required": [
@@ -2371,7 +2391,7 @@
           },
           "error": {
             "description": "The error message.",
-            "type": "string"
+            "$ref": "#/$defs/v1/LiquidTemplate"
           }
         },
         "required": [
@@ -2418,6 +2438,13 @@
           "tls": {
             "description": "Whether or not to use TLS.",
             "type": "boolean"
+          },
+          "with": {
+            "description": "Configuration necessary to provide when instantiating the component.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
           },
           "operations": {
             "description": "A list of operations to expose on this component.",
@@ -2509,6 +2536,13 @@
             "required": false,
             "$ref": "#/$defs/v1/Codec"
           },
+          "with": {
+            "description": "Configuration necessary to provide when instantiating the component.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
           "operations": {
             "description": "A list of operations to expose on this component.",
             "type": "array",
@@ -2567,7 +2601,7 @@
           "body": {
             "description": "The body to send, processed as a structured JSON liquid template.",
             "required": false,
-            "type": "object"
+            "$ref": "#/$defs/v1/LiquidJsonValue"
           },
           "path": {
             "description": "The path to append to our base URL, processed as a liquid template with each input as part of the template data.",

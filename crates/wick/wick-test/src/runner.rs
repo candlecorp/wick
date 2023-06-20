@@ -1,13 +1,13 @@
 use std::time::Duration;
 
-use flow_component::SharedComponent;
+use flow_component::{panic_callback, SharedComponent};
 use serde::Deserialize;
 use serde_value::Value;
 use tap_harness::{TestBlock, TestRunner};
 use tokio_stream::StreamExt;
-use wick_packet::{Entity, Invocation, Packet, PacketPayload};
+use wick_packet::{Entity, Invocation, Packet, PacketPayload, RuntimeConfig};
 
-use crate::utils::gen_packet;
+use crate::utils::{gen_packet, render_config};
 use crate::{get_payload, TestError, UnitTest};
 
 #[must_use]
@@ -24,6 +24,7 @@ pub async fn run_test<'a, 'b>(
   defs: Vec<&'a mut UnitTest<'a>>,
   id: Option<&'b str>,
   component: SharedComponent,
+  root_config: Option<RuntimeConfig>,
 ) -> Result<TestRunner, TestError> {
   let mut harness = TestRunner::new(Some(name));
 
@@ -32,7 +33,7 @@ pub async fn run_test<'a, 'b>(
       || Entity::local(def.test.operation()),
       |id| Entity::operation(id, def.test.operation()),
     );
-    let block = run_unit(i, def, entity, component.clone()).await?;
+    let block = run_unit(i, def, entity, component.clone(), root_config.clone()).await?;
     harness.add_block(block);
   }
 
@@ -46,20 +47,24 @@ async fn run_unit<'a>(
   def: &'a mut UnitTest<'a>,
   entity: Entity,
   component: SharedComponent,
+  root_config: Option<RuntimeConfig>,
 ) -> Result<TestBlock, TestError> {
   let span = debug_span!("unit test", name = def.test.name());
-  let (stream, inherent) = get_payload(def)?;
+  let op_config = render_config(def.test.config())?;
+  let signature = component
+    .signature()
+    .get_operation(def.test.operation())
+    .ok_or(TestError::OpNotFound(def.test.operation().to_owned()))?;
+  wick_packet::validation::expect_configuration_matches(def.test.name(), op_config.as_ref(), &signature.config)
+    .map_err(TestError::ConfigUnsatisfied)?;
+  let (stream, inherent) = get_payload(def, root_config.as_ref(), op_config.as_ref())?;
   let test_name = get_description(def);
   let mut test_block = TestBlock::new(Some(test_name.clone()));
   let prefix = |msg: &str| format!("{}: {}", test_name, if msg.is_empty() { "wick test" } else { msg });
 
   span.in_scope(|| info!(%entity, "invoke"));
   let invocation = Invocation::new(Entity::test(&test_name), entity, stream, inherent, &span);
-  let fut = component.handle(
-    invocation,
-    def.test.config().cloned(),
-    std::sync::Arc::new(|_, _, _, _, _, _| panic!()),
-  );
+  let fut = component.handle(invocation, op_config.clone(), panic_callback());
   let fut = tokio::time::timeout(Duration::from_secs(5), fut);
   let result = fut
     .await
@@ -112,7 +117,7 @@ async fn run_unit<'a>(
       );
       break false;
     }
-    let expected = gen_packet(expected)?;
+    let expected = gen_packet(expected, root_config.as_ref(), op_config.as_ref())?;
 
     let actual_payload = actual.payload.clone();
 
@@ -129,22 +134,38 @@ async fn run_unit<'a>(
 
     let actual_value: Result<Value, TestError> = actual_payload
       .decode()
-      .map_err(|e| TestError::ConversionFailed(e.to_string()));
-    let expected_value: Result<Value, TestError> = expected
-      .decode()
-      .map_err(|e| TestError::ConversionFailed(e.to_string()));
+      .map_err(|e| TestError::Deserialization(e.to_string()));
+    let expected_value: Result<Value, TestError> =
+      expected.decode().map_err(|e| TestError::Deserialization(e.to_string()));
 
     debug!(i,index,actual=?actual_value, "actual");
     debug!(i,index,expected=?expected_value, "expected");
 
     let desc = prefix("payload data mismatch");
 
-    let success = match (&actual_value, &expected_value) {
-      (Ok(actual), Ok(expected)) => eq(actual, expected),
-      (Err(actual), Err(expected)) => err_eq(actual, expected),
-      _ => false,
+    let (success, diagnostic) = match (&actual_value, &expected_value) {
+      (Ok(actual), Ok(expected)) => {
+        let diagnostic = assert_json_diff::assert_json_matches_no_panic(
+          &actual,
+          &expected,
+          assert_json_diff::Config::new(assert_json_diff::CompareMode::Inclusive),
+        );
+
+        (
+          eq(actual, expected),
+          Some(split_and_indent(&diagnostic.err().unwrap_or_default(), 3)),
+        )
+      }
+      (Err(actual), Err(expected)) => (
+        err_eq(actual, expected),
+        diag_compare(&diag_result(actual_value), &diag_result(expected_value)),
+      ),
+      _ => (
+        false,
+        diag_compare(&diag_result(actual_value), &diag_result(expected_value)),
+      ),
     };
-    let diagnostic = diag_compare(&diag_value(actual_value), &diag_value(expected_value));
+
     if !success {
       test_block.fail(desc, diagnostic);
       break false;
@@ -180,9 +201,9 @@ async fn run_unit<'a>(
   Ok(test_block)
 }
 
-fn diag_value(result: Result<Value, TestError>) -> String {
+fn diag_result(result: Result<Value, TestError>) -> String {
   match result {
-    Ok(v) => format!("{}", serde_json::Value::deserialize(v).unwrap()),
+    Ok(v) => serde_json::to_string_pretty(&serde_json::Value::deserialize(v).unwrap()).unwrap(),
     Err(e) => format!("Could not deserialize payload, message was : {}", e),
   }
 }
@@ -195,7 +216,19 @@ fn diag_packet(packet: &Packet) -> String {
 }
 
 fn diag_compare(actual: &str, expected: &str) -> Option<Vec<String>> {
-  Some(vec![format!("Actual: {}", actual), format!("Expected: {}", expected)])
+  let mut lines = vec!["Actual: ".to_owned()];
+  lines.extend(split_and_indent(actual, 3));
+  lines.push("Expected: ".to_owned());
+  lines.extend(split_and_indent(expected, 3));
+  Some(lines)
+}
+
+fn split_and_indent(text: &str, spaces: u8) -> Vec<String> {
+  let mut lines = vec![];
+  for line in text.lines() {
+    lines.push(format!("{:spaces$}{}", "", line, spaces = spaces as usize));
+  }
+  lines
 }
 
 fn eq(left: &Value, right: &Value) -> bool {

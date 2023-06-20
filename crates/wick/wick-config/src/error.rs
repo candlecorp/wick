@@ -21,6 +21,10 @@ pub enum ManifestError {
   #[error(transparent)]
   AssetContainer(#[from] asset_container::Error),
 
+  /// Error rendering liquid JSON configuration.
+  #[error(transparent)]
+  LiquidConfig(#[from] liquid_json::Error),
+
   /// Attempted to retrieve the types in a manifest before they've been fetched.
   #[error("Attempted to retrieve the types in a manifest before they've been fetched")]
   TypesNotFetched,
@@ -53,10 +57,6 @@ pub enum ManifestError {
   #[error("Could not parse manifest {} as YAML: {1} at line {}, column {}", .0.as_ref().map_or("<raw>".to_owned(), |v|v.display().to_string()), .2.as_ref().map_or("unknown".to_owned(),|l|l.line().to_string()), .2.as_ref().map_or("unknown".to_owned(),|l|l.column().to_string()))]
   YamlError(Option<PathBuf>, String, Option<serde_yaml::Location>),
 
-  /// Error parsing or serializing Sender data.
-  #[error("Error parsing or serializing Sender data: {0}")]
-  InvalidSenderData(String),
-
   /// IP address in manifest is invalid.
   #[error("Invalid IP Address: {0}")]
   BadIpAddress(String),
@@ -84,6 +84,26 @@ pub enum ManifestError {
   /// Invalid authority format
   #[error("Invalid authority: {0}")]
   InvalidUrl(String),
+
+  /// Attempted to use configuration before it was renderable.
+  #[error("Could not render configuration template: {0}")]
+  ConfigurationTemplate(String),
+
+  /// Attempted to serialize a complex [liquid_json::LiquidJson] template into a string.
+  #[error("Invalid template: could not turn an object or an array into a string")]
+  TemplateStructure,
+
+  /// Attempted to create a template render context from a non-object value.
+  #[error("Invalid template context, context must be an object")]
+  ContextBase,
+
+  /// Attempted to use configuration before it was rendered.
+  #[error("Attempted to use configuration '{0}' before it was rendered")]
+  UnrenderedConfiguration(String),
+
+  /// Error resolving reference.
+  #[error(transparent)]
+  Reference(ReferenceError),
 }
 
 #[derive(Error, Debug, Clone, Copy)]

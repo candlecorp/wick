@@ -2,6 +2,7 @@ use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use url::Url;
 use wick_config::config::{ResourceDefinition, TcpPort, UdpPort, UrlResource, Volume};
 
 #[derive(thiserror::Error, Debug)]
@@ -17,7 +18,7 @@ pub enum ResourceError {
 pub enum Resource {
   TcpPort(SocketAddr),
   UdpPort(SocketAddr),
-  Url(UrlResource),
+  Url(Url),
   Volume(PathBuf),
 }
 
@@ -50,24 +51,27 @@ impl Resource {
       ResourceDefinition::Volume(config) => Self::new_volume(&config),
     }
   }
+
   pub fn new_tcp_port(config: &TcpPort) -> Result<Self, ResourceError> {
+    let host = config.host().value_unchecked();
+    let port = config.port().value_unchecked();
     Ok(Self::TcpPort(SocketAddr::new(
-      IpAddr::from_str(config.host())
-        .map_err(|e| ResourceError::InvalidIpAddress(config.host().to_owned(), e.to_string()))?,
-      config.port(),
+      IpAddr::from_str(host).map_err(|e| ResourceError::InvalidIpAddress(host.clone(), e.to_string()))?,
+      *port,
     )))
   }
 
   pub fn new_udp_port(config: &UdpPort) -> Result<Self, ResourceError> {
+    let host = config.host().value_unchecked();
+    let port = config.port().value_unchecked();
     Ok(Self::UdpPort(SocketAddr::new(
-      IpAddr::from_str(config.host())
-        .map_err(|e| ResourceError::InvalidIpAddress(config.host().to_owned(), e.to_string()))?,
-      config.port(),
+      IpAddr::from_str(host).map_err(|e| ResourceError::InvalidIpAddress(host.clone(), e.to_string()))?,
+      *port,
     )))
   }
 
   pub fn new_url(config: &UrlResource) -> Result<Self, ResourceError> {
-    Ok(Self::Url(config.clone()))
+    Ok(Self::Url(config.url().value_unchecked().clone()))
   }
 
   pub fn new_volume(config: &Volume) -> Result<Self, ResourceError> {

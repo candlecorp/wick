@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use serde_json::Value;
+use liquid_json::LiquidJsonValue;
 
 use crate::{parse, Error};
 
@@ -329,11 +329,11 @@ impl InstancePort {
 }
 
 /// A connection target, specified by an instance and a port.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ConnectionTargetExpression {
   instance: InstanceTarget,
   port: InstancePort,
-  data: Option<HashMap<String, Value>>,
+  data: Option<HashMap<String, LiquidJsonValue>>,
 }
 
 impl std::fmt::Display for ConnectionTargetExpression {
@@ -362,7 +362,7 @@ impl ConnectionTargetExpression {
   pub fn new_data(
     instance: InstanceTarget,
     port: impl Into<InstancePort>,
-    data: Option<HashMap<String, Value>>,
+    data: Option<HashMap<String, LiquidJsonValue>>,
   ) -> Self {
     Self {
       instance,
@@ -389,12 +389,12 @@ impl ConnectionTargetExpression {
 
   /// Get the data.
   #[must_use]
-  pub fn data(&self) -> Option<&HashMap<String, Value>> {
+  pub fn data(&self) -> Option<&HashMap<String, LiquidJsonValue>> {
     self.data.as_ref()
   }
 
   /// Get the owned parts of the connection target.
-  pub fn into_parts(self) -> (InstanceTarget, InstancePort, Option<HashMap<String, Value>>) {
+  pub fn into_parts(self) -> (InstanceTarget, InstancePort, Option<HashMap<String, LiquidJsonValue>>) {
     (self.instance, self.port, self.data)
   }
 }

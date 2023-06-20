@@ -55,7 +55,7 @@ pub(crate) async fn handle(
     .await?
     .try_component_config()?;
 
-  let mut suite = TestSuite::from_configuration(root_manifest.tests());
+  let mut suite = TestSuite::from_configuration(root_manifest.tests())?;
 
   let test_files: Vec<_> = futures::future::join_all(opts.tests.iter().map(|path| {
     WickConfiguration::fetch_all(path, oci_opts.clone())
@@ -66,20 +66,23 @@ pub(crate) async fn handle(
   .collect::<Result<_, _>>()?;
 
   for config in &test_files {
-    suite.add_configuration(config);
+    suite.add_configuration(config)?;
   }
 
   let server_options = DefaultCliOptions { ..Default::default() };
 
   let manifest = merge_config(&root_manifest, &opts.oci, Some(server_options));
 
-  let factory: ComponentFactory = Box::new(move |config| {
-    let manifest = manifest.clone();
+  let factory: ComponentFactory = Box::new(move |config, env| {
+    let mut manifest = manifest.clone();
     let span = span.clone();
     let task = async move {
+      manifest.set_root_config(config);
+      manifest
+        .initialize(env.as_ref())
+        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
       let mut host = ComponentHostBuilder::default()
         .manifest(manifest)
-        .config(config)
         .span(span)
         .build()
         .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;

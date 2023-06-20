@@ -3,7 +3,7 @@ use std::sync::Arc;
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use futures::StreamExt;
 use wick_interface_types::{component, ComponentSignature};
-use wick_packet::{fan_out, GenericConfig, Invocation, Observer, Packet, PacketStream};
+use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream, RuntimeConfig};
 use wick_rpc::dispatch;
 
 mod wick_component_cli;
@@ -44,7 +44,7 @@ impl Component for NativeComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _data: Option<GenericConfig>,
+    _data: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let target = invocation.target_url();
@@ -127,11 +127,13 @@ mod tests {
       operations: vec![
         OperationSignature {
           name: "error".to_string(),
+          config: Default::default(),
           inputs: vec![Field::new("input", Type::String)],
           outputs: vec![Field::new("output", Type::String)],
         },
         OperationSignature {
           name: "test-component".to_string(),
+          config: Default::default(),
           inputs: vec![Field::new("input", Type::String)],
           outputs: vec![Field::new("output", Type::String)],
         },

@@ -12,14 +12,100 @@ pub(crate) type AssociatedData = OperationSettings;
 
 #[derive(Debug, Clone, Default)]
 pub struct OperationSettings {
-  pub(crate) config: Option<GenericConfig>,
+  pub(crate) config: OperationConfig,
   pub(crate) settings: Option<ExecutionSettings>,
 }
 
 impl OperationSettings {
   /// Initialize a new OperationSettings with the specified config and settings.
-  pub(crate) fn new(config: Option<GenericConfig>, settings: Option<ExecutionSettings>) -> Self {
+  pub(crate) fn new(config: OperationConfig, settings: Option<ExecutionSettings>) -> Self {
     Self { config, settings }
+  }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct OperationConfig {
+  root: Option<RuntimeConfig>,
+  template: Option<LiquidJsonConfig>,
+  value: Option<RuntimeConfig>,
+}
+
+impl OperationConfig {
+  #[must_use]
+  pub fn new_template(template: Option<LiquidJsonConfig>) -> Self {
+    Self {
+      template,
+      value: None,
+      root: None,
+    }
+  }
+
+  #[must_use]
+  pub fn new_value(value: Option<RuntimeConfig>) -> Self {
+    Self {
+      template: None,
+      value,
+      root: None,
+    }
+  }
+
+  pub fn render(&self) -> Result<Option<RuntimeConfig>, InterpreterError> {
+    if let Some(template) = self.template() {
+      Ok(Some(
+        template
+          .render(self.root.as_ref(), self.value.as_ref(), None)
+          .map_err(|e| InterpreterError::Configuration(e.to_string()))?,
+      ))
+    } else {
+      Ok(self.value.clone())
+    }
+  }
+
+  #[must_use]
+  pub fn value(&self) -> Option<&RuntimeConfig> {
+    self.value.as_ref()
+  }
+
+  #[must_use]
+  pub fn template(&self) -> Option<&LiquidJsonConfig> {
+    self.template.as_ref()
+  }
+
+  #[must_use]
+  pub fn root(&self) -> Option<&RuntimeConfig> {
+    self.root.as_ref()
+  }
+
+  pub fn set_root(&mut self, root: Option<RuntimeConfig>) {
+    self.root = root;
+  }
+
+  pub fn set_template(&mut self, template: Option<LiquidJsonConfig>) {
+    self.template = template;
+  }
+
+  pub fn set_value(&mut self, value: Option<RuntimeConfig>) {
+    self.value = value;
+  }
+}
+
+impl From<Option<LiquidJsonConfig>> for OperationConfig {
+  fn from(value: Option<LiquidJsonConfig>) -> Self {
+    OperationConfig {
+      template: value,
+      value: None,
+      root: None,
+    }
+  }
+}
+
+impl From<Option<RuntimeConfig>> for OperationConfig {
+  fn from(value: Option<RuntimeConfig>) -> Self {
+    OperationConfig {
+      template: None,
+      value,
+      root: None,
+    }
   }
 }
 
@@ -34,10 +120,11 @@ use flow_expression_parser::ast::{
 use flow_graph::NodeReference;
 use serde_json::Value;
 use types::*;
-use wick_config::config::{ComponentImplementation, ExecutionSettings, FlowOperation};
-use wick_packet::GenericConfig;
+use wick_config::config::{ComponentImplementation, ExecutionSettings, FlowOperation, LiquidJsonConfig};
+use wick_packet::RuntimeConfig;
 
 use crate::constants::{NS_CORE, NS_NULL};
+use crate::error::InterpreterError;
 
 #[derive(Debug)]
 #[must_use]
@@ -66,21 +153,26 @@ fn register_operation(
   mut scope: Vec<String>,
   network: &mut Network,
   flow: &mut FlowOperation,
+  op_config: &OperationConfig,
 ) -> Result<(), flow_graph::error::Error> {
   scope.push(flow.name().to_owned());
+
   for flow in flow.flows_mut() {
     let scope = scope.clone();
-    register_operation(scope, network, flow)?;
+    register_operation(scope, network, flow, op_config)?;
   }
   let name = scope.join("::");
   let mut schematic = Schematic::new(name, Default::default(), Default::default());
 
   for (name, def) in flow.instances().iter() {
     debug!(%name, config=?def.data(),settings=?def.settings(), "registering operation");
+    let mut op_config = op_config.clone();
+    op_config.set_template(def.data().cloned());
+
     schematic.add_external(
       name,
       NodeReference::new(def.component_id(), def.name()),
-      OperationSettings::new(def.data().cloned(), def.settings().cloned()),
+      OperationSettings::new(op_config, def.settings().cloned()),
     );
   }
 
@@ -155,14 +247,14 @@ fn expand_port_paths(
       let (to_inst, to_port, _) = to.into_parts();
       if let InstancePort::Path(name, parts) = from_port {
         let id = format!("{}_pluck_{}_[{}]", schematic.name(), name, parts.join(","));
-        let config = GenericConfig::from(HashMap::from([(
+        let config = HashMap::from([(
           "path".to_owned(),
           Value::Array(parts.into_iter().map(Value::String).collect()),
-        )]));
+        )]);
         schematic.add_external(
           &id,
           NodeReference::new("core", "pluck"),
-          OperationSettings::new(Some(config), None),
+          OperationSettings::new(Some(RuntimeConfig::from(config)).into(), None),
         );
         *expression = FlowExpression::block(BlockExpression::new(vec![
           FlowExpression::connection(ConnectionExpression::new(
@@ -256,14 +348,23 @@ fn expand_operation(
 
 pub fn from_def(
   manifest: &mut wick_config::config::ComponentConfiguration,
+  config: &Option<RuntimeConfig>,
 ) -> Result<Network, flow_graph::error::Error> {
-  let mut network = Network::new(manifest.name().cloned().unwrap_or_default());
+  let mut network = Network::new(
+    manifest.name().cloned().unwrap_or_default(),
+    OperationSettings::new(config.clone().into(), None),
+  );
+
+  let mut op_config = OperationConfig::default();
+  op_config.set_root(config.clone());
 
   if let ComponentImplementation::Composite(composite) = manifest.component_mut() {
     for flow in composite.operations_mut().values_mut() {
-      register_operation(vec![], &mut network, flow)?;
+      register_operation(vec![], &mut network, flow, &op_config)?;
     }
   }
+
+  trace!(graph=?network,"initialized graph");
 
   Ok(network)
 }

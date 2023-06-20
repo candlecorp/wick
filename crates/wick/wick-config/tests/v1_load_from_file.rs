@@ -1,12 +1,7 @@
 use core::panic;
 use std::path::PathBuf;
 
-use wick_config::config::{
-  ComponentConfiguration,
-  ComponentDefinition,
-  CompositeComponentImplementation,
-  ImportDefinition,
-};
+use wick_config::config::{AppConfiguration, ComponentDefinition, CompositeComponentImplementation, ImportDefinition};
 use wick_config::error::ManifestError;
 use wick_config::*;
 
@@ -15,8 +10,8 @@ async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
   WickConfiguration::load_from_file(path).await
 }
 
-async fn load_component(path: &str) -> Result<ComponentConfiguration, ManifestError> {
-  load(path).await?.try_component_config()
+async fn load_app(path: &str) -> Result<AppConfiguration, ManifestError> {
+  load(path).await?.try_app_config()
 }
 
 async fn load_composite(path: &str) -> Result<CompositeComponentImplementation, ManifestError> {
@@ -69,35 +64,20 @@ async fn test_main() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test(tokio::test)]
-async fn regression_issue_180() -> Result<(), ManifestError> {
-  let component = load_component("./tests/manifests/v1/shell-expansion.yaml").await?;
-  println!("{:?}", component);
-  let coll = component.get_import("test").unwrap();
-  #[allow(deprecated)]
-  if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = coll.kind() {
-    let value = module.reference().path()?;
-    println!("value: {:?}", value);
-    let actual = value;
-
-    let mut expected = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-
-    expected.push("Cargo.toml");
-    assert_eq!(actual, expected);
-  } else {
-    panic!("wrong collection kind");
-  }
-
-  Ok(())
-}
-
-#[test_logger::test(tokio::test)]
 async fn regression_issue_42() -> Result<(), ManifestError> {
-  let component = load_component("./tests/manifests/v1/shell-expansion.yaml").await?;
+  let component = load_app("./tests/manifests/v1/template-expansion.yaml").await?;
   println!("{:?}", component);
-  let coll = component.get_import("test").unwrap();
+  let coll = component.imports().get("test").unwrap();
   #[allow(deprecated)]
   if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = coll.kind() {
-    let value = module.config().as_ref().unwrap().get("pwd").unwrap().as_str().unwrap();
+    let map: std::collections::HashMap<String, String> = std::env::vars().collect();
+    let value: String = module
+      .config()
+      .unwrap()
+      .render(None, None, Some(&map))
+      .unwrap()
+      .coerce_key("pwd")
+      .unwrap();
     let expected = std::env::var("CARGO_MANIFEST_DIR").unwrap();
 
     assert_eq!(value, expected);

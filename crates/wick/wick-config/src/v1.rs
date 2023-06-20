@@ -32,7 +32,6 @@ use std::collections::HashMap;
 use num_traits::FromPrimitive;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serde_with_expand_env::with_expand_envs;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -53,6 +52,10 @@ pub(crate) enum WickConfig {
   TestConfiguration(TestConfiguration),
 }
 
+/// A liquid template. Liquid-JSON is a way of using Liquid templates in structured JSON-like data. See liquid's [homepage](https://shopify.github.io/liquid/) for more information.
+#[allow(unused)]
+pub(crate) type LiquidTemplate = String;
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Configuration for a standalone Wick application.
@@ -60,7 +63,6 @@ pub(crate) struct AppConfiguration {
   /// The application&#x27;s name.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Associated metadata for this component.
 
@@ -96,7 +98,6 @@ pub(crate) struct Metadata {
   /// The version of the artifact.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) version: String,
   /// A list of the authors.
 
@@ -158,12 +159,10 @@ pub(crate) struct RegistryDefinition {
 
   #[serde(default = "REGISTRY_DEFINITION_HOST")]
   #[serde(alias = "registry")]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) host: String,
   /// The namespace on the registry. e.g.: [*your username*]
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) namespace: String,
 }
 
@@ -172,8 +171,6 @@ pub(crate) struct RegistryDefinition {
 /// An identifier bound to a resource.
 pub(crate) struct ResourceBinding {
   /// The name of the binding.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The resource to bind to.
   pub(crate) resource: ResourceDefinition,
@@ -184,8 +181,6 @@ pub(crate) struct ResourceBinding {
 /// An identifier bound to an imported component or type manifest.
 pub(crate) struct ImportBinding {
   /// The name of the binding.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The import to bind to.
   pub(crate) component: ImportDefinition,
@@ -217,13 +212,11 @@ pub(crate) struct TcpPort {
   /// The port to bind to.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) port: u16,
+  pub(crate) port: LiquidTemplate,
   /// The address to bind to.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) address: String,
+  pub(crate) address: LiquidTemplate,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -233,13 +226,11 @@ pub(crate) struct UdpPort {
   /// The port to bind to.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) port: u16,
+  pub(crate) port: LiquidTemplate,
   /// The address to bind to.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) address: String,
+  pub(crate) address: LiquidTemplate,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -247,9 +238,7 @@ pub(crate) struct UdpPort {
 /// A filesystem or network volume resource.
 pub(crate) struct Volume {
   /// The path.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) path: String,
+  pub(crate) path: LiquidTemplate,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -257,9 +246,7 @@ pub(crate) struct Volume {
 /// A URL configured as a resource.
 pub(crate) struct Url {
   /// The url string.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) url: String,
+  pub(crate) url: LiquidTemplate,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -309,12 +296,8 @@ pub(crate) struct TimeTrigger {
 /// Input to use when calling an operation
 pub(crate) struct OperationInput {
   /// The name of the input.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The value to pass.
-
-  #[serde(deserialize_with = "crate::helpers::deserialize_json_env")]
   pub(crate) value: Value,
 }
 
@@ -328,13 +311,10 @@ pub(crate) fn SCHEDULE_REPEAT() -> u16 {
 /// The schedule to run the Time trigger with.
 pub(crate) struct Schedule {
   /// Schedule in cron format with second precision. See [cron.help](https://cron.help) for more information.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) cron: String,
   /// repeat &#x60;n&#x60; times. Use &#x60;0&#x60; to repeat indefinitely
 
   #[serde(default = "SCHEDULE_REPEAT")]
-  #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) repeat: u16,
 }
 
@@ -347,15 +327,12 @@ pub(crate) struct ComponentOperationExpression {
   #[serde(deserialize_with = "crate::v1::parse::component_shortform")]
   pub(crate) component: ComponentDefinition,
   /// The operation name.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Configuration to pass to this operation on invocation.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
-  pub(crate) with: Option<HashMap<String, Value>>,
+  pub(crate) with: Option<HashMap<String, liquid_json::LiquidJsonValue>>,
   /// Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely.
 
   #[serde(default)]
@@ -368,8 +345,6 @@ pub(crate) struct ComponentOperationExpression {
 /// An HTTP server that delegates to HTTP routers on every request.
 pub(crate) struct HttpTrigger {
   /// The TcpPort resource to listen on for connections.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) resource: String,
   /// The router to handle incoming requests
 
@@ -402,8 +377,6 @@ pub(crate) enum HttpRouter {
 /// A router that proxies to the configured URL when the path matches.
 pub(crate) struct ProxyRouter {
   /// The path that this router will trigger for.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
   /// Middleware operations for this router.
 
@@ -411,13 +384,10 @@ pub(crate) struct ProxyRouter {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) middleware: Option<Middleware>,
   /// The URL resource to proxy to.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) url: String,
   /// Whether or not to strip the router&#x27;s path from the proxied request.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) strip_path: bool,
 }
 
@@ -426,8 +396,6 @@ pub(crate) struct ProxyRouter {
 /// A router that can be configured to delegate to specific operations on a per-route, per-method basis.
 pub(crate) struct RestRouter {
   /// The path that this router will trigger for.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
   /// Additional tools and services to enable.
 
@@ -456,8 +424,6 @@ pub(crate) struct RestRouter {
 /// A route to serve and the operation that handles it.
 pub(crate) struct Route {
   /// The path to serve this route from. See [URI documentation](/docs/configuration/uri) for more information on specifying query and path parameters.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) uri: String,
   /// The operation that will act as the main entrypoint for this route.
 
@@ -595,8 +561,6 @@ pub(crate) struct Contact {
 /// A router that serves static files.
 pub(crate) struct StaticRouter {
   /// The path that this router will trigger for.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
   /// Middleware operations for this router.
 
@@ -604,8 +568,6 @@ pub(crate) struct StaticRouter {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) middleware: Option<Middleware>,
   /// The volume to serve static files from.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) volume: String,
   /// Fallback path (relative to volume &#x60;resource&#x60;) for files to serve in case of a 404. Useful for SPA&#x27;s. if volume resource is: /www and fallback: index.html, then a 404 will serve /www/index.html
 
@@ -619,8 +581,6 @@ pub(crate) struct StaticRouter {
 /// A router that delegates all requests to the configured operation, optionally encoding/decoding based on the specified codec.
 pub(crate) struct RawRouter {
   /// The path that this router will trigger for.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
   /// Middleware operations for this router.
 
@@ -700,8 +660,7 @@ pub(crate) struct TestConfiguration {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
-  pub(crate) with: Option<HashMap<String, Value>>,
+  pub(crate) with: Option<HashMap<String, liquid_json::LiquidJsonValue>>,
   /// Unit tests to run against components and operations.
 
   #[serde(default)]
@@ -767,8 +726,6 @@ pub(crate) struct ComponentConfiguration {
 /// An interface bound to an ID. Used in the require/provide relationship between components.
 pub(crate) struct InterfaceBinding {
   /// The name of the interface.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The interface to bind to.
   pub(crate) interface: InterfaceDefinition,
@@ -794,16 +751,16 @@ pub(crate) struct InterfaceDefinition {
 #[serde(deny_unknown_fields)]
 /// A component made from connectiong other components.
 pub(crate) struct CompositeComponentConfiguration {
-  /// Configuration necessary to provide when instantiating the component.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) with: Vec<Field>,
   /// A list of operations exposed by the Composite component.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<CompositeOperationDefinition>,
+  /// Configuration necessary to provide when instantiating the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -906,8 +863,6 @@ pub(crate) struct TypesComponent {
 /// A reference to a component in the application's scope.
 pub(crate) struct ComponentReference {
   /// The id of the referenced component.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) id: String,
 }
 
@@ -918,7 +873,6 @@ pub(crate) struct HostConfig {
   /// Whether or not to allow the &#x60;:latest&#x60; tag on remote artifacts.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) allow_latest: bool,
   /// A list of registries to connect to insecurely (over HTTP vs HTTPS).
 
@@ -939,7 +893,6 @@ pub(crate) struct HttpConfig {
   /// Enable/disable the server.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) enabled: bool,
   /// The port to bind to.
 
@@ -973,15 +926,12 @@ pub(crate) struct HttpConfig {
 /// A component hosted as an independent microservice.
 pub(crate) struct GrpcUrlComponent {
   /// The GRPC URL to connect to.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) url: String,
   /// Any configuration necessary for the component.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
-  pub(crate) with: Option<HashMap<String, Value>>,
+  pub(crate) with: Option<HashMap<String, liquid_json::LiquidJsonValue>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -996,8 +946,7 @@ pub(crate) struct ManifestComponent {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
-  pub(crate) with: Option<HashMap<String, Value>>,
+  pub(crate) with: Option<HashMap<String, liquid_json::LiquidJsonValue>>,
   /// External components to provide to the referenced component.
 
   #[serde(default)]
@@ -1013,7 +962,6 @@ pub(crate) struct CompositeOperationDefinition {
   /// The name of the operation.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Any configuration required by the operation.
 
@@ -1088,19 +1036,14 @@ pub(crate) struct ConnectionDefinition {
 /// A connection target e.g. a specific input or output on an operation instance. This can be specified in shortform syntax.
 pub(crate) struct ConnectionTargetDefinition {
   /// The instance ID of the component operation.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) instance: String,
   /// The operation&#x27;s input or output (depending on to/from).
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) port: String,
   /// The default value to provide on this connection in the event of an error.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
-  pub(crate) data: Option<HashMap<String, Value>>,
+  pub(crate) data: Option<HashMap<String, liquid_json::LiquidJsonValue>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1110,7 +1053,6 @@ pub(crate) struct OperationDefinition {
   /// The name of the operation.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Any configuration required by the operation.
 
@@ -1134,8 +1076,6 @@ pub(crate) struct OperationDefinition {
 /// Field definition with a name and type signature
 pub(crate) struct Field {
   /// The name of the field.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The type signature of the field.
 
@@ -1255,7 +1195,6 @@ pub(crate) struct Custom {
   /// The name of the custom type.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
 }
 
@@ -1305,7 +1244,6 @@ pub(crate) struct StructSignature {
   /// The name of the struct.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The fields in this struct.
 
@@ -1326,7 +1264,6 @@ pub(crate) struct EnumSignature {
   /// The name of the enum.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The variants in the enum.
 
@@ -1347,7 +1284,6 @@ pub(crate) struct EnumVariant {
   /// The name of the variant.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The index of the variant.
 
@@ -1371,8 +1307,6 @@ pub(crate) struct EnumVariant {
 /// An identifier bound to a component's operation.
 pub(crate) struct OperationInstance {
   /// The name of the binding.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The operation to bind to.
 
@@ -1382,8 +1316,7 @@ pub(crate) struct OperationInstance {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
-  pub(crate) with: Option<HashMap<String, Value>>,
+  pub(crate) with: Option<HashMap<String, liquid_json::LiquidJsonValue>>,
   /// Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely.
 
   #[serde(default)]
@@ -1396,12 +1329,8 @@ pub(crate) struct OperationInstance {
 /// A test case for a component's operation.
 pub(crate) struct TestDefinition {
   /// The name of the test.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// The operaton to test.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) operation: String,
   /// Inherent data to use for the test.
 
@@ -1412,8 +1341,7 @@ pub(crate) struct TestDefinition {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  #[serde(deserialize_with = "crate::helpers::configmap_deserializer")]
-  pub(crate) with: Option<HashMap<String, Value>>,
+  pub(crate) with: Option<HashMap<String, liquid_json::LiquidJsonValue>>,
   /// The inputs to the test.
 
   #[serde(default)]
@@ -1460,8 +1388,6 @@ pub(crate) enum PacketData {
 /// A simplified representation of a Wick data packet & payload, used when writing tests.
 pub(crate) struct SuccessPacket {
   /// The name of the input or output this packet is going to or coming from.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Any flags set on the packet.
 
@@ -1473,15 +1399,13 @@ pub(crate) struct SuccessPacket {
   #[serde(default)]
   #[serde(alias = "data")]
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) value: Option<Value>,
+  pub(crate) value: Option<liquid_json::LiquidJsonValue>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct ErrorPacket {
   /// The name of the input or output this packet is going to or coming from.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Any flags set on the packet.
 
@@ -1489,9 +1413,7 @@ pub(crate) struct ErrorPacket {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) flags: Option<PacketFlags>,
   /// The error message.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
-  pub(crate) error: String,
+  pub(crate) error: LiquidTemplate,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1501,17 +1423,14 @@ pub(crate) struct PacketFlags {
   /// Indicates the port should be considered closed.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) done: bool,
   /// Indicates the opening of a new substream context within the parent stream.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) open: bool,
   /// Indicates the closing of a substream context within the parent stream.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) close: bool,
 }
 
@@ -1522,13 +1441,16 @@ pub(crate) struct SqlComponent {
   /// The connect string URL resource for the database.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) resource: String,
   /// Whether or not to use TLS.
 
   #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
   pub(crate) tls: bool,
+  /// Configuration necessary to provide when instantiating the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
   /// A list of operations to expose on this component.
 
   #[serde(default)]
@@ -1543,7 +1465,6 @@ pub(crate) struct SqlOperationDefinition {
   /// The name of the operation.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Any configuration required by the operation.
 
@@ -1561,8 +1482,6 @@ pub(crate) struct SqlOperationDefinition {
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) outputs: Vec<Field>,
   /// The query to execute.
-
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) query: String,
   /// The positional arguments to the query, defined as a list of input names.
 
@@ -1625,13 +1544,17 @@ pub(crate) struct HttpClientComponent {
   /// The URL base to use.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) resource: String,
   /// The codec to use when encoding/decoding data. Can be overridden by individual operations.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) codec: Option<Codec>,
+  /// Configuration necessary to provide when instantiating the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
   /// A list of operations to expose on this component.
 
   #[serde(default)]
@@ -1646,7 +1569,6 @@ pub(crate) struct HttpClientOperationDefinition {
   /// The name of the operation.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) name: String,
   /// Any configuration required by the operation.
 
@@ -1680,7 +1602,6 @@ pub(crate) struct HttpClientOperationDefinition {
   /// The path to append to our base URL, processed as a liquid template with each input as part of the template data.
 
   #[serde(default)]
-  #[serde(deserialize_with = "crate::helpers::with_expand_envs_string")]
   pub(crate) path: String,
 }
 

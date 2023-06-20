@@ -4,8 +4,14 @@ metadata:
   version: '1'
 component:
   kind: wick/component/composite@v1
+  with:
+    - name: component_config_name
+      type: string
   operations:
     - name: test-component
+      with:
+        - name: component_config_name
+          type: string
       inputs:
         - name: input
           type: string

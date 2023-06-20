@@ -4,9 +4,10 @@ use flow_component::{Component, ComponentError, RuntimeCallback};
 use parking_lot::Mutex;
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{GenericConfig, Invocation, PacketStream};
+use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
 use crate::constants::*;
+use crate::graph::OperationConfig;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::executor::SchematicExecutor;
 use crate::interpreter::program::ProgramState;
@@ -24,12 +25,14 @@ pub(crate) struct SchematicComponent {
   schematics: Arc<Vec<SchematicExecutor>>,
   components: Arc<HandlerMap>,
   self_collection: Mutex<Option<Arc<Self>>>,
+  config: Option<RuntimeConfig>,
 }
 
 impl SchematicComponent {
   pub(crate) fn new(
     components: Arc<HandlerMap>,
     state: &ProgramState,
+    config: Option<RuntimeConfig>,
     dispatcher: &InterpreterDispatchChannel,
   ) -> Arc<Self> {
     let schematics: Arc<Vec<SchematicExecutor>> = Arc::new(
@@ -46,6 +49,7 @@ impl SchematicComponent {
       schematics,
       self_collection: Mutex::new(None),
       components,
+      config,
     });
     collection.update_self_collection();
     collection
@@ -67,10 +71,13 @@ impl Component for SchematicComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _config: Option<GenericConfig>,
+    config: Option<RuntimeConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, namespace = NS_SELF));
+
+    let mut op_config = OperationConfig::new_value(config);
+    op_config.set_root(self.config.clone());
 
     let operation = invocation.target.operation_id().to_owned();
     let fut = self
@@ -82,6 +89,7 @@ impl Component for SchematicComponent {
           invocation,
           self.components.clone(),
           self.clone_self_collection(),
+          op_config,
           callback,
         )
       })

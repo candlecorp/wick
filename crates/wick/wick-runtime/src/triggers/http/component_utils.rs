@@ -16,13 +16,13 @@ use wick_interface_http::types as wick_http;
 use wick_packet::{
   packets,
   Entity,
-  GenericConfig,
   InherentData,
   Invocation,
   Observer,
   Packet,
   PacketPayload,
   PacketStream,
+  RuntimeConfig,
 };
 
 use super::conversions::convert_response;
@@ -36,7 +36,7 @@ pub(super) async fn handle(
   engine: Arc<Runtime>,
   req: Request<Body>,
   remote_addr: SocketAddr,
-  config: Option<GenericConfig>,
+  config: Option<RuntimeConfig>,
 ) -> Result<PacketStream, HttpError> {
   let (tx, rx) = PacketStream::new_channels();
 
@@ -101,7 +101,7 @@ pub(super) enum Either {
 
 pub(super) async fn handle_request_middleware(
   target: Entity,
-  operation_config: Option<GenericConfig>,
+  operation_config: Option<RuntimeConfig>,
   engine: Arc<Runtime>,
   req: &wick_http::HttpRequest,
 ) -> Result<Option<Either>, HttpError> {
@@ -152,7 +152,7 @@ pub(super) async fn handle_request_middleware(
 
 pub(super) async fn handle_response_middleware(
   target: Entity,
-  operation_config: Option<GenericConfig>,
+  operation_config: Option<RuntimeConfig>,
   engine: Arc<Runtime>,
   req: &wick_http::HttpRequest,
   res: &wick_http::HttpResponse,

@@ -16,6 +16,11 @@ pub struct SqlComponentConfig {
   #[builder(default)]
   pub(crate) tls: bool,
 
+  /// The configuration for the component.
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) config: Vec<wick_interface_types::Field>,
+
   /// A list of operations to expose on this component.
   #[asset(skip)]
   #[builder(default)]
@@ -34,6 +39,7 @@ impl From<SqlOperationDefinition> for wick_interface_types::OperationSignature {
   fn from(operation: SqlOperationDefinition) -> Self {
     Self {
       name: operation.name,
+      config: operation.config,
       inputs: operation.inputs,
       outputs: operation.outputs,
     }

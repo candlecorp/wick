@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::future::Future;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::Arc;
 
 use asset_container::{self as assets, Asset, AssetManager, Progress, Status};
@@ -21,6 +22,14 @@ pub struct AssetReference {
   pub(crate) location: String,
   pub(crate) cache_location: Arc<RwLock<Option<PathBuf>>>,
   pub(crate) baseurl: Arc<RwLock<Option<PathBuf>>>,
+}
+
+impl FromStr for AssetReference {
+  type Err = Error;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    Ok(Self::new(s))
+  }
 }
 
 impl std::fmt::Display for AssetReference {

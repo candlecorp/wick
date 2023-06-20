@@ -12,8 +12,6 @@ network:
       reference: *comp
   schematics:
     - name: inner-schematic
-      uses:
-        COMPONENT: main::byte-count
       connections:
         - <>[input] => COMPONENT[input]
         - COMPONENT[output] => <>[output]

@@ -1,7 +1,7 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::collections::HashMap;
 
-use crate::config;
+use crate::config::{self, LiquidJsonConfig};
 
 /// A WebAssembly collection.
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
@@ -12,7 +12,7 @@ pub struct WasmComponent {
   pub(crate) reference: config::AssetReference,
   /// The configuration for the collection
   #[asset(skip)]
-  pub(crate) config: Option<wick_packet::GenericConfig>,
+  pub(crate) config: Option<LiquidJsonConfig>,
   /// Permissions for this collection
   #[asset(skip)]
   pub(crate) permissions: Permissions,

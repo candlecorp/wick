@@ -26,7 +26,13 @@ impl RequestOperation for Component {
 
       // `post_op` is a method on the `client` component. It takes two inputs and produces
       // two outputs. In wick, all inputs and outputs are independent streams.
-      let (mut response, mut body) = client.post_op(once(id), once(name))?;
+      let (mut response, mut body) = client.post_op(
+        PostOpConfig {
+          message: "From wasm".to_owned(),
+        },
+        once(id),
+        once(name),
+      )?;
 
       if let Some(response) = response.next().await {
         let _response = propagate_if_error!(response, outputs, continue);

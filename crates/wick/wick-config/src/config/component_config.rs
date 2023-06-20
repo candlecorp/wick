@@ -7,9 +7,11 @@ use std::path::{Path, PathBuf};
 use asset_container::{AssetManager, Assets};
 pub use composite::*;
 use config::{ComponentImplementation, ComponentKind};
+use tracing::trace;
 pub use wasm::*;
 use wick_asset_reference::{AssetReference, FetchOptions};
-use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, TypeDefinition};
+use wick_interface_types::{ComponentMetadata, ComponentSignature, Field, OperationSignature, TypeDefinition};
+use wick_packet::RuntimeConfig;
 
 use super::common::package_definition::PackageConfig;
 use super::{make_resolver, ImportBinding, TestConfiguration};
@@ -32,49 +34,66 @@ pub struct ComponentConfiguration {
   #[builder(setter(strip_option), default)]
   /// The name of the component configuration.
   pub(crate) name: Option<String>,
+
   #[builder(default = "ComponentImplementation::Composite(CompositeComponentImplementation::default())")]
   /// The component implementation.
   pub(crate) component: ComponentImplementation,
+
   #[asset(skip)]
   #[builder(setter(strip_option), default)]
   #[property(skip)]
   /// The source (i.e. url or file on disk) of the configuration.
   pub(crate) source: Option<PathBuf>,
+
   #[asset(skip)]
   #[builder(default)]
   #[property(skip)]
   /// Any types referenced or exported by this component.
   pub(crate) types: Vec<TypeDefinition>,
+
   #[builder(default)]
   /// Any imports this component makes available to its implementation.
   pub(crate) import: HashMap<String, ImportBinding>,
+
   #[asset(skip)]
   #[builder(default)]
   /// Any components or resources that must be provided to this component upon instantiation.
   pub(crate) requires: HashMap<String, BoundInterface>,
+
   #[builder(default)]
   /// Any resources this component defines.
   pub(crate) resources: HashMap<String, ResourceBinding>,
+
   #[asset(skip)]
   #[builder(default)]
   /// The configuration to use when running this component as a microservice.
   pub(crate) host: Option<config::HostConfig>,
+
   #[asset(skip)]
   #[builder(default)]
   /// Any embedded test cases that should be run against this component.
   pub(crate) tests: Vec<TestConfiguration>,
+
   #[asset(skip)]
   #[builder(default)]
   /// The metadata for this component.
   pub(crate) metadata: Option<config::Metadata>,
+
   #[builder(default)]
   /// The package configuration for this component.
   pub(crate) package: Option<PackageConfig>,
+
+  #[asset(skip)]
+  #[doc(hidden)]
+  #[builder(default)]
+  pub(crate) root_config: Option<RuntimeConfig>,
+
   #[asset(skip)]
   #[builder(setter(skip))]
   #[property(skip)]
   #[doc(hidden)]
   pub(crate) type_cache: ImportCache,
+
   #[asset(skip)]
   #[builder(setter(skip))]
   #[property(skip)]
@@ -105,17 +124,6 @@ impl ComponentConfiguration {
     }
   }
 
-  #[must_use]
-  /// Retrieve the initialization configuration for this component.
-  pub fn config(&self) -> &[wick_interface_types::Field] {
-    match &self.component {
-      ComponentImplementation::Composite(c) => c.config(),
-      ComponentImplementation::Wasm(c) => c.config(),
-      ComponentImplementation::Sql(_) => Default::default(),
-      ComponentImplementation::HttpClient(_) => Default::default(),
-    }
-  }
-
   /// Get the package files
   #[must_use]
   pub fn package_files(&self) -> Option<Assets<AssetReference>> {
@@ -137,16 +145,12 @@ impl ComponentConfiguration {
   /// Returns a function that resolves a binding to a configuration item.
   #[must_use]
   pub fn resolver(&self) -> Box<Resolver> {
-    let imports = self.import.clone();
-    let resources = self.resources.clone();
-
-    make_resolver(imports, resources)
-  }
-
-  /// Returns an [ImportBinding] if it exists in the configuration.
-  #[must_use]
-  pub fn get_import(&self, name: &str) -> Option<&ImportBinding> {
-    self.import.get(name)
+    make_resolver(
+      self.import.clone(),
+      self.resources.clone(),
+      self.root_config().cloned(),
+      None,
+    )
   }
 
   /// Get the kind of this component implementation.
@@ -209,6 +213,16 @@ impl ComponentConfiguration {
     .await
   }
 
+  #[must_use]
+  pub fn config(&self) -> &[Field] {
+    match &self.component {
+      ComponentImplementation::Composite(c) => &c.config,
+      ComponentImplementation::Wasm(c) => &c.config,
+      ComponentImplementation::Sql(c) => &c.config,
+      ComponentImplementation::HttpClient(c) => &c.config,
+    }
+  }
+
   /// Get the component signature for this configuration.
   pub fn signature(&self) -> Result<ComponentSignature> {
     let mut sig = wick_interface_types::component! {
@@ -225,6 +239,22 @@ impl ComponentConfiguration {
   pub fn into_v1_yaml(self) -> Result<String> {
     let v1_manifest: v1::ComponentConfiguration = self.try_into()?;
     Ok(serde_yaml::to_string(&v1_manifest).unwrap())
+  }
+
+  /// Initialize the configuration with the given environment variables.
+  pub fn initialize(&mut self, env: Option<&HashMap<String, String>>) -> Result<()> {
+    // This pre-renders the component config's resources without access to the environment.
+    let config = self.root_config().cloned();
+
+    trace!(
+      num_resources = self.resources.len(),
+      ?config,
+      "initializing component resources"
+    );
+    for resource in self.resources.values_mut() {
+      resource.kind.render(config.as_ref(), env)?;
+    }
+    Ok(())
   }
 }
 
@@ -288,6 +318,7 @@ impl From<config::OperationSignature> for OperationSignature {
   fn from(value: config::OperationSignature) -> Self {
     Self {
       name: value.name,
+      config: value.config,
       inputs: value.inputs,
       outputs: value.outputs,
     }

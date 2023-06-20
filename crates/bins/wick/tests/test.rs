@@ -4,7 +4,7 @@ static DIR: &str = "test";
 #[case("wasm.toml")]
 fn wick_run(#[case] file: &'static str) {
   let kind = "unit";
-  let file = format!("tests/{}/{}/{}", kind, DIR, file);
+  let file = format!("tests/{}/{}/{}", DIR, kind, file);
 
   trycmd::TestCases::new().case(file);
 }

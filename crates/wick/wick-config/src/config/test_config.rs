@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 use asset_container::AssetManager;
 
+use super::LiquidJsonConfig;
 use crate::config;
 
 #[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
@@ -24,7 +25,7 @@ pub struct TestConfiguration {
 
   #[asset(skip)]
   /// The configuration with which to initialize the component before running tests.
-  pub(crate) config: Option<wick_packet::GenericConfig>,
+  pub(crate) config: Option<LiquidJsonConfig>,
 
   #[asset(skip)]
   /// A suite of test cases to run against component operations.

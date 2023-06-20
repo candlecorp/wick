@@ -1,6 +1,6 @@
-use flow_component::{Component, ComponentError, Context, Operation, RuntimeCallback};
+use flow_component::{Component, ComponentError, Context, Operation, RenderConfiguration, RuntimeCallback};
 use wick_interface_types::{ComponentSignature, TypeDefinition};
-use wick_packet::{GenericConfig, Invocation, PacketStream};
+use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
 use crate::constants::*;
 use crate::graph::types::Network;
@@ -42,7 +42,7 @@ impl std::fmt::Display for OpInitError {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum DynamicOperation {
   Merge,
   Switch,
@@ -66,6 +66,7 @@ impl CoreCollection {
       merge: merge::Op::new(),
       switch: switch::Op::new(),
     };
+
     this.signature = this.signature.add_operation(this.pluck.get_signature(None).clone());
     this.signature = this.signature.add_operation(this.sender.get_signature(None).clone());
 
@@ -77,8 +78,21 @@ impl CoreCollection {
           continue;
         }
 
-        let result = match operation.cref().name() {
-          merge::Op::ID => match merge::Op::decode_config(operation.data().config.clone()) {
+        let op = match operation.cref().name() {
+          merge::Op::ID => DynamicOperation::Merge,
+          switch::Op::ID => DynamicOperation::Switch,
+          _ => continue,
+        };
+
+        let config = operation
+          .data()
+          .config
+          .clone()
+          .render()
+          .map_err(|e| OpInitError::new(ComponentError::new(e), op))?;
+
+        let result = match op {
+          DynamicOperation::Merge => match merge::Op::decode_config(config) {
             Ok(config) => {
               let id = dyn_component_id(merge::Op::ID, schematic.name(), operation.id());
               debug!(%id,"adding dynamic type signature for merge component");
@@ -90,7 +104,7 @@ impl CoreCollection {
             }
             Err(e) => Err(OpInitError::new(e, DynamicOperation::Merge)),
           },
-          switch::Op::ID => match switch::Op::decode_config(operation.data().config.clone()) {
+          DynamicOperation::Switch => match switch::Op::decode_config(config) {
             Ok(config) => {
               let op_sig = this.switch.gen_signature(graph, config);
 
@@ -99,7 +113,6 @@ impl CoreCollection {
             }
             Err(e) => Err(OpInitError::new(e, DynamicOperation::Switch)),
           },
-          _ => Ok(()),
         };
         if let Err(error) = result {
           error!(%error, "Failed to add dynamic signature");
@@ -126,7 +139,7 @@ impl Component for CoreCollection {
   fn handle(
     &self,
     invocation: Invocation,
-    data: Option<GenericConfig>,
+    data: Option<RuntimeConfig>,
     callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, namespace = NS_CORE));

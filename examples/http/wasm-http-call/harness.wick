@@ -16,8 +16,13 @@ import:
     component:
       kind: wick/component/manifest@v1
       ref: ./client.wick
+      with:
+        url: '{{ ctx.root_config.url}}'
 component:
   kind: wick/component/composite@v1
+  with:
+    - name: url
+      type: string
   operations:
     - name: example
       flow:
@@ -25,7 +30,9 @@ component:
         - <input>.name -> a.name
         - a.output.form -> <>.output
 tests:
-  - cases:
+  - with:
+      url: 'http://{{ctx.env.HTTPBIN}}'
+    cases:
       - name: basic_test
         operation: example
         inputs:
@@ -35,4 +42,8 @@ tests:
             value: wick
         outputs:
           - name: output
-            value: { 'id': '1', 'name': 'wick' }
+            value:
+              id: '1'
+              name: 'wick'
+              from_root: '{{ctx.root_config.url}}'
+              from_op: 'From wasm'

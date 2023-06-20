@@ -98,6 +98,7 @@ mod tests {
   fn sig(fields: &[(&str, Type)]) -> OperationSignature {
     OperationSignature {
       name: "test".to_owned(),
+      config: Default::default(),
       inputs: fields.iter().map(|(n, t)| Field::new(n, t.clone())).collect(),
       outputs: vec![],
     }

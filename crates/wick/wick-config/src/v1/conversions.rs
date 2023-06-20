@@ -22,6 +22,7 @@ use crate::config::{
   HostConfig,
   OperationSignature,
   ScheduleConfig,
+  TemplateConfig,
   WasmComponentImplementation,
 };
 // use flow_expression_parser::parse_id;
@@ -79,7 +80,7 @@ impl TryFrom<config::TestConfiguration> for v1::TestConfiguration {
     Ok(Self {
       name: value.name,
       with: value.config.map_into(),
-      cases: value.cases.into_iter().map(|v| v.into()).collect(),
+      cases: value.cases.try_map_into()?,
     })
   }
 }
@@ -151,6 +152,7 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
       cached_types: Default::default(),
       type_cache: Default::default(),
       package: def.package.try_map_into()?,
+      root_config: Default::default(),
     })
   }
 }
@@ -170,7 +172,11 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
         .collect::<Result<_>>()?,
       import: def.import.into_values().map(|v| v.try_into()).collect::<Result<_>>()?,
       types: def.types.try_map_into()?,
-      resources: def.resources.into_values().map(|v| v.into()).collect(),
+      resources: def
+        .resources
+        .into_values()
+        .map(|v| v.try_into())
+        .collect::<Result<_>>()?,
       tests: def.tests.try_map_into()?,
       component: def.component.try_into()?,
       package: def.package.try_map_into()?,
@@ -293,12 +299,12 @@ impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentImplemen
   type Error = ManifestError;
   fn try_from(value: v1::CompositeComponentConfiguration) -> Result<Self> {
     Ok(Self {
-      config: value.with.try_map_into()?,
       operations: value
         .operations
         .into_iter()
         .map(|op| Ok((op.name.clone(), op.try_into()?)))
         .collect::<Result<_>>()?,
+      config: value.with.try_map_into()?,
     })
   }
 }
@@ -307,12 +313,12 @@ impl TryFrom<CompositeComponentImplementation> for v1::CompositeComponentConfigu
   type Error = ManifestError;
   fn try_from(value: CompositeComponentImplementation) -> Result<Self> {
     Ok(Self {
-      with: value.config.try_map_into()?,
       operations: value
         .operations
         .into_values()
         .map(|op| op.try_into())
         .collect::<Result<_>>()?,
+      with: value.config.try_map_into()?,
     })
   }
 }
@@ -321,13 +327,13 @@ impl TryFrom<WasmComponentImplementation> for v1::WasmComponentConfiguration {
   type Error = ManifestError;
   fn try_from(value: WasmComponentImplementation) -> Result<Self> {
     Ok(Self {
-      with: value.config.try_map_into()?,
       operations: value
         .operations
         .into_values()
         .map(|op| op.try_into())
         .collect::<Result<_>>()?,
       reference: value.reference.try_into()?,
+      with: value.config.try_map_into()?,
     })
   }
 }
@@ -393,6 +399,7 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
       cached_types: Default::default(),
       type_cache: Default::default(),
       package: def.package.try_map_into()?,
+      root_config: Default::default(),
     })
   }
 }
@@ -409,7 +416,11 @@ impl TryFrom<AppConfiguration> for v1::AppConfiguration {
         .into_values()
         .map(|v| v.try_into())
         .collect::<Result<_>>()?,
-      resources: value.resources.into_values().map(|v| v.into()).collect(),
+      resources: value
+        .resources
+        .into_values()
+        .map(|v| v.try_into())
+        .collect::<Result<_>>()?,
       triggers: value.triggers.try_map_into()?,
       package: value.package.try_map_into()?,
     })
@@ -744,46 +755,51 @@ impl TryFrom<ComponentOperationExpression> for v1::ComponentOperationExpression 
   }
 }
 
-impl From<ResourceDefinition> for v1::ResourceDefinition {
-  fn from(value: ResourceDefinition) -> Self {
-    match value {
-      ResourceDefinition::TcpPort(v) => v1::ResourceDefinition::TcpPort(v.into()),
-      ResourceDefinition::UdpPort(v) => v1::ResourceDefinition::UdpPort(v.into()),
-      ResourceDefinition::Url(v) => v1::ResourceDefinition::Url(v.into()),
-      ResourceDefinition::Volume(v) => v1::ResourceDefinition::Volume(v.into()),
-    }
+impl TryFrom<ResourceDefinition> for v1::ResourceDefinition {
+  type Error = ManifestError;
+  fn try_from(value: ResourceDefinition) -> Result<Self> {
+    Ok(match value {
+      ResourceDefinition::TcpPort(v) => v1::ResourceDefinition::TcpPort(v.try_into()?),
+      ResourceDefinition::UdpPort(v) => v1::ResourceDefinition::UdpPort(v.try_into()?),
+      ResourceDefinition::Url(v) => v1::ResourceDefinition::Url(v.try_into()?),
+      ResourceDefinition::Volume(v) => v1::ResourceDefinition::Volume(v.try_into()?),
+    })
   }
 }
 
-impl From<config::UrlResource> for v1::Url {
-  fn from(value: config::UrlResource) -> Self {
-    Self { url: value.to_string() }
+impl TryFrom<config::UrlResource> for v1::Url {
+  type Error = ManifestError;
+  fn try_from(value: config::UrlResource) -> Result<Self> {
+    Ok(Self { url: value.to_string() })
   }
 }
 
-impl From<config::Volume> for v1::Volume {
-  fn from(value: config::Volume) -> Self {
-    Self {
+impl TryFrom<config::Volume> for v1::Volume {
+  type Error = ManifestError;
+  fn try_from(value: config::Volume) -> Result<Self> {
+    Ok(Self {
       path: value.path.to_string(),
-    }
+    })
   }
 }
 
-impl From<UdpPort> for v1::UdpPort {
-  fn from(value: UdpPort) -> Self {
-    Self {
-      port: value.port,
-      address: value.host,
-    }
+impl TryFrom<UdpPort> for v1::UdpPort {
+  type Error = ManifestError;
+  fn try_from(value: UdpPort) -> Result<Self> {
+    Ok(Self {
+      port: value.port.to_string(),
+      address: value.host.to_string(),
+    })
   }
 }
 
-impl From<TcpPort> for v1::TcpPort {
-  fn from(value: TcpPort) -> Self {
-    Self {
-      port: value.port,
-      address: value.host,
-    }
+impl TryFrom<TcpPort> for v1::TcpPort {
+  type Error = ManifestError;
+  fn try_from(value: TcpPort) -> Result<Self> {
+    Ok(Self {
+      port: value.port.unrender()?,
+      address: value.host.unrender()?,
+    })
   }
 }
 
@@ -917,12 +933,13 @@ impl TryFrom<config::ImportDefinition> for v1::ImportDefinition {
   }
 }
 
-impl From<ResourceBinding> for v1::ResourceBinding {
-  fn from(value: ResourceBinding) -> Self {
-    Self {
+impl TryFrom<ResourceBinding> for v1::ResourceBinding {
+  type Error = ManifestError;
+  fn try_from(value: ResourceBinding) -> Result<Self> {
+    Ok(Self {
       name: value.id,
-      resource: value.kind.into(),
-    }
+      resource: value.kind.try_into()?,
+    })
   }
 }
 
@@ -989,6 +1006,7 @@ impl TryFrom<config::components::HttpClientComponentConfig> for v1::HttpClientCo
     Ok(Self {
       resource: value.resource,
       codec: value.codec.map_into(),
+      with: value.config.try_map_into()?,
       operations: value.operations.try_map_into()?,
     })
   }
@@ -1223,7 +1241,7 @@ impl TryFrom<v1::ResourceDefinition> for ResourceDefinition {
     Ok(match value {
       v1::ResourceDefinition::TcpPort(v) => Self::TcpPort(v.into()),
       v1::ResourceDefinition::UdpPort(v) => Self::UdpPort(v.into()),
-      v1::ResourceDefinition::Url(v) => Self::Url(v.url.try_into()?),
+      v1::ResourceDefinition::Url(v) => Self::Url(v.into()),
       v1::ResourceDefinition::Volume(v) => Self::Volume(v.into()),
     })
   }
@@ -1235,11 +1253,19 @@ impl From<v1::Volume> for config::Volume {
   }
 }
 
+impl From<v1::Url> for config::UrlResource {
+  fn from(value: v1::Url) -> Self {
+    Self {
+      url: TemplateConfig::new_template(value.url),
+    }
+  }
+}
+
 impl From<v1::TcpPort> for TcpPort {
   fn from(value: v1::TcpPort) -> Self {
     Self {
-      port: value.port,
-      host: value.address,
+      port: TemplateConfig::new_template(value.port),
+      host: TemplateConfig::new_template(value.address),
     }
   }
 }
@@ -1247,8 +1273,8 @@ impl From<v1::TcpPort> for TcpPort {
 impl From<v1::UdpPort> for UdpPort {
   fn from(value: v1::UdpPort) -> Self {
     Self {
-      port: value.port,
-      host: value.address,
+      port: TemplateConfig::new_template(value.port),
+      host: TemplateConfig::new_template(value.address),
     }
   }
 }
@@ -1395,7 +1421,7 @@ impl From<v1::ErrorPacket> for config::ErrorPayload {
     Self {
       port: value.name,
       flags: value.flags.map_into(),
-      error: value.error,
+      error: TemplateConfig::new_template(value.error),
     }
   }
 }
@@ -1419,26 +1445,28 @@ impl From<v1::InherentData> for config::InherentConfig {
   }
 }
 
-impl From<test_case::TestCase> for v1::TestDefinition {
-  fn from(value: test_case::TestCase) -> Self {
-    Self {
+impl TryFrom<test_case::TestCase> for v1::TestDefinition {
+  type Error = crate::Error;
+  fn try_from(value: test_case::TestCase) -> Result<Self> {
+    Ok(Self {
       name: value.name,
       operation: value.operation,
-      inputs: value.inputs.map_into(),
-      outputs: value.outputs.map_into(),
+      inputs: value.inputs.try_map_into()?,
+      outputs: value.outputs.try_map_into()?,
       inherent: value.inherent.map_into(),
       with: value.config.map_into(),
-    }
+    })
   }
 }
 
-impl From<test_case::ErrorPayload> for v1::ErrorPacket {
-  fn from(value: test_case::ErrorPayload) -> Self {
-    Self {
+impl TryFrom<test_case::ErrorPayload> for v1::ErrorPacket {
+  type Error = crate::Error;
+  fn try_from(value: test_case::ErrorPayload) -> Result<Self> {
+    Ok(Self {
       name: value.port,
       flags: value.flags.map_into(),
-      error: value.error,
-    }
+      error: value.error.unrender()?,
+    })
   }
 }
 
@@ -1471,12 +1499,13 @@ impl From<test_case::InherentConfig> for v1::InherentData {
   }
 }
 
-impl From<test_case::TestPacket> for v1::PacketData {
-  fn from(value: test_case::TestPacket) -> Self {
-    match value {
+impl TryFrom<test_case::TestPacket> for v1::PacketData {
+  type Error = crate::Error;
+  fn try_from(value: test_case::TestPacket) -> Result<Self> {
+    Ok(match value {
       test_case::TestPacket::SuccessPacket(v) => v1::PacketData::SuccessPacket(v.into()),
-      test_case::TestPacket::ErrorPacket(v) => v1::PacketData::ErrorPacket(v.into()),
-    }
+      test_case::TestPacket::ErrorPacket(v) => v1::PacketData::ErrorPacket(v.try_into()?),
+    })
   }
 }
 
@@ -1530,6 +1559,7 @@ impl TryFrom<v1::SqlComponent> for components::SqlComponentConfig {
     Ok(Self {
       resource: value.resource,
       tls: value.tls,
+      config: value.with.try_map_into()?,
       operations: value
         .operations
         .into_iter()
@@ -1597,6 +1627,7 @@ impl TryFrom<v1::HttpClientComponent> for components::HttpClientComponentConfig 
   fn try_from(value: v1::HttpClientComponent) -> Result<Self> {
     Ok(Self {
       resource: value.resource,
+      config: value.with.try_map_into()?,
       codec: value.codec.map_into(),
       operations: value.operations.try_map_into()?,
     })
@@ -1608,6 +1639,7 @@ impl TryFrom<components::SqlComponentConfig> for v1::SqlComponent {
   fn try_from(value: components::SqlComponentConfig) -> Result<Self> {
     Ok(Self {
       resource: value.resource,
+      with: value.config.try_map_into()?,
       tls: value.tls,
       operations: value.operations.try_map_into()?,
     })
