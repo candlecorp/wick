@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "docs/**"
+
   workflow_dispatch:
 
 jobs:
@@ -18,22 +17,50 @@ jobs:
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
-        
-      - name: Setup Just
-        uses: extractions/setup-just@v1
-        
+
+      - name: install protobuf
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rust toolchain cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-rust-nightly-docs
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustc, cargo, rust-docs
+
+      - name: 'rustup updates'
+        run: |
+          cargo install just
+
       - name: Build rustdocs
         run: just rustdoc
-        
+
       - name: Build site
         working-directory: ./docs
         run: hugo --minify
+
+      - name: Generate build ID
+        id: prep
+        run: |
+          branch=${GITHUB_REF##*/}
+          sha=${GITHUB_SHA::8}
+          ts=$(date +%s)
+          echo "::set-output name=BUILD_ID::${branch}-${sha}-${ts}"
 
       - name: Publish Wick Package
         uses: candlecorp/wick-push-action@v0.0.3
         id: push
         with:
-          path: "docs/docs.wick"
+          path: 'docs/docs.wick'
           username: ${{ secrets.CANDLE_REG_USERNAME }}
           password: ${{ secrets.CANDLE_REG_PASSWORD }}
-          tags: latest
+          tags: latest ${{ steps.prep.outputs.BUILD_ID }}

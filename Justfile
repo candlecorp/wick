@@ -132,6 +132,7 @@ devdocs:
 # Run `cargo doc` to generate rust documentation and copy it to the docs site
 rustdoc:
   RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo +nightly doc --workspace --no-deps
+  mkdir -p docs/static/rustdoc/
   rsync -av --delete --exclude=".*" target/doc/ docs/static/rustdoc/
 
 ##################################
