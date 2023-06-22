@@ -18,6 +18,8 @@ pub enum OciError {
   #[error("Invalid manifest found at {}. Try deleting your cache directory.",.0.display())]
   InvalidManifest(PathBuf),
 
+  #[error("Reference '{0}' did not contain a tag or digest")]
+  NoTagOrDigest(String),
   /// Error thrown when attempting to fetch an image with :latest when forbidden.
   #[error("Configuration disallows fetching artifacts with the :latest tag ({0})")]
   LatestDisallowed(String),
@@ -64,7 +66,7 @@ pub enum OciError {
 
   /// Failed to parse image reference location
   #[error("Failed to parse the image reference: {0}")]
-  InvalidReference(String),
+  InvalidReferenceFormat(String),
 
   /// Failed to push package
   #[error("Failed to pull the package: {0}")]
