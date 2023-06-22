@@ -716,23 +716,20 @@ mod test {
       println!("{:#?}", res);
       assert_eq!(
         res,
-        json!({"first":"FIRST_VALUE", "second": 222,"third":"third_a", "fourth":true })
+        json!({"first":"FIRST_VALUE", "second": 222,"third":["third_a"], "fourth":true })
+      );
+
+      let res: serde_json::Value = get("/this/FIRST_VALUE/some/222?third=third_a&third=third_b&fourth=true")
+        .await?
+        .json()
+        .await?;
+
+      println!("{:#?}", res);
+      assert_eq!(
+        res,
+        json!({"first":"FIRST_VALUE", "second": 222,"third":["third_a","third_b"], "fourth":true })
       );
       trigger.shutdown_gracefully().await?;
-      // Todo, fix parsing query string list parameters
-      // let res: serde_json::Value = client
-      //   .get("http://0.0.0.0:8999/this/FIRST_VALUE/some/222?third=third_a&third=third_b&fourth=true")
-      //   .send()
-      //   .await?
-      //   .json()
-      //   .await?;
-
-      // println!("{:#?}", res);
-      // assert_eq!(
-      //   res,
-      //   json!({"first":"FIRST_VALUE", "second": 222,"third":["third_a","third_b"], "fourth":true })
-      // );
-      // trigger.shutdown_gracefully().await?;
 
       Ok(())
     }

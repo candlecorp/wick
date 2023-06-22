@@ -107,7 +107,9 @@ impl RestHandler {
         continue
       };
       let uri = request.uri().clone();
-      span.in_scope(|| debug!(route = %uri, "handling"));
+      span.in_scope(
+        || trace!(route = %uri, path_params=?path_params, query_params=?query_params, "incoming http request"),
+      );
       let mut packets: Vec<_> = path_params
         .iter()
         .chain(query_params.iter())
@@ -138,7 +140,7 @@ impl RestHandler {
       }
 
       let invocation = Invocation::new(
-        Entity::server("http_client"),
+        Entity::server("http"),
         Entity::operation(route.component.id(), route.operation.name()),
         packets,
         InherentData::unsafe_default(),
