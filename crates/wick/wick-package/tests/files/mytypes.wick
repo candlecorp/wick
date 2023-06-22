@@ -4,7 +4,7 @@ metadata:
   version: 0.1.0
 package:
   registry:
-    host: $DOCKER_REGISTRY
+    host: registry.candle.dev
     namespace: default
 kind: wick/types@v1
 types:

@@ -9,10 +9,16 @@ pub struct OperationSignature {
   /// The name of the component.
   #[serde(default)]
   pub name: String,
+
+  /// The operation's configuration.
+  #[serde(default, skip_serializing_if = "Vec::is_empty")]
+  pub config: Vec<Field>,
+
   /// The component's inputs.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub inputs: Vec<Field>,
+
   /// The component's outputs.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]

@@ -1,9 +1,12 @@
 mod test;
 
+use std::collections::HashMap;
+
 use anyhow::Result;
 use flow_component::Component;
 use pretty_assertions::assert_eq;
-use wick_packet::{packets, ComponentReference, Entity, Packet};
+use serde_json::json;
+use wick_packet::{packets, ComponentReference, Entity, Packet, RuntimeConfig};
 
 #[test_logger::test(tokio::test)]
 async fn test_echo() -> Result<()> {
@@ -34,6 +37,7 @@ async fn test_timeout_ok() -> Result<()> {
     Entity::local("test"),
     packets!(("input", sleep_for)),
     None,
+    None,
   )
   .await?;
 
@@ -57,6 +61,7 @@ async fn test_timeout_fail() -> Result<()> {
     Entity::local("test"),
     packets!(("input", sleep_for)),
     None,
+    None,
   )
   .await?;
 
@@ -67,6 +72,35 @@ async fn test_timeout_fail() -> Result<()> {
   let packet = wrapper;
   assert!(packet.unwrap_err().msg().contains("timed out"));
 
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_context_passing() -> Result<()> {
+  let (interpreter, mut outputs) = test::base_setup(
+    "./tests/manifests/v1/component-context-vars.yaml",
+    Entity::local("test"),
+    packets!(("input", "This works!")),
+    Some(RuntimeConfig::from(HashMap::from([(
+      "component_config_greeting".to_owned(),
+      json!("Hello"),
+    )]))),
+    Some(RuntimeConfig::from(HashMap::from([(
+      "op_config_name".to_owned(),
+      json!("World"),
+    )]))),
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _wrapper = outputs.pop().unwrap(); //done signal
+  let wrapper = outputs.pop().unwrap();
+  let expected = Packet::encode("output", "Hello, World! This works!");
+
+  assert_eq!(wrapper.unwrap(), expected);
   interpreter.shutdown().await?;
 
   Ok(())
@@ -208,6 +242,7 @@ async fn test_external_direct() -> Result<()> {
     "./tests/manifests/v0/external.yaml",
     Entity::operation("test", "echo"),
     packets!(("input", "hello world")),
+    Default::default(),
     Default::default(),
   )
   .await?;

@@ -35,7 +35,7 @@ wasmrs = { workspace = true }
 wasmrs-frames = { workspace = true, features = ["derive_serde"] }
 wasmrs-rx = { workspace = true }
 wasmrs-codec = { workspace = true }
-# futures = { workspace = true }
+liquid-json = { workspace = true, features = ["serde"] }
 bytes = { workspace = true, features = ["serde"] }
 parking_lot = { workspace = true }
 url = { workspace = true }

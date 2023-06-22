@@ -1,0 +1,42 @@
+---
+name: 'test'
+kind: wick/component@v1
+metadata:
+  version: '0.0.2'
+component:
+  kind: wick/component/composite@v1
+  with:
+    - name: component_config_greeting
+      type: string
+  operations:
+    - name: test
+      with:
+        - name: op_config_name
+          type: string
+      uses:
+        - name: GREET
+          operation: self::greet
+          with:
+            greeting: '{{ ctx.root_config.component_config_greeting }}, {{ ctx.config.op_config_name }}! '
+      inputs:
+        - name: input
+          type: string
+      outputs:
+        - name: output
+          type: string
+      flow:
+        - <>.input -> GREET.input
+        - GREET.output -> <>.output
+    - name: greet
+      with:
+        - name: greeting
+          type: string
+      uses:
+        - name: GREETING
+          operation: core::sender
+          with:
+            output: '{{ ctx.config.greeting }}'
+      flow:
+        - <>.input -> test::concat[a].right
+        - GREETING.output -> a.left
+        - a.output -> <>.output

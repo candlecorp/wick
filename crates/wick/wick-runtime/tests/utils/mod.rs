@@ -1,15 +1,15 @@
 use futures::stream::StreamExt;
 use tracing::debug;
 use wick_config::WickConfiguration;
-use wick_packet::{Entity, GenericConfig, InherentData, Invocation, Packet, PacketStream};
+use wick_packet::{Entity, InherentData, Invocation, Packet, PacketStream, RuntimeConfig};
 use wick_runtime::{Runtime, RuntimeBuilder};
 
-pub async fn init_engine_from_yaml(path: &str, config: Option<GenericConfig>) -> anyhow::Result<(Runtime, uuid::Uuid)> {
+pub async fn init_engine_from_yaml(path: &str, config: Option<RuntimeConfig>) -> anyhow::Result<(Runtime, uuid::Uuid)> {
   let host_def = WickConfiguration::load_from_file(path).await?.try_component_config()?;
   debug!("Manifest loaded");
 
   let builder = RuntimeBuilder::from_definition(host_def)
-    .config(config)
+    .root_config(config)
     .namespace("__TEST__");
 
   let engine = builder.build(None).await?;
@@ -34,7 +34,7 @@ pub async fn test_with_config(
   stream: PacketStream,
   target: &str,
   mut expected: Vec<Packet>,
-  config: GenericConfig,
+  config: RuntimeConfig,
 ) -> anyhow::Result<()> {
   base_test(path, stream, Entity::local(target), expected, Some(config)).await
 }
@@ -45,7 +45,7 @@ pub async fn base_test(
   stream: PacketStream,
   target: Entity,
   mut expected: Vec<Packet>,
-  config: Option<GenericConfig>,
+  config: Option<RuntimeConfig>,
 ) -> anyhow::Result<()> {
   let cwd = std::env::current_dir()?;
   let (engine, _) = init_engine_from_yaml(path, config).await?;

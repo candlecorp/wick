@@ -1,7 +1,7 @@
-use flow_component::{ComponentError, Context, Operation};
+use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use serde_json::Value;
 use wick_interface_types::{operation, OperationSignature};
-use wick_packet::{packet_stream, Invocation, PacketStream};
+use wick_packet::{packet_stream, Invocation, PacketStream, RuntimeConfig};
 
 use crate::BoxFuture;
 #[derive()]
@@ -31,6 +31,7 @@ pub(crate) struct SenderData {
 impl Operation for Op {
   const ID: &'static str = "sender";
   type Config = SenderData;
+
   fn handle(
     &self,
     _invocation: Invocation,
@@ -48,13 +49,19 @@ impl Operation for Op {
   fn input_names(&self, _config: &Self::Config) -> Vec<String> {
     self.signature.inputs.iter().map(|n| n.name.clone()).collect()
   }
+}
 
-  fn decode_config(data: Option<wick_packet::GenericConfig>) -> Result<Self::Config, ComponentError> {
+impl RenderConfiguration for Op {
+  type Config = SenderData;
+  type ConfigSource = RuntimeConfig;
+
+  fn decode_config(data: Option<Self::ConfigSource>) -> Result<Self::Config, ComponentError> {
     let config = data.ok_or_else(|| {
-      ComponentError::message("Merge component requires configuration, please specify configuration.")
+      ComponentError::message("Sender component requires configuration, please specify configuration.")
     })?;
+
     Ok(Self::Config {
-      output: config.get_into("output").map_err(ComponentError::new)?,
+      output: config.coerce_key("output").map_err(ComponentError::new)?,
     })
   }
 }

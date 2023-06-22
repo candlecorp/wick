@@ -5,7 +5,7 @@ use wick_asset_reference::AssetReference;
 use super::Glob;
 
 #[derive(Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property)]
-#[property(get(public), set(private), mut(disable))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference), lazy)]
 /// The package details for an application or component.
 pub struct PackageConfig {
@@ -20,7 +20,7 @@ pub struct PackageConfig {
 }
 
 #[derive(Debug, Default, Builder, Clone, PartialEq, property::Property)]
-#[property(get(public), set(private), mut(disable))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 /// Configuration for publishing the package to a registry.
 pub struct RegistryConfig {
   /// The registry to publish to.

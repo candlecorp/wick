@@ -10,6 +10,11 @@ description = "The binary executable for the Wick project."
 [features]
 default = []
 cross = ["openssl/vendored"]
+console = [
+  "wick-logger/console",
+  "tokio/full",
+  "tokio/tracing"
+] # Build with RUSTFLAGS="--cfg tokio_unstable"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]

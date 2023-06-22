@@ -145,11 +145,24 @@ macro_rules! fields {
 #[macro_export]
 macro_rules! operation {
   ($name:expr => {
+    config: {$($ckey:expr => $cvalue:expr),* $(,)?},
     inputs: {$($ikey:expr => $ivalue:expr),* $(,)?},
     outputs: {$($okey:expr => $ovalue:expr),* $(,)?},
   }) => {
     $crate::OperationSignature {
       name: $name.to_owned(),
+      config: $crate::fields! {$($ckey => $cvalue),*},
+      inputs: $crate::fields! {$($ikey => $ivalue),*},
+      outputs: $crate::fields! {$($okey => $ovalue),*},
+    }
+  };
+  ($name:expr => {
+    inputs: {$($ikey:expr => $ivalue:expr),* $(,)?},
+    outputs: {$($okey:expr => $ovalue:expr),* $(,)?},
+  }) => {
+    $crate::OperationSignature {
+      name: $name.to_owned(),
+      config: vec![],
       inputs: $crate::fields! {$($ikey => $ivalue),*},
       outputs: $crate::fields! {$($okey => $ovalue),*},
     }
@@ -163,6 +176,7 @@ macro_rules! component {
     version: $version:expr,
     operations: {
       $($opname:expr => {
+        config: {$($ckey:expr => $cvalue:expr),* $(,)?},
         inputs: {$($ikey:expr => $ivalue:expr),* $(,)?},
         outputs: {$($okey:expr => $ovalue:expr),* $(,)?},
       }),* $(,)?
@@ -170,7 +184,28 @@ macro_rules! component {
   ) => {{
     let mut ops = std::vec::Vec::default();
     $(
-      let _ = ops.push($crate::operation!($opname => {inputs: {$($ikey => $ivalue),*}, outputs: {$($okey => $ovalue),*},}));
+      let _ = ops.push($crate::operation!($opname => {config:{$($ckey => $cvalue),*}, inputs: {$($ikey => $ivalue),*}, outputs: {$($okey => $ovalue),*},}));
+    )*;
+
+    $crate::component! {
+      name: $name,
+      version: $version,
+      operations: ops,
+    }
+  }};
+  (
+    name: $name:expr,
+    version: $version:expr,
+    operations: {
+      $($opname:expr => {
+        inputs: {$($ikey:expr => $ivalue:expr),* $(,)?},
+        outputs: {$($okey:expr => $ovalue:expr),* $(,)?},
+      }),* $(,)?
+    }
+  ) => {{
+    let mut ops = std::vec::Vec::default();
+    $(
+      let _ = ops.push($crate::operation!($opname => {config:{}, inputs: {$($ikey => $ivalue),*}, outputs: {$($okey => $ovalue),*},}));
     )*;
 
     $crate::component! {

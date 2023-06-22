@@ -1,9 +1,13 @@
-#![allow(missing_docs)] // delete when we move away from the `property` crate.
+#![allow(missing_docs)]
+use std::collections::HashMap;
+
+// delete when we move away from the `property` crate.
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
-use wick_packet::GenericConfig;
+use wick_packet::RuntimeConfig;
 
-use crate::config::{self, ExecutionSettings};
+use crate::config::{self, ExecutionSettings, LiquidJsonConfig};
+use crate::error::ManifestError;
 
 /// A reference to an operation.
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
@@ -18,7 +22,7 @@ pub struct ComponentOperationExpression {
   pub(crate) component: ComponentDefinition,
   /// Configuration to associate with this operation.
   #[asset(skip)]
-  pub(crate) config: Option<GenericConfig>,
+  pub(crate) config: Option<LiquidJsonConfig>,
   /// Per-operation settings that override global execution settings.
   #[asset(skip)]
   pub(crate) settings: Option<ExecutionSettings>,
@@ -39,7 +43,7 @@ impl ComponentOperationExpression {
   pub fn new(
     operation: impl AsRef<str>,
     component: ComponentDefinition,
-    config: Option<GenericConfig>,
+    config: Option<LiquidJsonConfig>,
     settings: Option<ExecutionSettings>,
   ) -> Self {
     Self {
@@ -121,7 +125,7 @@ impl ComponentDefinition {
 
   /// Returns the component config, if it exists
   #[must_use]
-  pub fn config(&self) -> Option<&GenericConfig> {
+  pub fn config(&self) -> Option<&LiquidJsonConfig> {
     match self {
       #[allow(deprecated)]
       ComponentDefinition::Wasm(c) => c.config.as_ref(),
@@ -131,6 +135,48 @@ impl ComponentDefinition {
       ComponentDefinition::Reference(_) => None,
       ComponentDefinition::HighLevelComponent(_) => None,
     }
+  }
+
+  /// Returns the component config, if it exists
+  #[must_use]
+  pub fn config_mut(&mut self) -> Option<&mut LiquidJsonConfig> {
+    match self {
+      #[allow(deprecated)]
+      ComponentDefinition::Wasm(c) => c.config.as_mut(),
+      ComponentDefinition::GrpcUrl(c) => c.config.as_mut(),
+      ComponentDefinition::Manifest(c) => c.config.as_mut(),
+      ComponentDefinition::Native(_) => None,
+      ComponentDefinition::Reference(_) => None,
+      ComponentDefinition::HighLevelComponent(_) => None,
+    }
+  }
+
+  /// Returns the component config, if it exists
+  pub fn set_config(&mut self, config: Option<RuntimeConfig>) {
+    match self {
+      #[allow(deprecated)]
+      ComponentDefinition::Wasm(c) => c.config.as_mut().map(|c| c.set_value(config)),
+      ComponentDefinition::GrpcUrl(c) => c.config.as_mut().map(|c| c.set_value(config)),
+      ComponentDefinition::Manifest(c) => c.config.as_mut().map(|c| c.set_value(config)),
+      ComponentDefinition::Native(_) => None,
+      ComponentDefinition::Reference(_) => None,
+      ComponentDefinition::HighLevelComponent(_) => None,
+    };
+  }
+
+  /// Render the resource configuration
+  pub fn render(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    let val = if let Some(config) = self.config() {
+      Some(config.render(root_config, None, env)?)
+    } else {
+      None
+    };
+    self.set_config(val);
+    Ok(())
   }
 }
 

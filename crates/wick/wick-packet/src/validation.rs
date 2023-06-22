@@ -1,22 +1,19 @@
+use tracing::warn;
 use wick_interface_types::Field;
 
-use crate::{Error, GenericConfig};
+use crate::{Error, RuntimeConfig};
 
-pub fn expect_configuration_matches(
-  name: &str,
-  config: Option<&GenericConfig>,
-  fields: Option<&[Field]>,
-) -> Result<(), Error> {
+pub fn expect_configuration_matches(name: &str, config: Option<&RuntimeConfig>, fields: &[Field]) -> Result<(), Error> {
   if config.is_none() {
-    if fields.map_or_else(|| true, |f| f.is_empty()) {
+    if fields.is_empty() {
       return Ok(());
     }
+    warn!(?config, ?fields, "configuration invalid");
     return Err(Error::Signature(
       name.to_owned(),
       format!(
         "missing field(s): {}",
         fields
-          .unwrap()
           .iter()
           .map(|f| f.name().to_owned())
           .collect::<Vec<String>>()
@@ -26,7 +23,7 @@ pub fn expect_configuration_matches(
   }
 
   let config = config.unwrap();
-  let fields = fields.unwrap_or_default();
+
   for field in fields {
     if !config.has(field.name()) {
       return Err(Error::Signature(
@@ -49,21 +46,21 @@ mod test {
   use super::*;
 
   #[rstest::rstest]
-  #[case(json!({"required_field": "value"}),Some(vec![Field::new("required_field", Type::String)]))]
-  #[case(json!({}),Some(vec![]))]
-  #[case(json!({}),None)]
-  fn config_validation_positive(#[case] config: serde_json::Value, #[case] fields: Option<Vec<Field>>) -> Result<()> {
-    let config = Some(GenericConfig::try_from(config)?);
-    expect_configuration_matches("test", config.as_ref(), fields.as_deref())?;
+  #[case(json!({"required_field": "value"}),vec![Field::new("required_field", Type::String)])]
+  #[case(json!({}),vec![])]
+
+  fn config_validation_positive(#[case] config: serde_json::Value, #[case] fields: Vec<Field>) -> Result<()> {
+    let config = Some(RuntimeConfig::try_from(config)?);
+    expect_configuration_matches("test", config.as_ref(), &fields)?;
 
     Ok(())
   }
 
   #[rstest::rstest]
-  #[case(json!({}),Some(vec![Field::new("required_field", Type::String)]))]
-  fn config_validation_negative(#[case] config: serde_json::Value, #[case] fields: Option<Vec<Field>>) -> Result<()> {
-    let config = Some(GenericConfig::try_from(config)?);
-    assert!(expect_configuration_matches("test", config.as_ref(), fields.as_deref()).is_err());
+  #[case(json!({}),vec![Field::new("required_field", Type::String)])]
+  fn config_validation_negative(#[case] config: serde_json::Value, #[case] fields: Vec<Field>) -> Result<()> {
+    let config = Some(RuntimeConfig::try_from(config)?);
+    assert!(expect_configuration_matches("test", config.as_ref(), &fields).is_err());
 
     Ok(())
   }

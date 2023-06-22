@@ -7,19 +7,6 @@ pub use crate::components::error::ComponentError;
 use crate::resources::ResourceKind;
 pub use crate::runtime_service::error::EngineError;
 
-#[derive(Error, Debug, Clone, Copy)]
-pub struct ConversionError(pub &'static str);
-
-impl std::fmt::Display for ConversionError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.write_str(self.0)
-  }
-}
-
-#[derive(Error, Debug)]
-#[error("Invocation error: {0}")]
-pub struct InvocationError(pub String);
-
 #[derive(Error, Debug)]
 pub enum RuntimeError {
   #[error("Invalid trigger configuration, expected configuration for {0}")]
@@ -34,17 +21,14 @@ pub enum RuntimeError {
   #[error("Trigger {0} did not shutdown gracefully: {1}")]
   ShutdownFailed(TriggerKind, String),
 
-  #[error("The supplied id '{0}' does not point to the correct type: {1}")]
-  ReferenceError(String, wick_config::error::ReferenceError),
+  #[error("The supplied id '{0}' does not point to a correct type or valid type: {1}")]
+  ReferenceError(String, wick_config::Error),
 
   #[error("{0}")]
   InitializationFailed(String),
 
-  #[error("{0}")]
-  TriggerFailed(String),
-
-  #[error(transparent)]
-  InvocationError(#[from] InvocationError),
+  #[error("Invocation error: {0}")]
+  InvocationError(String),
 
   #[error(transparent)]
   ComponentError(#[from] ComponentError),
@@ -55,11 +39,8 @@ pub enum RuntimeError {
   #[error("Error starting schedule: {0}")]
   ScheduleStartError(String),
 
-  #[error("Error stopping schedule: {0}")]
-  ScheduleStopError(String),
-
-  #[error("Component not found: {0}")]
-  ComponentNotFound(String),
+  #[error("Could not render configuration: {0}")]
+  Configuration(String),
 }
 
 impl From<Infallible> for RuntimeError {

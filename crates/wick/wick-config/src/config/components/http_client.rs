@@ -14,6 +14,11 @@ pub struct HttpClientComponentConfig {
   #[asset(skip)]
   pub(crate) resource: String,
 
+  /// The configuration for the component.
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) config: Vec<wick_interface_types::Field>,
+
   /// The codec to use when encoding/decoding data.
   #[asset(skip)]
   #[builder(default)]
@@ -47,6 +52,7 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
   fn from(operation: HttpClientOperationDefinition) -> Self {
     Self {
       name: operation.name,
+      config: operation.config,
       inputs: operation.inputs,
       outputs: vec![
         // TODO: support actual HTTP Response type.

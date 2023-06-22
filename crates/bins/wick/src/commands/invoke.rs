@@ -50,12 +50,8 @@ pub(crate) struct Options {
   #[clap(long = "filter", action)]
   filter: Vec<String>,
 
-  /// A port=value string where value is JSON to pass as input.
-  #[clap(long = "data", short = 'd', action)]
-  data: Vec<String>,
-
   /// Print values only and exit with an error code and string on any errors.
-  #[clap(long = "values", short = 'o', action)]
+  #[clap(long = "values", action)]
   short: bool,
 
   /// Pass a seed along with the invocation.
@@ -65,6 +61,10 @@ pub(crate) struct Options {
   /// Pass configuration necessary to instantiate the component (JSON).
   #[clap(long = "with", short = 'w', action)]
   with: Option<String>,
+
+  /// Pass configuration necessary to invoke the operation (JSON).
+  #[clap(long = "op-with", action)]
+  op_with: Option<String>,
 
   /// Arguments to pass as inputs to a component.
   #[clap(last(true), action)]
@@ -104,17 +104,16 @@ pub(crate) async fn handle(
 
   let server_options = DefaultCliOptions { ..Default::default() };
 
-  let config = merge_config(&manifest, &opts.oci, Some(server_options));
+  let mut manifest = merge_config(&manifest, &opts.oci, Some(server_options));
+
+  let root_config = parse_config_string(opts.with.as_deref())?;
+  let op_config = parse_config_string(opts.op_with.as_deref())?;
+  manifest.set_root_config(root_config);
+  manifest.initialize(None)?;
 
   let component = opts.operation;
 
-  let component_config = parse_config_string(opts.with.as_deref())?;
-
-  let mut host = ComponentHostBuilder::default()
-    .manifest(config)
-    .config(component_config)
-    .span(span)
-    .build()?;
+  let mut host = ComponentHostBuilder::default().manifest(manifest).span(span).build()?;
 
   host.start_runtime(opts.seed.map(Seed::unsafe_new)).await?;
 
@@ -126,7 +125,7 @@ pub(crate) async fn handle(
   let check_stdin = if op_signature.inputs.is_empty() {
     false
   } else {
-    !opts.no_input && opts.data.is_empty() && opts.args.is_empty()
+    !opts.no_input && opts.args.is_empty()
   };
 
   let inherent_data = opts.seed.map_or_else(InherentData::unsafe_default, |seed| {
@@ -161,17 +160,11 @@ pub(crate) async fn handle(
     //   utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
     // }
   } else {
-    let data = crate::utils::packet_from_kv_json(&opts.data)?;
-
     let args = parse_args(&opts.args, op_signature)?;
     trace!(args= ?args, "parsed CLI arguments");
     let mut packets = Vec::new();
     let mut seen_ports = HashSet::new();
     for packet in args {
-      seen_ports.insert(packet.port().to_owned());
-      packets.push(Ok(packet));
-    }
-    for packet in data {
       seen_ports.insert(packet.port().to_owned());
       packets.push(Ok(packet));
     }
@@ -181,7 +174,7 @@ pub(crate) async fn handle(
     debug!(args= ?packets, "invoke");
     let stream = PacketStream::new(futures::stream::iter(packets));
 
-    let stream = host.request(&component, stream, inherent_data).await?;
+    let stream = host.request(&component, op_config, stream, inherent_data).await?;
 
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }

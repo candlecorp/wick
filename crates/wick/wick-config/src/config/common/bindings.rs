@@ -2,7 +2,7 @@
 
 use super::{ComponentDefinition, ComponentImplementation, HighLevelComponent, ImportDefinition, InterfaceDefinition};
 use crate::config::components::WasmComponent;
-use crate::config::{self};
+use crate::config::{self, LiquidJsonConfig};
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
 #[property(get(public), set(private), mut(disable))]
@@ -49,7 +49,7 @@ impl ImportBinding {
 
   /// Get the configuration object for the collection.
   #[must_use]
-  pub fn config(&self) -> Option<&wick_packet::GenericConfig> {
+  pub fn config(&self) -> Option<&LiquidJsonConfig> {
     match &self.kind {
       ImportDefinition::Component(c) => c.config(),
       ImportDefinition::Types(_) => None,

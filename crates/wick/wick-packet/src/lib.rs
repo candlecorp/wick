@@ -109,7 +109,7 @@ mod wrapped_type;
 pub mod validation;
 
 pub use collection_link::ComponentReference;
-pub use context::{ContextTransport, GenericConfig, InvocationRequest};
+pub use context::{ContextTransport, InvocationRequest, RuntimeConfig};
 #[cfg(feature = "datetime")]
 pub use datetime::{date_from_millis, parse_date, serde, DateTime};
 pub use entity::Entity;

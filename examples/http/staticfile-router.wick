@@ -19,7 +19,7 @@ resources:
   - name: DIR
     resource:
       kind: wick/resource/volume@v1
-      path: $PWD
+      path: '{{ ctx.env.PWD }}'
 triggers:
   - kind: wick/trigger/http@v1
     resource: http

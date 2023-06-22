@@ -47,7 +47,7 @@ impl ComponentReference {
     &self,
     operation: &str,
     stream: PacketStream,
-    config: Option<crate::GenericConfig>,
+    config: Option<crate::RuntimeConfig>,
     previous_inherent: crate::InherentData,
   ) -> Result<PacketStream> {
     link_call(self.clone(), operation, stream, config, previous_inherent)
@@ -72,7 +72,7 @@ fn link_call(
   compref: ComponentReference,
   target_op: &str,
   input: PacketStream,
-  config: Option<crate::GenericConfig>,
+  config: Option<crate::RuntimeConfig>,
   previous_inherent: crate::InherentData,
 ) -> Result<PacketStream> {
   use tokio_stream::StreamExt;
@@ -113,7 +113,7 @@ fn link_call(
   _compref: ComponentReference,
   _target_op: &str,
   _input: PacketStream,
-  _config: Option<crate::GenericConfig>,
+  _config: Option<crate::RuntimeConfig>,
   _previous_inherent: crate::InherentData,
 ) -> Result<PacketStream> {
   unimplemented!("Link calls from native components is not implemented yet")

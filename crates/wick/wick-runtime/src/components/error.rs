@@ -1,8 +1,6 @@
 use thiserror::Error;
 use wick_config::config::AssetReference;
 
-use crate::dev::prelude::*;
-
 #[derive(Error, Debug)]
 pub enum ComponentError {
   #[error("Component not found: {0}")]
@@ -19,9 +17,6 @@ pub enum ComponentError {
 
   #[error("{0}")]
   Downstream(Box<dyn std::error::Error + Send + Sync>),
-
-  #[error(transparent)]
-  InvocationError(#[from] InvocationError),
 
   #[error(transparent)]
   Configuration(#[from] wick_config::Error),

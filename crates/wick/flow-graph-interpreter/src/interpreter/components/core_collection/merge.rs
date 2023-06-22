@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use flow_component::{ComponentError, Context, Operation};
+use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use futures::FutureExt;
 use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, StructDefinition, Type};
-use wick_packet::{Invocation, Packet, PacketStream, StreamMap};
+use wick_packet::{Invocation, Packet, PacketStream, RuntimeConfig, StreamMap};
 
 use crate::BoxFuture;
 pub(crate) struct Op {}
@@ -83,13 +83,19 @@ impl Operation for Op {
   fn input_names(&self, config: &Self::Config) -> Vec<String> {
     config.inputs.iter().map(|n| n.name.clone()).collect()
   }
+}
 
-  fn decode_config(data: Option<wick_packet::GenericConfig>) -> Result<Self::Config, ComponentError> {
+impl RenderConfiguration for Op {
+  type Config = Config;
+  type ConfigSource = RuntimeConfig;
+
+  fn decode_config(data: Option<Self::ConfigSource>) -> Result<Self::Config, ComponentError> {
     let config = data.ok_or_else(|| {
       ComponentError::message("Merge component requires configuration, please specify configuration.")
     })?;
+
     Ok(Self::Config {
-      inputs: config.get_into("inputs").map_err(ComponentError::new)?,
+      inputs: config.coerce_key("inputs").map_err(ComponentError::new)?,
     })
   }
 }
@@ -108,8 +114,8 @@ mod test {
   async fn test_basic() -> Result<()> {
     let inputs = vec![Field::new("input_a", Type::String), Field::new("input_b", Type::U32)];
     let op = Op::new();
-    let config = serde_json::json!({ "inputs": inputs });
-    let config = Op::decode_config(Some(config.try_into()?))?;
+    let config = HashMap::from([("inputs".to_owned(), json!(inputs))]);
+    let config = Op::decode_config(Some(config.into()))?;
     let stream = packet_stream!(("input_a", "hello"), ("input_b", 1000));
     let inv = Invocation::test(file!(), Entity::test("noop"), stream, None)?;
     let mut packets = op

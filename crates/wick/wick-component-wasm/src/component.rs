@@ -5,7 +5,7 @@ use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use tracing::Span;
 use wasmrs_host::WasiParams;
 use wick_config::config::components::Permissions;
-use wick_packet::{Entity, GenericConfig, Invocation, PacketStream};
+use wick_packet::{Entity, Invocation, PacketStream, RuntimeConfig};
 
 use crate::helpers::WickWasmModule;
 use crate::wasm_host::{SetupPayload, WasmHost, WasmHostBuilder};
@@ -37,7 +37,7 @@ impl WasmComponent {
     module: &WickWasmModule,
     max_threads: usize,
     permissions: Option<Permissions>,
-    config: Option<GenericConfig>,
+    config: Option<RuntimeConfig>,
     callback: Option<Arc<RuntimeCallback>>,
     provided: HashMap<String, String>,
     span: Span,
@@ -61,7 +61,7 @@ impl WasmComponent {
     let host = builder.build(module)?;
 
     let sig = host.signature();
-    wick_packet::validation::expect_configuration_matches(&name, config.as_ref(), Some(&sig.config))
+    wick_packet::validation::expect_configuration_matches(&name, config.as_ref(), &sig.config)
       .map_err(Error::SetupSignature)?;
 
     let setup = SetupPayload::new(
@@ -79,7 +79,7 @@ impl Component for WasmComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    data: Option<GenericConfig>,
+    data: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, config=?data, "wasm invoke"));

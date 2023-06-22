@@ -4,11 +4,18 @@ resources:
   - name: DBADDR
     resource:
       kind: wick/resource/url@v1
-      url: postgres://postgres:$TEST_PASSWORD@$TEST_HOST:$POSTGRES_PORT/wick_test
+      url: postgres://postgres:{{ ctx.root_config.password }}@{{ ctx.root_config.host }}:{{ ctx.root_config.port }}/wick_test
 component:
   kind: wick/component/sql@v1
   resource: DBADDR
   tls: false
+  with:
+    - name: password
+      type: string
+    - name: host
+      type: string
+    - name: port
+      type: string
   operations:
     - name: get_user
       inputs:

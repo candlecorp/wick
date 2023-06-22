@@ -21,5 +21,6 @@ anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tracing = { workspace = true }
 seeded-random = { workspace = true, features = ["rng"] }
+liquid-json = { workspace = true }
 
 [dev-dependencies]

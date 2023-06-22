@@ -65,6 +65,7 @@ impl TryFrom<rpc::Operation> for wick::OperationSignature {
   fn try_from(v: rpc::Operation) -> Result<Self> {
     Ok(Self {
       name: v.name,
+      config: convert_list(v.config)?,
       inputs: convert_list(v.inputs)?,
       outputs: convert_list(v.outputs)?,
     })
@@ -77,6 +78,7 @@ impl TryFrom<wick::OperationSignature> for rpc::Operation {
     Ok(Self {
       name: v.name,
       kind: rpc::operation::OperationKind::Operation.into(),
+      config: convert_list(v.config)?,
       inputs: convert_list(v.inputs)?,
       outputs: convert_list(v.outputs)?,
     })

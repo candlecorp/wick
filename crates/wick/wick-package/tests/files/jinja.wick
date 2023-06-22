@@ -13,7 +13,7 @@ package:
   files:
     - ./assets/**/*
   registry:
-    host: $DOCKER_REGISTRY
+    host: REPLACE
     namespace: default
 component:
   kind: wick/component/composite@v1

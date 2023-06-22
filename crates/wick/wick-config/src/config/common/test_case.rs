@@ -1,5 +1,7 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
-use serde_json::Value;
+use liquid_json::LiquidJsonValue;
+
+use crate::config::{LiquidJsonConfig, TemplateConfig};
 
 #[derive(Debug, Clone, PartialEq, property::Property)]
 #[property(get(public), set(private), mut(disable))]
@@ -10,7 +12,7 @@ pub struct TestCase {
   /// The operaton to test.
   pub(crate) operation: String,
   /// The configuration for the operation being tested, if any.
-  pub(crate) config: Option<wick_packet::GenericConfig>,
+  pub(crate) config: Option<LiquidJsonConfig>,
   /// Inherent data to use for the test.
   pub(crate) inherent: Option<InherentConfig>,
   /// The inputs to the test.
@@ -59,7 +61,7 @@ impl TestPacket {
 
   /// Get the data for the packet.
   #[must_use]
-  pub fn data(&self) -> Option<&Value> {
+  pub fn data(&self) -> Option<&LiquidJsonValue> {
     match self {
       TestPacket::SuccessPacket(data) => data.data.as_ref(),
       TestPacket::ErrorPacket(_) => None,
@@ -76,7 +78,7 @@ pub struct SuccessPayload {
   /// Any flags set on the packet.
   pub(crate) flags: Option<PacketFlags>,
   /// The data to send.
-  pub(crate) data: Option<Value>,
+  pub(crate) data: Option<LiquidJsonValue>,
 }
 
 #[derive(Debug, Clone, PartialEq, property::Property)]
@@ -88,7 +90,7 @@ pub struct ErrorPayload {
   /// Any flags set on the packet.
   pub(crate) flags: Option<PacketFlags>,
   /// The error message.
-  pub(crate) error: String,
+  pub(crate) error: TemplateConfig<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, property::Property)]

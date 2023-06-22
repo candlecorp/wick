@@ -8,7 +8,7 @@ use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
 use tracing::{Instrument, Span};
 use wick_config::config::{ComponentOperationExpression, ImportBinding, RestRouterConfig, WickRouter};
-use wick_packet::{Entity, InherentData, Invocation, Packet};
+use wick_packet::{Entity, InherentData, Invocation, Packet, RuntimeConfig};
 mod route;
 
 use super::{HttpError, RawRouter};
@@ -143,7 +143,7 @@ impl RestHandler {
       );
 
       let stream = runtime
-        .invoke(invocation, route.config.operation().config().cloned())
+        .invoke(invocation, route.runtime_config.clone())
         .instrument(span)
         .await
         .map_err(|e| HttpError::OperationError(e.to_string()))?;
@@ -182,20 +182,25 @@ pub(super) struct RestRoute {
   route: route::Route,
   component: ImportBinding,
   operation: ComponentOperationExpression,
+  runtime_config: Option<RuntimeConfig>,
 }
 
 impl RestRoute {
   pub(super) fn new(
     config: wick_config::config::RestRoute,
     component: ImportBinding,
-  ) -> Result<Self, wick_interface_types::ParserError> {
-    let route = route::Route::parse(config.uri())?;
+    runtime_config: Option<RuntimeConfig>,
+  ) -> Result<Self, HttpError> {
+    let route =
+      route::Route::parse(config.uri()).map_err(|e| HttpError::RouteSyntax(e.to_string(), config.uri().to_owned()))?;
     let operation = config.operation().clone();
+
     Ok(Self {
       config,
       route,
       component,
       operation,
+      runtime_config,
     })
   }
 }

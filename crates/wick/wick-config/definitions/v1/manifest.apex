@@ -11,9 +11,15 @@ alias LocationReference = string @skip
 """
 A liquid JSON value. Liquid-JSON is a way of using Liquid templates in structured JSON-like data.
 
-See [liquid-json](https://crates.io/crates/liquid-json) for more information.
+See [liquid-json](https://crates.io/crates/liquid-json) and [liquid's website](https://shopify.github.io/liquid/) for more information.
 """
 alias LiquidJsonValue = string @skip
+
+"""
+A liquid template. Liquid-JSON is a way of using Liquid templates in structured JSON-like data. See liquid's [homepage](https://shopify.github.io/liquid/) for more information.
+"""
+alias LiquidTemplate = string
+
 
 "A glob pattern, e.g. **/*.html"
 alias Glob = string @skip
@@ -96,29 +102,29 @@ union ResourceDefinition = TcpPort | UdpPort | Url | Volume
 "A TCP port to bind to."
 type TcpPort @tagged("wick/resource/tcpport@v1") {
   "The port to bind to."
-  port: u16
+  port: LiquidTemplate
   "The address to bind to."
-  address: string
+  address: LiquidTemplate
 }
 
 "A UDP port to bind to."
 type UdpPort @tagged("wick/resource/udpport@v1") {
   "The port to bind to."
-  port: u16
+  port: LiquidTemplate
   "The address to bind to."
-  address: string
+  address: LiquidTemplate
 }
 
 "A filesystem or network volume resource."
 type Volume @tagged("wick/resource/volume@v1") {
   "The path."
-  path: string @required
+  path: LiquidTemplate @required
 }
 
 "A URL configured as a resource."
 type Url @tagged("wick/resource/url@v1") {
   "The url string."
-  url: string @required
+  url: LiquidTemplate @required
 }
 
 "Triggers that operate off events and translate environment data to components. Triggers are the way that Wick handles standard use cases and translates them into the component world."
@@ -168,7 +174,7 @@ type ComponentOperationExpression @shortform {
   "The operation name."
   name: string @required
   "Configuration to pass to this operation on invocation."
-  with: {string: any}?,
+  with: {string: LiquidJsonValue}?,
   "Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely."
   timeout: u64?,
 }
@@ -347,7 +353,7 @@ type TestConfiguration @tagged("wick/tests@v1") {
   name: string?
 
   "Configuration used to instantiate this component."
-  with: {string: any}?
+  with: {string: LiquidJsonValue}?
 
   "Unit tests to run against components and operations."
   cases: [TestDefinition]
@@ -407,11 +413,11 @@ type InterfaceDefinition {
 
 "A component made from connectiong other components."
 type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
-  "Configuration necessary to provide when instantiating the component."
-  with: [Field]
-
   "A list of operations exposed by the Composite component."
   operations: [CompositeOperationDefinition]
+
+  "Configuration necessary to provide when instantiating the component."
+  with: [Field]
 }
 
 "A component whose implementation is a WasmRS WebAssembly module."
@@ -489,7 +495,7 @@ type GrpcUrlComponent @tagged("wick/component/grpc@v1") {
   url: string @required
 
   "Any configuration necessary for the component."
-  with: {string: any}?,
+  with: {string: LiquidJsonValue}?,
 }
 
 "A native component that can be extracted and run as a microservice."
@@ -498,7 +504,7 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
   ref: LocationReference @rename("reference")  @required
 
   "Any configuration necessary for the component."
-  with: {string: any}?,
+  with: {string: LiquidJsonValue}?,
 
   "External components to provide to the referenced component."
   provide: {string:string}
@@ -554,7 +560,7 @@ type ConnectionTargetDefinition {
   port: string @required,
 
   "The default value to provide on this connection in the event of an error."
-  data: {string: any}?,
+  data: {string: LiquidJsonValue}?,
 }
 
 "An operation name and its input and output signatures"
@@ -665,7 +671,7 @@ type OperationInstance {
   operation: ComponentOperationExpression @required @shortform
 
   "Data to associate with the reference, if any."
-  with: {string: any}?,
+  with: {string: LiquidJsonValue}?,
 
   "Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely."
   timeout: u64?,
@@ -683,7 +689,7 @@ type TestDefinition {
   inherent: InherentData?
 
   "The configuration for the operation, if any."
-  with: {string: any}?
+  with: {string: LiquidJsonValue}?
 
   "The inputs to the test."
   inputs: [PacketData] @alias("input")
@@ -713,7 +719,7 @@ type SuccessPacket {
   flags: PacketFlags?
 
   "The data to send."
-  value: any? @skip_env @alias("data")
+  value: LiquidJsonValue? @alias("data")
 }
 
 type ErrorPacket {
@@ -724,7 +730,7 @@ type ErrorPacket {
   flags: PacketFlags?
 
   "The error message."
-  error: string @required
+  error: LiquidTemplate @required
 }
 
 "Flags set on a packet."
@@ -746,6 +752,9 @@ type SqlComponent @tagged("wick/component/sql@v1") {
 
   "Whether or not to use TLS."
   tls: bool
+
+  "Configuration necessary to provide when instantiating the component."
+  with: [Field]
 
   "A list of operations to expose on this component."
   operations: [SqlOperationDefinition]
@@ -793,6 +802,9 @@ type HttpClientComponent @tagged("wick/component/http@v1") {
 
   "The codec to use when encoding/decoding data. Can be overridden by individual operations."
   codec: Codec?
+
+  "Configuration necessary to provide when instantiating the component."
+  with: [Field]
 
   "A list of operations to expose on this component."
   operations: [HttpClientOperationDefinition]

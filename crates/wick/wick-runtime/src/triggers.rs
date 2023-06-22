@@ -1,6 +1,4 @@
-use std::collections::HashMap;
 use std::convert::Infallible;
-use std::sync::Arc;
 mod cli;
 mod http;
 mod time;
@@ -11,7 +9,6 @@ use parking_lot::Mutex;
 use structured_output::StructuredOutput;
 use tracing::Span;
 use wick_config::config::{
-  AppConfiguration,
   ComponentDefinition,
   ComponentOperationExpression,
   ImportBinding,
@@ -80,6 +77,13 @@ pub(crate) fn resolve_or_import(
       .ok_or_else(|| {
         RuntimeError::InitializationFailed(format!("Could not find a component by the name of {}", cref.id()))
       })?
+      .map_err(|e| {
+        RuntimeError::InitializationFailed(format!(
+          "Could not render configuration for component {}: error was {}",
+          cref.id(),
+          e
+        ))
+      })?
       .try_component()
       .map_err(|e| RuntimeError::ReferenceError(cref.id().to_owned(), e))?;
     Ok((Entity::operation(cref.id(), operation.name()), None))
@@ -101,9 +105,15 @@ pub(crate) fn resolve_ref(
       .ok_or_else(|| {
         RuntimeError::InitializationFailed(format!("Could not find a component by the name of {}", cref.id()))
       })?
+      .map_err(|e| {
+        RuntimeError::InitializationFailed(format!(
+          "Could not render configuration for component {}: error was {}",
+          cref.id(),
+          e
+        ))
+      })?
       .try_component()
       .map_err(|e| RuntimeError::ReferenceError(cref.id().to_owned(), e))?
-      .clone()
   } else {
     component.clone()
   };

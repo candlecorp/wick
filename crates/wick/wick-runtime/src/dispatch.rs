@@ -1,5 +1,5 @@
 use uuid::Uuid;
-use wick_packet::{GenericConfig, Invocation, PacketStream};
+use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
 use crate::dev::prelude::*;
 
@@ -24,10 +24,10 @@ impl InvocationResponse {
     InvocationResponse::Error { tx_id, msg }
   }
 
-  pub(crate) fn ok(self) -> Result<PacketStream, InvocationError> {
+  pub(crate) fn ok(self) -> Result<PacketStream, RuntimeError> {
     match self {
       InvocationResponse::Stream { rx, .. } => Ok(rx),
-      InvocationResponse::Error { msg, .. } => Err(InvocationError(msg)),
+      InvocationResponse::Error { msg, .. } => Err(RuntimeError::InvocationError(msg)),
     }
   }
 }
@@ -49,7 +49,7 @@ impl From<ComponentError> for DispatchError {
 pub(crate) async fn engine_invoke_async(
   engine_id: Uuid,
   invocation: Invocation,
-  config: Option<GenericConfig>,
+  config: Option<RuntimeConfig>,
 ) -> Result<PacketStream, DispatchError> {
   let engine = RuntimeService::for_id(&engine_id).ok_or(DispatchError::EntityNotAvailable(engine_id))?;
 

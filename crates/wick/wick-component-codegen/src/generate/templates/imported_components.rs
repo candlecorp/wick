@@ -100,7 +100,7 @@ fn named_configs(config: &mut Config, ops: &HashMap<String, OperationSignature>)
         Some(quote! {
           #def
 
-          impl From<#config_id> for wick_packet::GenericConfig {
+          impl From<#config_id> for wick_packet::RuntimeConfig {
             fn from(v: #config_id) -> Self {
               wick_component::to_value(v).unwrap().try_into().unwrap()
             }

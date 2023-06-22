@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=../../../json-schema/manifest.json
+---
+kind: wick/app@v1
+import:
+  - name: test
+    component:
+      kind: wick/component/manifest@v1
+      ref: path/to/component.wick
+      with:
+        pwd: '{{ ctx.env.CARGO_MANIFEST_DIR }}'
+triggers: []

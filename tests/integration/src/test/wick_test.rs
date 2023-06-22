@@ -18,15 +18,19 @@ async fn baseline_component() -> Result<()> {
     .await?
     .try_component_config()?;
 
-  let mut suite = TestSuite::from_configuration(root_manifest.tests());
+  let mut suite = TestSuite::from_configuration(root_manifest.tests())?;
   let manifest = root_manifest.clone();
 
-  let factory: ComponentFactory = Box::new(move |config| {
-    let manifest = manifest.clone();
+  let factory: ComponentFactory = Box::new(move |config, env| {
+    let mut manifest = manifest.clone();
+
     let task = async move {
+      manifest.set_root_config(config);
+      manifest
+        .initialize(env.as_ref())
+        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
       let mut host = ComponentHostBuilder::default()
         .manifest(manifest)
-        .config(config)
         .span(Span::current())
         .build()
         .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;

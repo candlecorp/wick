@@ -16,6 +16,7 @@ wick-config = { workspace = true }
 wick-rpc = { workspace = true }
 wick-interface-types = { workspace = true, features = ["parser"] }
 tokio-util = { workspace = true, features = ["compat"] }
+url = { workspace = true }
 # tiberius & pool
 tiberius = { workspace = true, features = [
   "rustls",

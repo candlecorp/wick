@@ -4,7 +4,7 @@ use std::sync::Arc;
 use futures::future::BoxFuture;
 use hyper::{Body, Request, Response, StatusCode};
 use tracing::Span;
-use wick_config::config::UrlResource;
+use url::Url;
 
 use super::{HttpError, RawRouter};
 use crate::Runtime;
@@ -18,7 +18,7 @@ pub(super) struct ProxyRouter {
 }
 
 impl ProxyRouter {
-  pub(super) fn new(url: UrlResource, strip: Option<String>) -> Self {
+  pub(super) fn new(url: Url, strip: Option<String>) -> Self {
     let url = url.to_string();
     let url = url.trim_end_matches('/').to_owned();
 

@@ -1,3 +1,8 @@
 "{{name.value}}": {
+{{#switch name.value~}}
+  {{#case "LiquidJsonValue"}}"oneOf": [{"type":"boolean"},{"type":"object"},{"type":"array"},{"type":"string"},{"type":"number"}]{{/case}}
+  {{#default}}
   "type":"string",
+  {{/default}}
+{{/switch}}
 },

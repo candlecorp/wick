@@ -10,11 +10,12 @@ use parking_lot::Mutex;
 use serde_json::{Map, Value};
 use tiberius::{Query, Row};
 use tracing::Span;
+use url::Url;
 use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition};
 use wick_config::config::{ErrorBehavior, Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{component, ComponentSignature, Field, Type};
-use wick_packet::{FluxChannel, GenericConfig, Invocation, Observer, Packet, PacketSender, PacketStream};
+use wick_packet::{FluxChannel, Invocation, Observer, Packet, PacketSender, PacketStream, RuntimeConfig};
 
 use crate::error::Error;
 use crate::mssql;
@@ -43,14 +44,17 @@ impl Context {}
 pub struct AzureSqlComponent {
   context: Arc<Mutex<Option<Context>>>,
   signature: Arc<ComponentSignature>,
-  url_resource: UrlResource,
+  url: Url,
   config: SqlComponentConfig,
+  #[allow(unused)]
+  root_config: Option<RuntimeConfig>,
 }
 
 impl AzureSqlComponent {
   #[allow(clippy::needless_pass_by_value)]
   pub fn new(
     config: SqlComponentConfig,
+    root_config: Option<RuntimeConfig>,
     metadata: Option<Metadata>,
     resolver: &Resolver,
   ) -> Result<Self, ComponentError> {
@@ -69,13 +73,22 @@ impl AzureSqlComponent {
     });
 
     let addr = resolver(config.resource())
-      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))
-      .and_then(|r| r.try_resource().map_err(ComponentError::new))?;
+      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))?
+      .and_then(|r| r.try_resource())
+      .map_err(ComponentError::new)?;
+
+    let resource: UrlResource = addr.into();
+    let url = resource
+      .url()
+      .value()
+      .cloned()
+      .ok_or_else(|| ComponentError::message("Internal Error - Invalid resource"))?;
 
     Ok(Self {
       context: Arc::new(Mutex::new(None)),
       signature: Arc::new(sig),
-      url_resource: addr.into(),
+      url,
+      root_config,
       config,
     })
   }
@@ -85,7 +98,7 @@ impl Component for AzureSqlComponent {
   fn handle(
     &self,
     mut invocation: Invocation,
-    _data: Option<GenericConfig>,
+    _data: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let ctx = self.context.clone();
@@ -136,7 +149,7 @@ impl Component for AzureSqlComponent {
 
   fn init(&self) -> std::pin::Pin<Box<dyn Future<Output = Result<(), ComponentError>> + Send + 'static>> {
     let ctx = self.context.clone();
-    let addr = self.url_resource.clone();
+    let addr = self.url.clone();
     let config = self.config.clone();
 
     Box::pin(async move {
@@ -312,7 +325,7 @@ fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Err
   Ok(())
 }
 
-async fn init_client(config: SqlComponentConfig, addr: UrlResource) -> Result<Pool<ConnectionManager>, Error> {
+async fn init_client(config: SqlComponentConfig, addr: Url) -> Result<Pool<ConnectionManager>, Error> {
   let pool = match addr.scheme() {
     "mssql" => mssql::connect(config, &addr).await?,
     "postgres" => unimplemented!("Use the sql component instead"),
@@ -320,11 +333,11 @@ async fn init_client(config: SqlComponentConfig, addr: UrlResource) -> Result<Po
     "sqllite" => unimplemented!("Use the sql component instead"),
     s => return Err(Error::InvalidScheme(s.to_owned())),
   };
-  debug!(addr=%addr.address(), "connected to db");
+  debug!(%addr, "connected to db");
   Ok(pool)
 }
 
-async fn init_context(config: SqlComponentConfig, addr: UrlResource) -> Result<Context, Error> {
+async fn init_context(config: SqlComponentConfig, addr: Url) -> Result<Context, Error> {
   let client = init_client(config.clone(), addr).await?;
   let mut queries = HashMap::new();
   trace!(count=%config.operations().len(), "preparing queries");

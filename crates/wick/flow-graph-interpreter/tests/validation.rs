@@ -11,7 +11,7 @@ type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send
 
 use tracing::Span;
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, Type};
-use wick_packet::{GenericConfig, Invocation, PacketStream};
+use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentConfiguration> {
   Ok(wick_config::WickConfiguration::load_from_file_sync(path.as_ref())?.try_component_config()?)
 }
@@ -21,7 +21,7 @@ impl Component for SignatureTestCollection {
   fn handle(
     &self,
     _invocation: Invocation,
-    _config: Option<GenericConfig>,
+    _config: Option<RuntimeConfig>,
     _callback: std::sync::Arc<flow_component::RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     todo!()
@@ -41,10 +41,11 @@ fn collections(sig: ComponentSignature) -> HandlerMap {
 }
 
 fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interpreter, InterpreterError> {
-  let network = from_def(&mut load(path).unwrap()).unwrap();
+  let network = from_def(&mut load(path).unwrap(), &None).unwrap();
 
   Interpreter::new(
     network,
+    None,
     None,
     Some(collections(sig)),
     panic_callback(),
@@ -55,9 +56,9 @@ fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interprete
 #[test_logger::test(tokio::test)]
 async fn test_missing_collections() -> Result<()> {
   let mut manifest = load("./tests/manifests/v0/external.yaml")?;
-  let network = from_def(&mut manifest)?;
+  let network = from_def(&mut manifest, &None)?;
   let result: std::result::Result<Interpreter, _> =
-    Interpreter::new(network, None, None, panic_callback(), &Span::current());
+    Interpreter::new(network, None, None, None, panic_callback(), &Span::current());
   let validation_errors = ValidationError::ComponentIdNotFound("test".to_owned());
   if let Err(InterpreterError::EarlyError(e)) = result {
     assert_eq!(e, validation_errors);

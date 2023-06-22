@@ -289,6 +289,8 @@ where
   if let Some(f) = with_default {
     Ok(Either::ScopeReturn(tracing::subscriber::with_default(subscriber, f)))
   } else if opts.global {
+    #[cfg(feature = "console")]
+    let subscriber = subscriber.with(console_subscriber::spawn());
     tracing::subscriber::set_global_default(subscriber)?;
     Ok(Either::Logger(LoggingGuard::new(
       environment,

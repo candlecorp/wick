@@ -15,11 +15,11 @@ use wick_packet::{
   fan_out,
   packet_stream,
   ComponentReference,
-  GenericConfig,
   InherentData,
   Invocation,
   Packet,
   PacketStream,
+  RuntimeConfig,
 };
 
 pub struct TestComponent(ComponentSignature);
@@ -183,7 +183,7 @@ impl Component for TestComponent {
   fn handle(
     &self,
     invocation: Invocation,
-    _config: Option<GenericConfig>,
+    _config: Option<RuntimeConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let operation = invocation.target.operation_id();
@@ -277,6 +277,29 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
         while let Some(Ok(payload)) = input.next().await {
           let msg: String = payload.decode().unwrap();
           defer(vec![send(Packet::encode("output", &msg.to_ascii_uppercase()))]);
+        }
+        defer(vec![send(Packet::done("output"))]);
+      });
+      Ok(stream)
+    }
+    "concat" => {
+      let (mut send, stream) = stream(1);
+      spawn(async move {
+        let (mut left, mut right) = fan_out!(payload_stream, "left", "right");
+        while let (Some(left), Some(right)) = (left.next().await, right.next().await) {
+          match (left, right) {
+            (Ok(left), Ok(right)) => {
+              let left: String = left.decode().unwrap();
+              let right: String = right.decode().unwrap();
+              defer(vec![send(Packet::encode("output", format!("{}{}", left, right)))]);
+            }
+            (Err(e), _) => {
+              defer(vec![send(Packet::err("output", e.to_string()))]);
+            }
+            (_, Err(e)) => {
+              defer(vec![send(Packet::err("output", e.to_string()))]);
+            }
+          }
         }
         defer(vec![send(Packet::done("output"))]);
       });

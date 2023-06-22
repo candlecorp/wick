@@ -14,6 +14,16 @@
     },
 
     "LiquidJsonValue": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "object" },
+        { "type": "array" },
+        { "type": "string" },
+        { "type": "number" }
+      ]
+    },
+
+    "LiquidTemplate": {
       "type": "string"
     },
 
@@ -234,12 +244,12 @@
         "port": {
           "description": "The port to bind to.",
 
-          "oneOf": [{ "type": "number" }, { "type": "string" }]
+          "$ref": "#/$defs/v1/LiquidTemplate"
         },
         "address": {
           "description": "The address to bind to.",
 
-          "type": "string"
+          "$ref": "#/$defs/v1/LiquidTemplate"
         }
       },
       "required": []
@@ -258,12 +268,12 @@
         "port": {
           "description": "The port to bind to.",
 
-          "oneOf": [{ "type": "number" }, { "type": "string" }]
+          "$ref": "#/$defs/v1/LiquidTemplate"
         },
         "address": {
           "description": "The address to bind to.",
 
-          "type": "string"
+          "$ref": "#/$defs/v1/LiquidTemplate"
         }
       },
       "required": []
@@ -282,7 +292,7 @@
         "path": {
           "description": "The path.",
 
-          "type": "string"
+          "$ref": "#/$defs/v1/LiquidTemplate"
         }
       },
       "required": ["path"]
@@ -301,7 +311,7 @@
         "url": {
           "description": "The url string.",
 
-          "type": "string"
+          "$ref": "#/$defs/v1/LiquidTemplate"
         }
       },
       "required": ["url"]
@@ -435,7 +445,9 @@
 
           "type": "object",
           "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1/LiquidJsonValue"
+            }
           }
         },
         "timeout": {
@@ -929,7 +941,9 @@
 
           "type": "object",
           "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1/LiquidJsonValue"
+            }
           }
         },
         "cases": {
@@ -1081,20 +1095,20 @@
           "description": "The kind of the collection",
           "enum": ["wick/component/composite@v1"]
         },
-        "with": {
-          "description": "Configuration necessary to provide when instantiating the component.",
-
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1/Field"
-          }
-        },
         "operations": {
           "description": "A list of operations exposed by the Composite component.",
 
           "type": "array",
           "items": {
             "$ref": "#/$defs/v1/CompositeOperationDefinition"
+          }
+        },
+        "with": {
+          "description": "Configuration necessary to provide when instantiating the component.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/Field"
           }
         }
       },
@@ -1303,7 +1317,9 @@
 
           "type": "object",
           "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1/LiquidJsonValue"
+            }
           }
         }
       },
@@ -1331,7 +1347,9 @@
 
           "type": "object",
           "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1/LiquidJsonValue"
+            }
           }
         },
         "provide": {
@@ -1473,7 +1491,9 @@
 
           "type": "object",
           "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1/LiquidJsonValue"
+            }
           }
         }
       },
@@ -1835,7 +1855,9 @@
 
           "type": "object",
           "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1/LiquidJsonValue"
+            }
           }
         },
         "timeout": {
@@ -1875,7 +1897,9 @@
 
           "type": "object",
           "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1/LiquidJsonValue"
+            }
           }
         },
         "inputs": {
@@ -1944,7 +1968,9 @@
         },
         "value": {
           "description": "The data to send.",
-          "required": false
+          "required": false,
+
+          "$ref": "#/$defs/v1/LiquidJsonValue"
         }
       },
       "required": ["name"]
@@ -1969,7 +1995,7 @@
         "error": {
           "description": "The error message.",
 
-          "type": "string"
+          "$ref": "#/$defs/v1/LiquidTemplate"
         }
       },
       "required": ["name", "error"]
@@ -2018,6 +2044,14 @@
           "description": "Whether or not to use TLS.",
 
           "type": "boolean"
+        },
+        "with": {
+          "description": "Configuration necessary to provide when instantiating the component.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/Field"
+          }
         },
         "operations": {
           "description": "A list of operations to expose on this component.",
@@ -2114,6 +2148,14 @@
 
           "$ref": "#/$defs/v1/Codec"
         },
+        "with": {
+          "description": "Configuration necessary to provide when instantiating the component.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/Field"
+          }
+        },
         "operations": {
           "description": "A list of operations to expose on this component.",
 
@@ -2181,7 +2223,7 @@
           "description": "The body to send, processed as a structured JSON liquid template.",
           "required": false,
 
-          "type": "object"
+          "$ref": "#/$defs/v1/LiquidJsonValue"
         },
         "path": {
           "description": "The path to append to our base URL, processed as a liquid template with each input as part of the template data.",

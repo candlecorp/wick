@@ -1,0 +1,73 @@
+kind: wick/component@v1
+name: http_client_example
+metadata:
+  version: 0.0.1
+  description: Example showing how to use the HTTP Client component to make HTTP requests from Wick.
+  licenses:
+    - Apache-2.0
+resources:
+  - name: BASEURL
+    resource:
+      kind: wick/resource/url@v1
+      url: http://{{ ctx.root_config.url }}
+component:
+  kind: wick/component/http@v1
+  resource: BASEURL
+  with:
+    - name: url
+      type: string
+    - name: message
+      type: string
+  operations:
+    - name: get
+      with:
+        - name: message
+          type: string
+      inputs:
+        - name: message
+          type: string
+      path: /get?input_message={{message}}&component_message={{ ctx.root_config.message }}&config_message={{ctx.config.message}}
+tests:
+  - name: basic
+    with:
+      url: '{{ctx.env.HTTPBIN}}'
+      message: 'root config message'
+    cases:
+      - name: get
+        operation: get
+        with:
+          message: 'op config message'
+        inputs:
+          - name: message
+            value: 'input message'
+        outputs:
+          - name: response
+            value:
+              status: 'Ok'
+              version: 'Http11'
+              headers:
+                access-control-allow-credentials: ['true']
+                access-control-allow-origin: ['*']
+                connection: ['keep-alive']
+                content-length: ['438']
+                content-type: ['application/json']
+                date: ['{{ "now" | date: "%a, %d %b %Y %I:%M:%S" }} GMT']
+                server: ['gunicorn/19.9.0']
+          - name: response
+            flags:
+              done: true
+          - name: body
+            value:
+              args:
+                component_message: '{{ctx.root_config.message}}'
+                config_message: '{{ctx.config.message}}'
+                input_message: input message
+              headers:
+                Accept: '*/*'
+                Host: '{{ctx.env.HTTPBIN}}'
+                User-Agent: wick-http-client/0.1.0
+              origin: 172.17.0.1
+              url: http://{{ctx.env.HTTPBIN}}/get?input_message=input message&component_message={{ctx.root_config.message}}&config_message={{ctx.config.message}}
+          - name: body
+            flags:
+              done: true

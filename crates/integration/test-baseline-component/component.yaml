@@ -6,7 +6,7 @@ metadata:
   version: '1'
 package:
   registry:
-    host: $DOCKER_REGISTRY
+    host: registry.candle.dev
     namespace: test-component
 component:
   kind: wick/component/wasmrs@v1

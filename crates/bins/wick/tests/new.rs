@@ -8,7 +8,7 @@ static DIR: &str = "new";
 #[case("component-wasm.toml")]
 fn wick_new(#[case] file: &'static str) {
   let kind = "unit";
-  let file = format!("tests/{}/{}/{}", kind, DIR, file);
+  let file = format!("tests/{}/{}/{}", DIR, kind, file);
 
   trycmd::TestCases::new().case(file);
 }

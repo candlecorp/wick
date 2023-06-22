@@ -21,16 +21,17 @@ component:
         - <> -> test_component.input
         - test_component.output -> <>
 tests:
-  - name: test
-    operation: test
-    with:
-      exponent: 6
-    input:
-      - name: input
-        data: 2
-    output:
-      - name: output
-        data: 16
-      - name: output
-        flags:
-          done: true
+  - cases:
+      - name: test
+        operation: test
+        with:
+          exponent: 6
+        inputs:
+          - name: input
+            value: 2
+        outputs:
+          - name: output
+            value: 16
+          - name: output
+            flags:
+              done: true

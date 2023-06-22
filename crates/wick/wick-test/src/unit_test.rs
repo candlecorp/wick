@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use wick_config::config::TestCase;
-use wick_packet::{InherentData, Packet, PacketStream};
+use wick_packet::{InherentData, Packet, PacketStream, RuntimeConfig};
 
 use crate::utils::gen_packet;
 use crate::TestError;
@@ -13,7 +13,11 @@ pub struct UnitTest<'a> {
   pub actual: Vec<Packet>,
 }
 
-pub(crate) fn get_payload(test: &UnitTest) -> Result<(PacketStream, InherentData), TestError> {
+pub(crate) fn get_payload(
+  test: &UnitTest,
+  root_config: Option<&RuntimeConfig>,
+  op_config: Option<&RuntimeConfig>,
+) -> Result<(PacketStream, InherentData), TestError> {
   let mut packets = Vec::new();
   let mut not_done = HashSet::new();
   if test.test.inputs().is_empty() {
@@ -27,7 +31,7 @@ pub(crate) fn get_payload(test: &UnitTest) -> Result<(PacketStream, InherentData
         not_done.insert(packet.port());
       }
       debug!("Test input for port {:?}", packet);
-      packets.push(gen_packet(packet)?);
+      packets.push(gen_packet(packet, root_config, op_config)?);
     }
     for port in not_done {
       packets.push(Packet::done(port));

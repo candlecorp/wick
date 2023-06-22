@@ -7,11 +7,11 @@ use serde_json::Value;
 use crate::{ComponentReference, Error, InherentData};
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct GenericConfig(HashMap<String, Value>);
+pub struct RuntimeConfig(HashMap<String, Value>);
 
-impl GenericConfig {
+impl RuntimeConfig {
   /// Get a value from the configuration map, deserializing it into the target type.
-  pub fn get_into<T>(&self, key: &str) -> Result<T, Error>
+  pub fn coerce_key<T>(&self, key: &str) -> Result<T, Error>
   where
     T: DeserializeOwned,
   {
@@ -30,14 +30,9 @@ impl GenericConfig {
   pub fn get(&self, key: &str) -> Option<&Value> {
     self.0.get(key)
   }
-
-  /// Get an iterator over the keys and values in the configuration.
-  pub fn iter(&self) -> impl Iterator<Item = (&String, &Value)> {
-    self.0.iter()
-  }
 }
 
-impl IntoIterator for GenericConfig {
+impl IntoIterator for RuntimeConfig {
   type Item = (String, Value);
   type IntoIter = std::collections::hash_map::IntoIter<String, Value>;
 
@@ -46,19 +41,19 @@ impl IntoIterator for GenericConfig {
   }
 }
 
-impl From<HashMap<String, Value>> for GenericConfig {
+impl From<HashMap<String, Value>> for RuntimeConfig {
   fn from(value: HashMap<String, Value>) -> Self {
     Self(value)
   }
 }
 
-impl From<GenericConfig> for HashMap<String, Value> {
-  fn from(value: GenericConfig) -> Self {
+impl From<RuntimeConfig> for HashMap<String, Value> {
+  fn from(value: RuntimeConfig) -> Self {
     value.0
   }
 }
 
-impl TryFrom<Value> for GenericConfig {
+impl TryFrom<Value> for RuntimeConfig {
   type Error = Error;
 
   fn try_from(value: Value) -> Result<Self, Self::Error> {

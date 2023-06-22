@@ -14,6 +14,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 nom = { workspace = true, features = ["alloc"] }
+liquid-json = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

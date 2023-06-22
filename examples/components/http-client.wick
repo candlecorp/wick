@@ -9,7 +9,7 @@ resources:
   - name: BASEURL
     resource:
       kind: wick/resource/url@v1
-      url: http://$HTTPBIN
+      url: http://{{ ctx.env.HTTPBIN }}
 component:
   kind: wick/component/http@v1
   resource: BASEURL

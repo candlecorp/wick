@@ -9,13 +9,19 @@ resources:
   - name: HTTP_URL
     resource:
       kind: wick/resource/url@v1
-      url: http://$HTTPBIN/
+      url: '{{ ctx.root_config.url }}'
 component:
   kind: wick/component/http@v1
   resource: HTTP_URL
   codec: Json
+  with:
+    - name: url
+      type: string
   operations:
     - name: post_op
+      with:
+        - name: message
+          type: string
       inputs:
         - name: id
           type: string
@@ -29,3 +35,5 @@ component:
       body:
         id: '{{id}}'
         name: '{{name}}'
+        from_root: '{{ ctx.root_config.url }}'
+        from_op: '{{ ctx.config.message }}'

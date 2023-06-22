@@ -1,5 +1,3 @@
-use wick_interface_types::Field;
-
 use crate::config;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
@@ -47,17 +45,6 @@ impl ComponentImplementation {
       ComponentImplementation::Composite(_) => panic!("Composite components must be named"),
       ComponentImplementation::Sql(_) => "wick/component/sql",
       ComponentImplementation::HttpClient(_) => "wick/component/http",
-    }
-  }
-
-  #[must_use]
-  /// Get the associated configuration for this component.
-  pub fn config(&self) -> Option<&[Field]> {
-    match self {
-      ComponentImplementation::Wasm(c) => Some(c.config()),
-      ComponentImplementation::Composite(c) => Some(c.config()),
-      ComponentImplementation::Sql(_) => None,
-      ComponentImplementation::HttpClient(_) => None,
     }
   }
 }

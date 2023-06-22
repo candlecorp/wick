@@ -12,5 +12,5 @@ package:
     - ./assets/test.js
     - ./assets/static/**/*
   registry:
-    host: $DOCKER_REGISTRY
+    host: registry.candle.dev
     namespace: default

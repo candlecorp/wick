@@ -13,7 +13,7 @@ resources:
   - name: DBADDR
     resource:
       kind: wick/resource/url@v1
-      url: postgres://postgres:$TEST_PASSWORD@$TEST_HOST:$POSTGRES_PORT/wick_test
+      url: postgres://postgres:{{ ctx.env.TEST_PASSWORD }}@{{ ctx.env.TEST_HOST }}:{{ ctx.env.POSTGRES_PORT }}/wick_test
 import:
   - name: MYDB
     component:

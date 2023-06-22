@@ -107,6 +107,8 @@ pub struct Operation {
   pub name: ::prost::alloc::string::String,
   #[prost(enumeration = "operation::OperationKind", tag = "2")]
   pub kind: i32,
+  #[prost(message, repeated, tag = "5")]
+  pub config: ::prost::alloc::vec::Vec<Field>,
   #[prost(message, repeated, tag = "3")]
   pub inputs: ::prost::alloc::vec::Vec<Field>,
   #[prost(message, repeated, tag = "4")]

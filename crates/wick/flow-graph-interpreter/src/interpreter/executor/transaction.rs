@@ -14,6 +14,7 @@ use wick_packet::{Invocation, Packet, PacketError, PacketSender, PacketStream};
 use self::operation::InstanceHandler;
 use super::error::ExecutionError;
 use crate::graph::types::*;
+use crate::graph::OperationConfig;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::transaction::operation::port::PortStatus;
@@ -30,8 +31,7 @@ type Result<T> = std::result::Result<T, ExecutionError>;
 #[must_use]
 pub struct Transaction {
   schematic: Arc<Schematic>,
-  output_tx: PacketSender,
-  output_rx: Option<PacketStream>,
+  output: (PacketSender, Option<PacketStream>),
   channel: InterpreterDispatchChannel,
   invocation: Invocation,
   instances: Vec<Arc<InstanceHandler>>,
@@ -40,6 +40,7 @@ pub struct Transaction {
   finished: AtomicBool,
   span: tracing::Span,
   callback: Arc<RuntimeCallback>,
+  config: OperationConfig,
   pub(crate) last_access_time: Mutex<SystemTime>,
   pub(crate) stats: TransactionStatistics,
 }
@@ -59,6 +60,7 @@ impl Transaction {
     collections: &Arc<HandlerMap>,
     self_collection: &Arc<dyn Component + Send + Sync>,
     callback: Arc<RuntimeCallback>,
+    config: OperationConfig,
     seed: Seed,
   ) -> Self {
     let instances: Vec<_> = schematic
@@ -79,8 +81,7 @@ impl Transaction {
     invocation.tx_id = id;
     let stats = TransactionStatistics::new(id);
     stats.mark("new");
-    let span = tracing::Span::current();
-    span.record("tx_id", id.to_string());
+    let span = invocation.following_span(trace_span!("tx",tx_id=%id));
 
     let (tx, rx) = invocation.make_response();
 
@@ -88,8 +89,8 @@ impl Transaction {
       channel,
       invocation,
       schematic,
-      output_tx: tx,
-      output_rx: Some(rx),
+      config,
+      output: (tx, Some(rx)),
       instances,
       start_time: Instant::now(),
       stats,
@@ -153,6 +154,7 @@ impl Transaction {
           self.channel.clone(),
           options,
           self.callback.clone(),
+          self.config.clone(),
         )
         .await?;
     }
@@ -203,7 +205,7 @@ impl Transaction {
 
   pub(crate) async fn emit_output_message(&self, packets: Vec<Packet>) -> Result<()> {
     for packet in packets {
-      self.output_tx.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
+      self.output.0.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
     }
 
     if self.done() {
@@ -221,7 +223,7 @@ impl Transaction {
   }
 
   pub(crate) fn take_stream(&mut self) -> Option<PacketStream> {
-    self.output_rx.take()
+    self.output.1.take()
   }
 
   pub(crate) fn take_tx_output(&self) -> Result<Vec<Packet>> {

@@ -91,7 +91,7 @@ mod operations;
 use flow_component::{Component, RuntimeCallback};
 use seeded_random::Seed;
 use wick_interface_types::{component, ComponentSignature};
-use wick_packet::{GenericConfig, Invocation, PacketStream};
+use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 use wick_rpc::dispatch;
 
 #[macro_use]
@@ -115,38 +115,47 @@ impl Collection {
         version: Some("0.1.0"),
         operations: {
           "core::error" => {
+
             inputs: { "input" => "string" },
             outputs: { "output" => "string" },
           },
           "core::log" => {
+
             inputs: { "input" => "string" },
             outputs: { "output" => "string" },
           },
           "core::panic" => {
+
             inputs: { "input" => "string" },
             outputs: { "output" => "string" },
           },
           "math::add" => {
+
             inputs: { "left" => "u64", "right" => "u64" },
             outputs: { "output" => "u64" },
           },
           "math::subtract" => {
+
             inputs: { "left" => "u64", "right" => "u64" },
             outputs: { "output" => "u64" },
           },
           "rand::bytes" => {
+
             inputs: { "seed" => "u64", "length" => "u32" },
             outputs: { "output" => "bytes" },
           },
           "rand::string" => {
+
             inputs: { "seed" => "u64", "length" => "u32" },
             outputs: { "output" => "string" },
           },
           "rand::uuid" => {
+
             inputs: { "seed" => "u64" },
             outputs: { "output" => "string" },
           },
           "string::concat" => {
+
             inputs: { "left" => "string", "right" => "string" },
             outputs: { "output" => "string" },
           }
@@ -160,7 +169,7 @@ impl Component for Collection {
   fn handle(
     &self,
     invocation: Invocation,
-    _data: Option<GenericConfig>,
+    _data: Option<RuntimeConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target = invocation.target_url();

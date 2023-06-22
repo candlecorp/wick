@@ -10,10 +10,10 @@ use serde_json::{Map, Value};
 use tracing::Span;
 use url::Url;
 use wick_config::config::components::{Codec, HttpClientComponentConfig, HttpClientOperationDefinition, HttpMethod};
-use wick_config::config::{Metadata, UrlResource};
+use wick_config::config::{LiquidJsonConfig, Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Base64Bytes, FluxChannel, GenericConfig, Invocation, Observer, Packet, PacketSender, PacketStream};
+use wick_packet::{Base64Bytes, FluxChannel, Invocation, Observer, Packet, PacketSender, PacketStream, RuntimeConfig};
 
 use crate::error::Error;
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
@@ -39,30 +39,117 @@ pub struct HttpClientComponent {
   signature: ComponentSignature,
   ctx: Arc<Mutex<Option<Context>>>,
   config: HttpClientComponentConfig,
+  root_config: Option<RuntimeConfig>,
 }
 
 impl HttpClientComponent {
   #[allow(clippy::needless_pass_by_value)]
   pub fn new(
     config: HttpClientComponentConfig,
+    root_config: Option<RuntimeConfig>,
     metadata: Option<Metadata>,
     resolver: &Resolver,
   ) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
     let addr: UrlResource = resolver(config.resource())
-      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))
-      .and_then(|r| r.try_resource().map_err(ComponentError::new))?
+      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))?
+      .and_then(|r| r.try_resource())
+      .map_err(ComponentError::new)?
       .into();
 
     let mut sig = ComponentSignature::new("wick/component/http");
     sig.metadata.version = metadata.map(|v| v.version().to_owned());
     sig.operations = config.operation_signatures();
+    sig.config = config.config().to_vec();
+
+    let url = addr
+      .url()
+      .value()
+      .cloned()
+      .ok_or_else(|| ComponentError::message("Internal Error - Invalid resource"))?;
 
     Ok(Self {
       signature: sig,
-      base: (*addr).clone(),
+      base: url,
       ctx: Default::default(),
+      root_config,
       config,
+    })
+  }
+}
+
+impl Component for HttpClientComponent {
+  fn handle(
+    &self,
+    invocation: Invocation,
+    op_config: Option<RuntimeConfig>,
+    _callback: Arc<RuntimeCallback>,
+  ) -> BoxFuture<Result<PacketStream, ComponentError>> {
+    invocation.trace(|| trace!("http request"));
+    let ctx = self.ctx.clone();
+    let config = self.config.clone();
+    let baseurl = self.base.clone();
+    let codec = config.codec().copied();
+
+    Box::pin(async move {
+      let (opdef, path_template, client) = match ctx.lock().as_ref() {
+        Some(ctx) => {
+          let opdef = get_op_by_name(&config, invocation.target.operation_id());
+          let template = opdef.as_ref().and_then(|op| ctx.path_templates.get(op.name()).cloned());
+          (opdef, template, ctx.client.clone())
+        }
+        None => return Err(ComponentError::message("Http client component not initialized")),
+      };
+      let (tx, rx) = invocation.make_response();
+      let span = invocation.span.clone();
+      let fut = handle(
+        opdef,
+        tx.clone(),
+        invocation,
+        self.root_config.clone(),
+        op_config,
+        codec,
+        path_template,
+        baseurl,
+        client,
+      );
+      tokio::spawn(async move {
+        if let Err(e) = fut.await {
+          span.in_scope(|| error!(error = %e, "http request"));
+          let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
+        }
+      });
+      Ok(rx)
+    })
+  }
+
+  fn signature(&self) -> &ComponentSignature {
+    &self.signature
+  }
+
+  fn init(&self) -> std::pin::Pin<Box<dyn futures::Future<Output = Result<(), ComponentError>> + Send + 'static>> {
+    let container = self.ctx.clone();
+    let config = self.config.clone();
+
+    Box::pin(async move {
+      let mut path_templates = HashMap::new();
+      for ops in config.operations() {
+        path_templates.insert(
+          ops.name().to_owned(),
+          Arc::new((ops.path().to_owned(), ops.path().to_owned())),
+        );
+      }
+      let ctx = Context {
+        path_templates,
+        client: ClientBuilder::new()
+          .connect_timeout(std::time::Duration::from_secs(5))
+          .user_agent(APP_USER_AGENT)
+          .build()
+          .unwrap(),
+      };
+      container.lock().replace(ctx);
+
+      Ok(())
     })
   }
 }
@@ -76,7 +163,8 @@ async fn handle(
   opdef: Option<HttpClientOperationDefinition>,
   tx: FluxChannel<Packet, wick_packet::Error>,
   mut invocation: Invocation,
-  config: Option<GenericConfig>,
+  root_config: Option<RuntimeConfig>,
+  op_config: Option<RuntimeConfig>,
   codec: Option<Codec>,
   path_template: Option<Arc<(String, String)>>,
   baseurl: Url,
@@ -108,7 +196,7 @@ async fn handle(
     if inputs.values().all(|v| v.is_done()) {
       break 'outer;
     }
-    let mut inputs: Map<String, Value> = inputs
+    let inputs: Map<String, Value> = inputs
       .into_iter()
       .map(|(k, v)| {
         let v = v
@@ -121,17 +209,13 @@ async fn handle(
         (k, v)
       })
       .collect();
-    if let Some(config) = &config {
-      for (k, v) in config.iter() {
-        inputs.insert(k.clone(), v.clone());
-      }
-    }
     let inputs = Value::Object(inputs);
 
     invocation.trace(|| trace!(inputs=?inputs, "request inputs"));
+    let ctx = LiquidJsonConfig::make_context(Some(inputs), root_config.as_ref(), op_config.as_ref(), None)?;
 
     let body = match opdef.body() {
-      Some(body) => match body.render(&inputs) {
+      Some(body) => match body.render(&ctx) {
         Ok(p) => Some(p),
         Err(e) => {
           let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
@@ -143,7 +227,7 @@ async fn handle(
 
     invocation.trace(|| trace!(body=?body, "request body"));
 
-    let append_path = match liquid_json::render_string(&template.0, &inputs)
+    let append_path = match liquid_json::render_string(&template.0, &ctx)
       .map_err(|e| Error::PathTemplate(template.1.clone(), e.to_string()))
     {
       Ok(p) => p,
@@ -178,7 +262,7 @@ async fn handle(
     if let Some(headers) = opdef.headers() {
       for (header, values) in headers {
         for value in values {
-          let Ok(value) =  liquid_json::render_string(value, &inputs) else {
+          let Ok(value) =  liquid_json::render_string(value, &ctx) else {
           let _ = tx.error(wick_packet::Error::component_error(format!("Can't render template {}", value)));
           break 'outer;
         };
@@ -227,78 +311,6 @@ async fn handle(
     ));
   }
   Ok(())
-}
-
-impl Component for HttpClientComponent {
-  fn handle(
-    &self,
-    invocation: Invocation,
-    data: Option<GenericConfig>,
-    _callback: Arc<RuntimeCallback>,
-  ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let ctx = self.ctx.clone();
-    let config = self.config.clone();
-    let baseurl = self.base.clone();
-    let codec = config.codec().copied();
-
-    Box::pin(async move {
-      let (opdef, path_template, client) = match ctx.lock().as_ref() {
-        Some(ctx) => {
-          let opdef = get_op_by_name(&config, invocation.target.operation_id());
-          let template = opdef.as_ref().and_then(|op| ctx.path_templates.get(op.name()).cloned());
-          (opdef, template, ctx.client.clone())
-        }
-        None => return Err(ComponentError::message("Http client component not initialized")),
-      };
-      let (tx, rx) = invocation.make_response();
-      let fut = handle(
-        opdef,
-        tx.clone(),
-        invocation,
-        data,
-        codec,
-        path_template,
-        baseurl,
-        client,
-      );
-      tokio::spawn(async move {
-        if let Err(e) = fut.await {
-          let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
-        }
-      });
-      Ok(rx)
-    })
-  }
-
-  fn signature(&self) -> &ComponentSignature {
-    &self.signature
-  }
-
-  fn init(&self) -> std::pin::Pin<Box<dyn futures::Future<Output = Result<(), ComponentError>> + Send + 'static>> {
-    let container = self.ctx.clone();
-    let config = self.config.clone();
-
-    Box::pin(async move {
-      let mut path_templates = HashMap::new();
-      for ops in config.operations() {
-        path_templates.insert(
-          ops.name().to_owned(),
-          Arc::new((ops.path().to_owned(), ops.path().to_owned())),
-        );
-      }
-      let ctx = Context {
-        path_templates,
-        client: ClientBuilder::new()
-          .connect_timeout(std::time::Duration::from_secs(5))
-          .user_agent(APP_USER_AGENT)
-          .build()
-          .unwrap(),
-      };
-      container.lock().replace(ctx);
-
-      Ok(())
-    })
-  }
 }
 
 fn output_task(
@@ -393,13 +405,13 @@ mod test {
 
     let get_headers = Some(HashMap::from([(
       "Authorization".to_owned(),
-      vec!["Bearer {{secret}}".to_owned()],
+      vec!["Bearer {{ctx.config.secret}}".to_owned()],
     )]));
 
     config.operations_mut().push(
       HttpClientOperationDefinition::new_get(
         GET_OP,
-        "/get?query1={{input}}&query2={{secret}}",
+        "/get?query1={{input}}&query2={{ctx.config.secret}}",
         vec![Field::new("input", Type::String)],
         get_headers,
       )
@@ -449,7 +461,7 @@ mod test {
     component_config: HttpClientComponentConfig,
   ) -> HttpClientComponent {
     let resolver = app_config.resolver();
-    let component = HttpClientComponent::new(component_config, None, &resolver).unwrap();
+    let component = HttpClientComponent::new(component_config, None, None, &resolver).unwrap();
     component.init().await.unwrap();
     component
   }

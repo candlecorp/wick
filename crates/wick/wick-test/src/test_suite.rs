@@ -1,12 +1,18 @@
+use std::collections::HashMap;
+
 use flow_component::BoxFuture;
 use tap_harness::TestRunner;
 use wick_config::config::{TestCase, TestConfiguration};
-use wick_packet::GenericConfig;
+use wick_packet::RuntimeConfig;
 
+use crate::utils::render_config;
 use crate::{run_test, TestError, UnitTest};
 
-pub type ComponentFactory<'a> =
-  Box<dyn Fn(Option<GenericConfig>) -> BoxFuture<'a, Result<SharedComponent, TestError>> + Sync + Send>;
+pub type ComponentFactory<'a> = Box<
+  dyn Fn(Option<RuntimeConfig>, Option<HashMap<String, String>>) -> BoxFuture<'a, Result<SharedComponent, TestError>>
+    + Sync
+    + Send,
+>;
 
 pub use flow_component::SharedComponent;
 
@@ -17,35 +23,39 @@ pub struct TestSuite<'a> {
 }
 
 impl<'a> TestSuite<'a> {
-  pub fn from_configuration<'b>(configurations: &'b [TestConfiguration]) -> Self
+  pub fn from_configuration<'b>(configurations: &'b [TestConfiguration]) -> Result<Self, TestError>
   where
     'b: 'a,
   {
     let defs: Vec<TestGroup<'b>> = configurations
       .iter()
-      .map(|config| TestGroup::from_test_cases(config.config().cloned(), config.cases()))
-      .collect();
-    Self { tests: defs }
+      .map(|config| {
+        Ok(TestGroup::from_test_cases(
+          render_config(config.config())?,
+          config.cases(),
+        ))
+      })
+      .collect::<Result<_, _>>()?;
+    Ok(Self { tests: defs })
   }
 
-  pub fn add_configuration<'b>(&mut self, config: &'b TestConfiguration)
+  pub fn add_configuration<'b>(&mut self, config: &'b TestConfiguration) -> Result<(), TestError>
   where
     'b: 'a,
   {
-    self
-      .tests
-      .push(TestGroup::from_test_cases(config.config().cloned(), config.cases()));
+    self.tests.push(TestGroup::from_test_cases(
+      render_config(config.config())?,
+      config.cases(),
+    ));
+    Ok(())
   }
 
   pub async fn run(&'a mut self, factory: ComponentFactory<'a>) -> Result<Vec<TestRunner>, TestError> {
     let mut runners = Vec::new();
+    let env: HashMap<String, String> = std::env::vars().collect();
     for group in &mut self.tests {
-      let component = factory(group.config.clone());
-      runners.push(
-        group
-          .run(None, component.await.map_err(|e| TestError::Factory(e.to_string()))?)
-          .await?,
-      );
+      let component = factory(group.root_config.clone(), Some(env.clone()));
+      runners.push(group.run(None, component.await?).await?);
     }
     Ok(runners)
   }
@@ -55,29 +65,12 @@ impl<'a> TestSuite<'a> {
 #[must_use]
 pub struct TestGroup<'a> {
   tests: Vec<UnitTest<'a>>,
-  config: Option<GenericConfig>,
+  root_config: Option<RuntimeConfig>,
   name: String,
 }
 
-impl<'a> Default for TestGroup<'a> {
-  fn default() -> Self {
-    Self {
-      name: "Test".to_owned(),
-      config: None,
-      tests: Vec::new(),
-    }
-  }
-}
-
 impl<'a> TestGroup<'a> {
-  pub fn new<T: AsRef<str>>(name: T) -> Self {
-    Self {
-      name: name.as_ref().to_owned(),
-      ..Default::default()
-    }
-  }
-
-  pub fn from_test_cases<'b>(config: Option<GenericConfig>, tests: &'b [TestCase]) -> Self
+  pub fn from_test_cases<'b>(root_config: Option<RuntimeConfig>, tests: &'b [TestCase]) -> Self
   where
     'b: 'a,
   {
@@ -90,8 +83,8 @@ impl<'a> TestGroup<'a> {
       .collect();
     Self {
       tests: defs,
-      config,
-      ..Default::default()
+      root_config,
+      name: "Test".to_owned(),
     }
   }
 
@@ -113,7 +106,8 @@ impl<'a> TestGroup<'a> {
     component: SharedComponent,
   ) -> Result<TestRunner, TestError> {
     let name = self.name.clone();
+    let config = self.root_config.clone();
     let tests = self.get_tests();
-    run_test(name, tests, component_id, component).await
+    run_test(name, tests, component_id, component, config).await
   }
 }

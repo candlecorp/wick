@@ -3,17 +3,17 @@ mod wrapper;
 pub(crate) use serialize::*;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
+use url::Url;
 use wick_config::config::components::SqlComponentConfig;
-use wick_config::config::UrlResource;
 
 use crate::Error;
 
-pub(crate) async fn connect(_config: SqlComponentConfig, addr: &UrlResource) -> Result<PgPool, Error> {
-  debug!(connect = %addr, "connecting to postgres");
+pub(crate) async fn connect(_config: SqlComponentConfig, addr: &Url) -> Result<PgPool, Error> {
+  debug!(%addr, "connecting to postgres");
 
   let pool = PgPoolOptions::new()
     .max_connections(5)
-    .connect(&addr.to_string())
+    .connect(addr.as_ref())
     .await
     .map_err(|e| Error::PostgresConnect(e.to_string()))?;
   Ok(pool)
@@ -65,7 +65,7 @@ mod integration_test {
       ),
     );
 
-    let component = SqlXComponent::new(config, None, &app_config.resolver())?;
+    let component = SqlXComponent::new(config, None, None, &app_config.resolver())?;
 
     component.init().await.unwrap();
 

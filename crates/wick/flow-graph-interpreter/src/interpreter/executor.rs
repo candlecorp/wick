@@ -8,6 +8,7 @@ use self::error::ExecutionError;
 use self::transaction::Transaction;
 use super::channel::InterpreterDispatchChannel;
 use crate::graph::types::*;
+use crate::graph::OperationConfig;
 use crate::HandlerMap;
 
 pub(crate) mod error;
@@ -40,6 +41,7 @@ impl SchematicExecutor {
     invocation: Invocation,
     components: Arc<HandlerMap>,
     self_component: Arc<dyn Component + Send + Sync>,
+    config: OperationConfig,
     callback: Arc<RuntimeCallback>,
   ) -> Result<PacketStream> {
     invocation
@@ -54,6 +56,7 @@ impl SchematicExecutor {
       &components,
       &self_component,
       callback,
+      config,
       seed,
     );
     let stream = transaction.take_stream().unwrap();

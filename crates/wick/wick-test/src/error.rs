@@ -10,8 +10,16 @@ pub enum TestError {
   InvocationFailed(String),
   #[error("Invocation timed out: {0}")]
   InvocationTimeout(String),
+  #[error("Serialization failed: {0}")]
+  Serialization(String),
   #[error("Deserialization failed: {0}")]
-  ConversionFailed(String),
+  Deserialization(String),
+  #[error("Could not render configuration: {0}")]
+  Configuration(String),
   #[error("Could not create component instance to test: {0}")]
   Factory(String),
+  #[error("Could not find operation {0} on this component")]
+  OpNotFound(String),
+  #[error(transparent)]
+  ConfigUnsatisfied(wick_packet::Error),
 }

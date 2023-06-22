@@ -5,15 +5,17 @@ pub(super) mod resources;
 pub(super) mod triggers;
 
 use asset_container::{AssetManager, Assets};
+use tracing::trace;
 use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::TypeDefinition;
+use wick_packet::RuntimeConfig;
 
 pub use self::resources::*;
 pub use self::triggers::*;
 use super::common::component_definition::ComponentDefinition;
 use super::common::package_definition::PackageConfig;
-use super::{make_resolver, ImportBinding, ImportDefinition};
-use crate::error::ReferenceError;
+use super::{make_resolver, resolve, ImportBinding, ImportDefinition};
+use crate::error::{ManifestError, ReferenceError};
 use crate::import_cache::{setup_cache, ImportCache};
 use crate::utils::RwOption;
 use crate::{config, v1, Resolver, Result};
@@ -59,6 +61,11 @@ pub struct AppConfiguration {
   pub(crate) triggers: Vec<TriggerDefinition>,
 
   #[asset(skip)]
+  #[doc(hidden)]
+  #[builder(default)]
+  pub(crate) root_config: Option<RuntimeConfig>,
+
+  #[asset(skip)]
   #[builder(setter(skip))]
   #[property(skip)]
   #[doc(hidden)]
@@ -94,22 +101,20 @@ impl AppConfiguration {
 
   /// Get the configuration item a binding points to.
   #[must_use]
-  pub fn resolve_binding(&self, name: &str) -> Option<ConfigurationItem> {
-    if let Some(import) = self.import.get(name) {
-      if let ImportDefinition::Component(component) = &import.kind {
-        return Some(ConfigurationItem::Component(component));
-      }
-    }
-    if let Some(resource) = self.resources.get(name) {
-      return Some(ConfigurationItem::Resource(&resource.kind));
-    }
-    None
+  pub fn resolve_binding(&self, name: &str) -> Option<Result<OwnedConfigurationItem>> {
+    let env = std::env::vars().collect();
+    resolve(name, &self.import, &self.resources, self.root_config(), Some(&env))
   }
 
   /// Returns a function that resolves a binding to a configuration item.
   #[must_use]
   pub fn resolver(&self) -> Box<Resolver> {
-    make_resolver(self.import.clone(), self.resources.clone())
+    make_resolver(
+      self.import.clone(),
+      self.resources.clone(),
+      self.root_config().cloned(),
+      Some(std::env::vars().collect()),
+    )
   }
 
   /// Return the underlying version of the source manifest.
@@ -160,6 +165,22 @@ impl AppConfiguration {
     let v1_manifest: v1::AppConfiguration = self.try_into()?;
     Ok(serde_yaml::to_string(&v1_manifest).unwrap())
   }
+
+  /// Initialize the configuration with the given environment variables.
+  pub fn initialize(&mut self, env: Option<&HashMap<String, String>>) -> Result<()> {
+    // This pre-renders the application config's resources with access to the environment
+    // so they're resulting value is intuitively based on where it was initially defined.
+    let config = self.root_config().cloned();
+    trace!(
+      num_resources = self.resources.len(),
+      ?config,
+      "initializing app resources"
+    );
+    for resource in self.resources.values_mut() {
+      resource.kind.render(config.as_ref(), env)?;
+    }
+    Ok(())
+  }
 }
 
 /// A configuration item
@@ -201,17 +222,17 @@ pub enum OwnedConfigurationItem {
 
 impl OwnedConfigurationItem {
   /// Get the component definition or return an error.
-  pub fn try_component(&self) -> std::result::Result<ComponentDefinition, ReferenceError> {
+  pub fn try_component(&self) -> Result<ComponentDefinition> {
     match self {
       Self::Component(c) => Ok(c.clone()),
-      _ => Err(ReferenceError::Component),
+      _ => Err(ManifestError::Reference(ReferenceError::Component)),
     }
   }
   /// Get the resource definition or return an error.
-  pub fn try_resource(&self) -> std::result::Result<ResourceDefinition, ReferenceError> {
+  pub fn try_resource(&self) -> Result<ResourceDefinition> {
     match self {
       Self::Resource(c) => Ok(c.clone()),
-      _ => Err(ReferenceError::Resource),
+      _ => Err(ManifestError::Reference(ReferenceError::Resource)),
     }
   }
 }

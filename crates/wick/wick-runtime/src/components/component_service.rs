@@ -1,10 +1,8 @@
-use flow_component::{panic_callback, Component, RuntimeCallback, SharedComponent};
+use flow_component::panic_callback;
 use tracing::Instrument;
-use wick_packet::{GenericConfig, Invocation, PacketStream};
 
 use crate::dev::prelude::*;
 type Result<T> = std::result::Result<T, ComponentError>;
-use crate::BoxFuture;
 
 pub(crate) struct NativeComponentService {
   signature: ComponentSignature,
@@ -28,8 +26,8 @@ impl Component for NativeComponentService {
   fn handle(
     &self,
     invocation: Invocation,
-    config: Option<GenericConfig>,
-    callback: std::sync::Arc<RuntimeCallback>,
+    config: Option<RuntimeConfig>,
+    callback: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<std::result::Result<PacketStream, flow_component::ComponentError>> {
     let component = self.component.clone();
 
@@ -46,7 +44,7 @@ impl InvocationHandler for NativeComponentService {
   fn invoke(
     &self,
     invocation: Invocation,
-    config: Option<GenericConfig>,
+    config: Option<RuntimeConfig>,
   ) -> Result<BoxFuture<Result<InvocationResponse>>> {
     let tx_id = invocation.tx_id;
     let span = debug_span!("invoke", target =  %invocation.target);
