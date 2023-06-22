@@ -46,19 +46,27 @@ impl Route {
       }
     }
 
-    if query.contains('&') {
-      for part in query.split('&') {
-        let (name, type_) = if let Some(idx) = part.find(':') {
-          let (name, type_) = part.split_at(idx);
-          let type_ = type_.trim_start_matches(':');
-          let ty = wick_interface_types::parse(type_)?;
-          (name.to_owned(), ty)
-        } else {
-          (part.to_owned(), Type::Object)
-        };
-        query_params.push(Field::new(name, type_));
-      }
+    let query_parts: Vec<&str> = if query.contains('&') {
+      query.split('&').collect()
+    } else if !query.is_empty() {
+      vec![query]
+    } else {
+      vec![]
+    };
+
+    for part in query_parts {
+      let (name, type_) = if let Some(idx) = part.find(':') {
+        let (name, type_) = part.split_at(idx);
+        let type_ = type_.trim_start_matches(':');
+        let ty = wick_interface_types::parse(type_)?;
+        (name.to_owned(), ty)
+      } else {
+        (part.to_owned(), Type::Object)
+      };
+      query_params.push(Field::new(name, type_));
     }
+
+    trace!(path_parts=?path_parts,query_parts=?query_params, "processed url path and query params");
 
     Ok(Self {
       path_parts,
@@ -118,11 +126,13 @@ impl Route {
           if name != param.name {
             continue;
           }
+
           if let Type::List { ty } = &param.ty {
             let Ok(value) = ty.coerce_str(value) else {
               warn!("Failed to coerce {} to {} for query param {}", value, param.ty,name);
               return Err(HttpError::InvalidParameter(param.name.clone()));
             };
+
             if let Some(field) = query_params
               .iter_mut()
               .find(|p: &&mut FieldValue| p.field.name == param.name)
@@ -135,6 +145,7 @@ impl Route {
             } else {
               query_params.push(param.clone().with_value(Value::Array(vec![value])));
             }
+            continue;
           }
 
           let Ok(value) = param.ty.coerce_str(value) else {
@@ -159,7 +170,7 @@ mod test {
 
   use super::*;
 
-  #[test]
+  #[test_logger::test]
   fn test_parse() -> Result<()> {
     let route = Route::parse("/api/v1/users/{id:u32}/posts/{post_id:string}?filter:string[]&sort:string")?;
     assert_eq!(
@@ -190,7 +201,17 @@ mod test {
     Ok(())
   }
 
-  #[test]
+  #[test_logger::test]
+  fn regression_test_single_query() -> Result<()> {
+    let route = Route::parse("/api?filter:string")?;
+    assert_eq!(route.path_parts, vec![PathPart::Literal("api".to_owned()),],);
+
+    assert_eq!(route.query_params, vec![Field::new("filter", Type::String),]);
+
+    Ok(())
+  }
+
+  #[test_logger::test]
   fn test_no_query_string() -> Result<()> {
     let route = Route::parse("/api/v1/users/{id:u32}/posts/{post_id:string}")?;
     assert_eq!(
@@ -210,15 +231,12 @@ mod test {
     Ok(())
   }
 
-  #[test]
-  #[ignore = "broken, need to fix"]
+  #[test_logger::test]
   fn test_match_array() -> Result<()> {
     let route = Route::parse("/api/v1/users/{id:u32}/posts/{post_id:string}?filter:string[]&sort:string")?;
 
     assert_eq!(
-      route
-        .compare("/api/v1/users/123/posts/abc", Some("filter=foo&filter=bar&sort=asc"))
-        .unwrap(),
+      route.compare("/api/v1/users/123/posts/abc", Some("filter=foo&filter=bar&sort=asc"))?,
       Some((
         vec![
           Field::new("id", Type::U32).with_value(123),
@@ -240,14 +258,12 @@ mod test {
     Ok(())
   }
 
-  #[test]
+  #[test_logger::test]
   fn test_match() -> Result<()> {
     let route = Route::parse("/api/v1/users/{id:u32}/posts/{post_id:string}?filter:string&sort:string")?;
 
     assert_eq!(
-      route
-        .compare("/api/v1/users/123/posts/abc", Some("filter=foo&sort=asc"))
-        .unwrap(),
+      route.compare("/api/v1/users/123/posts/abc", Some("filter=foo&sort=asc"))?,
       Some((
         vec![
           Field::new("id", Type::U32).with_value(123),
