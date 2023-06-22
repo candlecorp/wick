@@ -98,6 +98,7 @@ impl RestHandler {
     } = self;
 
     for route in routes.iter() {
+      let method = request.method().clone();
       if !route.config.methods().is_empty() && !route.config.methods().contains(&request.method().to_string()) {
         continue;
       }
@@ -120,13 +121,15 @@ impl RestHandler {
 
       span.in_scope(|| trace!(route = %uri, len=body_bytes.len(), "body"));
 
-      let payload: serde_json::Value = if body.trim().is_empty() {
-        serde_json::Value::Null
-      } else {
-        serde_json::from_str(&body).map_err(HttpError::InvalidBody)?
-      };
+      if !matches!(method, hyper::Method::GET) {
+        let payload: serde_json::Value = if body.trim().is_empty() {
+          serde_json::Value::Null
+        } else {
+          serde_json::from_str(&body).map_err(HttpError::InvalidBody)?
+        };
 
-      packets.push(Packet::encode("input", payload));
+        packets.push(Packet::encode("input", payload));
+      }
 
       let mut port_names: Vec<_> = packets.iter().map(|p| p.port().to_owned()).collect();
       port_names.dedup();
