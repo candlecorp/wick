@@ -216,8 +216,11 @@ async fn handle_stream(
     }
 
     let num_done = incoming_packets.iter().filter(|r| r.is_none()).count();
-    if num_done > 0 && num_done != opdef.inputs().len() {
-      return Err(Error::MissingInput);
+    if num_done > 0 {
+      if num_done != opdef.inputs().len() {
+        return Err(Error::MissingInput);
+      }
+      break 'outer;
     }
     let incoming_packets = incoming_packets.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
 
