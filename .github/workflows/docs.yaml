@@ -37,9 +37,7 @@ jobs:
         with:
           components: rustc, cargo, rust-docs
 
-      - name: 'rustup updates'
-        run: |
-          cargo install just
+      - uses: extractions/setup-just@v1
 
       - name: Build rustdocs
         run: just rustdoc
