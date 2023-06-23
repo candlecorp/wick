@@ -1499,12 +1499,12 @@ pub(crate) struct SqlOperationDefinition {
 #[serde(deny_unknown_fields)]
 /// What to do when an error occurs.
 pub(crate) enum ErrorBehavior {
-  /// The operation will commit what has succeeded.
-  Commit = 0,
-  /// The operation will rollback changes.
-  Rollback = 1,
   /// Errors will be ignored.
-  Ignore = 2,
+  Ignore = 0,
+  /// The operation will commit what has succeeded.
+  Commit = 1,
+  /// The operation will rollback changes.
+  Rollback = 2,
 }
 
 impl Default for ErrorBehavior {
@@ -1516,9 +1516,9 @@ impl Default for ErrorBehavior {
 impl FromPrimitive for ErrorBehavior {
   fn from_i64(n: i64) -> Option<Self> {
     Some(match n {
-      0 => Self::Commit,
-      1 => Self::Rollback,
-      2 => Self::Ignore,
+      0 => Self::Ignore,
+      1 => Self::Commit,
+      2 => Self::Rollback,
       _ => {
         return None;
       }
@@ -1527,9 +1527,9 @@ impl FromPrimitive for ErrorBehavior {
 
   fn from_u64(n: u64) -> Option<Self> {
     Some(match n {
-      0 => Self::Commit,
-      1 => Self::Rollback,
-      2 => Self::Ignore,
+      0 => Self::Ignore,
+      1 => Self::Commit,
+      2 => Self::Rollback,
       _ => {
         return None;
       }

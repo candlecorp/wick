@@ -786,14 +786,13 @@ type SqlOperationDefinition {
 
 "What to do when an error occurs."
 enum ErrorBehavior {
-  "The operation will commit what has succeeded."
-  Commit = 0 as "commit",
-  "The operation will rollback changes."
-  Rollback = 1 as "rollback",
   "Errors will be ignored."
-  Ignore = 2 as "ignore",
+  Ignore = 0 as "ignore",
+  "The operation will commit what has succeeded."
+  Commit = 1 as "commit",
+  "The operation will rollback changes."
+  Rollback = 2 as "rollback",
 }
-
 
 "A component whose operations are HTTP requests."
 type HttpClientComponent @tagged("wick/component/http@v1") {

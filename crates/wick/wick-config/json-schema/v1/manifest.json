@@ -2124,7 +2124,7 @@
 
     "ErrorBehavior": {
       "$anchor": "#v1/ErrorBehavior",
-      "enum": ["Commit", "Rollback", "Ignore"]
+      "enum": ["Ignore", "Commit", "Rollback"]
     },
 
     "HttpClientComponent": {
