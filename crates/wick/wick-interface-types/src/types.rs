@@ -1,5 +1,5 @@
 #![allow(deprecated)]
-
+#[cfg(feature = "typeid")]
 use std::any::TypeId;
 use std::error::Error;
 use std::str::FromStr;
