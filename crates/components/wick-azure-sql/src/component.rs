@@ -181,9 +181,11 @@ async fn handle_call(
   if let Err(e) = handle_stream(&mut client, opdef, input_streams, tx, stmt.clone(), span).await {
     match error_behavior {
       wick_config::config::ErrorBehavior::Commit => {
+        error!(error=%e, on_error=?error_behavior, "error in sql operation, committing transaction");
         client.simple_query("COMMIT").await.map_err(|_| Error::TxCommit)?;
       }
       wick_config::config::ErrorBehavior::Rollback => {
+        error!(error=%e, on_error=?error_behavior, "error in sql operation, rolling back transaction");
         client.simple_query("ROLLBACK").await.map_err(|_| Error::TxRollback)?;
       }
       _ => {}

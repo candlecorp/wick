@@ -6278,7 +6278,7 @@ dependencies = [
 
 [[package]]
 name = "wick-cli"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "atty",
@@ -6599,6 +6599,7 @@ dependencies = [
  "oci-distribution",
  "once_cell",
  "regex",
+ "rstest",
  "serde",
  "serde_json",
  "serde_yaml",
