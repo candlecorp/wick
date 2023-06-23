@@ -104,7 +104,9 @@ fn typename(input: &str) -> IResult<&str, Type> {
     "u16" => Type::U16,
     "u32" => Type::U32,
     "u64" => Type::U64,
-    "number" => Type::I64,
+    "int" => Type::I64,
+    "uint" => Type::U64,
+    "float" => Type::F64,
     "f32" => Type::F32,
     "f64" => Type::F64,
     "bytes" => Type::Bytes,
@@ -265,7 +267,9 @@ mod test {
   #[case("i16", Type::I16)]
   #[case("i32", Type::I32)]
   #[case("i64", Type::I64)]
-  #[case("number", Type::I64)]
+  #[case("int", Type::I64)]
+  #[case("uint", Type::U64)]
+  #[case("float", Type::F64)]
   #[case("u8", Type::U8)]
   #[case("u16", Type::U16)]
   #[case("u32", Type::U32)]
