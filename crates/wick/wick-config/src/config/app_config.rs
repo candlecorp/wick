@@ -14,16 +14,19 @@ pub use self::resources::*;
 pub use self::triggers::*;
 use super::common::component_definition::ComponentDefinition;
 use super::common::package_definition::PackageConfig;
-use super::{make_resolver, resolve, ImportBinding, ImportDefinition};
+use super::{ImportBinding, ImportDefinition};
 use crate::error::{ManifestError, ReferenceError};
 use crate::import_cache::{setup_cache, ImportCache};
-use crate::utils::RwOption;
+use crate::utils::{make_resolver, resolve, RwOption};
 use crate::{config, v1, Resolver, Result};
 
 #[derive(Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]
-#[builder(setter(into))]
+#[builder(
+  setter(into),
+  build_fn(name = "build_internal", private, error = "crate::error::BuilderError")
+)]
 #[must_use]
 /// A Wick application configuration.
 ///
@@ -63,7 +66,14 @@ pub struct AppConfiguration {
   #[asset(skip)]
   #[doc(hidden)]
   #[builder(default)]
+  #[property(skip)]
   pub(crate) root_config: Option<RuntimeConfig>,
+
+  #[asset(skip)]
+  #[builder(default)]
+  #[property(skip)]
+  /// The environment this configuration has access to.
+  pub(crate) env: Option<HashMap<String, String>>,
 
   #[asset(skip)]
   #[builder(setter(skip))]
@@ -103,7 +113,13 @@ impl AppConfiguration {
   #[must_use]
   pub fn resolve_binding(&self, name: &str) -> Option<Result<OwnedConfigurationItem>> {
     let env = std::env::vars().collect();
-    resolve(name, &self.import, &self.resources, self.root_config(), Some(&env))
+    resolve(
+      name,
+      &self.import,
+      &self.resources,
+      self.root_config.as_ref(),
+      Some(&env),
+    )
   }
 
   /// Returns a function that resolves a binding to a configuration item.
@@ -112,7 +128,7 @@ impl AppConfiguration {
     make_resolver(
       self.import.clone(),
       self.resources.clone(),
-      self.root_config().cloned(),
+      self.root_config.clone(),
       Some(std::env::vars().collect()),
     )
   }
@@ -167,18 +183,29 @@ impl AppConfiguration {
   }
 
   /// Initialize the configuration with the given environment variables.
-  pub fn initialize(&mut self, env: Option<&HashMap<String, String>>) -> Result<()> {
+  pub(super) fn initialize(&mut self) -> Result<&Self> {
     // This pre-renders the application config's resources with access to the environment
     // so they're resulting value is intuitively based on where it was initially defined.
-    let config = self.root_config().cloned();
+    let root_config = self.root_config.clone();
     trace!(
       num_resources = self.resources.len(),
-      ?config,
+      num_imports = self.import.len(),
+      ?root_config,
       "initializing app resources"
     );
+    let env = self.env.clone();
     for resource in self.resources.values_mut() {
-      resource.kind.render(config.as_ref(), env)?;
+      resource.kind.render_config(root_config.as_ref(), env.as_ref())?;
     }
+    for import in self.import.values_mut() {
+      import.kind.render_config(root_config.as_ref(), env.as_ref())?;
+    }
+    Ok(self)
+  }
+
+  /// Validate this configuration is good.
+  pub fn validate(&self) -> Result<()> {
+    /* placeholder */
     Ok(())
   }
 }
@@ -234,5 +261,14 @@ impl OwnedConfigurationItem {
       Self::Resource(c) => Ok(c.clone()),
       _ => Err(ManifestError::Reference(ReferenceError::Resource)),
     }
+  }
+}
+
+impl AppConfigurationBuilder {
+  /// Build the configuration.
+  pub fn build(self) -> Result<AppConfiguration> {
+    let config = self.build_internal()?;
+    config.validate()?;
+    Ok(config)
   }
 }

@@ -4,9 +4,16 @@ resources:
   - name: DBADDR
     resource:
       kind: wick/resource/url@v1
-      url: postgres://postgres:{{ ctx.env.TEST_PASSWORD }}@{{ ctx.env.TEST_HOST }}:{{ ctx.env.POSTGRES_PORT }}/wick_test
+      url: postgres://postgres:{{ ctx.root_config.password }}@{{ ctx.root_config.host }}:{{ ctx.root_config.port }}/wick_test
 component:
   kind: wick/component/sql@v1
+  with:
+    - name: password
+      type: string
+    - name: host
+      type: string
+    - name: port
+      type: string
   resource: DBADDR
   tls: false
   operations:
@@ -45,7 +52,11 @@ component:
         - u64
         - f64
 tests:
-  - cases:
+  - with:
+      host: '{{ctx.env.TEST_HOST}}'
+      port: '{{ctx.env.POSTGRES_PORT}}'
+      password: '{{ctx.env.TEST_PASSWORD}}'
+    cases:
       - name: native_types
         operation: native_types
         inputs:

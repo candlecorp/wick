@@ -57,11 +57,10 @@ pub(crate) async fn init_wasm_component(
     .instrument(opts.span.clone())
     .await?;
 
-  // TODO take max threads from configuration
   let collection = Arc::new(
     wick_component_wasm::component::WasmComponent::try_load(
       &component,
-      5,
+      5, // TODO take max threads from configuration
       permissions,
       opts.config,
       Some(make_link_callback(opts.runtime_id)),
@@ -115,9 +114,8 @@ pub(crate) async fn init_manifest_component(
   id: String,
   mut opts: ChildInit,
 ) -> ComponentInitResult {
-  opts
-    .span
-    .in_scope(|| trace!(namespace = %id, ?opts, "registering composite component"));
+  let span = opts.span.clone();
+  span.in_scope(|| trace!(namespace = %id, ?opts, "registering wick component"));
 
   let mut options = FetchOptions::default();
 
@@ -125,13 +123,16 @@ pub(crate) async fn init_manifest_component(
     .set_allow_latest(opts.allow_latest)
     .set_allow_insecure(opts.allowed_insecure.clone());
 
-  let mut manifest = WickConfiguration::fetch(kind.reference().path()?.to_string_lossy(), options)
-    .instrument(opts.span.clone())
-    .await?
-    .try_component_config()?;
-  expect_configuration_matches(&id, opts.config.as_ref(), manifest.config()).map_err(EngineError::Setup)?;
-  manifest.set_root_config(opts.config.clone());
-  manifest.initialize(None)?;
+  let mut builder = WickConfiguration::fetch(kind.reference().path()?.to_string_lossy(), options)
+    .instrument(span.clone())
+    .await?;
+  builder.set_root_config(opts.config.clone());
+  let manifest = builder.finish()?.try_component_config()?;
+
+  span.in_scope(|| {
+    debug!(%id,"validating configuration for wick component");
+    expect_configuration_matches(&id, opts.config.as_ref(), manifest.config()).map_err(EngineError::Setup)
+  })?;
 
   let rng = Random::from_seed(opts.rng_seed);
   opts.rng_seed = rng.seed();
@@ -146,12 +147,14 @@ pub(crate) async fn init_manifest_component(
       let comp = init_wasm_impl_component(wasmimpl, id.clone(), opts, provided).await?;
       let signed_sig = comp.component().signature();
       let manifest_sig = manifest.signature()?;
-      expect_signature_match(
-        Some(&PathBuf::from(&id)),
-        signed_sig,
-        Some(&PathBuf::from(wasmimpl.reference().location())),
-        &manifest_sig,
-      )?;
+      span.in_scope(|| {
+        expect_signature_match(
+          Some(&PathBuf::from(&id)),
+          signed_sig,
+          Some(&PathBuf::from(wasmimpl.reference().location())),
+          &manifest_sig,
+        )
+      })?;
       Ok(comp)
     }
     config::ComponentImplementation::Composite(_) => {

@@ -1,10 +1,12 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use asset_container::AssetManager;
 
 use super::LiquidJsonConfig;
 use crate::config;
+use crate::error::ManifestError;
 
 #[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
@@ -30,6 +32,11 @@ pub struct TestConfiguration {
   #[asset(skip)]
   /// A suite of test cases to run against component operations.
   pub(crate) cases: Vec<config::TestCase>,
+
+  #[asset(skip)]
+  /// The environment this configuration has access to.
+  #[builder(default)]
+  pub(crate) env: Option<HashMap<String, String>>,
 }
 
 impl TestConfiguration {
@@ -42,5 +49,11 @@ impl TestConfiguration {
       source.pop();
     }
     self.set_baseurl(&source);
+  }
+
+  /// Validate this configuration is good.
+  pub fn validate(&self) -> Result<(), ManifestError> {
+    /* placeholder */
+    Ok(())
   }
 }

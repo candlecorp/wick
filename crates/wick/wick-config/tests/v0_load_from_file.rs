@@ -15,7 +15,7 @@ use wick_config::*;
 
 async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
   let path = PathBuf::from(path);
-  WickConfiguration::load_from_file(path).await
+  WickConfiguration::load_from_file(path).await?.finish()
 }
 
 async fn load_component(path: &str) -> Result<CompositeComponentImplementation, ManifestError> {

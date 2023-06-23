@@ -1,5 +1,7 @@
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use futures::FutureExt;
+use tokio::spawn;
+use tokio_stream::StreamExt;
 use wick_interface_types::{operation, ComponentSignature};
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
@@ -27,11 +29,22 @@ impl NullComponent {
 impl Component for NullComponent {
   fn handle(
     &self,
-    invocation: Invocation,
+    mut invocation: Invocation,
     _data: Option<RuntimeConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| trace!(target = %invocation.target, namespace = NS_CORE));
+    spawn(async move {
+      let mut stream = invocation.eject_stream();
+      while let Some(p) = stream.next().await {
+        match p {
+          Err(e) => invocation.trace(|| error!("received error on dropped stream: {}", e)),
+          Ok(p) if p.is_error() => {
+            invocation.trace(|| debug!("received error packet on dropped stream: {:?}", p.unwrap_err()));
+          }
+          _ => {}
+        }
+      }
+    });
     async move { Ok(PacketStream::empty()) }.boxed()
   }
 

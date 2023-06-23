@@ -1,4 +1,5 @@
-use crate::config;
+use crate::config::components::WasmComponent;
+use crate::config::{self, ComponentDefinition, HighLevelComponent};
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
 #[asset(asset(config::AssetReference))]
@@ -76,6 +77,25 @@ impl std::fmt::Display for ComponentKind {
       ComponentKind::Composite => write!(f, "wick/component/composite"),
       ComponentKind::Sql => write!(f, "wick/component/sql"),
       ComponentKind::HttpClient => write!(f, "wick/component/http"),
+    }
+  }
+}
+
+impl From<ComponentImplementation> for ComponentDefinition {
+  fn from(implementation: ComponentImplementation) -> Self {
+    match implementation {
+      #[allow(deprecated)]
+      ComponentImplementation::Wasm(wasm) => ComponentDefinition::Wasm(WasmComponent {
+        reference: wasm.reference,
+        config: Default::default(),
+        permissions: Default::default(),
+        provide: Default::default(),
+      }),
+      ComponentImplementation::Composite(_) => unimplemented!("Inline composite components are not yet supported."),
+      ComponentImplementation::HttpClient(client) => {
+        ComponentDefinition::HighLevelComponent(HighLevelComponent::HttpClient(client))
+      }
+      ComponentImplementation::Sql(c) => ComponentDefinition::HighLevelComponent(HighLevelComponent::Sql(c)),
     }
   }
 }

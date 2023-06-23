@@ -26,9 +26,6 @@ pub struct RuntimeInit {
   pub(crate) manifest: ComponentConfiguration,
 
   #[builder(default)]
-  pub(crate) root_config: Option<RuntimeConfig>,
-
-  #[builder(default)]
   pub(crate) allow_latest: bool,
 
   #[builder(default)]
@@ -169,12 +166,11 @@ impl RuntimeBuilder {
     let from_span = self.span.unwrap_or_else(tracing::Span::current);
     let span = debug_span!("runtime");
     span.follows_from(from_span);
-    let definition = self.manifest.unwrap_or_default();
+    let definition = self.manifest.ok_or(RuntimeError::MissingComponentDefinition)?;
     Runtime::new(
       seed.unwrap_or_else(new_seed),
       RuntimeInit {
         manifest: definition,
-        root_config: self.root_config.unwrap_or_default(),
         allow_latest: self.allow_latest.unwrap_or_default(),
         allowed_insecure: self.allowed_insecure.unwrap_or_default(),
         native_components: self.native_components.unwrap_or_default(),

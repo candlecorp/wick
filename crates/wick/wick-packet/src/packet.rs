@@ -172,6 +172,11 @@ impl Packet {
     self.port() == Self::FATAL_ERROR
   }
 
+  /// Return `true` if this is an error packet.
+  pub fn is_error(&self) -> bool {
+    matches!(self.payload, PacketPayload::Err(_))
+  }
+
   /// Get the inner payload of this packet.
   pub fn payload(&self) -> &PacketPayload {
     &self.payload

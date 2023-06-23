@@ -11,6 +11,7 @@ use crate::error::ManifestError;
 
 #[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
 #[asset(asset(AssetReference))]
+#[builder(derive(Debug), setter(into))]
 #[property(get(public), set(private), mut(disable))]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
@@ -51,16 +52,16 @@ pub enum ResourceDefinition {
 
 impl ResourceDefinition {
   /// Render the resource configuration
-  pub fn render(
+  pub(crate) fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     match self {
-      ResourceDefinition::TcpPort(v) => v.render(root_config, env),
-      ResourceDefinition::UdpPort(v) => v.render(root_config, env),
-      ResourceDefinition::Url(v) => v.render(root_config, env),
-      ResourceDefinition::Volume(v) => v.render(root_config, env),
+      ResourceDefinition::TcpPort(v) => v.render_config(root_config, env),
+      ResourceDefinition::UdpPort(v) => v.render_config(root_config, env),
+      ResourceDefinition::Url(v) => v.render_config(root_config, env),
+      ResourceDefinition::Volume(v) => v.render_config(root_config, env),
     }
   }
 }
@@ -129,7 +130,7 @@ impl Volume {
   }
 
   /// Render the resource configuration
-  pub fn render(
+  pub(crate) fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
@@ -188,7 +189,7 @@ impl UrlResource {
   }
 
   /// Render the resource configuration
-  pub fn render(
+  pub(crate) fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
@@ -230,7 +231,7 @@ impl TcpPort {
   }
 
   /// Render the resource configuration
-  pub fn render(
+  pub(crate) fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
@@ -267,7 +268,7 @@ impl UdpPort {
   }
 
   /// Render the resource configuration
-  pub fn render(
+  pub(crate) fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,

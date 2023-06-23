@@ -1,3 +1,5 @@
+#![allow(missing_docs)] // delete when we move away from the `property` crate.
+
 pub(crate) mod app_config;
 pub(crate) mod common;
 pub(crate) mod component_config;
@@ -10,7 +12,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 pub use app_config::*;
-use asset_container::{Asset, AssetFlags, AssetManager};
+use asset_container::Asset;
 pub use common::*;
 pub use component_config::*;
 pub use test_config::*;
@@ -18,48 +20,61 @@ use tokio::fs::read_to_string;
 use tracing::debug;
 pub use types_config::*;
 pub use wick_asset_reference::{AssetReference, FetchOptions};
+use wick_interface_types::Field;
+use wick_packet::validation::expect_configuration_matches;
 use wick_packet::RuntimeConfig;
 
-use crate::error::ManifestError;
-use crate::utils::from_yaml;
-use crate::{v0, v1, Error, Resolver};
+use crate::utils::{fetch_all, resolve_configuration};
+use crate::{v1, Error};
 
-#[derive(Debug, Clone, Copy)]
-/// The kind of configuration loaded.
-#[must_use]
-pub enum ConfigurationKind {
-  /// An [app_config::AppConfiguration] configuration.
-  App,
-  /// A [component_config::ComponentConfiguration] configuration.
-  Component,
-  /// A [types_config::TypesConfiguration] configuration.
-  Types,
-  /// A [test_config::TestConfiguration] configuration.
-  Tests,
+#[derive(Debug, Clone, property::Property)]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
+/// A builder for [WickConfiguration].
+pub struct UninitializedConfiguration {
+  /// The manifest to use as a base.
+  pub(crate) manifest: WickConfiguration,
+  /// The root configuration to use when rendering internal configuration templates.
+  pub(crate) root_config: Option<RuntimeConfig>,
+  /// The environment this configuration can use when rendering internal configuration templates.
+  pub(crate) env: Option<HashMap<String, String>>,
 }
 
-impl std::fmt::Display for ConfigurationKind {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      ConfigurationKind::App => write!(f, "wick/app"),
-      ConfigurationKind::Component => write!(f, "wick/component"),
-      ConfigurationKind::Types => write!(f, "wick/types"),
-      ConfigurationKind::Tests => write!(f, "wick/tests"),
+impl UninitializedConfiguration {
+  #[must_use]
+  /// Create a new builder with the given manifest.
+  pub fn new(manifest: WickConfiguration) -> Self {
+    Self {
+      manifest,
+      root_config: None,
+      env: None,
     }
   }
-}
 
-async fn fetch_all(
-  asset_manager: &(dyn AssetManager<Asset = AssetReference> + Send + Sync),
-  options: FetchOptions,
-) -> Result<(), Error> {
-  for asset in asset_manager.assets().iter() {
-    if asset.get_asset_flags() == AssetFlags::Lazy {
-      continue;
-    }
-    asset.fetch(options.clone()).await?;
+  /// Return the inner, uninitialized [WickConfiguration].
+  #[must_use]
+  pub fn into_inner(self) -> WickConfiguration {
+    self.manifest
   }
-  Ok(())
+
+  /// Build, initialize and return a [WickConfiguration].
+  pub fn finish(mut self) -> Result<WickConfiguration, Error> {
+    debug!(root_config=?self.root_config, env=?self.env.as_ref().map(|c|format!("{} variables",c.len())), "initializing configuration");
+
+    expect_configuration_matches(
+      self
+        .manifest
+        .source()
+        .map_or("<unknown>", |p| p.to_str().unwrap_or("<invalid>")),
+      self.root_config.as_ref(),
+      self.manifest.config(),
+    )
+    .map_err(Error::ConfigurationInvalid)?;
+    self.manifest.set_env(self.env);
+    self.manifest.set_root_config(self.root_config);
+    self.manifest.initialize()?;
+    self.manifest.validate()?;
+    Ok(self.manifest)
+  }
 }
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager)]
@@ -89,9 +104,12 @@ impl WickConfiguration {
   ///
   /// let manifest = WickConfiguration::fetch_all("path/to/manifest.yaml", opts).await?;
   /// ```
-  pub async fn fetch_all(path: impl Into<String> + Send, options: FetchOptions) -> Result<Self, Error> {
+  pub async fn fetch_all(
+    path: impl Into<String> + Send,
+    options: FetchOptions,
+  ) -> Result<UninitializedConfiguration, Error> {
     let config = Self::fetch(path, options.clone()).await?;
-    config.fetch_assets(options).await?;
+    config.manifest.fetch_assets(options).await?;
     Ok(config)
   }
 
@@ -109,7 +127,10 @@ impl WickConfiguration {
   /// let manifest = WickConfiguration::fetch("path/to/manifest.yaml", opts).await?;
   /// ```
   ///
-  pub async fn fetch(path: impl Into<String> + Send, options: FetchOptions) -> Result<Self, Error> {
+  pub async fn fetch(
+    path: impl Into<String> + Send,
+    options: FetchOptions,
+  ) -> Result<UninitializedConfiguration, Error> {
     let path = path.into();
     let location = AssetReference::new(&path);
 
@@ -118,7 +139,7 @@ impl WickConfiguration {
       .path()
       .unwrap_or_else(|e| PathBuf::from(format!("<ERROR:{}>", e)));
     let config = WickConfiguration::load_from_bytes(&bytes, &Some(source))?;
-    match &config {
+    match &config.manifest {
       WickConfiguration::Component(c) => {
         c.setup_cache(options).await?;
       }
@@ -155,7 +176,7 @@ impl WickConfiguration {
   /// let manifest = WickConfiguration::load_from_bytes(bytes, &Some(path))?;
   ///
   /// ```
-  pub fn load_from_bytes(bytes: &[u8], source: &Option<PathBuf>) -> Result<Self, Error> {
+  pub fn load_from_bytes(bytes: &[u8], source: &Option<PathBuf>) -> Result<UninitializedConfiguration, Error> {
     let string = &String::from_utf8(bytes.to_vec()).map_err(|_| Error::Utf8)?;
 
     resolve_configuration(string, source)
@@ -177,7 +198,7 @@ impl WickConfiguration {
   ///
   /// ```
   ///
-  pub fn from_yaml(src: &str, source: &Option<PathBuf>) -> Result<Self, Error> {
+  pub fn from_yaml(src: &str, source: &Option<PathBuf>) -> Result<UninitializedConfiguration, Error> {
     resolve_configuration(src, source)
   }
 
@@ -230,15 +251,53 @@ impl WickConfiguration {
     }
   }
 
+  /// Validate this configuration is good.
+  pub fn validate(&self) -> Result<(), Error> {
+    match self {
+      WickConfiguration::Component(v) => v.validate(),
+      WickConfiguration::App(v) => v.validate(),
+      WickConfiguration::Types(v) => v.validate(),
+      WickConfiguration::Tests(v) => v.validate(),
+    }
+  }
+
   /// Get the runtime configuration (if any) associated with the inner configuration.
   #[must_use]
-  pub fn root_config(&self) -> Option<&RuntimeConfig> {
+  fn config(&self) -> &[Field] {
     match self {
-      WickConfiguration::Component(v) => v.root_config(),
-      WickConfiguration::App(v) => v.root_config(),
-      WickConfiguration::Types(_v) => None,
-      WickConfiguration::Tests(_v) => None,
+      WickConfiguration::Component(v) => v.config(),
+      WickConfiguration::App(_v) => Default::default(),
+      WickConfiguration::Types(_v) => Default::default(),
+      WickConfiguration::Tests(_v) => Default::default(),
     }
+  }
+
+  /// Set the root runtime config for a [WickConfiguration].
+  fn set_root_config(&mut self, env: Option<RuntimeConfig>) -> &mut Self {
+    match self {
+      WickConfiguration::App(ref mut v) => {
+        v.root_config = env;
+      }
+      WickConfiguration::Component(v) => {
+        v.root_config = env;
+      }
+      WickConfiguration::Types(_) => (),
+      WickConfiguration::Tests(_) => (),
+    }
+    self
+  }
+
+  /// Set the environment variables for a [WickConfiguration].
+  fn set_env(&mut self, env: Option<HashMap<String, String>>) -> &mut Self {
+    match self {
+      WickConfiguration::App(ref mut v) => {
+        v.env = env;
+      }
+      WickConfiguration::Component(_) => (),
+      WickConfiguration::Types(_) => (),
+      WickConfiguration::Tests(_) => (),
+    }
+    self
   }
 
   /// Get the kind of the inner configuration.
@@ -314,18 +373,23 @@ impl WickConfiguration {
     }
   }
 
-  /// Initialize the configuration with the given environment variables.
-  pub fn initialize(&mut self, env: Option<&HashMap<String, String>>) -> Result<(), Error> {
+  /// Initialize the configuration.
+  fn initialize(&mut self) -> Result<&Self, Error> {
     match self {
-      WickConfiguration::Component(v) => v.initialize(env),
-      WickConfiguration::App(v) => v.initialize(env),
-      WickConfiguration::Types(_) => Ok(()),
-      WickConfiguration::Tests(_) => Ok(()),
+      WickConfiguration::Component(v) => {
+        v.initialize()?;
+      }
+      WickConfiguration::App(v) => {
+        v.initialize()?;
+      }
+      WickConfiguration::Types(_) => (),
+      WickConfiguration::Tests(_) => (),
     }
+    Ok(self)
   }
 
   /// Load struct from file by trying all the supported file formats.
-  pub async fn load_from_file(path: impl AsRef<Path> + Send) -> Result<Self, Error> {
+  pub async fn load_from_file(path: impl AsRef<Path> + Send) -> Result<UninitializedConfiguration, Error> {
     let path = path.as_ref();
     let pathstr = path.to_string_lossy();
     if !path.exists() {
@@ -340,7 +404,7 @@ impl WickConfiguration {
   }
 
   #[doc(hidden)]
-  pub fn load_from_file_sync(path: impl AsRef<Path>) -> Result<Self, Error> {
+  pub fn load_from_file_sync(path: impl AsRef<Path>) -> Result<UninitializedConfiguration, Error> {
     let path = path.as_ref();
 
     if !path.exists() {
@@ -374,71 +438,27 @@ impl WickConfiguration {
   }
 }
 
-fn resolve_configuration(src: &str, source: &Option<PathBuf>) -> Result<WickConfiguration, Error> {
-  let raw: serde_yaml::Value = from_yaml(src, source)?;
-
-  let raw_version = raw.get("format");
-  let raw_kind = raw.get("kind");
-  let version = if raw_kind.is_some() {
-    1
-  } else {
-    let raw_version = raw_version.ok_or(Error::NoFormat(source.clone()))?;
-    raw_version
-      .as_i64()
-      .unwrap_or_else(|| -> i64 { raw_version.as_str().and_then(|s| s.parse::<i64>().ok()).unwrap_or(-1) })
-  };
-  // re-parse the yaml into the correct version from string again for location info.
-  match version {
-    0 => {
-      let host_config = serde_yaml::from_str::<v0::HostManifest>(src)
-        .map_err(|e| Error::YamlError(source.clone(), e.to_string(), e.location()))?;
-      Ok(WickConfiguration::Component(host_config.try_into()?))
-    }
-    1 => {
-      let base_config = serde_yaml::from_str::<v1::WickConfig>(src)
-        .map_err(|e| Error::YamlError(source.clone(), e.to_string(), e.location()))?;
-      let mut config: WickConfiguration = base_config.try_into()?;
-      if let Some(src) = source {
-        config.set_source(src);
-      }
-      Ok(config)
-    }
-    -1 => Err(Error::NoFormat(source.clone())),
-    _ => Err(Error::VersionError(version.to_string())),
-  }
+#[derive(Debug, Clone, Copy)]
+/// The kind of configuration loaded.
+#[must_use]
+pub enum ConfigurationKind {
+  /// An [app_config::AppConfiguration] configuration.
+  App,
+  /// A [component_config::ComponentConfiguration] configuration.
+  Component,
+  /// A [types_config::TypesConfiguration] configuration.
+  Types,
+  /// A [test_config::TestConfiguration] configuration.
+  Tests,
 }
 
-pub(crate) fn make_resolver(
-  imports: HashMap<String, ImportBinding>,
-  resources: HashMap<String, ResourceBinding>,
-  runtime_config: Option<RuntimeConfig>,
-  env: Option<HashMap<String, String>>,
-) -> Box<Resolver> {
-  Box::new(move |name| resolve(name, &imports, &resources, runtime_config.as_ref(), env.as_ref()))
-}
-
-pub(crate) fn resolve(
-  name: &str,
-  imports: &HashMap<String, ImportBinding>,
-  resources: &HashMap<String, ResourceBinding>,
-  runtime_config: Option<&RuntimeConfig>,
-  env: Option<&HashMap<String, String>>,
-) -> Option<Result<OwnedConfigurationItem, ManifestError>> {
-  if let Some(import) = imports.get(name) {
-    if let ImportDefinition::Component(component) = &import.kind {
-      let mut component = component.clone();
-      return Some(match component.render(runtime_config, env) {
-        Ok(_) => Ok(OwnedConfigurationItem::Component(component)),
-        Err(e) => Err(e),
-      });
+impl std::fmt::Display for ConfigurationKind {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      ConfigurationKind::App => write!(f, "wick/app"),
+      ConfigurationKind::Component => write!(f, "wick/component"),
+      ConfigurationKind::Types => write!(f, "wick/types"),
+      ConfigurationKind::Tests => write!(f, "wick/tests"),
     }
   }
-  if let Some(resource) = resources.get(name) {
-    let mut resource = resource.kind.clone();
-    return Some(match resource.render(runtime_config, env) {
-      Ok(_) => Ok(OwnedConfigurationItem::Resource(resource)),
-      Err(e) => Err(e),
-    });
-  }
-  None
 }

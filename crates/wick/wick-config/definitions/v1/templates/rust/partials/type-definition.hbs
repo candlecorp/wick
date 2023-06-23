@@ -14,6 +14,9 @@ pub(crate) fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}()
 {{else}}
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 {{/withAnnotation}}
+{{#withAnnotation "custom_serializer"}}
+#[serde(serialize_with = "crate::v1::helpers::serialize_{{snakeCase ../name.value}}")]
+{{/withAnnotation}}
 {{#withAnnotation "into_string"}}
 #[serde(into = "String")]
 {{/withAnnotation}}
@@ -40,6 +43,9 @@ pub(crate) struct {{name.value}} {
       #[serde(default)]
       {{/if}}
     {{/unlessAnnotation}}
+    {{#withAnnotation "custom_serializer"}}
+    #[serde(serialize_with = "{{arguments.0.value.value}}")]
+    {{/withAnnotation}}
     {{#withAnnotation "alias"}}
     #[serde(alias = "{{arguments.0.value.value}}")]
     {{/withAnnotation}}

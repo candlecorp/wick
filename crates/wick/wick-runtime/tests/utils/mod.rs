@@ -5,12 +5,12 @@ use wick_packet::{Entity, InherentData, Invocation, Packet, PacketStream, Runtim
 use wick_runtime::{Runtime, RuntimeBuilder};
 
 pub async fn init_engine_from_yaml(path: &str, config: Option<RuntimeConfig>) -> anyhow::Result<(Runtime, uuid::Uuid)> {
-  let host_def = WickConfiguration::load_from_file(path).await?.try_component_config()?;
+  let mut host_def = WickConfiguration::load_from_file(path).await?;
+  host_def.set_root_config(config);
+  let host_def = host_def.finish()?.try_component_config()?;
   debug!("Manifest loaded");
 
-  let builder = RuntimeBuilder::from_definition(host_def)
-    .root_config(config)
-    .namespace("__TEST__");
+  let builder = RuntimeBuilder::from_definition(host_def).namespace("__TEST__");
 
   let engine = builder.build(None).await?;
 

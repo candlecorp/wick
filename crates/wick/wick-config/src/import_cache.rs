@@ -35,7 +35,7 @@ impl ImportCache {
         Ok(c)
       } else {
         let bytes = asset.fetch(options).await.map_err(ManifestError::AssetContainer)?;
-        let config = WickConfiguration::load_from_bytes(&bytes, &Some(asset.path().unwrap()))?;
+        let config = WickConfiguration::load_from_bytes(&bytes, &Some(asset.path().unwrap()))?.finish()?;
         let type_config = config.try_types_config()?;
         cache.write().insert(name, type_config.clone());
         Ok(type_config)

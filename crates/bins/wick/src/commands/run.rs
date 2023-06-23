@@ -64,17 +64,18 @@ pub(crate) async fn handle(
     fetch_opts.set_cache_dir(path_dir.join(xdg.local().cache()));
   };
 
-  let mut app_config = WickConfiguration::fetch_all(&opts.path, fetch_opts.clone())
+  let mut builder = WickConfiguration::fetch_all(&opts.path, fetch_opts.clone())
     .instrument(span.clone())
-    .await?
-    .try_app_config()?;
-
-  app_config.set_options(fetch_opts);
+    .await?;
 
   let with_config = parse_config_string(opts.with.as_deref())?;
 
-  app_config.set_root_config(with_config);
-  app_config.initialize(Some(&std::env::vars().collect()))?;
+  builder
+    .set_root_config(with_config)
+    .set_env(Some(std::env::vars().collect()));
+  let mut app_config = builder.finish()?.try_app_config()?;
+
+  app_config.set_options(fetch_opts);
 
   let mut host = AppHostBuilder::default()
     .manifest(app_config.clone())

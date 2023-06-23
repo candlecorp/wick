@@ -50,7 +50,9 @@ fn process_assets(
 
       match relative_path.extension().and_then(|os_str| os_str.to_str()) {
         Some("yaml" | "yml" | "wick") => {
-          let config = WickConfiguration::fetch(asset_path.to_string_lossy(), options.clone()).await;
+          let config = WickConfiguration::fetch(asset_path.to_string_lossy(), options.clone())
+            .await
+            .map(|b| b.into_inner());
           match config {
             Ok(WickConfiguration::App(config)) => {
               media_type = media_types::APPLICATION;
@@ -131,7 +133,9 @@ impl WickPackage {
     }
 
     let options = wick_config::FetchOptions::default();
-    let config = WickConfiguration::fetch(path.to_string_lossy(), options).await?;
+    let config = WickConfiguration::fetch(path.to_string_lossy(), options)
+      .await?
+      .into_inner();
     if !matches!(
       config,
       WickConfiguration::App(_) | WickConfiguration::Component(_) | WickConfiguration::Types(_)

@@ -12,10 +12,12 @@ pub struct TimeTriggerConfig {
   pub(crate) schedule: ScheduleConfig,
   pub(crate) operation: ComponentOperationExpression,
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) payload: Vec<OperationInputConfig>,
 }
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, Builder)]
+#[builder(setter(into))]
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(AssetReference))]
 #[must_use]
@@ -23,5 +25,6 @@ pub struct ScheduleConfig {
   #[asset(skip)]
   pub(crate) cron: String,
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) repeat: u16,
 }

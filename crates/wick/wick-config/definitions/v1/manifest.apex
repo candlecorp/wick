@@ -133,7 +133,7 @@ union TriggerDefinition = CliTrigger | HttpTrigger | TimeTrigger
 "A trigger that runs when an application is called via the command line."
 type CliTrigger @tagged("wick/trigger/cli@v1") {
   "The operation that will act as the main entrypoint for this trigger."
-  operation: ComponentOperationExpression @required @shortform
+  operation: ComponentOperationExpression @required @shortform @custom_serializer("crate::v1::helpers::serialize_component_expression")
 }
 
 "A trigger that runs on a schedule similar to cron."
@@ -142,7 +142,7 @@ type TimeTrigger @tagged("wick/trigger/time@v1") {
   schedule: Schedule @required
 
   "The operation to execute on the schedule."
-  operation: ComponentOperationExpression @required @shortform
+  operation: ComponentOperationExpression @required @shortform @custom_serializer("crate::v1::helpers::serialize_component_expression")
 
   "Values passed to the operation as inputs"
   payload: [OperationInput] @required
@@ -168,7 +168,7 @@ type Schedule {
 }
 
 "A reference to an operation. This type can be shortened to <code>component_id::operation_name</code> with the short-form syntax."
-type ComponentOperationExpression @shortform {
+type ComponentOperationExpression @shortform  {
   "The component that exports the operation."
   component: ComponentDefinition @required @shortform
   "The operation name."
@@ -229,7 +229,7 @@ type Route {
   "The path to serve this route from. See [URI documentation](/docs/configuration/uri) for more information on specifying query and path parameters."
   uri: string @required
   "The operation that will act as the main entrypoint for this route."
-  operation: ComponentOperationExpression @required @shortform
+  operation: ComponentOperationExpression @required @shortform @custom_serializer("crate::v1::helpers::serialize_component_expression")
   "The HTTP methods to serve this route for."
   methods: [string]
   "The name of the route, used for documentation and tooling."
@@ -318,7 +318,7 @@ type RawRouter @tagged("wick/router/raw@v1") {
   codec: Codec?
 
   "The operation that handles HTTP requests."
-  operation: ComponentOperationExpression @required @shortform
+  operation: ComponentOperationExpression @required @shortform @custom_serializer("crate::v1::helpers::serialize_component_expression")
 }
 
 "Request and response operations that run before and after the main operation."
@@ -668,7 +668,7 @@ type OperationInstance {
   name: string @required
 
   "The operation to bind to."
-  operation: ComponentOperationExpression @required @shortform
+  operation: ComponentOperationExpression @required @shortform @custom_serializer("crate::v1::helpers::serialize_component_expression")
 
   "Data to associate with the reference, if any."
   with: {string: LiquidJsonValue}?,

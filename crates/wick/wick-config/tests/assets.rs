@@ -10,7 +10,7 @@ mod integration_test {
 
   async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
     let path = PathBuf::from(path);
-    WickConfiguration::load_from_file(path).await
+    WickConfiguration::load_from_file(path).await?.finish()
   }
 
   #[test_logger::test(tokio::test)]
@@ -50,7 +50,9 @@ mod integration_test {
     let crate_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     let asset_dir = crate_dir.join("tests/assets/test-application/");
 
-    let config = WickConfiguration::fetch("./tests/assets/test-application/app.wick", opts.clone()).await?;
+    let config = WickConfiguration::fetch("./tests/assets/test-application/app.wick", opts.clone())
+      .await?
+      .finish()?;
     for asset in config.assets().iter() {
       if asset.is_directory() {
         continue;
@@ -69,6 +71,7 @@ mod integration_test {
 
     let config = WickConfiguration::fetch("./tests/assets/test-application/app.wick", opts.clone())
       .await?
+      .finish()?
       .try_app_config()?;
     let pkg_files = config.package_files();
     let num_expected = pkg_files.iter().count();
@@ -88,56 +91,4 @@ mod integration_test {
 
     Ok(())
   }
-
-  // TODO: move to wick-package
-  // Commenting out to remove dependency on wick-package for now.
-  // fn get_relative_path(path: &str) -> PathBuf {
-  //   let mut root = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-  //   root.push("tests");
-  //   root.push(path);
-  //   root
-  // }
-
-  // #[test_logger::test(tokio::test)]
-  // async fn test_remote_asset_fetch() -> Result<()> {
-  //   // Setup: push test-component to local registry
-  //   let host = std::env::var("DOCKER_REGISTRY").unwrap();
-  //   let reg_host = host.split(':').next().unwrap();
-  //   let options = wick_oci_utils::OciOptions::default().allow_insecure(vec![host.to_owned()]);
-  //   let test_component = get_relative_path("./assets/test-component/component.wick");
-
-  //   let mut package = wick_package::WickPackage::from_path(&test_component).await?;
-  //   let result = package
-  //     .push(&format!("{}/test-component/jinja:0.2.0", host), &options)
-  //     .await?;
-  //   println!("result: {:?}", result);
-
-  //   // Test: Assert that an app config that references the test-component can be loaded
-
-  //   let config = load("./tests/assets/test-application/app.wick").await?;
-  //   let assets = config.assets();
-
-  //   // Create a temp directory
-  //   let mut basedir = std::env::temp_dir();
-  //   println!("basedir: {}", basedir.display());
-
-  //   let options = FetchOptions::default()
-  //     .allow_insecure([host.to_owned()])
-  //     .artifact_dir(basedir.clone());
-
-  //   basedir.push(wick_xdg::Cache::Assets.basedir());
-  //   // Clean up the cache in the temp directory before running test
-  //   let _ = tokio::fs::remove_dir_all(&basedir).await;
-
-  //   let _progress = assets.pull(options).await?;
-
-  //   let first = basedir.join(format!("{}/test-component/jinja/0.2.0/component.wick", reg_host));
-  //   println!("first: {}", first.display());
-  //   assert!(first.exists());
-  //   let second = basedir.join(format!("{}/test-component/jinja/0.2.0/assets/test.fake.wasm", reg_host));
-  //   println!("second: {}", second.display());
-  //   assert!(second.exists());
-
-  //   Ok(())
-  // }
 }

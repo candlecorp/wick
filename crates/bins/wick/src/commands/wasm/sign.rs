@@ -53,6 +53,7 @@ pub(crate) async fn handle(
   let interface = WickConfiguration::fetch(&opts.interface, wick_config::FetchOptions::default())
     .instrument(span.clone())
     .await?
+    .into_inner()
     .try_component_config()?;
 
   let mut source_file = File::open(&opts.source).unwrap();
@@ -66,6 +67,10 @@ pub(crate) async fn handle(
     opts.common.subject,
   )
   .await?;
+
+  let sig = interface.signature()?;
+
+  span.in_scope(|| Ok::<_, anyhow::Error>(debug!(signature = %serde_json::to_string(&sig)?, "component signature")))?;
 
   let signed = sign_buffer_with_claims(
     &buf,

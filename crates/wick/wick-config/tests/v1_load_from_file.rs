@@ -1,13 +1,16 @@
-use core::panic;
 use std::path::PathBuf;
 
-use wick_config::config::{AppConfiguration, ComponentDefinition, CompositeComponentImplementation, ImportDefinition};
+use wick_config::config::{AppConfiguration, CompositeComponentImplementation};
 use wick_config::error::ManifestError;
 use wick_config::*;
+use wick_packet::RuntimeConfig;
 
 async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
   let path = PathBuf::from(path);
-  WickConfiguration::load_from_file(path).await
+  let mut config = WickConfiguration::load_from_file(path).await?;
+  config.set_env(Some(std::env::vars().collect()));
+  config.set_root_config(Some(RuntimeConfig::from([("component_config_name", "test".into())])));
+  config.finish()
 }
 
 async fn load_app(path: &str) -> Result<AppConfiguration, ManifestError> {
@@ -68,22 +71,9 @@ async fn regression_issue_42() -> Result<(), ManifestError> {
   let component = load_app("./tests/manifests/v1/template-expansion.yaml").await?;
   println!("{:?}", component);
   let coll = component.imports().get("test").unwrap();
-  #[allow(deprecated)]
-  if let ImportDefinition::Component(ComponentDefinition::Manifest(module)) = coll.kind() {
-    let map: std::collections::HashMap<String, String> = std::env::vars().collect();
-    let value: String = module
-      .config()
-      .unwrap()
-      .render(None, None, Some(&map))
-      .unwrap()
-      .coerce_key("pwd")
-      .unwrap();
-    let expected = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+  let value: String = coll.kind().config().unwrap().coerce_key("pwd").unwrap();
+  let expected = std::env::var("CARGO_MANIFEST_DIR").unwrap();
 
-    assert_eq!(value, expected);
-  } else {
-    panic!("wrong collection kind");
-  }
-
+  assert_eq!(value, expected);
   Ok(())
 }

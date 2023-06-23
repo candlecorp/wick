@@ -271,6 +271,7 @@ pub(crate) enum TriggerDefinition {
 pub(crate) struct CliTrigger {
   /// The operation that will act as the main entrypoint for this trigger.
 
+  #[serde(serialize_with = "crate::v1::helpers::serialize_component_expression")]
   #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
   pub(crate) operation: ComponentOperationExpression,
 }
@@ -283,6 +284,7 @@ pub(crate) struct TimeTrigger {
   pub(crate) schedule: Schedule,
   /// The operation to execute on the schedule.
 
+  #[serde(serialize_with = "crate::v1::helpers::serialize_component_expression")]
   #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
   pub(crate) operation: ComponentOperationExpression,
   /// Values passed to the operation as inputs
@@ -427,6 +429,7 @@ pub(crate) struct Route {
   pub(crate) uri: String,
   /// The operation that will act as the main entrypoint for this route.
 
+  #[serde(serialize_with = "crate::v1::helpers::serialize_component_expression")]
   #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
   pub(crate) operation: ComponentOperationExpression,
   /// The HTTP methods to serve this route for.
@@ -594,6 +597,7 @@ pub(crate) struct RawRouter {
   pub(crate) codec: Option<Codec>,
   /// The operation that handles HTTP requests.
 
+  #[serde(serialize_with = "crate::v1::helpers::serialize_component_expression")]
   #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
   pub(crate) operation: ComponentOperationExpression,
 }
@@ -1310,6 +1314,7 @@ pub(crate) struct OperationInstance {
   pub(crate) name: String,
   /// The operation to bind to.
 
+  #[serde(serialize_with = "crate::v1::helpers::serialize_component_expression")]
   #[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]
   pub(crate) operation: ComponentOperationExpression,
   /// Data to associate with the reference, if any.

@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use liquid_json::LiquidJsonValue;
 use serde_json::Value;
+use tracing::debug_span;
 use wick_packet::RuntimeConfig;
 
 use crate::config::LiquidJsonConfig;
@@ -108,7 +109,7 @@ where
     if let Some(value) = &self.value {
       return Ok(value.clone());
     }
-    let ctx = LiquidJsonConfig::make_context(None, root, None, env)?;
+    let ctx = debug_span!("template-config").in_scope(|| LiquidJsonConfig::make_context(None, root, None, env))?;
 
     if let Some(template) = &self.template {
       let rendered = template

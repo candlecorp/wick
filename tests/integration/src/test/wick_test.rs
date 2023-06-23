@@ -1,10 +1,13 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Result;
 use flow_component::SharedComponent;
 use tracing::Span;
+use wick_config::config::UninitializedConfiguration;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
+use wick_packet::RuntimeConfig;
 use wick_test::{ComponentFactory, TestSuite};
 
 #[test_logger::test(tokio::test)]
@@ -14,21 +17,26 @@ async fn baseline_component() -> Result<()> {
 
   let fetch_options = wick_config::config::FetchOptions::default();
 
-  let root_manifest = WickConfiguration::fetch_all(manifest.to_string_lossy(), fetch_options)
-    .await?
-    .try_component_config()?;
+  let mut root_manifest = WickConfiguration::fetch_all(manifest.to_string_lossy(), fetch_options).await?;
+  root_manifest.set_root_config(Some(RuntimeConfig::from(HashMap::from([(
+    "default_err".into(),
+    "err".into(),
+  )]))));
+  let root_manifest = root_manifest.finish()?.try_component_config()?;
 
   let mut suite = TestSuite::from_configuration(root_manifest.tests())?;
   let manifest = root_manifest.clone();
 
-  let factory: ComponentFactory = Box::new(move |config, env| {
-    let mut manifest = manifest.clone();
+  let factory: ComponentFactory = Box::new(move |config| {
+    let mut builder = UninitializedConfiguration::new(WickConfiguration::Component(manifest.clone()));
 
     let task = async move {
-      manifest.set_root_config(config);
-      manifest
-        .initialize(env.as_ref())
-        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
+      builder.set_root_config(config);
+      let manifest = builder
+        .finish()
+        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?
+        .try_component_config()
+        .unwrap();
       let mut host = ComponentHostBuilder::default()
         .manifest(manifest)
         .span(Span::current())

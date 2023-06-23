@@ -9,6 +9,7 @@ use wick_interface_types::TypeDefinition;
 use super::common::package_definition::PackageConfig;
 use super::OperationSignature;
 use crate::config;
+use crate::error::ManifestError;
 
 #[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
@@ -89,5 +90,17 @@ impl TypesConfiguration {
       source.pop();
     }
     self.set_baseurl(&source);
+  }
+
+  /// Return the environment variables for this configuration.
+  #[must_use]
+  pub fn env(&self) -> Option<&HashMap<String, String>> {
+    None
+  }
+
+  /// Validate this configuration is good.
+  pub fn validate(&self) -> Result<(), ManifestError> {
+    /* placeholder */
+    Ok(())
   }
 }

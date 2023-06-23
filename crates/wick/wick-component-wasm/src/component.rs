@@ -61,8 +61,11 @@ impl WasmComponent {
     let host = builder.build(module)?;
 
     let sig = host.signature();
-    wick_packet::validation::expect_configuration_matches(&name, config.as_ref(), &sig.config)
-      .map_err(Error::SetupSignature)?;
+    span.in_scope(|| {
+      debug!(root_config=?config.as_ref(),%name,"validating configuration for wasm component");
+      wick_packet::validation::expect_configuration_matches(&name, config.as_ref(), &sig.config)
+        .map_err(Error::SetupSignature)
+    })?;
 
     let setup = SetupPayload::new(
       &Entity::component(module.name().clone().unwrap_or_default()),
