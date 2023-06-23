@@ -12,9 +12,9 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use utils::{assert_constraints, instantiate_import};
 use uuid::Uuid;
-use wick_config::config::ComponentKind;
-use wick_packet::validation::expect_configuration_matches;
+use wick_config::config::{ComponentDefinition, ComponentKind};
 
+use self::utils::instantiate_component;
 use crate::components::make_link_callback;
 use crate::components::validation::expect_signature_match;
 use crate::dev::prelude::*;
@@ -37,28 +37,29 @@ pub(crate) struct RuntimeService {
 impl RuntimeService {
   pub(crate) async fn start(mut init: ServiceInit) -> Result<Arc<Self>> {
     let span = init.span.clone();
+    let ns = init.namespace.clone().unwrap_or_else(|| init.id.to_string());
     let graph = init.span.in_scope(|| {
       debug!("initializing engine service");
-      flow_graph_interpreter::graph::from_def(&mut init.manifest, &init.root_config)
+
+      Ok::<_, EngineError>(flow_graph_interpreter::graph::from_def(&mut init.manifest)?)
     })?;
 
     let mut components = HandlerMap::default();
-    let ns = init.namespace.clone().unwrap_or_else(|| init.id.to_string());
-
-    expect_configuration_matches(&ns, init.root_config.as_ref(), init.manifest.config())
-      .map_err(EngineError::Configuration)?;
 
     if init.manifest.component().kind() == ComponentKind::Composite {
+      // Initialize any native components for composite components.
       for native_comp in init.native_components.inner() {
         components
           .add(native_comp(init.seed())?)
           .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
       }
     } else {
-      let component_init = init.child_init(init.root_config.clone());
-      let binding = config::ImportBinding::new(&ns, init.manifest.component().clone().into());
+      // Instantiate the non-composite component as an exposed, standalone component.
+      let component_init = init.child_init(init.manifest.root_config().cloned());
+      let def: ComponentDefinition = init.manifest.component().clone().into();
 
-      if let Some(main_component) = instantiate_import(&binding, component_init).await? {
+      span.in_scope(|| debug!(%ns,options=?component_init,"instantiating component"));
+      if let Some(main_component) = instantiate_component(ns.clone(), &def, component_init).await? {
         let reported_sig = main_component.component().signature();
         let manifest_sig = init.manifest.signature()?;
 
@@ -70,7 +71,6 @@ impl RuntimeService {
         )?;
         main_component.expose();
 
-        span.in_scope(|| debug!("Adding main component: {}", main_component.namespace()));
         components
           .add(main_component)
           .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
@@ -78,21 +78,7 @@ impl RuntimeService {
     }
 
     for component in init.manifest.import().values() {
-      let runtime_config = if let Some(component_config) = component.config() {
-        Some(
-          component_config
-            .render(init.manifest.root_config(), None, None)
-            .map_err(|e| {
-              EngineError::ComponentInit(
-                component.id().to_owned(),
-                RuntimeError::Configuration(e.to_string()).to_string(),
-              )
-            })?,
-        )
-      } else {
-        None
-      };
-      let component_init = init.child_init(runtime_config);
+      let component_init = init.child_init(component.config().cloned());
       if let Some(p) = instantiate_import(component, component_init).await? {
         components
           .add(p)

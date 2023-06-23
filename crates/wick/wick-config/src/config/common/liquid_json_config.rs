@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use liquid_json::LiquidJsonValue;
-use tracing::trace;
+use tracing::{debug_span, trace};
 use wick_packet::RuntimeConfig;
 
 use crate::Error;
@@ -24,7 +24,7 @@ impl LiquidJsonConfig {
     config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<serde_json::Value, Error> {
-    trace!(root_config=?root, ?config, "rendering liquid config");
+    trace!(root_config=?root, ?config, env=?env.map(|e|e.len()), "rendering liquid config");
     let mut base = base.unwrap_or(serde_json::Value::Object(Default::default()));
     let map = base.as_object_mut().ok_or(Error::ContextBase)?;
     map.insert(
@@ -47,7 +47,8 @@ impl LiquidJsonConfig {
     config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<RuntimeConfig, Error> {
-    let ctx = Self::make_context(None, root, config, env)?;
+    let ctx = debug_span!("liquid-json-config").in_scope(|| Self::make_context(None, root, config, env))?;
+
     let mut map = HashMap::new();
     for (k, v) in self.template.iter() {
       map.insert(k.clone(), v.render(&ctx)?);

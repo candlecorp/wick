@@ -348,15 +348,14 @@ fn expand_operation(
 
 pub fn from_def(
   manifest: &mut wick_config::config::ComponentConfiguration,
-  config: &Option<RuntimeConfig>,
 ) -> Result<Network, flow_graph::error::Error> {
   let mut network = Network::new(
     manifest.name().cloned().unwrap_or_default(),
-    OperationSettings::new(config.clone().into(), None),
+    OperationSettings::new(manifest.root_config().cloned().into(), None),
   );
 
   let mut op_config = OperationConfig::default();
-  op_config.set_root(config.clone());
+  op_config.set_root(manifest.root_config().cloned());
 
   if let ComponentImplementation::Composite(composite) = manifest.component_mut() {
     for flow in composite.operations_mut().values_mut() {

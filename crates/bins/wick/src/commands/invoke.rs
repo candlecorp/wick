@@ -98,18 +98,17 @@ pub(crate) async fn handle(
     fetch_opts.set_cache_dir(path_dir.join(env.local().cache()));
   };
 
-  let manifest = WickConfiguration::fetch_all(&opts.path, fetch_opts)
-    .await?
-    .try_component_config()?;
+  let root_config = parse_config_string(opts.with.as_deref())?;
+
+  let mut manifest = WickConfiguration::fetch_all(&opts.path, fetch_opts).await?;
+  manifest.set_root_config(root_config);
+  let manifest = manifest.finish()?.try_component_config()?;
 
   let server_options = DefaultCliOptions { ..Default::default() };
 
-  let mut manifest = merge_config(&manifest, &opts.oci, Some(server_options));
+  let manifest = merge_config(&manifest, &opts.oci, Some(server_options));
 
-  let root_config = parse_config_string(opts.with.as_deref())?;
   let op_config = parse_config_string(opts.op_with.as_deref())?;
-  manifest.set_root_config(root_config);
-  manifest.initialize(None)?;
 
   let component = opts.operation;
 

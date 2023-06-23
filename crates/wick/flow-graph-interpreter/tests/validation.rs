@@ -13,7 +13,11 @@ use tracing::Span;
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, Type};
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentConfiguration> {
-  Ok(wick_config::WickConfiguration::load_from_file_sync(path.as_ref())?.try_component_config()?)
+  Ok(
+    wick_config::WickConfiguration::load_from_file_sync(path.as_ref())?
+      .finish()?
+      .try_component_config()?,
+  )
 }
 
 struct SignatureTestCollection(ComponentSignature);
@@ -41,7 +45,7 @@ fn collections(sig: ComponentSignature) -> HandlerMap {
 }
 
 fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interpreter, InterpreterError> {
-  let network = from_def(&mut load(path).unwrap(), &None).unwrap();
+  let network = from_def(&mut load(path).unwrap()).unwrap();
 
   Interpreter::new(
     network,
@@ -56,7 +60,7 @@ fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interprete
 #[test_logger::test(tokio::test)]
 async fn test_missing_collections() -> Result<()> {
   let mut manifest = load("./tests/manifests/v0/external.yaml")?;
-  let network = from_def(&mut manifest, &None)?;
+  let network = from_def(&mut manifest)?;
   let result: std::result::Result<Interpreter, _> =
     Interpreter::new(network, None, None, None, panic_callback(), &Span::current());
   let validation_errors = ValidationError::ComponentIdNotFound("test".to_owned());

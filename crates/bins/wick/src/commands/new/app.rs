@@ -1,7 +1,17 @@
 use anyhow::Result;
 use clap::{Args, ValueEnum};
 use structured_output::StructuredOutput;
-use wick_config::config::{self, AppConfiguration};
+use wick_config::config::components::{ComponentReference, ManifestComponentBuilder};
+use wick_config::config::{
+  self,
+  AppConfiguration,
+  ComponentDefinition,
+  ComponentOperationExpressionBuilder,
+  ImportBinding,
+  ResourceBindingBuilder,
+  ScheduleConfigBuilder,
+  TcpPort,
+};
 use wick_config::WickConfiguration;
 
 use crate::io::File;
@@ -43,18 +53,81 @@ pub(crate) async fn handle(
     for trigger in opts.triggers {
       match trigger {
         TriggerType::Time => {
+          let comp_name = "COMPONENT";
+          config.import_mut().insert(
+            comp_name.to_owned(),
+            ImportBinding::component(
+              comp_name,
+              config::ComponentDefinition::Manifest(
+                ManifestComponentBuilder::default()
+                  .reference("path/to/component.wick")
+                  .build()
+                  .unwrap(),
+              ),
+            ),
+          );
+
           config.triggers_mut().push(config::TriggerDefinition::Time(
-            config::TimeTriggerConfigBuilder::default().build().unwrap(),
+            config::TimeTriggerConfigBuilder::default()
+              .operation(
+                ComponentOperationExpressionBuilder::default()
+                  .component(ComponentDefinition::Reference(ComponentReference::new(comp_name)))
+                  .name("main")
+                  .build()
+                  .unwrap(),
+              )
+              .schedule(
+                ScheduleConfigBuilder::default()
+                  .cron("*/5 * * * *")
+                  .repeat(10_u16)
+                  .build()?,
+              )
+              .build()?,
           ));
         }
         TriggerType::Http => {
+          let port_name = "HTTP_PORT";
+          config.resources_mut().insert(
+            port_name.to_owned(),
+            ResourceBindingBuilder::default()
+              .id(port_name)
+              .kind(config::ResourceDefinition::TcpPort(TcpPort::new("0.0.0.0", 8080)))
+              .build()
+              .unwrap(),
+          );
           config.triggers_mut().push(config::TriggerDefinition::Http(
-            config::HttpTriggerConfigBuilder::default().build().unwrap(),
+            config::HttpTriggerConfigBuilder::default()
+              .resource(port_name)
+              .build()
+              .unwrap(),
           ));
         }
         TriggerType::Cli => {
+          let comp_name = "MAIN_COMPONENT";
+          config.import_mut().insert(
+            comp_name.to_owned(),
+            ImportBinding::component(
+              comp_name,
+              config::ComponentDefinition::Manifest(
+                ManifestComponentBuilder::default()
+                  .reference("path/to/component.wick")
+                  .build()
+                  .unwrap(),
+              ),
+            ),
+          );
+
           config.triggers_mut().push(config::TriggerDefinition::Cli(
-            config::CliConfigBuilder::default().build().unwrap(),
+            config::CliConfigBuilder::default()
+              .operation(
+                ComponentOperationExpressionBuilder::default()
+                  .component(ComponentDefinition::Reference(ComponentReference::new(comp_name)))
+                  .name("main")
+                  .build()
+                  .unwrap(),
+              )
+              .build()
+              .unwrap(),
           ));
         }
       }

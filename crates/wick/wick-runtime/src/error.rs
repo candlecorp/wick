@@ -41,6 +41,9 @@ pub enum RuntimeError {
 
   #[error("Could not render configuration: {0}")]
   Configuration(String),
+
+  #[error("Runtime can not be built without a wick configuration")]
+  MissingComponentDefinition,
 }
 
 impl From<Infallible> for RuntimeError {

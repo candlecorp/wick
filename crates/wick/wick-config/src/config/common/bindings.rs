@@ -1,11 +1,13 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 
-use super::{ComponentDefinition, ComponentImplementation, HighLevelComponent, ImportDefinition, InterfaceDefinition};
+use wick_packet::RuntimeConfig;
+
+use super::{ComponentDefinition, HighLevelComponent, ImportDefinition, InterfaceDefinition};
 use crate::config::components::WasmComponent;
-use crate::config::{self, LiquidJsonConfig};
+use crate::config::{self};
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
-#[property(get(public), set(private), mut(disable))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
@@ -15,27 +17,6 @@ pub struct ImportBinding {
   pub(crate) id: String,
   /// The kind/type of the collection.
   pub(crate) kind: ImportDefinition,
-}
-
-impl From<ComponentImplementation> for ImportDefinition {
-  fn from(implementation: ComponentImplementation) -> Self {
-    match implementation {
-      #[allow(deprecated)]
-      ComponentImplementation::Wasm(wasm) => Self::Component(ComponentDefinition::Wasm(WasmComponent {
-        reference: wasm.reference,
-        config: Default::default(),
-        permissions: Default::default(),
-        provide: Default::default(),
-      })),
-      ComponentImplementation::Composite(_) => unimplemented!("Inline composite components are not yet supported."),
-      ComponentImplementation::HttpClient(client) => Self::Component(ComponentDefinition::HighLevelComponent(
-        HighLevelComponent::HttpClient(client),
-      )),
-      ComponentImplementation::Sql(c) => {
-        Self::Component(ComponentDefinition::HighLevelComponent(HighLevelComponent::Sql(c)))
-      }
-    }
-  }
 }
 
 impl ImportBinding {
@@ -49,9 +30,9 @@ impl ImportBinding {
 
   /// Get the configuration object for the collection.
   #[must_use]
-  pub fn config(&self) -> Option<&LiquidJsonConfig> {
+  pub fn config(&self) -> Option<&RuntimeConfig> {
     match &self.kind {
-      ImportDefinition::Component(c) => c.config(),
+      ImportDefinition::Component(c) => c.config().and_then(|v| v.value()),
       ImportDefinition::Types(_) => None,
     }
   }

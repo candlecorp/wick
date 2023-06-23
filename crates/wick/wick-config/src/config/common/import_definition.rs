@@ -1,4 +1,9 @@
-use crate::config;
+use std::collections::HashMap;
+
+use wick_packet::RuntimeConfig;
+
+use crate::config::{self};
+use crate::error::ManifestError;
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
 #[asset(asset(config::AssetReference))]
@@ -19,5 +24,26 @@ impl ImportDefinition {
       return c.is_reference();
     }
     false
+  }
+
+  /// Get the configuration associated with this import.
+  #[must_use]
+  pub fn config(&self) -> Option<&RuntimeConfig> {
+    match self {
+      ImportDefinition::Component(v) => v.config().and_then(|v| v.value()),
+      ImportDefinition::Types(_) => None,
+    }
+  }
+
+  /// Render the configuration associated with this import.
+  pub(crate) fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    match self {
+      ImportDefinition::Component(v) => v.render_config(root_config, env),
+      ImportDefinition::Types(_) => Ok(()),
+    }
   }
 }

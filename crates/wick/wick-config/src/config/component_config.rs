@@ -14,14 +14,18 @@ use wick_interface_types::{ComponentMetadata, ComponentSignature, Field, Operati
 use wick_packet::RuntimeConfig;
 
 use super::common::package_definition::PackageConfig;
-use super::{make_resolver, ImportBinding, TestConfiguration};
+use super::{ImportBinding, TestConfiguration};
 use crate::config::{BoundInterface, ResourceBinding};
 use crate::import_cache::{setup_cache, ImportCache};
-use crate::utils::RwOption;
+use crate::utils::{make_resolver, RwOption};
 use crate::{config, v1, Error, Resolver, Result};
 
 #[derive(Debug, Default, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
-#[builder(derive(Debug), setter(into))]
+#[builder(
+  derive(Debug),
+  setter(into),
+  build_fn(name = "build_internal", private, error = "crate::error::BuilderError")
+)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]
 #[must_use]
@@ -35,7 +39,6 @@ pub struct ComponentConfiguration {
   /// The name of the component configuration.
   pub(crate) name: Option<String>,
 
-  #[builder(default = "ComponentImplementation::Composite(CompositeComponentImplementation::default())")]
   /// The component implementation.
   pub(crate) component: ComponentImplementation,
 
@@ -85,6 +88,7 @@ pub struct ComponentConfiguration {
 
   #[asset(skip)]
   #[doc(hidden)]
+  #[property(skip)]
   #[builder(default)]
   pub(crate) root_config: Option<RuntimeConfig>,
 
@@ -148,7 +152,7 @@ impl ComponentConfiguration {
     make_resolver(
       self.import.clone(),
       self.resources.clone(),
-      self.root_config().cloned(),
+      self.root_config.clone(),
       None,
     )
   }
@@ -223,6 +227,11 @@ impl ComponentConfiguration {
     }
   }
 
+  #[must_use]
+  pub fn root_config(&self) -> Option<&RuntimeConfig> {
+    self.root_config.as_ref()
+  }
+
   /// Get the component signature for this configuration.
   pub fn signature(&self) -> Result<ComponentSignature> {
     let mut sig = wick_interface_types::component! {
@@ -241,19 +250,34 @@ impl ComponentConfiguration {
     Ok(serde_yaml::to_string(&v1_manifest).unwrap())
   }
 
-  /// Initialize the configuration with the given environment variables.
-  pub fn initialize(&mut self, env: Option<&HashMap<String, String>>) -> Result<()> {
+  /// Initialize the configuration.
+  pub(super) fn initialize(&mut self) -> Result<&Self> {
     // This pre-renders the component config's resources without access to the environment.
-    let config = self.root_config().cloned();
-
+    let root_config = self.root_config.clone();
     trace!(
       num_resources = self.resources.len(),
-      ?config,
-      "initializing component resources"
+      num_imports = self.import.len(),
+      ?root_config,
+      "initializing component"
     );
     for resource in self.resources.values_mut() {
-      resource.kind.render(config.as_ref(), env)?;
+      resource.kind.render_config(root_config.as_ref(), None)?;
     }
+    for import in self.import.values_mut() {
+      import.kind.render_config(root_config.as_ref(), None)?;
+    }
+
+    Ok(self)
+  }
+
+  /// Validate this configuration is good.
+  pub fn validate(&self) -> Result<()> {
+    wick_packet::validation::expect_configuration_matches(
+      self.source().map_or("<unknown>", |p| p.to_str().unwrap_or("<invalid>")),
+      self.root_config.as_ref(),
+      self.config(),
+    )
+    .map_err(Error::ConfigurationInvalid)?;
     Ok(())
   }
 }
@@ -262,25 +286,22 @@ impl ComponentConfigurationBuilder {
   #[must_use]
   /// Initialize a new component configuration builder from an existing configuration.
   pub fn from_base(config: ComponentConfiguration) -> Self {
-    let mut this = Self::default();
-    this
-      .component(config.component)
-      .host(config.host)
-      .tests(config.tests)
-      .types(config.types)
-      .requires(config.requires)
-      .resources(config.resources)
-      .metadata(config.metadata)
-      .import(config.import);
-
-    if let Some(name) = config.name {
-      this.name(name);
+    Self {
+      name: Some(config.name),
+      component: Some(config.component),
+      source: None,
+      types: Some(config.types),
+      import: Some(config.import),
+      requires: Some(config.requires),
+      resources: Some(config.resources),
+      host: Some(config.host),
+      tests: Some(config.tests),
+      metadata: Some(config.metadata),
+      package: Some(config.package),
+      root_config: Some(config.root_config),
+      type_cache: std::marker::PhantomData,
+      cached_types: std::marker::PhantomData,
     }
-    if let Some(source) = config.source {
-      this.source(source);
-    }
-
-    this
   }
 
   /// Add an imported component to the builder.
@@ -303,6 +324,13 @@ impl ComponentConfigurationBuilder {
       r.insert(resource.id.clone(), resource);
       self.resources = Some(r);
     }
+  }
+
+  /// Build the configuration.
+  pub fn build(self) -> Result<ComponentConfiguration> {
+    let config = self.build_internal()?;
+    config.validate()?;
+    Ok(config)
   }
 }
 

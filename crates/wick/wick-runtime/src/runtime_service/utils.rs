@@ -1,4 +1,5 @@
 use flow_graph_interpreter::{HandlerMap, NamespaceHandler};
+use wick_config::config::ComponentDefinition;
 
 use super::error::ConstraintFailure;
 use super::ChildInit;
@@ -45,34 +46,40 @@ pub(crate) async fn instantiate_import(
   binding: &config::ImportBinding,
   opts: ChildInit,
 ) -> Result<Option<NamespaceHandler>, EngineError> {
-  opts.span.in_scope(|| debug!(?binding, ?opts, "initializing component"));
+  opts.span.in_scope(|| debug!(?binding, ?opts, "instantiating import"));
   let id = binding.id().to_owned();
   match binding.kind() {
-    config::ImportDefinition::Component(c) => {
-      match c {
-        #[allow(deprecated)]
-        config::ComponentDefinition::Wasm(def) => Ok(Some(
-          init_wasm_component(
-            def.reference(),
-            Some(def.permissions().clone()),
-            id,
-            opts,
-            Default::default(),
-          )
-          .await?,
-        )),
-        config::ComponentDefinition::Manifest(def) => Ok(Some(init_manifest_component(def, id, opts).await?)),
-        config::ComponentDefinition::Reference(_) => unreachable!(),
-        config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
-        config::ComponentDefinition::HighLevelComponent(hlc) => {
-          init_hlc_component(id, opts.config.clone(), None, hlc.clone(), opts.resolver)
-            .await
-            .map(Some)
-        }
-        config::ComponentDefinition::Native(_) => Ok(None),
-      }
-    }
+    config::ImportDefinition::Component(c) => instantiate_component(id, c, opts).await,
     config::ImportDefinition::Types(_) => Ok(None),
+  }
+}
+
+pub(crate) async fn instantiate_component(
+  id: String,
+  kind: &ComponentDefinition,
+  opts: ChildInit,
+) -> Result<Option<NamespaceHandler>, EngineError> {
+  match kind {
+    #[allow(deprecated)]
+    config::ComponentDefinition::Wasm(def) => Ok(Some(
+      init_wasm_component(
+        def.reference(),
+        Some(def.permissions().clone()),
+        id,
+        opts,
+        Default::default(),
+      )
+      .await?,
+    )),
+    config::ComponentDefinition::Manifest(def) => Ok(Some(init_manifest_component(def, id, opts).await?)),
+    config::ComponentDefinition::Reference(_) => unreachable!(),
+    config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
+    config::ComponentDefinition::HighLevelComponent(hlc) => {
+      init_hlc_component(id, opts.config.clone(), None, hlc.clone(), opts.resolver)
+        .await
+        .map(Some)
+    }
+    config::ComponentDefinition::Native(_) => Ok(None),
   }
 }
 

@@ -32,6 +32,7 @@ pub(crate) async fn handle(
 
   let manifest = WickConfiguration::fetch_all(&opts.location, fetch_options)
     .await?
+    .finish()?
     .try_component_config()?;
 
   let server_options = DefaultCliOptions { ..Default::default() };

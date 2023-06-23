@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use flow_component::BoxFuture;
 use tap_harness::TestRunner;
 use wick_config::config::{TestCase, TestConfiguration};
@@ -8,11 +6,8 @@ use wick_packet::RuntimeConfig;
 use crate::utils::render_config;
 use crate::{run_test, TestError, UnitTest};
 
-pub type ComponentFactory<'a> = Box<
-  dyn Fn(Option<RuntimeConfig>, Option<HashMap<String, String>>) -> BoxFuture<'a, Result<SharedComponent, TestError>>
-    + Sync
-    + Send,
->;
+pub type ComponentFactory<'a> =
+  Box<dyn Fn(Option<RuntimeConfig>) -> BoxFuture<'a, Result<SharedComponent, TestError>> + Sync + Send>;
 
 pub use flow_component::SharedComponent;
 
@@ -52,9 +47,8 @@ impl<'a> TestSuite<'a> {
 
   pub async fn run(&'a mut self, factory: ComponentFactory<'a>) -> Result<Vec<TestRunner>, TestError> {
     let mut runners = Vec::new();
-    let env: HashMap<String, String> = std::env::vars().collect();
     for group in &mut self.tests {
-      let component = factory(group.root_config.clone(), Some(env.clone()));
+      let component = factory(group.root_config.clone());
       runners.push(group.run(None, component.await?).await?);
     }
     Ok(runners)

@@ -108,7 +108,6 @@ impl ComponentHost {
     span.follows_from(&self.span);
     rt_builder = rt_builder.span(span);
     rt_builder = rt_builder.namespace(self.get_host_id());
-    rt_builder = rt_builder.root_config(self.manifest.root_config().cloned());
     rt_builder = rt_builder.allow_latest(self.manifest.allow_latest());
     if let Some(insecure) = self.manifest.insecure_registries() {
       rt_builder = rt_builder.allowed_insecure(insecure.to_vec());
@@ -239,7 +238,10 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn request_direct() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
-    let manifest = WickConfiguration::load_from_file(&file).await?.try_component_config()?;
+    let manifest = WickConfiguration::load_from_file(&file)
+      .await?
+      .finish()?
+      .try_component_config()?;
     let mut host = ComponentHostBuilder::default().manifest(manifest).build()?;
     host.start(None).await?;
     let passed_data = "logging output";
@@ -262,7 +264,10 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn request_rpc_server() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
-    let mut def = WickConfiguration::load_from_file(&file).await?.try_component_config()?;
+    let mut def = WickConfiguration::load_from_file(&file)
+      .await?
+      .finish()?
+      .try_component_config()?;
 
     if def.host().is_none() {
       def.set_host(Some(Default::default()));

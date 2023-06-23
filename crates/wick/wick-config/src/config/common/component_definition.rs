@@ -10,7 +10,8 @@ use crate::config::{self, ExecutionSettings, LiquidJsonConfig};
 use crate::error::ManifestError;
 
 /// A reference to an operation.
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, Builder)]
+#[builder(setter(into))]
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(config::AssetReference))]
 
@@ -22,9 +23,11 @@ pub struct ComponentOperationExpression {
   pub(crate) component: ComponentDefinition,
   /// Configuration to associate with this operation.
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) config: Option<LiquidJsonConfig>,
   /// Per-operation settings that override global execution settings.
   #[asset(skip)]
+  #[builder(default)]
   pub(crate) settings: Option<ExecutionSettings>,
 }
 
@@ -165,7 +168,7 @@ impl ComponentDefinition {
   }
 
   /// Render the resource configuration
-  pub fn render(
+  pub(crate) fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,

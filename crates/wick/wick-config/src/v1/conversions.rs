@@ -69,6 +69,7 @@ impl TryFrom<v1::TestConfiguration> for test_config::TestConfiguration {
       config: value.with.map_into(),
       name: value.name,
       source: None,
+      env: Default::default(),
     })
   }
 }
@@ -400,6 +401,7 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
       type_cache: Default::default(),
       package: def.package.try_map_into()?,
       root_config: Default::default(),
+      env: Default::default(),
     })
   }
 }

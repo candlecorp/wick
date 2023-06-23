@@ -20,6 +20,7 @@ mod static_router;
 pub struct HttpTriggerConfig {
   #[asset(skip)]
   pub(crate) resource: String,
+  #[builder(default)]
   pub(crate) routers: Vec<HttpRouterConfig>,
 }
 

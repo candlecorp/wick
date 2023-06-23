@@ -53,6 +53,28 @@ impl From<RuntimeConfig> for HashMap<String, Value> {
   }
 }
 
+impl<K, const N: usize> From<[(K, Value); N]> for RuntimeConfig
+where
+  K: Into<String>,
+{
+  /// # Examples
+  ///
+  /// ```
+  /// use wick_packet::RuntimeConfig;
+  ///
+  /// let config = RuntimeConfig::from([("key1", "value".into()), ("key2", 4.into())]);
+  /// let key1 = config.coerce_key::<String>("key1").unwrap();
+  /// assert_eq!(key1, "value");
+  ///
+  /// let key2 = config.coerce_key::<u16>("key2").unwrap();
+  /// assert_eq!(key2, 4);
+  ///
+  /// ```
+  fn from(arr: [(K, Value); N]) -> Self {
+    Self(HashMap::from_iter(arr.into_iter().map(|(k, v)| (k.into(), v))))
+  }
+}
+
 impl TryFrom<Value> for RuntimeConfig {
   type Error = Error;
 

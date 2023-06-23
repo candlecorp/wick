@@ -210,6 +210,7 @@ mod test {
     let yaml = manifest_dir.join("time.wick");
     let app_config = config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default())
       .await?
+      .finish()?
       .try_app_config()?;
 
     let trigger = Time::load()?;

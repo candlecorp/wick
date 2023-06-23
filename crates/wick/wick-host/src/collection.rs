@@ -78,6 +78,7 @@ mod tests {
   async fn test_component() -> TestResult<()> {
     let manifest = WickConfiguration::fetch("./manifests/logger.yaml", Default::default())
       .await?
+      .finish()?
       .try_component_config()?;
     let mut builder = ComponentHostBuilder::default();
     builder.manifest(manifest);

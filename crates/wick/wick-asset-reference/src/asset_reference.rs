@@ -32,6 +32,12 @@ impl FromStr for AssetReference {
   }
 }
 
+impl From<&str> for AssetReference {
+  fn from(s: &str) -> Self {
+    Self::new(s)
+  }
+}
+
 impl std::fmt::Display for AssetReference {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{}", self.location)

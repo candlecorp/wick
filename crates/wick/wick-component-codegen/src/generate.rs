@@ -171,7 +171,9 @@ pub fn build(config: config::Config) -> Result<()> {
 
 pub async fn async_build(mut config: config::Config) -> Result<()> {
   let path = config.spec.as_path().to_str().unwrap();
-  let wick_config = wick_config::WickConfiguration::fetch(path, FetchOptions::default()).await?;
+  let wick_config = wick_config::WickConfiguration::fetch(path, FetchOptions::default())
+    .await?
+    .into_inner();
 
   let src = codegen(wick_config, &mut config)?;
   tokio::fs::create_dir_all(&config.out_dir).await?;
@@ -196,7 +198,10 @@ mod test {
   #[tokio::test]
   async fn test_build() -> Result<()> {
     let mut config = ConfigBuilder::new().spec("./tests/testdata/component.yaml").build()?;
-    let wick_config = WickConfiguration::load_from_file(&config.spec).await.unwrap();
+    let wick_config = WickConfiguration::load_from_file(&config.spec)
+      .await
+      .unwrap()
+      .finish()?;
 
     let src = codegen(wick_config, &mut config)?;
 

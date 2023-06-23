@@ -7,6 +7,7 @@ use seeded_random::Seed;
 use serde_json::{json, Value};
 use structured_output::StructuredOutput;
 use wick_component_cli::options::DefaultCliOptions;
+use wick_config::config::UninitializedConfiguration;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
 use wick_oci_utils::OciOptions;
@@ -53,13 +54,14 @@ pub(crate) async fn handle(
   let oci_opts: OciOptions = opts.oci.clone().into();
   let root_manifest = WickConfiguration::fetch_all(&opts.location, oci_opts.clone())
     .await?
+    .into_inner()
     .try_component_config()?;
 
   let mut suite = TestSuite::from_configuration(root_manifest.tests())?;
 
   let test_files: Vec<_> = futures::future::join_all(opts.tests.iter().map(|path| {
     WickConfiguration::fetch_all(path, oci_opts.clone())
-      .and_then(|config| futures::future::ready(config.try_test_config()))
+      .and_then(|config| futures::future::ready(config.finish().and_then(|c| c.try_test_config())))
   }))
   .await
   .into_iter()
@@ -73,14 +75,18 @@ pub(crate) async fn handle(
 
   let manifest = merge_config(&root_manifest, &opts.oci, Some(server_options));
 
-  let factory: ComponentFactory = Box::new(move |config, env| {
-    let mut manifest = manifest.clone();
+  let factory: ComponentFactory = Box::new(move |config| {
+    let mut builder = UninitializedConfiguration::new(WickConfiguration::Component(manifest.clone()));
     let span = span.clone();
+
     let task = async move {
-      manifest.set_root_config(config);
-      manifest
-        .initialize(env.as_ref())
-        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
+      builder.set_root_config(config);
+      let manifest = builder
+        .finish()
+        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?
+        .try_component_config()
+        .unwrap();
+
       let mut host = ComponentHostBuilder::default()
         .manifest(manifest)
         .span(span)

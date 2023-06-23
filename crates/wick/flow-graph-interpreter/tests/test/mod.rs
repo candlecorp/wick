@@ -44,8 +44,10 @@ pub(crate) async fn base_setup(
     error_on_missing: false,
     ..Default::default()
   });
-  let mut def = wick_config::WickConfiguration::load_from_file_sync(manifest)?.try_component_config()?;
-  let network = from_def(&mut def, &component_config)?;
+  let mut def = wick_config::WickConfiguration::load_from_file_sync(manifest)?;
+  def.set_root_config(component_config);
+  let mut def = def.finish()?.try_component_config()?;
+  let network = from_def(&mut def)?;
   let collections = HandlerMap::new(vec![NamespaceHandler::new(
     "test",
     Box::new(test::TestComponent::new()),
@@ -55,7 +57,7 @@ pub(crate) async fn base_setup(
   let mut interpreter = Interpreter::new(
     network,
     None,
-    component_config,
+    def.root_config().cloned(),
     Some(collections),
     panic_callback(),
     &tracing::Span::current(),

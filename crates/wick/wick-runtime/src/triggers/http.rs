@@ -403,7 +403,7 @@ fn register_rest_router(
     let route_component = resolve_ref(app_config, route.operation().component())?;
     let route_binding =
       config::ImportBinding::component(format!("{}_{}", index_to_router_id(index), i), route_component);
-    let config = route_binding.config().and_then(|v| v.value().cloned());
+    let config = route_binding.config().cloned();
     let route = RestRoute::new(route.clone(), route_binding.clone(), config).map_err(|e| {
       RuntimeError::InitializationFailed(format!(
         "could not intitialize rest router for route {}: {}",

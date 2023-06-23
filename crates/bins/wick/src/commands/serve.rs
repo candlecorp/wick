@@ -36,13 +36,13 @@ pub(crate) async fn handle(
 ) -> Result<StructuredOutput> {
   let fetch_options: wick_oci_utils::OciOptions = opts.oci.clone().into();
 
-  let manifest = WickConfiguration::fetch_all(&opts.location, fetch_options)
-    .await?
-    .try_component_config()?;
-
-  let mut config = merge_config(&manifest, &opts.oci, Some(opts.cli));
   let with_config = parse_config_string(opts.with.as_deref())?;
-  config.set_root_config(with_config);
+
+  let mut manifest = WickConfiguration::fetch_all(&opts.location, fetch_options).await?;
+  manifest.set_root_config(with_config);
+  let manifest = manifest.finish()?.try_component_config()?;
+
+  let config = merge_config(&manifest, &opts.oci, Some(opts.cli));
 
   let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 

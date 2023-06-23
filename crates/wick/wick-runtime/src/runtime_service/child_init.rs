@@ -45,7 +45,6 @@ pub(crate) fn init_child(
   child_span.follows_from(opts.span);
   let config = RuntimeInit {
     manifest,
-    root_config: opts.config,
     allow_latest: opts.allow_latest,
     allowed_insecure: opts.allowed_insecure,
     namespace,

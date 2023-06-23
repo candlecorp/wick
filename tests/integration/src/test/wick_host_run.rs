@@ -18,6 +18,7 @@ mod slow_test {
 
     let app_config = WickConfiguration::fetch_all(manifest.to_string_lossy(), Default::default())
       .await?
+      .finish()?
       .try_app_config()?;
 
     let mut host = AppHostBuilder::default().manifest(app_config.clone()).build()?;

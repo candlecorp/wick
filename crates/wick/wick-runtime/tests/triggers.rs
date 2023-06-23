@@ -10,9 +10,10 @@ use wick_config::WickConfiguration;
 use wick_runtime::resources::Resource;
 
 async fn load_app_yaml(path: &str) -> anyhow::Result<AppConfiguration> {
-  let mut host_def = WickConfiguration::load_from_file(path).await?.try_app_config()?;
-  host_def.initialize(Some(&std::env::vars().collect()))?;
-  Ok(host_def)
+  let mut config = WickConfiguration::load_from_file(path).await?;
+  config.set_env(Some(std::env::vars().collect()));
+
+  Ok(config.finish()?.try_app_config()?)
 }
 
 fn init_resources(config: &AppConfiguration) -> Result<HashMap<String, Resource>> {

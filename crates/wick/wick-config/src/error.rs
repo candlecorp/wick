@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use derive_builder::UninitializedFieldError;
 use thiserror::Error;
 
 use crate::config::{self};
@@ -89,6 +90,10 @@ pub enum ManifestError {
   #[error("Could not render configuration template: {0}")]
   ConfigurationTemplate(String),
 
+  /// Passed [RuntimeConfig] is invalid for the configuration required by this component.
+  #[error(transparent)]
+  ConfigurationInvalid(#[from] wick_packet::Error),
+
   /// Attempted to serialize a complex [liquid_json::LiquidJson] template into a string.
   #[error("Invalid template: could not turn an object or an array into a string")]
   TemplateStructure,
@@ -104,6 +109,10 @@ pub enum ManifestError {
   /// Error resolving reference.
   #[error(transparent)]
   Reference(ReferenceError),
+
+  /// Error building a configuration
+  #[error(transparent)]
+  Builder(#[from] BuilderError),
 }
 
 #[derive(Error, Debug, Clone, Copy)]
@@ -115,4 +124,24 @@ pub enum ReferenceError {
   /// The referenced item was not a resource.
   #[error("Referenced item is not a resource")]
   Resource,
+}
+/// Errors generated when building a configuration.
+#[derive(Error, Debug)]
+pub enum BuilderError {
+  /// Uninitialized field
+  #[error("Uninitialized field: {0}")]
+  UninitializedField(&'static str),
+  /// Invalid builder configuration
+  #[error("Invalid builder configuration: {0}")]
+  ValidationError(String),
+}
+impl From<String> for BuilderError {
+  fn from(s: String) -> Self {
+    Self::ValidationError(s)
+  }
+}
+impl From<UninitializedFieldError> for BuilderError {
+  fn from(value: UninitializedFieldError) -> Self {
+    Self::UninitializedField(value.field_name())
+  }
 }

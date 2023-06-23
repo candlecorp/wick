@@ -7,3 +7,12 @@ pub struct ComponentReference {
   /// The id of the component.
   pub(crate) id: String,
 }
+
+impl ComponentReference {
+  /// Create a new [ComponentReference] with specified id.
+  pub fn new(id: impl AsRef<str>) -> Self {
+    Self {
+      id: id.as_ref().to_owned(),
+    }
+  }
+}
