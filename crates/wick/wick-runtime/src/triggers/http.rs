@@ -25,7 +25,6 @@ use wick_config::config::components::Codec;
 use wick_config::config::{
   AppConfiguration,
   ImportBinding,
-  LiquidJsonConfig,
   ProxyRouterConfig,
   RawRouterConfig,
   RestRouterConfig,
@@ -268,20 +267,6 @@ fn index_to_router_id(index: usize) -> String {
   format!("router_{}", index)
 }
 
-fn render_trigger_config(
-  root: Option<&RuntimeConfig>,
-  config: Option<&LiquidJsonConfig>,
-) -> Result<Option<RuntimeConfig>, RuntimeError> {
-  if let Some(config) = config {
-    let config = config
-      .render(root, None, None)
-      .map_err(|e| RuntimeError::Configuration(e.to_string()))?;
-    Ok(Some(config))
-  } else {
-    Ok(None)
-  }
-}
-
 fn resolve_middleware_components(
   router_index: usize,
   app_config: &AppConfiguration,
@@ -300,10 +285,7 @@ fn resolve_middleware_components(
       if let Some(binding) = binding {
         bindings.push(binding);
       }
-      request_operations.push((
-        name,
-        render_trigger_config(app_config.root_config(), operation.config())?,
-      ));
+      request_operations.push((name, operation.config().and_then(|v| v.value().cloned())));
     }
     for (i, operation) in middleware.response().iter().enumerate() {
       let (name, binding) = resolve_or_import(
@@ -314,10 +296,7 @@ fn resolve_middleware_components(
       if let Some(binding) = binding {
         bindings.push(binding);
       }
-      response_operations.push((
-        name,
-        render_trigger_config(app_config.root_config(), operation.config())?,
-      ));
+      response_operations.push((name, operation.config().and_then(|v| v.value().cloned())));
     }
   }
   let middleware = RouterMiddleware::new(request_operations, response_operations);
@@ -338,7 +317,7 @@ fn register_raw_router(
     operation: router_config.operation().name().to_owned(),
     component: index_to_router_id(index),
     codec: router_config.codec().copied().unwrap_or_default(),
-    config: render_trigger_config(app_config.root_config(), router_config.operation().config())?,
+    config: router_config.operation().config().and_then(|v| v.value().cloned()),
   };
 
   let constraint = RuntimeConstraint::Operation {
@@ -424,7 +403,7 @@ fn register_rest_router(
     let route_component = resolve_ref(app_config, route.operation().component())?;
     let route_binding =
       config::ImportBinding::component(format!("{}_{}", index_to_router_id(index), i), route_component);
-    let config = render_trigger_config(app_config.root_config(), route_binding.config())?;
+    let config = route_binding.config().and_then(|v| v.value().cloned());
     let route = RestRoute::new(route.clone(), route_binding.clone(), config).map_err(|e| {
       RuntimeError::InitializationFailed(format!(
         "could not intitialize rest router for route {}: {}",
