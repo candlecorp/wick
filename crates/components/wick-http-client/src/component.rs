@@ -9,10 +9,17 @@ use reqwest::{ClientBuilder, Method, Request, RequestBuilder};
 use serde_json::{Map, Value};
 use tracing::Span;
 use url::Url;
-use wick_config::config::components::{Codec, HttpClientComponentConfig, HttpClientOperationDefinition, HttpMethod};
+use wick_config::config::components::{
+  Codec,
+  ComponentConfig,
+  HttpClientComponentConfig,
+  HttpClientOperationDefinition,
+  HttpMethod,
+  OperationConfig,
+};
 use wick_config::config::{LiquidJsonConfig, Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
-use wick_interface_types::ComponentSignature;
+use wick_interface_types::{ComponentSignature, OperationSignatures};
 use wick_packet::{Base64Bytes, FluxChannel, Invocation, Observer, Packet, PacketSender, PacketStream, RuntimeConfig};
 
 use crate::error::Error;
@@ -489,7 +496,7 @@ mod test {
       let invocation = Invocation::test("test_get_request", Entity::local(GET_OP), packets, Default::default())?;
       let config = json!({"secret":"0xDEADBEEF"});
       let mut stream = comp
-        .handle(invocation, Some(config.try_into()?), panic_callback())
+        .handle(invocation, Some(RuntimeConfig::from_value(config)?), panic_callback())
         .await?
         .collect::<Vec<_>>()
         .await;

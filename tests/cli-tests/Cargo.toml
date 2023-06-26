@@ -1,0 +1,17 @@
+[package]
+name = "cli-tests"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "Apache-2.0"
+description = "A generic, native component to use in Wick testing"
+repository = "https://github.com/candlecorp/wick"
+publish = false
+
+[features]
+
+[dev-dependencies]
+trycmd = { workspace = true }
+rstest = { workspace = true }
+anyhow = { workspace = true }
+escargot = { workspace = true, features = ["print"] }

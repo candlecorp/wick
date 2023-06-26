@@ -3,10 +3,10 @@
 use wick_interface_types::Field;
 
 #[derive(Debug, Builder, Clone, property::Property)]
-#[property(get(public), set(private), mut(disable))]
+#[property(get(disable), set(private), mut(disable))]
 #[builder(setter(into))]
 /// The generic definition of an Operation without any implementation details.
-pub struct OperationSignature {
+pub struct OperationDefinition {
   /// The name of the schematic.
   pub(crate) name: String,
 

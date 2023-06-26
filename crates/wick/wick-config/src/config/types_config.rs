@@ -4,10 +4,11 @@ use std::path::{Path, PathBuf};
 
 use asset_container::{AssetManager, Assets};
 use wick_asset_reference::AssetReference;
-use wick_interface_types::TypeDefinition;
+use wick_interface_types::{OperationSignatures, TypeDefinition};
 
 use super::common::package_definition::PackageConfig;
-use super::OperationSignature;
+use super::components::ComponentConfig;
+use super::OperationDefinition;
 use crate::config;
 use crate::error::ManifestError;
 
@@ -36,32 +37,15 @@ pub struct TypesConfiguration {
   /// A list of types defined in this configuration.
   pub(crate) types: Vec<TypeDefinition>,
   #[asset(skip)]
+  #[property(skip)]
   /// A list of operation signatures defined in this configuration.
-  pub(crate) operations: HashMap<String, OperationSignature>,
+  pub(crate) operations: Vec<OperationDefinition>,
   #[builder(default)]
   /// The package configuration for this configuration.
   pub(crate) package: Option<PackageConfig>,
 }
 
 impl TypesConfiguration {
-  /// Get the inner definitions, consuming the [TypesConfiguration].
-  #[must_use]
-  pub fn into_parts(self) -> (Vec<TypeDefinition>, HashMap<String, OperationSignature>) {
-    (self.types, self.operations)
-  }
-
-  /// Get the types defined in this configuration, consuming the [TypesConfiguration].
-  #[must_use]
-  pub fn into_types(self) -> Vec<TypeDefinition> {
-    self.types
-  }
-
-  /// Get the operations defined in this configuration, consuming the [TypesConfiguration].
-  #[must_use]
-  pub fn into_operations(self) -> HashMap<String, OperationSignature> {
-    self.operations
-  }
-
   /// Get a type by name
   #[must_use]
   pub fn get_type(&self, name: &str) -> Option<&TypeDefinition> {
@@ -102,5 +86,23 @@ impl TypesConfiguration {
   pub fn validate(&self) -> Result<(), ManifestError> {
     /* placeholder */
     Ok(())
+  }
+}
+
+impl OperationSignatures for TypesConfiguration {
+  fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
+    self.operations.clone().into_iter().map(Into::into).collect()
+  }
+}
+
+impl ComponentConfig for TypesConfiguration {
+  type Operation = OperationDefinition;
+
+  fn operations(&self) -> &[Self::Operation] {
+    &self.operations
+  }
+
+  fn operations_mut(&mut self) -> &mut Vec<Self::Operation> {
+    &mut self.operations
   }
 }

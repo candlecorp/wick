@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
-use wick_config::config::OperationSignature;
+use wick_interface_types::OperationSignature;
 
 use crate::generate::dependency::Dependency;
 use crate::generate::expand_type::expand_type;

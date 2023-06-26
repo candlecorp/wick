@@ -615,6 +615,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a2dd5a6fe8c6e3502f568a6353e5273bbb15193ad9a89e457b9970798efbea1"
 
 [[package]]
+name = "cli-tests"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "escargot",
+ "rstest",
+ "trycmd",
+]
+
+[[package]]
 name = "codegen-tests"
 version = "0.1.0"
 dependencies = [
@@ -1547,6 +1557,18 @@ checksum = "aa68f1b12764fab894d2755d2518754e71b4fd80ecfb822714a1206c2aab39bf"
 dependencies = [
  "cc",
  "libc",
+]
+
+[[package]]
+name = "escargot"
+version = "0.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5584ba17d7ab26a8a7284f13e5bd196294dd2f2d79773cff29b9e9edef601a6"
+dependencies = [
+ "log",
+ "once_cell",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -6248,35 +6270,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wick-azure-sql"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bb8",
- "bb8-tiberius",
- "bytes 1.4.0",
- "chrono",
- "flow-component",
- "futures 0.3.28",
- "parking_lot 0.12.1",
- "pretty_assertions",
- "serde",
- "serde_json",
- "test-logger",
- "thiserror",
- "tiberius",
- "tokio",
- "tokio-util",
- "tracing",
- "url",
- "wick-config",
- "wick-interface-types",
- "wick-logger",
- "wick-packet",
- "wick-rpc",
-]
-
-[[package]]
 name = "wick-cli"
 version = "0.10.0"
 dependencies = [
@@ -6720,7 +6713,6 @@ dependencies = [
  "url",
  "uuid",
  "wasmrs-codec",
- "wick-azure-sql",
  "wick-component-wasm",
  "wick-config",
  "wick-http-client",
@@ -6730,7 +6722,7 @@ dependencies = [
  "wick-logger",
  "wick-packet",
  "wick-rpc",
- "wick-sqlx",
+ "wick-sql",
  "wick-stdlib",
 ]
 
@@ -6746,10 +6738,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "wick-sqlx"
+name = "wick-sql"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bb8",
+ "bb8-tiberius",
  "bytes 1.4.0",
  "chrono",
  "flow-component",
@@ -6761,6 +6755,7 @@ dependencies = [
  "sqlx",
  "test-logger",
  "thiserror",
+ "tiberius",
  "tokio",
  "tracing",
  "url",

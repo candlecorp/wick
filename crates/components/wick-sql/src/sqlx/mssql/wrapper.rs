@@ -10,7 +10,7 @@ use sqlx::{Encode, Mssql, Type as SqlxType};
 use wick_interface_types::Type;
 use wick_packet::{parse_date, TypeWrapper};
 
-use crate::sql_wrapper::SqlWrapper;
+use crate::common::sql_wrapper::SqlWrapper;
 
 impl<'q> Encode<'q, Mssql> for SqlWrapper {
   #[inline]

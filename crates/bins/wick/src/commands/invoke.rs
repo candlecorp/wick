@@ -159,7 +159,8 @@ pub(crate) async fn handle(
     //   utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
     // }
   } else {
-    let args = parse_args(&opts.args, op_signature)?;
+    let args = parse_args(&opts.args, op_signature)
+      .map_err(|e| anyhow!("Failed to parse arguments for operation {}: {}", component, e))?;
     trace!(args= ?args, "parsed CLI arguments");
     let mut packets = Vec::new();
     let mut seen_ports = HashSet::new();

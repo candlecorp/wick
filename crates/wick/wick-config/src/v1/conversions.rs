@@ -20,7 +20,7 @@ use crate::config::{
   ExecutionSettings,
   HighLevelComponent,
   HostConfig,
-  OperationSignature,
+  OperationDefinition,
   ScheduleConfig,
   TemplateConfig,
   WasmComponentImplementation,
@@ -94,11 +94,7 @@ impl TryFrom<v1::TypesConfiguration> for types_config::TypesConfiguration {
       name: value.name,
       metadata: value.metadata.try_map_into()?,
       types: value.types.try_map_into()?,
-      operations: value
-        .operations
-        .into_iter()
-        .map(|op| Ok((op.name.clone(), op.try_into()?)))
-        .collect::<Result<_>>()?,
+      operations: value.operations.try_map_into()?,
       source: None,
       package: value.package.try_map_into()?,
     })
@@ -113,11 +109,7 @@ impl TryFrom<types_config::TypesConfiguration> for v1::TypesConfiguration {
       name: value.name,
       metadata: value.metadata.try_map_into()?,
       types: value.types.try_map_into()?,
-      operations: value
-        .operations
-        .into_values()
-        .map(TryInto::try_into)
-        .collect::<Result<_>>()?,
+      operations: value.operations.try_map_into()?,
       package: value.package.try_map_into()?,
     })
   }
@@ -261,11 +253,7 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentImplementation {
     Ok(Self {
       reference: value.reference.try_into()?,
       config: value.with.try_map_into()?,
-      operations: value
-        .operations
-        .into_iter()
-        .map(|op| Ok((op.name.clone(), op.try_into()?)))
-        .collect::<Result<_>>()?,
+      operations: value.operations.try_map_into()?,
     })
   }
 }
@@ -286,11 +274,7 @@ impl TryFrom<v1::InterfaceDefinition> for config::InterfaceDefinition {
 
   fn try_from(value: v1::InterfaceDefinition) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      operations: value
-        .operations
-        .into_iter()
-        .map(|v| Ok((v.name.clone(), v.try_into()?)))
-        .collect::<Result<_>>()?,
+      operations: value.operations.try_map_into()?,
       types: value.types.try_map_into()?,
     })
   }
@@ -300,11 +284,7 @@ impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentImplemen
   type Error = ManifestError;
   fn try_from(value: v1::CompositeComponentConfiguration) -> Result<Self> {
     Ok(Self {
-      operations: value
-        .operations
-        .into_iter()
-        .map(|op| Ok((op.name.clone(), op.try_into()?)))
-        .collect::<Result<_>>()?,
+      operations: value.operations.try_map_into()?,
       config: value.with.try_map_into()?,
     })
   }
@@ -314,11 +294,7 @@ impl TryFrom<CompositeComponentImplementation> for v1::CompositeComponentConfigu
   type Error = ManifestError;
   fn try_from(value: CompositeComponentImplementation) -> Result<Self> {
     Ok(Self {
-      operations: value
-        .operations
-        .into_values()
-        .map(|op| op.try_into())
-        .collect::<Result<_>>()?,
+      operations: value.operations.try_map_into()?,
       with: value.config.try_map_into()?,
     })
   }
@@ -328,11 +304,7 @@ impl TryFrom<WasmComponentImplementation> for v1::WasmComponentConfiguration {
   type Error = ManifestError;
   fn try_from(value: WasmComponentImplementation) -> Result<Self> {
     Ok(Self {
-      operations: value
-        .operations
-        .into_values()
-        .map(|op| op.try_into())
-        .collect::<Result<_>>()?,
+      operations: value.operations.try_map_into()?,
       reference: value.reference.try_into()?,
       with: value.config.try_map_into()?,
     })
@@ -355,11 +327,7 @@ impl TryFrom<config::InterfaceDefinition> for v1::InterfaceDefinition {
 
   fn try_from(value: config::InterfaceDefinition) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      operations: value
-        .operations
-        .into_values()
-        .map(|op| op.try_into())
-        .collect::<Result<_>>()?,
+      operations: value.operations.try_map_into()?,
       types: value.types.try_map_into()?,
     })
   }
@@ -878,7 +846,7 @@ impl TryFrom<ComponentImplementation> for v1::ComponentKind {
   }
 }
 
-impl TryFrom<crate::v1::OperationDefinition> for OperationSignature {
+impl TryFrom<crate::v1::OperationDefinition> for OperationDefinition {
   type Error = ManifestError;
 
   fn try_from(op: crate::v1::OperationDefinition) -> Result<Self> {
@@ -891,10 +859,10 @@ impl TryFrom<crate::v1::OperationDefinition> for OperationSignature {
   }
 }
 
-impl TryFrom<OperationSignature> for crate::v1::OperationDefinition {
+impl TryFrom<OperationDefinition> for crate::v1::OperationDefinition {
   type Error = ManifestError;
 
-  fn try_from(op: OperationSignature) -> Result<Self> {
+  fn try_from(op: OperationDefinition) -> Result<Self> {
     Ok(Self {
       name: op.name,
       with: op.config.try_map_into()?,

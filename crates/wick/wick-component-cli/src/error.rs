@@ -31,11 +31,11 @@ pub enum CliError {
   /// An internal error running asynchronous jobs.
   JoinError(#[from] tokio::task::JoinError),
 
-  #[error("{0}")]
+  #[error("invalid argument: {0}")]
   /// Thrown when the CLI received an invalid argument to pass to an invocation.
   InvalidArgument(String),
 
-  #[error("Input '{0}' not found in operation signature")]
+  #[error("Input '{0}' not found in signature")]
   /// Thrown when parsed input name was not found on the target operation.
   InvalidInput(String),
 

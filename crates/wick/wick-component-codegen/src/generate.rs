@@ -18,9 +18,8 @@ use module::Module;
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use templates::TypeOptions;
-use wick_config::config::OperationSignature;
 use wick_config::{FetchOptions, WickConfiguration};
-use wick_interface_types::TypeDefinition;
+use wick_interface_types::{OperationSignature, OperationSignatures, TypeDefinition};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum Direction {
@@ -98,16 +97,14 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
       let root_config = comp.config().to_owned();
       let requires = comp.requires().values().cloned().collect_vec();
       let ops = match comp.component() {
-        wick_config::config::ComponentImplementation::Wasm(c) => c.operations().clone(),
-        wick_config::config::ComponentImplementation::Composite(c) => {
-          c.operations().clone().into_iter().map(|(k, v)| (k, v.into())).collect()
-        }
+        wick_config::config::ComponentImplementation::Wasm(c) => c.operation_signatures(),
+        wick_config::config::ComponentImplementation::Composite(c) => c.operation_signatures(),
         _ => panic!("Code generation only supports `wick/component/wasm|composite` and `wick/types` configurations"),
       };
       (ops, types, requires, Some(root_config))
     }
     wick_config::WickConfiguration::Types(config) => (
-      config.operations().clone(),
+      config.operation_signatures(),
       config.types().to_vec(),
       Default::default(),
       None,
@@ -116,14 +113,14 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
   };
 
   let component_name = id("Component");
-  let wrapper_fns = gen_wrapper_fns(gen_config, &component_name, ops.values());
-  let trait_defs = gen_trait_fns(gen_config, ops.values());
+  let wrapper_fns = gen_wrapper_fns(gen_config, &component_name, ops.iter());
+  let trait_defs = gen_trait_fns(gen_config, ops.iter());
   let typedefs = gen_types("types", gen_config, types.iter());
 
   let init = f::gen_if(
     !ops.is_empty(),
     || {},
-    templates::gen_component_impls(gen_config, &component_name, ops.values(), required),
+    templates::gen_component_impls(gen_config, &component_name, ops.iter(), required),
   );
 
   let root_config = templates::component_config(gen_config, root_config);

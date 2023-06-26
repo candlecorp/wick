@@ -11,7 +11,7 @@ pub(crate) fn expect_signature_match(
   expected: &ComponentSignature,
 ) -> Result<(), EngineError> {
   if actual != expected {
-    warn!(
+    debug!(
       expected = serde_json::to_string(expected).unwrap(),
       actual = serde_json::to_string(actual).unwrap(),
       "signature mismatch"

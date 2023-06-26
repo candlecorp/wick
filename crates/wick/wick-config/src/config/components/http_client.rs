@@ -1,6 +1,9 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::collections::HashMap;
 
+use wick_interface_types::OperationSignatures;
+
+use super::{ComponentConfig, OperationConfig};
 use crate::config;
 
 #[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
@@ -27,13 +30,14 @@ pub struct HttpClientComponentConfig {
   /// A list of operations to expose on this component.
   #[asset(skip)]
   #[builder(default)]
+  #[property(skip)]
   pub(crate) operations: Vec<HttpClientOperationDefinition>,
 }
 
-impl HttpClientComponentConfig {
-  /// Get the signature of the component as defined by the manifest.
-  #[must_use]
-  pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
+impl HttpClientComponentConfig {}
+
+impl OperationSignatures for HttpClientComponentConfig {
+  fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
     let codec = self.codec;
     self
       .operations
@@ -45,6 +49,24 @@ impl HttpClientComponentConfig {
       })
       .map(Into::into)
       .collect()
+  }
+}
+
+impl ComponentConfig for HttpClientComponentConfig {
+  type Operation = HttpClientOperationDefinition;
+
+  fn operations(&self) -> &[Self::Operation] {
+    &self.operations
+  }
+
+  fn operations_mut(&mut self) -> &mut Vec<Self::Operation> {
+    &mut self.operations
+  }
+}
+
+impl OperationConfig for HttpClientOperationDefinition {
+  fn name(&self) -> &str {
+    &self.name
   }
 }
 
@@ -78,6 +100,7 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
 /// An operation whose implementation is an HTTP request.
 pub struct HttpClientOperationDefinition {
   /// The name of the operation.
+  #[property(skip)]
   pub(crate) name: String,
 
   /// The configuration the operation needs.

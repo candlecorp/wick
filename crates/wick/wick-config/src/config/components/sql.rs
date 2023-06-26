@@ -1,4 +1,7 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
+use wick_interface_types::{Field, OperationSignatures};
+
+use super::{ComponentConfig, OperationConfig};
 use crate::config::{self, ErrorBehavior};
 
 #[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
@@ -19,29 +22,53 @@ pub struct SqlComponentConfig {
   /// The configuration for the component.
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) config: Vec<wick_interface_types::Field>,
+  pub(crate) config: Vec<Field>,
 
   /// A list of operations to expose on this component.
   #[asset(skip)]
   #[builder(default)]
+  #[property(skip)]
   pub(crate) operations: Vec<SqlOperationDefinition>,
 }
 
-impl SqlComponentConfig {
-  /// Get the signature of the component as defined by the manifest.
-  #[must_use]
-  pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
+impl SqlComponentConfig {}
+
+impl OperationSignatures for SqlComponentConfig {
+  fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
     self.operations.clone().into_iter().map(Into::into).collect()
+  }
+}
+
+impl ComponentConfig for SqlComponentConfig {
+  type Operation = SqlOperationDefinition;
+
+  fn operations(&self) -> &[Self::Operation] {
+    &self.operations
+  }
+
+  fn operations_mut(&mut self) -> &mut Vec<Self::Operation> {
+    &mut self.operations
+  }
+}
+
+impl OperationConfig for SqlOperationDefinition {
+  fn name(&self) -> &str {
+    &self.name
   }
 }
 
 impl From<SqlOperationDefinition> for wick_interface_types::OperationSignature {
   fn from(operation: SqlOperationDefinition) -> Self {
+    // TODO: Properly use configured outputs here.
+    // Forcing SQL components to have a single object output called "output" is a temporary
+    // limitation
+    let outputs = vec![Field::new("output", wick_interface_types::Type::Object)];
+
     Self {
       name: operation.name,
       config: operation.config,
       inputs: operation.inputs,
-      outputs: operation.outputs,
+      outputs,
     }
   }
 }
@@ -54,22 +81,23 @@ impl From<SqlOperationDefinition> for wick_interface_types::OperationSignature {
 pub struct SqlOperationDefinition {
   /// The name of the operation.
   #[asset(skip)]
+  #[property(skip)]
   pub(crate) name: String,
 
   /// Types of the inputs to the operation.
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) inputs: Vec<wick_interface_types::Field>,
+  pub(crate) inputs: Vec<Field>,
 
   /// Types of the outputs to the operation.
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) outputs: Vec<wick_interface_types::Field>,
+  pub(crate) outputs: Vec<Field>,
 
   /// The configuration the operation needs.
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) config: Vec<wick_interface_types::Field>,
+  pub(crate) config: Vec<Field>,
 
   /// The query to execute.
   #[asset(skip)]

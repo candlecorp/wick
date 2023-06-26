@@ -34,6 +34,30 @@ impl PartialEq for OperationSignature {
 }
 
 impl OperationSignature {
+  /// Get the name of the operation.
+  #[must_use]
+  pub fn name(&self) -> &str {
+    &self.name
+  }
+
+  /// Get the operation's configuration.
+  #[must_use]
+  pub fn config(&self) -> &[Field] {
+    &self.config
+  }
+
+  /// Get the operation's inputs.
+  #[must_use]
+  pub fn inputs(&self) -> &[Field] {
+    &self.inputs
+  }
+
+  /// Get the operation's outputs.
+  #[must_use]
+  pub fn outputs(&self) -> &[Field] {
+    &self.outputs
+  }
+
   /// Create a new [OperationSignature] with the passed name.
   pub fn new<T: AsRef<str>>(name: T) -> Self {
     Self {

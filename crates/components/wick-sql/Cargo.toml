@@ -1,22 +1,38 @@
 [package]
-name = "wick-azure-sql"
+name = "wick-sql"
 version = "0.1.0"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
-description = "Azure SQL Database component for the wick project."
+description = "SQL Database component for the wick project."
 
 [features]
 
 [dependencies]
 wick-packet = { workspace = true, features = ["rt-tokio", "datetime"] }
-flow-component = { workspace = true }
+flow-component = { workspace = true, features = ["invocation"] }
 wick-config = { workspace = true }
 wick-rpc = { workspace = true }
 wick-interface-types = { workspace = true, features = ["parser"] }
-tokio-util = { workspace = true, features = ["compat"] }
 url = { workspace = true }
+# v0.7.0-alpha
+# sqlx = { workspace = true, features = [
+#   "runtime-tokio",
+#   "tls-rustls",
+#   "postgres",
+#   "json"
+# ] }
+#
+# v0.6
+sqlx = { workspace = true, features = [
+  "runtime-tokio-rustls",
+  "postgres",
+  "mssql",
+  "json",
+  "any",
+  "chrono"
+] }
 # tiberius & pool
 tiberius = { workspace = true, features = [
   "rustls",

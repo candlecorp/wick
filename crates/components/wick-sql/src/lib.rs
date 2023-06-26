@@ -1,3 +1,5 @@
+#![doc(html_logo_url = "https://avatars.githubusercontent.com/u/104781277?s=96&v=4")]
+#![doc = include_str!("../README.md")]
 // !!START_LINTS
 // Wick lints
 // Do not change anything between the START_LINTS and END_LINTS line.
@@ -83,14 +85,19 @@
 #![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs)]
-mod component;
+#![allow()]
+
 mod error;
-pub(crate) mod mssql;
-pub(crate) mod sql_wrapper;
+
+pub use error::Error;
+
+pub(crate) mod common;
+
+mod mssql_tiberius;
+mod sqlx;
+
+pub use self::mssql_tiberius::AzureSqlComponent;
+pub use self::sqlx::SqlXComponent;
 
 #[macro_use]
 extern crate tracing;
-
-pub use component::AzureSqlComponent;
-pub use error::Error;

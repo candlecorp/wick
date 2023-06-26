@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use wick_config::config::components::ComponentConfig;
 use wick_config::config::{AppConfiguration, CompositeComponentImplementation};
 use wick_config::error::ManifestError;
 use wick_config::*;
