@@ -190,7 +190,7 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
 }
 
 #[cfg(test)]
-mod test {
+mod integration_test {
   use std::time::{SystemTime, UNIX_EPOCH};
 
   use anyhow::Result;
