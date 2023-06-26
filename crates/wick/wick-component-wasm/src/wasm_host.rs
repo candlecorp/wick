@@ -34,8 +34,6 @@ use crate::{Error, Result};
 pub struct WasmHostBuilder {
   wasi_params: Option<WasiParams>,
   callback: Option<Arc<RuntimeCallback>>,
-  min_threads: usize,
-  max_threads: usize,
   span: Span,
 }
 
@@ -53,8 +51,6 @@ impl WasmHostBuilder {
       wasi_params: None,
       callback: None,
       span,
-      min_threads: 1,
-      max_threads: 1,
     }
   }
 
@@ -76,24 +72,7 @@ impl WasmHostBuilder {
   }
 
   pub fn build(self, module: &WickWasmModule) -> Result<WasmHost> {
-    WasmHost::try_load(
-      module,
-      self.wasi_params,
-      &self.callback,
-      self.min_threads,
-      self.max_threads,
-      self.span,
-    )
-  }
-
-  pub fn max_threads(mut self, max_threads: usize) -> Self {
-    self.max_threads = max_threads;
-    self
-  }
-
-  pub fn min_threads(mut self, min_threads: usize) -> Self {
-    self.min_threads = min_threads;
-    self
+    WasmHost::try_load(module, self.wasi_params, &self.callback, self.span)
   }
 }
 
@@ -118,8 +97,6 @@ impl WasmHost {
     module: &WickWasmModule,
     wasi_options: Option<WasiParams>,
     callback: &Option<Arc<RuntimeCallback>>,
-    _min_threads: usize,
-    _max_threads: usize,
     span: Span,
   ) -> Result<Self> {
     let jwt = &module.token.jwt;

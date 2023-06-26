@@ -60,7 +60,6 @@ pub(crate) async fn init_wasm_component(
   let collection = Arc::new(
     wick_component_wasm::component::WasmComponent::try_load(
       &component,
-      5, // TODO take max threads from configuration
       permissions,
       opts.config,
       Some(make_link_callback(opts.runtime_id)),

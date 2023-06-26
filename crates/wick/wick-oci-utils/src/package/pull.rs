@@ -17,6 +17,8 @@ pub struct PullResult {
   pub base_dir: PathBuf,
   /// The root file path for the package.
   pub root_path: PathBuf,
+  /// Whether the package was pulled from the cache.
+  pub cached: bool,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -25,23 +27,29 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
   let (image_ref, protocol) = crate::utils::parse_reference_and_protocol(reference, &options.allow_insecure)?;
 
   let cache_dir = get_cache_directory(reference, &options.cache_dir)?;
-  // let download_dir = options.directories.artifacts();
 
   let manifest_file = cache_dir.join(AssetManifest::FILENAME);
-  debug!("manifest_file: {:?}", manifest_file);
+
   if manifest_file.exists() {
     debug!(cache_hit = true, "remote asset");
     let json = tokio::fs::read_to_string(&manifest_file).await?;
 
     //check if manifest file is valid json, if not then break out of if statement and continue
     let manifest: Result<AssetManifest, serde_json::Error> = serde_json::from_str(&json);
-    if manifest.is_err() {
-      //exit if statement and continue
+    if let Err(e) = manifest {
+      warn!(
+        "Invalid root manifest file at {}, repulling - error was {}",
+        manifest_file.display(),
+        e
+      );
     } else {
       //check if manifest.root file exists, if it does then return otherwise continue
-      let root_file = cache_dir.join(&manifest.unwrap().root);
-      if root_file.exists() {
+      let root_file = manifest.unwrap().root;
+      let root_filepath = cache_dir.join(&root_file);
+      debug!(file = %root_filepath.display(), "using cache");
+      if root_filepath.exists() {
         return Ok(PullResult {
+          cached: true,
           base_dir: cache_dir.clone(),
           root_path: root_file,
         });
@@ -111,6 +119,7 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
       would_overwrite.push(path);
     }
   }
+
   if !would_overwrite.is_empty() && !options.overwrite {
     return Err(Error::WouldOverwrite(would_overwrite));
   }
@@ -174,7 +183,40 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
 
   debug!(path = root_file, "Root file");
   Ok(PullResult {
+    cached: false,
     base_dir: cache_dir.clone(),
     root_path: PathBuf::from(root_file),
   })
+}
+
+#[cfg(test)]
+mod test {
+  use std::time::{SystemTime, UNIX_EPOCH};
+
+  use anyhow::Result;
+
+  use super::*;
+
+  #[test_logger::test(tokio::test)]
+  async fn test_cache_pull() -> Result<()> {
+    let reg = std::env::var("DOCKER_REGISTRY").unwrap();
+    let dur = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+
+    let temp_dir = std::env::temp_dir().join(dur.as_millis().to_string());
+
+    let ref_str = format!("{}/test-component/baseline:1", reg);
+    let options = OciOptions {
+      cache_dir: temp_dir,
+      allow_insecure: vec![reg.clone()],
+      ..Default::default()
+    };
+    let result = pull(&ref_str, &options).await?;
+    assert!(!result.cached);
+    assert_eq!(result.root_path, PathBuf::from("component.yaml"));
+
+    let result = pull(&ref_str, &options).await?;
+    assert!(result.cached);
+
+    Ok(())
+  }
 }

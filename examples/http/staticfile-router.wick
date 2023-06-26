@@ -14,7 +14,7 @@ resources:
   - name: http
     resource:
       kind: wick/resource/tcpport@v1
-      port: 8999
+      port: '8999'
       address: 0.0.0.0
   - name: DIR
     resource:
