@@ -1219,7 +1219,9 @@ impl TryFrom<v1::ResourceDefinition> for ResourceDefinition {
 
 impl From<v1::Volume> for config::Volume {
   fn from(value: v1::Volume) -> Self {
-    config::Volume::new(value.path)
+    config::Volume {
+      path: TemplateConfig::new_template(value.path),
+    }
   }
 }
 

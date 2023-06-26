@@ -111,13 +111,6 @@ pub struct Volume {
 }
 
 impl Volume {
-  /// Create a new Volume.
-  pub fn new(path: impl AsRef<str>) -> Self {
-    Self {
-      path: TemplateConfig::new_value(AssetReference::new(path.as_ref())),
-    }
-  }
-
   pub fn path(&self) -> Result<PathBuf, ManifestError> {
     if let Some(path) = &self.path.value {
       Ok(path.path()?)

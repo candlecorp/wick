@@ -35,7 +35,6 @@ fn permissions_to_wasi_params(perms: &Permissions) -> WasiParams {
 impl WasmComponent {
   pub async fn try_load(
     module: &WickWasmModule,
-    max_threads: usize,
     permissions: Option<Permissions>,
     config: Option<RuntimeConfig>,
     callback: Option<Arc<RuntimeCallback>>,
@@ -53,7 +52,6 @@ impl WasmComponent {
     } else {
       span.in_scope(|| debug!(id = %name, "wasi disabled"));
     }
-    builder = builder.max_threads(max_threads);
 
     if let Some(callback) = callback {
       builder = builder.link_callback(callback);
@@ -118,7 +116,6 @@ mod tests {
 
     let c = WasmComponent::try_load(
       &component,
-      2,
       None,
       Some(json!({"default_err":"error from wasm test"}).try_into()?),
       Some(Arc::new(|_, _, _, _, _, _| {
