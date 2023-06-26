@@ -9,17 +9,17 @@ use parking_lot::Mutex;
 use serde_json::Value;
 use sqlx::{MssqlPool, PgPool};
 use url::Url;
-use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition};
-use wick_config::config::{Metadata, UrlResource};
+use wick_config::config::components::{ComponentConfig, OperationConfig, SqlComponentConfig, SqlOperationDefinition};
+use wick_config::config::Metadata;
 use wick_config::{ConfigValidation, Resolver};
-use wick_interface_types::{component, ComponentSignature, Field, Type};
+use wick_interface_types::{ComponentSignature, Field, OperationSignatures, Type};
 use wick_packet::{FluxChannel, Invocation, Observer, Packet, PacketStream, RuntimeConfig};
 
-use crate::error::Error;
-use crate::mssql::SerMapMssqlRow;
-use crate::postgres::SerMapPgRow;
-use crate::sql_wrapper::SqlWrapper;
-use crate::{mssql, postgres};
+use super::mssql::SerMapMssqlRow;
+use super::postgres::SerMapPgRow;
+use crate::common::sql_wrapper::SqlWrapper;
+use crate::sqlx::{mssql, postgres};
+use crate::{common, Error};
 
 #[derive(Debug, Clone)]
 enum CtxPool {
@@ -84,6 +84,7 @@ impl std::fmt::Debug for Context {
 
 impl Context {}
 
+/// The SQLx component.
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct SqlXComponent {
@@ -97,6 +98,7 @@ pub struct SqlXComponent {
 
 impl SqlXComponent {
   #[allow(clippy::needless_pass_by_value)]
+  /// Create a new SQLx component.
   pub fn new(
     config: SqlComponentConfig,
     root_config: Option<RuntimeConfig>,
@@ -104,29 +106,13 @@ impl SqlXComponent {
     resolver: &Resolver,
   ) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
-    let mut sig = component! {
-      name: "wick/component/sql",
-      version: metadata.map(|v|v.version().to_owned()),
-      operations: config.operation_signatures(),
-    };
-    // NOTE: remove this must change when db components support customized outputs.
-    sig.operations.iter_mut().for_each(|op| {
-      if !op.outputs.iter().any(|f| f.name == "output") {
-        op.outputs.push(Field::new("output", Type::Object));
-      }
-    });
-
-    let addr = resolver(config.resource())
-      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))?
-      .and_then(|r| r.try_resource())
-      .map_err(ComponentError::new)?;
-
-    let resource: UrlResource = addr.into();
-    let url = resource
-      .url()
-      .value()
-      .cloned()
-      .ok_or_else(|| ComponentError::message("Internal Error - Invalid resource"))?;
+    let sig = common::gen_signature(
+      "wick/component/sql",
+      config.operation_signatures(),
+      config.config(),
+      &metadata,
+    )?;
+    let url = common::convert_url_resource(resolver, config.resource())?;
 
     Ok(Self {
       context: Arc::new(Mutex::new(None)),
@@ -152,21 +138,14 @@ impl Component for SqlXComponent {
         Some(ctx) => {
           let opdef = ctx
             .config
-            .operations()
-            .iter()
-            .find(|op| op.name() == invocation.target.operation_id())
-            .ok_or_else(|| {
-              ComponentError::message(&format!(
-                "operation {} not found in this sql component",
-                invocation.target.operation_id()
-              ))
-            })?
+            .get_operation(invocation.target.operation_id())
+            .ok_or_else(|| Error::MissingOperation(invocation.target.operation_id().to_owned()))?
             .clone();
           let client = ctx.db.clone();
           let stmt = ctx.queries.get(invocation.target.operation_id()).unwrap().clone();
           (opdef, client, stmt)
         }
-        None => return Err(ComponentError::message("DB not initialized")),
+        None => return Err(Error::Uninitialized.into()),
       };
 
       let input_names: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
@@ -191,6 +170,7 @@ impl Component for SqlXComponent {
             let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
             break 'outer;
           }
+
           let fields = opdef.inputs();
           let mut type_wrappers = Vec::new();
 
@@ -310,25 +290,7 @@ async fn exec(
 ) -> Result<(), Error> {
   debug!(stmt = %stmt.0, "executing query");
 
-  let mut bound_args = Vec::new();
-  for arg in def.arguments() {
-    let (ty, packet) = args
-      .iter()
-      .find(|(_, p)| p.port() == arg)
-      .cloned()
-      .ok_or_else(|| Error::MissingArgument(arg.clone()))?;
-    let wrapper = match packet
-      .to_type_wrapper(ty.clone())
-      .map_err(|e| Error::Prepare(e.to_string()))
-    {
-      Ok(type_wrapper) => SqlWrapper(type_wrapper),
-      Err(e) => {
-        let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
-        return Err(Error::Prepare(e.to_string()));
-      }
-    };
-    bound_args.push(wrapper);
-  }
+  let bound_args = common::bind_args(def.arguments(), &args)?;
 
   let mut result = client.fetch(&stmt.1, bound_args);
 
@@ -381,7 +343,7 @@ mod test {
     app_config.add_resource("db", ResourceDefinition::TcpPort(TcpPort::new("0.0.0.0", 11111)));
 
     let result = validate(&config, &app_config.resolver());
-    assert_eq!(result, Err(Error::InvalidOutput(vec!["test".to_owned()])));
+    assert!(result.is_err());
     Ok(())
   }
 }

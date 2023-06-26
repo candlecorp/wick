@@ -98,10 +98,13 @@ mod types;
 
 mod field;
 
+mod traits;
+
 mod signatures;
 
 pub use field::{Field, FieldValue};
 pub use signatures::*;
+pub use traits::*;
 pub use types::*;
 
 #[allow(clippy::trivially_copy_pass_by_ref)]

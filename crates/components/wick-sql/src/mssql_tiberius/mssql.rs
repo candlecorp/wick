@@ -46,7 +46,7 @@ mod integration_test {
   use flow_component::{panic_callback, Component};
   use futures::StreamExt;
   use serde_json::json;
-  use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
+  use wick_config::config::components::{ComponentConfig, SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
   use wick_config::config::ResourceDefinition;
   use wick_interface_types::{Field, Type};
   use wick_packet::{packet_stream, Invocation, Packet};

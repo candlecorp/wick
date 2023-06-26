@@ -12,7 +12,7 @@ pub enum Error {
   Encode(Vec<u8>, String),
 
   /// Error deserializing payload.
-  #[error("Error deserializing  payload: {1} (payload was: {:?})",.0)]
+  #[error("Error deserializing payload: {1} (payload was: {:?})",.0)]
   Decode(Vec<u8>, String),
 
   /// Error converting payload into JSON.
@@ -44,8 +44,8 @@ pub enum Error {
   ContextKey(String),
 
   /// Returned when trying to decode a non-JSON object into [crate::GenericConfig].
-  #[error("Can only convert JSON Objects to a operation and component configuration")]
-  BadJson,
+  #[error("Can only convert JSON Objects to a operation and component configuration, got '{0}'")]
+  BadJson(serde_json::Value),
 
   /// Couldn't retrieve a complete set of packets from a [crate::StreamMap]
   #[error("Could not retrieve a complete set of packets. Stream '{0}' failed to provide a packet: '{1}'")]

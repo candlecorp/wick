@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use futures::StreamExt;
 use serde_json::Value;
 use wick_component_cli::options::DefaultCliOptions;
-use wick_config::config::{AssetReference, ComponentConfiguration, HttpConfigBuilder};
+use wick_config::config::{AssetReference, ComponentConfiguration, HttpConfigBuilder, LiquidJsonConfig};
 use wick_packet::{Packet, PacketStream, RuntimeConfig};
 
 pub(crate) fn merge_config(
@@ -103,13 +105,16 @@ pub(crate) async fn print_stream_json(
 
 pub(crate) fn parse_config_string(source: Option<&str>) -> anyhow::Result<Option<RuntimeConfig>> {
   let component_config = match source {
-    Some(c) => Some(
-      RuntimeConfig::try_from(
-        serde_json::from_str::<Value>(c)
-          .map_err(|e| anyhow::anyhow!("Failed to parse config argument as JSON: {}", e))?,
-      )
-      .map_err(|e| anyhow::anyhow!("Failed to parse config: {}", e))?,
-    ),
+    Some(c) => {
+      let config = serde_json::from_str::<HashMap<String, Value>>(c)
+        .map_err(|e| anyhow::anyhow!("Failed to parse config argument as JSON: {}", e))?;
+      let config: LiquidJsonConfig = config.into();
+      let rendered = config
+        .render(None, None, Some(&std::env::vars().collect::<HashMap<_, _>>()))
+        .map_err(|e| anyhow::anyhow!("Failed to parse config: {}", e))?;
+      trace!(config=?rendered, "rendered config");
+      Some(rendered)
+    }
     None => None,
   };
   Ok(component_config)

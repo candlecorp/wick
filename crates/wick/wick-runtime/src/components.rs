@@ -234,14 +234,14 @@ pub(crate) async fn init_hlc_component(
         }
       };
       if scheme == "mssql" {
-        Box::new(wick_azure_sql::AzureSqlComponent::new(
+        Box::new(wick_sql::AzureSqlComponent::new(
           comp,
           root_config,
           metadata,
           &resolver,
         )?)
       } else {
-        Box::new(wick_sqlx::SqlXComponent::new(comp, root_config, metadata, &resolver)?)
+        Box::new(wick_sql::SqlXComponent::new(comp, root_config, metadata, &resolver)?)
       }
     }
     config::HighLevelComponent::HttpClient(comp) => Box::new(wick_http_client::HttpClientComponent::new(

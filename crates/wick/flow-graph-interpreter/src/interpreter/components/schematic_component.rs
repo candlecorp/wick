@@ -7,7 +7,7 @@ use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
 use crate::constants::*;
-use crate::graph::OperationConfig;
+use crate::graph::LiquidOperationConfig;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::executor::SchematicExecutor;
 use crate::interpreter::program::ProgramState;
@@ -76,7 +76,7 @@ impl Component for SchematicComponent {
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| trace!(target = %invocation.target, namespace = NS_SELF));
 
-    let mut op_config = OperationConfig::new_value(config);
+    let mut op_config = LiquidOperationConfig::new_value(config);
     op_config.set_root(self.config.clone());
 
     let operation = invocation.target.operation_id().to_owned();

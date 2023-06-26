@@ -1,7 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use wick_config::config::OperationSignature;
-use wick_interface_types::{StructDefinition, TypeDefinition};
+use wick_interface_types::{OperationSignature, StructDefinition, TypeDefinition};
 
 use crate::generate::dependency::Dependency;
 use crate::generate::templates::TypeOptions;

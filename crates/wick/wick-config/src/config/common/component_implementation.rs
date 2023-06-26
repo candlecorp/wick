@@ -1,3 +1,5 @@
+use wick_interface_types::OperationSignatures;
+
 use crate::config::components::WasmComponent;
 use crate::config::{self, ComponentDefinition, HighLevelComponent};
 
@@ -31,7 +33,7 @@ impl ComponentImplementation {
   /// Get the operation signatures for this component.
   pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
     match self {
-      ComponentImplementation::Wasm(w) => w.operation_signatures(),
+      ComponentImplementation::Wasm(c) => c.operation_signatures(),
       ComponentImplementation::Composite(c) => c.operation_signatures(),
       ComponentImplementation::Sql(c) => c.operation_signatures(),
       ComponentImplementation::HttpClient(c) => c.operation_signatures(),

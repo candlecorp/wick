@@ -342,8 +342,8 @@ impl From<config::Metadata> for ComponentMetadata {
   }
 }
 
-impl From<config::OperationSignature> for OperationSignature {
-  fn from(value: config::OperationSignature) -> Self {
+impl From<config::OperationDefinition> for OperationSignature {
+  fn from(value: config::OperationDefinition) -> Self {
     Self {
       name: value.name,
       config: value.config,

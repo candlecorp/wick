@@ -12,25 +12,25 @@ pub(crate) type AssociatedData = OperationSettings;
 
 #[derive(Debug, Clone, Default)]
 pub struct OperationSettings {
-  pub(crate) config: OperationConfig,
+  pub(crate) config: LiquidOperationConfig,
   pub(crate) settings: Option<ExecutionSettings>,
 }
 
 impl OperationSettings {
   /// Initialize a new OperationSettings with the specified config and settings.
-  pub(crate) fn new(config: OperationConfig, settings: Option<ExecutionSettings>) -> Self {
+  pub(crate) fn new(config: LiquidOperationConfig, settings: Option<ExecutionSettings>) -> Self {
     Self { config, settings }
   }
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct OperationConfig {
+pub struct LiquidOperationConfig {
   root: Option<RuntimeConfig>,
   template: Option<LiquidJsonConfig>,
   value: Option<RuntimeConfig>,
 }
 
-impl OperationConfig {
+impl LiquidOperationConfig {
   #[must_use]
   pub fn new_template(template: Option<LiquidJsonConfig>) -> Self {
     Self {
@@ -89,9 +89,9 @@ impl OperationConfig {
   }
 }
 
-impl From<Option<LiquidJsonConfig>> for OperationConfig {
+impl From<Option<LiquidJsonConfig>> for LiquidOperationConfig {
   fn from(value: Option<LiquidJsonConfig>) -> Self {
-    OperationConfig {
+    LiquidOperationConfig {
       template: value,
       value: None,
       root: None,
@@ -99,9 +99,9 @@ impl From<Option<LiquidJsonConfig>> for OperationConfig {
   }
 }
 
-impl From<Option<RuntimeConfig>> for OperationConfig {
+impl From<Option<RuntimeConfig>> for LiquidOperationConfig {
   fn from(value: Option<RuntimeConfig>) -> Self {
-    OperationConfig {
+    LiquidOperationConfig {
       template: None,
       value,
       root: None,
@@ -120,6 +120,7 @@ use flow_expression_parser::ast::{
 use flow_graph::NodeReference;
 use serde_json::Value;
 use types::*;
+use wick_config::config::components::{ComponentConfig, OperationConfig};
 use wick_config::config::{ComponentImplementation, ExecutionSettings, FlowOperation, LiquidJsonConfig};
 use wick_packet::RuntimeConfig;
 
@@ -153,7 +154,7 @@ fn register_operation(
   mut scope: Vec<String>,
   network: &mut Network,
   flow: &mut FlowOperation,
-  op_config: &OperationConfig,
+  op_config: &LiquidOperationConfig,
 ) -> Result<(), flow_graph::error::Error> {
   scope.push(flow.name().to_owned());
 
@@ -354,11 +355,11 @@ pub fn from_def(
     OperationSettings::new(manifest.root_config().cloned().into(), None),
   );
 
-  let mut op_config = OperationConfig::default();
+  let mut op_config = LiquidOperationConfig::default();
   op_config.set_root(manifest.root_config().cloned());
 
   if let ComponentImplementation::Composite(composite) = manifest.component_mut() {
-    for flow in composite.operations_mut().values_mut() {
+    for flow in composite.operations_mut() {
       register_operation(vec![], &mut network, flow, &op_config)?;
     }
   }

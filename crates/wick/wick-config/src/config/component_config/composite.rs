@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use flow_expression_parser::ast::{self};
-use wick_interface_types::Field;
+use wick_interface_types::{Field, OperationSignatures};
 
+use crate::config::components::{ComponentConfig, OperationConfig};
 use crate::config::{self, ExecutionSettings, LiquidJsonConfig};
 
 #[derive(Debug, Default, Clone, derive_asset_container::AssetManager, Builder, property::Property)]
@@ -15,7 +16,8 @@ pub struct CompositeComponentImplementation {
   /// The operations defined by the component.
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) operations: HashMap<String, FlowOperation>,
+  #[property(skip)]
+  pub(crate) operations: Vec<FlowOperation>,
 
   /// The configuration for the component.
   #[asset(skip)]
@@ -27,13 +29,31 @@ impl CompositeComponentImplementation {
   /// Get a [FlowOperation] by name.
   #[must_use]
   pub fn flow(&self, name: &str) -> Option<&FlowOperation> {
-    self.operations.iter().find(|(n, _)| name == *n).map(|(_, v)| v)
+    self.operations.iter().find(|n| n.name() == name)
+  }
+}
+
+impl OperationSignatures for CompositeComponentImplementation {
+  fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
+    self.operations.iter().cloned().map(Into::into).collect()
+  }
+}
+
+impl ComponentConfig for CompositeComponentImplementation {
+  type Operation = FlowOperation;
+
+  fn operations(&self) -> &[Self::Operation] {
+    &self.operations
   }
 
-  /// Get the signature of the component as defined by the manifest.
-  #[must_use]
-  pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
-    self.operations.values().cloned().map(Into::into).collect()
+  fn operations_mut(&mut self) -> &mut Vec<Self::Operation> {
+    &mut self.operations
+  }
+}
+
+impl OperationConfig for FlowOperation {
+  fn name(&self) -> &str {
+    &self.name
   }
 }
 
@@ -56,6 +76,7 @@ impl From<FlowOperation> for wick_interface_types::OperationSignature {
 #[must_use]
 pub struct FlowOperation {
   /// The name of the schematic.
+  #[property(skip)]
   pub(crate) name: String,
 
   /// A list of the input types for the operation.
@@ -83,7 +104,7 @@ pub struct FlowOperation {
   pub(crate) flows: Vec<FlowOperation>,
 }
 
-impl From<FlowOperation> for config::OperationSignature {
+impl From<FlowOperation> for config::OperationDefinition {
   fn from(value: FlowOperation) -> Self {
     Self {
       name: value.name,

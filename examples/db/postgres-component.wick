@@ -30,7 +30,14 @@ component:
           type: string
         - name: email
           type: string
-      query: INSERT INTO users(name, email) VALUES ($1, $2)
+      query: INSERT INTO users(name, email) VALUES ($1, $2) RETURNING *
       arguments:
         - name
         - email
+    - name: set_user_with_columns
+      inputs:
+        - name: input
+          type: string[]
+      query: INSERT INTO users(name, email) VALUES ($1, $2) RETURNING *
+      arguments:
+        - input... # This is special "spread" syntax that expands the input array into individual positional arguments

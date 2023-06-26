@@ -30,6 +30,20 @@ impl RuntimeConfig {
   pub fn get(&self, key: &str) -> Option<&Value> {
     self.0.get(key)
   }
+
+  /// Convert a [serde_json::Value] into a [RuntimeConfig].
+  pub fn from_value(value: Value) -> Result<Self, Error> {
+    match value {
+      Value::Object(map) => {
+        let mut hm = HashMap::new();
+        for (k, v) in map {
+          hm.insert(k, v);
+        }
+        Ok(Self(hm))
+      }
+      _ => Err(Error::BadJson(value)),
+    }
+  }
 }
 
 impl IntoIterator for RuntimeConfig {
@@ -87,7 +101,7 @@ impl TryFrom<Value> for RuntimeConfig {
         }
         Ok(Self(hm))
       }
-      _ => Err(Error::BadJson),
+      _ => Err(Error::BadJson(value)),
     }
   }
 }

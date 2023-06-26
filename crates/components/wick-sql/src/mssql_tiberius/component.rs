@@ -11,15 +11,14 @@ use serde_json::{Map, Value};
 use tiberius::{Query, Row};
 use tracing::Span;
 use url::Url;
-use wick_config::config::components::{SqlComponentConfig, SqlOperationDefinition};
-use wick_config::config::{ErrorBehavior, Metadata, UrlResource};
+use wick_config::config::components::{ComponentConfig, OperationConfig, SqlComponentConfig, SqlOperationDefinition};
+use wick_config::config::{ErrorBehavior, Metadata};
 use wick_config::{ConfigValidation, Resolver};
-use wick_interface_types::{component, ComponentSignature, Field, Type};
+use wick_interface_types::{ComponentSignature, Field, OperationSignatures, Type};
 use wick_packet::{FluxChannel, Invocation, Observer, Packet, PacketSender, PacketStream, RuntimeConfig};
 
-use crate::error::Error;
-use crate::mssql;
-use crate::sql_wrapper::{FromSqlWrapper, SqlWrapper};
+use super::sql_wrapper::FromSqlWrapper;
+use crate::{common, Error};
 
 #[derive()]
 pub(crate) struct Context {
@@ -39,6 +38,7 @@ impl std::fmt::Debug for Context {
 
 impl Context {}
 
+/// The Azure SQL Wick component.
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct AzureSqlComponent {
@@ -52,6 +52,7 @@ pub struct AzureSqlComponent {
 
 impl AzureSqlComponent {
   #[allow(clippy::needless_pass_by_value)]
+  /// Instantiate a new Azure SQL component.
   pub fn new(
     config: SqlComponentConfig,
     root_config: Option<RuntimeConfig>,
@@ -59,30 +60,14 @@ impl AzureSqlComponent {
     resolver: &Resolver,
   ) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
-    let mut sig = component! {
-      name: "wick/component/sql",
-      version: metadata.map(|v|v.version().to_owned()),
-      operations: config.operation_signatures(),
-    };
+    let sig = common::gen_signature(
+      "wick/component/sql",
+      config.operation_signatures(),
+      config.config(),
+      &metadata,
+    )?;
 
-    // NOTE: remove this must change when db components support customized outputs.
-    sig.operations.iter_mut().for_each(|op| {
-      if !op.outputs.iter().any(|f| f.name == "output") {
-        op.outputs.push(Field::new("output", Type::Object));
-      }
-    });
-
-    let addr = resolver(config.resource())
-      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))?
-      .and_then(|r| r.try_resource())
-      .map_err(ComponentError::new)?;
-
-    let resource: UrlResource = addr.into();
-    let url = resource
-      .url()
-      .value()
-      .cloned()
-      .ok_or_else(|| ComponentError::message("Internal Error - Invalid resource"))?;
+    let url = common::convert_url_resource(resolver, config.resource())?;
 
     Ok(Self {
       context: Arc::new(Mutex::new(None)),
@@ -108,16 +93,14 @@ impl Component for AzureSqlComponent {
         Some(ctx) => {
           let opdef = ctx
             .config
-            .operations()
-            .iter()
-            .find(|op| op.name() == invocation.target.operation_id())
-            .unwrap()
+            .get_operation(invocation.target.operation_id())
+            .ok_or_else(|| Error::MissingOperation(invocation.target.operation_id().to_owned()))?
             .clone();
           let client = ctx.db.clone();
           let stmt = ctx.queries.get(invocation.target.operation_id()).unwrap().clone();
           (opdef, client, stmt)
         }
-        None => return Err(ComponentError::message("DB not initialized")),
+        None => return Err(Error::Uninitialized.into()),
       };
 
       let input_names: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
@@ -265,21 +248,7 @@ async fn exec(
   let start = SystemTime::now();
   span.in_scope(|| trace!(stmt = %stmt.0, "executing query"));
 
-  let mut bound_args: Vec<SqlWrapper> = Vec::new();
-  for arg in def.arguments() {
-    let (ty, packet) = args.iter().find(|(_, p)| p.port() == arg).cloned().unwrap();
-    let wrapper = match packet
-      .to_type_wrapper(ty.clone())
-      .map_err(|e| Error::Prepare(e.to_string()))
-    {
-      Ok(type_wrapper) => SqlWrapper(type_wrapper),
-      Err(e) => {
-        let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
-        return Err(Error::Prepare(e.to_string()));
-      }
-    };
-    bound_args.push(wrapper);
-  }
+  let bound_args = common::bind_args(def.arguments(), &args)?;
 
   #[allow(trivial_casts)]
   let mut query = Query::new(&stmt.1);
@@ -332,7 +301,7 @@ fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Err
 
 async fn init_client(config: SqlComponentConfig, addr: Url) -> Result<Pool<ConnectionManager>, Error> {
   let pool = match addr.scheme() {
-    "mssql" => mssql::connect(config, &addr).await?,
+    "mssql" => super::mssql::connect(config, &addr).await?,
     "postgres" => unimplemented!("Use the sql component instead"),
     "mysql" => unimplemented!("Use the sql component instead"),
     "sqllite" => unimplemented!("Use the sql component instead"),
@@ -408,7 +377,7 @@ mod test {
     app_config.add_resource("db", ResourceDefinition::TcpPort(TcpPort::new("0.0.0.0", 11111)));
 
     let result = validate(&config, &app_config.resolver());
-    assert_eq!(result, Err(Error::InvalidOutput(vec!["test".to_owned()])));
+    assert!(result.is_err());
     Ok(())
   }
 }

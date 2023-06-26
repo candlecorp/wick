@@ -14,7 +14,7 @@ use wick_packet::{Invocation, Packet, PacketError, PacketSender, PacketStream};
 use self::operation::InstanceHandler;
 use super::error::ExecutionError;
 use crate::graph::types::*;
-use crate::graph::OperationConfig;
+use crate::graph::LiquidOperationConfig;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::transaction::operation::port::PortStatus;
@@ -40,7 +40,7 @@ pub struct Transaction {
   finished: AtomicBool,
   span: tracing::Span,
   callback: Arc<RuntimeCallback>,
-  config: OperationConfig,
+  config: LiquidOperationConfig,
   pub(crate) last_access_time: Mutex<SystemTime>,
   pub(crate) stats: TransactionStatistics,
 }
@@ -60,7 +60,7 @@ impl Transaction {
     collections: &Arc<HandlerMap>,
     self_collection: &Arc<dyn Component + Send + Sync>,
     callback: Arc<RuntimeCallback>,
-    config: OperationConfig,
+    config: LiquidOperationConfig,
     seed: Seed,
   ) -> Self {
     let instances: Vec<_> = schematic
