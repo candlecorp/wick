@@ -6,7 +6,7 @@ use sqlx::{Encode, Postgres};
 use wick_interface_types::Type;
 use wick_packet::parse_date;
 
-use crate::sql_wrapper::SqlWrapper;
+use crate::common::sql_wrapper::SqlWrapper;
 
 macro_rules! convert_int {
   ($ty:ty, $v:expr, $buf:expr) => {{

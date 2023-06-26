@@ -3,7 +3,8 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use serde_json::Value;
-use wick_config::config::OperationSignature;
+use wick_config::config::components::OperationConfig;
+use wick_config::config::OperationDefinition;
 use wick_interface_types::{Field, Type};
 
 use super::config;
@@ -122,7 +123,7 @@ fn default_from_val(value: &Value) -> TokenStream {
   }
 }
 
-fn op_names(ops: &[OperationSignature]) -> Vec<String> {
+fn op_names(ops: &[OperationDefinition]) -> Vec<String> {
   ops.iter().map(|op| op.name().to_owned()).collect()
 }
 

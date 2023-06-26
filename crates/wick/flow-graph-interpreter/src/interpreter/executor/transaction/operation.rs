@@ -15,7 +15,7 @@ use wick_packet::{Entity, Invocation, Packet, PacketError, PacketPayload, Packet
 use self::port::{InputPorts, OutputPorts, PortStatus};
 use crate::constants::*;
 use crate::graph::types::*;
-use crate::graph::{OperationConfig, Reference};
+use crate::graph::{LiquidOperationConfig, Reference};
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::error::ExecutionError;
@@ -211,7 +211,7 @@ impl InstanceHandler {
     channel: InterpreterDispatchChannel,
     options: &InterpreterOptions,
     callback: Arc<RuntimeCallback>,
-    config: OperationConfig,
+    config: LiquidOperationConfig,
   ) -> Result<()> {
     let identifier = self.id().to_owned();
 

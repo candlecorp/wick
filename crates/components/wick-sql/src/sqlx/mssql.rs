@@ -1,21 +1,21 @@
 mod serialize;
 mod wrapper;
-pub(crate) use serialize::*;
-use sqlx::postgres::PgPoolOptions;
-use sqlx::PgPool;
+use sqlx::mssql::MssqlPoolOptions;
+use sqlx::MssqlPool;
 use url::Url;
 use wick_config::config::components::SqlComponentConfig;
 
+pub(crate) use self::serialize::*;
 use crate::Error;
 
-pub(crate) async fn connect(_config: SqlComponentConfig, addr: &Url) -> Result<PgPool, Error> {
-  debug!(%addr, "connecting to postgres");
+pub(crate) async fn connect(_config: SqlComponentConfig, addr: &Url) -> Result<MssqlPool, Error> {
+  debug!(%addr, "connecting to mssql");
 
-  let pool = PgPoolOptions::new()
+  let pool = MssqlPoolOptions::new()
     .max_connections(5)
     .connect(addr.as_ref())
     .await
-    .map_err(|e| Error::PostgresConnect(e.to_string()))?;
+    .map_err(|e| Error::MssqlConnect(e.to_string()))?;
   Ok(pool)
 }
 
@@ -25,19 +25,19 @@ mod integration_test {
   use flow_component::{panic_callback, Component};
   use futures::StreamExt;
   use serde_json::json;
-  use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
+  use wick_config::config::components::{ComponentConfig, SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
   use wick_config::config::ResourceDefinition;
   use wick_interface_types::{Field, Type};
   use wick_packet::{packet_stream, Invocation, Packet};
 
   use crate::SqlXComponent;
 
-  async fn init_pg_component() -> Result<SqlXComponent> {
+  async fn init_mssql_component() -> Result<SqlXComponent> {
     let docker_host = std::env::var("DOCKER_HOST").unwrap();
-    let db_host = docker_host.split(':').next().unwrap();
     let password = std::env::var("TEST_PASSWORD").unwrap();
-    let port = std::env::var("POSTGRES_PORT").unwrap();
-    let user = "postgres";
+    let db_host = docker_host.split(':').next().unwrap();
+    let port = std::env::var("MSSQL_PORT").unwrap();
+    let user = "SA";
     let db_name = "wick_test";
 
     let mut config = SqlComponentConfigBuilder::default()
@@ -59,7 +59,7 @@ mod integration_test {
     app_config.add_resource(
       "db",
       ResourceDefinition::Url(
-        format!("postgres://{}:{}@{}:{}/{}", user, password, db_host, port, db_name)
+        format!("mssql://{}:{}@{}:{}/{}", user, password, db_host, port, db_name)
           .try_into()
           .unwrap(),
       ),
@@ -73,9 +73,9 @@ mod integration_test {
   }
 
   #[test_logger::test(tokio::test)]
-  async fn test_pg_basic() -> Result<()> {
-    let pg = init_pg_component().await?;
-    let input = packet_stream!(("input", 1_u32));
+  async fn test_mssql_basic() -> Result<()> {
+    let pg = init_mssql_component().await?;
+    let input = packet_stream!(("input", 1_i32));
     let inv = Invocation::test("postgres", "wick://__local__/test", input, None)?;
     let response = pg.handle(inv, Default::default(), panic_callback()).await.unwrap();
     let packets: Vec<_> = response.collect().await;

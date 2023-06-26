@@ -1,10 +1,9 @@
 use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
 use serde_json::{Number, Value};
 use tiberius::{ColumnData, FromSql, IntoSql};
-use wick_packet::{parse_date, TypeWrapper};
+use wick_packet::parse_date;
 
-#[derive(Debug, Clone)]
-pub(crate) struct SqlWrapper(pub(crate) TypeWrapper);
+use crate::common::sql_wrapper::SqlWrapper;
 
 impl<'a> IntoSql<'a> for SqlWrapper {
   fn into_sql(self) -> ColumnData<'a> {

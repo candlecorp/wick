@@ -8,21 +8,16 @@ use option_utils::OptionUtils;
 use serde_json::Value;
 
 use crate::error::ManifestError;
-use crate::utils::opt_str_to_ipv4addr;
+use crate::utils::{opt_str_to_ipv4addr, VecTryMapInto};
 use crate::{config, v0, Result};
 
 impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
   type Error = ManifestError;
 
   fn try_from(def: v0::HostManifest) -> Result<Self> {
-    let flows: Result<HashMap<String, config::FlowOperation>> = def
-      .network
-      .schematics
-      .into_iter()
-      .map(|val| Ok((val.name.clone(), val.try_into()?)))
-      .collect();
+    let flows: Vec<config::FlowOperation> = def.network.schematics.try_map_into()?;
     let composite = config::CompositeComponentImplementation {
-      operations: flows?,
+      operations: flows,
       config: Default::default(),
     };
     Ok(config::ComponentConfiguration {

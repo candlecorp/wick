@@ -63,8 +63,8 @@ pub(crate) async fn setup_cache(
         .await?;
       // if we didn't specify types to import, import everything.
       if t.types.is_empty() {
-        for ty in config.into_types() {
-          types.push(prefix_type(prefix, ty));
+        for ty in config.types() {
+          types.push(prefix_type(prefix, ty.clone()));
         }
       } else {
         // otherwise import a subset.

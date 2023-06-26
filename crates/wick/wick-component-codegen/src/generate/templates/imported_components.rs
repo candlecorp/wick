@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-
 use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
-use wick_config::config::{BoundInterface, OperationSignature};
-use wick_interface_types::Field;
+use wick_config::config::BoundInterface;
+use wick_interface_types::{Field, OperationSignature, OperationSignatures};
 
 use crate::generate::dependency::Dependency;
 use crate::generate::expand_type::{expand_field_types, expand_input_fields, fields_to_tuples};
@@ -18,8 +16,8 @@ pub(crate) fn imported_components(config: &mut Config, required: Vec<BoundInterf
     .into_iter()
     .map(|v| {
       let name = id(&format!("{}Component", &pascal(v.id())));
-      let configs = named_configs(config, v.kind().operations());
-      let ops = operation_impls(config, v.kind().operations());
+      let configs = named_configs(config, &v.kind().operation_signatures());
+      let ops = operation_impls(config, &v.kind().operation_signatures());
 
       config.add_dep(Dependency::WickPacket);
       quote! {
@@ -48,11 +46,11 @@ pub(crate) fn imported_components(config: &mut Config, required: Vec<BoundInterf
   }
 }
 
-fn operation_impls(config: &mut Config, ops: &HashMap<String, OperationSignature>) -> Vec<TokenStream> {
+fn operation_impls(config: &mut Config, ops: &[OperationSignature]) -> Vec<TokenStream> {
   let dir = Direction::In;
   let raw = false;
   ops
-    .values()
+    .iter()
     .map(|op| {
       config.add_dep(Dependency::WickComponent);
 
@@ -87,9 +85,9 @@ fn operation_impls(config: &mut Config, ops: &HashMap<String, OperationSignature
     .collect_vec()
 }
 
-fn named_configs(config: &mut Config, ops: &HashMap<String, OperationSignature>) -> Vec<TokenStream> {
+fn named_configs(config: &mut Config, ops: &[OperationSignature]) -> Vec<TokenStream> {
   ops
-    .values()
+    .iter()
     .filter_map(|op| {
       if op.config().is_empty() {
         None

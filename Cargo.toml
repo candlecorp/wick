@@ -65,8 +65,7 @@ wick-interface-cli = { path = "./crates/interfaces/wick-interface-cli", version 
 #
 # crates/components
 #
-wick-azure-sql = { path = "./crates/components/wick-azure-sql", version = "0.1.0" }
-wick-sqlx = { path = "./crates/components/wick-sqlx", version = "0.1.0" }
+wick-sql = { path = "./crates/components/wick-sql", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
 # wasmrs
 wasmrs = { version = "0.12.1" }
@@ -105,6 +104,7 @@ derive_builder = "0.12"
 dialoguer = "0.10"
 dyn-clone = "1.0"
 env_logger = "0.10"
+escargot = "0.5"
 futures = "0.3"
 getrandom = { version = "0.2", default-features = false }
 getset = "0.1"

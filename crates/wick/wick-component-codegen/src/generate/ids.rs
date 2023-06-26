@@ -2,8 +2,8 @@ use check_keyword::CheckKeyword;
 use heck::{AsPascalCase, AsSnakeCase};
 use itertools::Itertools;
 use proc_macro2::{Ident, Span};
-use wick_config::config::{BoundInterface, OperationSignature};
-use wick_interface_types::EnumVariant;
+use wick_config::config::BoundInterface;
+use wick_interface_types::{EnumVariant, OperationSignature};
 
 pub(crate) fn id(name: &str) -> Ident {
   if name.is_keyword() {

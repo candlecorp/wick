@@ -1,6 +1,8 @@
-use std::collections::HashMap;
+use wick_interface_types::OperationSignatures;
 
-use crate::config::{self, OperationSignature};
+use crate::config::components::{ComponentConfig, OperationConfig};
+use crate::config::{self, OperationDefinition};
+use crate::utils::VecMapInto;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager, Builder, property::Property)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
@@ -20,13 +22,30 @@ pub struct WasmComponentImplementation {
   /// The operations defined by the component.
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) operations: HashMap<String, OperationSignature>,
+  #[property(skip)]
+  pub(crate) operations: Vec<OperationDefinition>,
 }
 
-impl WasmComponentImplementation {
-  /// Get the signature of the component as defined by the manifest.
-  #[must_use]
-  pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
-    self.operations.values().cloned().map(Into::into).collect()
+impl OperationSignatures for WasmComponentImplementation {
+  fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
+    self.operations.clone().map_into()
+  }
+}
+
+impl ComponentConfig for WasmComponentImplementation {
+  type Operation = OperationDefinition;
+
+  fn operations(&self) -> &[Self::Operation] {
+    &self.operations
+  }
+
+  fn operations_mut(&mut self) -> &mut Vec<Self::Operation> {
+    &mut self.operations
+  }
+}
+
+impl OperationConfig for OperationDefinition {
+  fn name(&self) -> &str {
+    &self.name
   }
 }

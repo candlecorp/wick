@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::Args;
 use structured_output::StructuredOutput;
+use wick_config::config::components::ComponentConfig;
 use wick_config::config::{self, ComponentConfiguration, CompositeComponentImplementation, FlowOperationBuilder};
 
 use crate::io::File;
@@ -32,15 +33,13 @@ pub(crate) async fn handle(
     config.set_metadata(crate::commands::new::generic_metadata("New composite wick component"));
 
     let mut component = CompositeComponentImplementation::default();
-
-    component.set_operations([(
-      "operation_name".to_owned(),
+    component.operations_mut().push(
       FlowOperationBuilder::default()
         .name("operation_name")
         .expressions(vec!["<>.input -> <>.output".parse().unwrap()])
         .build()
         .unwrap(),
-    )]);
+    );
 
     config.set_component(config::ComponentImplementation::Composite(component));
 

@@ -4,7 +4,7 @@ use structured_output::StructuredOutput;
 use wick_config::config::{
   self,
   ComponentConfiguration,
-  OperationSignatureBuilder,
+  OperationDefinitionBuilder,
   WasmComponentImplementationBuilder,
 };
 use wick_interface_types::{Field, StructDefinition, Type, TypeDefinition};
@@ -53,15 +53,14 @@ pub(crate) async fn handle(
 
     let component = WasmComponentImplementationBuilder::default()
       .reference(config::AssetReference::new(format!("./build/{}", &name)))
-      .operations([(
-        "operation_name".to_owned(),
-        OperationSignatureBuilder::default()
+      .operations([
+        OperationDefinitionBuilder::default()
           .name("operation_name".to_owned())
           .inputs([Field::new("id", Type::String)])
           .outputs([Field::new("output", Type::Named("user_object".to_owned()))])
           .build()
           .unwrap(),
-      )])
+      ])
       .build()
       .unwrap();
 
