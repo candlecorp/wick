@@ -232,6 +232,7 @@ async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<Struc
       commands::registry::SubCommands::Push(cmd) => commands::registry::push::handle(cmd, settings, span).await,
       commands::registry::SubCommands::Pull(cmd) => commands::registry::pull::handle(cmd, settings, span).await,
       commands::registry::SubCommands::Login(cmd) => commands::registry::login::handle(cmd, settings, span).await,
+      commands::registry::SubCommands::Manifest(cmd) => commands::registry::manifest::handle(cmd, settings, span).await,
     },
     CliCommand::Rpc(cmd) => match cmd {
       commands::rpc::SubCommands::Invoke(cmd) => commands::rpc::invoke::handle(cmd, settings, span).await,

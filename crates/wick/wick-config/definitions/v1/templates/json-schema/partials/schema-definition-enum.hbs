@@ -2,7 +2,7 @@
   "$anchor": "#v1/{{name.value}}",
   "enum" : [
     {{#join values "," ~}}
-    "{{name.value}}"
+    "{{ pascalCase name.value}}"
     {{~/join}}
   ]
 },

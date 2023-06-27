@@ -37,6 +37,7 @@ pub async fn push(
       data: data.into(),
       annotations: None,
     };
+    trace!(annotations=?annotations_map, "adding layer");
 
     let image_layer_descriptor = OciDescriptor {
       media_type,

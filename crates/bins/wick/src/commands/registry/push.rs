@@ -19,6 +19,7 @@ pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) oci_opts: crate::oci::Options,
 
+  /// Registry to use (overriding configured registry)
   #[clap(long = "registry", action)]
   pub(crate) registry: Option<String>,
 

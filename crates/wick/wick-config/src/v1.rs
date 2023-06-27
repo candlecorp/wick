@@ -1003,8 +1003,10 @@ pub(crate) struct CompositeOperationDefinition {
 /// A flow operation, i.e. a connection from one operation's outputs to another's inputs.
 pub(crate) enum FlowExpression {
   /// A variant representing a [ConnectionDefinition] type.
+  #[serde(rename = "ConnectionDefinition")]
   ConnectionDefinition(ConnectionDefinition),
   /// A variant representing a [BlockExpression] type.
+  #[serde(rename = "BlockExpression")]
   BlockExpression(BlockExpression),
 }
 
@@ -1095,42 +1097,61 @@ pub(crate) struct Field {
 #[serde(tag = "kind")]
 pub(crate) enum TypeSignature {
   /// A variant representing a [I8] type.
+  #[serde(rename = "I8")]
   I8(I8),
   /// A variant representing a [I16] type.
+  #[serde(rename = "I16")]
   I16(I16),
   /// A variant representing a [I32] type.
+  #[serde(rename = "I32")]
   I32(I32),
   /// A variant representing a [I64] type.
+  #[serde(rename = "I64")]
   I64(I64),
   /// A variant representing a [U8] type.
+  #[serde(rename = "U8")]
   U8(U8),
   /// A variant representing a [U16] type.
+  #[serde(rename = "U16")]
   U16(U16),
   /// A variant representing a [U32] type.
+  #[serde(rename = "U32")]
   U32(U32),
   /// A variant representing a [U64] type.
+  #[serde(rename = "U64")]
   U64(U64),
   /// A variant representing a [F32] type.
+  #[serde(rename = "F32")]
   F32(F32),
   /// A variant representing a [F64] type.
+  #[serde(rename = "F64")]
   F64(F64),
   /// A variant representing a [Bool] type.
+  #[serde(rename = "Bool")]
   Bool(Bool),
   /// A variant representing a [StringType] type.
+  #[serde(rename = "StringType")]
   StringType(StringType),
   /// A variant representing a [Optional] type.
+  #[serde(rename = "Optional")]
   Optional(Optional),
   /// A variant representing a [Datetime] type.
+  #[serde(rename = "Datetime")]
   Datetime(Datetime),
   /// A variant representing a [Bytes] type.
+  #[serde(rename = "Bytes")]
   Bytes(Bytes),
   /// A variant representing a [Custom] type.
+  #[serde(rename = "Custom")]
   Custom(Custom),
   /// A variant representing a [List] type.
+  #[serde(rename = "List")]
   List(List),
   /// A variant representing a [Map] type.
+  #[serde(rename = "Map")]
   Map(Map),
   /// A variant representing a [Object] type.
+  #[serde(rename = "Object")]
   Object(Object),
 }
 
@@ -1380,8 +1401,10 @@ pub(crate) struct InherentData {
 /// Either a success packet or an error packet.
 pub(crate) enum PacketData {
   /// A variant representing a [SuccessPacket] type.
+  #[serde(rename = "SuccessPacket")]
   SuccessPacket(SuccessPacket),
   /// A variant representing a [ErrorPacket] type.
+  #[serde(rename = "ErrorPacket")]
   ErrorPacket(ErrorPacket),
 }
 

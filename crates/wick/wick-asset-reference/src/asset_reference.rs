@@ -4,12 +4,11 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 
-use asset_container::{self as assets, Asset, AssetManager, Progress, Status};
-use bytes::{Bytes, BytesMut};
+use asset_container::{self as assets, Asset, AssetManager, Progress};
+use bytes::Bytes;
 use normpath::PathExt;
 use parking_lot::RwLock;
 use tokio::io::AsyncReadExt;
-use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::Stream;
 use tracing::debug;
 use wick_oci_utils::OciOptions;
@@ -82,11 +81,18 @@ impl AssetReference {
     self.baseurl.read().clone()
   }
 
-  #[allow(clippy::option_if_let_else)]
   pub fn path(&self) -> Result<PathBuf, Error> {
+    self.resolve_path(true)
+  }
+
+  #[allow(clippy::option_if_let_else)]
+  fn resolve_path(&self, use_cache: bool) -> Result<PathBuf, Error> {
     if let Some(cache_loc) = self.cache_location.read().as_ref() {
-      Ok(cache_loc.clone())
-    } else if let Ok(url) = normalize_path(self.location.as_ref(), self.baseurl()) {
+      if use_cache {
+        return Ok(cache_loc.clone());
+      }
+    }
+    if let Ok(url) = normalize_path(self.location.as_ref(), self.baseurl()) {
       Ok(url)
     } else if wick_oci_utils::parse_reference(self.location.as_str()).is_ok() {
       Ok(PathBuf::from(&self.location))
@@ -112,95 +118,11 @@ impl AssetReference {
     }
   }
 
-  fn retrieve_as_file(&self) -> std::pin::Pin<Box<dyn Stream<Item = Progress> + Send + '_>> {
-    let mut buffer = [0u8; 1024];
-
-    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
-    let location = self.location.clone();
-    tokio::spawn(async move {
-      let location = location.as_str();
-      let mut bm = BytesMut::new();
-      let mut file = match tokio::fs::File::open(location).await {
-        Ok(file) => file,
-        Err(err) => {
-          let _ = tx.send(Progress::new(location, Status::Error(err.to_string())));
-          return;
-        }
-      };
-
-      let file_size = match file.metadata().await {
-        Ok(metadata) => metadata.len(),
-        Err(err) => {
-          let _ = tx.send(Progress::new(location, Status::Error(err.to_string())));
-          return;
-        }
-      };
-
-      let _ = tx.send(Progress::new(
-        location,
-        Status::Progress {
-          num: 0,
-          total: file_size as _,
-        },
-      ));
-      loop {
-        let bytes = match file.read(&mut buffer).await {
-          Ok(0) => break,
-          Ok(bytes) => bytes,
-          Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
-          Err(e) => {
-            let _ = tx.send(Progress::new(location, Status::Error(e.to_string())));
-            return;
-          }
-        };
-        let _ = tx.send(Progress::new(
-          location,
-          Status::Progress {
-            num: bytes,
-            total: file_size as _,
-          },
-        ));
-        bm.extend_from_slice(&buffer[..bytes]);
-      }
-
-      let _ = tx.send(Progress::new(location, Status::AssetComplete(bm.to_vec())));
-    });
-    Box::pin(UnboundedReceiverStream::new(rx))
-  }
-
   /// Check if the asset exists on disk.
   #[must_use]
   pub fn exists_locally(&self) -> bool {
-    let path = self.path();
+    let path = self.resolve_path(false);
     path.is_ok() && path.unwrap().exists()
-  }
-
-  fn retrieve_as_oci_with_progress(
-    &self,
-    options: OciOptions,
-  ) -> std::pin::Pin<Box<dyn Stream<Item = Progress> + Send + '_>> {
-    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
-    let location = self.location.clone();
-    tokio::spawn(async move {
-      let location = location.as_str();
-      let _ = tx.send(Progress::new(location, Status::Progress { num: 0, total: 0 }));
-      match wick_oci_utils::fetch_oci_bytes(location, &options).await {
-        Ok(bytes) => {
-          let _ = tx.send(Progress::new(
-            location,
-            Status::Progress {
-              num: bytes.len(),
-              total: bytes.len(),
-            },
-          ));
-          let _ = tx.send(Progress::new(location, Status::AssetComplete(bytes)));
-        }
-        Err(e) => {
-          let _ = tx.send(Progress::new(location, Status::Error(e.to_string())));
-        }
-      }
-    });
-    Box::pin(UnboundedReceiverStream::new(rx))
   }
 }
 
@@ -221,26 +143,8 @@ impl Asset for AssetReference {
     *self.baseurl.write() = Some(baseurl);
   }
 
-  fn fetch_with_progress(&self, options: OciOptions) -> std::pin::Pin<Box<dyn Stream<Item = Progress> + Send + '_>> {
-    let path = self.path();
-
-    debug!(path = ?path, "fetching asset with progress");
-    match path {
-      Ok(path) => {
-        if path.exists() {
-          debug!(path = %path.display(), "load as file");
-          self.retrieve_as_file()
-        } else {
-          debug!(url = %path.display(), "load as oci");
-          self.retrieve_as_oci_with_progress(options)
-        }
-      }
-
-      Err(e) => Box::pin(tokio_stream::once(Progress::new(
-        self.location(),
-        Status::Error(e.to_string()),
-      ))),
-    }
+  fn fetch_with_progress(&self, _options: OciOptions) -> std::pin::Pin<Box<dyn Stream<Item = Progress> + Send + '_>> {
+    unimplemented!()
   }
 
   fn fetch(

@@ -26,7 +26,7 @@ import:
   - name: openapi
     component:
       kind: wick/component/manifest@v1
-      ref: registry.candle.dev/common/openapi-ui:1
+      ref: registry.candle.dev/common/openapi-ui:4
       with:
         schema_url: /openapi.json
 triggers:

@@ -14,6 +14,7 @@ mod integration_test {
   }
 
   #[test_logger::test(tokio::test)]
+  #[ignore = "fetch with progress has been removed as unused for now"]
   async fn test_fetch_with_progress() -> Result<()> {
     let config = load("./tests/manifests/v1/logger.yaml").await?;
     let mut assets = config.assets();
