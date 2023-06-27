@@ -1,10 +1,12 @@
 pub mod types {
+  #![allow(unused)]
   use super::AssociatedData;
 
   pub(crate) type Network = flow_graph::Network<AssociatedData>;
   pub(crate) type Operation = flow_graph::Node<AssociatedData>;
   pub(crate) type OperationPort = flow_graph::NodePort;
   pub(crate) type Schematic = flow_graph::Schematic<AssociatedData>;
+  pub(crate) type Node = flow_graph::Node<AssociatedData>;
   pub(crate) type Port<'a> = flow_graph::iterators::Port<'a, AssociatedData>;
 }
 use std::collections::HashMap;
@@ -363,8 +365,6 @@ pub fn from_def(
       register_operation(vec![], &mut network, flow, &op_config)?;
     }
   }
-
-  trace!(graph=?network,"initialized graph");
 
   Ok(network)
 }

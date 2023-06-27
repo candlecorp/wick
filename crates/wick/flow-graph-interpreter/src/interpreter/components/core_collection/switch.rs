@@ -9,10 +9,10 @@ use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, Type};
 use wick_packet::{ComponentReference, Entity, Invocation, PacketSender, PacketStream, RuntimeConfig};
 
-use crate::constants::NS_CORE;
-use crate::graph::types::Network;
+use crate::constants::{NS_CORE, NS_SELF};
+use crate::graph::types::{Network, Schematic};
 use crate::utils::path_to_entity;
-use crate::BoxFuture;
+use crate::{BoxFuture, HandlerMap};
 pub(crate) struct Op {
   signature: Arc<Mutex<Option<OperationSignature>>>,
 }
@@ -38,43 +38,108 @@ pub(crate) struct SwitchCase {
   case: Value,
   #[serde(rename = "do")]
   case_do: String,
+  with: Option<RuntimeConfig>,
 }
 
-fn gen_signature(id: &str, graph: &Network, config: Config) -> OperationSignature {
+#[allow(clippy::option_if_let_else)]
+fn get_op_signature(
+  op_path: &str,
+  parent_schematic: &Schematic,
+  graph: &Network,
+  handlers: &HandlerMap,
+) -> Option<OperationSignature> {
+  if op_path.starts_with("self::") {
+    get_self_op_signature(graph, op_path)
+  } else if op_path.contains("::") {
+    get_handler_op_signature(handlers, op_path)
+  } else {
+    // if it's a bare name then it must be a node on the parent schematic.
+    if let Some(_op) = parent_schematic.nodes().iter().find(|n| n.id() == op_path) {
+      panic!("operation instance by the name {} exists, but switch configurations can not delegate to operation instances within a flow. Reference the operation by path instead.", op_path);
+      // This is what it points to. We *may* be able to just delegate to this operation but I'm panicking for now.
+      // match op.kind() {
+      //   flow_graph::NodeKind::External(ext) => get_ns_op_signature(ext.component_id(), ext.name(), graph, handlers),
+      //   _ => None,
+      // }
+    } else {
+      None
+    }
+  }
+}
+
+#[allow(unused)]
+fn get_ns_op_signature(ns: &str, op: &str, graph: &Network, handlers: &HandlerMap) -> Option<OperationSignature> {
+  if ns == NS_SELF {
+    get_self_op_signature(graph, op)
+  } else {
+    get_handler_op_signature(handlers, op)
+  }
+}
+
+fn get_handler_op_signature(handlers: &HandlerMap, op_name: &str) -> Option<OperationSignature> {
+  op_name.split_once("::").and_then(|(ns, op)| {
+    handlers
+      .get(ns)
+      .and_then(|ns| ns.component.signature().get_operation(op).cloned())
+  })
+}
+
+fn get_self_op_signature(graph: &Network, schematic_name: &str) -> Option<OperationSignature> {
+  let schematic_name = schematic_name.trim_start_matches("self::");
+  graph.schematic(schematic_name).map(|schematic| {
+    let mut sig = OperationSignature::new(schematic_name);
+    for output in schematic.output().outputs() {
+      sig = sig.add_output(output.name(), Type::Object); // we don't know the type of the output, so we just use object.
+    }
+    for input in schematic.input().inputs() {
+      sig = sig.add_input(input.name(), Type::Object);
+    }
+    sig
+  })
+}
+
+fn log(string: String) -> String {
+  error!("{}", string);
+  string
+}
+
+fn gen_signature(
+  id: &str,
+  parent_schematic: &Schematic,
+  graph: &Network,
+  handlers: &HandlerMap,
+  config: Config,
+) -> OperationSignature {
   let mut signature = OperationSignature::new(id);
   signature = signature.add_input(DISCRIMINANT, Type::Object);
-  let default_op_path = config.default.trim_start_matches("self::");
-  let default_op = graph.schematic(default_op_path).unwrap_or_else(|| {
-    error!(
+  let Some(default_op_sig) = get_op_signature(&config.default, parent_schematic, graph, handlers) else {
+    panic!("{}",log(format!(
       "Invalid switch configuration: default operation '{}' not found.",
-      default_op_path
-    );
-    panic!(
-      "Invalid switch configuration: default operation '{}' not found.",
-      default_op_path
-    );
-  });
+      config.default
+    )));
+  };
   let case_ops = config
     .cases
     .iter()
     .map(|case| {
-      graph
-        .schematic(case.case_do.trim_start_matches("self::"))
-        .unwrap_or_else(|| {
-          error!(
-            "Invalid switch configuration: case operation '{}' not found",
-            case.case_do
-          );
-          panic!();
-        })
-        .clone()
+      let Some(op_sig) = get_op_signature(&case.case_do, parent_schematic, graph, handlers) else {
+        panic!("{}",log(format!(
+          "Invalid switch configuration: case operation '{}' not found",
+          case.case_do
+        )));
+      };
+      op_sig
     })
     .collect::<Vec<_>>();
 
-  if !case_ops
-    .iter()
-    .all(|op| op.output().outputs() == default_op.output().outputs())
-  {
+  let mut default_op_names = default_op_sig.outputs().iter().map(|p| p.name()).collect::<Vec<_>>();
+  default_op_names.sort();
+
+  if !case_ops.iter().all(|op| {
+    let mut output_names = op.outputs().iter().map(|p| p.name()).collect::<Vec<_>>();
+    output_names.sort();
+    output_names == default_op_names
+  }) {
     error!("The default operation and all case conditions must have the same output signature.");
     panic!();
   }
@@ -82,8 +147,8 @@ fn gen_signature(id: &str, graph: &Network, config: Config) -> OperationSignatur
   for field in config.context {
     signature = signature.add_input(field.name, field.ty);
   }
-  for field in config.outputs.clone() {
-    signature = signature.add_output(field.name, field.ty);
+  for field in default_op_sig.outputs {
+    signature.outputs.push(field);
   }
 
   signature
@@ -96,8 +161,14 @@ impl Op {
     }
   }
 
-  pub(crate) fn gen_signature(&self, graph: &Network, config: Config) -> OperationSignature {
-    let sig = gen_signature(Op::ID, graph, config);
+  pub(crate) fn gen_signature(
+    &self,
+    parent_schematic: &Schematic,
+    graph: &Network,
+    handlers: &HandlerMap,
+    config: Config,
+  ) -> OperationSignature {
+    let sig = gen_signature(Op::ID, parent_schematic, graph, handlers, config);
     *self.signature.lock() = Some(sig.clone());
     sig
   }
@@ -163,14 +234,14 @@ impl Operation for Op {
         };
         let case = context.config.cases.iter().find(|case| case.case == *condition);
 
-        let op = case.map_or_else(
+        let (op, op_config) = case.map_or_else(
           || {
             trace!(case = "default", op = default, "switch:case");
-            &default
+            (&default, None)
           },
           |case| {
             trace!(case = %case.case, op = case.case_do, "switch:case");
-            &case.case_do
+            (&case.case_do, case.with.clone())
           },
         );
         trace!(operation = op, "core:switch:route");
@@ -184,7 +255,7 @@ impl Operation for Op {
           let tx = tx.clone();
           let callback = callback.clone();
           tokio::spawn(async move {
-            match callback(link, op_id, route_rx, inherent, Default::default(), &span).await {
+            match callback(link, op_id, route_rx, inherent, op_config, &span).await {
               Ok(mut call_rx) => {
                 while let Some(packet) = call_rx.next().await {
                   let _ = tx.send_result(packet);

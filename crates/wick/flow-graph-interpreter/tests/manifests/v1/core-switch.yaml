@@ -4,7 +4,23 @@ metadata:
   version: '0.0.2'
 component:
   kind: wick/component/composite@v1
+  with:
+    - name: greeting
+      type: string
   operations:
+    - name: greet
+      with:
+        - name: greeting
+          type: string
+      uses:
+        - name: sender
+          operation: core::sender
+          with:
+            output: '{{ctx.config.greeting}}'
+      flow:
+        - <>.message -> test::concat[a].right
+        - sender.output -> a.left
+        - a.output -> <>.output
     - name: test
       uses:
         - name: s
@@ -17,8 +33,10 @@ component:
               - name: output
                 type: string
             cases:
-              - case: want_reverse
-                do: self::test::reverse
+              - case: want_greeting
+                do: self::greet
+                with:
+                  greeting: '{{ctx.root_config.greeting}}, '
               - case: want_uppercase
                 do: self::test::uppercase
             default: self::test::default

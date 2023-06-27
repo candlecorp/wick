@@ -59,7 +59,7 @@ where
     self.index
   }
 
-  pub fn inner(&self) -> &Node<DATA> {
+  pub fn inner(&self) -> &'graph Node<DATA> {
     &self.schematic.nodes[self.index]
   }
 

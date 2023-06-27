@@ -6,7 +6,7 @@ use anyhow::Result;
 use flow_component::Component;
 use pretty_assertions::assert_eq;
 use serde_json::json;
-use wick_packet::{packets, Packet};
+use wick_packet::{packets, Entity, Packet, RuntimeConfig};
 
 #[test_logger::test(tokio::test)]
 async fn test_senders() -> Result<()> {
@@ -133,18 +133,22 @@ async fn test_subflows() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_switch_case_1() -> Result<()> {
-  first_packet_test(
+  first_packet_test_config(
     "./tests/manifests/v1/core-switch.yaml",
-    packets!(("command", "want_reverse"), ("input", "hello WORLD")),
-    "DLROW olleh",
+    Some(RuntimeConfig::from_value(json!({"greeting": "Hello"})).unwrap()),
+    None,
+    packets!(("command", "want_greeting"), ("input", "world")),
+    "Hello, world",
   )
   .await
 }
 
 #[test_logger::test(tokio::test)]
 async fn test_switch_case_2() -> Result<()> {
-  first_packet_test(
+  first_packet_test_config(
     "./tests/manifests/v1/core-switch.yaml",
+    Some(RuntimeConfig::from_value(json!({"greeting": ""})).unwrap()),
+    None,
     packets!(("command", "want_uppercase"), ("input", "hello WORLD")),
     "HELLO WORLD",
   )
@@ -153,8 +157,10 @@ async fn test_switch_case_2() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_switch_default() -> Result<()> {
-  first_packet_test(
+  first_packet_test_config(
     "./tests/manifests/v1/core-switch.yaml",
+    Some(RuntimeConfig::from_value(json!({"greeting": ""})).unwrap()),
+    None,
     packets!(("command", "nomatch"), ("input", "hello WORLD")),
     "hello WORLD",
   )
@@ -187,6 +193,26 @@ async fn first_packet_test(file: &str, packets: Vec<Packet>, expected: &str) -> 
 
 async fn first_packet_test_op(op_name: &str, file: &str, packets: Vec<Packet>, expected: &str) -> Result<()> {
   let (interpreter, mut outputs) = test::common_setup(file, op_name, packets).await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _ = outputs.pop();
+  let wrapper = outputs.pop().unwrap().unwrap();
+  let actual: String = wrapper.decode()?;
+  assert_eq!(actual, expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+async fn first_packet_test_config(
+  file: &str,
+  root_config: Option<RuntimeConfig>,
+  config: Option<RuntimeConfig>,
+  packets: Vec<Packet>,
+  expected: &str,
+) -> Result<()> {
+  let (interpreter, mut outputs) = test::base_setup(file, Entity::local("test"), packets, root_config, config).await?;
 
   assert_eq!(outputs.len(), 2);
 

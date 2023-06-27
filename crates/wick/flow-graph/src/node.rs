@@ -84,7 +84,7 @@ impl std::fmt::Display for NodeKind {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq)]
 #[must_use]
 pub struct Node<DATA> {
   pub name: String,

@@ -5,7 +5,7 @@ use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 use crate::constants::*;
 use crate::graph::types::Network;
 use crate::interpreter::components::dyn_component_id;
-use crate::BoxFuture;
+use crate::{BoxFuture, HandlerMap};
 
 mod merge;
 mod pluck;
@@ -58,7 +58,7 @@ impl std::fmt::Display for DynamicOperation {
 }
 
 impl CoreCollection {
-  pub(crate) fn new(graph: &Network) -> Result<Self, OpInitError> {
+  pub(crate) fn new(graph: &Network, handlers: &HandlerMap) -> Result<Self, OpInitError> {
     let mut this = Self {
       signature: ComponentSignature::new(NS_CORE).version("0.0.0"),
       pluck: pluck::Op::new(),
@@ -106,7 +106,7 @@ impl CoreCollection {
           },
           DynamicOperation::Switch => match switch::Op::decode_config(config) {
             Ok(config) => {
-              let op_sig = this.switch.gen_signature(graph, config);
+              let op_sig = this.switch.gen_signature(schematic, graph, handlers, config);
 
               this.signature.operations.push(op_sig);
               Ok(())
