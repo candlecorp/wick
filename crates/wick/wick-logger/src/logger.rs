@@ -59,6 +59,9 @@ fn silly_modules(module: &str) -> bool {
     "flow_graph_interpreter",
     "wasmtime_provider",
     "wasmrs",
+    "wasmrs_rx",
+    "wasmrs_runtime",
+    "wasmrs_guest",
     "wick_wascap",
     "flow_graph",
   ]
@@ -74,37 +77,42 @@ where
   // This is split up into an if/else because FilterFn needs an fn type.
   // If the closure captures opts.silly then it won't be coercable to an fn.
   if opts.silly {
-    filter::dynamic_filter_fn(move |_metadata, _cx| true)
+    filter::dynamic_filter_fn(move |_metadata, _cx| {
+      !hushed_modules(
+        _metadata
+          .module_path()
+          .unwrap_or_default()
+          .split("::")
+          .next()
+          .unwrap_or_default(),
+      )
+    })
   } else {
-    filter::dynamic_filter_fn(move |metadata, cx| {
-      #[allow(clippy::option_if_let_else)]
-      if let Some(md) = cx.current_span().metadata() {
-        let module = &metadata
-          .module_path()
-          .unwrap_or_default()
-          .split("::")
-          .next()
-          .unwrap_or_default();
-        if hushed_modules(module) {
-          return false;
-        }
-        if silly_modules(module) {
-          matches!(*md.level(), tracing::Level::ERROR | tracing::Level::WARN)
-        } else {
-          true
-        }
+    filter::dynamic_filter_fn(move |metadata, _cx| {
+      let module = &metadata
+        .module_path()
+        .unwrap_or_default()
+        .split("::")
+        .next()
+        .unwrap_or_default();
+
+      #[cfg(feature = "audit")]
+      if _cx.current_span().metadata().is_none() && !hushed_modules(module) {
+        warn!(
+          "Logging without a span: {} at {}:{}",
+          metadata.module_path().unwrap_or_default(),
+          metadata.file().unwrap_or_default(),
+          metadata.line().unwrap_or_default()
+        );
+      }
+
+      if hushed_modules(module) {
+        return false;
+      }
+      if silly_modules(module) {
+        matches!(*metadata.level(), tracing::Level::ERROR | tracing::Level::WARN)
       } else {
-        let module = &metadata
-          .module_path()
-          .unwrap_or_default()
-          .split("::")
-          .next()
-          .unwrap_or_default();
-        if !hushed_modules(module) {
-          !silly_modules(module)
-        } else {
-          false
-        }
+        true
       }
     })
   }
@@ -229,10 +237,12 @@ where
           Some(
             tracing_subscriber::fmt::layer()
               .with_writer(stderr_writer)
-              .with_thread_names(true)
               .with_ansi(with_color)
-              .with_target(true)
               .with_timer(timer)
+              .with_thread_names(cfg!(debug_assertions))
+              .with_target(cfg!(debug_assertions))
+              .with_file(cfg!(debug_assertions))
+              .with_line_number(cfg!(debug_assertions))
               .with_filter(get_levelfilter(opts))
               .with_filter(wick_filter(opts)),
           ),
