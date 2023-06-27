@@ -3,7 +3,7 @@
 name: http
 kind: wick/types@v1
 metadata:
-  version: 0.2.0
+  version: 0.3.0
 package:
   registry:
     host: registry.candle.dev

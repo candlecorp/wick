@@ -18,6 +18,6 @@ triggers:
       - kind: wick/router/rest@v1
         path: /
         routes:
-          - uri: /bad_op
+          - sub_path: /bad_op
             operation: component::bad_op
-            methods: [POST]
+            methods: [Post]

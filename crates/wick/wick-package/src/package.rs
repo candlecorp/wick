@@ -33,7 +33,7 @@ fn process_assets(
       }
       let pdir = parent_dir.clone();
       asset.update_baseurl(&pdir);
-      let asset_path = asset.path()?; // the resolved, abolute path relative to the config location.
+      let asset_path = asset.path()?; // the resolved, absolute path relative to the config location.
       if seen_assets.contains(&asset_path) {
         continue;
       }

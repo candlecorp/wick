@@ -23,6 +23,8 @@ pub(crate) enum {{name.value}} {
     {{#withType .}}
       {{#withAnnotation "tagged"}}
         #[serde(rename = "{{arguments.0.value.value}}")]
+      {{else}}
+        #[serde(rename = "{{pascalCase name.value}}")]
       {{/withAnnotation}}
     {{/withType}}
     {{#ifCond name.value '===' "ComponentOperationExpression"}}

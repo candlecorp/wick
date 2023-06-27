@@ -100,6 +100,7 @@ pub mod utils;
 pub use error::OciError as Error;
 pub use manifest::*;
 pub use oci_distribution::client::ClientProtocol;
+pub use oci_distribution::manifest::{OciDescriptor, OciImageIndex, OciImageManifest, OciManifest};
 pub use options::*;
 pub use pull::*;
 pub use push::*;
@@ -139,38 +140,39 @@ pub enum WickPackageKind {
   TYPES,
 }
 
-/// Retrieve a payload from an OCI url.
-pub async fn fetch_oci_bytes(img: &str, options: &OciOptions) -> Result<Vec<u8>, OciError> {
-  if !options.allow_latest && img.ends_with(":latest") {
-    return Err(OciError::LatestDisallowed(img.to_owned()));
+/// Retrieve a manifest from an OCI url.
+pub async fn fetch_image_manifest(image: &str, options: &OciOptions) -> Result<(OciImageManifest, String), OciError> {
+  if !options.allow_latest && image.ends_with(":latest") {
+    return Err(OciError::LatestDisallowed(image.to_owned()));
   }
-  debug!(image = img, "oci remote");
+  debug!(image, "oci remote");
 
-  let img = parse_reference(img)?;
+  let image = parse_reference(image)?;
 
-  let auth = std::env::var(OCI_VAR_USER).map_or(oci_distribution::secrets::RegistryAuth::Anonymous, |u| {
-    std::env::var(OCI_VAR_PASSWORD).map_or(oci_distribution::secrets::RegistryAuth::Anonymous, |p| {
-      oci_distribution::secrets::RegistryAuth::Basic(u, p)
-    })
-  });
+  let auth = options
+    .username()
+    .as_ref()
+    .map_or(oci_distribution::secrets::RegistryAuth::Anonymous, |u| {
+      options
+        .password()
+        .as_ref()
+        .map_or(oci_distribution::secrets::RegistryAuth::Anonymous, |p| {
+          oci_distribution::secrets::RegistryAuth::Basic(u.clone(), p.clone())
+        })
+    });
 
   let protocol = oci_distribution::client::ClientProtocol::HttpsExcept(options.allow_insecure.clone());
   let config = oci_distribution::client::ClientConfig {
     protocol,
     ..Default::default()
   };
-  let mut c = oci_distribution::Client::new(config);
-  let imgdata = pull(&mut c, &img, &auth).await;
-
-  match imgdata {
-    Ok(imgdata) => {
-      let content = imgdata.layers.into_iter().flat_map(|l| l.data).collect::<Vec<_>>();
-
-      Ok(content)
-    }
-    Err(e) => {
-      error!("Failed to fetch OCI bytes: {}", e);
-      Err(OciError::OciFetchFailure(img.to_string(), e.to_string()))
-    }
-  }
+  let mut client = oci_distribution::Client::new(config);
+  let (manifest, digest) = client
+    .pull_manifest(&image, &auth)
+    .await
+    .map_err(|e| OciError::OciFetchFailure(image.to_string(), e.to_string()))?;
+  let OciManifest::Image(manifest) = manifest else {
+    return Err(OciError::OciFetchFailure(image.to_string(), "manifest is not an image".to_owned()));
+  };
+  Ok((manifest, digest))
 }

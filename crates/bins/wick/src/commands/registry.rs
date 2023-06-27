@@ -1,6 +1,7 @@
 use clap::Subcommand;
 
 pub(crate) mod login;
+pub(crate) mod manifest;
 pub(crate) mod pull;
 pub(crate) mod push;
 
@@ -17,4 +18,8 @@ pub(crate) enum SubCommands {
   /// Save the credentials for a registry.
   #[clap(name = "login")]
   Login(login::Options),
+
+  /// Retrieve the manifest for a package.
+  #[clap(name = "manifest")]
+  Manifest(manifest::Options),
 }
