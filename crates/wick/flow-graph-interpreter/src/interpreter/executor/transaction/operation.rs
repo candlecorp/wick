@@ -173,14 +173,7 @@ impl InstanceHandler {
       let current_status = port.status();
 
       let new_status = match current_status {
-        PortStatus::Open => {
-          // Note: A port can still be "Open" after a call if the operation panics.
-          // if port.is_empty() {
-          //   PortStatus::DoneClosed
-          // } else {
-          PortStatus::DoneClosing
-          // }
-        }
+        PortStatus::Open => PortStatus::UpstreamComplete,
         orig => orig,
       };
 
@@ -219,7 +212,11 @@ impl InstanceHandler {
     let namespace = self.namespace().to_owned();
 
     let mut associated_data = self.schematic.nodes()[self.index()].data().clone();
-    associated_data.config.set_root(config.root().cloned());
+
+    if associated_data.config.root().is_none() {
+      associated_data.config.set_root(config.root().cloned());
+    }
+
     if associated_data.config.value().is_none() {
       associated_data.config.set_value(config.value().cloned());
     }

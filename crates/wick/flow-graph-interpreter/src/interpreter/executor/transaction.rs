@@ -176,6 +176,8 @@ impl Transaction {
       while let Some(Ok(packet)) = payloads.next().await {
         if let Ok(port) = input.find_input(packet.port()) {
           accept_input(tx_id, port, &input, &channel, packet).await;
+        } else if packet.is_noop() {
+          // TODO: propagate this and/or its context if it becomes an issue.
         } else {
           warn!(port = packet.port(), "dropping packet for unconnected port");
         }
@@ -216,6 +218,7 @@ impl Transaction {
 
   pub(crate) async fn emit_done(&self) -> Result<()> {
     if !self.finished.load(Ordering::Relaxed) {
+      self.span.in_scope(|| trace!("tx finished, dispatching done"));
       self.finished.store(true, Ordering::Relaxed);
       self.channel.dispatch_done(self.id()).await;
     }
@@ -249,6 +252,7 @@ impl Transaction {
 
   pub(crate) async fn check_hung(&self) -> Result<bool> {
     if self.done() {
+      error!("transaction done but not cleaned up yet");
       self.channel.dispatch_done(self.id()).await;
       Ok(false)
     } else {

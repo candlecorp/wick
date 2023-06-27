@@ -15,6 +15,7 @@ pub(crate) enum PortStatus {
   Open,
   DoneClosing,
   DoneClosed,
+  UpstreamComplete,
 }
 
 impl PortStatus {
@@ -45,6 +46,7 @@ impl std::fmt::Display for PortStatus {
         PortStatus::Open => "Open",
         PortStatus::DoneClosing => "DoneClosing",
         PortStatus::DoneClosed => "DoneClosed",
+        PortStatus::UpstreamComplete => "UpstreamComplete",
       }
     )
   }

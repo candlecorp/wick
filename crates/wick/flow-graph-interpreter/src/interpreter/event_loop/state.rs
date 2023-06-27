@@ -75,18 +75,14 @@ impl State {
     mut transaction: Transaction,
     options: &InterpreterOptions,
   ) -> Result<(), ExecutionError> {
-    let result = match transaction.start(options).await {
+    match transaction.start(options).await {
       Ok(_) => {
         self.transactions.init_tx(transaction.id(), transaction);
+        trace!("transaction started");
         Ok(())
       }
-      Err(e) => {
-        error!(tx_error = %e);
-        Err(e)
-      }
-    };
-    trace!("transaction started");
-    result
+      Err(e) => Err(e),
+    }
   }
 
   #[allow(clippy::unused_async)]
@@ -103,7 +99,7 @@ impl State {
     let tx = match self.get_tx(&tx_id) {
       Ok(tx) => tx,
       Err(e) => {
-        error!(
+        debug!(
           port = %port, error=%e, "error handling port input"
         );
         return Err(e);
@@ -137,7 +133,7 @@ impl State {
     let tx = match self.get_tx(&tx_id) {
       Ok(tx) => tx,
       Err(e) => {
-        error!(
+        debug!(
           port = %port, error=%e, "error handling port output"
         );
         return Err(e);
