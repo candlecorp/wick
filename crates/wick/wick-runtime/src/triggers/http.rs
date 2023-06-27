@@ -89,6 +89,9 @@ enum HttpError {
   #[error("Invalid pre-request middleware response: {0}")]
   InvalidPreRequestResponse(String),
 
+  #[error("Pre-request middleware did not provide a request or response")]
+  PreRequestResponseNoData,
+
   #[error("Invalid post-request middleware response: {0}")]
   InvalidPostRequestResponse(String),
 
