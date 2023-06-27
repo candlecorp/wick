@@ -87,12 +87,14 @@ impl Interpreter {
       }
       handler.component.signature().clone()
     });
-    handlers.add_core(&network)?;
+
     handlers.add(NamespaceHandler::new(NS_NULL, Box::new(NullComponent::new())))?;
 
     // Add the component:: component
     let component_component = ComponentComponent::new(&handlers);
     handlers.add(NamespaceHandler::new(NS_COMPONENTS, Box::new(component_component)))?;
+
+    handlers.add_core(&network)?;
 
     let mut signatures = handlers.component_signatures();
     program::generate_self_signature(&network, &mut signatures).map_err(Error::EarlyError)?;

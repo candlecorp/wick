@@ -51,7 +51,10 @@ impl HandlerMap {
   }
 
   pub(crate) fn add_core(&mut self, network: &Network) -> Result<(), InterpreterError> {
-    self.add(NamespaceHandler::new(NS_CORE, Box::new(CoreCollection::new(network)?)))
+    self.add(NamespaceHandler::new(
+      NS_CORE,
+      Box::new(CoreCollection::new(network, self)?),
+    ))
   }
 
   #[must_use]

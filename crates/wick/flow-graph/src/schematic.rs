@@ -132,6 +132,24 @@ where
   }
 
   #[must_use]
+  pub fn used_nodes(&self) -> Vec<&Node<DATA>> {
+    let mut nodes_connected_to_input: HashMap<String, _> = SchematicWalker::new_from_input(self)
+      .filter_map(|hop| match hop {
+        iterators::SchematicHop::Node(n) => Some((n.name().to_owned(), n.inner())),
+        _ => None,
+      })
+      .collect();
+    let nodes_connected_to_output: HashMap<String, _> = SchematicWalker::new_from_output(self)
+      .filter_map(|hop| match hop {
+        iterators::SchematicHop::Node(n) => Some((n.name().to_owned(), n.inner())),
+        _ => None,
+      })
+      .collect();
+    nodes_connected_to_input.extend(nodes_connected_to_output);
+    nodes_connected_to_input.into_values().collect()
+  }
+
+  #[must_use]
   pub fn get(&self, index: NodeIndex) -> Option<&Node<DATA>> {
     self.nodes.get(index)
   }
