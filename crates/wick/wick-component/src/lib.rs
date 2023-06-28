@@ -104,11 +104,12 @@ pub mod datetime {
   pub use wick_packet::{date_from_millis, serde, DateTime};
 }
 #[cfg(feature = "json")]
-pub use serde_json::{from_slice, from_str, from_value, json, to_value, Map};
+pub use serde_json::{from_slice, from_str, from_value, json, to_value, Map, Value};
 pub use tokio_stream::{empty, iter as iter_raw, once as once_raw, Stream, StreamExt};
 #[cfg(target_family = "wasm")]
 /// Re-export of wasmrs.
 pub use wasmrs_guest;
+pub use wick_packet::Base64Bytes as Bytes;
 /// Re-exported crates;
 pub use {flow_component, paste, wasmrs, wasmrs_codec, wasmrs_runtime as runtime, wasmrs_rx, wick_packet as packet};
 

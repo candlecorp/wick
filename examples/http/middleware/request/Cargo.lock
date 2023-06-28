@@ -972,10 +972,11 @@ dependencies = [
 
 [[package]]
 name = "liquid-json"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d297cffc15f80264ef919488290fb0cefd3f9bdc4e96688a523fef12ab5fa10"
+checksum = "a6ce64ef6453a4d45ba9f5bac4273906b26103df9cbe841028c74370c7352d88"
 dependencies = [
+ "base64 0.21.2",
  "liquid",
  "liquid-core",
  "liquid-lib",

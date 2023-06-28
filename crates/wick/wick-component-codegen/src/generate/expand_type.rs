@@ -35,7 +35,7 @@ pub(super) fn expand_type(
     }
     wick_interface_types::Type::Bytes => {
       config.add_dep(Dependency::Bytes);
-      quote! {bytes::Bytes}
+      quote! {wick_component::Bytes}
     }
     wick_interface_types::Type::Named(name) => {
       let (mod_parts, item_part) = get_typename_parts(name);
@@ -68,7 +68,7 @@ pub(super) fn expand_type(
     }
     wick_interface_types::Type::Object => {
       config.add_dep(Dependency::SerdeJson);
-      quote! { Value }
+      quote! { wick_component::Value }
     }
     wick_interface_types::Type::AnonymousStruct(_) => todo!("implement anonymous struct in new codegen"),
   }

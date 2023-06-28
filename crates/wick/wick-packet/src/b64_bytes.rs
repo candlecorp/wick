@@ -3,10 +3,10 @@ use std::ops::Deref;
 
 use base64_serde::base64_serde_type;
 use bytes::buf::IntoIter;
-base64_serde_type!(Base64UrlSafe, base64::engine::general_purpose::URL_SAFE);
+base64_serde_type!(Base64Standard, base64::engine::general_purpose::STANDARD);
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Base64Bytes(#[serde(with = "Base64UrlSafe")] pub bytes::Bytes);
+pub struct Base64Bytes(#[serde(with = "Base64Standard")] pub bytes::Bytes);
 
 impl Base64Bytes {
   pub fn new<T>(value: T) -> Self
@@ -248,5 +248,19 @@ impl bytes::Buf for Base64Bytes {
 
   fn advance(&mut self, cnt: usize) {
     self.0.advance(cnt);
+  }
+}
+
+impl From<String> for Base64Bytes {
+  fn from(value: String) -> Self {
+    Self::new(value)
+  }
+}
+
+impl Extend<Base64Bytes> for bytes::BytesMut {
+  fn extend<T: IntoIterator<Item = Base64Bytes>>(&mut self, iter: T) {
+    for bytes in iter {
+      self.extend(bytes);
+    }
   }
 }

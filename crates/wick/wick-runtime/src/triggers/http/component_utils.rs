@@ -15,6 +15,7 @@ use wick_config::config::Codec;
 use wick_interface_http::types as wick_http;
 use wick_packet::{
   packets,
+  Base64Bytes,
   Entity,
   InherentData,
   Invocation,
@@ -82,7 +83,7 @@ pub(super) async fn handle(
         trace!(?bytes, "http:codec:raw:bytes");
         match bytes {
           Ok(b) => {
-            let _ = tx.send(Packet::encode("body", b));
+            let _ = tx.send(Packet::encode("body", Base64Bytes::new(b)));
           }
           Err(e) => {
             let _ = tx.send(Packet::err("body", e.to_string()));
@@ -234,7 +235,7 @@ pub(super) async fn respond(
             let bytes = as_str.as_bytes();
             body.extend_from_slice(bytes);
           } else {
-            let response: Bytes = p.decode().map_err(|e| HttpError::Codec(codec, e.to_string()))?;
+            let response: Base64Bytes = p.decode().map_err(|e| HttpError::Bytes(e.to_string()))?;
             body.extend_from_slice(&response);
           }
         }

@@ -30,7 +30,7 @@ impl HttpHandlerOperation for Component {
 
   async fn http_handler(
     mut request: WickStream<types::http::HttpRequest>,
-    body: WickStream<bytes::Bytes>,
+    body: WickStream<Bytes>,
     mut outputs: Self::Outputs,
     _ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
@@ -40,7 +40,7 @@ impl HttpHandlerOperation for Component {
 
     let body: bytes::BytesMut = body.try_collect().await?;
     let res_body = if body.is_empty() {
-      bytes::Bytes::new()
+      Bytes::default()
     } else {
       let body = String::from_utf8(body.into())?;
       let req: Request = serde_json::from_str(&body)?;

@@ -213,7 +213,7 @@ mod test {
     let ty = Type::Object;
     let src = expand_type(&mut config, Direction::In, false, &ty);
 
-    assert_eq!(&src.to_string(), "Value");
+    assert_eq!(&src.to_string(), "wick_component :: Value");
 
     Ok(())
   }
