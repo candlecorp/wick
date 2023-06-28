@@ -50,7 +50,7 @@ async fn run_unit<'a>(
   root_config: Option<RuntimeConfig>,
 ) -> Result<TestBlock, TestError> {
   let span = debug_span!("unit test", name = def.test.name());
-  let op_config = render_config(def.test.config())?;
+  let op_config = render_config(def.test.config(), None)?;
   let signature = component
     .signature()
     .get_operation(def.test.operation())

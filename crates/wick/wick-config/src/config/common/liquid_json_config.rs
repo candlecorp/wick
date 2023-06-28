@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use liquid_json::LiquidJsonValue;
 use tracing::{debug_span, trace};
-use wick_packet::RuntimeConfig;
+use wick_packet::{date_from_millis, InherentData, RuntimeConfig};
 
 use crate::Error;
 
@@ -16,6 +16,11 @@ pub struct LiquidJsonConfig {
   pub(crate) root_config: Option<RuntimeConfig>,
 }
 
+#[derive(Debug, Clone, serde::Serialize)]
+struct CtxInherent {
+  timestamp: String,
+}
+
 impl LiquidJsonConfig {
   /// Make a template render context from the passed configuration.
   pub fn make_context(
@@ -23,18 +28,31 @@ impl LiquidJsonConfig {
     root: Option<&RuntimeConfig>,
     config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
+    inherent: Option<&InherentData>,
   ) -> Result<serde_json::Value, Error> {
-    trace!(root_config=?root, ?config, env=?env.map(|e|e.len()), "rendering liquid config");
+    trace!(root_config=?root, ?config, env=?env.map(|e|e.len()), inherent=?inherent, "rendering liquid config");
     let mut base = base.unwrap_or(serde_json::Value::Object(Default::default()));
     let map = base.as_object_mut().ok_or(Error::ContextBase)?;
+    // The rust liquid template library is picky with the formats it recognizes.
+    // This turns the timestamp into something it can use.
+    // Datetime format: "[year]-[month]-[day] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"
+    let inherent = if let Some(i) = inherent {
+      Some(CtxInherent {
+        timestamp: date_from_millis(i.timestamp)
+          .map(|d| d.format("%F %T %z").to_string())
+          .map_err(|e| Error::ConfigurationTemplate(e.to_string()))?,
+      })
+    } else {
+      None
+    };
+
     map.insert(
       "ctx".to_owned(),
       serde_json::json!({
-
           "root_config": root,
           "config": config,
-          "env": env
-
+          "env": env,
+          "inherent": inherent,
       }),
     );
     Ok(base)
@@ -46,8 +64,9 @@ impl LiquidJsonConfig {
     root: Option<&RuntimeConfig>,
     config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
+    inherent: Option<&InherentData>,
   ) -> Result<RuntimeConfig, Error> {
-    let ctx = debug_span!("liquid-json-config").in_scope(|| Self::make_context(None, root, config, env))?;
+    let ctx = debug_span!("liquid-json-config").in_scope(|| Self::make_context(None, root, config, env, inherent))?;
 
     let mut map = HashMap::new();
     for (k, v) in self.template.iter() {

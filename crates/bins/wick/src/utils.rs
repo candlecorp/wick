@@ -110,7 +110,7 @@ pub(crate) fn parse_config_string(source: Option<&str>) -> anyhow::Result<Option
         .map_err(|e| anyhow::anyhow!("Failed to parse config argument as JSON: {}", e))?;
       let config: LiquidJsonConfig = config.into();
       let rendered = config
-        .render(None, None, Some(&std::env::vars().collect::<HashMap<_, _>>()))
+        .render(None, None, Some(&std::env::vars().collect::<HashMap<_, _>>()), None)
         .map_err(|e| anyhow::anyhow!("Failed to parse config: {}", e))?;
       trace!(config=?rendered, "rendered config");
       Some(rendered)

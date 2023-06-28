@@ -11,7 +11,8 @@ version = "0.26.0"
 flow-component = { workspace = true }
 flow-expression-parser = { workspace = true }
 wick-packet = { workspace = true, default-features = false, features = [
-  "validation"
+  "validation",
+  "std"
 ] }
 wick-interface-types = { workspace = true, features = ["yaml", "parser"] }
 wick-asset-reference = { workspace = true }

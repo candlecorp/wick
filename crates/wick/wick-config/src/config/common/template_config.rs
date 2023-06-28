@@ -109,7 +109,8 @@ where
     if let Some(value) = &self.value {
       return Ok(value.clone());
     }
-    let ctx = debug_span!("template-config").in_scope(|| LiquidJsonConfig::make_context(None, root, None, env))?;
+    let ctx =
+      debug_span!("template-config").in_scope(|| LiquidJsonConfig::make_context(None, root, None, env, None))?;
 
     if let Some(template) = &self.template {
       let rendered = template

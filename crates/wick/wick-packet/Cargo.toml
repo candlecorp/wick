@@ -22,7 +22,7 @@ rt-tokio = ["tokio/rt"]
 datetime = ["chrono"]
 validation = []
 rng = ["seeded-random/rng"]
-std = ["seeded-random/std"]
+std = ["seeded-random/std", "chrono/std"]
 test = ["invocation", "std"]
 
 [dependencies]
@@ -53,7 +53,7 @@ uuid = { workspace = true, features = ["v4", "serde"], optional = true }
 #
 # feature = datetime
 chrono = { workspace = true, optional = true, features = [
-  "serde"
+  "serde",
 ], default-features = false }
 
 [target.'cfg(target_family = "wasm")'.dependencies]

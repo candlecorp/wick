@@ -7,13 +7,13 @@ pub enum Error {
   #[error("No stream found for port '{0}'")]
   PortMissing(String),
 
-  /// Error serializing payload.
-  #[error("Error serializing payload: {1} (payload was: {:?})",.0)]
-  Encode(Vec<u8>, String),
-
   /// Error deserializing payload.
-  #[error("Error deserializing payload: {1} (payload was: {:?})",.0)]
-  Decode(Vec<u8>, String),
+  #[error("Error deserializing payload '{}': {} (raw payload was: {:?})",.as_json,.error,.payload)]
+  Decode {
+    as_json: String,
+    payload: Vec<u8>,
+    error: String,
+  },
 
   /// Error converting payload into JSON.
   #[error("Error JSON-ifying payload: {0}")]

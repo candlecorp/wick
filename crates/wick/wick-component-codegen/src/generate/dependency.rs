@@ -39,10 +39,7 @@ impl ToTokens for Dependency {
       }
       Dependency::WickPacket => tokens.extend(quote! { pub use wick_component::packet as wick_packet; }),
       Dependency::SerdeJson => tokens.extend(quote! {
-        #[cfg(target_family="wasm")]
-        pub use wick_component::wasmrs_guest::Value;
-        #[cfg(not(target_family="wasm"))]
-        pub use serde_json::Value;
+        pub use wick_component::Value;
       }),
       Dependency::Bytes => tokens.extend(quote! { pub use wick_component::Bytes; }),
       Dependency::AsyncTrait => tokens.extend(quote! { pub use async_trait::async_trait; }),

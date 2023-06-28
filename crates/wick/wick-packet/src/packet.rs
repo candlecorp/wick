@@ -262,7 +262,12 @@ impl PacketPayload {
     match self {
       PacketPayload::Ok(Some(bytes)) => match wasmrs_codec::messagepack::deserialize(&bytes) {
         Ok(data) => Ok(data),
-        Err(err) => Err(crate::Error::Decode(bytes.into(), err.to_string())),
+        Err(err) => Err(crate::Error::Decode {
+          as_json: wasmrs_codec::messagepack::deserialize::<serde_json::Value>(&bytes)
+            .map_or_else(|_e| "could not convert".to_owned(), |v| v.to_string()),
+          payload: bytes.into(),
+          error: err.to_string(),
+        }),
       },
       PacketPayload::Ok(None) => Err(crate::Error::NoData),
       PacketPayload::Err(err) => Err(crate::Error::PayloadError(err)),

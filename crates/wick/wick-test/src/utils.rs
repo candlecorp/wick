@@ -2,7 +2,16 @@ use std::collections::HashMap;
 
 use wasmrs_codec::messagepack;
 use wick_config::config::{LiquidJsonConfig, PacketFlags, TestPacket};
-use wick_packet::{Packet, PacketError, PacketPayload, RuntimeConfig, CLOSE_BRACKET, DONE_FLAG, OPEN_BRACKET};
+use wick_packet::{
+  InherentData,
+  Packet,
+  PacketError,
+  PacketPayload,
+  RuntimeConfig,
+  CLOSE_BRACKET,
+  DONE_FLAG,
+  OPEN_BRACKET,
+};
 
 use crate::error::TestError;
 
@@ -27,7 +36,7 @@ pub(crate) fn gen_packet(
       PacketPayload::Ok(match data.data() {
         Some(data) => {
           let ctx =
-            LiquidJsonConfig::make_context(None, root_config, op_config, env().as_ref()).map_err(config_error)?;
+            LiquidJsonConfig::make_context(None, root_config, op_config, env().as_ref(), None).map_err(config_error)?;
           let data = data.render(&ctx).map_err(config_error)?;
           Some(
             messagepack::serialize(&data)
@@ -69,10 +78,15 @@ fn convert_flags(flags: Option<&PacketFlags>) -> u8 {
   byte
 }
 
-pub(crate) fn render_config(config: Option<&LiquidJsonConfig>) -> Result<Option<RuntimeConfig>, TestError> {
+pub(crate) fn render_config(
+  config: Option<&LiquidJsonConfig>,
+  inherent: Option<&InherentData>,
+) -> Result<Option<RuntimeConfig>, TestError> {
   if let Some(config) = config {
     let env = std::env::vars().collect();
-    Ok(Some(config.render(None, None, Some(&env)).map_err(config_error)?))
+    Ok(Some(
+      config.render(None, None, Some(&env), inherent).map_err(config_error)?,
+    ))
   } else {
     Ok(None)
   }

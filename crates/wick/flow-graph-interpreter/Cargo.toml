@@ -38,3 +38,4 @@ anyhow = { workspace = true }
 serde_json = { workspace = true }
 pretty_assertions = { workspace = true }
 wick-packet = { workspace = true, features = ["test"] }
+chrono = { workspace = true }

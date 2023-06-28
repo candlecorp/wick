@@ -174,7 +174,7 @@ impl ComponentDefinition {
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     let val = if let Some(config) = self.config() {
-      Some(config.render(root_config, None, env)?)
+      Some(config.render(root_config, None, env, None)?)
     } else {
       None
     };

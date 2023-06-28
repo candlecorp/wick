@@ -1,6 +1,7 @@
 mod test;
 
 use std::collections::HashMap;
+use std::time::SystemTime;
 
 use anyhow::Result;
 use flow_component::Component;
@@ -98,7 +99,10 @@ async fn test_context_passing() -> Result<()> {
 
   let _wrapper = outputs.pop().unwrap(); //done signal
   let wrapper = outputs.pop().unwrap();
-  let expected = Packet::encode("output", "Hello, World! This works!");
+  let time = wick_packet::DateTime::from(SystemTime::now());
+  use chrono::Datelike;
+
+  let expected = Packet::encode("output", format!("Hello, World! Happy {}! This works!", time.year()));
 
   assert_eq!(wrapper.unwrap(), expected);
   interpreter.shutdown().await?;

@@ -1688,6 +1688,7 @@ name = "flow-graph-interpreter"
 version = "0.20.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "flow-component",
  "flow-expression-parser",
  "flow-graph",

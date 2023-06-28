@@ -175,6 +175,9 @@ async fn handle(
   baseurl: Url,
   client: reqwest::Client,
 ) -> anyhow::Result<()> {
+  if baseurl.cannot_be_a_base() {
+    return Err(Error::InvalidBaseUrl(baseurl).into());
+  }
   let opdef = match opdef {
     Some(opdef) => opdef,
     None => {
@@ -207,7 +210,7 @@ async fn handle(
         let v = v
           .decode_value()
           .map_err(|e| {
-            invocation.trace(|| warn!(port=%k,error=%e, "http:input:deserialize"));
+            invocation.trace(|| error!(port=%k,error=%e, "http:input:deserialize"));
             e
           })
           .unwrap_or(Value::Null);
@@ -217,7 +220,13 @@ async fn handle(
     let inputs = Value::Object(inputs);
 
     invocation.trace(|| trace!(inputs=?inputs, "request inputs"));
-    let ctx = LiquidJsonConfig::make_context(Some(inputs), root_config.as_ref(), op_config.as_ref(), None)?;
+    let ctx = LiquidJsonConfig::make_context(
+      Some(inputs),
+      root_config.as_ref(),
+      op_config.as_ref(),
+      None,
+      Some(&invocation.inherent),
+    )?;
 
     let body = match opdef.body() {
       Some(body) => match body.render(&ctx) {
@@ -241,7 +250,10 @@ async fn handle(
         break 'outer;
       }
     };
-    let request_url = baseurl.join(&append_path).unwrap();
+
+    let mut request_url = baseurl.clone();
+    request_url.set_path(&format!("{}{}", request_url.path(), append_path));
+
     invocation.trace(|| trace!(url= %request_url, "initiating request"));
 
     let request = match opdef.method() {
@@ -279,7 +291,7 @@ async fn handle(
     let (client, request) = request_builder.build_split();
     let request = request.unwrap();
 
-    invocation.trace(|| trace!(request=?request, "request created"));
+    invocation.trace(|| debug!(request=?request, "http client request"));
 
     let response = match client.execute(request).await {
       Ok(r) => r,
