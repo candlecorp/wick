@@ -77,6 +77,9 @@ enum HttpError {
   #[error("Could not serialize output into '{0}' codec: {1}")]
   Codec(Codec, String),
 
+  #[error("Could not read output as base64 bytes: {0}")]
+  Bytes(String),
+
   #[error("Invalid header name: {0}")]
   InvalidHeaderName(String),
 
