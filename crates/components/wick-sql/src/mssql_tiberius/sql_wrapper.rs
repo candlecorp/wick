@@ -1,26 +1,27 @@
 use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
 use serde_json::{Number, Value};
 use tiberius::{ColumnData, FromSql, IntoSql};
-use wick_packet::parse_date;
+use wick_packet::{parse_date, TypeWrapper};
 
 use crate::common::sql_wrapper::SqlWrapper;
 
 impl<'a> IntoSql<'a> for SqlWrapper {
   fn into_sql(self) -> ColumnData<'a> {
-    let v = self.0.inner();
+    let ty = self.0.type_signature().clone();
+    let v = self.0.into_inner();
 
-    match self.0.type_signature() {
+    match ty {
       wick_interface_types::Type::I8 => {
-        let v = to_int::<i16>(v).unwrap();
+        let v = to_int::<i16>(&v).unwrap();
         v.into_sql()
       }
-      wick_interface_types::Type::I16 => to_int::<i16>(v).unwrap().into_sql(),
-      wick_interface_types::Type::I32 => to_int::<i32>(v).unwrap().into_sql(),
-      wick_interface_types::Type::I64 => to_int::<i64>(v).unwrap().into_sql(),
-      wick_interface_types::Type::U8 => to_uint::<u8>(v).unwrap().into_sql(),
-      wick_interface_types::Type::U16 => to_int::<i16>(v).unwrap().into_sql(),
-      wick_interface_types::Type::U32 => to_int::<i32>(v).unwrap().into_sql(),
-      wick_interface_types::Type::U64 => to_int::<i64>(v).unwrap().into_sql(),
+      wick_interface_types::Type::I16 => to_int::<i16>(&v).unwrap().into_sql(),
+      wick_interface_types::Type::I32 => to_int::<i32>(&v).unwrap().into_sql(),
+      wick_interface_types::Type::I64 => to_int::<i64>(&v).unwrap().into_sql(),
+      wick_interface_types::Type::U8 => to_uint::<u8>(&v).unwrap().into_sql(),
+      wick_interface_types::Type::U16 => to_int::<i16>(&v).unwrap().into_sql(),
+      wick_interface_types::Type::U32 => to_int::<i32>(&v).unwrap().into_sql(),
+      wick_interface_types::Type::U64 => to_int::<i64>(&v).unwrap().into_sql(),
       wick_interface_types::Type::F32 => v.as_f64().unwrap().into_sql(),
       wick_interface_types::Type::F64 => v.as_f64().unwrap().into_sql(),
       wick_interface_types::Type::Bool => v.as_bool().unwrap().into_sql(),
@@ -29,7 +30,27 @@ impl<'a> IntoSql<'a> for SqlWrapper {
       wick_interface_types::Type::Bytes => unimplemented!("Bytes are not supported yet."),
       wick_interface_types::Type::Named(_) => unimplemented!("Custom types are not supported yet."),
       wick_interface_types::Type::List { .. } => unimplemented!("Lists are not supported yet."),
-      wick_interface_types::Type::Optional { .. } => unimplemented!("Optional values are not supported yet."),
+      wick_interface_types::Type::Optional { ty } => match v {
+        Value::Null => match *ty {
+          // This satisfies types but may be optimizable into one generic call
+          // if tiberius doesn't do anything type-specific with the impls underneath.
+          wick_interface_types::Type::I8 => None::<i16>.into_sql(),
+          wick_interface_types::Type::I16 => None::<i16>.into_sql(),
+          wick_interface_types::Type::I32 => None::<i32>.into_sql(),
+          wick_interface_types::Type::I64 => None::<i64>.into_sql(),
+          wick_interface_types::Type::U8 => None::<u8>.into_sql(),
+          wick_interface_types::Type::U16 => None::<i16>.into_sql(),
+          wick_interface_types::Type::U32 => None::<i32>.into_sql(),
+          wick_interface_types::Type::U64 => None::<i64>.into_sql(),
+          wick_interface_types::Type::F32 => None::<f32>.into_sql(),
+          wick_interface_types::Type::F64 => None::<f64>.into_sql(),
+          wick_interface_types::Type::Bool => None::<bool>.into_sql(),
+          wick_interface_types::Type::String => None::<String>.into_sql(),
+          wick_interface_types::Type::Datetime => None::<wick_packet::DateTime>.into_sql(),
+          _ => None::<i16>.into_sql(), // Delegating to generic impl as a test.
+        },
+        _ => SqlWrapper(TypeWrapper::new(*ty, v)).into_sql(),
+      },
       wick_interface_types::Type::Map { .. } => unimplemented!("Maps are not supported yet."),
       #[allow(deprecated)]
       wick_interface_types::Type::Link { .. } => unimplemented!("Links are not supported yet."),
