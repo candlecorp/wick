@@ -106,31 +106,20 @@ impl Service<Request<Body>> for ResponseService {
       let start = chrono::Local::now().format("%d/%b/%Y:%H:%M:%S %z");
       let response = match router {
         Some(h) => match h {
-          HttpRouter::Raw(r) => {
-            let (wick_request_object, early_response) =
-              run_request_middleware(&req, engine.clone(), &r, remote_addr).await?;
-            // if we have an early response, skip the main handler.
-            let response = if let Some(response) = early_response {
-              response
-            } else {
-              let req = merge_requests(&wick_request_object, req)?;
-              match r.component.handle(remote_addr, engine.clone(), req).await {
-                Ok(res) => res,
-                Err(e) => {
-                  span.in_scope(|| {
-                    error!(
-                      time=%start,
-                      path,
-                      error=%e,
-                      "internal error",
-                    );
-                  });
-                  make_ise(None)
-                }
-              }
-            };
-            run_response_middleware(wick_request_object, response, engine.clone(), &r).await?
-          }
+          HttpRouter::Raw(r) => match handle(req, r, engine.clone(), remote_addr).await {
+            Ok(v) => v,
+            Err(e) => {
+              span.in_scope(|| {
+                error!(
+                  time=%start,
+                  path,
+                  error=%e,
+                  "internal error",
+                );
+              });
+              make_ise(None)
+            }
+          },
         },
         None => Builder::new()
           .status(StatusCode::NOT_FOUND)
@@ -153,6 +142,23 @@ impl Service<Request<Body>> for ResponseService {
       Ok(response)
     })
   }
+}
+
+async fn handle(
+  req: Request<Body>,
+  r: RawRouterHandler,
+  engine: Arc<Runtime>,
+  remote_addr: SocketAddr,
+) -> Result<Response<Body>, HttpError> {
+  let (wick_request_object, early_response) = run_request_middleware(&req, engine.clone(), &r, remote_addr).await?;
+  // if we have an early response, skip the main handler.
+  let response = if let Some(response) = early_response {
+    response
+  } else {
+    let req = merge_requests(&wick_request_object, req)?;
+    r.component.handle(remote_addr, engine.clone(), req).await?
+  };
+  run_response_middleware(wick_request_object, response, engine.clone(), &r).await
 }
 
 async fn run_request_middleware<B>(
