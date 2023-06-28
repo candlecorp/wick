@@ -165,24 +165,21 @@ pub(super) async fn handle_response_middleware(
     &Span::current(),
   );
 
-  let mut stream = engine
+  let stream = engine
     .invoke(invocation, operation_config)
     .await
     .map_err(|e| HttpError::OperationError(e.to_string()))?;
 
-  let packet = stream.next().await;
+  let packets = stream.collect::<Result<Vec<Packet>, _>>().await;
 
-  if packet.is_none() {
-    return Ok(None);
-  }
+  let packets = match packets {
+    Ok(packets) => packets,
+    Err(e) => return Err(HttpError::InvalidPostRequestResponse(e.to_string())),
+  };
 
-  let packet = packet.unwrap();
-
-  if let Err(e) = packet {
-    return Err(HttpError::InvalidPostRequestResponse(e.to_string()));
-  }
-
-  let packet = packet.unwrap();
+  let Some(packet) = packets.into_iter().find(|p|p.has_data()) else {
+      return Err(HttpError::PostRequestResponseNoData);
+  };
 
   if packet.port() == "response" {
     let response: wick_http::HttpResponse = packet
