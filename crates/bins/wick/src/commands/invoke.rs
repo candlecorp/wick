@@ -117,9 +117,19 @@ pub(crate) async fn handle(
   host.start_runtime(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
-  let op_signature = signature
-    .get_operation(&component)
-    .ok_or_else(|| anyhow::anyhow!("operation not found: {}", component))?;
+  let op_signature = signature.get_operation(&component).ok_or_else(|| {
+    anyhow::anyhow!(
+      "Could not invoke operation '{}', '{}' not found. Reported operations are [{}]",
+      component,
+      component,
+      signature
+        .operations
+        .iter()
+        .map(|op| op.name())
+        .collect::<Vec<_>>()
+        .join(", ")
+    )
+  })?;
 
   let check_stdin = if op_signature.inputs.is_empty() {
     false
@@ -171,7 +181,7 @@ pub(crate) async fn handle(
     for port in seen_ports {
       packets.push(Ok(Packet::done(port)));
     }
-    debug!(args= ?packets, "invoke");
+    debug!(cli_packets= ?packets, "wick invoke");
     let stream = PacketStream::new(futures::stream::iter(packets));
 
     let stream = host.request(&component, op_config, stream, inherent_data).await?;

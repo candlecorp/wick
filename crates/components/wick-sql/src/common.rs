@@ -58,33 +58,28 @@ pub(crate) fn bind_args(positional_args: &[String], values: &[(Type, Packet)]) -
       .cloned()
       .ok_or_else(|| Error::MissingPacket(arg.to_owned()))?;
 
-    match packet
+    let type_wrapper = packet
       .to_type_wrapper(ty.clone())
-      .map_err(|e| Error::Prepare(e.to_string()))
-    {
-      Ok(type_wrapper) => {
-        if spread {
-          let Type::List { ty } = type_wrapper.type_signature().clone() else {
+      .map_err(|e| Error::Prepare(e.to_string()))?;
+
+    if spread {
+      let Type::List { ty } = type_wrapper.type_signature().clone() else {
             return Err(Error::Prepare(format!("value for '{}...' is not a list ", arg)));
           };
-          if let serde_json::Value::Array(arr) = type_wrapper.into_inner() {
-            bound_args.extend(
-              arr
-                .into_iter()
-                .map(|v| SqlWrapper::from(TypeWrapper::new(*ty.clone(), v))),
-            );
-          } else {
-            return Err(Error::Prepare(format!("value for '{}...' is not an array ", arg)));
-          }
-        } else {
-          bound_args.push(SqlWrapper::from(type_wrapper));
-        }
+      if let serde_json::Value::Array(arr) = type_wrapper.into_inner() {
+        bound_args.extend(
+          arr
+            .into_iter()
+            .map(|v| SqlWrapper::from(TypeWrapper::new(*ty.clone(), v))),
+        );
+      } else {
+        return Err(Error::Prepare(format!("value for '{}...' is not an array ", arg)));
       }
-      Err(e) => {
-        return Err(Error::Prepare(e.to_string()));
-      }
+    } else {
+      bound_args.push(SqlWrapper::from(type_wrapper));
     }
   }
+
   Ok(bound_args)
 }
 

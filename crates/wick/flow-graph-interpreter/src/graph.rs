@@ -51,11 +51,11 @@ impl LiquidOperationConfig {
     }
   }
 
-  pub fn render(&self) -> Result<Option<RuntimeConfig>, InterpreterError> {
+  pub fn render(&self, inherent: &InherentData) -> Result<Option<RuntimeConfig>, InterpreterError> {
     if let Some(template) = self.template() {
       Ok(Some(
         template
-          .render(self.root.as_ref(), self.value.as_ref(), None)
+          .render(self.root.as_ref(), self.value.as_ref(), None, Some(inherent))
           .map_err(|e| InterpreterError::Configuration(e.to_string()))?,
       ))
     } else {
@@ -124,7 +124,7 @@ use serde_json::Value;
 use types::*;
 use wick_config::config::components::{ComponentConfig, OperationConfig};
 use wick_config::config::{ComponentImplementation, ExecutionSettings, FlowOperation, LiquidJsonConfig};
-use wick_packet::RuntimeConfig;
+use wick_packet::{InherentData, RuntimeConfig};
 
 use crate::constants::{NS_CORE, NS_NULL};
 use crate::error::InterpreterError;

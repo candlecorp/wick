@@ -132,7 +132,7 @@ macro_rules! payload_fan_out {
               let mut packet: $crate::packet::Packet = payload.into();
               if let Some(config_tx) = config_tx.take() {
                 if let Some(context) = packet.context() {
-                  let config: Result<$crate::packet::ContextTransport<$config>, _> = $crate::wasmrs_codec::messagepack::deserialize(&context).map_err(|_e|$crate::flow_component::ComponentError::message("Cound not deserialize Context"));
+                  let config: Result<$crate::packet::ContextTransport<$config>, _> = $crate::wasmrs_codec::messagepack::deserialize(&context).map_err(|e|$crate::flow_component::ComponentError::message(&format!("Cound not deserialize context: {}", e)));
                   let _ = config_tx.send(config.map($crate::flow_component::Context::from));
                 } else {
                   packet = $crate::packet::Packet::component_error("No context attached to first invocation packet");

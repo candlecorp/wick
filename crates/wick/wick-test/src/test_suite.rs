@@ -26,7 +26,7 @@ impl<'a> TestSuite<'a> {
       .iter()
       .map(|config| {
         Ok(TestGroup::from_test_cases(
-          render_config(config.config())?,
+          render_config(config.config(), None)?,
           config.cases(),
         ))
       })
@@ -39,7 +39,7 @@ impl<'a> TestSuite<'a> {
     'b: 'a,
   {
     self.tests.push(TestGroup::from_test_cases(
-      render_config(config.config())?,
+      render_config(config.config(), None)?,
       config.cases(),
     ));
     Ok(())

@@ -1,6 +1,6 @@
 use flow_component::{Component, ComponentError, Context, Operation, RenderConfiguration, RuntimeCallback};
 use wick_interface_types::{ComponentSignature, TypeDefinition};
-use wick_packet::{Invocation, PacketStream, RuntimeConfig};
+use wick_packet::{InherentData, Invocation, PacketStream, RuntimeConfig};
 
 use crate::constants::*;
 use crate::graph::types::Network;
@@ -88,7 +88,7 @@ impl CoreCollection {
           .data()
           .config
           .clone()
-          .render()
+          .render(&InherentData::unsafe_default()) // this is a first pass render to extract details so using unsafe_default should be OK.
           .map_err(|e| OpInitError::new(ComponentError::new(e), op))?;
 
         let result = match op {

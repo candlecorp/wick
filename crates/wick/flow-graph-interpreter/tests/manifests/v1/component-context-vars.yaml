@@ -17,7 +17,7 @@ component:
         - name: GREET
           operation: self::greet
           with:
-            greeting: '{{ ctx.root_config.component_config_greeting }}, {{ ctx.config.op_config_name }}! '
+            greeting: '{{ ctx.root_config.component_config_greeting }}, {{ ctx.config.op_config_name }}! Happy {{ ctx.inherent.timestamp | date: "%Y" }}! '
       inputs:
         - name: input
           type: string

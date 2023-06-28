@@ -1,4 +1,5 @@
 use flow_component::ComponentError;
+use url::Url;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
@@ -13,6 +14,9 @@ pub enum Error {
 
   #[error("Could not find operation {0} on this component")]
   OpNotFound(String),
+
+  #[error("Invalid baseurl: {0}")]
+  InvalidBaseUrl(Url),
 }
 
 impl From<Error> for ComponentError {

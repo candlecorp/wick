@@ -223,7 +223,7 @@ impl InstanceHandler {
 
     let config = associated_data
       .config
-      .render()
+      .render(&invocation.inherent)
       .map_err(|e| ExecutionError::ComponentError(ComponentError::new(e)))?;
 
     let timeout = associated_data

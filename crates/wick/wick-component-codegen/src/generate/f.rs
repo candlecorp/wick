@@ -92,7 +92,7 @@ pub(crate) fn default_val() -> impl FnMut(Option<&Value>) -> TokenStream {
 
 fn from_json(value: &Value) -> TokenStream {
   let json_str = serde_json::to_string(&value).unwrap();
-  quote! {serde_json::from_str(#json_str).unwrap()}
+  quote! {wick_component::from_str(#json_str).unwrap()}
 }
 
 #[allow(clippy::needless_pass_by_value)]

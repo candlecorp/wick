@@ -50,9 +50,15 @@ pub(crate) fn gen_wrapper_fn(config: &mut config::Config, component: &Ident, op:
           Ok(Ok(config)) => {
             config
           },
-          _ => {
+          Err(e) => {
             let _ = channel.send_result(
-              wick_packet::Packet::component_error("Component sent invalid context").into(),
+              wick_packet::Packet::component_error(format!("Component sent invalid context: {}", e)).into(),
+            );
+            return;
+          }
+          Ok(Err(e)) => {
+            let _ = channel.send_result(
+              wick_packet::Packet::component_error(format!("Component sent invalid context: {}", e)).into(),
             );
             return;
           }
