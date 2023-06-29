@@ -235,9 +235,7 @@ async fn handle_stream(
     .await
     {
       if *opdef.on_error() == ErrorBehavior::Ignore {
-        span.in_scope(
-          || error!(error=%e, error_behavior=%opdef.on_error(), "error in sql operation, ignoring due to error behavior"),
-        );
+        let _ = tx.send(Packet::err("output", e.to_string()));
       } else {
         return Err(Error::OperationFailed(e.to_string()));
       }
