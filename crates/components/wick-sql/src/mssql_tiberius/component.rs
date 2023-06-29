@@ -11,7 +11,7 @@ use serde_json::{Map, Value};
 use tiberius::{Query, Row};
 use tracing::Span;
 use url::Url;
-use wick_config::config::components::{ComponentConfig, OperationConfig, SqlComponentConfig, SqlOperationDefinition};
+use wick_config::config::components::{ComponentConfig, OperationConfig, SqlComponentConfig, SqlOperationKind};
 use wick_config::config::{ErrorBehavior, Metadata};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{ComponentSignature, Field, OperationSignatures, Type};
@@ -147,14 +147,14 @@ impl Component for AzureSqlComponent {
 
 async fn handle_call(
   pool: Pool<ConnectionManager>,
-  opdef: SqlOperationDefinition,
+  opdef: SqlOperationKind,
   input_streams: Vec<PacketStream>,
   tx: PacketSender,
   stmt: Arc<(String, String)>,
   span: Span,
 ) -> Result<(), Error> {
   let mut client = pool.get().await.map_err(|e| Error::PoolConnection(e.to_string()))?;
-  let error_behavior = *opdef.on_error();
+  let error_behavior = opdef.on_error();
   match error_behavior {
     ErrorBehavior::Commit | ErrorBehavior::Rollback => {
       client.simple_query("BEGIN TRAN").await.map_err(|_| Error::TxStart)?;
@@ -187,7 +187,7 @@ async fn handle_call(
 
 async fn handle_stream(
   client: &mut PooledConnection<'_, ConnectionManager>,
-  opdef: SqlOperationDefinition,
+  opdef: SqlOperationKind,
   mut input_streams: Vec<PacketStream>,
   tx: PacketSender,
   stmt: Arc<(String, String)>,
@@ -224,17 +224,33 @@ async fn handle_stream(
       type_wrappers.push((ty, packet));
     }
 
-    if let Err(e) = exec(
-      client,
-      tx.clone(),
-      opdef.clone(),
-      type_wrappers,
-      stmt.clone(),
-      span.clone(),
-    )
-    .await
-    {
-      if *opdef.on_error() == ErrorBehavior::Ignore {
+    let result = match &opdef {
+      SqlOperationKind::Query(_) => {
+        query(
+          client,
+          tx.clone(),
+          opdef.clone(),
+          type_wrappers,
+          stmt.clone(),
+          span.clone(),
+        )
+        .await
+      }
+      SqlOperationKind::Exec(_) => {
+        exec(
+          client,
+          tx.clone(),
+          opdef.clone(),
+          type_wrappers,
+          stmt.clone(),
+          span.clone(),
+        )
+        .await
+      }
+    };
+
+    if let Err(e) = result {
+      if opdef.on_error() == ErrorBehavior::Ignore {
         let _ = tx.send(Packet::err("output", e.to_string()));
       } else {
         return Err(Error::OperationFailed(e.to_string()));
@@ -244,10 +260,10 @@ async fn handle_stream(
   Ok(())
 }
 
-async fn exec(
+async fn query(
   client: &mut PooledConnection<'_, ConnectionManager>,
   tx: FluxChannel<Packet, wick_packet::Error>,
-  def: SqlOperationDefinition,
+  def: SqlOperationKind,
   args: Vec<(Type, Packet)>,
   stmt: Arc<(String, String)>,
   span: Span,
@@ -277,6 +293,37 @@ async fn exec(
       let _ = tx.send(packet);
     }
   }
+  let duration = SystemTime::now().duration_since(start).unwrap();
+
+  Ok(duration)
+}
+
+async fn exec(
+  client: &mut PooledConnection<'_, ConnectionManager>,
+  tx: FluxChannel<Packet, wick_packet::Error>,
+  def: SqlOperationKind,
+  args: Vec<(Type, Packet)>,
+  stmt: Arc<(String, String)>,
+  span: Span,
+) -> Result<Duration, Error> {
+  let start = SystemTime::now();
+  span.in_scope(|| trace!(stmt = %stmt.0, "executing query"));
+
+  let bound_args = common::bind_args(def.arguments(), &args)?;
+
+  #[allow(trivial_casts)]
+  let mut query = Query::new(&stmt.1);
+
+  for param in bound_args {
+    query.bind(MsSqlWrapper::try_from(&param).map_err(|e| Error::SqlServerEncodingFault(param.0, e))?);
+  }
+
+  let packet = match query.execute(client).await.map_err(|e| Error::Failed(e.to_string())) {
+    Ok(result) => Packet::encode("output", result.rows_affected()),
+    Err(err) => Packet::err("output", err.to_string()),
+  };
+  let _ = tx.send(packet);
+
   let duration = SystemTime::now().duration_since(start).unwrap();
 
   Ok(duration)
@@ -380,7 +427,7 @@ mod test {
       .build()
       .unwrap();
 
-    config.operations_mut().push(op);
+    config.operations_mut().push(SqlOperationKind::Query(op));
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource("db", ResourceDefinition::TcpPort(TcpPort::new("0.0.0.0", 11111)));
 

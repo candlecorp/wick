@@ -1,4 +1,6 @@
-use wick_interface_types::OperationSignatures;
+use std::borrow::Cow;
+
+use wick_interface_types::{Field, OperationSignatures};
 
 use crate::config::components::{ComponentConfig, OperationConfig};
 use crate::config::{self, OperationDefinition};
@@ -17,7 +19,7 @@ pub struct WasmComponentImplementation {
   /// The configuration for the component.
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) config: Vec<wick_interface_types::Field>,
+  pub(crate) config: Vec<Field>,
 
   /// The operations defined by the component.
   #[asset(skip)]
@@ -47,5 +49,13 @@ impl ComponentConfig for WasmComponentImplementation {
 impl OperationConfig for OperationDefinition {
   fn name(&self) -> &str {
     &self.name
+  }
+
+  fn inputs(&self) -> Cow<Vec<Field>> {
+    Cow::Borrowed(&self.inputs)
+  }
+
+  fn outputs(&self) -> Cow<Vec<Field>> {
+    Cow::Borrowed(&self.outputs)
   }
 }

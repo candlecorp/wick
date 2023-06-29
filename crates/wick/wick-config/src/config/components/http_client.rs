@@ -1,4 +1,5 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use wick_interface_types::OperationSignatures;
@@ -68,6 +69,26 @@ impl OperationConfig for HttpClientOperationDefinition {
   fn name(&self) -> &str {
     &self.name
   }
+
+  fn inputs(&self) -> Cow<Vec<wick_interface_types::Field>> {
+    Cow::Borrowed(&self.inputs)
+  }
+
+  fn outputs(&self) -> Cow<Vec<wick_interface_types::Field>> {
+    Cow::Owned(vec![
+      // TODO: support actual HTTP Response type.
+      wick_interface_types::Field::new("response", wick_interface_types::Type::Object),
+      wick_interface_types::Field::new(
+        "body",
+        match self.codec {
+          Some(Codec::Json) => wick_interface_types::Type::Object,
+          Some(Codec::Raw) => wick_interface_types::Type::Bytes,
+          Some(Codec::FormData) => wick_interface_types::Type::Object,
+          None => wick_interface_types::Type::Object,
+        },
+      ),
+    ])
+  }
 }
 
 impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSignature {
@@ -108,6 +129,7 @@ pub struct HttpClientOperationDefinition {
   pub(crate) config: Vec<wick_interface_types::Field>,
 
   /// Types of the inputs to the operation.
+  #[property(skip)]
   pub(crate) inputs: Vec<wick_interface_types::Field>,
 
   /// The path to append to our base URL, processed as a liquid template with each input as part of the template data.

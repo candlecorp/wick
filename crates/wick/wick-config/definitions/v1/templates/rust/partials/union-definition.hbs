@@ -14,6 +14,9 @@
 {{else}}
 #[serde(tag = "kind")]
 {{/withAnnotation}}
+{{#withAnnotation "transparent"}}
+#[serde(transparent)]
+{{/withAnnotation}}
 {{#if description}}
 /// {{{description.value}}}
 {{/if}}

@@ -7,6 +7,8 @@ mod sql;
 mod types;
 mod wasm;
 
+use std::borrow::Cow;
+
 pub use grpcurl::*;
 pub use http_client::*;
 pub use manifest::*;
@@ -15,11 +17,17 @@ pub use reference::*;
 pub use sql::*;
 pub use types::*;
 pub use wasm::*;
-use wick_interface_types::OperationSignatures;
+use wick_interface_types::{Field, OperationSignatures};
 
 pub trait OperationConfig {
   /// The name of the operation.
   fn name(&self) -> &str;
+
+  /// The inputs to the operation.
+  fn inputs(&self) -> Cow<Vec<Field>>;
+
+  /// The outpus to the operation.
+  fn outputs(&self) -> Cow<Vec<Field>>;
 }
 
 pub trait ComponentConfig: OperationSignatures {

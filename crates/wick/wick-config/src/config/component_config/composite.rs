@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use flow_expression_parser::ast::{self};
@@ -55,6 +56,14 @@ impl OperationConfig for FlowOperation {
   fn name(&self) -> &str {
     &self.name
   }
+
+  fn inputs(&self) -> Cow<Vec<Field>> {
+    Cow::Borrowed(&self.inputs)
+  }
+
+  fn outputs(&self) -> Cow<Vec<Field>> {
+    Cow::Borrowed(&self.outputs)
+  }
 }
 
 impl From<FlowOperation> for wick_interface_types::OperationSignature {
@@ -81,10 +90,12 @@ pub struct FlowOperation {
 
   /// A list of the input types for the operation.
   #[builder(default)]
+  #[property(skip)]
   pub(crate) inputs: Vec<Field>,
 
   /// A list of the input types for the operation.
   #[builder(default)]
+  #[property(skip)]
   pub(crate) outputs: Vec<Field>,
 
   /// Any configuration required for the component to operate.
