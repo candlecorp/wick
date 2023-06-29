@@ -17,7 +17,7 @@ use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{ComponentSignature, Field, OperationSignatures, Type};
 use wick_packet::{FluxChannel, Invocation, Observer, Packet, PacketSender, PacketStream, RuntimeConfig};
 
-use super::sql_wrapper::FromSqlWrapper;
+use super::sql_wrapper::{FromSqlWrapper, MsSqlWrapper};
 use crate::{common, Error};
 
 #[derive()]
@@ -252,8 +252,9 @@ async fn exec(
 
   #[allow(trivial_casts)]
   let mut query = Query::new(&stmt.1);
+
   for param in bound_args {
-    query.bind(param);
+    query.bind(MsSqlWrapper::try_from(&param).map_err(|e| Error::SqlServerEncodingFault(param.0, e))?);
   }
 
   let mut result = query.query(client).await.map_err(|e| Error::Failed(e.to_string()))?;

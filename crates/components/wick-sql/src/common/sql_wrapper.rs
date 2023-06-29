@@ -1,5 +1,6 @@
 use wick_packet::TypeWrapper;
 
+/// [SqlWrapper] is a generic wrapper struct that can implement DB-specific traits.
 #[derive(Debug, Clone)]
 pub(crate) struct SqlWrapper(pub(crate) TypeWrapper);
 
