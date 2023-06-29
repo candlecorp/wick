@@ -1,5 +1,8 @@
 use flow_component::ComponentError;
 use wick_config::error::ManifestError;
+use wick_packet::TypeWrapper;
+
+use crate::mssql_tiberius::sql_wrapper::MsSqlConversionError;
 
 #[derive(thiserror::Error, Debug)]
 #[allow(missing_docs)]
@@ -54,6 +57,9 @@ pub enum Error {
 
   #[error("Could not find a value for input '{0}' to bind to a positional argument")]
   MissingPacket(String),
+
+  #[error("Could not encode wick type {} with value '{}' into the DB's type for {1}. Try a different value, type, or coersion within the SQL query.",.0.type_signature(),.0.inner())]
+  SqlServerEncodingFault(TypeWrapper, MsSqlConversionError),
 
   #[error(transparent)]
   ComponentError(wick_packet::Error),
