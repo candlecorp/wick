@@ -14,3 +14,13 @@ impl Default for ErrorBehavior {
     Self::Ignore
   }
 }
+
+impl std::fmt::Display for ErrorBehavior {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Self::Commit => write!(f, "commit"),
+      Self::Rollback => write!(f, "rollback"),
+      Self::Ignore => write!(f, "ignore"),
+    }
+  }
+}

@@ -224,7 +224,7 @@ async fn handle_stream(
       type_wrappers.push((ty, packet));
     }
 
-    let _ = exec(
+    if let Err(e) = exec(
       client,
       tx.clone(),
       opdef.clone(),
@@ -232,7 +232,16 @@ async fn handle_stream(
       stmt.clone(),
       span.clone(),
     )
-    .await?;
+    .await
+    {
+      if *opdef.on_error() == ErrorBehavior::Ignore {
+        span.in_scope(
+          || error!(error=%e, error_behavior=%opdef.on_error(), "error in sql operation, ignoring due to error behavior"),
+        );
+      } else {
+        return Err(Error::OperationFailed(e.to_string()));
+      }
+    };
   }
   Ok(())
 }
