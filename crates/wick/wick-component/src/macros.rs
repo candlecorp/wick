@@ -205,7 +205,7 @@ macro_rules! propagate_if_error {
       Ok(value) => value,
       Err(err) => {
         $outputs.broadcast_err(err.to_string());
-        continue;
+        break;
       }
     }
   };
