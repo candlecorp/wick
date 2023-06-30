@@ -32,6 +32,9 @@ pub(crate) struct {{name.value}} {
     {{#if description}}
     /// {{description.value}}
     {{/if}}
+    {{#withAnnotation "flatten"}}
+    #[serde(flatten)]
+    {{/withAnnotation}}
 
     {{#withAnnotation "deprecated"}}
     #[deprecated()]

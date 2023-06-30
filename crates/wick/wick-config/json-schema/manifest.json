@@ -2513,11 +2513,21 @@
             "description": "A list of operations to expose on this component.",
             "type": "array",
             "items": {
-              "$ref": "#/$defs/v1/SqlOperationDefinition"
+              "$ref": "#/$defs/v1/SqlQueryKind"
             }
           }
         },
         "required": []
+      },
+      "SqlQueryKind": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/v1/SqlOperationDefinition"
+          },
+          {
+            "$ref": "#/$defs/v1/SqlExecOperationDefinition"
+          }
+        ]
       },
       "SqlOperationDefinition": {
         "$anchor": "#v1/SqlOperationDefinition",
@@ -2568,6 +2578,57 @@
         },
         "required": [
           "query"
+        ]
+      },
+      "SqlExecOperationDefinition": {
+        "$anchor": "#v1/SqlExecOperationDefinition",
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "The name of the operation.",
+            "type": "string"
+          },
+          "with": {
+            "description": "Any configuration required by the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
+          "inputs": {
+            "description": "Types of the inputs to the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
+          "outputs": {
+            "description": "Types of the outputs to the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
+          "exec": {
+            "description": "The query to execute.",
+            "type": "string"
+          },
+          "arguments": {
+            "description": "The positional arguments to the query, defined as a list of input names.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "on_error": {
+            "description": "What to do when an error occurs.",
+            "required": false,
+            "$ref": "#/$defs/v1/ErrorBehavior"
+          }
+        },
+        "required": [
+          "exec"
         ]
       },
       "ErrorBehavior": {

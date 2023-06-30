@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Args;
 use structured_output::StructuredOutput;
-use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
+use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder, SqlOperationKind};
 use wick_config::config::{self, ComponentConfiguration};
 use wick_interface_types::{Field, Type};
 
@@ -46,13 +46,15 @@ pub(crate) async fn handle(
 
     let component = SqlComponentConfigBuilder::default()
       .resource(resource_name)
-      .operations([SqlOperationDefinitionBuilder::default()
-        .name("operation_name".to_owned())
-        .inputs([Field::new("id", Type::String)])
-        .query("SELECT * FROM users WHERE id = $1".to_owned())
-        .arguments(["id".to_owned()])
-        .build()
-        .unwrap()])
+      .operations([SqlOperationKind::Query(
+        SqlOperationDefinitionBuilder::default()
+          .name("operation_name".to_owned())
+          .inputs([Field::new("id", Type::String)])
+          .query("SELECT * FROM users WHERE id = $1".to_owned())
+          .arguments(["id".to_owned()])
+          .build()
+          .unwrap(),
+      )])
       .build()
       .unwrap();
 

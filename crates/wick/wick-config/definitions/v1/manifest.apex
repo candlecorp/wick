@@ -759,8 +759,10 @@ type SqlComponent @tagged("wick/component/sql@v1") {
   with: [Field]
 
   "A list of operations to expose on this component."
-  operations: [SqlOperationDefinition]
+  operations: [SqlQueryKind]
 }
+
+union SqlQueryKind @untagged = SqlOperationDefinition | SqlExecOperationDefinition
 
 "A dynamic operation whose implementation is a SQL query."
 type SqlOperationDefinition {
@@ -785,6 +787,33 @@ type SqlOperationDefinition {
   "What to do when an error occurs."
   on_error: ErrorBehavior?
 }
+
+"A dynamic operation whose implementation is a SQL query that returns the number of rows affected or failure."
+type SqlExecOperationDefinition {
+  "The name of the operation."
+  name: string
+
+  "Any configuration required by the operation."
+  with: [Field],
+
+  "Types of the inputs to the operation."
+  inputs: [Field],
+
+  "Types of the outputs to the operation."
+  outputs: [Field],
+
+  "The query to execute."
+  exec: string @required
+
+  "The positional arguments to the query, defined as a list of input names."
+  arguments: [string]
+
+  "What to do when an error occurs."
+  on_error: ErrorBehavior?
+}
+
+
+
 
 "What to do when an error occurs."
 enum ErrorBehavior {

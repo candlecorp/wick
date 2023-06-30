@@ -1480,7 +1480,19 @@ pub(crate) struct SqlComponent {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) operations: Vec<SqlOperationDefinition>,
+  pub(crate) operations: Vec<SqlQueryKind>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(untagged)]
+pub(crate) enum SqlQueryKind {
+  /// A variant representing a [SqlOperationDefinition] type.
+  #[serde(rename = "SqlOperationDefinition")]
+  SqlOperationDefinition(SqlOperationDefinition),
+  /// A variant representing a [SqlExecOperationDefinition] type.
+  #[serde(rename = "SqlExecOperationDefinition")]
+  SqlExecOperationDefinition(SqlExecOperationDefinition),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1508,6 +1520,43 @@ pub(crate) struct SqlOperationDefinition {
   pub(crate) outputs: Vec<Field>,
   /// The query to execute.
   pub(crate) query: String,
+  /// The positional arguments to the query, defined as a list of input names.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) arguments: Vec<String>,
+  /// What to do when an error occurs.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) on_error: Option<ErrorBehavior>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A dynamic operation whose implementation is a SQL query that returns the number of rows affected or failure.
+pub(crate) struct SqlExecOperationDefinition {
+  /// The name of the operation.
+
+  #[serde(default)]
+  pub(crate) name: String,
+  /// Any configuration required by the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) with: Vec<Field>,
+  /// Types of the inputs to the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) inputs: Vec<Field>,
+  /// Types of the outputs to the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) outputs: Vec<Field>,
+  /// The query to execute.
+  pub(crate) exec: String,
   /// The positional arguments to the query, defined as a list of input names.
 
   #[serde(default)]

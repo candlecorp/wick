@@ -1,4 +1,7 @@
-#![allow(missing_docs)] // delete when we move away from the `property` crate.
+#![allow(missing_docs)]
+use std::borrow::Cow;
+
+// delete when we move away from the `property` crate.
 use wick_interface_types::{Field, OperationSignatures};
 
 use super::{ComponentConfig, OperationConfig};
@@ -28,7 +31,7 @@ pub struct SqlComponentConfig {
   #[asset(skip)]
   #[builder(default)]
   #[property(skip)]
-  pub(crate) operations: Vec<SqlOperationDefinition>,
+  pub(crate) operations: Vec<SqlOperationKind>,
 }
 
 impl SqlComponentConfig {}
@@ -39,8 +42,17 @@ impl OperationSignatures for SqlComponentConfig {
   }
 }
 
+impl From<SqlOperationKind> for wick_interface_types::OperationSignature {
+  fn from(value: SqlOperationKind) -> Self {
+    match value {
+      SqlOperationKind::Query(v) => v.into(),
+      SqlOperationKind::Exec(v) => v.into(),
+    }
+  }
+}
+
 impl ComponentConfig for SqlComponentConfig {
-  type Operation = SqlOperationDefinition;
+  type Operation = SqlOperationKind;
 
   fn operations(&self) -> &[Self::Operation] {
     &self.operations
@@ -51,9 +63,86 @@ impl ComponentConfig for SqlComponentConfig {
   }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum SqlOperationKind {
+  Query(SqlOperationDefinition),
+  Exec(SqlExecOperationDefinition),
+}
+
+impl SqlOperationKind {
+  #[must_use]
+  pub fn on_error(&self) -> ErrorBehavior {
+    match self {
+      SqlOperationKind::Query(v) => v.on_error,
+      SqlOperationKind::Exec(v) => v.on_error,
+    }
+  }
+
+  #[must_use]
+  pub fn arguments(&self) -> &[String] {
+    match self {
+      SqlOperationKind::Query(v) => &v.arguments,
+      SqlOperationKind::Exec(v) => &v.arguments,
+    }
+  }
+
+  #[must_use]
+  pub fn query(&self) -> &str {
+    match self {
+      SqlOperationKind::Query(v) => &v.query,
+      SqlOperationKind::Exec(v) => &v.exec,
+    }
+  }
+}
+
+impl OperationConfig for SqlOperationKind {
+  fn name(&self) -> &str {
+    match self {
+      SqlOperationKind::Query(v) => &v.name,
+      SqlOperationKind::Exec(v) => &v.name,
+    }
+  }
+
+  fn inputs(&self) -> Cow<Vec<Field>> {
+    match self {
+      SqlOperationKind::Query(v) => v.inputs(),
+      SqlOperationKind::Exec(v) => v.inputs(),
+    }
+  }
+
+  fn outputs(&self) -> Cow<Vec<Field>> {
+    match self {
+      SqlOperationKind::Query(v) => v.outputs(),
+      SqlOperationKind::Exec(v) => v.outputs(),
+    }
+  }
+}
+
 impl OperationConfig for SqlOperationDefinition {
   fn name(&self) -> &str {
     &self.name
+  }
+
+  fn inputs(&self) -> Cow<Vec<Field>> {
+    Cow::Borrowed(&self.inputs)
+  }
+
+  fn outputs(&self) -> Cow<Vec<Field>> {
+    Cow::Borrowed(&self.outputs)
+  }
+}
+
+impl OperationConfig for SqlExecOperationDefinition {
+  fn name(&self) -> &str {
+    &self.name
+  }
+
+  fn inputs(&self) -> Cow<Vec<Field>> {
+    Cow::Borrowed(&self.inputs)
+  }
+
+  fn outputs(&self) -> Cow<Vec<Field>> {
+    Cow::Borrowed(&self.outputs)
   }
 }
 
@@ -73,6 +162,18 @@ impl From<SqlOperationDefinition> for wick_interface_types::OperationSignature {
   }
 }
 
+impl From<SqlExecOperationDefinition> for wick_interface_types::OperationSignature {
+  fn from(operation: SqlExecOperationDefinition) -> Self {
+    let outputs = vec![Field::new("output", wick_interface_types::Type::U32)];
+
+    Self {
+      name: operation.name,
+      config: operation.config,
+      inputs: operation.inputs,
+      outputs,
+    }
+  }
+}
 #[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(config::AssetReference))]
@@ -86,11 +187,13 @@ pub struct SqlOperationDefinition {
 
   /// Types of the inputs to the operation.
   #[asset(skip)]
+  #[property(skip)]
   #[builder(default)]
   pub(crate) inputs: Vec<Field>,
 
   /// Types of the outputs to the operation.
   #[asset(skip)]
+  #[property(skip)]
   #[builder(default)]
   pub(crate) outputs: Vec<Field>,
 
@@ -102,6 +205,49 @@ pub struct SqlOperationDefinition {
   /// The query to execute.
   #[asset(skip)]
   pub(crate) query: String,
+
+  /// The arguments to the query, defined as a list of input names.
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) arguments: Vec<String>,
+
+  /// The query to execute.
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) on_error: ErrorBehavior,
+}
+
+#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[property(get(public), set(private), mut(disable))]
+#[asset(asset(config::AssetReference))]
+#[builder(setter(into))]
+/// An operation whose implementation is a SQL query to execute on a database and returns the number of rows affected or failure.
+pub struct SqlExecOperationDefinition {
+  /// The name of the operation.
+  #[asset(skip)]
+  #[property(skip)]
+  pub(crate) name: String,
+
+  /// Types of the inputs to the operation.
+  #[asset(skip)]
+  #[property(skip)]
+  #[builder(default)]
+  pub(crate) inputs: Vec<Field>,
+
+  /// Types of the outputs to the operation.
+  #[asset(skip)]
+  #[property(skip)]
+  #[builder(default)]
+  pub(crate) outputs: Vec<Field>,
+
+  /// The configuration the operation needs.
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) config: Vec<Field>,
+
+  /// The query to execute.
+  #[asset(skip)]
+  pub(crate) exec: String,
 
   /// The arguments to the query, defined as a list of input names.
   #[asset(skip)]

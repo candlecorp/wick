@@ -9,7 +9,7 @@ use parking_lot::Mutex;
 use serde_json::Value;
 use sqlx::{MssqlPool, PgPool};
 use url::Url;
-use wick_config::config::components::{ComponentConfig, OperationConfig, SqlComponentConfig, SqlOperationDefinition};
+use wick_config::config::components::{ComponentConfig, OperationConfig, SqlComponentConfig, SqlOperationKind};
 use wick_config::config::Metadata;
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{ComponentSignature, Field, OperationSignatures, Type};
@@ -28,7 +28,7 @@ enum CtxPool {
 }
 
 impl CtxPool {
-  fn fetch<'a, 'q>(&'a self, query: &'q str, args: Vec<SqlWrapper>) -> BoxStream<'a, Result<Value, Error>>
+  fn query<'a, 'q>(&'a self, query: &'q str, args: Vec<SqlWrapper>) -> BoxStream<'a, Result<Value, Error>>
   where
     'q: 'a,
   {
@@ -61,6 +61,39 @@ impl CtxPool {
             .map_err(|e| Error::Fetch(e.to_string()))
         });
         c.boxed()
+      }
+    }
+  }
+
+  async fn exec<'a, 'q>(&'a self, query: &'q str, args: Vec<SqlWrapper>) -> Result<u64, Error>
+  where
+    'q: 'a,
+  {
+    match self {
+      CtxPool::Postgres(c) => {
+        let mut query = sqlx::query(query);
+        for arg in args {
+          trace!(?arg, "binding arg");
+          query = query.bind(arg);
+        }
+
+        query
+          .execute(c)
+          .await
+          .map(|r| r.rows_affected())
+          .map_err(|e| Error::Exec(e.to_string()))
+      }
+      CtxPool::MsSql(c) => {
+        let mut query = sqlx::query(query);
+        for arg in args {
+          trace!(?arg, "binding arg");
+          query = query.bind(arg);
+        }
+        query
+          .execute(c)
+          .await
+          .map(|r| r.rows_affected())
+          .map_err(|e| Error::Exec(e.to_string()))
       }
     }
   }
@@ -183,7 +216,16 @@ impl Component for SqlXComponent {
             type_wrappers.push((ty, packet));
           }
 
-          if let Err(e) = exec(client.clone(), tx.clone(), opdef.clone(), type_wrappers, stmt.clone()).await {
+          let result = match &opdef {
+            SqlOperationKind::Query(_) => {
+              query(client.clone(), tx.clone(), opdef.clone(), type_wrappers, stmt.clone()).await
+            }
+            SqlOperationKind::Exec(_) => {
+              exec(client.clone(), tx.clone(), opdef.clone(), type_wrappers, stmt.clone()).await
+            }
+          };
+
+          if let Err(e) = result {
             error!(error = %e, "error executing query");
             let _ = tx.send(Packet::component_error(e.to_string()));
           }
@@ -281,10 +323,10 @@ async fn init_context(config: SqlComponentConfig, addr: Url) -> Result<Context, 
   })
 }
 
-async fn exec(
+async fn query(
   client: CtxPool,
   tx: FluxChannel<Packet, wick_packet::Error>,
-  def: SqlOperationDefinition,
+  def: SqlOperationKind,
   args: Vec<(Type, Packet)>,
   stmt: Arc<(String, String)>,
 ) -> Result<(), Error> {
@@ -292,7 +334,7 @@ async fn exec(
 
   let bound_args = common::bind_args(def.arguments(), &args)?;
 
-  let mut result = client.fetch(&stmt.1, bound_args);
+  let mut result = client.query(&stmt.1, bound_args);
 
   while let Some(row) = result.next().await {
     if let Err(e) = row {
@@ -304,6 +346,23 @@ async fn exec(
     let _ = tx.send(packet);
   }
 
+  Ok(())
+}
+
+async fn exec(
+  client: CtxPool,
+  tx: FluxChannel<Packet, wick_packet::Error>,
+  def: SqlOperationKind,
+  args: Vec<(Type, Packet)>,
+  stmt: Arc<(String, String)>,
+) -> Result<(), Error> {
+  debug!(stmt = %stmt.0, "executing query");
+
+  let bound_args = common::bind_args(def.arguments(), &args)?;
+
+  let rows = client.exec(&stmt.1, bound_args).await?;
+
+  let _ = tx.send(Packet::encode("output", rows));
   Ok(())
 }
 
@@ -338,7 +397,7 @@ mod test {
       .build()
       .unwrap();
 
-    config.operations_mut().push(op);
+    config.operations_mut().push(SqlOperationKind::Query(op));
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource("db", ResourceDefinition::TcpPort(TcpPort::new("0.0.0.0", 11111)));
 

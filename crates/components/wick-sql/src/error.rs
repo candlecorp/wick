@@ -13,6 +13,9 @@ pub enum Error {
   #[error("Failed to fetch result of query: {0}")]
   Fetch(String),
 
+  #[error("Failed to fetch result of exec: {0}")]
+  Exec(String),
+
   #[error("Unknown database scheme '{0}'")]
   InvalidScheme(String),
 

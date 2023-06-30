@@ -1541,6 +1541,16 @@ impl TryFrom<v1::SqlComponent> for components::SqlComponentConfig {
   }
 }
 
+impl TryFrom<v1::SqlQueryKind> for components::SqlOperationKind {
+  type Error = crate::Error;
+  fn try_from(value: v1::SqlQueryKind) -> Result<Self> {
+    Ok(match value {
+      v1::SqlQueryKind::SqlOperationDefinition(v) => Self::Query(v.try_into()?),
+      v1::SqlQueryKind::SqlExecOperationDefinition(v) => Self::Exec(v.try_into()?),
+    })
+  }
+}
+
 impl TryFrom<v1::SqlOperationDefinition> for components::SqlOperationDefinition {
   type Error = crate::Error;
   fn try_from(value: v1::SqlOperationDefinition) -> Result<Self> {
@@ -1549,6 +1559,21 @@ impl TryFrom<v1::SqlOperationDefinition> for components::SqlOperationDefinition 
       inputs: value.inputs.try_map_into()?,
       outputs: value.outputs.try_map_into()?,
       query: value.query,
+      arguments: value.arguments,
+      config: value.with.try_map_into()?,
+      on_error: value.on_error.unwrap_or_default().try_into()?,
+    })
+  }
+}
+
+impl TryFrom<v1::SqlExecOperationDefinition> for components::SqlExecOperationDefinition {
+  type Error = crate::Error;
+  fn try_from(value: v1::SqlExecOperationDefinition) -> Result<Self> {
+    Ok(Self {
+      name: value.name,
+      inputs: value.inputs.try_map_into()?,
+      outputs: value.outputs.try_map_into()?,
+      exec: value.exec,
       arguments: value.arguments,
       config: value.with.try_map_into()?,
       on_error: value.on_error.unwrap_or_default().try_into()?,
@@ -1618,6 +1643,17 @@ impl TryFrom<components::SqlComponentConfig> for v1::SqlComponent {
   }
 }
 
+impl TryFrom<components::SqlOperationKind> for v1::SqlQueryKind {
+  type Error = crate::Error;
+
+  fn try_from(value: components::SqlOperationKind) -> std::result::Result<Self, Self::Error> {
+    Ok(match value {
+      components::SqlOperationKind::Query(v) => Self::SqlOperationDefinition(v.try_into()?),
+      components::SqlOperationKind::Exec(v) => Self::SqlExecOperationDefinition(v.try_into()?),
+    })
+  }
+}
+
 impl TryFrom<components::SqlOperationDefinition> for v1::SqlOperationDefinition {
   type Error = crate::Error;
   fn try_from(value: components::SqlOperationDefinition) -> Result<Self> {
@@ -1626,6 +1662,21 @@ impl TryFrom<components::SqlOperationDefinition> for v1::SqlOperationDefinition 
       inputs: value.inputs.try_map_into()?,
       outputs: value.outputs.try_map_into()?,
       query: value.query,
+      arguments: value.arguments,
+      on_error: Some(value.on_error.try_into()?),
+      with: value.config.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<components::SqlExecOperationDefinition> for v1::SqlExecOperationDefinition {
+  type Error = crate::Error;
+  fn try_from(value: components::SqlExecOperationDefinition) -> Result<Self> {
+    Ok(Self {
+      name: value.name,
+      inputs: value.inputs.try_map_into()?,
+      outputs: value.outputs.try_map_into()?,
+      exec: value.exec,
       arguments: value.arguments,
       on_error: Some(value.on_error.try_into()?),
       with: value.config.try_map_into()?,
