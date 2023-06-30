@@ -10,10 +10,28 @@ use crate::generate::{config, f, Direction};
 
 pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -> TokenStream {
   let outputs_name = id(&op_outputs_name(op));
-  let broadcast_statements = op.outputs().iter().map(|i| {
+  let broadcast_err_statements = op.outputs().iter().map(|i| {
     let field_name = id(&snake(&i.name));
     quote! {
       self.#field_name.error(&err);
+    }
+  });
+
+  let broadcast_open_statements = op.outputs().iter().map(|output| {
+    let name = &output.name;
+    let field_name = id(&snake(name));
+
+    quote! {
+      self.#field_name.open_bracket();
+    }
+  });
+
+  let broadcast_close_statements = op.outputs().iter().map(|output| {
+    let name = &output.name;
+    let field_name = id(&snake(name));
+
+    quote! {
+      self.#field_name.close_bracket();
     }
   });
 
@@ -58,8 +76,18 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
       }
 
       #[allow(unused)]
+      pub fn broadcast_open(&mut self) {
+        #(#broadcast_open_statements)*
+      }
+
+      #[allow(unused)]
+      pub fn broadcast_close(&mut self) {
+        #(#broadcast_close_statements)*
+      }
+
+      #[allow(unused)]
       pub fn broadcast_err(&mut self, err: impl AsRef<str>) {
-        #(#broadcast_statements)*
+        #(#broadcast_err_statements)*
       }
     }},
   );

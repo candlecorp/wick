@@ -52,7 +52,7 @@ async fn baseline_component() -> Result<()> {
     Box::pin(task)
   });
 
-  let runners = suite.run(factory).await?;
+  let runners = suite.run(factory, Default::default()).await?;
 
   for harness in runners {
     harness.print();
