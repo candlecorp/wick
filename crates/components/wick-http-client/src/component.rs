@@ -252,7 +252,9 @@ async fn handle(
     };
 
     let mut request_url = baseurl.clone();
-    request_url.set_path(&format!("{}{}", request_url.path(), append_path));
+    let (path, query) = append_path.split_once('?').unwrap_or((&append_path, ""));
+    request_url.set_path(&format!("{}{}", request_url.path(), path));
+    request_url.set_query((!query.is_empty()).then_some(query));
 
     invocation.trace(|| trace!(url= %request_url, "initiating request"));
 
@@ -417,6 +419,7 @@ mod test {
   fn get_config() -> (AppConfiguration, HttpClientComponentConfig) {
     let mut config = HttpClientComponentConfigBuilder::default()
       .resource("base")
+      .codec(Codec::Json)
       .build()
       .unwrap();
 
@@ -428,7 +431,7 @@ mod test {
     config.operations_mut().push(
       HttpClientOperationDefinition::new_get(
         GET_OP,
-        "/get?query1={{input}}&query2={{ctx.config.secret}}",
+        "get?query1={{input}}&query2={{ctx.config.secret}}",
         vec![Field::new("input", Type::String)],
         get_headers,
       )
@@ -437,15 +440,15 @@ mod test {
       .unwrap(),
     );
 
-    let post_headers = Some(HashMap::from([
-      ("Content-Type".to_owned(), vec!["application/json".to_owned()]),
-      ("X-Custom-Header".to_owned(), vec!["{{input}}".to_owned()]),
-    ]));
+    let post_headers = Some(HashMap::from([(
+      "X-Custom-Header".to_owned(),
+      vec!["{{input}}".to_owned()],
+    )]));
 
     config.operations_mut().push(
       HttpClientOperationDefinition::new_post(
         POST_OP,
-        "/post?query1={{input}}",
+        "post?query1={{input}}",
         vec![
           Field::new("input", Type::String),
           Field::new(
@@ -533,32 +536,38 @@ mod test {
       let comp = get_component(app_config, component_config).await;
       let packets = packet_stream!(("input", "SENTINEL"), ("number", [123, 345, 678]));
       let invocation = Invocation::test("test_post_request", Entity::local(POST_OP), packets, Default::default())?;
-      let mut stream = comp
+      let stream = comp
         .handle(invocation, Default::default(), panic_callback())
         .await?
+        .filter(|p| futures::future::ready(p.as_ref().map_or(false, |p| p.has_data())))
         .collect::<Vec<_>>()
         .await;
 
-      assert_eq!(stream.pop().unwrap(), Ok(Packet::done("body")));
-      let response = stream.pop().unwrap().unwrap();
-      println!("{:?}", response);
-      let response = response.decode_value().unwrap();
-      let args = response.get("args").unwrap();
-      assert_eq!(args, &json!( {"query1": "SENTINEL"}));
-      let data = response.get("json").unwrap();
-      assert_eq!(
-        data,
-        &json!( {"key": "SENTINEL","other":[{"value":123},{"value":345},{"value":678}]})
-      );
-      let response_headers = response.get("headers").unwrap();
-      assert_eq!(
-        response_headers.get("Content-Type").unwrap(),
-        &json!("application/json")
-      );
-      assert_eq!(response_headers.get("X-Custom-Header").unwrap(), &json!("SENTINEL"));
-      assert_eq!(stream.pop().unwrap(), Ok(Packet::done("response")));
-      let response: HttpResponse = stream.pop().unwrap().unwrap().decode().unwrap();
-      assert_eq!(response.version, HttpVersion::Http11);
+      let packets = stream.into_iter().collect::<Result<Vec<_>, _>>()?;
+      for packet in packets {
+        if packet.port() == "body" {
+          println!("{:?}", packet);
+          let response = packet.decode_value().unwrap();
+          println!("as json: {:?}", response);
+
+          let args = response.get("args").unwrap();
+          assert_eq!(args, &json!( {"query1": "SENTINEL"}));
+          let data = response.get("json").unwrap();
+          assert_eq!(
+            data,
+            &json!( {"key": "SENTINEL","other":[{"value":123},{"value":345},{"value":678}]})
+          );
+          let response_headers = response.get("headers").unwrap();
+          assert_eq!(
+            response_headers.get("Content-Type").unwrap(),
+            &json!("application/json")
+          );
+          assert_eq!(response_headers.get("X-Custom-Header").unwrap(), &json!("SENTINEL"));
+        } else {
+          let response: HttpResponse = packet.decode().unwrap();
+          assert_eq!(response.version, HttpVersion::Http11);
+        }
+      }
 
       Ok(())
     }
