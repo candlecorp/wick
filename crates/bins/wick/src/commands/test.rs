@@ -102,7 +102,7 @@ pub(crate) async fn handle(
     Box::pin(task)
   });
 
-  let runners = suite.run(factory).await?;
+  let runners = suite.run(factory, opts.filter).await?;
 
   let mut lines: Vec<String> = Vec::new();
   let mut output: Vec<Value> = Vec::new();
