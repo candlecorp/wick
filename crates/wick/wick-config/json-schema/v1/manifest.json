@@ -1874,6 +1874,7 @@
       "properties": {
         "name": {
           "description": "The name of the test.",
+          "required": false,
 
           "type": "string"
         },
@@ -1916,7 +1917,7 @@
           }
         }
       },
-      "required": ["name", "operation"]
+      "required": ["operation"]
     },
 
     "InherentData": {

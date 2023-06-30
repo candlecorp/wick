@@ -682,7 +682,7 @@ type OperationInstance {
 "A test case for a component's operation."
 type TestDefinition {
   "The name of the test."
-  name: string @required
+  name: string?
 
   "The operaton to test."
   operation: string @required

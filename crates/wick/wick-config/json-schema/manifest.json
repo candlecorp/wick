@@ -2331,6 +2331,7 @@
         "properties": {
           "name": {
             "description": "The name of the test.",
+            "required": false,
             "type": "string"
           },
           "operation": {
@@ -2368,7 +2369,6 @@
           }
         },
         "required": [
-          "name",
           "operation"
         ]
       },

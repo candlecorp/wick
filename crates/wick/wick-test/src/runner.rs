@@ -14,7 +14,7 @@ use crate::{get_payload, TestError, UnitTest};
 pub fn get_description(test: &UnitTest) -> String {
   format!(
     "(test name='{}', operation='{}')",
-    test.test.name(),
+    test.test.name().map_or("Test", |v| v.as_str()),
     test.test.operation()
   )
 }
@@ -55,8 +55,12 @@ async fn run_unit<'a>(
     .signature()
     .get_operation(def.test.operation())
     .ok_or(TestError::OpNotFound(def.test.operation().to_owned()))?;
-  wick_packet::validation::expect_configuration_matches(def.test.name(), op_config.as_ref(), &signature.config)
-    .map_err(TestError::ConfigUnsatisfied)?;
+  wick_packet::validation::expect_configuration_matches(
+    def.test.name().map_or("Test", |v| v.as_str()),
+    op_config.as_ref(),
+    &signature.config,
+  )
+  .map_err(TestError::ConfigUnsatisfied)?;
   let (stream, inherent) = get_payload(def, root_config.as_ref(), op_config.as_ref())?;
   let test_name = get_description(def);
   let mut test_block = TestBlock::new(Some(test_name.clone()));
