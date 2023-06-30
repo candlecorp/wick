@@ -8,7 +8,7 @@ use crate::config::{LiquidJsonConfig, TemplateConfig};
 /// A test case for a component.
 pub struct TestCase {
   /// The name of the test.
-  pub(crate) name: String,
+  pub(crate) name: Option<String>,
   /// The operaton to test.
   pub(crate) operation: String,
   /// The configuration for the operation being tested, if any.

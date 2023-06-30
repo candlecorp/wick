@@ -1352,7 +1352,10 @@ pub(crate) struct OperationInstance {
 /// A test case for a component's operation.
 pub(crate) struct TestDefinition {
   /// The name of the test.
-  pub(crate) name: String,
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) name: Option<String>,
   /// The operaton to test.
   pub(crate) operation: String,
   /// Inherent data to use for the test.
