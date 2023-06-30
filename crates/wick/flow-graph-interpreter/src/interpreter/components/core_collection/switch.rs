@@ -104,7 +104,7 @@ fn log(string: String) -> String {
 }
 
 fn gen_signature(
-  id: &str,
+  id: String,
   parent_schematic: &Schematic,
   graph: &Network,
   handlers: &HandlerMap,
@@ -163,12 +163,13 @@ impl Op {
 
   pub(crate) fn gen_signature(
     &self,
+    id: String,
     parent_schematic: &Schematic,
     graph: &Network,
     handlers: &HandlerMap,
     config: Config,
   ) -> OperationSignature {
-    let sig = gen_signature(Op::ID, parent_schematic, graph, handlers, config);
+    let sig = gen_signature(id, parent_schematic, graph, handlers, config);
     *self.signature.lock() = Some(sig.clone());
     sig
   }

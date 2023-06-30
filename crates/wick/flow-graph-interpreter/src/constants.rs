@@ -5,6 +5,3 @@ pub const NS_NULL: &str = "<null>";
 pub const NS_COMPONENTS: &str = "components";
 pub const NS_SELF: &str = "self";
 pub const NS_DYN: &str = "dyn";
-
-pub(crate) const CORE_ID_SENDER: &str = "sender";
-pub(crate) const CORE_ID_MERGE: &str = "merge";

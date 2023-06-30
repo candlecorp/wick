@@ -2,8 +2,6 @@ use flow_graph::NodeKind;
 
 use self::error::{OperationInvalid, ValidationError};
 use super::Program;
-use crate::constants::CORE_ID_SENDER;
-use crate::graph::Reference;
 use crate::interpreter::components::reconcile_op_id;
 
 pub(crate) mod error;
@@ -89,11 +87,6 @@ impl Validator {
           for field in &operation_sig.outputs {
             let port = operation.find_output(&field.name);
             if port.is_none() {
-              let cref: Reference = operation.cref().into();
-              if cref.is_core_operation(CORE_ID_SENDER) {
-                validation_errors.push(ValidationError::UnusedSender(operation.id().to_owned()));
-              }
-
               validation_errors.push(ValidationError::UnusedOutput {
                 port: field.name.clone(),
                 operation: reference.name().to_owned(),
