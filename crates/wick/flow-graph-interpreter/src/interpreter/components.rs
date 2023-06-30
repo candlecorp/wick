@@ -94,7 +94,7 @@ pub(crate) fn dyn_component_id(name: &str, schematic: &str, instance: &str) -> S
 }
 
 pub(crate) fn reconcile_op_id(ns: &str, name: &str, schematic: &str, instance: &str) -> String {
-  if ns == NS_CORE && name == CORE_ID_MERGE {
+  if ns == NS_CORE && core_collection::DYNAMIC_OPERATIONS.contains(&name) {
     dyn_component_id(name, schematic, instance)
   } else {
     name.to_owned()

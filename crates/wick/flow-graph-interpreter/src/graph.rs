@@ -126,7 +126,7 @@ use wick_config::config::components::{ComponentConfig, OperationConfig};
 use wick_config::config::{ComponentImplementation, ExecutionSettings, FlowOperation, LiquidJsonConfig};
 use wick_packet::{InherentData, RuntimeConfig};
 
-use crate::constants::{NS_CORE, NS_NULL};
+use crate::constants::NS_NULL;
 use crate::error::InterpreterError;
 
 #[derive(Debug)]
@@ -145,10 +145,6 @@ impl Reference {
   }
   pub(crate) fn namespace(&self) -> &str {
     self.0.component_id()
-  }
-
-  pub(crate) fn is_core_operation(&self, name: &str) -> bool {
-    self.0.component_id() == NS_CORE && self.0.name() == name
   }
 }
 

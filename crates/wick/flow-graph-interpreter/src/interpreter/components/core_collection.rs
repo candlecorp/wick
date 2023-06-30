@@ -7,10 +7,13 @@ use crate::graph::types::Network;
 use crate::interpreter::components::dyn_component_id;
 use crate::{BoxFuture, HandlerMap};
 
+mod collect;
 mod merge;
 mod pluck;
 mod sender;
 mod switch;
+
+pub(crate) static DYNAMIC_OPERATIONS: &[&str] = &[collect::Op::ID, merge::Op::ID, switch::Op::ID];
 
 #[derive(Debug)]
 pub(crate) struct CoreCollection {
@@ -19,6 +22,7 @@ pub(crate) struct CoreCollection {
   sender: sender::Op,
   merge: merge::Op,
   switch: switch::Op,
+  collect: collect::Op,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -46,6 +50,7 @@ impl std::fmt::Display for OpInitError {
 enum DynamicOperation {
   Merge,
   Switch,
+  Collect,
 }
 
 impl std::fmt::Display for DynamicOperation {
@@ -53,6 +58,7 @@ impl std::fmt::Display for DynamicOperation {
     match self {
       DynamicOperation::Merge => f.write_str("merge"),
       DynamicOperation::Switch => f.write_str("switch"),
+      DynamicOperation::Collect => f.write_str("collect"),
     }
   }
 }
@@ -65,6 +71,7 @@ impl CoreCollection {
       sender: sender::Op::new(),
       merge: merge::Op::new(),
       switch: switch::Op::new(),
+      collect: collect::Op::new(),
     };
 
     this.signature = this.signature.add_operation(this.pluck.get_signature(None).clone());
@@ -81,6 +88,7 @@ impl CoreCollection {
         let op = match operation.cref().name() {
           merge::Op::ID => DynamicOperation::Merge,
           switch::Op::ID => DynamicOperation::Switch,
+          collect::Op::ID => DynamicOperation::Collect,
           _ => continue,
         };
 
@@ -92,26 +100,39 @@ impl CoreCollection {
           .map_err(|e| OpInitError::new(ComponentError::new(e), op))?;
 
         let result = match op {
+          DynamicOperation::Collect => match collect::Op::decode_config(config) {
+            Ok(config) => {
+              let id = dyn_component_id(collect::Op::ID, schematic.name(), operation.id());
+              debug!(%id,%op,"adding type signature for dynamic component");
+              let op_sig = collect::Op::gen_signature(&id, config);
+
+              this.signature.operations.push(op_sig);
+              Ok(())
+            }
+            Err(e) => Err(OpInitError::new(e, op)),
+          },
           DynamicOperation::Merge => match merge::Op::decode_config(config) {
             Ok(config) => {
               let id = dyn_component_id(merge::Op::ID, schematic.name(), operation.id());
-              debug!(%id,"adding dynamic type signature for merge component");
+              debug!(%id,%op,"adding type signature for dynamic component");
               let (op_sig, output_sig) = merge::Op::gen_signature(id, config);
 
               this.signature.types.push(TypeDefinition::Struct(output_sig));
               this.signature.operations.push(op_sig);
               Ok(())
             }
-            Err(e) => Err(OpInitError::new(e, DynamicOperation::Merge)),
+            Err(e) => Err(OpInitError::new(e, op)),
           },
           DynamicOperation::Switch => match switch::Op::decode_config(config) {
             Ok(config) => {
-              let op_sig = this.switch.gen_signature(schematic, graph, handlers, config);
+              let id = dyn_component_id(switch::Op::ID, schematic.name(), operation.id());
+              debug!(%id,%op,"adding type signature for dynamic component");
+              let op_sig = this.switch.gen_signature(id, schematic, graph, handlers, config);
 
               this.signature.operations.push(op_sig);
               Ok(())
             }
-            Err(e) => Err(OpInitError::new(e, DynamicOperation::Switch)),
+            Err(e) => Err(OpInitError::new(e, op)),
           },
         };
         if let Err(error) = result {
@@ -150,6 +171,7 @@ impl Component for CoreCollection {
         pluck::Op::ID => core_op! {pluck::Op, invocation, self.pluck, callback, data},
         merge::Op::ID => core_op! {merge::Op, invocation, self.merge, callback, data},
         switch::Op::ID => core_op! {switch::Op, invocation, self.switch, callback, data},
+        collect::Op::ID => core_op! {collect::Op, invocation, self.collect, callback, data},
         _ => {
           panic!("Core operation {} not handled.", invocation.target.operation_id());
         }
