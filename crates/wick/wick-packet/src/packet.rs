@@ -182,6 +182,11 @@ impl Packet {
     &self.payload
   }
 
+  /// Returns true if this packet is a signal packet (i.e. done, open_bracket, close_bracket, etc).
+  pub fn is_signal(&self) -> bool {
+    self.extra.flags() > 0
+  }
+
   /// Returns true if this packet is a done packet.
   pub fn is_done(&self) -> bool {
     self.extra.is_done()

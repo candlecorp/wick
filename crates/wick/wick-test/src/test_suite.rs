@@ -45,11 +45,16 @@ impl<'a> TestSuite<'a> {
     Ok(())
   }
 
-  pub async fn run(&'a mut self, factory: ComponentFactory<'a>) -> Result<Vec<TestRunner>, TestError> {
+  pub async fn run(
+    &'a mut self,
+    factory: ComponentFactory<'a>,
+    filter: Vec<String>,
+  ) -> Result<Vec<TestRunner>, TestError> {
     let mut runners = Vec::new();
     for group in &mut self.tests {
       let component = factory(group.root_config.clone());
-      runners.push(group.run(None, component.await?).await?);
+
+      runners.push(group.run(None, component.await?, &filter).await?);
     }
     Ok(runners)
   }
@@ -98,10 +103,23 @@ impl<'a> TestGroup<'a> {
     &'a mut self,
     component_id: Option<&str>,
     component: SharedComponent,
+    filter: &[String],
   ) -> Result<TestRunner, TestError> {
     let name = self.name.clone();
     let config = self.root_config.clone();
-    let tests = self.get_tests();
+    let tests = self
+      .get_tests()
+      .into_iter()
+      .filter(|test| {
+        if filter.is_empty() {
+          return true;
+        }
+        test
+          .test
+          .name()
+          .map_or(false, |name| filter.iter().any(|f| name.contains(f)))
+      })
+      .collect();
     run_test(name, tests, component_id, component, config).await
   }
 }
