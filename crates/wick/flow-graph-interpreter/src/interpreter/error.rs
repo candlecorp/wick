@@ -1,6 +1,6 @@
 use wick_packet::Entity;
 
-use super::components::core_collection::OpInitError;
+use super::components::core_component::OpInitError;
 use super::executor::error::ExecutionError;
 use super::program::validator::error::{OperationInvalid, ValidationError};
 

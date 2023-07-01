@@ -9,8 +9,8 @@ use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, Type};
 use wick_packet::{ComponentReference, Entity, Invocation, PacketSender, PacketStream, RuntimeConfig};
 
-use crate::constants::{NS_CORE, NS_SELF};
 use crate::graph::types::{Network, Schematic};
+use crate::interpreter::components::schematic_component::SelfComponent;
 use crate::utils::path_to_entity;
 use crate::{BoxFuture, HandlerMap};
 pub(crate) struct Op {
@@ -27,7 +27,8 @@ impl std::fmt::Debug for Op {
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub(crate) struct Config {
-  context: Vec<Field>,
+  #[serde(alias = "context")]
+  inputs: Vec<Field>,
   outputs: Vec<Field>,
   cases: Vec<SwitchCase>,
   default: String,
@@ -56,7 +57,7 @@ fn get_op_signature(
     // if it's a bare name then it must be a node on the parent schematic.
     if let Some(_op) = parent_schematic.nodes().iter().find(|n| n.id() == op_path) {
       panic!("operation instance by the name {} exists, but switch configurations can not delegate to operation instances within a flow. Reference the operation by path instead.", op_path);
-      // This is what it points to. We *may* be able to just delegate to this operation but I'm panicking for now.
+      // This is what it points to. We can't simply delegate to this at this point, hence the panic.
       // match op.kind() {
       //   flow_graph::NodeKind::External(ext) => get_ns_op_signature(ext.component_id(), ext.name(), graph, handlers),
       //   _ => None,
@@ -69,7 +70,7 @@ fn get_op_signature(
 
 #[allow(unused)]
 fn get_ns_op_signature(ns: &str, op: &str, graph: &Network, handlers: &HandlerMap) -> Option<OperationSignature> {
-  if ns == NS_SELF {
+  if ns == SelfComponent::ID {
     get_self_op_signature(graph, op)
   } else {
     get_handler_op_signature(handlers, op)
@@ -144,7 +145,7 @@ fn gen_signature(
     panic!();
   }
 
-  for field in config.context {
+  for field in config.inputs {
     signature = signature.add_input(field.name, field.ty);
   }
   for field in default_op_sig.outputs {
@@ -193,7 +194,7 @@ impl Operation for Op {
       let mut condition = None;
       let mut held_packets = VecDeque::new();
       let mut router: HashMap<String, PacketSender> = HashMap::new();
-      let origin = Entity::operation(NS_CORE, Op::ID);
+      let origin = Entity::operation(super::CoreComponent::ID, Op::ID);
       'outer: loop {
         let packet = if condition.is_some() {
           match held_packets.pop_front() {
@@ -281,7 +282,7 @@ impl Operation for Op {
   }
 
   fn input_names(&self, config: &Self::Config) -> Vec<String> {
-    let mut context: Vec<_> = config.context.iter().map(|n| n.name.clone()).collect();
+    let mut context: Vec<_> = config.inputs.iter().map(|n| n.name.clone()).collect();
     context.push(DISCRIMINANT.to_owned());
     context
   }
@@ -296,7 +297,7 @@ impl RenderConfiguration for Op {
       ComponentError::message("Switch component requires configuration, please specify configuration.")
     })?;
     Ok(Self::Config {
-      context: config.coerce_key("context").map_err(ComponentError::new)?,
+      inputs: config.coerce_key("context").map_err(ComponentError::new)?,
       outputs: config.coerce_key("outputs").map_err(ComponentError::new)?,
       cases: config.coerce_key("cases").map_err(ComponentError::new)?,
       default: config.coerce_key("default").map_err(ComponentError::new)?,

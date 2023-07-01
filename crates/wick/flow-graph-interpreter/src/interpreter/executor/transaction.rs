@@ -57,8 +57,8 @@ impl Transaction {
     schematic: Arc<Schematic>,
     mut invocation: Invocation,
     channel: InterpreterDispatchChannel,
-    collections: &Arc<HandlerMap>,
-    self_collection: &Arc<dyn Component + Send + Sync>,
+    components: &Arc<HandlerMap>,
+    self_component: &Arc<dyn Component + Send + Sync>,
     callback: Arc<RuntimeCallback>,
     config: LiquidOperationConfig,
     seed: Seed,
@@ -70,8 +70,8 @@ impl Transaction {
         Arc::new(InstanceHandler::new(
           schematic.clone(),
           component,
-          collections.clone(),
-          self_collection.clone(),
+          components.clone(),
+          self_component.clone(),
         ))
       })
       .collect();

@@ -85,7 +85,6 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-pub mod constants;
 mod default;
 pub mod error;
 pub mod graph;

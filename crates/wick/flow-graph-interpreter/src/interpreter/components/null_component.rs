@@ -5,7 +5,6 @@ use tokio_stream::StreamExt;
 use wick_interface_types::{operation, ComponentSignature};
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
-use crate::constants::*;
 use crate::BoxFuture;
 
 #[derive(Debug)]
@@ -14,9 +13,11 @@ pub(crate) struct NullComponent {
 }
 
 impl NullComponent {
+  pub(crate) const ID: &str = "<null>";
+
   pub(crate) fn new() -> Self {
     let mut this = Self {
-      signature: ComponentSignature::new(NS_NULL).version("0.0.0"),
+      signature: ComponentSignature::new(Self::ID).version("0.0.0"),
     };
     this.signature = this
       .signature
