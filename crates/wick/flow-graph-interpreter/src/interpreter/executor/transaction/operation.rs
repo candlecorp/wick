@@ -13,10 +13,10 @@ use wasmrs_rx::{FluxChannel, Observer};
 use wick_packet::{Entity, Invocation, Packet, PacketError, PacketPayload, PacketSender, PacketStream};
 
 use self::port::{InputPorts, OutputPorts, PortStatus};
-use crate::constants::*;
 use crate::graph::types::*;
 use crate::graph::{LiquidOperationConfig, Reference};
 use crate::interpreter::channel::InterpreterDispatchChannel;
+use crate::interpreter::components::schematic_component::SelfComponent;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::error::ExecutionError;
 use crate::{HandlerMap, InterpreterOptions};
@@ -35,8 +35,8 @@ pub(crate) struct InstanceHandler {
   outputs: OutputPorts,
   schematic: Arc<Schematic>,
   pending: AtomicU32,
-  collections: Arc<HandlerMap>,
-  self_collection: Arc<dyn Component + Send + Sync>,
+  components: Arc<HandlerMap>,
+  self_component: Arc<dyn Component + Send + Sync>,
 }
 
 impl std::fmt::Debug for InstanceHandler {
@@ -61,8 +61,8 @@ impl InstanceHandler {
   pub(super) fn new(
     schematic: Arc<Schematic>,
     operation: &Operation,
-    collections: Arc<HandlerMap>,
-    self_collection: Arc<dyn Component + Send + Sync>,
+    components: Arc<HandlerMap>,
+    self_component: Arc<dyn Component + Send + Sync>,
   ) -> Self {
     let inputs = operation.inputs().to_vec();
     let outputs = operation.outputs().to_vec();
@@ -75,10 +75,10 @@ impl InstanceHandler {
       reference,
       index: operation.index(),
       identifier: operation.id().to_owned(),
-      collections,
+      components,
       sender: FluxChannel::new(),
       pending: AtomicU32::new(0),
-      self_collection,
+      self_component,
     }
   }
 
@@ -246,8 +246,8 @@ impl InstanceHandler {
     invocation.attach_stream(stream);
     let cb = callback.clone();
 
-    let fut = if namespace == NS_SELF {
-      let clone = self.self_collection.clone();
+    let fut = if namespace == SelfComponent::ID {
+      let clone = self.self_component.clone();
       tokio::spawn(async move {
         clone
           .handle(invocation, config, cb)
@@ -256,7 +256,7 @@ impl InstanceHandler {
       })
     } else {
       let clone = self
-        .collections
+        .components
         .get(&namespace)
         .ok_or_else(|| ExecutionError::InvalidState(StateError::MissingComponent(self.namespace().to_owned())))?
         .component

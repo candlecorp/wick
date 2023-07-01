@@ -3,18 +3,17 @@ use std::fmt::Debug;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-pub(super) mod component_component;
-pub(super) mod core_collection;
-pub(crate) mod internal_collection;
-pub(super) mod null_component;
-pub(super) mod schematic_component;
+pub(crate) mod component_component;
+pub(crate) mod core_component;
+pub(crate) mod internal_component;
+pub(crate) mod null_component;
+pub(crate) mod schematic_component;
 
 use flow_component::Component;
 use wick_interface_types::ComponentSignature;
 
-use self::core_collection::CoreCollection;
-use self::internal_collection::InternalCollection;
-use crate::constants::*;
+use self::core_component::CoreComponent;
+use self::internal_component::InternalComponent;
 use crate::error::InterpreterError;
 use crate::graph::types::Network;
 use crate::SharedHandler;
@@ -38,13 +37,13 @@ impl HandlerMap {
     let mut map = Self {
       components: Default::default(),
     };
-    for collection in components {
-      map.add(collection)?;
+    for component in components {
+      map.add(component)?;
     }
 
     map.add(NamespaceHandler::new(
-      NS_INTERNAL,
-      Box::new(InternalCollection::default()),
+      InternalComponent::ID,
+      Box::new(InternalComponent::default()),
     ))?;
 
     Ok(map)
@@ -52,8 +51,8 @@ impl HandlerMap {
 
   pub(crate) fn add_core(&mut self, network: &Network) -> Result<(), InterpreterError> {
     self.add(NamespaceHandler::new(
-      NS_CORE,
-      Box::new(CoreCollection::new(network, self)?),
+      CoreComponent::ID,
+      Box::new(CoreComponent::new(network, self)?),
     ))
   }
 
@@ -94,7 +93,7 @@ pub(crate) fn dyn_component_id(name: &str, schematic: &str, instance: &str) -> S
 }
 
 pub(crate) fn reconcile_op_id(ns: &str, name: &str, schematic: &str, instance: &str) -> String {
-  if ns == NS_CORE && core_collection::DYNAMIC_OPERATIONS.contains(&name) {
+  if ns == CoreComponent::ID && core_component::DYNAMIC_OPERATIONS.contains(&name) {
     dyn_component_id(name, schematic, instance)
   } else {
     name.to_owned()
@@ -110,10 +109,10 @@ pub struct NamespaceHandler {
 }
 
 impl NamespaceHandler {
-  pub fn new<T: AsRef<str>>(namespace: T, collection: Box<dyn Component + Send + Sync>) -> Self {
+  pub fn new<T: AsRef<str>>(namespace: T, component: Box<dyn Component + Send + Sync>) -> Self {
     Self {
       namespace: namespace.as_ref().to_owned(),
-      component: Arc::new(collection),
+      component: Arc::new(component),
       exposed: Arc::new(AtomicBool::new(false)),
     }
   }
@@ -142,7 +141,7 @@ impl Debug for NamespaceHandler {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("NamespaceHandler")
       .field("namespace", &self.namespace)
-      .field("collection", &self.component.signature())
+      .field("component", &self.component.signature())
       .finish()
   }
 }

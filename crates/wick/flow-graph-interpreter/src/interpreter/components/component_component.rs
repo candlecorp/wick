@@ -3,7 +3,6 @@ use wasmrs_rx::Observer;
 use wick_interface_types::{ComponentSignature, Field, OperationSignature};
 use wick_packet::{ComponentReference, Entity, Invocation, Packet, PacketStream, RuntimeConfig};
 
-use crate::constants::*;
 use crate::{BoxFuture, HandlerMap};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
@@ -18,6 +17,8 @@ pub(crate) struct ComponentComponent {
 }
 
 impl ComponentComponent {
+  pub(crate) const ID: &str = "component";
+
   pub(crate) fn new(list: &HandlerMap) -> Self {
     let mut signature = ComponentSignature::new("components");
     for ns in list.inner().keys() {
@@ -40,22 +41,22 @@ impl Component for ComponentComponent {
     _config: Option<RuntimeConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    trace!(target = %invocation.target, namespace = NS_COMPONENTS);
+    trace!(target = %invocation.target, namespace = Self::ID);
 
-    // This handler handles the NS_COLLECTIONS namespace and outputs the entity
+    // This handler handles the components:: namespace and outputs the entity
     // to link to.
     let target_name = invocation.target.operation_id().to_owned();
     let entity = Entity::component(invocation.target.operation_id());
 
-    let contains_collection = self.signature.operations.iter().any(|op| op.name == target_name);
-    let all_collections: Vec<_> = self.signature.operations.iter().map(|op| op.name.clone()).collect();
+    let contains_components = self.signature.operations.iter().any(|op| op.name == target_name);
+    let all_components: Vec<_> = self.signature.operations.iter().map(|op| op.name.clone()).collect();
 
     Box::pin(async move {
       let port_name = "ref";
-      if !contains_collection {
+      if !contains_components {
         return Err(ComponentError::new(Error::ComponentNotFound(
           entity.operation_id().to_owned(),
-          all_collections,
+          all_components,
         )));
       }
       let (tx, rx) = invocation.make_response();

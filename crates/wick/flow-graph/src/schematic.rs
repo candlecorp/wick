@@ -15,12 +15,12 @@ pub type ConnectionIndex = usize;
 pub type NodeIndex = usize;
 pub type PortIndex = usize;
 
-pub static SCHEMATIC_INPUT: &str = "<input>";
-pub static SCHEMATIC_INPUT_INDEX: NodeIndex = 0;
-pub static SCHEMATIC_OUTPUT: &str = "<output>";
-pub static SCHEMATIC_OUTPUT_INDEX: NodeIndex = 1;
+pub const SCHEMATIC_INPUT: &str = "<input>";
+pub const SCHEMATIC_INPUT_INDEX: NodeIndex = 0;
+pub const SCHEMATIC_OUTPUT: &str = "<output>";
+pub const SCHEMATIC_OUTPUT_INDEX: NodeIndex = 1;
 
-pub static NS_SCHEMATIC: &str = "__schematic__";
+pub const NS_SCHEMATIC: &str = "__schematic__";
 
 #[derive(Debug, Clone)]
 pub struct Schematic<DATA> {

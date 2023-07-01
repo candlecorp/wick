@@ -22,12 +22,11 @@ use self::components::HandlerMap;
 use self::error::Error;
 use self::event_loop::EventLoop;
 use self::program::Program;
-use crate::constants::*;
 use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterChannel;
 use crate::interpreter::components::component_component::ComponentComponent;
 use crate::interpreter::components::null_component::NullComponent;
-use crate::interpreter::components::schematic_component::SchematicComponent;
+use crate::interpreter::components::schematic_component::SelfComponent;
 use crate::interpreter::executor::error::ExecutionError;
 use crate::{NamespaceHandler, Observer, SharedHandler};
 
@@ -38,7 +37,7 @@ pub struct Interpreter {
   event_loop: EventLoop,
   signature: ComponentSignature,
   components: Arc<HandlerMap>,
-  self_component: Arc<SchematicComponent>,
+  self_component: Arc<SelfComponent>,
   dispatcher: InterpreterDispatchChannel,
   namespace: Option<String>,
   callback: Arc<RuntimeCallback>,
@@ -52,7 +51,7 @@ impl std::fmt::Debug for Interpreter {
       .field("program", &self.program)
       .field("event_loop", &self.event_loop)
       .field("signature", &self.signature)
-      .field("collections", &self.components)
+      .field("components", &self.components)
       .field("dispatcher", &self.dispatcher)
       .finish()
   }
@@ -88,11 +87,14 @@ impl Interpreter {
       handler.component.signature().clone()
     });
 
-    handlers.add(NamespaceHandler::new(NS_NULL, Box::new(NullComponent::new())))?;
+    handlers.add(NamespaceHandler::new(NullComponent::ID, Box::new(NullComponent::new())))?;
 
     // Add the component:: component
     let component_component = ComponentComponent::new(&handlers);
-    handlers.add(NamespaceHandler::new(NS_COMPONENTS, Box::new(component_component)))?;
+    handlers.add(NamespaceHandler::new(
+      ComponentComponent::ID,
+      Box::new(component_component),
+    ))?;
 
     handlers.add_core(&network)?;
 
@@ -107,7 +109,7 @@ impl Interpreter {
 
     // Make the self:: component
     let components = Arc::new(handlers);
-    let self_component = SchematicComponent::new(components.clone(), program.state(), config, &dispatcher);
+    let self_component = SelfComponent::new(components.clone(), program.state(), config, &dispatcher);
 
     // If we expose a component, expose its signature as our own.
     // Otherwise expose our self signature.
@@ -154,7 +156,7 @@ impl Interpreter {
       let span = span.clone();
       Box::pin(async move {
         span.in_scope(|| trace!(op, %compref, "invoke:component reference"));
-        if compref.get_target_id() == NS_SELF {
+        if compref.get_target_id() == SelfComponent::ID {
           span.in_scope(|| trace!(op, %compref, "handling component invocation for self"));
           let cb = inner_cb.lock().clone().unwrap();
           let invocation = compref.to_invocation(&op, stream, inherent, &span);
@@ -199,7 +201,7 @@ impl Interpreter {
     for (ns, components) in self.components.inner() {
       self
         .span
-        .in_scope(|| debug!(namespace = %ns, "shutting down collection"));
+        .in_scope(|| debug!(namespace = %ns, "shutting down component"));
       if let Err(error) = components
         .component
         .shutdown()
@@ -235,7 +237,7 @@ impl Component for Interpreter {
     Box::pin(async move {
       let stream = match &invocation.target {
         Entity::Operation(ns, _) => {
-          if ns == NS_SELF || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
+          if ns == SelfComponent::ID || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
             if let Some(component) = from_exposed {
               span.in_scope(|| trace!(entity=%invocation.target, "invoke::exposed::operation"));
               return component

@@ -2,7 +2,6 @@ use flow_component::{Component, ComponentError, Context, Operation, RenderConfig
 use wick_interface_types::{ComponentSignature, TypeDefinition};
 use wick_packet::{InherentData, Invocation, PacketStream, RuntimeConfig};
 
-use crate::constants::*;
 use crate::graph::types::Network;
 use crate::interpreter::components::dyn_component_id;
 use crate::{BoxFuture, HandlerMap};
@@ -16,7 +15,7 @@ mod switch;
 pub(crate) static DYNAMIC_OPERATIONS: &[&str] = &[collect::Op::ID, merge::Op::ID, switch::Op::ID];
 
 #[derive(Debug)]
-pub(crate) struct CoreCollection {
+pub(crate) struct CoreComponent {
   signature: ComponentSignature,
   pluck: pluck::Op,
   sender: sender::Op,
@@ -63,10 +62,12 @@ impl std::fmt::Display for DynamicOperation {
   }
 }
 
-impl CoreCollection {
+impl CoreComponent {
+  pub(crate) const ID: &str = "core";
+
   pub(crate) fn new(graph: &Network, handlers: &HandlerMap) -> Result<Self, OpInitError> {
     let mut this = Self {
-      signature: ComponentSignature::new(NS_CORE).version("0.0.0"),
+      signature: ComponentSignature::new(Self::ID).version("0.0.0"),
       pluck: pluck::Op::new(),
       sender: sender::Op::new(),
       merge: merge::Op::new(),
@@ -81,7 +82,7 @@ impl CoreCollection {
     for schematic in graph.schematics() {
       for operation in schematic.nodes() {
         // only handle core:: components
-        if operation.cref().component_id() != NS_CORE {
+        if operation.cref().component_id() != Self::ID {
           continue;
         }
 
@@ -156,14 +157,14 @@ macro_rules! core_op {
   }};
 }
 
-impl Component for CoreCollection {
+impl Component for CoreComponent {
   fn handle(
     &self,
     invocation: Invocation,
     data: Option<RuntimeConfig>,
     callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| trace!(target = %invocation.target, namespace = NS_CORE));
+    invocation.trace(|| trace!(target = %invocation.target, namespace = Self::ID));
 
     let task = async move {
       match invocation.target.operation_id() {

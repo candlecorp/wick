@@ -4,9 +4,9 @@ use flow_graph::iterators::{SchematicHop, WalkDirection};
 use flow_graph::{NodeKind, PortDirection};
 use wick_interface_types::{ComponentSignature, Field, OperationSignature, Type};
 
-use crate::constants::*;
 use crate::error::ValidationError;
 use crate::graph::types::*;
+use crate::interpreter::components::schematic_component::SelfComponent;
 
 pub(crate) mod validator;
 use super::components::{reconcile_op_id, ComponentMap};
@@ -19,10 +19,10 @@ pub(crate) struct Program {
 }
 
 impl Program {
-  pub(crate) fn new(network: Network, collections: ComponentMap) -> Result<Self, Error> {
+  pub(crate) fn new(network: Network, components: ComponentMap) -> Result<Self, Error> {
     trace!("initializing graph program");
     let program = Self {
-      state: ProgramState::new(network, collections),
+      state: ProgramState::new(network, components),
     };
     Ok(program)
   }
@@ -56,7 +56,7 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
       for component in schematic.nodes() {
         match component.kind() {
           NodeKind::External(ext) => {
-            let references_self = ext.component_id() == NS_SELF;
+            let references_self = ext.component_id() == SelfComponent::ID;
             let reference_will_have_resolved = will_resolve.contains(ext.name());
 
             if references_self && !reference_will_have_resolved {
@@ -96,18 +96,15 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
   }
 }
 
-pub(super) fn generate_self_signature(
-  network: &Network,
-  collections: &mut ComponentMap,
-) -> Result<(), ValidationError> {
-  let map = ComponentSignature::new(NS_SELF);
-  collections.insert(NS_SELF.to_owned(), map);
+pub(super) fn generate_self_signature(network: &Network, components: &mut ComponentMap) -> Result<(), ValidationError> {
+  let map = ComponentSignature::new(SelfComponent::ID);
+  components.insert(SelfComponent::ID.to_owned(), map);
   let resolution_order = get_resolution_order(network)?;
 
   for batch in resolution_order {
     for schematic in batch {
-      let signature = get_schematic_signature(schematic, collections)?;
-      let map = collections.get_mut(NS_SELF).unwrap();
+      let signature = get_schematic_signature(schematic, components)?;
+      let map = components.get_mut(SelfComponent::ID).unwrap();
       trace!(operation = signature.name, "interpreter:registering op on 'self' ns");
       map.operations.push(signature);
     }
@@ -117,7 +114,7 @@ pub(super) fn generate_self_signature(
 
 fn get_schematic_signature(
   schematic: &Schematic,
-  collections: &ComponentMap,
+  components: &ComponentMap,
 ) -> Result<OperationSignature, ValidationError> {
   let mut schematic_signature = OperationSignature::new(schematic.name());
   for port in schematic.input().outputs() {
@@ -125,7 +122,7 @@ fn get_schematic_signature(
       let signature = match hop {
         SchematicHop::Port(p) => {
           if p.direction() == PortDirection::In {
-            let signature = get_signature(schematic.name(), &p, PortDirection::In, collections)?;
+            let signature = get_signature(schematic.name(), &p, PortDirection::In, components)?;
             match signature {
               Some(sig) => sig,
               None => continue,
@@ -146,7 +143,7 @@ fn get_schematic_signature(
       let signature = match hop {
         SchematicHop::Port(p) => {
           if p.direction() == PortDirection::Out {
-            let signature = get_signature(schematic.name(), &p, PortDirection::Out, collections)?;
+            let signature = get_signature(schematic.name(), &p, PortDirection::Out, components)?;
             match signature {
               Some(sig) => sig,
               None => continue,

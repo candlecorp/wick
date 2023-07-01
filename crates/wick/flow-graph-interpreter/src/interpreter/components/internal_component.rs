@@ -3,32 +3,35 @@ use flow_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
-use crate::constants::*;
 use crate::BoxFuture;
 
 // pub(crate) mod oneshot;
 
 #[derive(Debug)]
-pub(crate) struct InternalCollection {
+pub(crate) struct InternalComponent {
   signature: ComponentSignature,
 }
 
-impl Default for InternalCollection {
+impl Default for InternalComponent {
   fn default() -> Self {
-    let signature = ComponentSignature::new(NS_INTERNAL).version("0.0.0");
+    let signature = ComponentSignature::new(Self::ID).version("0.0.0");
 
     Self { signature }
   }
 }
 
-impl Component for InternalCollection {
+impl InternalComponent {
+  pub(crate) const ID: &'static str = flow_graph::NS_SCHEMATIC;
+}
+
+impl Component for InternalComponent {
   fn handle(
     &self,
     invocation: Invocation,
     _config: Option<RuntimeConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| trace!(target = %invocation.target, id=%invocation.id,namespace = NS_INTERNAL));
+    invocation.trace(|| trace!(target = %invocation.target, id=%invocation.id,namespace = Self::ID));
     let op = invocation.target.operation_id().to_owned();
 
     let is_oneshot = op == SCHEMATIC_INPUT;

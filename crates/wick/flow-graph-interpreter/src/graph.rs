@@ -126,8 +126,8 @@ use wick_config::config::components::{ComponentConfig, OperationConfig};
 use wick_config::config::{ComponentImplementation, ExecutionSettings, FlowOperation, LiquidJsonConfig};
 use wick_packet::{InherentData, RuntimeConfig};
 
-use crate::constants::NS_NULL;
 use crate::error::InterpreterError;
+use crate::interpreter::components::null_component::NullComponent;
 
 #[derive(Debug)]
 #[must_use]
@@ -338,7 +338,11 @@ fn expand_operation(
       *inline_id += 1;
       let id_str = format!("drop_{}", inline_id);
       id.replace(id_str.clone());
-      schematic.add_external(id_str, NodeReference::new(NS_NULL, "drop"), Default::default());
+      schematic.add_external(
+        id_str,
+        NodeReference::new(NullComponent::ID, "drop"),
+        Default::default(),
+      );
     }
     _ => {}
   }
