@@ -1,4 +1,4 @@
-pub mod types {
+pub(crate) mod types {
   #![allow(unused)]
   use super::AssociatedData;
 
@@ -26,7 +26,7 @@ impl OperationSettings {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct LiquidOperationConfig {
+pub(crate) struct LiquidOperationConfig {
   root: Option<RuntimeConfig>,
   template: Option<LiquidJsonConfig>,
   value: Option<RuntimeConfig>,
@@ -34,16 +34,7 @@ pub struct LiquidOperationConfig {
 
 impl LiquidOperationConfig {
   #[must_use]
-  pub fn new_template(template: Option<LiquidJsonConfig>) -> Self {
-    Self {
-      template,
-      value: None,
-      root: None,
-    }
-  }
-
-  #[must_use]
-  pub fn new_value(value: Option<RuntimeConfig>) -> Self {
+  pub(crate) fn new_value(value: Option<RuntimeConfig>) -> Self {
     Self {
       template: None,
       value,
@@ -51,7 +42,7 @@ impl LiquidOperationConfig {
     }
   }
 
-  pub fn render(&self, inherent: &InherentData) -> Result<Option<RuntimeConfig>, InterpreterError> {
+  pub(crate) fn render(&self, inherent: &InherentData) -> Result<Option<RuntimeConfig>, InterpreterError> {
     if let Some(template) = self.template() {
       Ok(Some(
         template
@@ -64,29 +55,29 @@ impl LiquidOperationConfig {
   }
 
   #[must_use]
-  pub fn value(&self) -> Option<&RuntimeConfig> {
+  pub(crate) fn value(&self) -> Option<&RuntimeConfig> {
     self.value.as_ref()
   }
 
   #[must_use]
-  pub fn template(&self) -> Option<&LiquidJsonConfig> {
+  pub(crate) fn template(&self) -> Option<&LiquidJsonConfig> {
     self.template.as_ref()
   }
 
   #[must_use]
-  pub fn root(&self) -> Option<&RuntimeConfig> {
+  pub(crate) fn root(&self) -> Option<&RuntimeConfig> {
     self.root.as_ref()
   }
 
-  pub fn set_root(&mut self, root: Option<RuntimeConfig>) {
+  pub(crate) fn set_root(&mut self, root: Option<RuntimeConfig>) {
     self.root = root;
   }
 
-  pub fn set_template(&mut self, template: Option<LiquidJsonConfig>) {
+  pub(crate) fn set_template(&mut self, template: Option<LiquidJsonConfig>) {
     self.template = template;
   }
 
-  pub fn set_value(&mut self, value: Option<RuntimeConfig>) {
+  pub(crate) fn set_value(&mut self, value: Option<RuntimeConfig>) {
     self.value = value;
   }
 }
