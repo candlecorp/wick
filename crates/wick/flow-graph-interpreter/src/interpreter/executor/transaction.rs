@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
-use flow_component::{Component, RuntimeCallback};
+use flow_component::{RuntimeCallback, SharedComponent};
 use flow_graph::{NodeIndex, PortReference, SCHEMATIC_OUTPUT_INDEX};
 use futures::StreamExt;
 use parking_lot::Mutex;
@@ -27,11 +27,17 @@ pub(crate) use statistics::TransactionStatistics;
 
 type Result<T> = std::result::Result<T, ExecutionError>;
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum TxState {
+  OutputPending,
+  OutputComplete,
+}
+
 #[derive()]
 #[must_use]
 pub struct Transaction {
   schematic: Arc<Schematic>,
-  output: (PacketSender, Option<PacketStream>),
+  output: (Option<PacketSender>, Option<PacketStream>),
   channel: InterpreterDispatchChannel,
   invocation: Invocation,
   instances: Vec<Arc<InstanceHandler>>,
@@ -58,7 +64,7 @@ impl Transaction {
     mut invocation: Invocation,
     channel: InterpreterDispatchChannel,
     components: &Arc<HandlerMap>,
-    self_component: &Arc<dyn Component + Send + Sync>,
+    self_component: &SharedComponent,
     callback: Arc<RuntimeCallback>,
     config: LiquidOperationConfig,
     seed: Seed,
@@ -90,7 +96,7 @@ impl Transaction {
       invocation,
       schematic,
       config,
-      output: (tx, Some(rx)),
+      output: (Some(tx), Some(rx)),
       instances,
       start_time: Instant::now(),
       stats,
@@ -197,17 +203,32 @@ impl Transaction {
     *self.last_access_time.lock()
   }
 
-  pub(crate) fn finish(mut self) -> Result<TransactionStatistics> {
+  // Run when the transaction has finished delivering output to its output ports.
+  //
+  // A transaction may still be executing operations with side effects after this point.
+  pub(crate) fn finish(&mut self) -> Result<&TransactionStatistics> {
+    trace!("finishing transaction core");
+
+    // drop our output sender;
+    drop(self.output.0.take());
+
+    // mark our end of execution
     self.stats.end("execution");
+
+    // print stats if we're in tests.
     #[cfg(test)]
     self.stats.print();
 
-    Ok(self.stats)
+    Ok(&self.stats)
   }
 
   pub(crate) async fn emit_output_message(&self, packets: Vec<Packet>) -> Result<()> {
-    for packet in packets {
-      self.output.0.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
+    if let Some(ref output) = self.output.0 {
+      for packet in packets {
+        output.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
+      }
+    } else {
+      error!(tx_id = %self.id(), "attempted to send output message after tx finished");
     }
 
     if self.done() {
@@ -250,17 +271,15 @@ impl Transaction {
     instance.take_input(port)
   }
 
-  pub(crate) async fn check_hung(&self) -> Result<bool> {
+  pub(crate) async fn check_stalled(&self) -> Result<TxState> {
     if self.done() {
-      error!("transaction done but not cleaned up yet");
-      self.channel.dispatch_done(self.id()).await;
-      Ok(false)
+      Ok(TxState::OutputComplete)
     } else {
       warn!(tx_id = %self.id(), "transaction hung");
       self
         .emit_output_message(vec![Packet::component_error("Transaction hung")])
         .await?;
-      Ok(true)
+      Ok(TxState::OutputPending)
     }
   }
 

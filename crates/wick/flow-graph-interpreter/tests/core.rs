@@ -200,7 +200,9 @@ async fn first_packet_test_op(op_name: &str, file: &str, packets: Vec<Packet>, e
   let wrapper = outputs.pop().unwrap().unwrap();
   let actual: String = wrapper.decode()?;
   assert_eq!(actual, expected);
+  println!("shutting down interpreter");
   interpreter.shutdown().await?;
+  println!("done");
 
   Ok(())
 }

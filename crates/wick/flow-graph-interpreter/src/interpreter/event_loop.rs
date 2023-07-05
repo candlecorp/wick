@@ -23,7 +23,7 @@ pub(crate) struct EventLoop {
 
 impl EventLoop {
   pub(crate) const WAKE_TIMEOUT: Duration = Duration::from_millis(500);
-  pub(crate) const HUNG_TX_TIMEOUT: Duration = Duration::from_secs(60 * 5);
+  pub(crate) const STALLED_TX_TIMEOUT: Duration = Duration::from_secs(60 * 5);
 
   pub(super) fn new(channel: InterpreterChannel) -> Self {
     let dispatcher = channel.dispatcher();
@@ -60,9 +60,16 @@ impl EventLoop {
 
         let timeout = std::time::Duration::from_secs(2);
         let result = tokio::time::timeout(timeout, task).await;
-        result
-          .map_err(|e| Error::Shutdown(e.to_string()))?
-          .map_err(|e| Error::Shutdown(e.to_string()))??;
+        match result.map_err(|_| Error::ShutdownTimeout)? {
+          Ok(Err(e)) => {
+            return Err(Error::Shutdown(e.to_string()));
+          }
+          Err(e) => {
+            self.span.in_scope(|| warn!(%e, "event loop panicked"));
+            return Err(Error::EventLoopPanic(e.to_string()));
+          }
+          Ok(_) => {}
+        };
         self.span.in_scope(|| debug!("event loop closed"));
       }
       None => {
@@ -95,8 +102,7 @@ async fn event_loop(
   options: InterpreterOptions,
   observer: Option<Box<dyn Observer + Send + Sync>>,
 ) -> Result<(), ExecutionError> {
-  let span = trace_span!("event_loop");
-  span.in_scope(|| debug!(?options, "started"));
+  debug!(?options, "started");
   let mut state = State::new(channel.dispatcher());
 
   let mut num: usize = 0;
@@ -111,8 +117,8 @@ async fn event_loop(
           observer.on_event(num, &event);
         }
 
-        let evt_span = trace_span!(parent:&span,"event", otel.name = event.name(), i = num, %tx_id);
-        evt_span.in_scope(|| debug!(event = ?event, tx_id = ?tx_id, "iteration"));
+        let evt_span = trace_span!(parent:&Span::current(),"event", otel.name = event.name(), i = num, %tx_id);
+        evt_span.in_scope(|| debug!(event = ?event, tx_id = ?tx_id));
         let name = event.name().to_owned();
 
         let result = match event.kind {
@@ -146,14 +152,9 @@ async fn event_loop(
         };
 
         if let Err(e) = result {
-          if options.error_on_missing && matches!(e, ExecutionError::MissingTx(_)) {
-            span.in_scope(|| error!(event = %name, tx_id = ?tx_id, response_error = %e, "iteration:end"));
-            channel.dispatcher().dispatch_close(Some(e)).await;
-          } else {
-            span.in_scope(|| warn!(event = %name, tx_id = ?tx_id, response_error = %e, "iteration:end"));
-          }
+          warn!(event = %name, tx_id = ?tx_id, response_error = %e, "iteration:end");
         } else {
-          span.in_scope(|| trace!(event = %name, tx_id = ?tx_id, "iteration:end"));
+          trace!(event = %name, tx_id = ?tx_id, "iteration:end");
         }
 
         if let Some(observer) = &observer {
@@ -162,18 +163,17 @@ async fn event_loop(
         num += 1;
       }
       Ok(None) => {
-        span.in_scope(|| trace!("done"));
         break Ok(());
       }
       Err(_) => {
-        if let Err(error) = state.check_hung(options.error_on_hung).await {
-          span.in_scope(|| error!(%error,"Error checking hung transactions"));
+        if let Err(error) = state.check_stalled().await {
+          error!(%error,"Error checking hung transactions");
           channel.dispatcher().dispatch_close(Some(error)).await;
         };
       }
     }
   };
-  span.in_scope(|| trace!("stopped"));
+  trace!("stopped");
   if let Some(observer) = &observer {
     observer.on_close();
   }

@@ -59,8 +59,11 @@ pub(crate) struct PortList {
 }
 
 impl PortList {
-  pub(super) fn new(ports: Vec<OperationPort>) -> Self {
-    let ports = ports.into_iter().map(PortHandler::new).collect();
+  pub(super) fn new(operation_instance: impl AsRef<str>, ports: Vec<OperationPort>) -> Self {
+    let ports = ports
+      .into_iter()
+      .map(|p| PortHandler::new(operation_instance.as_ref(), p))
+      .collect();
     Self { inner: ports }
   }
 
@@ -106,9 +109,9 @@ pub(crate) struct OutputPorts {
 }
 
 impl OutputPorts {
-  pub(super) fn new(ports: Vec<OperationPort>) -> Self {
+  pub(super) fn new(operation_instance: impl AsRef<str>, ports: Vec<OperationPort>) -> Self {
     Self {
-      inner: PortList::new(ports),
+      inner: PortList::new(operation_instance, ports),
     }
   }
 
@@ -147,9 +150,9 @@ pub(crate) struct InputPorts {
   inner: PortList,
 }
 impl InputPorts {
-  pub(super) fn new(ports: Vec<OperationPort>) -> Self {
+  pub(super) fn new(operation_instance: impl AsRef<str>, ports: Vec<OperationPort>) -> Self {
     Self {
-      inner: PortList::new(ports),
+      inner: PortList::new(operation_instance, ports),
     }
   }
 

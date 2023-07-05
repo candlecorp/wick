@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use flow_graph::{PortDirection, PortReference};
 use uuid::Uuid;
-use wick_packet::{Packet, PacketPayload};
+use wick_packet::PacketPayload;
 
 use super::EventLoop;
 use crate::interpreter::channel::{CallComplete, InterpreterDispatchChannel};
 use crate::interpreter::executor::error::ExecutionError;
-use crate::interpreter::executor::transaction::Transaction;
+use crate::interpreter::executor::transaction::{Transaction, TxState};
 use crate::InterpreterOptions;
 
 #[derive(Debug)]
@@ -24,33 +24,27 @@ impl State {
     }
   }
 
-  fn get_tx(&self, uuid: &Uuid) -> Result<&Transaction, ExecutionError> {
-    self.transactions.get(uuid).ok_or(ExecutionError::MissingTx(*uuid))
+  fn get_tx(&self, uuid: &Uuid) -> Option<&Transaction> {
+    self.transactions.get(uuid)
   }
 
   pub fn transactions(&self) -> &TransactionMap {
     &self.transactions
   }
 
-  pub(super) async fn check_hung(&mut self, panic_on_hung: bool) -> Result<(), ExecutionError> {
+  pub(super) async fn check_stalled(&mut self) -> Result<(), ExecutionError> {
     let mut cleanup = Vec::new();
     for (tx_id, tx) in self.transactions.iter() {
       let last_update = tx.last_access();
-      if last_update.elapsed().unwrap() > EventLoop::HUNG_TX_TIMEOUT {
-        warn!(%tx_id, elapsed=?last_update.elapsed().unwrap(),"hung transaction");
-        if panic_on_hung {
-          let err = ExecutionError::HungTransaction(*tx_id);
-          tx.emit_output_message(vec![Packet::component_error(err.to_string())])
-            .await?;
-          return Err(err);
-        }
-
-        match tx.check_hung().await {
-          Ok(true) => {
+      if last_update.elapsed().unwrap() > EventLoop::STALLED_TX_TIMEOUT {
+        match tx.check_stalled().await {
+          Ok(TxState::OutputPending) => {
+            error!(%tx_id, "tx reached timeout while still waiting for output data");
             cleanup.push(*tx_id);
           }
-          Ok(false) => {
-            // not hung, continue as normal.
+          Ok(TxState::OutputComplete) => {
+            // transaction has completed its output and isn't generating more data, clean it up.
+            cleanup.push(*tx_id);
           }
           Err(error) => {
             error!(%error, %tx_id, "stalled transaction generated error determining hung state");
@@ -60,14 +54,13 @@ impl State {
     }
     for tx_id in cleanup {
       debug!(%tx_id, "transaction hung");
-      self.cleanup(&tx_id);
+      self.transactions.remove(&tx_id);
     }
     Ok(())
   }
 
-  fn cleanup(&mut self, tx_id: &Uuid) -> Option<Transaction> {
-    trace!(%tx_id, "cleaning up transaction");
-    self.transactions.remove(tx_id)
+  fn get_mut(&mut self, tx_id: &Uuid) -> Option<&mut Transaction> {
+    self.transactions.get_mut(tx_id)
   }
 
   pub(super) async fn handle_transaction_start(
@@ -87,22 +80,23 @@ impl State {
 
   #[allow(clippy::unused_async)]
   pub(super) async fn handle_transaction_done(&mut self, tx_id: Uuid) -> Result<(), ExecutionError> {
-    let tx = self.cleanup(&tx_id).ok_or(ExecutionError::MissingTx(tx_id))?;
-    trace!("handling transaction done");
-
-    let statistics = tx.finish()?;
-    trace!(?statistics);
+    if let Some(tx) = self.get_mut(&tx_id) {
+      let statistics = tx.finish()?;
+      trace!(?statistics);
+    }
     Ok(())
   }
 
   async fn handle_input_data(&mut self, tx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
     let tx = match self.get_tx(&tx_id) {
-      Ok(tx) => tx,
-      Err(e) => {
-        debug!(
-          port = %port, error=%e, "error handling port input"
+      Some(tx) => tx,
+      None => {
+        // This is a warning, not an error, because it's possible the transaction completes OK, it's just that a
+        // component is misbehaving.
+        warn!(
+          port = %port, %tx_id, "still receiving upstream data for missing tx, this may be due to a component panic or premature close"
         );
-        return Err(e);
+        return Ok(());
       }
     };
 
@@ -131,12 +125,14 @@ impl State {
 
   async fn handle_output_data(&mut self, tx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
     let tx = match self.get_tx(&tx_id) {
-      Ok(tx) => tx,
-      Err(e) => {
-        debug!(
-          port = %port, error=%e, "error handling port output"
+      Some(tx) => tx,
+      None => {
+        // This is a warning, not an error, because it's possible the transaction completes OK, it's just that a
+        // component is misbehaving.
+        warn!(
+          port = %port, %tx_id, "still receiving downstream data for missing tx, this may be due to a component panic or premature close"
         );
-        return Err(e);
+        return Ok(());
       }
     };
 
@@ -188,7 +184,18 @@ impl State {
 
   #[allow(clippy::unused_async)]
   pub(super) async fn handle_call_complete(&self, tx_id: Uuid, data: CallComplete) -> Result<(), ExecutionError> {
-    let tx = self.get_tx(&tx_id)?;
+    let tx = match self.get_tx(&tx_id) {
+      Some(tx) => tx,
+      None => {
+        // This is a warning, not an error, because it's possible the transaction completes OK, it's just that a
+        // component is misbehaving.
+        warn!(
+          ?data,
+          %tx_id, "tried to cleanup call for missing tx, this may be due to a component panic or premature close"
+        );
+        return Ok(());
+      }
+    };
     let instance = tx.instance(data.index);
     debug!(component = instance.id(), entity = %instance.entity(), "call complete");
 
@@ -216,6 +223,13 @@ impl TransactionMap {
 
   fn get(&self, uuid: &Uuid) -> Option<&Transaction> {
     self.0.get(uuid).map(|tx| {
+      tx.update_last_access();
+      tx
+    })
+  }
+
+  fn get_mut(&mut self, uuid: &Uuid) -> Option<&mut Transaction> {
+    self.0.get_mut(uuid).map(|tx| {
       tx.update_last_access();
       tx
     })

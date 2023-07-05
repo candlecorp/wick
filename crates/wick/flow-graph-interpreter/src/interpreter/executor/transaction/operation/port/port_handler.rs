@@ -13,7 +13,7 @@ type PacketType = Packet;
 #[derive()]
 #[must_use]
 pub(crate) struct PortHandler {
-  name: String,
+  operation_instance: String,
   buffer: PortBuffer,
   status: Mutex<PortStatus>,
   port: OperationPort,
@@ -21,14 +21,21 @@ pub(crate) struct PortHandler {
 
 impl std::fmt::Display for PortHandler {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}[{}]", self.name, self.get_status())
+    write!(
+      f,
+      "{}.{} ({}, {})",
+      self.operation_instance,
+      self.port,
+      self.port.direction(),
+      self.get_status()
+    )
   }
 }
 
 impl std::fmt::Debug for PortHandler {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("PortHandler")
-      .field("name", &self.name)
+      .field("port", &self.port)
       .field("buffer", &self.buffer)
       .field("status", &self.status)
       .finish()
@@ -36,10 +43,10 @@ impl std::fmt::Debug for PortHandler {
 }
 
 impl PortHandler {
-  pub(super) fn new(port: OperationPort) -> Self {
+  pub(super) fn new(operation_instance: impl AsRef<str>, port: OperationPort) -> Self {
     Self {
       buffer: Default::default(),
-      name: port.name().to_owned(),
+      operation_instance: operation_instance.as_ref().to_owned(),
       port,
       status: Mutex::new(PortStatus::Open),
     }
@@ -50,22 +57,36 @@ impl PortHandler {
     *lock
   }
 
-  pub(crate) fn set_status(&self, status: PortStatus) {
-    let new_status = if status == PortStatus::DoneClosed && !self.is_empty() {
-      PortStatus::DoneClosing
-    } else {
-      status
-    };
+  pub(crate) fn set_status(&self, new_status: PortStatus) {
+    let new_status =
+      if new_status == PortStatus::DoneClosed && !self.is_empty() && self.status() != PortStatus::DoneClosed {
+        PortStatus::DoneClosing
+      } else {
+        new_status
+      };
 
     let curr_status = self.get_status();
 
     if curr_status != new_status {
-      trace!(old_status=%curr_status, new_status=%new_status, port=%self.port, name =self.name(), "setting port status");
-      assert!(
-        !(curr_status == PortStatus::DoneClosed && status != PortStatus::DoneClosed),
-        "trying to set new status on closed port"
-      );
-      *self.status.lock() = new_status;
+      if curr_status == PortStatus::DoneClosed && new_status != PortStatus::DoneClosed {
+        debug!(
+          op = %self.operation_instance,
+          port = %self.port,
+          dir  = %self.port.direction(),
+          from = %curr_status,
+          to = %new_status,
+          "trying to set new status on closed port");
+      } else {
+        trace!(
+          op = %self.operation_instance,
+          port = %self.port,
+          dir  = %self.port.direction(),
+          from = %curr_status,
+          to = %new_status,
+          "setting port status");
+
+        *self.status.lock() = new_status;
+      }
     }
   }
 
@@ -74,7 +95,7 @@ impl PortHandler {
   }
 
   pub(crate) fn name(&self) -> &str {
-    &self.name
+    self.port.name()
   }
 
   pub(crate) fn get_status(&self) -> PortStatus {
@@ -83,7 +104,7 @@ impl PortHandler {
 
   pub(super) fn buffer(&self, value: PacketType) {
     if self.get_status() == PortStatus::DoneClosed {
-      warn!(port=%self.port, "trying to buffer on closed port");
+      warn!(port=%self, "trying to buffer on closed port");
     }
     if value.is_done() {
       self.set_status(PortStatus::DoneClosing);
@@ -93,7 +114,7 @@ impl PortHandler {
 
   pub(super) fn take(&self) -> Option<PacketType> {
     let result = self.buffer.take();
-    trace!(port=%self.port,payload=?result, "taking from buffer");
+    trace!(port=%self,payload=?result, "taking from buffer");
 
     let status = self.get_status();
     if self.is_empty() && status == PortStatus::DoneClosing {
@@ -110,7 +131,7 @@ impl PortHandler {
       return vec![];
     }
     let packets = self.buffer.drain(range);
-    trace!(port=%self.port,packets=?packets, "draining buffer");
+    trace!(port=%self,packets=?packets, "draining buffer");
 
     let status = self.get_status();
     if self.is_empty() && status == PortStatus::DoneClosing {
@@ -122,12 +143,4 @@ impl PortHandler {
   pub(crate) fn is_empty(&self) -> bool {
     self.buffer.is_empty()
   }
-
-  // pub(crate) fn len(&self) -> usize {
-  //   self.buffer.len()
-  // }
-
-  // pub(crate) fn clone_buffer(&self) -> Vec<PacketType> {
-  //   self.buffer.clone_buffer()
-  // }
 }

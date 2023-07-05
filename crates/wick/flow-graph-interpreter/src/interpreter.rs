@@ -289,10 +289,6 @@ impl Component for Interpreter {
 #[derive(Debug, Clone)]
 #[allow(missing_copy_implementations)]
 pub struct InterpreterOptions {
-  /// Stop the interpreter and return an error on any hung transactions.
-  pub error_on_hung: bool,
-  /// Stop the interpreter and return an error if any messages come after a transaction has completed.
-  pub error_on_missing: bool,
   /// Timeout after which a component that has received no output is considered dead.
   pub output_timeout: Duration,
 }
@@ -300,8 +296,6 @@ pub struct InterpreterOptions {
 impl Default for InterpreterOptions {
   fn default() -> Self {
     Self {
-      error_on_hung: false,
-      error_on_missing: false,
       output_timeout: Duration::from_secs(5),
     }
   }

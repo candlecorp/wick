@@ -41,7 +41,6 @@ impl Event {
 #[derive(Debug)]
 #[must_use]
 pub enum EventKind {
-  #[allow(unused)]
   Ping(usize),
   TransactionStart(Box<Transaction>),
   TransactionDone,
@@ -135,7 +134,6 @@ impl InterpreterDispatchChannel {
   }
 
   pub(crate) async fn dispatch(&self, event: Event) {
-    trace!(evt = event.name(), "dispatching event");
     if self.sender.send(event).await.is_err() {
       warn!("Interpreter channel closed unexpectedly. This is likely due to an intentional shutdown while there are still events processing.");
     }

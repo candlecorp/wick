@@ -37,13 +37,7 @@ pub(crate) async fn base_setup(
   use flow_graph_interpreter::{HandlerMap, InterpreterOptions, NamespaceHandler};
   use tokio_stream::StreamExt;
   use wick_packet::{Entity, Invocation};
-  let options = Some(InterpreterOptions {
-    error_on_hung: true,
-    // TODO: improve logic to ensure no remaining packets are sent after completion.
-    // Turn this on to make tests fail in these cases.
-    error_on_missing: false,
-    ..Default::default()
-  });
+  let options = Some(InterpreterOptions { ..Default::default() });
   let mut def = wick_config::WickConfiguration::load_from_file_sync(manifest)?;
   def.set_root_config(component_config);
   let mut def = def.finish()?.try_component_config()?;
