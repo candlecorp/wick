@@ -70,8 +70,8 @@ impl InstanceHandler {
 
     Self {
       schematic,
-      inputs: InputPorts::new(inputs),
-      outputs: OutputPorts::new(outputs),
+      inputs: InputPorts::new(operation.id(), inputs),
+      outputs: OutputPorts::new(operation.id(), outputs),
       reference,
       index: operation.index(),
       identifier: operation.id().to_owned(),

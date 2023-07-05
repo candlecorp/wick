@@ -4,8 +4,8 @@ network:
   schematics:
     - name: test
       instances:
-        ALWAYS_PANICS:
+        ALWAYS_ERRORS:
           id: test::error
       connections:
-        - <> => ALWAYS_PANICS[input]
-        - ALWAYS_PANICS[output] => <>
+        - <> => ALWAYS_ERRORS[input]
+        - ALWAYS_ERRORS[output] => <>

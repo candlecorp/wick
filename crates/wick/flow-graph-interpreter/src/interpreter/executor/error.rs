@@ -21,9 +21,6 @@ pub enum ExecutionError {
   #[error("Transaction '{0}' hung and error_on_hung set")]
   HungTransaction(Uuid),
 
-  #[error("Transaction '{0}' missing")]
-  MissingTx(Uuid),
-
   #[error("{0}")]
   ComponentError(ComponentError),
 

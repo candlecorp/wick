@@ -13,7 +13,7 @@ pub(crate) struct NullComponent {
 }
 
 impl NullComponent {
-  pub(crate) const ID: &str = "<null>";
+  pub(crate) const ID: &str = "__null__";
 
   pub(crate) fn new() -> Self {
     let mut this = Self {

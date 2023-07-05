@@ -242,7 +242,7 @@ mod tests {
   #[case("<>", InstTgt::Default)]
   #[case("<input>", InstTgt::Input)]
   #[case("<output>", InstTgt::Output)]
-  #[case("<core>", InstTgt::Core)]
+  #[case("core", InstTgt::Core)]
   #[case("heya", InstTgt::named("heya"))]
   #[case("this::that[A]", InstTgt::path("this::that", "A"))]
   fn test_component_id(#[case] input: &'static str, #[case] expected: InstTgt) -> Result<()> {

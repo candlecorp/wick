@@ -27,6 +27,12 @@ pub enum Error {
   #[error("Shutdown failed: {0}")]
   Shutdown(String),
 
+  #[error("Event loop panicked: {0}")]
+  EventLoopPanic(String),
+
+  #[error("Shutdown timed out")]
+  ShutdownTimeout,
+
   #[error("Namespace '{0}' already exists, can not overwrite")]
   DuplicateNamespace(String),
 

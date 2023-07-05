@@ -17,7 +17,7 @@ pub(crate) struct ComponentComponent {
 }
 
 impl ComponentComponent {
-  pub(crate) const ID: &str = "component";
+  pub(crate) const ID: &str = "__component__";
 
   pub(crate) fn new(list: &HandlerMap) -> Self {
     let mut signature = ComponentSignature::new("components");
