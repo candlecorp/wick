@@ -64,8 +64,8 @@ pub(crate) fn bind_args(positional_args: &[String], values: &[(Type, Packet)]) -
 
     if spread {
       let Type::List { ty } = type_wrapper.type_signature().clone() else {
-            return Err(Error::Prepare(format!("value for '{}...' is not a list ", arg)));
-          };
+        return Err(Error::Prepare(format!("value for '{}...' is not a list ", arg)));
+      };
       if let serde_json::Value::Array(arr) = type_wrapper.into_inner() {
         bound_args.extend(
           arr

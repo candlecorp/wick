@@ -68,10 +68,10 @@ pub(super) async fn handle(
         Ok(b) => {
           let bytes = b.join(&0);
           trace!(?bytes, "http:codec:json:bytes");
-          let Ok(value) : Result<Value,_> = serde_json::from_slice(&bytes) else {
-                let _ = tx.error(wick_packet::Error::component_error("Could not decode body as JSON"));
-                return;
-              };
+          let Ok(value): Result<Value, _> = serde_json::from_slice(&bytes) else {
+            let _ = tx.error(wick_packet::Error::component_error("Could not decode body as JSON"));
+            return;
+          };
           let _ = tx.send(Packet::encode("body", value));
         }
         Err(e) => {
@@ -129,7 +129,7 @@ pub(super) async fn handle_request_middleware(
     Err(e) => return Err(HttpError::InvalidPreRequestResponse(e.to_string())),
   };
 
-  let Some(packet) = packets.into_iter().find(|p|p.has_data()) else {
+  let Some(packet) = packets.into_iter().find(|p| p.has_data()) else {
     return Err(HttpError::PreRequestResponseNoData);
   };
 
@@ -178,8 +178,8 @@ pub(super) async fn handle_response_middleware(
     Err(e) => return Err(HttpError::InvalidPostRequestResponse(e.to_string())),
   };
 
-  let Some(packet) = packets.into_iter().find(|p|p.has_data()) else {
-      return Err(HttpError::PostRequestResponseNoData);
+  let Some(packet) = packets.into_iter().find(|p| p.has_data()) else {
+    return Err(HttpError::PostRequestResponseNoData);
   };
 
   if packet.port() == "response" {

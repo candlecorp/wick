@@ -39,9 +39,9 @@ pub(crate) async fn handle(
     .instrument(span.clone())
     .await?;
 
-  let Some(registry) = package.registry_mut() else  {
-      span.in_scope(||error!("No registry provided in package"));
-      return Err(anyhow!("No registry provided in package"));
+  let Some(registry) = package.registry_mut() else {
+    span.in_scope(|| error!("No registry provided in package"));
+    return Err(anyhow!("No registry provided in package"));
   };
 
   if let Some(reg_override) = opts.registry {

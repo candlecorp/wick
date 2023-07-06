@@ -127,20 +127,26 @@ fn gen_signature(
   let mut signature = OperationSignature::new(id);
   signature = signature.add_input(DISCRIMINANT, Type::Object);
   let Some(default_op_sig) = get_op_signature(&config.default, parent_schematic, graph, handlers) else {
-    panic!("{}",log(format!(
-      "Invalid switch configuration: default operation '{}' not found.",
-      config.default
-    )));
+    panic!(
+      "{}",
+      log(format!(
+        "Invalid switch configuration: default operation '{}' not found.",
+        config.default
+      ))
+    );
   };
   let case_ops = config
     .cases
     .iter()
     .map(|case| {
       let Some(op_sig) = get_op_signature(&case.case_do, parent_schematic, graph, handlers) else {
-        panic!("{}",log(format!(
-          "Invalid switch configuration: case operation '{}' not found",
-          case.case_do
-        )));
+        panic!(
+          "{}",
+          log(format!(
+            "Invalid switch configuration: case operation '{}' not found",
+            case.case_do
+          ))
+        );
       };
       op_sig
     })
@@ -496,7 +502,10 @@ impl Operation for Op {
         }
 
         let Some(incoming_input) = input_streams.get(packet.port()) else {
-          warn!(port=packet.port(),"switch:stream: received packet on unrecognized input port");
+          warn!(
+            port = packet.port(),
+            "switch:stream: received packet on unrecognized input port"
+          );
           continue;
         };
 

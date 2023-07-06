@@ -7,13 +7,10 @@ use flow_component::SharedComponent;
 // use std::sync::Arc;
 use tokio::signal;
 use tokio::sync::mpsc::Sender;
+use tracing::{debug, info, warn};
 
 use crate::options::Options;
 pub(crate) type Result<T> = std::result::Result<T, crate::error::CliError>;
-
-#[cfg(not(feature = "mesh"))]
-#[derive(Debug, Copy, Clone)]
-pub struct Mesh(); // Dummy struct if "mesh" feature is not enabled
 
 #[cfg(feature = "reflection")]
 pub(crate) const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("../../wick-rpc/src/generated/descriptors.bin");
@@ -108,7 +105,6 @@ pub async fn start_server(collection: SharedComponent, opts: Option<Options>) ->
   Ok(ServerState {
     id: opts.id,
     rpc: ServerControl::maybe_new(rpc_addr),
-    // mesh,
   })
 }
 

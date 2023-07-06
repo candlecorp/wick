@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 // mod serialize;
 // mod wrapper;
 use bb8::Pool;
@@ -28,7 +30,8 @@ pub(crate) async fn connect(_config: SqlComponentConfig, addr: &Url) -> Result<P
   let mgr = bb8_tiberius::ConnectionManager::new(config);
 
   let pool = bb8::Pool::builder()
-    .max_size(5)
+    .max_size(20)
+    .connection_timeout(Duration::from_secs(30))
     .build(mgr)
     .await
     .map_err(|e| Error::Pool(e.to_string()))?;

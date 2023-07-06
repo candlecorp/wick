@@ -250,10 +250,11 @@ mod test {
       .request("logger", None, stream, InherentData::unsafe_default())
       .await?;
 
-    let mut messages: Vec<_> = stream.collect().await;
-    assert_eq!(messages.len(), 2);
-    messages.pop();
-    let output = messages.pop().unwrap().unwrap();
+    let mut packets: Vec<_> = stream.collect().await;
+    println!("packets: {:#?}", packets);
+    assert_eq!(packets.len(), 2);
+    packets.pop();
+    let output = packets.pop().unwrap().unwrap();
 
     assert_eq!(output, Packet::encode("output", passed_data));
     host.stop().await;

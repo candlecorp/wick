@@ -154,7 +154,7 @@ impl RestHandler {
         continue;
       }
       let Some((path_params, query_params)) = route.route.compare(path, request.uri().query())? else {
-        continue
+        continue;
       };
       let uri = request.uri().clone();
       span.in_scope(

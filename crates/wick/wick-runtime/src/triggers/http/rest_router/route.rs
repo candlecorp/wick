@@ -142,7 +142,7 @@ impl Route {
 
           if let Type::List { ty } = &param.ty {
             let Ok(value) = ty.coerce_str(value) else {
-              warn!("Failed to coerce {} to {} for query param {}", value, param.ty,name);
+              warn!("Failed to coerce {} to {} for query param {}", value, param.ty, name);
               return Err(HttpError::InvalidParameter(param.name.clone()));
             };
 
@@ -164,7 +164,6 @@ impl Route {
           let Ok(value) = param.ty.coerce_str(value) else {
             warn!("Failed to coerce query param {} to {}", name, param.ty);
             return Err(HttpError::InvalidParameter(param.name.clone()));
-
           };
 
           query_params.push(param.clone().with_value(value));
