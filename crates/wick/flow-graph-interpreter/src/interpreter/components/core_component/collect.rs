@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use futures::FutureExt;
-use serde_json::Value;
+use serde_json::{json, Value};
 use tokio_stream::StreamExt;
 use wasmrs_rx::Observer;
 use wick_interface_types::{OperationSignature, Type};
@@ -51,25 +51,61 @@ impl Operation for Op {
 
     tokio::spawn(async move {
       let mut ports: HashMap<String, Vec<Value>> = context.config.inputs.iter().map(|n| (n.clone(), vec![])).collect();
-      ports.insert(Packet::FATAL_ERROR.to_owned(), vec![]);
+      let mut array_levels: HashMap<String, i16> = HashMap::new();
+
       while let Some(next) = invocation.packets.next().await {
-        let next = next.unwrap();
-        let port = next.port();
-        if next.is_done() || next.is_close_bracket() || next.is_open_bracket() {
+        if let Err(e) = next {
+          ports
+            .entry(Packet::FATAL_ERROR.to_owned())
+            .or_insert_with(Vec::new)
+            .push(json!({"error": e.to_string()}));
           continue;
         }
+
+        let next = next.unwrap();
+        let level = array_levels.entry(next.port().to_owned()).or_insert(0);
+        if next.is_fatal_error() {
+          ports
+            .entry(Packet::FATAL_ERROR.to_owned())
+            .or_insert_with(Vec::new)
+            .push(json!({"error": next.unwrap_err().msg()}));
+          continue;
+        }
+
+        let port = next.port();
+        if next.is_done() {
+          continue;
+        }
+
         let Some(value) = ports.get_mut(port) else {
           let _ = tx.send(Packet::err("output", "received value for invalid port"));
           return;
         };
 
-        value.push(
-          next
-            .to_json()
-            .as_object_mut()
-            .and_then(|o| o.remove("payload"))
-            .unwrap(),
-        );
+        if next.is_open_bracket() {
+          *level += 1;
+          value.push(Value::Array(vec![]));
+          continue;
+        }
+        if next.is_close_bracket() {
+          *level -= 0;
+          assert!(*level >= 0, "Received close bracket without open bracket");
+          continue;
+        }
+
+        let next = next
+          .to_json()
+          .as_object_mut()
+          .and_then(|o| o.remove("payload"))
+          .unwrap();
+
+        if *level > 0 {
+          // push a value onto the last array created by an open_bracket
+          let inner_array = get_inner_array(value.last_mut().unwrap(), *level - 1).unwrap();
+          inner_array.as_array_mut().unwrap().push(next);
+        } else {
+          value.push(next);
+        }
       }
       let _ = tx.send(Packet::encode("output", ports));
       let _ = tx.send(Packet::done("output"));
@@ -79,11 +115,26 @@ impl Operation for Op {
   }
 
   fn get_signature(&self, _config: Option<&Self::Config>) -> &OperationSignature {
-    panic!("Merge component has a dynamic signature");
+    panic!("{} operation has a dynamic signature", Self::ID);
   }
 
   fn input_names(&self, config: &Self::Config) -> Vec<String> {
     config.inputs.clone()
+  }
+}
+
+fn get_inner_array(value: &mut Value, depth: i16) -> Result<&mut Value, ComponentError> {
+  if depth == 0 {
+    return Ok(value);
+  }
+  match value {
+    Value::Array(ref mut array) => {
+      let inner = array
+        .last_mut()
+        .ok_or_else(|| ComponentError::message("Invalid structured in bracketed streams"))?;
+      get_inner_array(inner, depth - 1)
+    }
+    _ => Err(ComponentError::message("Value is not an array")),
   }
 }
 
@@ -93,7 +144,7 @@ impl RenderConfiguration for Op {
 
   fn decode_config(data: Option<Self::ConfigSource>) -> Result<Self::Config, ComponentError> {
     let config = data.ok_or_else(|| {
-      ComponentError::message("Merge component requires configuration, please specify configuration.")
+      ComponentError::message("Collect component requires configuration, please specify configuration.")
     })?;
 
     Ok(Self::Config {
@@ -119,8 +170,10 @@ mod test {
     let config = HashMap::from([("inputs".to_owned(), json!(inputs))]);
     let config = Op::decode_config(Some(config.into()))?;
     let mut stream = vec![
+      Packet::open_bracket("output_a"),
       Packet::encode("output_a", "hello"),
       Packet::encode("output_a", "hello2"),
+      Packet::close_bracket("output_a"),
       Packet::encode("output_b", 1000),
     ];
     stream.push(Packet::err("output_b", "Should collect errors too"));
@@ -141,9 +194,8 @@ mod test {
     let packet = packets.pop().unwrap()?;
     let actual = packet.decode_value()?;
     let expected = json!({
-      "output_a":[{"value":"hello"},{"value":"hello2"}],
+      "output_a":[[{"value":"hello"},{"value":"hello2"}]],
       "output_b": [{"value":1000}, {"error":"Should collect errors too"}],
-      "<error>": [],
     });
     assert_eq!(actual, expected);
 

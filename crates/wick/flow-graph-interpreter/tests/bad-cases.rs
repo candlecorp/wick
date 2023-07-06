@@ -42,7 +42,7 @@ async fn test_error() -> Result<()> {
 async fn test_timeout_done_noclose() -> Result<()> {
   test_failure(
     "./tests/manifests/v0/bad-cases/timeout-done-noclose.yaml",
-    "component failed to produce output",
+    "operation produced no output, likely due to a panic or misconfiguration",
   )
   .await
 }
@@ -51,7 +51,7 @@ async fn test_timeout_done_noclose() -> Result<()> {
 async fn test_noimpl() -> Result<()> {
   test_failure(
     "./tests/manifests/v0/bad-cases/noimpl.yaml",
-    "component failed to produce output",
+    "operation produced no output, likely due to a panic or misconfiguration",
   )
   .await
 }

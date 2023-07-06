@@ -77,7 +77,7 @@ impl Operation for Op {
   }
 
   fn get_signature(&self, _config: Option<&Self::Config>) -> &OperationSignature {
-    panic!("Merge component has a dynamic signature");
+    panic!("{} operation has a dynamic signature", Self::ID);
   }
 
   fn input_names(&self, config: &Self::Config) -> Vec<String> {

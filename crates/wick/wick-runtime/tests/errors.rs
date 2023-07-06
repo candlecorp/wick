@@ -10,7 +10,10 @@ async fn panics() -> Result<()> {
     packet_stream!(("input", "input")),
     "panics",
     vec![
-      Packet::err("output", "component failed to produce output"),
+      Packet::err(
+        "output",
+        "operation produced no output, likely due to a panic or misconfiguration",
+      ),
       Packet::done("output"),
     ],
   )

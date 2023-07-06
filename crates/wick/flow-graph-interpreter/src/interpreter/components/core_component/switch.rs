@@ -1,13 +1,26 @@
 use std::collections::{HashMap, VecDeque};
+use std::hash::Hash;
+use std::sync::atomic::{AtomicBool, AtomicI32, AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
+use flow_component::{ComponentError, Context, Operation, RenderConfiguration, RuntimeCallback};
 use futures::{FutureExt, StreamExt};
 use parking_lot::Mutex;
+use seeded_random::Seed;
 use serde_json::Value;
+use tokio::task::JoinHandle;
 use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, Type};
-use wick_packet::{ComponentReference, Entity, Invocation, PacketSender, PacketStream, RuntimeConfig};
+use wick_packet::{
+  ComponentReference,
+  Entity,
+  InherentData,
+  Invocation,
+  Packet,
+  PacketSender,
+  PacketStream,
+  RuntimeConfig,
+};
 
 use crate::graph::types::{Network, Schematic};
 use crate::interpreter::components::schematic_component::SelfComponent;
@@ -176,6 +189,217 @@ impl Op {
   }
 }
 
+#[derive(Default)]
+struct InputStream {
+  level: AtomicI32,
+  curr_index: AtomicUsize,
+  done: AtomicBool,
+}
+
+impl InputStream {
+  fn level(&self) -> i32 {
+    self.level.load(Ordering::Relaxed)
+  }
+
+  fn inc_curr_index(&self) {
+    let last = self.curr_index.fetch_add(1, Ordering::Relaxed);
+    trace!(last, "switch:case: done with condition");
+  }
+
+  fn curr_index(&self) -> usize {
+    self.curr_index.load(Ordering::Relaxed)
+  }
+
+  fn inc_level(&self) {
+    let last = self.level.fetch_add(1, Ordering::Relaxed);
+    trace!(level = last + 1, "switch:case: incrementing input level");
+  }
+
+  fn dec_level(&self) {
+    let last = self.level.fetch_sub(1, Ordering::Relaxed);
+    trace!(level = last - 1, "switch:case: decrementing input level");
+  }
+
+  // fn is_done(&self) -> bool {
+  //   self.done.load(Ordering::Relaxed)
+  // }
+
+  fn set_done(&self) {
+    self.done.store(true, Ordering::Relaxed);
+  }
+}
+
+#[derive(Default)]
+struct SwitchRouter {
+  conditions: VecDeque<Condition>,
+  buffer: VecDeque<Packet>,
+  raw_buffer: VecDeque<Packet>,
+  max: Option<usize>,
+}
+
+impl SwitchRouter {
+  fn pop_buffer(&mut self) -> Option<Packet> {
+    self.buffer.pop_front()
+  }
+
+  fn buffer_raw(&mut self, packet: Packet) {
+    self.raw_buffer.push_back(packet);
+  }
+
+  fn push(&mut self, condition: Condition) {
+    self.conditions.push_back(condition);
+  }
+
+  fn condition_level(&self, index: usize) -> i32 {
+    self.conditions.get(index).map_or(0, |c| c.level)
+  }
+
+  fn get(&self, index: usize) -> Option<&Condition> {
+    self.conditions.get(index)
+  }
+
+  fn freeze(&mut self) {
+    self.max = Some(self.conditions.len() - 1);
+  }
+
+  fn is_ready(&self, index: usize) -> bool {
+    self.get(index).is_some()
+  }
+
+  fn can_handle(&self, index: usize) -> CanHandle {
+    if self.is_ready(index) {
+      CanHandle::Yes
+    } else if !self.is_frozen() {
+      CanHandle::Maybe
+    } else {
+      CanHandle::No
+    }
+  }
+
+  fn is_frozen(&self) -> bool {
+    self.max.is_some()
+  }
+
+  fn handle_packet(&mut self, index: usize, packet: Packet) {
+    let condition = self.get(index).unwrap(); // unwrap ok because we check is_ready first.
+    trace!(condition=%condition.value, ?packet, "switch:case: routing packet to case stream");
+    condition.handler.send(packet);
+  }
+
+  async fn cleanup(self, fields: &[Field], tx: &PacketSender) {
+    for mut condition in self.conditions {
+      debug!(case=?condition.value, "switch:case: finishing case stream");
+      condition.handler.finish(fields, tx).await;
+    }
+  }
+
+  async fn finish(&mut self, index: usize, fields: &[Field], tx: &PacketSender) {
+    if let Some(condition) = self.conditions.get_mut(index) {
+      debug!(case=?condition.value, "switch:case: finishing case stream");
+      condition.handler.finish(fields, tx).await;
+    }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum CanHandle {
+  Yes,
+  No,
+  Maybe,
+}
+
+#[allow(unused)]
+struct RouteHandler {
+  tx: Option<PacketSender>,
+  rx: Option<PacketStream>,
+  done: Arc<AtomicBool>,
+  task: JoinHandle<()>,
+}
+
+#[allow(unused)]
+impl RouteHandler {
+  fn new(sender: PacketSender, receiver: PacketStream, done: Arc<AtomicBool>, task: JoinHandle<()>) -> Self {
+    Self {
+      tx: Some(sender),
+      rx: Some(receiver),
+      done,
+      task,
+    }
+  }
+
+  fn is_done(&self) -> bool {
+    self.done.load(Ordering::Relaxed)
+  }
+
+  fn send(&self, packet: Packet) {
+    let _ = self.tx.as_ref().unwrap().send(packet);
+  }
+
+  async fn finish(&mut self, fields: &[Field], tx: &PacketSender) {
+    if let Some(tx) = self.tx.take() {
+      for field in fields {
+        debug!(input= %field.name,"switch:case: sending done to case stream");
+        let _ = tx.send(Packet::done(field.name()));
+      }
+    }
+    if let Some(mut rx) = self.rx.take() {
+      while let Some(packet) = rx.next().await {
+        debug!(?packet, "switch:case: draining case stream");
+        let _ = tx.send_result(packet);
+      }
+    }
+  }
+}
+
+#[derive(Debug, Hash, Clone, PartialEq, Eq)]
+enum CaseId<'a> {
+  Match(CaseValue<'a>),
+  Default,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CaseValue<'a>(&'a Value);
+
+impl<'a> Hash for CaseValue<'a> {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    hash_value(self.0, state);
+  }
+}
+
+fn hash_value<H: std::hash::Hasher>(val: &Value, state: &mut H) {
+  match val {
+    Value::Null => None::<()>.hash(state),
+    Value::Bool(v) => v.hash(state),
+    Value::Number(n) => n.hash(state),
+    Value::String(v) => v.hash(state),
+    Value::Array(v) => {
+      for el in v {
+        hash_value(el, state);
+      }
+    }
+    Value::Object(v) => {
+      for (k, v) in v {
+        k.hash(state);
+        hash_value(v, state);
+      }
+    }
+  }
+}
+
+#[allow(unused)]
+struct Condition {
+  level: i32,
+  value: Value,
+  handler: RouteHandler,
+}
+
+impl Condition {
+  fn new(value: Value, level: i32, handler: RouteHandler) -> Self {
+    trace!(%value,level,"switch:case: creating condition");
+    Self { level, value, handler }
+  }
+}
+
 impl Operation for Op {
   const ID: &'static str = "switch";
   type Config = Config;
@@ -186,105 +410,248 @@ impl Operation for Op {
     mut invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let (tx, rx) = invocation.make_response();
+    let (root_tx, root_rx) = invocation.make_response();
 
     let default = context.config.default.clone();
     let callback = context.callback;
+
     tokio::spawn(async move {
-      let mut condition = None;
-      let mut held_packets = VecDeque::new();
-      let mut router: HashMap<String, PacketSender> = HashMap::new();
-      let origin = Entity::operation(super::CoreComponent::ID, Op::ID);
+      // the substream level the condition was found at.
+      let mut condition_level = 0;
+      let mut router = SwitchRouter::default();
+      let mut root_stream = invocation.eject_stream();
+
+      let input_streams: HashMap<String, InputStream> = context
+        .config
+        .inputs
+        .iter()
+        .map(|i| (i.name.clone(), InputStream::default()))
+        .collect();
+
+      let rng = seeded_random::Random::from_seed(Seed::unsafe_new(invocation.seed()));
+
+      warn!(state = "starting", "switch:stream");
       'outer: loop {
-        let packet = if condition.is_some() {
-          match held_packets.pop_front() {
-            Some(p) => p,
-            None => match invocation.packets.next().await {
-              Some(Ok(p)) => p,
-              Some(Err(e)) => {
-                let _ = tx.error(e);
-                continue;
-              }
-              None => {
-                break 'outer;
-              }
-            },
+        // if we don't yet have any condition, hold on to our input packets.
+        let packet = match router.pop_buffer() {
+          Some(p) => Some(Ok(p)),
+          None => root_stream.next().await,
+        };
+
+        let packet = match packet {
+          Some(Ok(p)) => p,
+          Some(Err(e)) => {
+            let _ = root_tx.error(e);
+            continue;
           }
-        } else {
-          match invocation.packets.next().await {
-            Some(Ok(p)) => p,
-            Some(Err(e)) => {
-              let _ = tx.error(e);
-              continue;
-            }
-            None => {
+          None => {
+            if router.raw_buffer.is_empty() {
               break 'outer;
             }
+            router.buffer.extend(router.raw_buffer.drain(0..));
+            continue;
           }
         };
 
+        trace!(?packet, "switch:stream:packet");
+
+        // if this is a packet on the DISCRIMINANT port, decode it and set the condition.
         if packet.port() == DISCRIMINANT {
           if packet.has_data() {
-            condition = Some(packet.decode_value().unwrap());
+            let condition = packet.decode_value().unwrap();
+            let case = context.config.cases.iter().find(|case| case.case == condition);
+            let (_case, op, op_config) = case.map_or_else(
+              || {
+                trace!(case = "default", condition = %condition, op = default, "switch:case:condition");
+                (CaseId::Default, &default, None)
+              },
+              |case| {
+                trace!(case = %case.case, condition = %condition, op = case.case_do, "switch:case:condition");
+                (CaseId::Match(CaseValue(&case.case)), &case.case_do, case.with.clone())
+              },
+            );
+
+            router.push(Condition::new(
+              condition,
+              condition_level,
+              new_route_handler(
+                path_to_entity(op),
+                &invocation,
+                InherentData::new(rng.gen(), invocation.timestamp()),
+                callback.clone(),
+                op_config,
+              )(),
+            ));
+            // Now that we have a new condition, re-process all buffered packets.
+            router.buffer.extend(router.raw_buffer.drain(0..));
+          } else if packet.is_done() {
+            router.freeze();
+          } else if packet.is_open_bracket() {
+            condition_level += 1;
+          } else if packet.is_close_bracket() {
+            condition_level -= 1;
+            assert!(condition_level >= 0, "Received close bracket without open bracket");
           }
           continue;
         }
-        let Some(condition) = &condition else {
-          held_packets.push_back(packet);
-          tokio::task::yield_now().await;
+
+        let Some(incoming_input) = input_streams.get(packet.port()) else {
+          warn!(port=packet.port(),"switch: received packet on unrecognized input port");
           continue;
         };
-        let case = context.config.cases.iter().find(|case| case.case == *condition);
 
-        let (op, op_config) = case.map_or_else(
-          || {
-            trace!(case = "default", op = default, "switch:case");
-            (&default, None)
-          },
-          |case| {
-            trace!(case = %case.case, op = case.case_do, "switch:case");
-            (&case.case_do, case.with.clone())
-          },
-        );
-        trace!(operation = op, "core:switch:route");
-        let span = invocation.span.clone();
-        let inherent = invocation.inherent.next();
-        let stream = router.entry(op.clone()).or_insert_with(|| {
-          let target = path_to_entity(op).unwrap(); // unwrap ok because the config has been pre-validated.
-          let op_id = target.operation_id().to_owned();
-          let (route_tx, route_rx) = invocation.make_response();
-          let link = ComponentReference::new(origin.clone(), target);
-          let tx = tx.clone();
-          let callback = callback.clone();
-          tokio::spawn(async move {
-            match callback(link, op_id, route_rx, inherent, op_config, &span).await {
-              Ok(mut call_rx) => {
-                while let Some(packet) = call_rx.next().await {
-                  let _ = tx.send_result(packet);
-                }
+        // if this is a done packet on an input port, then mark that input as done.
+        if packet.is_done() {
+          trace!(port = packet.port(), "switch:stream: input stream done");
+          incoming_input.set_done();
+          continue;
+        }
+
+        match router.can_handle(incoming_input.curr_index()) {
+          CanHandle::No => {
+            debug!(input = packet.port(), "switch:root: routing packet to root stream");
+            for output in context.config.outputs.iter() {
+              let _ = root_tx.send(packet.clone().set_port(output.name()));
+            }
+            continue;
+          }
+          CanHandle::Maybe => {
+            debug!(
+              input = packet.port(),
+              index = incoming_input.curr_index(),
+              "switch:case: buffering packet"
+            );
+            router.buffer_raw(packet);
+            continue;
+          }
+          _ => {}
+        }
+
+        // if this is an open bracket, then we need to decide where to route it.
+        if packet.is_open_bracket() {
+          incoming_input.inc_level();
+
+          // if we're more nested than the condition level, route it to the case handler.
+          if incoming_input.level() > router.condition_level(incoming_input.curr_index()) {
+            router.handle_packet(incoming_input.curr_index(), packet);
+          } else {
+            // otherwise, send the packet to the root stream.
+            debug!("switch:root: routing open bracket to root stream");
+            for output in context.config.outputs.iter() {
+              let _ = root_tx.send(Packet::open_bracket(output.name()));
+            }
+          }
+          continue;
+        }
+
+        // if this is a close bracket, we need to decide if we're still routing it to the case stream.
+        if packet.is_close_bracket() {
+          incoming_input.dec_level();
+          let level = incoming_input.level();
+          let curr_index = incoming_input.curr_index();
+          let condition_level = router.condition_level(curr_index);
+
+          match level.cmp(&condition_level) {
+            std::cmp::Ordering::Greater => {
+              // If we're more nested than the condition level, route it to the case.
+              router.handle_packet(curr_index, packet);
+            }
+            std::cmp::Ordering::Equal => {
+              // If we're back at the condition level, then we're done with this condition.
+              router.handle_packet(curr_index, packet);
+              incoming_input.inc_curr_index();
+              if input_streams.iter().all(|(_, v)| v.curr_index() > curr_index) {
+                router.finish(curr_index, &context.config.inputs, &root_tx).await;
               }
-              Err(e) => {
-                let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
+            }
+            std::cmp::Ordering::Less => {
+              // Otherwise, send it to the root stream.
+              debug!("switch:root: routing close bracket to root stream");
+              for output in context.config.outputs.iter() {
+                let _ = root_tx.send(Packet::close_bracket(output.name()));
               }
-            };
-          });
-          route_tx
-        });
-        let _ = stream.send(packet);
+            }
+          }
+
+          continue;
+        }
+
+        // otherwise, send the packet to the case stream.
+        router.handle_packet(incoming_input.curr_index(), packet);
       }
+
+      trace!("switch:stream: all inputs done and buffers drained");
+
+      router.cleanup(&context.config.inputs, &root_tx).await;
+
+      // Send done packets for all defined outputs to our root stream.
+      for output in context.config.outputs.iter() {
+        debug!(port = output.name(), "switch:root: sending done to root stream");
+        let _ = root_tx.send(Packet::done(output.name()));
+      }
+
+      warn!(state = "done", "switch:stream");
     });
 
-    async move { Ok(rx) }.boxed()
+    async move { Ok(root_rx) }.boxed()
   }
 
   fn get_signature(&self, _config: Option<&Self::Config>) -> &OperationSignature {
-    panic!("Merge component has a dynamic signature");
+    panic!("{} operation has a dynamic signature", Self::ID);
   }
 
   fn input_names(&self, config: &Self::Config) -> Vec<String> {
     let mut context: Vec<_> = config.inputs.iter().map(|n| n.name.clone()).collect();
     context.push(DISCRIMINANT.to_owned());
     context
+  }
+}
+
+fn new_route_handler(
+  target: Entity,
+  invocation: &Invocation,
+  inherent: InherentData,
+  callback: Arc<RuntimeCallback>,
+  op_config: Option<RuntimeConfig>,
+) -> impl FnOnce() -> RouteHandler {
+  let op_id = target.operation_id().to_owned();
+
+  let (outer_tx, outer_rx) = invocation.make_response();
+  let (inner_tx, inner_rx) = invocation.make_response();
+  let compref = ComponentReference::new(invocation.target.clone(), target);
+  trace!(%compref,"switch:case: route handler created");
+
+  let done = Arc::new(AtomicBool::new(false));
+  let inner_done = done.clone();
+  let span = invocation.span.clone();
+  || {
+    let handle = tokio::spawn(async move {
+      let call = compref.to_string();
+      trace!(invocation = %call, state="starting", "switch:case:task");
+      match callback(compref, op_id, inner_rx, inherent, op_config, &span).await {
+        Ok(mut inv_stream) => {
+          trace!(invocation = %call, state="starting", "switch:case:stream");
+          while let Some(packet) = inv_stream.next().await {
+            trace!(invocation = %call, ?packet, "switch:case:stream");
+
+            if let Ok(packet) = &packet {
+              if packet.is_done() {
+                break;
+              }
+            }
+            let _ = outer_tx.send_result(packet);
+          }
+          trace!(invocation = %call, state="done", "switch:case:stream");
+        }
+        Err(e) => {
+          warn!(err=%e, "switch:case:error");
+          let _ = outer_tx.error(wick_packet::Error::component_error(e.to_string()));
+        }
+      };
+      trace!(invocation = %call, state="done", "switch:case:task");
+      inner_done.store(true, Ordering::Relaxed);
+    });
+    RouteHandler::new(inner_tx, outer_rx, done, handle)
   }
 }
 
@@ -297,7 +664,10 @@ impl RenderConfiguration for Op {
       ComponentError::message("Switch component requires configuration, please specify configuration.")
     })?;
     Ok(Self::Config {
-      inputs: config.coerce_key("context").map_err(ComponentError::new)?,
+      inputs: config
+        .coerce_key("context")
+        .or_else(|_| config.coerce_key("inputs"))
+        .map_err(ComponentError::new)?,
       outputs: config.coerce_key("outputs").map_err(ComponentError::new)?,
       cases: config.coerce_key("cases").map_err(ComponentError::new)?,
       default: config.coerce_key("default").map_err(ComponentError::new)?,

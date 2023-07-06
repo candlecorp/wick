@@ -5,7 +5,7 @@ mod test;
 use anyhow::Result;
 use flow_component::Component;
 use pretty_assertions::assert_eq;
-use serde_json::json;
+use serde_json::{json, Value};
 use wick_packet::{packets, Entity, Packet, RuntimeConfig};
 
 #[test_logger::test(tokio::test)]
@@ -187,6 +187,282 @@ async fn test_switch_bool_default() -> Result<()> {
   .await
 }
 
+#[test_logger::test(tokio::test)]
+async fn test_switch_case_streams() -> Result<()> {
+  test_config(
+    "./tests/manifests/v1/core-switch-streams.yaml",
+    None,
+    None,
+    vec![
+      Packet::encode("input", "first"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "first_message_1"),
+      Packet::encode("message", "first_message_2"),
+      Packet::encode("message", "first_message_3"),
+      Packet::close_bracket("message"),
+      Packet::encode("input", "second"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "second_message_1"),
+      Packet::encode("message", "second_message_2"),
+      Packet::encode("message", "second_message_3"),
+      Packet::close_bracket("message"),
+      Packet::encode("input", "neither"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "default_message_1"),
+      Packet::encode("message", "default_message_2"),
+      Packet::encode("message", "default_message_3"),
+      Packet::close_bracket("message"),
+      Packet::done("input"),
+      Packet::done("message"),
+    ],
+    vec![
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"first_message_1"},
+            {"value":"first_message_2"},
+            {"value":"first_message_3"},
+          ]]
+        }),
+      ),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"SECOND_MESSAGE_1"},
+            {"value":"SECOND_MESSAGE_2"},
+            {"value":"SECOND_MESSAGE_3"},
+          ]]
+        }),
+      ),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"1_egassem_tluafed"},
+            {"value":"2_egassem_tluafed"},
+            {"value":"3_egassem_tluafed"},
+          ]]
+        }),
+      ),
+      Packet::done("output"),
+    ],
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_switch_case_streams_early_matches() -> Result<()> {
+  test_config(
+    "./tests/manifests/v1/core-switch-streams.yaml",
+    None,
+    None,
+    vec![
+      Packet::open_bracket("message"),
+      Packet::open_bracket("input"),
+      Packet::encode("input", "first"),
+      Packet::encode("input", "second"),
+      Packet::encode("input", "neither"),
+      Packet::close_bracket("input"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "first_message_1"),
+      Packet::encode("message", "first_message_2"),
+      Packet::encode("message", "first_message_3"),
+      Packet::close_bracket("message"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "second_message_1"),
+      Packet::encode("message", "second_message_2"),
+      Packet::encode("message", "second_message_3"),
+      Packet::close_bracket("message"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "default_message_1"),
+      Packet::encode("message", "default_message_2"),
+      Packet::encode("message", "default_message_3"),
+      Packet::close_bracket("message"),
+      Packet::close_bracket("message"),
+      Packet::done("input"),
+      Packet::done("message"),
+    ],
+    vec![
+      Packet::open_bracket("output"),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"first_message_1"},
+            {"value":"first_message_2"},
+            {"value":"first_message_3"},
+          ]]
+        }),
+      ),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"SECOND_MESSAGE_1"},
+            {"value":"SECOND_MESSAGE_2"},
+            {"value":"SECOND_MESSAGE_3"},
+          ]]
+        }),
+      ),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"1_egassem_tluafed"},
+            {"value":"2_egassem_tluafed"},
+            {"value":"3_egassem_tluafed"},
+          ]]
+        }),
+      ),
+      Packet::close_bracket("output"),
+      Packet::done("output"),
+    ],
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_switch_case_streams_empty_substreams() -> Result<()> {
+  test_config(
+    "./tests/manifests/v1/core-switch-streams.yaml",
+    None,
+    None,
+    vec![
+      Packet::open_bracket("message"),
+      Packet::open_bracket("input"),
+      Packet::encode("input", "first"),
+      Packet::encode("input", "second"),
+      Packet::encode("input", "neither"),
+      Packet::close_bracket("input"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "first_message_1"),
+      Packet::encode("message", "first_message_2"),
+      Packet::encode("message", "first_message_3"),
+      Packet::close_bracket("message"),
+      Packet::open_bracket("message"),
+      Packet::close_bracket("message"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "default_message_1"),
+      Packet::encode("message", "default_message_2"),
+      Packet::encode("message", "default_message_3"),
+      Packet::close_bracket("message"),
+      Packet::close_bracket("message"),
+      Packet::done("input"),
+      Packet::done("message"),
+    ],
+    vec![
+      Packet::open_bracket("output"),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"first_message_1"},
+            {"value":"first_message_2"},
+            {"value":"first_message_3"},
+          ]]
+        }),
+      ),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+          ]]
+        }),
+      ),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"1_egassem_tluafed"},
+            {"value":"2_egassem_tluafed"},
+            {"value":"3_egassem_tluafed"},
+          ]]
+        }),
+      ),
+      Packet::close_bracket("output"),
+      Packet::done("output"),
+    ],
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_switch_case_multi_input_streams() -> Result<()> {
+  test_config(
+    "./tests/manifests/v1/core-switch-multi-input-streams.yaml",
+    None,
+    None,
+    vec![
+      Packet::open_bracket("name"),
+      Packet::open_bracket("greeting"),
+      Packet::open_bracket("input"),
+      Packet::encode("input", "first"),
+      Packet::encode("input", "second"),
+      Packet::encode("input", "neither"),
+      Packet::close_bracket("input"),
+      Packet::open_bracket("greeting"),
+      Packet::encode("greeting", "Hello, "),
+      Packet::encode("greeting", "Bonjour, "),
+      Packet::encode("greeting", "Guten tag, "),
+      Packet::close_bracket("greeting"),
+      Packet::open_bracket("name"),
+      Packet::encode("name", "aaa123"),
+      Packet::encode("name", "bbb123"),
+      Packet::encode("name", "ccc123"),
+      Packet::close_bracket("name"),
+      Packet::open_bracket("greeting"),
+      Packet::encode("greeting", "Hola, "),
+      Packet::encode("greeting", "Hi, "),
+      Packet::encode("greeting", "Goddag, "),
+      Packet::close_bracket("greeting"),
+      Packet::open_bracket("name"),
+      Packet::encode("name", "ddd123"),
+      Packet::encode("name", "eee123"),
+      Packet::encode("name", "fff123"),
+      Packet::close_bracket("name"),
+      Packet::open_bracket("greeting"),
+      Packet::encode("greeting", "Salut, "),
+      Packet::encode("greeting", "Aloha, "),
+      Packet::encode("greeting", "Ciao, "),
+      Packet::close_bracket("greeting"),
+      Packet::open_bracket("name"),
+      Packet::encode("name", "ggg123"),
+      Packet::encode("name", "hhh123"),
+      Packet::encode("name", "iii123"),
+      Packet::close_bracket("name"),
+      Packet::close_bracket("name"),
+      Packet::close_bracket("greeting"),
+      Packet::done("input"),
+      Packet::done("name"),
+      Packet::done("greeting"),
+    ],
+    vec![
+      Packet::open_bracket("output"),
+      Packet::open_bracket("output"),
+      Packet::open_bracket("output"),
+      Packet::encode("output", "Hello, AAA123"),
+      Packet::encode("output", "Bonjour, BBB123"),
+      Packet::encode("output", "Guten tag, CCC123"),
+      Packet::close_bracket("output"),
+      Packet::open_bracket("output"),
+      Packet::encode("output", "Hola, 321ddd"),
+      Packet::encode("output", "Hi, 321eee"),
+      Packet::encode("output", "Goddag, 321fff"),
+      Packet::close_bracket("output"),
+      Packet::open_bracket("output"),
+      Packet::encode("output", "Salut, 321GGG"),
+      Packet::encode("output", "Aloha, 321HHH"),
+      Packet::encode("output", "Ciao, 321III"),
+      Packet::close_bracket("output"),
+      Packet::close_bracket("output"),
+      Packet::close_bracket("output"),
+    ],
+  )
+  .await
+}
+
 async fn first_packet_test(file: &str, packets: Vec<Packet>, expected: &str) -> Result<()> {
   first_packet_test_op("test", file, packets, expected).await
 }
@@ -212,7 +488,7 @@ async fn first_packet_test_config(
   root_config: Option<RuntimeConfig>,
   config: Option<RuntimeConfig>,
   packets: Vec<Packet>,
-  expected: &str,
+  expected: impl Into<Value>,
 ) -> Result<()> {
   let (interpreter, mut outputs) = test::base_setup(file, Entity::local("test"), packets, root_config, config).await?;
 
@@ -220,73 +496,39 @@ async fn first_packet_test_config(
 
   let _ = outputs.pop();
   let wrapper = outputs.pop().unwrap().unwrap();
-  let actual: String = wrapper.decode()?;
-  assert_eq!(actual, expected);
+  let actual: Value = wrapper.decode()?;
+  assert_eq!(actual, expected.into());
   interpreter.shutdown().await?;
 
   Ok(())
 }
 
-// #[test_logger::test(tokio::test)]
-// async fn test_switch_err() -> Result<()> {
-//   error_test(
-//     "./tests/manifests/v1/core-switch.yaml",
-//     Packet::err("match", "Something bad"),
-//     "hello WORLD",
-//   )
-//   .await
-// }
-// async fn error_test(file: &str, packet: Packet, expected: &str) -> Result<()> {
-//   let (interpreter, mut outputs) = test::common_setup(file, "test", vec![packet]).await?;
+async fn test_config(
+  file: &str,
+  root_config: Option<RuntimeConfig>,
+  config: Option<RuntimeConfig>,
+  packets: Vec<Packet>,
+  expected: Vec<Packet>,
+) -> Result<()> {
+  let (interpreter, outputs) = test::base_setup(file, Entity::local("test"), packets, root_config, config).await?;
 
-//   assert_eq!(outputs.len(), 2);
+  for (i, expected) in expected.into_iter().enumerate() {
+    let actual_packet = outputs.get(i).cloned().unwrap().unwrap();
+    println!("actual[{}] raw: {:?}", i, actual_packet);
+    println!("expected[{}] raw: {:?}", i, expected);
 
-//   let _ = outputs.pop();
-//   let wrapper = outputs.pop().unwrap().unwrap();
-//   let actual: String = wrapper.deserialize()?;
-//   assert_eq!(actual, expected);
-//   interpreter.shutdown().await?;
+    if actual_packet.has_data() {
+      let actual: Value = actual_packet.decode()?;
+      let expected: Value = expected.decode()?;
+      println!("actual[{}] value: {}", i, actual);
+      println!("expected[{}] value: {}", i, expected);
+      assert_eq!(actual, expected);
+    } else {
+      assert_eq!(actual_packet, expected);
+    }
+  }
 
-//   Ok(())
-// }
-// #[test_logger::test(tokio::test)]
-// async fn test_merge() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/core/merge.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-//   let mut inputs = PacketMap::default();
-//   inputs.insert("schem_one", "first value");
-//   inputs.insert("schem_two", 2u8);
-//   inputs.insert("schem_three", &["alpha".to_owned(), "beta".to_owned()]);
+  interpreter.shutdown().await?;
 
-//   let invocation = Invocation::new_test("merge", Entity::local("test"), inputs, None);
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let mut outputs: Vec<_> = stream.drain().await;
-//   println!("{:#?}", outputs);
-
-//   let wrapper = outputs.pop().unwrap();
-
-//   #[derive(serde::Deserialize, PartialEq, Debug)]
-//   struct Merged {
-//     one: String,
-//     two: i32,
-//     three: Vec<String>,
-//   }
-
-//   let result: Merged = wrapper.deserialize()?;
-
-//   assert_eq!(
-//     result,
-//     Merged {
-//       one: "first value".to_owned(),
-//       two: 2,
-//       three: vec!["alpha".to_owned(), "beta".to_owned()]
-//     }
-//   );
-//   interpreter.shutdown().await?;
-
-//   Ok(())
-// }
+  Ok(())
+}

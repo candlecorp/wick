@@ -6,10 +6,10 @@ component:
   operations:
     - name: test
       uses:
-        - name: switch
+        - name: S
           operation: core::switch
           with:
-            context:
+            inputs:
               - name: message
                 type: object
             outputs:
@@ -17,30 +17,41 @@ component:
                 type: string
             cases:
               - case: first
-                do: self::test::uppercase
-              - case: second
                 do: self::test::collect
-            default: self::test::on_true
+              - case: second
+                do: self::test::uppercase
+            default: self::test::default
       flow:
-        - <>.input -> switch.match
-        - <>.message -> switch.message
-        - switch.output -> <>
+        - <>.input -> S.match
+        - <>.message -> S.message
+        - S.output -> <>
       operations:
-        - name: on_false
+        - name: uppercase
           uses:
-            - name: STATUS
-              operation: core::sender
+            - name: collect1
+              operation: core::collect
               with:
-                output: 'on_false'
+                inputs: ['message']
           flow:
-            - <>.message -> drop
-            - STATUS.output -> <>.output
-        - name: on_true
+            - <>.message -> test::uppercase[a].input
+            - a.output -> collect1.message
+            - collect1.output -> <>.output
+        - name: collect
           uses:
-            - name: STATUS
-              operation: core::sender
+            - name: collect2
+              operation: core::collect
               with:
-                output: 'on_true'
+                inputs: ['message']
           flow:
-            - <>.message -> drop
-            - STATUS.output -> <>.output
+            - <>.message -> collect2.message
+            - collect2.output -> <>.output
+        - name: default
+          uses:
+            - name: collect3
+              operation: core::collect
+              with:
+                inputs: ['message']
+          flow:
+            - <>.message -> test::reverse[a].input
+            - a.output -> collect3.message
+            - collect3.output -> <>.output

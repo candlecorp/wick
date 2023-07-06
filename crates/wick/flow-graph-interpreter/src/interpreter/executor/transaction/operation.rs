@@ -233,7 +233,7 @@ impl InstanceHandler {
       .unwrap_or(options.output_timeout);
 
     let span = invocation.following_span(trace_span!(
-      "operation exec", component = %format!("{} ({})", identifier, entity)
+      "operation:next", operation = %format!("{} ({})", identifier, entity)
     ));
 
     self.increment_pending();
@@ -304,13 +304,6 @@ impl InstanceHandler {
     Ok(())
   }
 
-  // pub(crate) fn clone_buffer(&self, port: &PortReference) -> Vec<Packet> {
-  //   match port.direction() {
-  //     PortDirection::In => self.inputs.get_handler(port).clone_buffer(),
-  //     PortDirection::Out => self.outputs.get_handler(port).clone_buffer(),
-  //   }
-  // }
-
   pub(crate) fn num_pending(&self) -> u32 {
     self.pending.load(Ordering::Relaxed)
   }
@@ -365,7 +358,7 @@ async fn output_handler(
           hanging.insert(port, message.port().to_owned());
         }
 
-        span.in_scope(|| trace!(port=%message.port(),"received output packet"));
+        span.in_scope(|| trace!(port=%message.port(),payload=?message.payload(),"received output packet"));
 
         instance.buffer_out(&port, message);
         channel.dispatch_data(tx_id, port).await;
@@ -384,7 +377,7 @@ async fn output_handler(
       }
       Ok(None) => {
         if num_received == 0 && instance.outputs().len() > 0 {
-          let err = "component failed to produce output";
+          let err = "operation produced no output, likely due to a panic or misconfiguration";
           span.in_scope(|| warn!(error = err, "stream complete"));
           channel
             .dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(err))
