@@ -17,7 +17,7 @@ wick-runtime = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-config = { workspace = true }
-wick-component-cli = { workspace = true }
+wick-component-cli = { workspace = true, features = ["grpc"] }
 wick-rpc = { workspace = true }
 wick-invocation-server = { workspace = true }
 tracing = { workspace = true }
@@ -44,3 +44,4 @@ tokio = { workspace = true, features = [
 ] }
 anyhow = { workspace = true }
 tokio-stream = { workspace = true }
+wick-packet = { workspace = true, features = ["test"] }

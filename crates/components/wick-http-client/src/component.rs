@@ -281,10 +281,13 @@ async fn handle(
     if let Some(headers) = opdef.headers() {
       for (header, values) in headers {
         for value in values {
-          let Ok(value) =  liquid_json::render_string(value, &ctx) else {
-          let _ = tx.error(wick_packet::Error::component_error(format!("Can't render template {}", value)));
-          break 'outer;
-        };
+          let Ok(value) = liquid_json::render_string(value, &ctx) else {
+            let _ = tx.error(wick_packet::Error::component_error(format!(
+              "Can't render template {}",
+              value
+            )));
+            break 'outer;
+          };
           request_builder = request_builder.header(header, value);
         }
       }

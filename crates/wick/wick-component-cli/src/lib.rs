@@ -105,6 +105,3 @@ pub use utils::parse_args;
 
 /// The crate's error type;.
 pub type Error = error::CliError;
-
-#[macro_use]
-extern crate tracing;

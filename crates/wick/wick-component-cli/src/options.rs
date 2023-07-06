@@ -38,6 +38,7 @@ pub struct MeshOptions {
   pub token: Option<String>,
 }
 
+#[allow(missing_copy_implementations)]
 #[derive(Debug, Clone, Default)]
 /// Options to use when starting an RPC or HTTP server.
 pub struct ServerOptions {

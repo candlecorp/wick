@@ -172,7 +172,10 @@ pub async fn fetch_image_manifest(image: &str, options: &OciOptions) -> Result<(
     .await
     .map_err(|e| OciError::OciFetchFailure(image.to_string(), e.to_string()))?;
   let OciManifest::Image(manifest) = manifest else {
-    return Err(OciError::OciFetchFailure(image.to_string(), "manifest is not an image".to_owned()));
+    return Err(OciError::OciFetchFailure(
+      image.to_string(),
+      "manifest is not an image".to_owned(),
+    ));
   };
   Ok((manifest, digest))
 }
