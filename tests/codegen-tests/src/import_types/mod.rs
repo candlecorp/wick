@@ -1605,6 +1605,16 @@ pub mod echo {
       }
     }
     #[allow(unused)]
+    pub fn broadcast_open(&mut self) {
+      self.output.open_bracket();
+      self.time.open_bracket();
+    }
+    #[allow(unused)]
+    pub fn broadcast_close(&mut self) {
+      self.output.close_bracket();
+      self.time.close_bracket();
+    }
+    #[allow(unused)]
     pub fn broadcast_err(&mut self, err: impl AsRef<str>) {
       self.output.error(&err);
       self.time.error(&err);
@@ -1668,6 +1678,14 @@ pub mod testop {
       }
     }
     #[allow(unused)]
+    pub fn broadcast_open(&mut self) {
+      self.output.open_bracket();
+    }
+    #[allow(unused)]
+    pub fn broadcast_close(&mut self) {
+      self.output.close_bracket();
+    }
+    #[allow(unused)]
     pub fn broadcast_err(&mut self, err: impl AsRef<str>) {
       self.output.error(&err);
     }
@@ -1715,8 +1733,14 @@ impl Component {
       let (config, input, time) = wick_component :: payload_fan_out ! (input , raw : false , Box < dyn std :: error :: Error + Send + Sync > , echo :: Config , [("input" , types :: http :: HttpRequest) , ("time" , wick_component :: datetime :: DateTime) ,]);
       let config = match config.await {
         Ok(Ok(config)) => config,
-        _ => {
-          let _ = channel.send_result(wick_packet::Packet::component_error("Component sent invalid context").into());
+        Err(e) => {
+          let _ = channel
+            .send_result(wick_packet::Packet::component_error(format!("Component sent invalid context: {}", e)).into());
+          return;
+        }
+        Ok(Err(e)) => {
+          let _ = channel
+            .send_result(wick_packet::Packet::component_error(format!("Component sent invalid context: {}", e)).into());
           return;
         }
       };
@@ -1738,8 +1762,14 @@ impl Component {
       let (config, message) = wick_component :: payload_fan_out ! (input , raw : false , Box < dyn std :: error :: Error + Send + Sync > , testop :: Config , [("message" , types :: http :: HttpResponse) ,]);
       let config = match config.await {
         Ok(Ok(config)) => config,
-        _ => {
-          let _ = channel.send_result(wick_packet::Packet::component_error("Component sent invalid context").into());
+        Err(e) => {
+          let _ = channel
+            .send_result(wick_packet::Packet::component_error(format!("Component sent invalid context: {}", e)).into());
+          return;
+        }
+        Ok(Err(e)) => {
+          let _ = channel
+            .send_result(wick_packet::Packet::component_error(format!("Component sent invalid context: {}", e)).into());
           return;
         }
       };
