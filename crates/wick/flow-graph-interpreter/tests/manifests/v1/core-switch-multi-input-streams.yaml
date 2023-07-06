@@ -1,0 +1,50 @@
+---
+kind: wick/component@v1
+name: switch-bool
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: test
+      uses:
+        - name: S
+          operation: core::switch
+          with:
+            inputs:
+              - name: name
+                type: object
+              - name: greeting
+                type: object
+            outputs:
+              - name: output
+                type: string
+            cases:
+              - case: first
+                do: self::test::first
+              - case: second
+                do: self::test::second
+            default: self::test::default
+      flow:
+        - <>.input -> S.match
+        - <>.name -> S.name
+        - <>.greeting -> S.greeting
+        - S.output -> <>
+      operations:
+        - name: first
+          flow:
+            - <>.greeting -> test::concat[b].left
+            - <>.name -> test::uppercase[a].input
+            - a.output -> b.right
+            - b.output -> <>
+        - name: second
+          flow:
+            - <>.greeting -> test::concat[b].left
+            - <>.name -> test::reverse[a].input
+            - a.output -> b.right
+            - b.output -> <>
+        - name: default
+          flow:
+            - <>.greeting -> test::concat[b].left
+            - <>.name -> test::uppercase[a].input
+            - a.output -> test::reverse[c].input
+            - c.output -> b.right
+            - b.output -> <>

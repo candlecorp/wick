@@ -62,6 +62,7 @@ fn silly_modules(module: &str) -> bool {
     "wasmrs_rx",
     "wasmrs_runtime",
     "wasmrs_guest",
+    "wasmrs_wasmtime",
     "wick_wascap",
     "flow_graph",
   ]

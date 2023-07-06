@@ -39,10 +39,11 @@ macro_rules! fan_out {
             while let Some(Ok(payload)) = $stream.next().await {
             let sender = senders.get_mut(payload.port()).unwrap();
             if payload.is_done() {
+              sender.send(payload).unwrap();
               sender.complete();
-              continue;
+            } else {
+              sender.send(payload).unwrap();
             }
-            sender.send(payload).unwrap();
           }
         });
         ($(streams.take($port).unwrap()),*)

@@ -73,6 +73,9 @@ async fn test_component(mut input: Invocation) -> Result<PacketStream, Component
   tokio::spawn(async move {
     let mut input = fan_out!(input.packets, "input");
     while let Some(Ok(input)) = input.next().await {
+      if input.is_done() {
+        break;
+      }
       let input: String = input.payload.decode().unwrap();
       let output = Packet::encode("output", format!("TEST: {}", input));
       tx.send(output).unwrap();

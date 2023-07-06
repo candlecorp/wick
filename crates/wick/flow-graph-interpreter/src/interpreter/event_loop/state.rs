@@ -167,7 +167,7 @@ impl State {
         });
       }
     } else {
-      panic!("got port_data message with no payload to act on");
+      panic!("got port_data message with no payload to act on, port: {:?}", port);
     }
 
     trace!(count = instance.num_pending(), "number still pending");

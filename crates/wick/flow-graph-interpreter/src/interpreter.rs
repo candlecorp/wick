@@ -296,7 +296,7 @@ pub struct InterpreterOptions {
 impl Default for InterpreterOptions {
   fn default() -> Self {
     Self {
-      output_timeout: Duration::from_secs(5),
+      output_timeout: Duration::from_secs(60),
     }
   }
 }
