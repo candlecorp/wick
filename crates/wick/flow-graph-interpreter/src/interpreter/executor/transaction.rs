@@ -227,7 +227,7 @@ impl Transaction {
       for packet in packets {
         output.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
       }
-    } else {
+    } else if packets.iter().any(|p| !p.is_done()) {
       error!(tx_id = %self.id(), "attempted to send output message after tx finished");
     }
 

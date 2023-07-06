@@ -430,7 +430,6 @@ impl Operation for Op {
 
       let rng = seeded_random::Random::from_seed(Seed::unsafe_new(invocation.seed()));
 
-      warn!(state = "starting", "switch:stream");
       'outer: loop {
         // if we don't yet have any condition, hold on to our input packets.
         let packet = match router.pop_buffer() {
@@ -453,6 +452,7 @@ impl Operation for Op {
           }
         };
 
+        #[cfg(debug_assertions)]
         trace!(?packet, "switch:stream:packet");
 
         // if this is a packet on the DISCRIMINANT port, decode it and set the condition.
@@ -496,7 +496,7 @@ impl Operation for Op {
         }
 
         let Some(incoming_input) = input_streams.get(packet.port()) else {
-          warn!(port=packet.port(),"switch: received packet on unrecognized input port");
+          warn!(port=packet.port(),"switch:stream: received packet on unrecognized input port");
           continue;
         };
 
@@ -509,14 +509,14 @@ impl Operation for Op {
 
         match router.can_handle(incoming_input.curr_index()) {
           CanHandle::No => {
-            debug!(input = packet.port(), "switch:root: routing packet to root stream");
+            trace!(input = packet.port(), "switch:stream: routing packet to root stream");
             for output in context.config.outputs.iter() {
               let _ = root_tx.send(packet.clone().set_port(output.name()));
             }
             continue;
           }
           CanHandle::Maybe => {
-            debug!(
+            trace!(
               input = packet.port(),
               index = incoming_input.curr_index(),
               "switch:case: buffering packet"
@@ -557,16 +557,18 @@ impl Operation for Op {
               router.handle_packet(curr_index, packet);
             }
             std::cmp::Ordering::Equal => {
-              // If we're back at the condition level, then we're done with this condition.
+              // If we're back at the condition level, then this input has moved on with this condition.
               router.handle_packet(curr_index, packet);
               incoming_input.inc_curr_index();
+
               if input_streams.iter().all(|(_, v)| v.curr_index() > curr_index) {
+                // If all inputs have moved on, finish the handler.
                 router.finish(curr_index, &context.config.inputs, &root_tx).await;
               }
             }
             std::cmp::Ordering::Less => {
-              // Otherwise, send it to the root stream.
-              debug!("switch:root: routing close bracket to root stream");
+              // Otherwise, send the packet to the root stream.
+              trace!("switch:root: routing close bracket to root stream");
               for output in context.config.outputs.iter() {
                 let _ = root_tx.send(Packet::close_bracket(output.name()));
               }
@@ -586,11 +588,9 @@ impl Operation for Op {
 
       // Send done packets for all defined outputs to our root stream.
       for output in context.config.outputs.iter() {
-        debug!(port = output.name(), "switch:root: sending done to root stream");
+        trace!(port = output.name(), "switch:root: sending done to root stream");
         let _ = root_tx.send(Packet::done(output.name()));
       }
-
-      warn!(state = "done", "switch:stream");
     });
 
     async move { Ok(root_rx) }.boxed()
