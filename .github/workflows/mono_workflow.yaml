@@ -166,13 +166,13 @@ jobs:
               arch: 'aarch64',
               args: '--features cross',
             }
-          # - {
-          #     os: "ubuntu-latest",
-          #     name: "win",
-          #     target: "x86_64-pc-windows-gnu",
-          #     arch: "amd64",
-          #     args: "--features cross"
-          #   }
+          - {
+              os: 'ubuntu-latest',
+              name: 'win',
+              target: 'x86_64-pc-windows-gnu',
+              arch: 'amd64',
+              args: '--features cross',
+            }
     steps:
       - uses: actions/checkout@v3
       - name: install protobuf
