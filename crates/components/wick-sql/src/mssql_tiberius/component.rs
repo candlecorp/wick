@@ -267,6 +267,10 @@ async fn handle_stream(
         return Err(Error::OperationFailed(e.to_string()));
       }
     };
+
+    if opdef.inputs().len() == 0 {
+      break 'outer;
+    }
   }
   Ok(())
 }
