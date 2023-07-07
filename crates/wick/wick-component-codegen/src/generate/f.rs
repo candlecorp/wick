@@ -22,11 +22,13 @@ pub(crate) fn field_pair(
   config: &mut config::Config,
   imported: bool,
   serde: bool,
+  dir: Direction,
 ) -> impl FnMut(&Field) -> TokenStream + '_ {
   move |field: &Field| {
     let name = &field.name;
     let id = id(&snake(name));
-    let ty = expand_type(config, Direction::In, imported, &field.ty);
+
+    let ty = expand_type(config, dir, imported, &field.ty);
     let desc = field
       .description
       .as_ref()

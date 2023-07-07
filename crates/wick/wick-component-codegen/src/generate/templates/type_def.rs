@@ -208,7 +208,7 @@ pub(crate) fn gen_struct<'a>(
   let fields = ty
     .fields
     .iter()
-    .map(f::field_pair(config, imported, true))
+    .map(f::field_pair(config, imported, true, Direction::Out))
     .collect_vec();
 
   let (derive, default_impl) = if ty.fields.is_empty() {
