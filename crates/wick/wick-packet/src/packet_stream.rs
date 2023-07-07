@@ -121,7 +121,7 @@ impl Stream for PacketStream {
           if cfg!(debug_assertions) {
             self.span.in_scope(|| {
               tracing::trace!(flags=packet.flags(),port=packet.port(),packet=%packet.clone().decode_value().map_or_else(|_| format!("{:?}", packet.payload()),|j|j.to_string())
-              , "delivering packet");
+              , "packetstream:packet");
             });
           }
           Poll::Ready(Some(Ok(packet)))
@@ -136,7 +136,7 @@ impl Stream for PacketStream {
         if cfg!(debug_assertions) {
           self.span.in_scope(|| {
             tracing::trace!(flags=packet.flags(),port=packet.port(),packet=%packet.clone().decode_value().map_or_else(|_| format!("{:?}", packet.payload()),|j|j.to_string())
-              , "delivering packet");
+              , "packetstream:packet");
           });
         }
       }

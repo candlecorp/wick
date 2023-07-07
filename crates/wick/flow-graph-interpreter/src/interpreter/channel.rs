@@ -133,46 +133,44 @@ impl InterpreterDispatchChannel {
     Self { sender }
   }
 
-  pub(crate) async fn dispatch(&self, event: Event) {
-    if self.sender.send(event).await.is_err() {
-      warn!("Interpreter channel closed unexpectedly. This is likely due to an intentional shutdown while there are still events processing.");
-    }
+  pub(crate) fn dispatch(&self, event: Event) {
+    let tx = self.sender.clone();
+
+    tokio::task::spawn(async move {
+      if tx.send(event).await.is_err() {
+        warn!("Interpreter channel closed unexpectedly. This is likely due to an intentional shutdown while there are still events processing.");
+      }
+    });
   }
 
-  pub(crate) async fn dispatch_done(&self, tx_id: Uuid) {
-    self.dispatch(Event::new(tx_id, EventKind::TransactionDone)).await;
+  pub(crate) fn dispatch_done(&self, tx_id: Uuid) {
+    self.dispatch(Event::new(tx_id, EventKind::TransactionDone));
   }
 
-  pub(crate) async fn dispatch_data(&self, tx_id: Uuid, port: PortReference) {
-    self.dispatch(Event::new(tx_id, EventKind::PortData(port))).await;
+  pub(crate) fn dispatch_data(&self, tx_id: Uuid, port: PortReference) {
+    self.dispatch(Event::new(tx_id, EventKind::PortData(port)));
   }
 
-  pub(crate) async fn dispatch_close(&self, error: Option<ExecutionError>) {
-    self.dispatch(Event::new(CHANNEL_UUID, EventKind::Close(error))).await;
+  pub(crate) fn dispatch_close(&self, error: Option<ExecutionError>) {
+    self.dispatch(Event::new(CHANNEL_UUID, EventKind::Close(error)));
   }
 
-  pub(crate) async fn dispatch_start(&self, tx: Box<Transaction>) {
-    self
-      .dispatch(Event::new(tx.id(), EventKind::TransactionStart(tx)))
-      .await;
+  pub(crate) fn dispatch_start(&self, tx: Box<Transaction>) {
+    self.dispatch(Event::new(tx.id(), EventKind::TransactionStart(tx)));
   }
 
-  pub(crate) async fn dispatch_call_complete(&self, tx_id: Uuid, op_index: usize) {
-    self
-      .dispatch(Event::new(tx_id, EventKind::CallComplete(CallComplete::new(op_index))))
-      .await;
+  pub(crate) fn dispatch_call_complete(&self, tx_id: Uuid, op_index: usize) {
+    self.dispatch(Event::new(tx_id, EventKind::CallComplete(CallComplete::new(op_index))));
   }
 
-  pub(crate) async fn dispatch_op_err(&self, tx_id: Uuid, op_index: usize, signal: PacketPayload) {
-    self
-      .dispatch(Event::new(
-        tx_id,
-        EventKind::CallComplete(CallComplete {
-          index: op_index,
-          err: Some(signal),
-        }),
-      ))
-      .await;
+  pub(crate) fn dispatch_op_err(&self, tx_id: Uuid, op_index: usize, signal: PacketPayload) {
+    self.dispatch(Event::new(
+      tx_id,
+      EventKind::CallComplete(CallComplete {
+        index: op_index,
+        err: Some(signal),
+      }),
+    ));
   }
 }
 
@@ -234,18 +232,18 @@ mod test {
     tokio::spawn(async move {
       let num = 1;
       println!("Child 1 PING({})", num);
-      child1.dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num))).await;
+      child1.dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num)));
     })
     .await?;
 
     tokio::spawn(async move {
       let num = 2;
       println!("Child 2 PING({})", num);
-      child2.dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num))).await;
+      child2.dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num)));
     })
     .await?;
 
-    child3.dispatch_close(None).await;
+    child3.dispatch_close(None);
     let num_handled = join_handle.await?;
 
     println!("{:?}", num_handled);

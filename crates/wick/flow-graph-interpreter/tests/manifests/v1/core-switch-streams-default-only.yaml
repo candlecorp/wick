@@ -1,0 +1,26 @@
+---
+kind: wick/component@v1
+name: switch-bool
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: bad_data
+      flow:
+        - <>.row -> <>.output
+    - name: test
+      uses:
+        - name: S
+          operation: core::switch
+          with:
+            inputs:
+              - name: row
+                type: object
+            outputs:
+              - name: output
+                type: string
+            cases: []
+            default: self::bad_data
+      flow:
+        - <>.input -> S.match
+        - <>.message -> S.row
+        - S.output -> <>

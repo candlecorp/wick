@@ -164,7 +164,7 @@ impl Component for CoreComponent {
     data: Option<RuntimeConfig>,
     callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| trace!(target = %invocation.target, namespace = Self::ID));
+    invocation.trace(|| debug!(target = %invocation.target, namespace = Self::ID));
 
     let task = async move {
       match invocation.target.operation_id() {

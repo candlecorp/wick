@@ -57,7 +57,8 @@ async fn bad_wasm_component_v1() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
-async fn bad_wasm_component() -> Result<()> {
+#[ignore = "bad test, need to re-implement in v1 and add better panic handling"]
+async fn bad_wasm_component_v0() -> Result<()> {
   common_test(
     "./manifests/v0/bad-wasmrs-component.yaml",
     packet_stream!(("input", "1234567890")),
@@ -65,7 +66,7 @@ async fn bad_wasm_component() -> Result<()> {
     vec![
       Packet::err(
         "output",
-        "Transaction timed out waiting for output from operation error (wick://wapc/error)",
+        "Transaction timed out waiting for output from operation error (wick://wasmrs/error)",
       ),
       Packet::done("output"),
     ],

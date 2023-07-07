@@ -8,7 +8,8 @@ use futures::{FutureExt, StreamExt};
 use parking_lot::Mutex;
 use seeded_random::Seed;
 use serde_json::Value;
-use tokio::task::JoinHandle;
+use tokio::task::{yield_now, JoinHandle};
+use tracing::{Instrument, Span};
 use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, Type};
 use wick_packet::{
@@ -226,24 +227,34 @@ impl InputStream {
     trace!(level = last - 1, "switch:case: decrementing input level");
   }
 
-  // fn is_done(&self) -> bool {
-  //   self.done.load(Ordering::Relaxed)
-  // }
+  fn is_done(&self) -> bool {
+    self.done.load(Ordering::Relaxed)
+  }
 
   fn set_done(&self) {
     self.done.store(true, Ordering::Relaxed);
   }
 }
 
-#[derive(Default)]
+#[derive()]
 struct SwitchRouter {
   conditions: VecDeque<Condition>,
   buffer: VecDeque<Packet>,
   raw_buffer: VecDeque<Packet>,
   max: Option<usize>,
+  span: Span,
 }
 
 impl SwitchRouter {
+  fn new(span: Span) -> Self {
+    Self {
+      conditions: Default::default(),
+      buffer: Default::default(),
+      raw_buffer: Default::default(),
+      max: None,
+      span,
+    }
+  }
   fn pop_buffer(&mut self) -> Option<Packet> {
     self.buffer.pop_front()
   }
@@ -265,6 +276,9 @@ impl SwitchRouter {
   }
 
   fn freeze(&mut self) {
+    self
+      .span
+      .in_scope(|| trace!(conditions = self.conditions.len(), "switch:case: freezing conditions"));
     self.max = Some(self.conditions.len() - 1);
   }
 
@@ -288,21 +302,27 @@ impl SwitchRouter {
 
   fn handle_packet(&mut self, index: usize, packet: Packet) {
     let condition = self.get(index).unwrap(); // unwrap ok because we check is_ready first.
-    trace!(condition=%condition.value, ?packet, "switch:case: routing packet to case stream");
+    self
+      .span
+      .in_scope(|| debug!(condition=%condition.value, ?packet, "switch:case: routing packet to case"));
     condition.handler.send(packet);
   }
 
   async fn cleanup(self, fields: &[Field], tx: &PacketSender) {
     for mut condition in self.conditions {
-      debug!(case=?condition.value, "switch:case: finishing case stream");
-      condition.handler.finish(fields, tx).await;
+      self
+        .span
+        .in_scope(|| debug!(case=?condition.value, "switch:case: cleaning up case"));
+      condition.handler.finish(fields, tx).instrument(self.span.clone()).await;
     }
   }
 
   async fn finish(&mut self, index: usize, fields: &[Field], tx: &PacketSender) {
     if let Some(condition) = self.conditions.get_mut(index) {
-      debug!(case=?condition.value, "switch:case: finishing case stream");
-      condition.handler.finish(fields, tx).await;
+      self
+        .span
+        .in_scope(|| debug!(case=?condition.value, "switch:case: finishing case iteration"));
+      condition.handler.finish(fields, tx).instrument(self.span.clone()).await;
     }
   }
 }
@@ -314,27 +334,19 @@ enum CanHandle {
   Maybe,
 }
 
-#[allow(unused)]
 struct RouteHandler {
   tx: Option<PacketSender>,
   rx: Option<PacketStream>,
-  done: Arc<AtomicBool>,
-  task: JoinHandle<()>,
+  task: Option<JoinHandle<()>>,
 }
 
-#[allow(unused)]
 impl RouteHandler {
-  fn new(sender: PacketSender, receiver: PacketStream, done: Arc<AtomicBool>, task: JoinHandle<()>) -> Self {
+  fn new(sender: PacketSender, receiver: PacketStream, task: JoinHandle<()>) -> Self {
     Self {
       tx: Some(sender),
       rx: Some(receiver),
-      done,
-      task,
+      task: Some(task),
     }
-  }
-
-  fn is_done(&self) -> bool {
-    self.done.load(Ordering::Relaxed)
   }
 
   fn send(&self, packet: Packet) {
@@ -348,9 +360,14 @@ impl RouteHandler {
         let _ = tx.send(Packet::done(field.name()));
       }
     }
+    if let Some(task) = self.task.take() {
+      debug!("switch:case: awaiting case task completion");
+      let _ = task.await;
+    }
+
     if let Some(mut rx) = self.rx.take() {
+      debug!("switch:case: draining case stream");
       while let Some(packet) = rx.next().await {
-        debug!(?packet, "switch:case: draining case stream");
         let _ = tx.send_result(packet);
       }
     }
@@ -392,7 +409,6 @@ fn hash_value<H: std::hash::Hasher>(val: &Value, state: &mut H) {
   }
 }
 
-#[allow(unused)]
 struct Condition {
   level: i32,
   value: Value,
@@ -424,7 +440,7 @@ impl Operation for Op {
     tokio::spawn(async move {
       // the substream level the condition was found at.
       let mut condition_level = 0;
-      let mut router = SwitchRouter::default();
+      let mut router = SwitchRouter::new(invocation.span.clone());
       let mut root_stream = invocation.eject_stream();
 
       let input_streams: HashMap<String, InputStream> = context
@@ -443,6 +459,9 @@ impl Operation for Op {
           None => root_stream.next().await,
         };
 
+        #[cfg(debug_assertions)]
+        invocation.trace(|| trace!(?packet, "switch:stream:packet"));
+
         let packet = match packet {
           Some(Ok(p)) => p,
           Some(Err(e)) => {
@@ -458,9 +477,6 @@ impl Operation for Op {
           }
         };
 
-        #[cfg(debug_assertions)]
-        trace!(?packet, "switch:stream:packet");
-
         // if this is a packet on the DISCRIMINANT port, decode it and set the condition.
         if packet.port() == DISCRIMINANT {
           if packet.has_data() {
@@ -468,15 +484,18 @@ impl Operation for Op {
             let case = context.config.cases.iter().find(|case| case.case == condition);
             let (_case, op, op_config) = case.map_or_else(
               || {
-                trace!(case = "default", condition = %condition, op = default, "switch:case:condition");
+                invocation
+                  .trace(|| trace!(case = "default", condition = %condition, op = default, "switch:case:condition"));
                 (CaseId::Default, &default, None)
               },
               |case| {
-                trace!(case = %case.case, condition = %condition, op = case.case_do, "switch:case:condition");
+                invocation.trace(
+                  || trace!(case = %case.case, condition = %condition, op = case.case_do, "switch:case:condition"),
+                );
                 (CaseId::Match(CaseValue(&case.case)), &case.case_do, case.with.clone())
               },
             );
-
+            let span = invocation.following_span(trace_span!("switch:case:handler",%condition));
             router.push(Condition::new(
               condition,
               condition_level,
@@ -486,7 +505,8 @@ impl Operation for Op {
                 InherentData::new(rng.gen(), invocation.timestamp()),
                 callback.clone(),
                 op_config,
-              )(),
+                span,
+              ),
             ));
             // Now that we have a new condition, re-process all buffered packets.
             router.buffer.extend(router.raw_buffer.drain(0..));
@@ -502,34 +522,38 @@ impl Operation for Op {
         }
 
         let Some(incoming_input) = input_streams.get(packet.port()) else {
-          warn!(
-            port = packet.port(),
-            "switch:stream: received packet on unrecognized input port"
-          );
+          invocation.trace(|| {
+            warn!(
+              port = packet.port(),
+              "switch:stream: received packet on unrecognized input port"
+            );
+          });
           continue;
         };
 
         // if this is a done packet on an input port, then mark that input as done.
         if packet.is_done() {
-          trace!(port = packet.port(), "switch:stream: input stream done");
+          invocation.trace(|| trace!(port = packet.port(), "switch:stream: input stream done"));
           incoming_input.set_done();
           continue;
         }
 
         match router.can_handle(incoming_input.curr_index()) {
           CanHandle::No => {
-            trace!(input = packet.port(), "switch:stream: routing packet to root stream");
+            invocation.trace(|| trace!(input = packet.port(), "switch:stream: routing packet to root stream"));
             for output in context.config.outputs.iter() {
               let _ = root_tx.send(packet.clone().set_port(output.name()));
             }
             continue;
           }
           CanHandle::Maybe => {
-            trace!(
-              input = packet.port(),
-              index = incoming_input.curr_index(),
-              "switch:case: buffering packet"
-            );
+            invocation.trace(|| {
+              trace!(
+                input = packet.port(),
+                index = incoming_input.curr_index(),
+                "switch:case: buffering packet"
+              );
+            });
             router.buffer_raw(packet);
             continue;
           }
@@ -545,7 +569,7 @@ impl Operation for Op {
             router.handle_packet(incoming_input.curr_index(), packet);
           } else {
             // otherwise, send the packet to the root stream.
-            debug!("switch:root: routing open bracket to root stream");
+            invocation.trace(|| debug!("switch:stream: routing open bracket to root stream"));
             for output in context.config.outputs.iter() {
               let _ = root_tx.send(Packet::open_bracket(output.name()));
             }
@@ -573,11 +597,15 @@ impl Operation for Op {
               if input_streams.iter().all(|(_, v)| v.curr_index() > curr_index) {
                 // If all inputs have moved on, finish the handler.
                 router.finish(curr_index, &context.config.inputs, &root_tx).await;
+                if input_streams.iter().all(|(_, v)| v.is_done()) {
+                  invocation.trace(|| trace!("switch: all inputs done"));
+                  break 'outer;
+                }
               }
             }
             std::cmp::Ordering::Less => {
               // Otherwise, send the packet to the root stream.
-              trace!("switch:root: routing close bracket to root stream");
+              invocation.trace(|| trace!("switch:stream: routing close bracket to root stream"));
               for output in context.config.outputs.iter() {
                 let _ = root_tx.send(Packet::close_bracket(output.name()));
               }
@@ -589,15 +617,16 @@ impl Operation for Op {
 
         // otherwise, send the packet to the case stream.
         router.handle_packet(incoming_input.curr_index(), packet);
+        yield_now().await;
       }
 
-      trace!("switch:stream: all inputs done and buffers drained");
+      invocation.trace(|| trace!("switch:stream: all inputs done and buffers drained"));
 
       router.cleanup(&context.config.inputs, &root_tx).await;
 
       // Send done packets for all defined outputs to our root stream.
       for output in context.config.outputs.iter() {
-        trace!(port = output.name(), "switch:root: sending done to root stream");
+        invocation.trace(|| trace!(port = output.name(), "switch:stream: sending done to root stream"));
         let _ = root_tx.send(Packet::done(output.name()));
       }
     });
@@ -622,46 +651,41 @@ fn new_route_handler(
   inherent: InherentData,
   callback: Arc<RuntimeCallback>,
   op_config: Option<RuntimeConfig>,
-) -> impl FnOnce() -> RouteHandler {
+  span: Span,
+) -> RouteHandler {
   let op_id = target.operation_id().to_owned();
 
   let (outer_tx, outer_rx) = invocation.make_response();
   let (inner_tx, inner_rx) = invocation.make_response();
   let compref = ComponentReference::new(invocation.target.clone(), target);
-  trace!(%compref,"switch:case: route handler created");
 
-  let done = Arc::new(AtomicBool::new(false));
-  let inner_done = done.clone();
-  let span = invocation.span.clone();
-  || {
-    let handle = tokio::spawn(async move {
-      let call = compref.to_string();
-      trace!(invocation = %call, state="starting", "switch:case:task");
-      match callback(compref, op_id, inner_rx, inherent, op_config, &span).await {
-        Ok(mut inv_stream) => {
-          trace!(invocation = %call, state="starting", "switch:case:stream");
-          while let Some(packet) = inv_stream.next().await {
-            trace!(invocation = %call, ?packet, "switch:case:stream");
+  span.in_scope(|| trace!(%compref,"switch:case: route handler created"));
+  let handle = tokio::spawn(async move {
+    let call = compref.to_string();
+    span.in_scope(|| trace!(invocation = %call, state="starting", "switch:case:task"));
+    match callback(compref, op_id, inner_rx, inherent, op_config, &span).await {
+      Ok(mut inv_stream) => {
+        span.in_scope(|| trace!(invocation = %call, state="starting", "switch:case:stream"));
+        while let Some(packet) = inv_stream.next().await {
+          span.in_scope(|| trace!(invocation = %call, ?packet, "switch:case:stream"));
 
-            if let Ok(packet) = &packet {
-              if packet.is_done() {
-                break;
-              }
+          if let Ok(packet) = &packet {
+            if packet.is_done() {
+              break;
             }
-            let _ = outer_tx.send_result(packet);
           }
-          trace!(invocation = %call, state="done", "switch:case:stream");
+          let _ = outer_tx.send_result(packet);
         }
-        Err(e) => {
-          warn!(err=%e, "switch:case:error");
-          let _ = outer_tx.error(wick_packet::Error::component_error(e.to_string()));
-        }
-      };
-      trace!(invocation = %call, state="done", "switch:case:task");
-      inner_done.store(true, Ordering::Relaxed);
-    });
-    RouteHandler::new(inner_tx, outer_rx, done, handle)
-  }
+        span.in_scope(|| trace!(invocation = %call, state="done", "switch:case:stream"));
+      }
+      Err(e) => {
+        span.in_scope(|| warn!(err=%e, "switch:case:error"));
+        let _ = outer_tx.error(wick_packet::Error::component_error(e.to_string()));
+      }
+    };
+    span.in_scope(|| trace!(invocation = %call, state="done", "switch:case:task"));
+  });
+  RouteHandler::new(inner_tx, outer_rx, handle)
 }
 
 impl RenderConfiguration for Op {

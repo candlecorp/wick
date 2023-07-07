@@ -32,12 +32,12 @@ impl State {
     &self.transactions
   }
 
-  pub(super) async fn check_stalled(&mut self) -> Result<(), ExecutionError> {
+  pub(super) fn check_stalled(&mut self) -> Result<(), ExecutionError> {
     let mut cleanup = Vec::new();
     for (tx_id, tx) in self.transactions.iter() {
       let last_update = tx.last_access();
       if last_update.elapsed().unwrap() > EventLoop::STALLED_TX_TIMEOUT {
-        match tx.check_stalled().await {
+        match tx.check_stalled() {
           Ok(TxState::OutputPending) => {
             error!(%tx_id, "tx reached timeout while still waiting for output data");
             cleanup.push(*tx_id);
@@ -87,6 +87,7 @@ impl State {
     Ok(())
   }
 
+  #[allow(clippy::unused_async)]
   async fn handle_input_data(&mut self, tx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
     let tx = match self.get_tx(&tx_id) {
       Some(tx) => tx,
@@ -116,13 +117,14 @@ impl State {
     let is_schematic_output = port.node_index() == graph.output().index();
 
     if is_schematic_output {
-      tx.handle_schematic_output().await?;
+      tx.handle_schematic_output()?;
     } else if let Some(packet) = tx.take_component_input(&port) {
       tx.push_packets(port.node_index(), vec![packet])?;
     }
     Ok(())
   }
 
+  #[allow(clippy::unused_async)]
   async fn handle_output_data(&mut self, tx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
     let tx = match self.get_tx(&tx_id) {
       Some(tx) => tx,
@@ -151,6 +153,7 @@ impl State {
       .mark(format!("output:{}:{}:ready", port.node_index(), port.port_index()));
 
     if let Some(message) = tx.take_component_output(&port) {
+      trace!(?message, "delivering component output",);
       let connections = graph.get_port(&port).connections();
       for index in connections {
         let connection = &graph.connections()[*index];
@@ -162,9 +165,7 @@ impl State {
         let message = message.clone().set_port(name);
         trace!(%connection, ?message, "delivering packet",);
         downstream_instance.buffer_in(&downport, message);
-        tokio::spawn(async move {
-          channel.dispatch_data(tx_id, downport).await;
-        });
+        channel.dispatch_data(tx_id, downport);
       }
     } else {
       panic!("got port_data message with no payload to act on, port: {:?}", port);
@@ -197,13 +198,13 @@ impl State {
       }
     };
     let instance = tx.instance(data.index);
-    debug!(component = instance.id(), entity = %instance.entity(), "call complete");
+    debug!(operation = instance.id(), entity = %instance.entity(), "call complete");
 
     if let Some(PacketPayload::Err(err)) = data.err {
       warn!(?err, "op:error");
       // If the call contains an error, then the component panicked.
       // We need to propagate the error downward...
-      tx.handle_op_err(data.index, err).await?;
+      tx.handle_op_err(data.index, &err)?;
       // ...and clean up the call.
       // instance.handle_stream_complete(CompletionStatus::Error)?;
     }

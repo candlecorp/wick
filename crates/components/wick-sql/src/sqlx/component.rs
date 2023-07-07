@@ -311,7 +311,6 @@ async fn init_context(config: SqlComponentConfig, addr: Url) -> Result<Context, 
       op.name().to_owned(),
       Arc::new((op.query().to_owned(), op.query().to_owned())),
     );
-    trace!(query=%op.query(), "prepared query");
   }
 
   let db = client;
