@@ -66,6 +66,7 @@ impl StreamMap {
   #[cfg(feature = "rt-tokio")]
   /// Turn a single [PacketStream] into a [StreamMap] keyed by the passed `ports`.
   pub fn from_stream(mut stream: PacketStream, ports: impl IntoIterator<Item = String>) -> Self {
+    use tracing::warn;
     use wasmrs_rx::Observer;
 
     #[must_use]
@@ -81,7 +82,15 @@ impl StreamMap {
             let _ = sender.send(packet.clone().set_port(name));
           }
         } else {
-          let sender = senders.get_mut(packet.port()).unwrap();
+          let sender = match senders.get_mut(packet.port()) {
+            Some(stream) => stream,
+            None => {
+              if !packet.is_noop() {
+                warn!("received packet for unknown port: {}", packet.port());
+              }
+              continue;
+            }
+          };
           let is_done = packet.is_done();
           let _ = sender.send(packet);
           if is_done {
