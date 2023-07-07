@@ -91,6 +91,7 @@ message TypeDefinition {
   oneof type {
     StructSignature struct = 1;
     EnumSignature enum = 2;
+    UnionSignature union = 3;
   }
 }
 
@@ -126,6 +127,12 @@ message StructSignature {
 message EnumSignature {
   string name = 1;
   repeated EnumVariant values = 2;
+  string description = 3;
+}
+
+message UnionSignature {
+  string name = 1;
+  repeated TypeSignature types = 2;
   string description = 3;
 }
 

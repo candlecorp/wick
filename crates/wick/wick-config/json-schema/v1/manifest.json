@@ -1725,7 +1725,8 @@
     "TypeDefinition": {
       "oneOf": [
         { "$ref": "#/$defs/v1/StructSignature" },
-        { "$ref": "#/$defs/v1/EnumSignature" }
+        { "$ref": "#/$defs/v1/EnumSignature" },
+        { "$ref": "#/$defs/v1/UnionSignature" }
       ]
     },
 
@@ -1754,6 +1755,39 @@
         },
         "description": {
           "description": "The description of the struct.",
+          "required": false,
+
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+
+    "UnionSignature": {
+      "$anchor": "#v1/UnionSignature",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/type/union@v1"]
+        },
+        "name": {
+          "description": "The name of the union.",
+
+          "type": "string"
+        },
+        "types": {
+          "description": "The types in the union.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/TypeSignature"
+          }
+        },
+        "description": {
+          "description": "The description of the union.",
           "required": false,
 
           "type": "string"

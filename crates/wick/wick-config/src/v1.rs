@@ -1257,6 +1257,9 @@ pub(crate) enum TypeDefinition {
   /// A variant representing a [EnumSignature] type.
   #[serde(rename = "wick/type/enum@v1")]
   EnumSignature(EnumSignature),
+  /// A variant representing a [UnionSignature] type.
+  #[serde(rename = "wick/type/union@v1")]
+  UnionSignature(UnionSignature),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1273,6 +1276,26 @@ pub(crate) struct StructSignature {
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) fields: Vec<Field>,
   /// The description of the struct.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// An enum definition of named variants.
+pub(crate) struct UnionSignature {
+  /// The name of the union.
+
+  #[serde(default)]
+  pub(crate) name: String,
+  /// The types in the union.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) types: Vec<TypeSignature>,
+  /// The description of the union.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]

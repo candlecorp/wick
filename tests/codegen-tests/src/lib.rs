@@ -85,6 +85,20 @@ mod test1 {
 
       assert_eq!(expected, actual);
 
+      let expected = types::LocalUnion::String("Helloooo World".to_owned());
+
+      let bytes = wasmrs_codec::messagepack::serialize(&expected).unwrap();
+
+      let actual: types::LocalUnion = wasmrs_codec::messagepack::deserialize(&bytes).unwrap();
+
+      assert_eq!(expected, actual);
+
+      let json = serde_json::json!("Helloooo World");
+
+      let actual: types::LocalUnion = serde_json::from_value(json).unwrap();
+
+      assert_eq!(expected, actual);
+
       let response = HttpResponse {
         version: http::HttpVersion::Http11,
         status: http::StatusCode::Ok,

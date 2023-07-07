@@ -15,9 +15,16 @@ import:
       kind: wick/component/types@v1
       ref: ../../../../crates/interfaces/wick-interface-http/component.yaml
 types:
+  - name: LocalUnion
+    kind: wick/type/union@v1
+    description: 'a weird union'
+    types:
+      - string
+      - LocalStructInner
+      - datetime
   - name: LocalStruct
     kind: wick/type/struct@v1
-    description: 'hey'
+    description: 'a useful struct'
     fields:
       - name: field1
         type: string

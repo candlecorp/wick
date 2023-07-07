@@ -9,6 +9,7 @@ impl TryFrom<v1::TypeDefinition> for wick::TypeDefinition {
     Ok(match value {
       v1::TypeDefinition::StructSignature(v) => wick::TypeDefinition::Struct(v.try_into()?),
       v1::TypeDefinition::EnumSignature(v) => wick::TypeDefinition::Enum(v.try_into()?),
+      v1::TypeDefinition::UnionSignature(v) => wick::TypeDefinition::Union(v.try_into()?),
     })
   }
 }
@@ -20,6 +21,32 @@ impl TryFrom<wick::TypeDefinition> for v1::TypeDefinition {
     Ok(match value {
       wick::TypeDefinition::Struct(v) => v1::TypeDefinition::StructSignature(v.try_into()?),
       wick::TypeDefinition::Enum(v) => v1::TypeDefinition::EnumSignature(v.try_into()?),
+      wick::TypeDefinition::Union(v) => v1::TypeDefinition::UnionSignature(v.try_into()?),
+    })
+  }
+}
+
+impl TryFrom<v1::UnionSignature> for wick::UnionDefinition {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::UnionSignature) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      name: value.name,
+      description: value.description,
+      types: value.types.try_map_into()?,
+      imported: false,
+    })
+  }
+}
+
+impl TryFrom<wick::UnionDefinition> for v1::UnionSignature {
+  type Error = ManifestError;
+
+  fn try_from(value: wick::UnionDefinition) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      name: value.name,
+      description: value.description,
+      types: value.types.try_map_into()?,
     })
   }
 }

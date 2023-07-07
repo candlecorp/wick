@@ -6,12 +6,14 @@ use std::str::FromStr;
 
 mod enum_def;
 mod struct_def;
+mod union_def;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub use self::enum_def::{EnumDefinition, EnumVariant};
 pub use self::struct_def::StructDefinition;
+pub use self::union_def::UnionDefinition;
 use crate::Field;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -25,6 +27,9 @@ pub enum TypeDefinition {
   /// An enum definition.
   #[serde(rename = "enum")]
   Enum(EnumDefinition),
+  /// An union definition.
+  #[serde(rename = "union")]
+  Union(UnionDefinition),
 }
 
 impl TypeDefinition {
@@ -32,8 +37,9 @@ impl TypeDefinition {
   #[must_use]
   pub fn name(&self) -> &str {
     match self {
-      TypeDefinition::Struct(s) => &s.name,
-      TypeDefinition::Enum(e) => &e.name,
+      TypeDefinition::Struct(v) => &v.name,
+      TypeDefinition::Enum(v) => &v.name,
+      TypeDefinition::Union(v) => &v.name,
     }
   }
 }

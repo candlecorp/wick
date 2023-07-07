@@ -24,7 +24,7 @@ use openapiv3::{
   VariantOrUnknownOrEmpty,
 };
 use wick_config::config::{AppConfiguration, HttpMethod, WickRouter};
-use wick_interface_types::{EnumDefinition, Field, StructDefinition, Type, TypeDefinition};
+use wick_interface_types::{EnumDefinition, Field, StructDefinition, Type, TypeDefinition, UnionDefinition};
 
 use super::error::RestError;
 use super::RestRoute;
@@ -225,6 +225,7 @@ fn typedef_to_schema(ty: &TypeDefinition, named: &mut HashSet<String>) -> Schema
   match ty {
     TypeDefinition::Struct(v) => struct_to_schema(v, named),
     TypeDefinition::Enum(v) => enum_to_schema(v, named),
+    TypeDefinition::Union(v) => union_to_schema(v, named),
   }
 }
 
@@ -264,6 +265,21 @@ fn enum_to_schema(ty: &EnumDefinition, _named: &mut HashSet<String>) -> Schema {
       enumeration: variants,
       ..Default::default()
     })),
+  }
+}
+
+fn union_to_schema(ty: &UnionDefinition, named: &mut HashSet<String>) -> Schema {
+  let mut variants = Vec::new();
+  for variant in &ty.types {
+    variants.push(ReferenceOr::Item(type_to_schema(variant, named)));
+  }
+  Schema {
+    schema_data: SchemaData {
+      description: ty.description.clone(),
+      nullable: false,
+      ..Default::default()
+    },
+    schema_kind: openapiv3::SchemaKind::OneOf { one_of: variants },
   }
 }
 

@@ -381,6 +381,7 @@ impl TryFrom<rpc::TypeDefinition> for wick::TypeDefinition {
     let result = match typ {
       rpc::type_definition::Type::Struct(v) => wick::TypeDefinition::Struct(v.try_into()?),
       rpc::type_definition::Type::Enum(v) => wick::TypeDefinition::Enum(v.try_into()?),
+      rpc::type_definition::Type::Union(v) => wick::TypeDefinition::Union(v.try_into()?),
     };
     Ok(result)
   }
@@ -396,8 +397,21 @@ impl TryFrom<wick::TypeDefinition> for rpc::TypeDefinition {
       wick::TypeDefinition::Enum(v) => rpc::TypeDefinition {
         r#type: Some(rpc::type_definition::Type::Enum(v.try_into()?)),
       },
+      wick::TypeDefinition::Union(v) => rpc::TypeDefinition {
+        r#type: Some(rpc::type_definition::Type::Union(v.try_into()?)),
+      },
     };
     Ok(result)
+  }
+}
+
+impl TryFrom<rpc::UnionSignature> for wick::UnionDefinition {
+  type Error = RpcError;
+  fn try_from(v: rpc::UnionSignature) -> Result<Self> {
+    Ok(wick::UnionDefinition::new(
+      v.name,
+      v.types.into_iter().map(|v| v.try_into()).collect::<Result<Vec<_>>>()?,
+    ))
   }
 }
 
@@ -450,6 +464,16 @@ impl TryFrom<wick::StructDefinition> for rpc::StructSignature {
   }
 }
 
+impl TryFrom<wick::UnionDefinition> for rpc::UnionSignature {
+  type Error = RpcError;
+  fn try_from(v: wick::UnionDefinition) -> Result<Self> {
+    Ok(Self {
+      name: v.name,
+      description: v.description.unwrap_or_default(),
+      types: v.types.into_iter().map(|v| v.try_into()).collect::<Result<Vec<_>>>()?,
+    })
+  }
+}
 impl TryFrom<wick::EnumDefinition> for rpc::EnumSignature {
   type Error = RpcError;
   fn try_from(v: wick::EnumDefinition) -> Result<Self> {

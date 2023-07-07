@@ -623,7 +623,7 @@ type Map {
 type Object @nameonly("object") {}
 
 "A Struct or Enum type definition."
-union TypeDefinition = StructSignature | EnumSignature
+union TypeDefinition = StructSignature | EnumSignature | UnionSignature
 
 "A struct definition of named fields and types."
 type StructSignature @tagged("wick/type/struct@v1") {
@@ -634,6 +634,18 @@ type StructSignature @tagged("wick/type/struct@v1") {
    fields: [Field],
 
   "The description of the struct."
+  description: string?,
+}
+
+"An enum definition of named variants."
+type UnionSignature @tagged("wick/type/union@v1") {
+  "The name of the union."
+  name: string,
+
+  "The types in the union."
+  types: [TypeSignature],
+
+  "The description of the union."
   description: string?,
 }
 
