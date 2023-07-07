@@ -8,4 +8,5 @@ component:
   operations:
     - name: test
       flow:
-        - <>.request.headers.cookie.0 -> <>.output
+        - <>.input.value -> <>.pluck1
+        - <>.input.value -> <>.pluck2
