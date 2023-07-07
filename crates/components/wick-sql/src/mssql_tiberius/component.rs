@@ -198,7 +198,9 @@ async fn handle_stream(
     let mut incoming_packets = Vec::new();
 
     for input in &mut input_streams {
-      incoming_packets.push(input.next().await);
+      let packet = input.next().await;
+
+      incoming_packets.push(packet);
     }
 
     let num_done = incoming_packets.iter().filter(|r| r.is_none()).count();
@@ -220,6 +222,10 @@ async fn handle_stream(
       let packet = packet.unwrap();
       if packet.is_done() {
         break 'outer;
+      }
+      if packet.is_open_bracket() || packet.is_close_bracket() {
+        let _ = tx.send(packet.set_port("output"));
+        continue 'outer;
       }
       let ty = fields.iter().find(|f| f.name() == packet.port()).unwrap().ty().clone();
       type_wrappers.push((ty, packet));
