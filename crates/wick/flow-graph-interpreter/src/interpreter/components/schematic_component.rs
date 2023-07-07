@@ -75,7 +75,7 @@ impl Component for SelfComponent {
     config: Option<RuntimeConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| trace!(target = %invocation.target, namespace = Self::ID));
+    invocation.trace(|| debug!(target = %invocation.target, namespace = Self::ID));
 
     let mut op_config = LiquidOperationConfig::new_value(config);
     op_config.set_root(self.config.clone());

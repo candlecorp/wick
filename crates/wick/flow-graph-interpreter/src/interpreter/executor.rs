@@ -36,6 +36,7 @@ impl SchematicExecutor {
     self.schematic.name()
   }
 
+  #[allow(clippy::unused_async)]
   pub(crate) async fn invoke(
     &self,
     invocation: Invocation,
@@ -60,7 +61,7 @@ impl SchematicExecutor {
       seed,
     );
     let stream = transaction.take_stream().unwrap();
-    self.channel.dispatch_start(Box::new(transaction)).await;
+    self.channel.dispatch_start(Box::new(transaction));
     Ok(stream)
   }
 }

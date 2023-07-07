@@ -90,7 +90,7 @@ impl Component for HttpClientComponent {
     op_config: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| trace!("http request"));
+    invocation.trace(|| trace!("http:client"));
     let ctx = self.ctx.clone();
     let config = self.config.clone();
     let baseurl = self.base.clone();
@@ -120,7 +120,7 @@ impl Component for HttpClientComponent {
       );
       tokio::spawn(async move {
         if let Err(e) = fut.await {
-          span.in_scope(|| error!(error = %e, "http request"));
+          span.in_scope(|| error!(error = %e, "http:client"));
           let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
         }
       });
@@ -210,7 +210,7 @@ async fn handle(
         let v = v
           .decode_value()
           .map_err(|e| {
-            invocation.trace(|| error!(port=%k,error=%e, "http:input:deserialize"));
+            invocation.trace(|| error!(port=%k,error=%e, "http:client"));
             e
           })
           .unwrap_or(Value::Null);
@@ -219,7 +219,7 @@ async fn handle(
       .collect();
     let inputs = Value::Object(inputs);
 
-    invocation.trace(|| trace!(inputs=?inputs, "request inputs"));
+    invocation.trace(|| trace!(inputs=?inputs, "http:client:inputs"));
     let ctx = LiquidJsonConfig::make_context(
       Some(inputs),
       root_config.as_ref(),
@@ -239,7 +239,7 @@ async fn handle(
       None => None,
     };
 
-    invocation.trace(|| trace!(body=?body, "request body"));
+    invocation.trace(|| trace!(body=?body, "http:client:request_body"));
 
     let append_path = match liquid_json::render_string(&template.0, &ctx)
       .map_err(|e| Error::PathTemplate(template.1.clone(), e.to_string()))
@@ -256,7 +256,7 @@ async fn handle(
     request_url.set_path(&format!("{}{}", request_url.path(), path));
     request_url.set_query((!query.is_empty()).then_some(query));
 
-    invocation.trace(|| trace!(url= %request_url, "initiating request"));
+    invocation.trace(|| trace!(url= %request_url, "http:client:request_url"));
 
     let request = match opdef.method() {
       HttpMethod::Get => Request::new(Method::GET, request_url),
@@ -296,7 +296,7 @@ async fn handle(
     let (client, request) = request_builder.build_split();
     let request = request.unwrap();
 
-    invocation.trace(|| debug!(request=?request, "http client request"));
+    invocation.trace(|| debug!(request=?request, "http:client:request"));
 
     let response = match client.execute(request).await {
       Ok(r) => r,
@@ -305,6 +305,9 @@ async fn handle(
         break 'outer;
       }
     };
+
+    invocation.trace(|| debug!(status=%response.status(), "http:client:response_status"));
+
     let codec = response.headers().get(CONTENT_TYPE).map_or(Codec::Raw, |value| {
       let value = value.to_str().unwrap();
       let (value, _other) = value.split_once(';').unwrap_or((value, ""));
@@ -321,7 +324,7 @@ async fn handle(
         break 'outer;
       }
     };
-    invocation.trace(|| trace!(response = ?our_response, "response"));
+    invocation.trace(|| debug!(response = ?our_response, "http:client:response"));
 
     let _ = tx.send(Packet::encode("response", our_response));
     let _ = tx.send(Packet::done("response"));
@@ -360,14 +363,15 @@ fn output_task(
             return;
           }
         };
-        span.in_scope(|| trace!(%json, "response body"));
+        span.in_scope(|| trace!(%json, "http:client:response_body"));
         let _ = tx.send(Packet::encode("body", json));
         let _ = tx.send(Packet::done("body"));
       }
       Codec::Raw => {
         let _ = tx.send(Packet::open_bracket("body"));
         while let Some(Ok(bytes)) = body_stream.next().await {
-          span.in_scope(|| trace!(?bytes, "response body"));
+          span.in_scope(|| debug!(len = bytes.len(), "http:client:response_body"));
+
           let _ = tx.send(Packet::encode("body", bytes));
         }
         let _ = tx.send(Packet::close_bracket("body"));

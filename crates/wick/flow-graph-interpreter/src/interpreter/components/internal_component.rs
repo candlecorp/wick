@@ -31,7 +31,7 @@ impl Component for InternalComponent {
     _config: Option<RuntimeConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| trace!(target = %invocation.target, id=%invocation.id,namespace = Self::ID));
+    invocation.trace(|| debug!(target = %invocation.target, id=%invocation.id,namespace = Self::ID));
     let op = invocation.target.operation_id().to_owned();
 
     let is_oneshot = op == SCHEMATIC_INPUT;

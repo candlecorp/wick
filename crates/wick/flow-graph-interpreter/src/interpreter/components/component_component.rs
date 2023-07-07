@@ -41,7 +41,7 @@ impl Component for ComponentComponent {
     _config: Option<RuntimeConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    trace!(target = %invocation.target, namespace = Self::ID);
+    invocation.trace(|| debug!(target = %invocation.target, namespace = Self::ID));
 
     // This handler handles the components:: namespace and outputs the entity
     // to link to.

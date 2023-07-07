@@ -2,7 +2,7 @@
 format: 0
 network:
   collections:
-    - namespace: wapc
+    - namespace: wasmrs
       kind: WaPC
       reference: ../../integration/test-baseline-component/build/baseline.signed.wasm
       data:
@@ -11,7 +11,7 @@ network:
     - name: test
       instances:
         error:
-          id: wapc::error
+          id: wasmrs::error
       connections:
         - from:
             instance: <input>

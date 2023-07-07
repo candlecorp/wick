@@ -30,7 +30,7 @@ pub(crate) async fn connect(_config: SqlComponentConfig, addr: &Url) -> Result<P
   let mgr = bb8_tiberius::ConnectionManager::new(config);
 
   let pool = bb8::Pool::builder()
-    .max_size(20)
+    .max_size(50)
     .connection_timeout(Duration::from_secs(30))
     .build(mgr)
     .await

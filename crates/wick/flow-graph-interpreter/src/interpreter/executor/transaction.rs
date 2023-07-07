@@ -181,7 +181,7 @@ impl Transaction {
     tokio::spawn(async move {
       while let Some(Ok(packet)) = payloads.next().await {
         if let Ok(port) = input.find_input(packet.port()) {
-          accept_input(tx_id, port, &input, &channel, packet).await;
+          accept_input(tx_id, port, &input, &channel, packet);
         } else if packet.is_noop() {
           // TODO: propagate this and/or its context if it becomes an issue.
         } else {
@@ -194,8 +194,6 @@ impl Transaction {
 
   pub(crate) fn update_last_access(&self) {
     let now = SystemTime::now();
-    let elapsed = now.duration_since(self.last_access());
-    trace!(?elapsed, "updating last access");
     *self.last_access_time.lock() = now;
   }
 
@@ -207,7 +205,7 @@ impl Transaction {
   //
   // A transaction may still be executing operations with side effects after this point.
   pub(crate) fn finish(&mut self) -> Result<&TransactionStatistics> {
-    trace!("finishing transaction core");
+    self.span.in_scope(|| trace!("finishing transaction core"));
 
     // drop our output sender;
     drop(self.output.0.take());
@@ -222,26 +220,28 @@ impl Transaction {
     Ok(&self.stats)
   }
 
-  pub(crate) async fn emit_output_message(&self, packets: Vec<Packet>) -> Result<()> {
+  pub(crate) fn emit_output_message(&self, packets: Vec<Packet>) -> Result<()> {
     if let Some(ref output) = self.output.0 {
       for packet in packets {
         output.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
       }
     } else if packets.iter().any(|p| !p.is_done()) {
-      error!(tx_id = %self.id(), "attempted to send output message after tx finished");
+      self
+        .span
+        .in_scope(|| error!(tx_id = %self.id(), "attempted to send output message after tx finished"));
     }
 
     if self.done() {
-      self.emit_done().await?;
+      self.emit_done()?;
     }
     Ok(())
   }
 
-  pub(crate) async fn emit_done(&self) -> Result<()> {
+  pub(crate) fn emit_done(&self) -> Result<()> {
     if !self.finished.load(Ordering::Relaxed) {
       self.span.in_scope(|| trace!("tx finished, dispatching done"));
       self.finished.store(true, Ordering::Relaxed);
-      self.channel.dispatch_done(self.id()).await;
+      self.channel.dispatch_done(self.id());
     }
     Ok(())
   }
@@ -271,14 +271,12 @@ impl Transaction {
     instance.take_input(port)
   }
 
-  pub(crate) async fn check_stalled(&self) -> Result<TxState> {
+  pub(crate) fn check_stalled(&self) -> Result<TxState> {
     if self.done() {
       Ok(TxState::OutputComplete)
     } else {
-      warn!(tx_id = %self.id(), "transaction hung");
-      self
-        .emit_output_message(vec![Packet::component_error("Transaction hung")])
-        .await?;
+      self.span.in_scope(|| warn!(tx_id = %self.id(), "transaction hung"));
+      self.emit_output_message(vec![Packet::component_error("Transaction hung")])?;
       Ok(TxState::OutputPending)
     }
   }
@@ -291,13 +289,13 @@ impl Transaction {
     Ok(())
   }
 
-  pub(crate) async fn handle_schematic_output(&self) -> Result<()> {
-    self.emit_output_message(self.take_tx_output()?).await?;
+  pub(crate) fn handle_schematic_output(&self) -> Result<()> {
+    self.emit_output_message(self.take_tx_output()?)?;
 
     Ok(())
   }
 
-  pub(crate) async fn handle_op_err(&self, index: NodeIndex, err: PacketError) -> Result<()> {
+  pub(crate) fn handle_op_err(&self, index: NodeIndex, err: &PacketError) -> Result<()> {
     self.stats.mark(format!("component:{}:op_err", index));
     let instance = self.instance(index);
 
@@ -309,45 +307,44 @@ impl Transaction {
       accept_outputs(
         self.id(),
         port,
-        down_instance.clone(),
-        self.channel.clone(),
+        down_instance,
+        &self.channel,
         vec![Packet::raw_err(downport_name, err.clone()), Packet::done(downport_name)],
-      )
-      .await;
+      );
     }
     Ok(())
   }
 }
 
-pub(crate) async fn accept_input<'a, 'b>(
+pub(crate) fn accept_input(
   tx_id: Uuid,
   port: PortReference,
-  instance: &'a Arc<InstanceHandler>,
-  channel: &'b InterpreterDispatchChannel,
+  instance: &Arc<InstanceHandler>,
+  channel: &InterpreterDispatchChannel,
   payload: Packet,
 ) {
   instance.buffer_in(&port, payload);
-  channel.dispatch_data(tx_id, port).await;
+  channel.dispatch_data(tx_id, port);
 }
 
-pub(crate) async fn accept_outputs(
+pub(crate) fn accept_outputs(
   tx_id: Uuid,
   port: PortReference,
-  instance: Arc<InstanceHandler>,
-  channel: InterpreterDispatchChannel,
+  instance: &Arc<InstanceHandler>,
+  channel: &InterpreterDispatchChannel,
   msgs: Vec<Packet>,
 ) {
   for payload in msgs {
-    accept_output(tx_id, port, &instance, &channel, payload).await;
+    accept_output(tx_id, port, instance, channel, payload);
   }
 }
-pub(crate) async fn accept_output<'a, 'b>(
+pub(crate) fn accept_output(
   tx_id: Uuid,
   port: PortReference,
-  instance: &'a Arc<InstanceHandler>,
-  channel: &'b InterpreterDispatchChannel,
+  instance: &Arc<InstanceHandler>,
+  channel: &InterpreterDispatchChannel,
   payload: Packet,
 ) {
   instance.buffer_out(&port, payload);
-  channel.dispatch_data(tx_id, port).await;
+  channel.dispatch_data(tx_id, port);
 }

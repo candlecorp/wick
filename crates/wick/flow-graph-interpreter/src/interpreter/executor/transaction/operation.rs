@@ -233,7 +233,7 @@ impl InstanceHandler {
       .unwrap_or(options.output_timeout);
 
     let span = invocation.following_span(trace_span!(
-      "operation:next", operation = %format!("{} ({})", identifier, entity)
+      "next", operation = %format!("{} ({})", identifier, entity)
     ));
 
     self.increment_pending();
@@ -287,11 +287,9 @@ impl InstanceHandler {
           format!("Operation {} failed: {}", entity, error)
         };
 
-        warn!(%msg, "component error");
+        span.in_scope(|| warn!(%msg, "component error"));
 
-        channel
-          .dispatch_op_err(tx_id, self.index(), PacketPayload::Err(PacketError::new(msg)))
-          .await;
+        channel.dispatch_op_err(tx_id, self.index(), PacketPayload::Err(PacketError::new(msg)));
         return Ok(());
       }
     };
@@ -328,15 +326,18 @@ async fn output_handler(
         num_received += 1;
         if let Err(e) = message {
           span.in_scope(|| warn!(error=?e,"component-wide error"));
-          channel
-            .dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(e.to_string()))
-            .await;
+          channel.dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(e.to_string()));
           break CompletionStatus::Error;
         }
         let message = message.unwrap();
+
+        span.in_scope(
+          || trace!(op=instance.id(),port=%message.port(),flags=message.flags(),payload=?message.payload(),"received output packet"),
+        );
+
         if message.is_fatal_error() {
           span.in_scope(|| warn!(error=?message,"component-wide error"));
-          channel.dispatch_op_err(tx_id, instance.index(), message.payload).await;
+          channel.dispatch_op_err(tx_id, instance.index(), message.payload);
           break CompletionStatus::Error;
         }
 
@@ -358,10 +359,8 @@ async fn output_handler(
           hanging.insert(port, message.port().to_owned());
         }
 
-        span.in_scope(|| trace!(port=%message.port(),payload=?message.payload(),"received output packet"));
-
         instance.buffer_out(&port, message);
-        channel.dispatch_data(tx_id, port).await;
+        channel.dispatch_data(tx_id, port);
       }
       Err(error) => {
         span.in_scope(|| warn!(%error,"timeout"));
@@ -370,18 +369,14 @@ async fn output_handler(
           instance.id(),
           instance.entity()
         );
-        channel
-          .dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(msg))
-          .await;
+        channel.dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(msg));
         break CompletionStatus::Timeout;
       }
       Ok(None) => {
         if num_received == 0 && instance.outputs().len() > 0 {
           let err = "operation produced no output, likely due to a panic or misconfiguration";
           span.in_scope(|| warn!(error = err, "stream complete"));
-          channel
-            .dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(err))
-            .await;
+          channel.dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(err));
           break CompletionStatus::Error;
         }
         for (portref, port) in hanging {
@@ -394,7 +389,7 @@ async fn output_handler(
     }
   };
   instance.handle_stream_complete(reason)?;
-  channel.dispatch_call_complete(tx_id, instance.index()).await;
+  channel.dispatch_call_complete(tx_id, instance.index());
   Ok(())
 }
 

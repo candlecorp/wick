@@ -20,7 +20,6 @@ pub(crate) struct Program {
 
 impl Program {
   pub(crate) fn new(network: Network, components: ComponentMap) -> Result<Self, Error> {
-    trace!("initializing graph program");
     let program = Self {
       state: ProgramState::new(network, components),
     };

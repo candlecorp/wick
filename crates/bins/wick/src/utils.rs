@@ -76,30 +76,31 @@ pub(crate) async fn print_stream_json(
   raw: bool,
 ) -> crate::Result<()> {
   if !filter.is_empty() {
-    trace!("filtering only {:?}", filter);
+    trace!(?filter, "cli:output:filter");
   }
   while let Some(packet) = stream.next().await {
     match packet {
       Ok(packet) => {
-        trace!(message = ?packet, "output");
+        trace!(message = ?packet, "cli:output");
+
         if (packet.is_done()) && !raw {
           continue;
         }
         if !filter.is_empty() && !filter.iter().any(|name| name == packet.port()) {
-          tracing::debug!(port = %packet.port(), "filtering out");
+          tracing::debug!(port = %packet.port(), "cli:output:filtering");
           continue;
         }
         let json = packet.to_json();
         println!("{}", json);
       }
       Err(e) => {
-        error!(error = %e, "error in stream");
+        error!(error = %e, "cli:output:error");
         let packet = Packet::component_error(e.to_string());
         println!("{}", packet.to_json());
       }
     }
   }
-  trace!("stream complete");
+  trace!("cli:output:complete");
   Ok(())
 }
 

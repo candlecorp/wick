@@ -193,6 +193,7 @@ async fn handle_stream(
   stmt: Arc<(String, String)>,
   span: Span,
 ) -> Result<(), Error> {
+  span.in_scope(|| debug!(stmt = %stmt.0, "preparing query for stream"));
   'outer: loop {
     let mut incoming_packets = Vec::new();
 
@@ -224,6 +225,7 @@ async fn handle_stream(
       type_wrappers.push((ty, packet));
     }
 
+    let start = SystemTime::now();
     let result = match &opdef {
       SqlOperationKind::Query(_) => {
         query(
@@ -248,6 +250,9 @@ async fn handle_stream(
         .await
       }
     };
+    let duration = SystemTime::now().duration_since(start).unwrap();
+
+    span.in_scope(|| debug!(μs = duration.as_micros(), "executed query"));
 
     if let Err(e) = result {
       if opdef.on_error() == ErrorBehavior::Ignore {
@@ -266,10 +271,9 @@ async fn query(
   def: SqlOperationKind,
   args: Vec<(Type, Packet)>,
   stmt: Arc<(String, String)>,
-  span: Span,
+  _span: Span,
 ) -> Result<Duration, Error> {
   let start = SystemTime::now();
-  span.in_scope(|| trace!(stmt = %stmt.0, "executing query"));
 
   let bound_args = common::bind_args(def.arguments(), &args)?;
 
@@ -304,10 +308,9 @@ async fn exec(
   def: SqlOperationKind,
   args: Vec<(Type, Packet)>,
   stmt: Arc<(String, String)>,
-  span: Span,
+  _span: Span,
 ) -> Result<Duration, Error> {
   let start = SystemTime::now();
-  span.in_scope(|| trace!(stmt = %stmt.0, "executing query"));
 
   let bound_args = common::bind_args(def.arguments(), &args)?;
 
@@ -375,7 +378,6 @@ async fn init_context(config: SqlComponentConfig, addr: Url) -> Result<Context, 
       op.name().to_owned(),
       Arc::new((op.query().to_owned(), op.query().to_owned())),
     );
-    trace!(query=%op.query(), "prepared query");
   }
 
   let db = client;

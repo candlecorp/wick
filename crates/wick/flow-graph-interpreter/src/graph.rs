@@ -153,8 +153,11 @@ fn register_operation(
   }
   let name = scope.join("::");
   let mut schematic = Schematic::new(name, Default::default(), Default::default());
+  let mut ids = flow.instances().keys().cloned().collect::<Vec<_>>();
+  ids.sort();
 
-  for (name, def) in flow.instances().iter() {
+  for name in ids {
+    let def = flow.instances().get(&name).unwrap();
     debug!(%name, config=?def.data(),settings=?def.settings(), "registering operation");
     let mut op_config = op_config.clone();
     op_config.set_template(def.data().cloned());

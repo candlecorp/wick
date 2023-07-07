@@ -5,6 +5,7 @@ mod test;
 use anyhow::Result;
 use flow_component::Component;
 use pretty_assertions::assert_eq;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use wick_packet::{packets, Entity, Packet, RuntimeConfig};
 
@@ -109,10 +110,10 @@ async fn test_multi_sender() -> Result<()> {
   let _ = outputs.pop();
   let actual = outputs.pop().unwrap().unwrap();
 
-  assert_eq!(actual, Packet::encode("c", 123456));
+  assert_eq!(actual, Packet::encode("b", "Hello world"));
   let _ = outputs.pop();
   let actual = outputs.pop().unwrap().unwrap();
-  assert_eq!(actual, Packet::encode("b", "Hello world"));
+  assert_eq!(actual, Packet::encode("c", 123456));
   let _ = outputs.pop();
   let actual = outputs.pop().unwrap().unwrap();
   assert_eq!(actual, Packet::encode("a", true));
@@ -324,6 +325,93 @@ async fn test_switch_case_streams_early_matches() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn test_switch_case_streams_multiple_matches() -> Result<()> {
+  test_config(
+    "./tests/manifests/v1/core-switch-streams.yaml",
+    None,
+    None,
+    vec![
+      Packet::open_bracket("input"),
+      Packet::open_bracket("message"),
+      Packet::encode("input", "first"),
+      Packet::encode("input", "second"),
+      Packet::encode("input", "neither"),
+      Packet::encode("input", "neither2"),
+      Packet::close_bracket("input"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "first_message_1"),
+      Packet::encode("message", "first_message_2"),
+      Packet::encode("message", "first_message_3"),
+      Packet::close_bracket("message"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "second_message_1"),
+      Packet::encode("message", "second_message_2"),
+      Packet::encode("message", "second_message_3"),
+      Packet::close_bracket("message"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "default_message_1"),
+      Packet::encode("message", "default_message_2"),
+      Packet::encode("message", "default_message_3"),
+      Packet::close_bracket("message"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "default_message_1_2"),
+      Packet::encode("message", "default_message_2_2"),
+      Packet::encode("message", "default_message_3_2"),
+      Packet::close_bracket("message"),
+      Packet::close_bracket("message"),
+      Packet::done("input"),
+      Packet::done("message"),
+    ],
+    vec![
+      Packet::open_bracket("output"),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"first_message_1"},
+            {"value":"first_message_2"},
+            {"value":"first_message_3"},
+          ]]
+        }),
+      ),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"SECOND_MESSAGE_1"},
+            {"value":"SECOND_MESSAGE_2"},
+            {"value":"SECOND_MESSAGE_3"},
+          ]]
+        }),
+      ),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"1_egassem_tluafed"},
+            {"value":"2_egassem_tluafed"},
+            {"value":"3_egassem_tluafed"},
+          ]]
+        }),
+      ),
+      Packet::encode(
+        "output",
+        json!({
+          "message": [[
+            {"value":"2_1_egassem_tluafed"},
+            {"value":"2_2_egassem_tluafed"},
+            {"value":"2_3_egassem_tluafed"},
+          ]]
+        }),
+      ),
+      Packet::close_bracket("output"),
+      Packet::done("output"),
+    ],
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
 async fn test_switch_case_streams_empty_substreams() -> Result<()> {
   test_config(
     "./tests/manifests/v1/core-switch-streams.yaml",
@@ -389,15 +477,65 @@ async fn test_switch_case_streams_empty_substreams() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn test_switch_case_streams_default_only() -> Result<()> {
+  test_config(
+    "./tests/manifests/v1/core-switch-streams-default-only.yaml",
+    None,
+    None,
+    vec![
+      Packet::open_bracket("message"),
+      Packet::open_bracket("input"),
+      Packet::encode("input", "first"),
+      Packet::encode("input", "second"),
+      Packet::encode("input", "neither"),
+      Packet::close_bracket("input"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "first_message_1"),
+      Packet::encode("message", "first_message_2"),
+      Packet::encode("message", "first_message_3"),
+      Packet::close_bracket("message"),
+      Packet::open_bracket("message"),
+      Packet::close_bracket("message"),
+      Packet::open_bracket("message"),
+      Packet::encode("message", "default_message_1"),
+      Packet::encode("message", "default_message_2"),
+      Packet::encode("message", "default_message_3"),
+      Packet::close_bracket("message"),
+      Packet::close_bracket("message"),
+      Packet::done("input"),
+      Packet::done("message"),
+    ],
+    vec![
+      Packet::open_bracket("output"),
+      Packet::open_bracket("output"),
+      Packet::encode("output", "first_message_1"),
+      Packet::encode("output", "first_message_2"),
+      Packet::encode("output", "first_message_3"),
+      Packet::close_bracket("output"),
+      Packet::open_bracket("output"),
+      Packet::close_bracket("output"),
+      Packet::open_bracket("output"),
+      Packet::encode("output", "default_message_1"),
+      Packet::encode("output", "default_message_2"),
+      Packet::encode("output", "default_message_3"),
+      Packet::close_bracket("output"),
+      Packet::close_bracket("output"),
+      Packet::done("output"),
+    ],
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
 async fn test_switch_case_multi_input_streams() -> Result<()> {
   test_config(
     "./tests/manifests/v1/core-switch-multi-input-streams.yaml",
     None,
     None,
     vec![
+      Packet::open_bracket("input"),
       Packet::open_bracket("name"),
       Packet::open_bracket("greeting"),
-      Packet::open_bracket("input"),
       Packet::encode("input", "first"),
       Packet::encode("input", "second"),
       Packet::encode("input", "neither"),
@@ -461,6 +599,60 @@ async fn test_switch_case_multi_input_streams() -> Result<()> {
     ],
   )
   .await
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct SuccessPacket {
+  #[serde(default)]
+  flags: u8,
+  #[serde(default)]
+  payload: Option<Value>,
+  port: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct ErrorPacket {
+  port: String,
+  error: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+enum JsonPacket {
+  Error(ErrorPacket),
+  Success(SuccessPacket),
+}
+
+impl From<JsonPacket> for Packet {
+  fn from(value: JsonPacket) -> Self {
+    match value {
+      JsonPacket::Error(v) => Packet::err(v.port, v.error),
+      JsonPacket::Success(v) => {
+        if v.payload.is_some() {
+          Packet::encode(v.port, v.payload)
+        } else if v.flags == 64 {
+          Packet::open_bracket(v.port)
+        } else if v.flags == 32 {
+          Packet::close_bracket(v.port)
+        } else {
+          Packet::done(v.port)
+        }
+      }
+    }
+  }
+}
+
+#[allow(unused)]
+fn from_packet_file(file: &str) -> Result<Vec<Packet>> {
+  let file = std::fs::read_to_string(file).unwrap();
+  let mut packets = Vec::new();
+  for line in file.lines() {
+    let json = serde_json::from_str::<JsonPacket>(line)?;
+    let packet: Packet = json.into();
+    packets.push(packet);
+  }
+
+  Ok(packets)
 }
 
 async fn first_packet_test(file: &str, packets: Vec<Packet>, expected: &str) -> Result<()> {

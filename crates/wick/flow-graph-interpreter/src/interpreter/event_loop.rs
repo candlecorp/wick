@@ -56,7 +56,7 @@ impl EventLoop {
     let task = self.steal_task();
     match task {
       Some(task) => {
-        self.dispatcher.dispatch_close(None).await;
+        self.dispatcher.dispatch_close(None);
 
         let timeout = std::time::Duration::from_secs(2);
         let result = tokio::time::timeout(timeout, task).await;
@@ -166,9 +166,9 @@ async fn event_loop(
         break Ok(());
       }
       Err(_) => {
-        if let Err(error) = state.check_stalled().await {
+        if let Err(error) = state.check_stalled() {
           error!(%error,"Error checking hung transactions");
-          channel.dispatcher().dispatch_close(Some(error)).await;
+          channel.dispatcher().dispatch_close(Some(error));
         };
       }
     }
