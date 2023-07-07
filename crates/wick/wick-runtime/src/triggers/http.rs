@@ -92,11 +92,11 @@ enum HttpError {
   #[error("Invalid pre-request middleware response: {0}")]
   InvalidPreRequestResponse(String),
 
-  #[error("Pre-request middleware did not provide a request or response")]
-  PreRequestResponseNoData,
+  #[error("Pre-request middleware '{0}' did not provide a request or response")]
+  PreRequestResponseNoData(Entity),
 
-  #[error("Post-request middleware did not provide a response")]
-  PostRequestResponseNoData,
+  #[error("Post-request middleware '{0}' did not provide a response")]
+  PostRequestResponseNoData(Entity),
 
   #[error("Invalid post-request middleware response: {0}")]
   InvalidPostRequestResponse(String),
@@ -660,6 +660,13 @@ mod test {
 
       assert!(res.contains("Google"));
 
+      // requests to /google should result in a redirected response (from a composite component)
+      let res = get("/google").await?.text().await?;
+
+      println!("{:#?}", res);
+
+      assert!(res.contains("Google"));
+
       // check that other requests still go through.
       let res = get("/this/FIRST_VALUE/some/222?third=third_a&fourth=true").await?;
 
@@ -668,7 +675,7 @@ mod test {
       assert_eq!(header, "false");
       // check our response middleware added a header.
       let header = res.headers().get("x-wick-count").unwrap();
-      assert_eq!(header, "2");
+      assert_eq!(header, "3");
       let res: serde_json::Value = res.json().await?;
       println!("{:#?}", res);
       assert_eq!(

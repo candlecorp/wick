@@ -97,21 +97,16 @@ pub(super) async fn handle(
   stream
 }
 
-pub(super) enum Either {
-  Request(wick_http::HttpRequest),
-  Response(wick_http::HttpResponse),
-}
-
 pub(super) async fn handle_request_middleware(
   target: Entity,
   operation_config: Option<RuntimeConfig>,
   engine: Arc<Runtime>,
   req: &wick_http::HttpRequest,
-) -> Result<Option<Either>, HttpError> {
+) -> Result<Option<wick_http::RequestMiddlewareResponse>, HttpError> {
   let packets = packets!(("request", req));
   let invocation = Invocation::new(
     Entity::server("http_client"),
-    target,
+    target.clone(),
     packets,
     InherentData::unsafe_default(),
     &Span::current(),
@@ -129,24 +124,27 @@ pub(super) async fn handle_request_middleware(
     Err(e) => return Err(HttpError::InvalidPreRequestResponse(e.to_string())),
   };
 
-  let Some(packet) = packets.into_iter().find(|p| p.has_data()) else {
-    return Err(HttpError::PreRequestResponseNoData);
+  if let Some(packet) = packets.iter().find(|p| p.is_error()) {
+    return Err(HttpError::InvalidPreRequestResponse(
+      packet.clone().unwrap_err().msg().to_owned(),
+    ));
   };
 
-  if packet.port() == "response" {
-    let response: wick_http::HttpResponse = packet
+  let Some(packet) = packets.into_iter().find(|p| p.has_data()) else {
+    return Err(HttpError::PreRequestResponseNoData(target));
+  };
+
+  if packet.port() == "output" {
+    let response: wick_http::RequestMiddlewareResponse = packet
       .decode()
       .map_err(|e| HttpError::InvalidPreRequestResponse(e.to_string()))?;
 
-    Ok(Some(Either::Response(response)))
-  } else if packet.port() == "request" {
-    let request: wick_http::HttpRequest = packet
-      .decode()
-      .map_err(|e| HttpError::InvalidPreRequestResponse(e.to_string()))?;
-
-    Ok(Some(Either::Request(request)))
+    Ok(Some(response))
   } else {
-    Err(HttpError::InvalidPreRequestResponse("Invalid packet".to_owned()))
+    Err(HttpError::InvalidPreRequestResponse(format!(
+      "Invalid response named {}, pre-request middleware expects a response named 'output' that is either an HttpRequest or an HttpResponse",
+      packet.port()
+    )))
   }
 }
 
@@ -160,7 +158,7 @@ pub(super) async fn handle_response_middleware(
   let packets = packets!(("request", req), ("response", res));
   let invocation = Invocation::new(
     Entity::server("http_client"),
-    target,
+    target.clone(),
     packets,
     InherentData::unsafe_default(),
     &Span::current(),
@@ -178,8 +176,14 @@ pub(super) async fn handle_response_middleware(
     Err(e) => return Err(HttpError::InvalidPostRequestResponse(e.to_string())),
   };
 
+  if let Some(packet) = packets.iter().find(|p| p.is_error()) {
+    return Err(HttpError::InvalidPostRequestResponse(
+      packet.clone().unwrap_err().msg().to_owned(),
+    ));
+  };
+
   let Some(packet) = packets.into_iter().find(|p| p.has_data()) else {
-    return Err(HttpError::PostRequestResponseNoData);
+    return Err(HttpError::PostRequestResponseNoData(target));
   };
 
   if packet.port() == "response" {

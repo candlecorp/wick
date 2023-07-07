@@ -25,11 +25,12 @@ wick-packet = { workspace = true, default-features = false }
 flow-component = { workspace = true, default-features = false }
 wasmrs = { workspace = true }
 wasmrs-rx = { workspace = true }
-wasmrs-codec = { workspace = true }
+wasmrs-codec = { workspace = true, features = ["std"] }
 wasmrs-runtime = { workspace = true }
 tokio-stream = { workspace = true }
 paste = { workspace = true }
 serde_json = { workspace = true }
+serde = { workspace = true }
 chrono = { workspace = true, features = ["std"], optional = true }
 bytes = { workspace = true, optional = true }
 
@@ -40,3 +41,7 @@ wasmrs-guest = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 serde = { workspace = true }
 anyhow = { workspace = true }
+wick-logger = { workspace = true }
+test-logger = { workspace = true }
+tracing = { workspace = true }
+serde-value = { workspace = true }

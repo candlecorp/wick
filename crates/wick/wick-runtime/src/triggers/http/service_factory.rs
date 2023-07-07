@@ -9,8 +9,9 @@ use hyper::server::conn::AddrStream;
 use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
 use tracing::Span;
+use wick_interface_http::types::RequestMiddlewareResponse;
 
-use super::component_utils::{handle_request_middleware, handle_response_middleware, Either};
+use super::component_utils::{handle_request_middleware, handle_response_middleware};
 use super::conversions::{convert_response, convert_to_wick_response, merge_requests, request_to_wick};
 use super::{HttpError, HttpRouter, RawRouterHandler};
 use crate::Runtime;
@@ -174,8 +175,8 @@ where
   for (entity, config) in &r.middleware.request {
     let response = handle_request_middleware(entity.clone(), config.clone(), engine.clone(), &wick_req).await?;
     match response {
-      Some(Either::Request(req)) => wick_req = req,
-      Some(Either::Response(res)) => {
+      Some(RequestMiddlewareResponse::HttpRequest(req)) => wick_req = req,
+      Some(RequestMiddlewareResponse::HttpResponse(res)) => {
         let builder = convert_response(Response::builder(), res)?;
         let res = builder.body(Body::empty()).unwrap();
         return Ok((wick_req, Some(res)));

@@ -5,7 +5,7 @@ mod wick {
 }
 use wick::*;
 
-use self::wick::types::http;
+use self::wick::types::http::{self, RequestMiddlewareResponse};
 
 #[async_trait::async_trait(?Send)]
 impl RedirectOperation for Component {
@@ -29,17 +29,17 @@ impl RedirectOperation for Component {
         let url = request.query_parameters.get("url").and_then(|v| v.get(0));
         if let Some(url) = url {
           response.headers.insert("Location".to_owned(), vec![url.to_owned()]);
-          outputs.response.send(&response);
+          outputs.output.send(&RequestMiddlewareResponse::HttpResponse(response));
         }
       } else {
         request
           .headers
           .insert("x-wick-redirect".to_owned(), vec!["false".to_owned()]);
-        outputs.request.send(&request);
+        outputs.output.send(&RequestMiddlewareResponse::HttpRequest(request));
       }
     }
-    outputs.request.done();
-    outputs.response.done();
+    outputs.output.done();
+
     Ok(())
   }
 }

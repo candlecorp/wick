@@ -87,6 +87,9 @@
 // Add exceptions here
 #![allow()]
 
+/// A module implementing custom serializers/deserializers for wick types.
+pub mod serde;
+
 /// Macros used by wick components and generated code.
 pub mod macros;
 #[cfg(feature = "bytes")]

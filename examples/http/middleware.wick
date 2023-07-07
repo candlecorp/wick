@@ -25,6 +25,10 @@ import:
     component:
       kind: wick/component/manifest@v1
       ref: ./middleware/request/component.wick
+  - name: composite_middleware
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./middleware/redirect.wick
 triggers:
   - kind: wick/trigger/http@v1
     resource: http
@@ -34,9 +38,10 @@ triggers:
         middleware:
           request:
             - middleware::redirect
+            - composite_middleware::pathcheck
           response:
             - middleware::count
         routes:
-          - uri: '/this/{first:string}/some/{second:u32}?third:string&fourth:bool'
+          - sub_path: '/this/{first:string}/some/{second:u32}?third:string&fourth:bool'
             operation: sample::echo
             description: 'Echoes inputs first, second, third, and fourth back as JSON'

@@ -66,7 +66,8 @@ pub(crate) fn gen_enum<'a>(
     .iter()
     .map(|v| {
       let identname = id(&enumvariant_name(v));
-      let name = v.name.clone();
+      let name = v.value.clone().unwrap_or_else(|| v.name.clone());
+
       quote! {Self::#identname => f.write_str(#name)}
     })
     .collect_vec();
@@ -86,9 +87,28 @@ pub(crate) fn gen_enum<'a>(
   let fromstr_match_arms = ty
     .variants
     .iter()
-    .filter_map(|v| {
-      let identname = id(&enumvariant_name(v));
-      v.value.as_ref().map(|name| quote! {#name => Ok(Self::#identname)})
+    .map(|v| {
+      let name = enumvariant_name(v);
+      let identname = id(&name);
+      v.value.as_ref().map_or_else(
+        || {
+          quote! {
+            #name => Ok(Self::#identname)
+          }
+        },
+        |value| {
+          if name != *value {
+            quote! {
+              #value => Ok(Self::#identname),
+              #name => Ok(Self::#identname)
+            }
+          } else {
+            quote! {
+              #value => Ok(Self::#identname)
+            }
+          }
+        },
+      )
     })
     .collect_vec();
 
@@ -97,13 +117,36 @@ pub(crate) fn gen_enum<'a>(
     .as_ref()
     .map_or_else(|| quote! {}, |desc| quote! {#[doc = #desc]});
 
+  let try_from_strnum_impl = quote! {
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for #name {
+      type Error = String;
+
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+
+    impl From<#name> for String {
+      fn from(value: #name) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
+    }
+  };
+
   let enum_impl = quote! {
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
     #description
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum #name {
       #(#variants,)*
-
     }
+
+    #try_from_strnum_impl
 
     impl #name {
       #[allow(unused)]
@@ -243,8 +286,12 @@ pub(crate) fn gen_union<'a>(
     .iter()
     .map(|ty| {
       let name = id(&generic_type_name(ty));
+      let description = format!("A {} value.", ty);
       let ty = expand_type(config, Direction::In, imported, ty);
-      quote! {#name(#ty)}
+      quote! {
+        #[doc = #description]
+        #name(#ty)
+      }
     })
     .collect_vec();
 

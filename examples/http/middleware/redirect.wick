@@ -13,7 +13,7 @@ import:
   - name: http
     component:
       kind: wick/component/types@v1
-      ref: 'registry.candle.dev/common/http:0.0.1'
+      ref: ../../../crates/interfaces/wick-interface-http/component.yaml
 component:
   kind: wick/component/composite@v1
   operations:
@@ -26,10 +26,8 @@ component:
               - name: request
                 type: http::HttpRequest
             outputs:
-              - name: request
-                type: http::HttpRequest
-              - name: response
-                type: http::HttpResponse?
+              - name: output
+                type: http::RequestMiddlewareResponse
             cases:
               - case: '/google'
                 do: self::pathcheck::to_google
@@ -37,8 +35,7 @@ component:
       flow:
         - <>.request.path -> switch.match
         - <>.request -> switch.request
-        - switch.request -> <>.request
-        - switch.response -> <>.response
+        - switch.output -> <>.output
       operations:
         - name: to_google
           uses:
@@ -51,18 +48,14 @@ component:
                   headers:
                     location: ['https://google.com']
           outputs:
-            - name: request
-              type: http::HttpRequest
-            - name: response
-              type: http::HttpResponse?
+            - name: output
+              type: http::RequestMiddlewareResponse
           flow:
             - <>.request -> drop
-            - STATUS.output -> <>.response
+            - STATUS.output -> <>.output
         - name: none
           outputs:
-            - name: request
-              type: http::HttpRequest
-            - name: response
-              type: http::HttpResponse?
+            - name: output
+              type: http::RequestMiddlewareResponse
           flow:
-            - <>.request -> <>.request
+            - <>.request -> <>.output

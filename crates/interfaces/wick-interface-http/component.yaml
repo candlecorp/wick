@@ -13,41 +13,41 @@ types:
     kind: wick/type/enum@v1
     description: HTTP method enum
     variants:
-      - name: GET
+      - name: Get
         description: HTTP GET method
-      - name: POST
+      - name: Post
         description: HTTP POST method
-      - name: PUT
+      - name: Put
         description: HTTP PUT method
-      - name: DELETE
+      - name: Delete
         description: HTTP DELETE method
-      - name: PATCH
+      - name: Patch
         description: HTTP PATCH method
-      - name: HEAD
+      - name: Head
         description: HTTP HEAD method
-      - name: OPTIONS
+      - name: Options
         description: HTTP OPTIONS method
-      - name: TRACE
+      - name: Trace
         description: HTTP TRACE method
   - name: HttpScheme
     kind: wick/type/enum@v1
     description: HTTP scheme
     variants:
-      - name: HTTP
+      - name: Http
         description: HTTP scheme
-      - name: HTTPS
+      - name: Https
         description: HTTPS scheme
   - name: HttpVersion
     kind: wick/type/enum@v1
     description: HTTP version
     variants:
-      - name: HTTP_1_0
+      - name: Http1_0
         value: '1.0'
         description: HTTP 1.0 version
-      - name: HTTP_1_1
+      - name: Http1_1
         value: '1.1'
         description: HTTP 1.1 version
-      - name: HTTP_2_0
+      - name: Http2_0
         value: '2.0'
         description: HTTP 2.0 version
   - name: StatusCode
@@ -60,7 +60,7 @@ types:
       - name: SwitchingProtocols
         value: '101'
         description: SwitchingProtocols status code
-      - name: OK
+      - name: Ok
         value: '200'
         description: HTTP OK status code
       - name: Created
@@ -236,3 +236,9 @@ types:
       - name: remote_addr
         type: string
         description: The remote address of the connected client
+  - name: RequestMiddlewareResponse
+    kind: wick/type/union@v1
+    description: A response from pre-request middleware
+    types:
+      - HttpRequest
+      - HttpResponse

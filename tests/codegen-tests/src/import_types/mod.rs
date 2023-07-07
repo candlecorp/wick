@@ -105,8 +105,11 @@ pub mod types {
   #[doc = "a weird union"]
   #[serde(untagged)]
   pub enum LocalUnion {
+    #[doc = "A string value."]
     String(String),
+    #[doc = "A LocalStructInner value."]
     LocalStructInner(types::LocalStructInner),
+    #[doc = "A datetime value."]
     Datetime(wick_component::datetime::DateTime),
   }
   pub mod aaa {
@@ -114,6 +117,7 @@ pub mod types {
     use super::aaa;
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP method enum"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum HttpMethod {
       #[doc = "HTTP GET method"]
       Get,
@@ -131,6 +135,22 @@ pub mod types {
       Options,
       #[doc = "HTTP TRACE method"]
       Trace,
+    }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpMethod {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<HttpMethod> for String {
+      fn from(value: HttpMethod) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
     }
     impl HttpMethod {
       #[allow(unused)]
@@ -164,6 +184,14 @@ pub mod types {
       fn from_str(s: &str) -> Result<Self, Self::Err> {
         #[allow(clippy::match_single_binding)]
         match s {
+          "Get" => Ok(Self::Get),
+          "Post" => Ok(Self::Post),
+          "Put" => Ok(Self::Put),
+          "Delete" => Ok(Self::Delete),
+          "Patch" => Ok(Self::Patch),
+          "Head" => Ok(Self::Head),
+          "Options" => Ok(Self::Options),
+          "Trace" => Ok(Self::Trace),
           _ => Err(s.to_owned()),
         }
       }
@@ -172,14 +200,14 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Get => f.write_str("GET"),
-          Self::Post => f.write_str("POST"),
-          Self::Put => f.write_str("PUT"),
-          Self::Delete => f.write_str("DELETE"),
-          Self::Patch => f.write_str("PATCH"),
-          Self::Head => f.write_str("HEAD"),
-          Self::Options => f.write_str("OPTIONS"),
-          Self::Trace => f.write_str("TRACE"),
+          Self::Get => f.write_str("Get"),
+          Self::Post => f.write_str("Post"),
+          Self::Put => f.write_str("Put"),
+          Self::Delete => f.write_str("Delete"),
+          Self::Patch => f.write_str("Patch"),
+          Self::Head => f.write_str("Head"),
+          Self::Options => f.write_str("Options"),
+          Self::Trace => f.write_str("Trace"),
         }
       }
     }
@@ -235,11 +263,28 @@ pub mod types {
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP scheme"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum HttpScheme {
       #[doc = "HTTP scheme"]
       Http,
       #[doc = "HTTPS scheme"]
       Https,
+    }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpScheme {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<HttpScheme> for String {
+      fn from(value: HttpScheme) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
     }
     impl HttpScheme {
       #[allow(unused)]
@@ -267,6 +312,8 @@ pub mod types {
       fn from_str(s: &str) -> Result<Self, Self::Err> {
         #[allow(clippy::match_single_binding)]
         match s {
+          "Http" => Ok(Self::Http),
+          "Https" => Ok(Self::Https),
           _ => Err(s.to_owned()),
         }
       }
@@ -275,13 +322,14 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Http => f.write_str("HTTP"),
-          Self::Https => f.write_str("HTTPS"),
+          Self::Http => f.write_str("Http"),
+          Self::Https => f.write_str("Https"),
         }
       }
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP version"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum HttpVersion {
       #[doc = "HTTP 1.0 version"]
       Http10,
@@ -289,6 +337,22 @@ pub mod types {
       Http11,
       #[doc = "HTTP 2.0 version"]
       Http20,
+    }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpVersion {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<HttpVersion> for String {
+      fn from(value: HttpVersion) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
     }
     impl HttpVersion {
       #[allow(unused)]
@@ -318,8 +382,11 @@ pub mod types {
         #[allow(clippy::match_single_binding)]
         match s {
           "1.0" => Ok(Self::Http10),
+          "Http10" => Ok(Self::Http10),
           "1.1" => Ok(Self::Http11),
+          "Http11" => Ok(Self::Http11),
           "2.0" => Ok(Self::Http20),
+          "Http20" => Ok(Self::Http20),
           _ => Err(s.to_owned()),
         }
       }
@@ -328,14 +395,24 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Http10 => f.write_str("HTTP_1_0"),
-          Self::Http11 => f.write_str("HTTP_1_1"),
-          Self::Http20 => f.write_str("HTTP_2_0"),
+          Self::Http10 => f.write_str("1.0"),
+          Self::Http11 => f.write_str("1.1"),
+          Self::Http20 => f.write_str("2.0"),
         }
       }
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
+    #[doc = "A response from pre-request middleware"]
+    #[serde(untagged)]
+    pub enum RequestMiddlewareResponse {
+      #[doc = "A HttpRequest value."]
+      HttpRequest(HttpRequest),
+      #[doc = "A HttpResponse value."]
+      HttpResponse(HttpResponse),
+    }
+    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP status code"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum StatusCode {
       #[doc = "Continue status code"]
       Continue,
@@ -430,6 +507,22 @@ pub mod types {
       #[doc = "Indicates an unknown status code"]
       Unknown,
     }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for StatusCode {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<StatusCode> for String {
+      fn from(value: StatusCode) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
+    }
     impl StatusCode {
       #[allow(unused)]
       #[doc = "Returns the value of the enum variant as a string."]
@@ -501,51 +594,97 @@ pub mod types {
         #[allow(clippy::match_single_binding)]
         match s {
           "100" => Ok(Self::Continue),
+          "Continue" => Ok(Self::Continue),
           "101" => Ok(Self::SwitchingProtocols),
+          "SwitchingProtocols" => Ok(Self::SwitchingProtocols),
           "200" => Ok(Self::Ok),
+          "Ok" => Ok(Self::Ok),
           "201" => Ok(Self::Created),
+          "Created" => Ok(Self::Created),
           "202" => Ok(Self::Accepted),
+          "Accepted" => Ok(Self::Accepted),
           "203" => Ok(Self::NonAuthoritativeInformation),
+          "NonAuthoritativeInformation" => Ok(Self::NonAuthoritativeInformation),
           "204" => Ok(Self::NoContent),
+          "NoContent" => Ok(Self::NoContent),
           "205" => Ok(Self::ResetContent),
+          "ResetContent" => Ok(Self::ResetContent),
           "206" => Ok(Self::PartialContent),
+          "PartialContent" => Ok(Self::PartialContent),
           "300" => Ok(Self::MultipleChoices),
+          "MultipleChoices" => Ok(Self::MultipleChoices),
           "301" => Ok(Self::MovedPermanently),
+          "MovedPermanently" => Ok(Self::MovedPermanently),
           "302" => Ok(Self::Found),
+          "Found" => Ok(Self::Found),
           "303" => Ok(Self::SeeOther),
+          "SeeOther" => Ok(Self::SeeOther),
           "304" => Ok(Self::NotModified),
+          "NotModified" => Ok(Self::NotModified),
           "307" => Ok(Self::TemporaryRedirect),
+          "TemporaryRedirect" => Ok(Self::TemporaryRedirect),
           "308" => Ok(Self::PermanentRedirect),
+          "PermanentRedirect" => Ok(Self::PermanentRedirect),
           "400" => Ok(Self::BadRequest),
+          "BadRequest" => Ok(Self::BadRequest),
           "401" => Ok(Self::Unauthorized),
+          "Unauthorized" => Ok(Self::Unauthorized),
           "402" => Ok(Self::PaymentRequired),
+          "PaymentRequired" => Ok(Self::PaymentRequired),
           "403" => Ok(Self::Forbidden),
+          "Forbidden" => Ok(Self::Forbidden),
           "404" => Ok(Self::NotFound),
+          "NotFound" => Ok(Self::NotFound),
           "405" => Ok(Self::MethodNotAllowed),
+          "MethodNotAllowed" => Ok(Self::MethodNotAllowed),
           "406" => Ok(Self::NotAcceptable),
+          "NotAcceptable" => Ok(Self::NotAcceptable),
           "407" => Ok(Self::ProxyAuthenticationRequired),
+          "ProxyAuthenticationRequired" => Ok(Self::ProxyAuthenticationRequired),
           "408" => Ok(Self::RequestTimeout),
+          "RequestTimeout" => Ok(Self::RequestTimeout),
           "409" => Ok(Self::Conflict),
+          "Conflict" => Ok(Self::Conflict),
           "410" => Ok(Self::Gone),
+          "Gone" => Ok(Self::Gone),
           "411" => Ok(Self::LengthRequired),
+          "LengthRequired" => Ok(Self::LengthRequired),
           "412" => Ok(Self::PreconditionFailed),
+          "PreconditionFailed" => Ok(Self::PreconditionFailed),
           "413" => Ok(Self::PayloadTooLarge),
+          "PayloadTooLarge" => Ok(Self::PayloadTooLarge),
           "414" => Ok(Self::UriTooLong),
+          "UriTooLong" => Ok(Self::UriTooLong),
           "415" => Ok(Self::UnsupportedMediaType),
+          "UnsupportedMediaType" => Ok(Self::UnsupportedMediaType),
           "416" => Ok(Self::RangeNotSatisfiable),
+          "RangeNotSatisfiable" => Ok(Self::RangeNotSatisfiable),
           "417" => Ok(Self::ExpectationFailed),
+          "ExpectationFailed" => Ok(Self::ExpectationFailed),
           "418" => Ok(Self::ImATeapot),
+          "ImATeapot" => Ok(Self::ImATeapot),
           "422" => Ok(Self::UnprocessableEntity),
+          "UnprocessableEntity" => Ok(Self::UnprocessableEntity),
           "423" => Ok(Self::Locked),
+          "Locked" => Ok(Self::Locked),
           "424" => Ok(Self::FailedDependency),
+          "FailedDependency" => Ok(Self::FailedDependency),
           "429" => Ok(Self::TooManyRequests),
+          "TooManyRequests" => Ok(Self::TooManyRequests),
           "500" => Ok(Self::InternalServerError),
+          "InternalServerError" => Ok(Self::InternalServerError),
           "501" => Ok(Self::NotImplemented),
+          "NotImplemented" => Ok(Self::NotImplemented),
           "502" => Ok(Self::BadGateway),
+          "BadGateway" => Ok(Self::BadGateway),
           "503" => Ok(Self::ServiceUnavailable),
+          "ServiceUnavailable" => Ok(Self::ServiceUnavailable),
           "504" => Ok(Self::GatewayTimeout),
+          "GatewayTimeout" => Ok(Self::GatewayTimeout),
           "505" => Ok(Self::HttpVersionNotSupported),
+          "HttpVersionNotSupported" => Ok(Self::HttpVersionNotSupported),
           "-1" => Ok(Self::Unknown),
+          "Unknown" => Ok(Self::Unknown),
           _ => Err(s.to_owned()),
         }
       }
@@ -554,52 +693,52 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Continue => f.write_str("Continue"),
-          Self::SwitchingProtocols => f.write_str("SwitchingProtocols"),
-          Self::Ok => f.write_str("OK"),
-          Self::Created => f.write_str("Created"),
-          Self::Accepted => f.write_str("Accepted"),
-          Self::NonAuthoritativeInformation => f.write_str("NonAuthoritativeInformation"),
-          Self::NoContent => f.write_str("NoContent"),
-          Self::ResetContent => f.write_str("ResetContent"),
-          Self::PartialContent => f.write_str("PartialContent"),
-          Self::MultipleChoices => f.write_str("MultipleChoices"),
-          Self::MovedPermanently => f.write_str("MovedPermanently"),
-          Self::Found => f.write_str("Found"),
-          Self::SeeOther => f.write_str("SeeOther"),
-          Self::NotModified => f.write_str("NotModified"),
-          Self::TemporaryRedirect => f.write_str("TemporaryRedirect"),
-          Self::PermanentRedirect => f.write_str("PermanentRedirect"),
-          Self::BadRequest => f.write_str("BadRequest"),
-          Self::Unauthorized => f.write_str("Unauthorized"),
-          Self::PaymentRequired => f.write_str("PaymentRequired"),
-          Self::Forbidden => f.write_str("Forbidden"),
-          Self::NotFound => f.write_str("NotFound"),
-          Self::MethodNotAllowed => f.write_str("MethodNotAllowed"),
-          Self::NotAcceptable => f.write_str("NotAcceptable"),
-          Self::ProxyAuthenticationRequired => f.write_str("ProxyAuthenticationRequired"),
-          Self::RequestTimeout => f.write_str("RequestTimeout"),
-          Self::Conflict => f.write_str("Conflict"),
-          Self::Gone => f.write_str("Gone"),
-          Self::LengthRequired => f.write_str("LengthRequired"),
-          Self::PreconditionFailed => f.write_str("PreconditionFailed"),
-          Self::PayloadTooLarge => f.write_str("PayloadTooLarge"),
-          Self::UriTooLong => f.write_str("URITooLong"),
-          Self::UnsupportedMediaType => f.write_str("UnsupportedMediaType"),
-          Self::RangeNotSatisfiable => f.write_str("RangeNotSatisfiable"),
-          Self::ExpectationFailed => f.write_str("ExpectationFailed"),
-          Self::ImATeapot => f.write_str("ImATeapot"),
-          Self::UnprocessableEntity => f.write_str("UnprocessableEntity"),
-          Self::Locked => f.write_str("Locked"),
-          Self::FailedDependency => f.write_str("FailedDependency"),
-          Self::TooManyRequests => f.write_str("TooManyRequests"),
-          Self::InternalServerError => f.write_str("InternalServerError"),
-          Self::NotImplemented => f.write_str("NotImplemented"),
-          Self::BadGateway => f.write_str("BadGateway"),
-          Self::ServiceUnavailable => f.write_str("ServiceUnavailable"),
-          Self::GatewayTimeout => f.write_str("GatewayTimeout"),
-          Self::HttpVersionNotSupported => f.write_str("HTTPVersionNotSupported"),
-          Self::Unknown => f.write_str("Unknown"),
+          Self::Continue => f.write_str("100"),
+          Self::SwitchingProtocols => f.write_str("101"),
+          Self::Ok => f.write_str("200"),
+          Self::Created => f.write_str("201"),
+          Self::Accepted => f.write_str("202"),
+          Self::NonAuthoritativeInformation => f.write_str("203"),
+          Self::NoContent => f.write_str("204"),
+          Self::ResetContent => f.write_str("205"),
+          Self::PartialContent => f.write_str("206"),
+          Self::MultipleChoices => f.write_str("300"),
+          Self::MovedPermanently => f.write_str("301"),
+          Self::Found => f.write_str("302"),
+          Self::SeeOther => f.write_str("303"),
+          Self::NotModified => f.write_str("304"),
+          Self::TemporaryRedirect => f.write_str("307"),
+          Self::PermanentRedirect => f.write_str("308"),
+          Self::BadRequest => f.write_str("400"),
+          Self::Unauthorized => f.write_str("401"),
+          Self::PaymentRequired => f.write_str("402"),
+          Self::Forbidden => f.write_str("403"),
+          Self::NotFound => f.write_str("404"),
+          Self::MethodNotAllowed => f.write_str("405"),
+          Self::NotAcceptable => f.write_str("406"),
+          Self::ProxyAuthenticationRequired => f.write_str("407"),
+          Self::RequestTimeout => f.write_str("408"),
+          Self::Conflict => f.write_str("409"),
+          Self::Gone => f.write_str("410"),
+          Self::LengthRequired => f.write_str("411"),
+          Self::PreconditionFailed => f.write_str("412"),
+          Self::PayloadTooLarge => f.write_str("413"),
+          Self::UriTooLong => f.write_str("414"),
+          Self::UnsupportedMediaType => f.write_str("415"),
+          Self::RangeNotSatisfiable => f.write_str("416"),
+          Self::ExpectationFailed => f.write_str("417"),
+          Self::ImATeapot => f.write_str("418"),
+          Self::UnprocessableEntity => f.write_str("422"),
+          Self::Locked => f.write_str("423"),
+          Self::FailedDependency => f.write_str("424"),
+          Self::TooManyRequests => f.write_str("429"),
+          Self::InternalServerError => f.write_str("500"),
+          Self::NotImplemented => f.write_str("501"),
+          Self::BadGateway => f.write_str("502"),
+          Self::ServiceUnavailable => f.write_str("503"),
+          Self::GatewayTimeout => f.write_str("504"),
+          Self::HttpVersionNotSupported => f.write_str("505"),
+          Self::Unknown => f.write_str("-1"),
         }
       }
     }
@@ -609,6 +748,7 @@ pub mod types {
     use super::zzz;
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP method enum"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum HttpMethod {
       #[doc = "HTTP GET method"]
       Get,
@@ -626,6 +766,22 @@ pub mod types {
       Options,
       #[doc = "HTTP TRACE method"]
       Trace,
+    }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpMethod {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<HttpMethod> for String {
+      fn from(value: HttpMethod) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
     }
     impl HttpMethod {
       #[allow(unused)]
@@ -659,6 +815,14 @@ pub mod types {
       fn from_str(s: &str) -> Result<Self, Self::Err> {
         #[allow(clippy::match_single_binding)]
         match s {
+          "Get" => Ok(Self::Get),
+          "Post" => Ok(Self::Post),
+          "Put" => Ok(Self::Put),
+          "Delete" => Ok(Self::Delete),
+          "Patch" => Ok(Self::Patch),
+          "Head" => Ok(Self::Head),
+          "Options" => Ok(Self::Options),
+          "Trace" => Ok(Self::Trace),
           _ => Err(s.to_owned()),
         }
       }
@@ -667,14 +831,14 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Get => f.write_str("GET"),
-          Self::Post => f.write_str("POST"),
-          Self::Put => f.write_str("PUT"),
-          Self::Delete => f.write_str("DELETE"),
-          Self::Patch => f.write_str("PATCH"),
-          Self::Head => f.write_str("HEAD"),
-          Self::Options => f.write_str("OPTIONS"),
-          Self::Trace => f.write_str("TRACE"),
+          Self::Get => f.write_str("Get"),
+          Self::Post => f.write_str("Post"),
+          Self::Put => f.write_str("Put"),
+          Self::Delete => f.write_str("Delete"),
+          Self::Patch => f.write_str("Patch"),
+          Self::Head => f.write_str("Head"),
+          Self::Options => f.write_str("Options"),
+          Self::Trace => f.write_str("Trace"),
         }
       }
     }
@@ -730,11 +894,28 @@ pub mod types {
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP scheme"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum HttpScheme {
       #[doc = "HTTP scheme"]
       Http,
       #[doc = "HTTPS scheme"]
       Https,
+    }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpScheme {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<HttpScheme> for String {
+      fn from(value: HttpScheme) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
     }
     impl HttpScheme {
       #[allow(unused)]
@@ -762,6 +943,8 @@ pub mod types {
       fn from_str(s: &str) -> Result<Self, Self::Err> {
         #[allow(clippy::match_single_binding)]
         match s {
+          "Http" => Ok(Self::Http),
+          "Https" => Ok(Self::Https),
           _ => Err(s.to_owned()),
         }
       }
@@ -770,13 +953,14 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Http => f.write_str("HTTP"),
-          Self::Https => f.write_str("HTTPS"),
+          Self::Http => f.write_str("Http"),
+          Self::Https => f.write_str("Https"),
         }
       }
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP version"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum HttpVersion {
       #[doc = "HTTP 1.0 version"]
       Http10,
@@ -784,6 +968,22 @@ pub mod types {
       Http11,
       #[doc = "HTTP 2.0 version"]
       Http20,
+    }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpVersion {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<HttpVersion> for String {
+      fn from(value: HttpVersion) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
     }
     impl HttpVersion {
       #[allow(unused)]
@@ -813,8 +1013,11 @@ pub mod types {
         #[allow(clippy::match_single_binding)]
         match s {
           "1.0" => Ok(Self::Http10),
+          "Http10" => Ok(Self::Http10),
           "1.1" => Ok(Self::Http11),
+          "Http11" => Ok(Self::Http11),
           "2.0" => Ok(Self::Http20),
+          "Http20" => Ok(Self::Http20),
           _ => Err(s.to_owned()),
         }
       }
@@ -823,14 +1026,24 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Http10 => f.write_str("HTTP_1_0"),
-          Self::Http11 => f.write_str("HTTP_1_1"),
-          Self::Http20 => f.write_str("HTTP_2_0"),
+          Self::Http10 => f.write_str("1.0"),
+          Self::Http11 => f.write_str("1.1"),
+          Self::Http20 => f.write_str("2.0"),
         }
       }
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
+    #[doc = "A response from pre-request middleware"]
+    #[serde(untagged)]
+    pub enum RequestMiddlewareResponse {
+      #[doc = "A HttpRequest value."]
+      HttpRequest(HttpRequest),
+      #[doc = "A HttpResponse value."]
+      HttpResponse(HttpResponse),
+    }
+    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP status code"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum StatusCode {
       #[doc = "Continue status code"]
       Continue,
@@ -925,6 +1138,22 @@ pub mod types {
       #[doc = "Indicates an unknown status code"]
       Unknown,
     }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for StatusCode {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<StatusCode> for String {
+      fn from(value: StatusCode) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
+    }
     impl StatusCode {
       #[allow(unused)]
       #[doc = "Returns the value of the enum variant as a string."]
@@ -996,51 +1225,97 @@ pub mod types {
         #[allow(clippy::match_single_binding)]
         match s {
           "100" => Ok(Self::Continue),
+          "Continue" => Ok(Self::Continue),
           "101" => Ok(Self::SwitchingProtocols),
+          "SwitchingProtocols" => Ok(Self::SwitchingProtocols),
           "200" => Ok(Self::Ok),
+          "Ok" => Ok(Self::Ok),
           "201" => Ok(Self::Created),
+          "Created" => Ok(Self::Created),
           "202" => Ok(Self::Accepted),
+          "Accepted" => Ok(Self::Accepted),
           "203" => Ok(Self::NonAuthoritativeInformation),
+          "NonAuthoritativeInformation" => Ok(Self::NonAuthoritativeInformation),
           "204" => Ok(Self::NoContent),
+          "NoContent" => Ok(Self::NoContent),
           "205" => Ok(Self::ResetContent),
+          "ResetContent" => Ok(Self::ResetContent),
           "206" => Ok(Self::PartialContent),
+          "PartialContent" => Ok(Self::PartialContent),
           "300" => Ok(Self::MultipleChoices),
+          "MultipleChoices" => Ok(Self::MultipleChoices),
           "301" => Ok(Self::MovedPermanently),
+          "MovedPermanently" => Ok(Self::MovedPermanently),
           "302" => Ok(Self::Found),
+          "Found" => Ok(Self::Found),
           "303" => Ok(Self::SeeOther),
+          "SeeOther" => Ok(Self::SeeOther),
           "304" => Ok(Self::NotModified),
+          "NotModified" => Ok(Self::NotModified),
           "307" => Ok(Self::TemporaryRedirect),
+          "TemporaryRedirect" => Ok(Self::TemporaryRedirect),
           "308" => Ok(Self::PermanentRedirect),
+          "PermanentRedirect" => Ok(Self::PermanentRedirect),
           "400" => Ok(Self::BadRequest),
+          "BadRequest" => Ok(Self::BadRequest),
           "401" => Ok(Self::Unauthorized),
+          "Unauthorized" => Ok(Self::Unauthorized),
           "402" => Ok(Self::PaymentRequired),
+          "PaymentRequired" => Ok(Self::PaymentRequired),
           "403" => Ok(Self::Forbidden),
+          "Forbidden" => Ok(Self::Forbidden),
           "404" => Ok(Self::NotFound),
+          "NotFound" => Ok(Self::NotFound),
           "405" => Ok(Self::MethodNotAllowed),
+          "MethodNotAllowed" => Ok(Self::MethodNotAllowed),
           "406" => Ok(Self::NotAcceptable),
+          "NotAcceptable" => Ok(Self::NotAcceptable),
           "407" => Ok(Self::ProxyAuthenticationRequired),
+          "ProxyAuthenticationRequired" => Ok(Self::ProxyAuthenticationRequired),
           "408" => Ok(Self::RequestTimeout),
+          "RequestTimeout" => Ok(Self::RequestTimeout),
           "409" => Ok(Self::Conflict),
+          "Conflict" => Ok(Self::Conflict),
           "410" => Ok(Self::Gone),
+          "Gone" => Ok(Self::Gone),
           "411" => Ok(Self::LengthRequired),
+          "LengthRequired" => Ok(Self::LengthRequired),
           "412" => Ok(Self::PreconditionFailed),
+          "PreconditionFailed" => Ok(Self::PreconditionFailed),
           "413" => Ok(Self::PayloadTooLarge),
+          "PayloadTooLarge" => Ok(Self::PayloadTooLarge),
           "414" => Ok(Self::UriTooLong),
+          "UriTooLong" => Ok(Self::UriTooLong),
           "415" => Ok(Self::UnsupportedMediaType),
+          "UnsupportedMediaType" => Ok(Self::UnsupportedMediaType),
           "416" => Ok(Self::RangeNotSatisfiable),
+          "RangeNotSatisfiable" => Ok(Self::RangeNotSatisfiable),
           "417" => Ok(Self::ExpectationFailed),
+          "ExpectationFailed" => Ok(Self::ExpectationFailed),
           "418" => Ok(Self::ImATeapot),
+          "ImATeapot" => Ok(Self::ImATeapot),
           "422" => Ok(Self::UnprocessableEntity),
+          "UnprocessableEntity" => Ok(Self::UnprocessableEntity),
           "423" => Ok(Self::Locked),
+          "Locked" => Ok(Self::Locked),
           "424" => Ok(Self::FailedDependency),
+          "FailedDependency" => Ok(Self::FailedDependency),
           "429" => Ok(Self::TooManyRequests),
+          "TooManyRequests" => Ok(Self::TooManyRequests),
           "500" => Ok(Self::InternalServerError),
+          "InternalServerError" => Ok(Self::InternalServerError),
           "501" => Ok(Self::NotImplemented),
+          "NotImplemented" => Ok(Self::NotImplemented),
           "502" => Ok(Self::BadGateway),
+          "BadGateway" => Ok(Self::BadGateway),
           "503" => Ok(Self::ServiceUnavailable),
+          "ServiceUnavailable" => Ok(Self::ServiceUnavailable),
           "504" => Ok(Self::GatewayTimeout),
+          "GatewayTimeout" => Ok(Self::GatewayTimeout),
           "505" => Ok(Self::HttpVersionNotSupported),
+          "HttpVersionNotSupported" => Ok(Self::HttpVersionNotSupported),
           "-1" => Ok(Self::Unknown),
+          "Unknown" => Ok(Self::Unknown),
           _ => Err(s.to_owned()),
         }
       }
@@ -1049,52 +1324,52 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Continue => f.write_str("Continue"),
-          Self::SwitchingProtocols => f.write_str("SwitchingProtocols"),
-          Self::Ok => f.write_str("OK"),
-          Self::Created => f.write_str("Created"),
-          Self::Accepted => f.write_str("Accepted"),
-          Self::NonAuthoritativeInformation => f.write_str("NonAuthoritativeInformation"),
-          Self::NoContent => f.write_str("NoContent"),
-          Self::ResetContent => f.write_str("ResetContent"),
-          Self::PartialContent => f.write_str("PartialContent"),
-          Self::MultipleChoices => f.write_str("MultipleChoices"),
-          Self::MovedPermanently => f.write_str("MovedPermanently"),
-          Self::Found => f.write_str("Found"),
-          Self::SeeOther => f.write_str("SeeOther"),
-          Self::NotModified => f.write_str("NotModified"),
-          Self::TemporaryRedirect => f.write_str("TemporaryRedirect"),
-          Self::PermanentRedirect => f.write_str("PermanentRedirect"),
-          Self::BadRequest => f.write_str("BadRequest"),
-          Self::Unauthorized => f.write_str("Unauthorized"),
-          Self::PaymentRequired => f.write_str("PaymentRequired"),
-          Self::Forbidden => f.write_str("Forbidden"),
-          Self::NotFound => f.write_str("NotFound"),
-          Self::MethodNotAllowed => f.write_str("MethodNotAllowed"),
-          Self::NotAcceptable => f.write_str("NotAcceptable"),
-          Self::ProxyAuthenticationRequired => f.write_str("ProxyAuthenticationRequired"),
-          Self::RequestTimeout => f.write_str("RequestTimeout"),
-          Self::Conflict => f.write_str("Conflict"),
-          Self::Gone => f.write_str("Gone"),
-          Self::LengthRequired => f.write_str("LengthRequired"),
-          Self::PreconditionFailed => f.write_str("PreconditionFailed"),
-          Self::PayloadTooLarge => f.write_str("PayloadTooLarge"),
-          Self::UriTooLong => f.write_str("URITooLong"),
-          Self::UnsupportedMediaType => f.write_str("UnsupportedMediaType"),
-          Self::RangeNotSatisfiable => f.write_str("RangeNotSatisfiable"),
-          Self::ExpectationFailed => f.write_str("ExpectationFailed"),
-          Self::ImATeapot => f.write_str("ImATeapot"),
-          Self::UnprocessableEntity => f.write_str("UnprocessableEntity"),
-          Self::Locked => f.write_str("Locked"),
-          Self::FailedDependency => f.write_str("FailedDependency"),
-          Self::TooManyRequests => f.write_str("TooManyRequests"),
-          Self::InternalServerError => f.write_str("InternalServerError"),
-          Self::NotImplemented => f.write_str("NotImplemented"),
-          Self::BadGateway => f.write_str("BadGateway"),
-          Self::ServiceUnavailable => f.write_str("ServiceUnavailable"),
-          Self::GatewayTimeout => f.write_str("GatewayTimeout"),
-          Self::HttpVersionNotSupported => f.write_str("HTTPVersionNotSupported"),
-          Self::Unknown => f.write_str("Unknown"),
+          Self::Continue => f.write_str("100"),
+          Self::SwitchingProtocols => f.write_str("101"),
+          Self::Ok => f.write_str("200"),
+          Self::Created => f.write_str("201"),
+          Self::Accepted => f.write_str("202"),
+          Self::NonAuthoritativeInformation => f.write_str("203"),
+          Self::NoContent => f.write_str("204"),
+          Self::ResetContent => f.write_str("205"),
+          Self::PartialContent => f.write_str("206"),
+          Self::MultipleChoices => f.write_str("300"),
+          Self::MovedPermanently => f.write_str("301"),
+          Self::Found => f.write_str("302"),
+          Self::SeeOther => f.write_str("303"),
+          Self::NotModified => f.write_str("304"),
+          Self::TemporaryRedirect => f.write_str("307"),
+          Self::PermanentRedirect => f.write_str("308"),
+          Self::BadRequest => f.write_str("400"),
+          Self::Unauthorized => f.write_str("401"),
+          Self::PaymentRequired => f.write_str("402"),
+          Self::Forbidden => f.write_str("403"),
+          Self::NotFound => f.write_str("404"),
+          Self::MethodNotAllowed => f.write_str("405"),
+          Self::NotAcceptable => f.write_str("406"),
+          Self::ProxyAuthenticationRequired => f.write_str("407"),
+          Self::RequestTimeout => f.write_str("408"),
+          Self::Conflict => f.write_str("409"),
+          Self::Gone => f.write_str("410"),
+          Self::LengthRequired => f.write_str("411"),
+          Self::PreconditionFailed => f.write_str("412"),
+          Self::PayloadTooLarge => f.write_str("413"),
+          Self::UriTooLong => f.write_str("414"),
+          Self::UnsupportedMediaType => f.write_str("415"),
+          Self::RangeNotSatisfiable => f.write_str("416"),
+          Self::ExpectationFailed => f.write_str("417"),
+          Self::ImATeapot => f.write_str("418"),
+          Self::UnprocessableEntity => f.write_str("422"),
+          Self::Locked => f.write_str("423"),
+          Self::FailedDependency => f.write_str("424"),
+          Self::TooManyRequests => f.write_str("429"),
+          Self::InternalServerError => f.write_str("500"),
+          Self::NotImplemented => f.write_str("501"),
+          Self::BadGateway => f.write_str("502"),
+          Self::ServiceUnavailable => f.write_str("503"),
+          Self::GatewayTimeout => f.write_str("504"),
+          Self::HttpVersionNotSupported => f.write_str("505"),
+          Self::Unknown => f.write_str("-1"),
         }
       }
     }
@@ -1104,6 +1379,7 @@ pub mod types {
     use super::http;
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP method enum"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum HttpMethod {
       #[doc = "HTTP GET method"]
       Get,
@@ -1121,6 +1397,22 @@ pub mod types {
       Options,
       #[doc = "HTTP TRACE method"]
       Trace,
+    }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpMethod {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<HttpMethod> for String {
+      fn from(value: HttpMethod) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
     }
     impl HttpMethod {
       #[allow(unused)]
@@ -1154,6 +1446,14 @@ pub mod types {
       fn from_str(s: &str) -> Result<Self, Self::Err> {
         #[allow(clippy::match_single_binding)]
         match s {
+          "Get" => Ok(Self::Get),
+          "Post" => Ok(Self::Post),
+          "Put" => Ok(Self::Put),
+          "Delete" => Ok(Self::Delete),
+          "Patch" => Ok(Self::Patch),
+          "Head" => Ok(Self::Head),
+          "Options" => Ok(Self::Options),
+          "Trace" => Ok(Self::Trace),
           _ => Err(s.to_owned()),
         }
       }
@@ -1162,14 +1462,14 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Get => f.write_str("GET"),
-          Self::Post => f.write_str("POST"),
-          Self::Put => f.write_str("PUT"),
-          Self::Delete => f.write_str("DELETE"),
-          Self::Patch => f.write_str("PATCH"),
-          Self::Head => f.write_str("HEAD"),
-          Self::Options => f.write_str("OPTIONS"),
-          Self::Trace => f.write_str("TRACE"),
+          Self::Get => f.write_str("Get"),
+          Self::Post => f.write_str("Post"),
+          Self::Put => f.write_str("Put"),
+          Self::Delete => f.write_str("Delete"),
+          Self::Patch => f.write_str("Patch"),
+          Self::Head => f.write_str("Head"),
+          Self::Options => f.write_str("Options"),
+          Self::Trace => f.write_str("Trace"),
         }
       }
     }
@@ -1225,11 +1525,28 @@ pub mod types {
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP scheme"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum HttpScheme {
       #[doc = "HTTP scheme"]
       Http,
       #[doc = "HTTPS scheme"]
       Https,
+    }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpScheme {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<HttpScheme> for String {
+      fn from(value: HttpScheme) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
     }
     impl HttpScheme {
       #[allow(unused)]
@@ -1257,6 +1574,8 @@ pub mod types {
       fn from_str(s: &str) -> Result<Self, Self::Err> {
         #[allow(clippy::match_single_binding)]
         match s {
+          "Http" => Ok(Self::Http),
+          "Https" => Ok(Self::Https),
           _ => Err(s.to_owned()),
         }
       }
@@ -1265,13 +1584,14 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Http => f.write_str("HTTP"),
-          Self::Https => f.write_str("HTTPS"),
+          Self::Http => f.write_str("Http"),
+          Self::Https => f.write_str("Https"),
         }
       }
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP version"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum HttpVersion {
       #[doc = "HTTP 1.0 version"]
       Http10,
@@ -1279,6 +1599,22 @@ pub mod types {
       Http11,
       #[doc = "HTTP 2.0 version"]
       Http20,
+    }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpVersion {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<HttpVersion> for String {
+      fn from(value: HttpVersion) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
     }
     impl HttpVersion {
       #[allow(unused)]
@@ -1308,8 +1644,11 @@ pub mod types {
         #[allow(clippy::match_single_binding)]
         match s {
           "1.0" => Ok(Self::Http10),
+          "Http10" => Ok(Self::Http10),
           "1.1" => Ok(Self::Http11),
+          "Http11" => Ok(Self::Http11),
           "2.0" => Ok(Self::Http20),
+          "Http20" => Ok(Self::Http20),
           _ => Err(s.to_owned()),
         }
       }
@@ -1318,14 +1657,24 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Http10 => f.write_str("HTTP_1_0"),
-          Self::Http11 => f.write_str("HTTP_1_1"),
-          Self::Http20 => f.write_str("HTTP_2_0"),
+          Self::Http10 => f.write_str("1.0"),
+          Self::Http11 => f.write_str("1.1"),
+          Self::Http20 => f.write_str("2.0"),
         }
       }
     }
     #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
+    #[doc = "A response from pre-request middleware"]
+    #[serde(untagged)]
+    pub enum RequestMiddlewareResponse {
+      #[doc = "A HttpRequest value."]
+      HttpRequest(HttpRequest),
+      #[doc = "A HttpResponse value."]
+      HttpResponse(HttpResponse),
+    }
+    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
     #[doc = "HTTP status code"]
+    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
     pub enum StatusCode {
       #[doc = "Continue status code"]
       Continue,
@@ -1420,6 +1769,22 @@ pub mod types {
       #[doc = "Indicates an unknown status code"]
       Unknown,
     }
+    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for StatusCode {
+      type Error = String;
+      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+        use std::str::FromStr;
+        match value {
+          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+        }
+      }
+    }
+    impl From<StatusCode> for String {
+      fn from(value: StatusCode) -> Self {
+        value.value().map_or_else(|| value.to_string(), |v| v.to_owned())
+      }
+    }
     impl StatusCode {
       #[allow(unused)]
       #[doc = "Returns the value of the enum variant as a string."]
@@ -1491,51 +1856,97 @@ pub mod types {
         #[allow(clippy::match_single_binding)]
         match s {
           "100" => Ok(Self::Continue),
+          "Continue" => Ok(Self::Continue),
           "101" => Ok(Self::SwitchingProtocols),
+          "SwitchingProtocols" => Ok(Self::SwitchingProtocols),
           "200" => Ok(Self::Ok),
+          "Ok" => Ok(Self::Ok),
           "201" => Ok(Self::Created),
+          "Created" => Ok(Self::Created),
           "202" => Ok(Self::Accepted),
+          "Accepted" => Ok(Self::Accepted),
           "203" => Ok(Self::NonAuthoritativeInformation),
+          "NonAuthoritativeInformation" => Ok(Self::NonAuthoritativeInformation),
           "204" => Ok(Self::NoContent),
+          "NoContent" => Ok(Self::NoContent),
           "205" => Ok(Self::ResetContent),
+          "ResetContent" => Ok(Self::ResetContent),
           "206" => Ok(Self::PartialContent),
+          "PartialContent" => Ok(Self::PartialContent),
           "300" => Ok(Self::MultipleChoices),
+          "MultipleChoices" => Ok(Self::MultipleChoices),
           "301" => Ok(Self::MovedPermanently),
+          "MovedPermanently" => Ok(Self::MovedPermanently),
           "302" => Ok(Self::Found),
+          "Found" => Ok(Self::Found),
           "303" => Ok(Self::SeeOther),
+          "SeeOther" => Ok(Self::SeeOther),
           "304" => Ok(Self::NotModified),
+          "NotModified" => Ok(Self::NotModified),
           "307" => Ok(Self::TemporaryRedirect),
+          "TemporaryRedirect" => Ok(Self::TemporaryRedirect),
           "308" => Ok(Self::PermanentRedirect),
+          "PermanentRedirect" => Ok(Self::PermanentRedirect),
           "400" => Ok(Self::BadRequest),
+          "BadRequest" => Ok(Self::BadRequest),
           "401" => Ok(Self::Unauthorized),
+          "Unauthorized" => Ok(Self::Unauthorized),
           "402" => Ok(Self::PaymentRequired),
+          "PaymentRequired" => Ok(Self::PaymentRequired),
           "403" => Ok(Self::Forbidden),
+          "Forbidden" => Ok(Self::Forbidden),
           "404" => Ok(Self::NotFound),
+          "NotFound" => Ok(Self::NotFound),
           "405" => Ok(Self::MethodNotAllowed),
+          "MethodNotAllowed" => Ok(Self::MethodNotAllowed),
           "406" => Ok(Self::NotAcceptable),
+          "NotAcceptable" => Ok(Self::NotAcceptable),
           "407" => Ok(Self::ProxyAuthenticationRequired),
+          "ProxyAuthenticationRequired" => Ok(Self::ProxyAuthenticationRequired),
           "408" => Ok(Self::RequestTimeout),
+          "RequestTimeout" => Ok(Self::RequestTimeout),
           "409" => Ok(Self::Conflict),
+          "Conflict" => Ok(Self::Conflict),
           "410" => Ok(Self::Gone),
+          "Gone" => Ok(Self::Gone),
           "411" => Ok(Self::LengthRequired),
+          "LengthRequired" => Ok(Self::LengthRequired),
           "412" => Ok(Self::PreconditionFailed),
+          "PreconditionFailed" => Ok(Self::PreconditionFailed),
           "413" => Ok(Self::PayloadTooLarge),
+          "PayloadTooLarge" => Ok(Self::PayloadTooLarge),
           "414" => Ok(Self::UriTooLong),
+          "UriTooLong" => Ok(Self::UriTooLong),
           "415" => Ok(Self::UnsupportedMediaType),
+          "UnsupportedMediaType" => Ok(Self::UnsupportedMediaType),
           "416" => Ok(Self::RangeNotSatisfiable),
+          "RangeNotSatisfiable" => Ok(Self::RangeNotSatisfiable),
           "417" => Ok(Self::ExpectationFailed),
+          "ExpectationFailed" => Ok(Self::ExpectationFailed),
           "418" => Ok(Self::ImATeapot),
+          "ImATeapot" => Ok(Self::ImATeapot),
           "422" => Ok(Self::UnprocessableEntity),
+          "UnprocessableEntity" => Ok(Self::UnprocessableEntity),
           "423" => Ok(Self::Locked),
+          "Locked" => Ok(Self::Locked),
           "424" => Ok(Self::FailedDependency),
+          "FailedDependency" => Ok(Self::FailedDependency),
           "429" => Ok(Self::TooManyRequests),
+          "TooManyRequests" => Ok(Self::TooManyRequests),
           "500" => Ok(Self::InternalServerError),
+          "InternalServerError" => Ok(Self::InternalServerError),
           "501" => Ok(Self::NotImplemented),
+          "NotImplemented" => Ok(Self::NotImplemented),
           "502" => Ok(Self::BadGateway),
+          "BadGateway" => Ok(Self::BadGateway),
           "503" => Ok(Self::ServiceUnavailable),
+          "ServiceUnavailable" => Ok(Self::ServiceUnavailable),
           "504" => Ok(Self::GatewayTimeout),
+          "GatewayTimeout" => Ok(Self::GatewayTimeout),
           "505" => Ok(Self::HttpVersionNotSupported),
+          "HttpVersionNotSupported" => Ok(Self::HttpVersionNotSupported),
           "-1" => Ok(Self::Unknown),
+          "Unknown" => Ok(Self::Unknown),
           _ => Err(s.to_owned()),
         }
       }
@@ -1544,52 +1955,52 @@ pub mod types {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          Self::Continue => f.write_str("Continue"),
-          Self::SwitchingProtocols => f.write_str("SwitchingProtocols"),
-          Self::Ok => f.write_str("OK"),
-          Self::Created => f.write_str("Created"),
-          Self::Accepted => f.write_str("Accepted"),
-          Self::NonAuthoritativeInformation => f.write_str("NonAuthoritativeInformation"),
-          Self::NoContent => f.write_str("NoContent"),
-          Self::ResetContent => f.write_str("ResetContent"),
-          Self::PartialContent => f.write_str("PartialContent"),
-          Self::MultipleChoices => f.write_str("MultipleChoices"),
-          Self::MovedPermanently => f.write_str("MovedPermanently"),
-          Self::Found => f.write_str("Found"),
-          Self::SeeOther => f.write_str("SeeOther"),
-          Self::NotModified => f.write_str("NotModified"),
-          Self::TemporaryRedirect => f.write_str("TemporaryRedirect"),
-          Self::PermanentRedirect => f.write_str("PermanentRedirect"),
-          Self::BadRequest => f.write_str("BadRequest"),
-          Self::Unauthorized => f.write_str("Unauthorized"),
-          Self::PaymentRequired => f.write_str("PaymentRequired"),
-          Self::Forbidden => f.write_str("Forbidden"),
-          Self::NotFound => f.write_str("NotFound"),
-          Self::MethodNotAllowed => f.write_str("MethodNotAllowed"),
-          Self::NotAcceptable => f.write_str("NotAcceptable"),
-          Self::ProxyAuthenticationRequired => f.write_str("ProxyAuthenticationRequired"),
-          Self::RequestTimeout => f.write_str("RequestTimeout"),
-          Self::Conflict => f.write_str("Conflict"),
-          Self::Gone => f.write_str("Gone"),
-          Self::LengthRequired => f.write_str("LengthRequired"),
-          Self::PreconditionFailed => f.write_str("PreconditionFailed"),
-          Self::PayloadTooLarge => f.write_str("PayloadTooLarge"),
-          Self::UriTooLong => f.write_str("URITooLong"),
-          Self::UnsupportedMediaType => f.write_str("UnsupportedMediaType"),
-          Self::RangeNotSatisfiable => f.write_str("RangeNotSatisfiable"),
-          Self::ExpectationFailed => f.write_str("ExpectationFailed"),
-          Self::ImATeapot => f.write_str("ImATeapot"),
-          Self::UnprocessableEntity => f.write_str("UnprocessableEntity"),
-          Self::Locked => f.write_str("Locked"),
-          Self::FailedDependency => f.write_str("FailedDependency"),
-          Self::TooManyRequests => f.write_str("TooManyRequests"),
-          Self::InternalServerError => f.write_str("InternalServerError"),
-          Self::NotImplemented => f.write_str("NotImplemented"),
-          Self::BadGateway => f.write_str("BadGateway"),
-          Self::ServiceUnavailable => f.write_str("ServiceUnavailable"),
-          Self::GatewayTimeout => f.write_str("GatewayTimeout"),
-          Self::HttpVersionNotSupported => f.write_str("HTTPVersionNotSupported"),
-          Self::Unknown => f.write_str("Unknown"),
+          Self::Continue => f.write_str("100"),
+          Self::SwitchingProtocols => f.write_str("101"),
+          Self::Ok => f.write_str("200"),
+          Self::Created => f.write_str("201"),
+          Self::Accepted => f.write_str("202"),
+          Self::NonAuthoritativeInformation => f.write_str("203"),
+          Self::NoContent => f.write_str("204"),
+          Self::ResetContent => f.write_str("205"),
+          Self::PartialContent => f.write_str("206"),
+          Self::MultipleChoices => f.write_str("300"),
+          Self::MovedPermanently => f.write_str("301"),
+          Self::Found => f.write_str("302"),
+          Self::SeeOther => f.write_str("303"),
+          Self::NotModified => f.write_str("304"),
+          Self::TemporaryRedirect => f.write_str("307"),
+          Self::PermanentRedirect => f.write_str("308"),
+          Self::BadRequest => f.write_str("400"),
+          Self::Unauthorized => f.write_str("401"),
+          Self::PaymentRequired => f.write_str("402"),
+          Self::Forbidden => f.write_str("403"),
+          Self::NotFound => f.write_str("404"),
+          Self::MethodNotAllowed => f.write_str("405"),
+          Self::NotAcceptable => f.write_str("406"),
+          Self::ProxyAuthenticationRequired => f.write_str("407"),
+          Self::RequestTimeout => f.write_str("408"),
+          Self::Conflict => f.write_str("409"),
+          Self::Gone => f.write_str("410"),
+          Self::LengthRequired => f.write_str("411"),
+          Self::PreconditionFailed => f.write_str("412"),
+          Self::PayloadTooLarge => f.write_str("413"),
+          Self::UriTooLong => f.write_str("414"),
+          Self::UnsupportedMediaType => f.write_str("415"),
+          Self::RangeNotSatisfiable => f.write_str("416"),
+          Self::ExpectationFailed => f.write_str("417"),
+          Self::ImATeapot => f.write_str("418"),
+          Self::UnprocessableEntity => f.write_str("422"),
+          Self::Locked => f.write_str("423"),
+          Self::FailedDependency => f.write_str("424"),
+          Self::TooManyRequests => f.write_str("429"),
+          Self::InternalServerError => f.write_str("500"),
+          Self::NotImplemented => f.write_str("501"),
+          Self::BadGateway => f.write_str("502"),
+          Self::ServiceUnavailable => f.write_str("503"),
+          Self::GatewayTimeout => f.write_str("504"),
+          Self::HttpVersionNotSupported => f.write_str("505"),
+          Self::Unknown => f.write_str("-1"),
         }
       }
     }
