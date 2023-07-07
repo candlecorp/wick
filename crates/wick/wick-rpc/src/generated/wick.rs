@@ -180,7 +180,7 @@ pub struct ComponentMetadata {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TypeDefinition {
-  #[prost(oneof = "type_definition::Type", tags = "1, 2")]
+  #[prost(oneof = "type_definition::Type", tags = "1, 2, 3")]
   pub r#type: ::core::option::Option<type_definition::Type>,
 }
 /// Nested message and enum types in `TypeDefinition`.
@@ -192,6 +192,8 @@ pub mod type_definition {
     Struct(super::StructSignature),
     #[prost(message, tag = "2")]
     Enum(super::EnumSignature),
+    #[prost(message, tag = "3")]
+    Union(super::UnionSignature),
   }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -254,6 +256,16 @@ pub struct EnumSignature {
   pub name: ::prost::alloc::string::String,
   #[prost(message, repeated, tag = "2")]
   pub values: ::prost::alloc::vec::Vec<EnumVariant>,
+  #[prost(string, tag = "3")]
+  pub description: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UnionSignature {
+  #[prost(string, tag = "1")]
+  pub name: ::prost::alloc::string::String,
+  #[prost(message, repeated, tag = "2")]
+  pub types: ::prost::alloc::vec::Vec<TypeSignature>,
   #[prost(string, tag = "3")]
   pub description: ::prost::alloc::string::String,
 }

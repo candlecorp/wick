@@ -84,7 +84,7 @@ pub mod types {
   #[allow(unused)]
   use super::types;
   #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-  #[doc = "hey"]
+  #[doc = "a useful struct"]
   pub struct LocalStruct {
     #[serde(rename = "field1")]
     pub field1: String,
@@ -100,6 +100,14 @@ pub mod types {
     pub field1: String,
     #[serde(rename = "field2")]
     pub field2: String,
+  }
+  #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
+  #[doc = "a weird union"]
+  #[serde(untagged)]
+  pub enum LocalUnion {
+    String(String),
+    LocalStructInner(types::LocalStructInner),
+    Datetime(wick_component::datetime::DateTime),
   }
   pub mod aaa {
     #[allow(unused)]

@@ -93,6 +93,10 @@ fn prefix_type(prefix: &str, mut ty: TypeDefinition) -> TypeDefinition {
       ty.name = format!("{}::{}", prefix, ty.name);
       ty.imported = true;
     }
+    TypeDefinition::Union(ref mut ty) => {
+      ty.name = format!("{}::{}", prefix, ty.name);
+      ty.imported = true;
+    }
   }
   ty
 }

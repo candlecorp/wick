@@ -2,10 +2,11 @@
 use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
-use wick_interface_types::{EnumDefinition, StructDefinition, TypeDefinition};
+use wick_interface_types::{EnumDefinition, StructDefinition, Type, TypeDefinition, UnionDefinition};
 
+use crate::generate::expand_type::expand_type;
 use crate::generate::ids::*;
-use crate::generate::{config, f};
+use crate::generate::{config, f, Direction};
 
 bitflags::bitflags! {
   #[derive(Default, Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -22,6 +23,7 @@ pub(crate) fn type_def<'a>(
   match ty {
     TypeDefinition::Enum(ty) => gen_enum(config, ty, options),
     TypeDefinition::Struct(ty) => gen_struct(config, ty, options),
+    TypeDefinition::Union(ty) => gen_union(config, ty, options),
   }
 }
 
@@ -205,6 +207,59 @@ pub(crate) fn gen_struct<'a>(
       #(#fields,)*
     }
     #default_impl
+  };
+  (module_parts, item)
+}
+
+fn generic_type_name(ty: &Type) -> String {
+  match ty {
+    Type::I8 | Type::I16 | Type::I32 | Type::I64 => pascal(&ty.to_string()),
+    Type::U8 | Type::U16 | Type::U32 | Type::U64 => pascal(&ty.to_string()),
+    Type::F32 | Type::F64 => pascal(&ty.to_string()),
+    Type::Bool | Type::String | Type::Datetime | Type::Bytes => pascal(&ty.to_string()),
+    Type::Named(n) => pascal(n),
+    Type::List { ty } => format!("{}List", pascal(&ty.to_string())),
+    Type::Optional { ty } => format!("Maybe{}", pascal(&ty.to_string())),
+    Type::Map { value, .. } => format!("{}Map", pascal(&value.to_string())),
+    Type::Object => "Any".to_owned(),
+    #[allow(deprecated)]
+    Type::Link { .. } => unimplemented!(),
+    Type::AnonymousStruct(_) => unimplemented!(),
+  }
+}
+
+pub(crate) fn gen_union<'a>(
+  config: &mut config::Config,
+  ty: &'a UnionDefinition,
+  _options: TypeOptions,
+) -> (Vec<&'a str>, TokenStream) {
+  let (module_parts, item_part) = get_typename_parts(&ty.name);
+  let imported = ty.imported;
+
+  let name = id(item_part);
+
+  let variants = ty
+    .types
+    .iter()
+    .map(|ty| {
+      let name = id(&generic_type_name(ty));
+      let ty = expand_type(config, Direction::In, imported, ty);
+      quote! {#name(#ty)}
+    })
+    .collect_vec();
+
+  let description = ty
+    .description
+    .as_ref()
+    .map_or_else(|| quote! {}, |desc| quote! {#[doc = #desc]});
+
+  let item = quote! {
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+    #description
+    #[serde(untagged)]
+    pub enum #name {
+      #(#variants,)*
+    }
   };
   (module_parts, item)
 }
