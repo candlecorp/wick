@@ -686,7 +686,7 @@ mod test {
       // check that our response middleware has been called again.
       let res = get("/this/FIRST_VALUE/some/222?third=third_a&fourth=true").await?;
       let header = res.headers().get("x-wick-count").unwrap();
-      assert_eq!(header, "3");
+      assert_eq!(header, "4");
 
       trigger.shutdown_gracefully().await?;
 
