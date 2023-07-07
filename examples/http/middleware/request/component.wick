@@ -18,10 +18,8 @@ component:
         - name: request
           type: http::HttpRequest
       outputs:
-        - name: request
-          type: http::HttpRequest
-        - name: response
-          type: http::HttpResponse
+        - name: output
+          type: http::RequestMiddlewareResponse
     - name: count
       inputs:
         - name: request

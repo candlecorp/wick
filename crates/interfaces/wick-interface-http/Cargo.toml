@@ -11,11 +11,18 @@ repository = "https://github.com/candlecorp/wick"
 default = []
 localgen = []
 
-[dev-dependencies]
-
 [dependencies]
 wick-component = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+wick-component = { workspace = true, features = ["json"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+wick-logger = { workspace = true }
+test-logger = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+serde-value = { workspace = true }
 
 [build-dependencies]
 wick-component-codegen = { workspace = true }

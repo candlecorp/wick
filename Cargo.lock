@@ -6335,14 +6335,18 @@ dependencies = [
  "flow-component",
  "paste",
  "serde",
+ "serde-value",
  "serde_json",
+ "test-logger",
  "tokio",
  "tokio-stream",
+ "tracing",
  "wasmrs",
  "wasmrs-codec",
  "wasmrs-guest",
  "wasmrs-runtime",
  "wasmrs-rx",
+ "wick-logger",
  "wick-packet",
 ]
 
@@ -6531,9 +6535,15 @@ dependencies = [
 name = "wick-interface-http"
 version = "0.2.0"
 dependencies = [
+ "anyhow",
  "serde",
+ "serde-value",
+ "test-logger",
+ "tokio",
+ "tracing",
  "wick-component",
  "wick-component-codegen",
+ "wick-logger",
 ]
 
 [[package]]
