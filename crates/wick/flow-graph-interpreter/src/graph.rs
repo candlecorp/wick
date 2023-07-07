@@ -233,13 +233,13 @@ fn expand_port_paths(
   schematic: &mut Schematic,
   expressions: &mut [FlowExpression],
 ) -> Result<(), flow_graph::error::Error> {
-  for expression in expressions.iter_mut() {
+  for (i, expression) in expressions.iter_mut().enumerate() {
     if let FlowExpression::ConnectionExpression(expr) = expression {
       let (from, to) = expr.clone().into_parts();
       let (from_inst, from_port, _) = from.into_parts();
       let (to_inst, to_port, _) = to.into_parts();
       if let InstancePort::Path(name, parts) = from_port {
-        let id = format!("{}_pluck_{}_[{}]", schematic.name(), name, parts.join(","));
+        let id = format!("{}_pluck_{}_{}_[{}]", schematic.name(), i, name, parts.join(","));
         let config = HashMap::from([(
           "path".to_owned(),
           Value::Array(parts.into_iter().map(Value::String).collect()),

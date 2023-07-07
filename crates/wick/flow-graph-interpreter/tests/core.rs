@@ -25,6 +25,35 @@ async fn test_pluck() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+async fn test_pluck_substreams() -> Result<()> {
+  test_config(
+    "./tests/manifests/v1/core-pluck-streams.yaml",
+    None,
+    None,
+    vec![
+      Packet::open_bracket("input"),
+      Packet::encode("input", json!({"value": "value1!"})),
+      Packet::encode("input", json!({"value": "value2!"})),
+      Packet::close_bracket("input"),
+      Packet::done("input"),
+    ],
+    vec![
+      Packet::open_bracket("pluck1"),
+      Packet::encode("pluck1", "value1!"),
+      Packet::encode("pluck1", "value2!"),
+      Packet::close_bracket("pluck1"),
+      Packet::done("pluck1"),
+      Packet::open_bracket("pluck2"),
+      Packet::encode("pluck2", "value1!"),
+      Packet::encode("pluck2", "value2!"),
+      Packet::close_bracket("pluck2"),
+      Packet::done("pluck2"),
+    ],
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
 async fn test_pluck_shorthand() -> Result<()> {
   first_packet_test(
     "./tests/manifests/v1/core-pluck-shorthand.yaml",
