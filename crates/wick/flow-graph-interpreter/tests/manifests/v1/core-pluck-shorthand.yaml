@@ -9,3 +9,6 @@ component:
     - name: test
       flow:
         - <>.request.headers.cookie.0 -> <>.output
+    - name: test2
+      flow:
+        - '<>.input."Raw String Field #" -> <>.output'
