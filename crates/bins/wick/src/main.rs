@@ -112,7 +112,14 @@ use self::options::{apply_log_settings, GlobalOptions};
 static BIN_NAME: &str = "wick";
 static BIN_DESC: &str = "wick runtime executable";
 
+#[cfg(feature = "mem-profiler")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 fn main() {
+  #[cfg(feature = "mem-profiler")]
+  let _profiler = dhat::Profiler::new_heap();
+
   let runtime = tokio::runtime::Builder::new_multi_thread()
     .enable_all()
     .thread_name("wick")
@@ -162,6 +169,9 @@ fn main() {
       1
     }
   };
+
+  #[cfg(feature = "mem-profiler")]
+  drop(_profiler);
 
   std::process::exit(code);
 }

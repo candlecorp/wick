@@ -15,6 +15,7 @@ console = [
   "tokio/full",
   "tokio/tracing"
 ] # Build with RUSTFLAGS="--cfg tokio_unstable"
+mem-profiler = ["dhat"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -51,6 +52,7 @@ openssl = { workspace = true, features = ["vendored"], optional = true }
 option-utils = { workspace = true }
 structured-output = { workspace = true }
 regex = { workspace = true }
+dhat = { version = "0.3.2", optional = true }
 
 [dev-dependencies]
 test_bin = { workspace = true }
