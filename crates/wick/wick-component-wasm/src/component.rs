@@ -35,6 +35,7 @@ fn permissions_to_wasi_params(perms: &Permissions) -> WasiParams {
 impl WasmComponent {
   pub async fn try_load(
     module: &WickWasmModule,
+    engine: Option<wasmtime::Engine>,
     permissions: Option<Permissions>,
     config: Option<RuntimeConfig>,
     callback: Option<Arc<RuntimeCallback>>,
@@ -56,6 +57,10 @@ impl WasmComponent {
     if let Some(callback) = callback {
       builder = builder.link_callback(callback);
     }
+    if let Some(engine) = engine {
+      builder = builder.engine(engine);
+    }
+
     let host = builder.build(module)?;
 
     let sig = host.signature();
@@ -116,6 +121,7 @@ mod tests {
 
     let c = WasmComponent::try_load(
       &component,
+      None,
       None,
       Some(json!({"default_err":"error from wasm test"}).try_into()?),
       Some(Arc::new(|_, _, _, _, _, _| {

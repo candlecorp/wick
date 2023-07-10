@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use flow_component::{Component, RuntimeCallback};
 use flow_graph_interpreter::NamespaceHandler;
+use once_cell::sync::Lazy;
 use seeded_random::{Random, Seed};
 use tracing::Instrument;
 use uuid::Uuid;
@@ -32,6 +33,17 @@ use crate::dev::prelude::*;
 use crate::dispatch::engine_invoke_async;
 use crate::runtime_service::{init_child, ChildInit};
 use crate::BoxFuture;
+
+#[allow(clippy::expect_used)]
+static WASMTIME_ENGINE: Lazy<wasmtime::Engine> = Lazy::new(|| {
+  let mut config = wasmtime::Config::default();
+  config.strategy(wasmtime::Strategy::Cranelift);
+  if let Err(e) = config.cache_config_load_default() {
+    warn!("Wasmtime cache configuration not found ({}). Repeated loads will speed up significantly with a cache configuration. See https://docs.wasmtime.dev/cli-cache.html for more information.",e);
+  }
+
+  wasmtime::Engine::new(&config).expect("Could not configure Wasmtime instance")
+});
 
 pub(crate) trait InvocationHandler {
   fn get_signature(&self) -> Result<ComponentSignature>;
@@ -60,6 +72,7 @@ pub(crate) async fn init_wasm_component(
   let collection = Arc::new(
     wick_component_wasm::component::WasmComponent::try_load(
       &component,
+      Some(WASMTIME_ENGINE.clone()),
       permissions,
       opts.config,
       Some(make_link_callback(opts.runtime_id)),

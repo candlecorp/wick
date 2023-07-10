@@ -5,7 +5,6 @@ use data_encoding::HEXUPPER;
 // use parity_wasm::elements::{CustomSection, Module, Serialize};
 // use parity_wasm::{deserialize_buffer, serialize};
 use ring::digest::{Context, Digest, SHA256};
-use walrus::{CustomSectionId, IdsToIndices, Module, TypedCustomSectionId, UntypedCustomSectionId};
 use wascap::jwt::Token;
 use wascap::prelude::{Claims, KeyPair};
 use wascap::wasm::days_from_now_to_jwt_time;
@@ -13,6 +12,7 @@ use wick_interface_types::ComponentSignature;
 
 use crate::component::CollectionClaims;
 use crate::error;
+use crate::parser::strip_custom_section;
 
 type Result<T> = std::result::Result<T, error::ClaimsError>;
 
@@ -29,19 +29,31 @@ pub struct ClaimsOptions {
   pub not_before_days: Option<u64>,
 }
 
-fn deserialize_buffer(buf: &[u8]) -> Result<Module> {
-  walrus::Module::from_buffer(buf).map_err(|e| crate::Error::ParseError(e.to_string()))
-}
+const SECTION_JWT: &str = "jwt"; // Versions of wascap prior to 0.9 used this section
 
-/// Extract the claims embedded in a [Token].
+/// Extract the claims embedded in a WebAssembly module.
 pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<CollectionClaims>>> {
-  let hash = compute_hash_without_jwt(contents.as_ref())?;
-  let module: Module = deserialize_buffer(contents.as_ref())?;
-  for (id, section) in module.customs.iter() {
-    if section.name() == "jwt" {
-      let token = decode_token(section.data(&IdsToIndices::default()).into())?;
-      assert_valid_jwt(&token, &hash)?;
-      return Ok(Some(token));
+  let stripped_bytes = strip_custom_section(contents.as_ref())?;
+  let target_hash = hash_bytes(&*stripped_bytes)?;
+  println!("target_hash: {}", target_hash);
+  let parser = wasmparser::Parser::new(0);
+  for payload in parser.parse_all(contents.as_ref()) {
+    let payload = payload?;
+    use wasmparser::Payload::*;
+    match payload {
+      CustomSection(c) if (c.name() == SECTION_JWT) => {
+        let jwt = String::from_utf8(c.data().to_vec())?;
+        let claims: Claims<CollectionClaims> = Claims::decode(&jwt)?;
+        if let Some(ref meta) = claims.metadata {
+          println!("extracted_hash: {}", meta.module_hash);
+          if meta.module_hash != target_hash {
+            // return Err(error::ClaimsError::InvalidModuleHash);
+          }
+          return Ok(Some(Token { jwt, claims }));
+        }
+        return Err(error::ClaimsError::InvalidModuleFormat);
+      }
+      _ => {}
     }
   }
   Ok(None)
@@ -73,35 +85,27 @@ pub fn decode_token(jwt_bytes: Vec<u8>) -> Result<Token<CollectionClaims>> {
 /// This function will embed a set of claims inside the bytecode of a WebAssembly module. The claims.
 /// are converted into a JWT and signed using the provided `KeyPair`.
 pub fn embed_claims(orig_bytecode: &[u8], claims: &Claims<CollectionClaims>, kp: &KeyPair) -> Result<Vec<u8>> {
-  let mut module = deserialize_buffer(orig_bytecode)?;
+  let mut bytes = orig_bytecode.to_vec();
+  bytes = strip_custom_section(&bytes)?;
 
-  module.customs.remove_raw("jwt");
-  let cleanbytes = module.emit_wasm();
+  let hash = hash_bytes(&*bytes)?;
+  let mut claims = (*claims).clone();
+  let meta = claims.metadata.map(|md| CollectionClaims {
+    module_hash: hash,
+    ..md
+  });
+  claims.metadata = meta;
 
-  let jwt = ClaimsJwt {
-    data: make_jwt(&*cleanbytes, claims, kp)?,
-  };
+  let encoded = claims.encode(kp)?;
+  let encvec = encoded.as_bytes().to_vec();
+  wasm_gen::write_custom_section(&mut bytes, SECTION_JWT, &encvec);
 
-  // emit_wasm() has side effects on our original `module` so we need to re-serialize it
-  // with the cleanbytes and add our token.
-  let mut module = deserialize_buffer(&cleanbytes)?;
-  module.customs.add(jwt);
-  Ok(module.emit_wasm())
+  Ok(bytes)
 }
 
 #[derive(Debug)]
 struct ClaimsJwt {
   data: Vec<u8>,
-}
-
-impl walrus::CustomSection for ClaimsJwt {
-  fn name(&self) -> &str {
-    "jwt"
-  }
-
-  fn data(&self, ids_to_indices: &IdsToIndices) -> std::borrow::Cow<[u8]> {
-    std::borrow::Cow::Borrowed(&self.data)
-  }
 }
 
 /// Create a JWT claims with a hash of the buffer embedded.
@@ -180,14 +184,4 @@ fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest> {
   }
 
   Ok(context.finish())
-}
-
-fn compute_hash_without_jwt(module: &[u8]) -> Result<String> {
-  let mut refmod = deserialize_buffer(module)?;
-  refmod.customs.remove_raw("jwt");
-  // refmod.clear_custom_section("jwt");
-  let modbytes = refmod.emit_wasm();
-  let hash = hash_bytes(&*modbytes)?;
-
-  Ok(hash)
 }

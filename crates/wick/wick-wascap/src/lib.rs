@@ -88,8 +88,8 @@
 #![allow(unused)]
 #![recursion_limit = "512"]
 
-/// The module that contains the component claims definition.
 mod component;
+mod parser;
 
 pub use component::CollectionClaims;
 pub use wascap;
