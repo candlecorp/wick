@@ -34,6 +34,7 @@ use crate::{Error, Result};
 pub struct WasmHostBuilder {
   wasi_params: Option<WasiParams>,
   callback: Option<Arc<RuntimeCallback>>,
+  engine: Option<wasmtime::Engine>,
   span: Span,
 }
 
@@ -50,6 +51,7 @@ impl WasmHostBuilder {
     Self {
       wasi_params: None,
       callback: None,
+      engine: None,
       span,
     }
   }
@@ -64,6 +66,11 @@ impl WasmHostBuilder {
     self
   }
 
+  pub fn engine(mut self, engine: wasmtime::Engine) -> Self {
+    self.engine = Some(engine);
+    self
+  }
+
   pub fn preopened_dirs(mut self, dirs: Vec<String>) -> Self {
     let mut params = self.wasi_params.take().unwrap_or_default();
     params.preopened_dirs = dirs;
@@ -72,7 +79,7 @@ impl WasmHostBuilder {
   }
 
   pub fn build(self, module: &WickWasmModule) -> Result<WasmHost> {
-    WasmHost::try_load(module, self.wasi_params, &self.callback, self.span)
+    WasmHost::try_load(module, self.engine, self.wasi_params, &self.callback, self.span)
   }
 }
 
@@ -95,6 +102,7 @@ impl std::fmt::Debug for WasmHost {
 impl WasmHost {
   pub fn try_load(
     module: &WickWasmModule,
+    engine: Option<wasmtime::Engine>,
     wasi_options: Option<WasiParams>,
     callback: &Option<Arc<RuntimeCallback>>,
     span: Span,
@@ -106,7 +114,13 @@ impl WasmHost {
 
     let time = Instant::now();
 
-    let engine = wasmrs_wasmtime::WasmtimeBuilder::new(&module.bytes).enable_cache(None);
+    #[allow(clippy::option_if_let_else)]
+    let engine = if let Some(engine) = engine {
+      wasmrs_wasmtime::WasmtimeBuilder::new(&module.bytes).engine(engine)
+    } else {
+      wasmrs_wasmtime::WasmtimeBuilder::new(&module.bytes).enable_cache(None)
+    };
+
     let engine = if let Some(wasi_options) = wasi_options {
       engine.wasi_params(wasi_options)
     } else {
