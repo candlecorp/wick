@@ -402,8 +402,8 @@ async fn init_context(config: SqlComponentConfig, addr: Url) -> Result<Context, 
 fn row_to_json(row: &Row) -> Value {
   let mut map: Map<String, Value> = Map::new();
   for col in row.columns() {
-    let v = row.get::<'_, FromSqlWrapper, _>(col.name()).unwrap();
-    map.insert(col.name().to_owned(), v.0);
+    let v = row.get::<'_, FromSqlWrapper, _>(col.name());
+    map.insert(col.name().to_owned(), v.map_or(Value::Null, |v| v.0));
   }
   Value::Object(map)
 }
