@@ -14,7 +14,6 @@ thiserror = { workspace = true }
 wascap = { workspace = true }
 wasmparser = { workspace = true }
 wasm-encoder = { workspace = true }
-wasm-gen = { workspace = true }
 data-encoding = { workspace = true }
 ring = { workspace = true }
 nuid = { workspace = true }

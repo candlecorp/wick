@@ -91,6 +91,8 @@ extern crate tracing;
 #[cfg(test)]
 pub(crate) mod test;
 
+mod wasmtime;
+
 mod components;
 pub(crate) mod dev;
 mod dispatch;
