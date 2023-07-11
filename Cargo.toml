@@ -68,7 +68,13 @@ wick-interface-cli = { path = "./crates/interfaces/wick-interface-cli", version 
 wick-sql = { path = "./crates/components/wick-sql", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
 # wasmtime (must align with version in wasmrs)
-wasmtime = { version = "10.0.1" }
+wasmtime = { version = "10.0.1", default-features = false, features = [
+  "cache",
+  "jitdump",
+  "parallel-compilation",
+  "cranelift",
+  "vtune"
+] }
 wasmtime-wasi = { version = "10.0.1", features = ["sync"] }
 wasi-common = { version = "10.0.1" }
 # wasmrs
@@ -193,7 +199,6 @@ trycmd = "0.14"
 url = "2.3"
 uuid = { version = "1.1", default-features = false }
 wasm-encoder = "0.29"
-wasm-gen = "0.1"
 wasmparser = "0.107"
 wascap = "0.8"
 walkdir = "2.3"
