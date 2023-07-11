@@ -12,6 +12,7 @@ use wasmrs::{GenericError, OperationHandler, RSocket, RawPayload};
 use wasmrs_codec::messagepack::serialize;
 use wasmrs_host::{CallContext, Host, WasiParams};
 use wasmrs_rx::{FluxChannel, Observer};
+use wasmrs_wasmtime::WasmtimeBuilder;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{
   from_raw_wasmrs,
@@ -24,7 +25,7 @@ use wick_packet::{
   PacketStream,
   RuntimeConfig,
 };
-use wick_wascap::{Claims, CollectionClaims};
+use wick_wascap::{Claims, WickComponent};
 
 use crate::error::WasmComponentError;
 use crate::wasm_module::WickWasmModule;
@@ -87,7 +88,7 @@ impl WasmHostBuilder {
 pub struct WasmHost {
   #[allow(unused)]
   host: Arc<Mutex<Host>>,
-  claims: Claims<CollectionClaims>,
+  claims: Claims<WickComponent>,
   ctx: Arc<CallContext>,
   _rng: seeded_random::Random,
   span: Span,
@@ -110,23 +111,28 @@ impl WasmHost {
     let jwt = &module.token.jwt;
     let _span = span.enter();
 
-    wick_wascap::validate_token::<CollectionClaims>(jwt).map_err(|e| Error::ClaimsInvalid(e.to_string()))?;
+    wick_wascap::validate_token::<WickComponent>(jwt).map_err(|e| Error::ClaimsInvalid(e.to_string()))?;
 
     let time = Instant::now();
+    let mut builder = WasmtimeBuilder::new();
 
-    #[allow(clippy::option_if_let_else)]
-    let engine = if let Some(engine) = engine {
-      wasmrs_wasmtime::WasmtimeBuilder::new(&module.bytes).engine(engine)
+    builder = if WasmtimeBuilder::is_cached(module.hash()) {
+      builder.with_cached_module(module.hash()).unwrap()
     } else {
-      wasmrs_wasmtime::WasmtimeBuilder::new(&module.bytes).enable_cache(None)
+      builder.with_module_bytes(module.hash(), &module.bytes)
     };
 
-    let engine = if let Some(wasi_options) = wasi_options {
-      engine.wasi_params(wasi_options)
+    builder = if let Some(engine) = engine {
+      builder.engine(engine)
     } else {
-      engine
+      builder.enable_cache(None)
     };
-    let engine = engine
+
+    if let Some(wasi_options) = wasi_options {
+      builder = builder.wasi_params(wasi_options);
+    }
+
+    let engine = builder
       .build()
       .map_err(|e| WasmComponentError::EngineFailure(e.to_string()))?;
     trace!(duration_μs = %time.elapsed().as_micros(), "wasmtime instance loaded");

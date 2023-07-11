@@ -1300,9 +1300,9 @@ checksum = "dc375e1527247fe1a97d8b7156678dfe7c1af2fc075c9a4db3690ecd2a148068"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.58"
+version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa1fb82fc0c281dd9671101b66b771ebbe1eaf967b96ac8740dcba4b70005ca8"
+checksum = "78803b62cbf1f46fde80d7c0e803111524b9877184cfe7c3033659490ac7a7da"
 dependencies = [
  "unicode-ident",
 ]
@@ -2214,9 +2214,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs"
-version = "0.12.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cf8e3897eb29abbfbbce3cef500e6a4fc802e175b9718bceb20887e43da2729"
+checksum = "94eaf073a819835e7bf712f6afbc8f3f04790cf6e57fd48b86e3ceac1f1c5582"
 dependencies = [
  "bytes 1.4.0",
  "crossbeam-channel",
@@ -2236,9 +2236,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-codec"
-version = "0.12.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a81f0513a5e5f5696cd49965808cee4a7816426d2a302a9318bfe8713ca58da0"
+checksum = "20f90276d9d3c49951c3073b2845ac3dc2cee446722ea4904bb768419c36b6be"
 dependencies = [
  "heapless",
  "rmp-serde",
@@ -2248,9 +2248,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-frames"
-version = "0.12.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b4ba83ebb354ad721dfb6c099256b8c3ed31e8f81217dda56ea783c8210acd5"
+checksum = "ff7f452a1908fb0f2d08db7752b9dc69bdeea647fa1841f469ef3ad98815956c"
 dependencies = [
  "bytes 1.4.0",
  "serde",
@@ -2258,9 +2258,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-guest"
-version = "0.12.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf63add27ac8dbc4df415606906bd975a29477df2d0a44fa866e1d064456c29c"
+checksum = "d50bc90ea73c739b11440c0e15674a4b8c197a0f1c120bd0ab5930f5d699eccd"
 dependencies = [
  "bytes 1.4.0",
  "cfg-if",
@@ -2278,9 +2278,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-runtime"
-version = "0.12.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b72c754f8f45726c17943eb40c3662e088b84a431755626f48708d104a2b385"
+checksum = "86a76568a0617b94230c08566e0e4dc1bdd4e953bb8f73ef3617f29cc025bb3a"
 dependencies = [
  "bytes 1.4.0",
  "crossbeam-channel",
@@ -2297,9 +2297,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-rx"
-version = "0.12.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c917feb73a6549d2604511d052daf941e1951ea46f0da935d93e9d0301050cb"
+checksum = "85a7878f17e23c775cb6cbf40c66651076b3bc483ffe5396a4b17874d2114a35"
 dependencies = [
  "async-trait",
  "bytes 1.4.0",

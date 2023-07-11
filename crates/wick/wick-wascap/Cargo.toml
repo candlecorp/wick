@@ -9,7 +9,7 @@ description = "WASM Capabilities library for Wick"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
-wick-interface-types = { workspace = true }
+wick-interface-types = { workspace = true, features = ["value"] }
 thiserror = { workspace = true }
 wascap = { workspace = true }
 wasmparser = { workspace = true }
@@ -22,3 +22,4 @@ tracing = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }
+rstest = { workspace = true }

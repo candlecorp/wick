@@ -38,6 +38,7 @@ use crate::BoxFuture;
 static WASMTIME_ENGINE: Lazy<wasmtime::Engine> = Lazy::new(|| {
   let mut config = wasmtime::Config::default();
   config.strategy(wasmtime::Strategy::Cranelift);
+
   if let Err(e) = config.cache_config_load_default() {
     warn!("Wasmtime cache configuration not found ({}). Repeated loads will speed up significantly with a cache configuration. See https://docs.wasmtime.dev/cli-cache.html for more information.",e);
   }
