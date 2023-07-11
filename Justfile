@@ -55,8 +55,8 @@ unit-tests: _check_nextest _codegen-tests
 # Run integration tests
 integration-tests: _check_nextest _codegen-tests
   cargo nextest run -E 'not (test(slow_test))'
-  cargo test --manifest-path tests/template/Cargo.toml
   just wick-tests
+  cargo test --manifest-path tests/template/Cargo.toml
 
 # Tests run via `wick test`
 wick-tests:
