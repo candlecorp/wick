@@ -33,10 +33,6 @@ pub(crate) struct Options {
   /// Version to embed in the module.
   #[clap(long, action)]
   ver: Option<String>,
-
-  /// Revision number to embed in the module.
-  #[clap(long, action)]
-  rev: Option<u32>,
 }
 
 #[allow(clippy::unused_async)]
@@ -77,12 +73,7 @@ pub(crate) async fn handle(
     interface.signature()?,
     &subject,
     &account,
-    ClaimsOptions {
-      revision: opts.rev,
-      version: opts.ver,
-      expires_in_days: opts.common.expires_in_days,
-      not_before_days: opts.common.wait,
-    },
+    &ClaimsOptions::v1(opts.ver, opts.common.expires_in_days, opts.common.wait),
   )?;
 
   let destination = match opts.destination.clone() {

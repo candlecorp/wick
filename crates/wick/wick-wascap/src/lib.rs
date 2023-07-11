@@ -82,36 +82,29 @@
   while_true,
   missing_docs
 )]
-#![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
+#![allow(unused_attributes)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(unused)]
+#![allow()]
 #![recursion_limit = "512"]
 
 mod component;
 mod parser;
 
-pub use component::CollectionClaims;
+mod v0;
+mod v1;
+
+pub use component::WickComponent;
 pub use wascap;
 pub use wascap::jwt::Token;
 pub use wascap::prelude::{validate_token, Claims, Invocation, KeyPair};
 
 /// The crate's error module.
 pub mod error;
-pub use error::ClaimsError as Error;
+pub use error::Error;
 mod claims;
 
-pub use claims::{
-  assert_valid_jwt,
-  build_collection_claims,
-  decode_token,
-  embed_claims,
-  extract_claims,
-  hash_bytes,
-  make_jwt,
-  sign_buffer_with_claims,
-  ClaimsOptions,
-};
+pub use claims::{extract_claims, sign_buffer_with_claims, ClaimsOptions};
 
 #[cfg(test)]
 mod test {
@@ -122,7 +115,7 @@ mod test {
   use super::*;
 
   #[test]
-  fn test_basic() -> Result<()> {
+  fn test_sign() -> Result<()> {
     let subject = KeyPair::new_service();
     let account = KeyPair::new_account();
     let signed = sign_buffer_with_claims(
@@ -130,15 +123,61 @@ mod test {
       ComponentSignature::new("TEST"),
       &subject,
       &account,
-      ClaimsOptions {
-        revision: None,
-        version: None,
-        expires_in_days: None,
-        not_before_days: None,
-      },
+      &ClaimsOptions::v0(None, None, None, None),
     )?;
     let claims = extract_claims(signed)?.unwrap();
     assert_eq!(claims.claims.name(), "TEST");
+
+    Ok(())
+  }
+
+  #[rstest::rstest]
+  #[case(
+    "./test/1.v0.signed.wasm",
+    "D3DFCF7F12B01A22025B2341871A46B5A4EE71387B32EE857EDBE69F2D1E1299",
+    "90E5D03AF45BAE5EFC5841C196A2774BEB783E4E041E1D6D1421073765D47E50"
+  )]
+  #[case(
+    "./test/2.v0.signed.wasm",
+    "2535F3568A2E0798AA376A6F836A65C81F1A258156F9E98E94B33A0E42EFC2C2",
+    "846CBC6E9D35321E0A81D150B1CCA2816EAD9E53DAF0AA12BD2FB44E19E7605C"
+  )]
+  #[case(
+    "./test/3.v0.signed.wasm",
+    "8CF411C08AEEF40150E70E0210A4C5A67559871FDB43351664A42DC6F94B8DC5",
+    "7A68971E61256D7B76FA580B2E17B173B943B1B737E65C5EB6AECA6D37312EEE"
+  )]
+  #[case(
+    "./test/4.v0.signed.wasm",
+    "7E215B19354779A37A5C01740D8D129536C38E1A2659A916F440418129924A11",
+    "8DD28458BE618E260A70390FAEB5E74160823F979A32F6167F3C3D3D1C2C08BB"
+  )]
+  fn test_re_sign(#[case] file: &str, #[case] old_hash: &str, #[case] new_hash: &str) -> Result<()> {
+    let subject = KeyPair::new_service();
+    let account = KeyPair::new_account();
+
+    let bytes = std::fs::read(file)?;
+    let token = extract_claims(&bytes)?.unwrap();
+
+    assert_eq!(token.claims.metadata.as_ref().unwrap().module_hash, old_hash);
+
+    validate_token::<WickComponent>(&token.jwt)?;
+
+    let signed = sign_buffer_with_claims(
+      &bytes,
+      ComponentSignature::new("TEST"),
+      &subject,
+      &account,
+      &ClaimsOptions::v1(None, None, None),
+    )?;
+
+    wasmparser::validate(&signed)?;
+
+    let token = extract_claims(&signed)?.unwrap();
+
+    assert_eq!(token.claims.metadata.as_ref().unwrap().module_hash, new_hash);
+
+    validate_token::<WickComponent>(&token.jwt)?;
 
     Ok(())
   }

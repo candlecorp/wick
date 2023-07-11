@@ -1,4 +1,4 @@
-use std::string::FromUtf8Error;
+use std::str::Utf8Error;
 
 // use parity_wasm::SerializationError;
 use thiserror::Error;
@@ -6,7 +6,7 @@ use wasmparser::BinaryReaderError;
 
 #[derive(Error, Debug)]
 /// Wick WasCap's error type.
-pub enum ClaimsError {
+pub enum Error {
   #[error("Invalid module hash")]
   /// Error returned when a module's hash does not match the hash embedded in its token.
   InvalidModuleHash,
@@ -17,7 +17,7 @@ pub enum ClaimsError {
 
   #[error(transparent)]
   /// Error parsing string.
-  Utf8Error(#[from] FromUtf8Error),
+  Utf8Error(#[from] Utf8Error),
 
   #[error(transparent)]
   /// Upstream error from [wascap].

@@ -1,96 +1,127 @@
-use std::io::Read;
+use std::borrow::Cow;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use data_encoding::HEXUPPER;
-// use parity_wasm::elements::{CustomSection, Module, Serialize};
-// use parity_wasm::{deserialize_buffer, serialize};
-use ring::digest::{Context, Digest, SHA256};
+use tracing::debug;
 use wascap::jwt::Token;
 use wascap::prelude::{Claims, KeyPair};
 use wascap::wasm::days_from_now_to_jwt_time;
 use wick_interface_types::ComponentSignature;
 
-use crate::component::CollectionClaims;
-use crate::error;
-use crate::parser::strip_custom_section;
+use crate::component::WickComponent;
+use crate::parser::{CustomSection, ParsedModule};
+use crate::{error, v0, v1};
 
-type Result<T> = std::result::Result<T, error::ClaimsError>;
+type Result<T> = std::result::Result<T, error::Error>;
 
 /// A common struct to group related options together.
-#[derive(Debug, Default, Clone)]
-pub struct ClaimsOptions {
-  /// The revision of the claims target.
-  pub revision: Option<u32>,
-  /// The version of the claims target.
-  pub version: Option<String>,
-  /// When the target expires.
-  pub expires_in_days: Option<u64>,
-  /// When the target becomes valid.
-  pub not_before_days: Option<u64>,
+#[derive(Debug, Clone)]
+pub enum ClaimsOptions {
+  /// Version 0 Claims
+  V0(v0::ClaimsOptions),
+  /// Version 1 Claims
+  V1(v1::ClaimsOptions),
 }
 
-const SECTION_JWT: &str = "jwt"; // Versions of wascap prior to 0.9 used this section
+impl ClaimsOptions {
+  /// Create a new [v0::ClaimsOptions] struct.
+  #[must_use]
+  pub fn v0(
+    revision: Option<u32>,
+    version: Option<String>,
+    expires_in_days: Option<u64>,
+    not_before_days: Option<u64>,
+  ) -> Self {
+    Self::V0(v0::ClaimsOptions {
+      revision,
+      version,
+      expires_in_days,
+      not_before_days,
+    })
+  }
 
-/// Extract the claims embedded in a WebAssembly module.
-pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<CollectionClaims>>> {
-  let stripped_bytes = strip_custom_section(contents.as_ref())?;
-  let target_hash = hash_bytes(&*stripped_bytes)?;
-  println!("target_hash: {}", target_hash);
-  let parser = wasmparser::Parser::new(0);
-  for payload in parser.parse_all(contents.as_ref()) {
-    let payload = payload?;
-    use wasmparser::Payload::*;
-    match payload {
-      CustomSection(c) if (c.name() == SECTION_JWT) => {
-        let jwt = String::from_utf8(c.data().to_vec())?;
-        let claims: Claims<CollectionClaims> = Claims::decode(&jwt)?;
-        if let Some(ref meta) = claims.metadata {
-          println!("extracted_hash: {}", meta.module_hash);
-          if meta.module_hash != target_hash {
-            // return Err(error::ClaimsError::InvalidModuleHash);
-          }
-          return Ok(Some(Token { jwt, claims }));
-        }
-        return Err(error::ClaimsError::InvalidModuleFormat);
-      }
-      _ => {}
+  /// Create a new [v1::ClaimsOptions] struct.
+  #[must_use]
+  pub fn v1(version: Option<String>, expires_in_days: Option<u64>, not_before_days: Option<u64>) -> Self {
+    Self::V1(v1::ClaimsOptions {
+      version,
+      expires_in_days,
+      not_before_days,
+    })
+  }
+
+  /// Get when the claims expire in days
+  #[must_use]
+  pub fn expires_in_days(&self) -> Option<u64> {
+    match self {
+      Self::V0(opts) => opts.expires_in_days,
+      Self::V1(opts) => opts.expires_in_days,
     }
   }
-  Ok(None)
-}
 
-/// Validate a JWT's hash matches the passed hash.
-pub fn assert_valid_jwt(token: &Token<CollectionClaims>, hash: &str) -> Result<()> {
-  let valid_hash = token
-    .claims
-    .metadata
-    .as_ref()
-    .map_or(false, |meta| meta.module_hash == hash);
+  /// Get when the claims are valid (in days)
+  #[must_use]
+  pub fn not_before_days(&self) -> Option<u64> {
+    match self {
+      Self::V0(opts) => opts.not_before_days,
+      Self::V1(opts) => opts.not_before_days,
+    }
+  }
 
-  if valid_hash {
-    Ok(())
-  } else {
-    Err(error::ClaimsError::InvalidModuleHash)
+  /// Get the version described by the claims
+  #[must_use]
+  pub fn version(&self) -> Option<String> {
+    match self {
+      Self::V0(opts) => opts.version.clone(),
+      Self::V1(opts) => opts.version.clone(),
+    }
   }
 }
 
-/// Decode a JWT and its claims.
-pub fn decode_token(jwt_bytes: Vec<u8>) -> Result<Token<CollectionClaims>> {
-  let jwt = String::from_utf8(jwt_bytes)?;
-  tracing::trace!(%jwt, "jwt");
-  let claims: Claims<CollectionClaims> = Claims::decode(&jwt)?;
-  Ok(Token { jwt, claims })
+/// Extract the claims embedded in a WebAssembly module.
+pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<WickComponent>>> {
+  let module = ParsedModule::new(contents.as_ref())?;
+  let v0_section = module.get_custom_section(v0::SECTION_NAME);
+  let v1_section = module.get_custom_section(v1::SECTION_NAME);
+
+  let (token, target_hash) = if let Some(section) = v0_section {
+    debug!(section= %v0::SECTION_NAME,"wasm:claims: decoding v0 token");
+    (
+      v0::decode(section)?,
+      v0::hash(&module, &[v0::SECTION_NAME, v1::SECTION_NAME])?,
+    )
+  } else if let Some(section) = v1_section {
+    debug!(section= %v1::SECTION_NAME,"wasm:claims: decoding v1 token");
+    (
+      v1::decode(section)?,
+      v1::hash(&module, &[v0::SECTION_NAME, v1::SECTION_NAME])?,
+    )
+  } else {
+    return Err(error::Error::InvalidModuleFormat);
+  };
+
+  debug!(?token, %target_hash, "wasm:claims");
+
+  if let Some(ref meta) = token.claims.metadata {
+    if meta.module_hash != target_hash {
+      Err(error::Error::InvalidModuleHash)
+    } else {
+      Ok(Some(token))
+    }
+  } else {
+    Err(error::Error::InvalidModuleFormat)
+  }
 }
 
 /// This function will embed a set of claims inside the bytecode of a WebAssembly module. The claims.
 /// are converted into a JWT and signed using the provided `KeyPair`.
-pub fn embed_claims(orig_bytecode: &[u8], claims: &Claims<CollectionClaims>, kp: &KeyPair) -> Result<Vec<u8>> {
-  let mut bytes = orig_bytecode.to_vec();
-  bytes = strip_custom_section(&bytes)?;
+pub(crate) fn embed_claims(orig_bytecode: &[u8], mut claims: Claims<WickComponent>, kp: &KeyPair) -> Result<Vec<u8>> {
+  let module = ParsedModule::new(orig_bytecode)?;
+  let module = module
+    .remove_custom_section(v0::SECTION_NAME)
+    .remove_custom_section(v1::SECTION_NAME);
+  let hash = module.hash(&[])?;
 
-  let hash = hash_bytes(&*bytes)?;
-  let mut claims = (*claims).clone();
-  let meta = claims.metadata.map(|md| CollectionClaims {
+  let meta = claims.metadata.map(|md| WickComponent {
     module_hash: hash,
     ..md
   });
@@ -98,56 +129,30 @@ pub fn embed_claims(orig_bytecode: &[u8], claims: &Claims<CollectionClaims>, kp:
 
   let encoded = claims.encode(kp)?;
   let encvec = encoded.as_bytes().to_vec();
-  wasm_gen::write_custom_section(&mut bytes, SECTION_JWT, &encvec);
-
-  Ok(bytes)
-}
-
-#[derive(Debug)]
-struct ClaimsJwt {
-  data: Vec<u8>,
-}
-
-/// Create a JWT claims with a hash of the buffer embedded.
-pub fn make_jwt<R: Read>(buffer: R, claims: &Claims<CollectionClaims>, kp: &KeyPair) -> Result<Vec<u8>> {
-  let module_hash = hash_bytes(buffer)?;
-  let mut claims = (*claims).clone();
-  let meta = claims.metadata.map(|md| CollectionClaims { module_hash, ..md });
-  claims.metadata = meta;
-
-  let encoded = claims.encode(kp)?;
-  let encvec = encoded.as_bytes().to_vec();
-
-  Ok(encvec)
-}
-
-/// Create a string safe hash from a list of bytes.
-pub fn hash_bytes<R: Read>(buffer: R) -> Result<String> {
-  let digest = sha256_digest(buffer)?;
-  Ok(HEXUPPER.encode(digest.as_ref()))
+  let custom_section = CustomSection::new(v1::SECTION_NAME.to_owned(), Cow::Owned(encvec));
+  Ok(module.emit_wasm([custom_section]))
 }
 
 /// Build collection claims from passed values
 #[must_use]
-pub fn build_collection_claims(
+pub(crate) fn build_collection_claims(
   interface: ComponentSignature,
   subject_kp: &KeyPair,
   issuer_kp: &KeyPair,
-  options: ClaimsOptions,
-) -> Claims<CollectionClaims> {
-  Claims::<CollectionClaims> {
-    expires: options.expires_in_days,
+  options: &ClaimsOptions,
+) -> Claims<WickComponent> {
+  Claims::<WickComponent> {
+    expires: options.expires_in_days(),
     id: nuid::next(),
     issued_at: since_the_epoch().as_secs(),
     issuer: issuer_kp.public_key(),
     subject: subject_kp.public_key(),
-    not_before: days_from_now_to_jwt_time(options.not_before_days),
-    metadata: Some(CollectionClaims {
+    not_before: days_from_now_to_jwt_time(options.not_before_days()),
+    metadata: Some(WickComponent {
       module_hash: "".to_owned(),
       tags: Some(Vec::new()),
       interface,
-      rev: options.revision,
-      ver: options.version,
+      ver: options.version(),
     }),
   }
 }
@@ -159,29 +164,14 @@ pub fn sign_buffer_with_claims(
   interface: ComponentSignature,
   mod_kp: &KeyPair,
   acct_kp: &KeyPair,
-  options: ClaimsOptions,
+  options: &ClaimsOptions,
 ) -> Result<Vec<u8>> {
   let claims = build_collection_claims(interface, mod_kp, acct_kp, options);
 
-  embed_claims(buf.as_ref(), &claims, acct_kp)
+  embed_claims(buf.as_ref(), claims, acct_kp)
 }
 
 fn since_the_epoch() -> std::time::Duration {
   let start = SystemTime::now();
   start.duration_since(UNIX_EPOCH).unwrap()
-}
-
-fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest> {
-  let mut context = Context::new(&SHA256);
-  let mut buffer = [0; 1024];
-
-  loop {
-    let count = reader.read(&mut buffer)?;
-    if count == 0 {
-      break;
-    }
-    context.update(&buffer[..count]);
-  }
-
-  Ok(context.finish())
 }

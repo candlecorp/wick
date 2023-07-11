@@ -68,18 +68,18 @@ wick-interface-cli = { path = "./crates/interfaces/wick-interface-cli", version 
 wick-sql = { path = "./crates/components/wick-sql", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
 # wasmtime (must align with version in wasmrs)
-wasmtime = { version = "7.0.0" }
-wasmtime-wasi = { version = "7.0.0", features = ["sync"] }
-wasi-common = { version = "7.0.0" }
+wasmtime = { version = "10.0.1" }
+wasmtime-wasi = { version = "10.0.1", features = ["sync"] }
+wasi-common = { version = "10.0.1" }
 # wasmrs
-wasmrs = { version = "0.12.1" }
-wasmrs-codec = { version = "0.12.1" }
-wasmrs-frames = { version = "0.12.1" }
-wasmrs-guest = { version = "0.12.1" }
-wasmrs-host = { version = "0.12.1" }
-wasmrs-runtime = { version = "0.12.1" }
-wasmrs-rx = { version = "0.12.1" }
-wasmrs-wasmtime = { version = "0.12.1" }
+wasmrs = { version = "0.13.0" }
+wasmrs-codec = { version = "0.13.0" }
+wasmrs-frames = { version = "0.13.0" }
+wasmrs-guest = { version = "0.13.0" }
+wasmrs-host = { version = "0.13.0" }
+wasmrs-runtime = { version = "0.13.0" }
+wasmrs-rx = { version = "0.13.0" }
+wasmrs-wasmtime = { version = "0.13.0" }
 #
 # Other
 #
