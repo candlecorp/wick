@@ -2,4 +2,4 @@
 
 Wick RPC SDK
 
-License: BSD-3-Clause
+License: Elastic-2.0

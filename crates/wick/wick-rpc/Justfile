@@ -1,0 +1,6 @@
+
+clean:
+  rm -f src/generated/*
+
+codegen:
+  cargo run --manifest-path=./codegen/Cargo.toml
