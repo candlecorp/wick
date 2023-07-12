@@ -1,0 +1,16 @@
+[package]
+name = "wick-rpc-codegen"
+version = "0.1.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "Library for generating protobuf code for the wick runtime"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+
+[dependencies]
+tonic-build = { version = "0.9", default-features = false, features = [
+  "prost",
+  "transport"
+] }

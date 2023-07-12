@@ -23,10 +23,4 @@ thiserror = { workspace = true }
 uuid = { workspace = true }
 option-utils = { workspace = true }
 
-[build-dependencies]
-tonic-build = { workspace = true, default-features = false, features = [
-  "prost",
-  "transport"
-] }
-
 [dev-dependencies]

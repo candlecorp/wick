@@ -43,6 +43,7 @@ clean:
   cargo clean
   rm -rf node_modules
   just crates/wick/wick-config/clean
+  just crates/wick/wick-rpc/clean
   just wasm-clean
 
 # Run the basic suite of tests
@@ -89,6 +90,7 @@ integration-teardown:
 
 # Run codegen-related tasks
 codegen:
+  just crates/wick/wick-rpc/codegen
   just crates/wick/wick-config/codegen
   cp crates/wick/wick-config/docs/v*.md docs/content/configuration/reference/
 

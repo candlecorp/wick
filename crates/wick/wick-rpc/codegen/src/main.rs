@@ -1,8 +1,6 @@
 use std::process::Command;
 
 fn main() {
-  println!("cargo:rerun-if-changed=proto/wick.proto");
-  println!("cargo:rustc-env=OUT_DIR=generated");
   tonic_build::configure()
     .out_dir("src/generated")
     .file_descriptor_set_path("src/generated/descriptors.bin")
