@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use flow_component::{Component, ComponentError, RuntimeCallback};
-use parking_lot::Mutex;
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
@@ -19,12 +18,41 @@ pub(crate) enum Error {
 }
 
 #[derive(Debug)]
-pub(crate) struct SelfComponent {
+pub(crate) struct InnerSelf {
   signature: ComponentSignature,
   schematics: Arc<Vec<SchematicExecutor>>,
   components: Arc<HandlerMap>,
-  self_component: Mutex<Option<Arc<Self>>>,
   config: Option<RuntimeConfig>,
+}
+
+impl InnerSelf {
+  pub(crate) fn new(
+    components: Arc<HandlerMap>,
+    state: &ProgramState,
+    config: Option<RuntimeConfig>,
+    dispatcher: &InterpreterDispatchChannel,
+  ) -> Self {
+    let schematics: Arc<Vec<SchematicExecutor>> = Arc::new(
+      state
+        .network
+        .schematics()
+        .iter()
+        .map(|s| SchematicExecutor::new(s.clone(), dispatcher.clone()))
+        .collect(),
+    );
+    let signature = state.components.get(SelfComponent::ID).unwrap().clone();
+    Self {
+      signature,
+      schematics,
+      components,
+      config,
+    }
+  }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct SelfComponent {
+  inner: Arc<InnerSelf>,
 }
 
 impl SelfComponent {
@@ -35,36 +63,11 @@ impl SelfComponent {
     state: &ProgramState,
     config: Option<RuntimeConfig>,
     dispatcher: &InterpreterDispatchChannel,
-  ) -> Arc<Self> {
-    let schematics: Arc<Vec<SchematicExecutor>> = Arc::new(
-      state
-        .network
-        .schematics()
-        .iter()
-        .map(|s| SchematicExecutor::new(s.clone(), dispatcher.clone()))
-        .collect(),
-    );
-    let signature = state.components.get(Self::ID).unwrap().clone();
-    let component = Arc::new(Self {
-      signature,
-      schematics,
-      self_component: Mutex::new(None),
-      components,
-      config,
-    });
-    component.update_self_component();
-    component
-  }
-
-  fn update_self_component(self: &Arc<Self>) {
-    let mut lock = self.self_component.lock();
-    lock.replace(self.clone());
-    drop(lock);
-  }
-
-  fn clone_self_component(&self) -> Arc<Self> {
-    let lock = self.self_component.lock();
-    lock.clone().unwrap()
+  ) -> Self {
+    let inner_self = InnerSelf::new(components, state, config, dispatcher);
+    Self {
+      inner: Arc::new(inner_self),
+    }
   }
 }
 
@@ -78,18 +81,19 @@ impl Component for SelfComponent {
     invocation.trace(|| debug!(target = %invocation.target, namespace = Self::ID));
 
     let mut op_config = LiquidOperationConfig::new_value(config);
-    op_config.set_root(self.config.clone());
+    op_config.set_root(self.inner.config.clone());
 
     let operation = invocation.target.operation_id().to_owned();
     let fut = self
+      .inner
       .schematics
       .iter()
       .find(|s| s.name() == operation)
       .map(|s| {
         s.invoke(
           invocation,
-          self.components.clone(),
-          self.clone_self_component(),
+          self.inner.components.clone(),
+          self.clone(),
           op_config,
           callback,
         )
@@ -106,6 +110,6 @@ impl Component for SelfComponent {
   }
 
   fn signature(&self) -> &ComponentSignature {
-    &self.signature
+    &self.inner.signature
   }
 }

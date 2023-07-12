@@ -6,7 +6,7 @@ use wick_interface_types::{ComponentSignature, Field, OperationSignature, Type};
 
 use crate::error::ValidationError;
 use crate::graph::types::*;
-use crate::interpreter::components::schematic_component::SelfComponent;
+use crate::interpreter::components::self_component::SelfComponent;
 
 pub(crate) mod validator;
 use super::components::{reconcile_op_id, ComponentMap};

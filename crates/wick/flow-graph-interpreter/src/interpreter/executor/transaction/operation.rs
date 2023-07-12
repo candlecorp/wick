@@ -16,7 +16,7 @@ use self::port::{InputPorts, OutputPorts, PortStatus};
 use crate::graph::types::*;
 use crate::graph::{LiquidOperationConfig, Reference};
 use crate::interpreter::channel::InterpreterDispatchChannel;
-use crate::interpreter::components::schematic_component::SelfComponent;
+use crate::interpreter::components::self_component::SelfComponent;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::error::ExecutionError;
 use crate::{HandlerMap, InterpreterOptions};
@@ -36,7 +36,7 @@ pub(crate) struct InstanceHandler {
   schematic: Arc<Schematic>,
   pending: AtomicU32,
   components: Arc<HandlerMap>,
-  self_component: Arc<dyn Component + Send + Sync>,
+  self_component: SelfComponent,
 }
 
 impl std::fmt::Debug for InstanceHandler {
@@ -62,7 +62,7 @@ impl InstanceHandler {
     schematic: Arc<Schematic>,
     operation: &Operation,
     components: Arc<HandlerMap>,
-    self_component: Arc<dyn Component + Send + Sync>,
+    self_component: SelfComponent,
   ) -> Self {
     let inputs = operation.inputs().to_vec();
     let outputs = operation.outputs().to_vec();
