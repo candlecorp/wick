@@ -8,10 +8,11 @@ use tokio::fs;
 
 use crate::Error;
 
-// Lovingly borrowed from oci-distribution who doesn't export it
-pub static REFERENCE_REGEXP: &str = r"^((?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])(?:(?:\.(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]))+)?(?::[0-9]+)?/)?[a-z0-9]+(?:(?:(?:[._]|__|[-]*)[a-z0-9]+)+)?(?:(?:/[a-z0-9]+(?:(?:(?:[._]|__|[-]*)[a-z0-9]+)+)?)+)?)(?::([\w][\w.-]{0,127}))?(?:@([A-Za-z][A-Za-z0-9]*(?:[-_+.][A-Za-z][A-Za-z0-9]*)*[:][[:xdigit:]]{32,}))?$";
+// Originally borrowed from oci-distribution who doesn't export it...
+// pub static REFERENCE_REGEXP: &str = r"^((?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])(?:(?:\.(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]))+)?(?::[0-9]+)?/)?[a-z0-9]+(?:(?:(?:[._]|__|[-]*)[a-z0-9]+)+)?(?:(?:/[a-z0-9]+(?:(?:(?:[._]|__|[-]*)[a-z0-9]+)+)?)+)?)(?::([\w][\w.-]{0,127}))?(?:@([A-Za-z][A-Za-z0-9]*(?:[-_+.][A-Za-z][A-Za-z0-9]*)*[:][[:xdigit:]]{32,}))?$";
 
-pub const DEFAULT_REGISTRY: &str = "registry.candle.dev";
+// ... with some minor changes that reduce the cost of the regex by >80% at the risk of some outlier false positives:
+pub static REFERENCE_REGEXP: &str = r"^((?:(?:[[:alnum:]]+)(?:(?:\.(?:[[:alnum:]]+))+)?(?::[[:digit:]]+)?/)?[[:lower:][:digit:]]+(?:(?:(?:[._]|__|[-]*)[[:lower:][:digit:]]+)+)?(?:(?:/[[:lower:][:digit:]]+(?:(?:(?:[._]|__|[-]*)[[:lower:][:digit:]]+)+)?)+)?)(?::([\w][\w.-]*))?(?:@([[:alpha:]][[:alnum:]]*(?:[-_+.][[:alpha:]][[:alnum:]]*)*[:][[:xdigit:]]+))?$";
 
 static RE: Lazy<Regex> = Lazy::new(|| {
   regex::RegexBuilder::new(REFERENCE_REGEXP)
@@ -19,6 +20,8 @@ static RE: Lazy<Regex> = Lazy::new(|| {
     .build()
     .unwrap()
 });
+
+pub const DEFAULT_REGISTRY: &str = "registry.candle.dev";
 
 fn normalize_reference(reference: &str) -> Result<String, Error> {
   let captures = RE
