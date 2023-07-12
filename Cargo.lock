@@ -6534,8 +6534,10 @@ name = "wick-component-wasm"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "derive_builder",
  "flow-component",
  "futures 0.3.28",
+ "once_cell",
  "parking_lot 0.12.1",
  "seeded-random",
  "serde",
@@ -6554,6 +6556,7 @@ dependencies = [
  "wick-config",
  "wick-interface-types",
  "wick-logger",
+ "wick-oci-utils",
  "wick-packet",
  "wick-rpc",
  "wick-wascap",

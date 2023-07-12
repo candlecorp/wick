@@ -4,9 +4,8 @@ mod integration_test {
   use anyhow::Result;
   use asset_container::{Asset, AssetFlags, AssetManager, Status};
   use tokio_stream::StreamExt;
-  use wick_config::config::FetchOptions;
   use wick_config::error::ManifestError;
-  use wick_config::*;
+  use wick_config::{FetchOptions, *};
 
   async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
     let path = PathBuf::from(path);

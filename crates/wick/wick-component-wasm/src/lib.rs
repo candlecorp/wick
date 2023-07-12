@@ -87,7 +87,6 @@
 
 pub mod component;
 pub mod error;
-pub mod helpers; // TODO ref check and make sure these are used:
 pub mod transaction;
 pub mod wasm_host;
 mod wasm_module;

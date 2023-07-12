@@ -5,11 +5,35 @@ use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use tracing::Span;
 use wasmrs_host::WasiParams;
 use wick_config::config::components::Permissions;
+use wick_config::FetchableAssetReference;
 use wick_packet::{Entity, Invocation, PacketStream, RuntimeConfig};
 
-use crate::helpers::WickWasmModule;
 use crate::wasm_host::{SetupPayload, WasmHost, WasmHostBuilder};
 use crate::Error;
+
+#[derive(Clone, Default, derive_builder::Builder)]
+
+pub struct ComponentSetup {
+  #[builder(setter(strip_option), default)]
+  pub engine: Option<wasmtime::Engine>,
+  #[builder(setter(), default)]
+  pub config: Option<RuntimeConfig>,
+  #[builder(setter(), default)]
+  pub callback: Option<Arc<RuntimeCallback>>,
+  #[builder(default, setter(into))]
+  pub provided: HashMap<String, String>,
+  #[builder(setter(), default)]
+  pub permissions: Option<Permissions>,
+}
+
+impl std::fmt::Debug for ComponentSetup {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("ComponentSetup")
+      .field("config", &self.config)
+      .field("provided", &self.provided)
+      .finish()
+  }
+}
 
 #[derive(Debug, Default)]
 pub struct Context {
@@ -34,47 +58,40 @@ fn permissions_to_wasi_params(perms: &Permissions) -> WasiParams {
 
 impl WasmComponent {
   pub async fn try_load(
-    module: &WickWasmModule<'_>,
-    engine: Option<wasmtime::Engine>,
-    permissions: Option<Permissions>,
-    config: Option<RuntimeConfig>,
-    callback: Option<Arc<RuntimeCallback>>,
-    provided: HashMap<String, String>,
+    ns: impl AsRef<str> + Send + Sync,
+    asset: FetchableAssetReference<'_>,
+    options: ComponentSetup,
     span: Span,
   ) -> Result<Self, Error> {
     let mut builder = WasmHostBuilder::new(span.clone());
-
-    let name = module.name().clone().unwrap_or_else(|| module.id().clone());
+    let location = asset.location();
+    let ns = ns.as_ref();
 
     #[allow(clippy::option_if_let_else)]
-    if let Some(config) = permissions {
-      span.in_scope(|| debug!(id=%name, config=?config, "wasi enabled"));
+    if let Some(config) = options.permissions {
+      span.in_scope(|| debug!(component=%ns, config=?config, "wasi enabled"));
       builder = builder.wasi_params(permissions_to_wasi_params(&config));
     } else {
-      span.in_scope(|| debug!(id = %name, "wasi disabled"));
+      span.in_scope(|| debug!(component=%ns, "wasi disabled"));
     }
 
-    if let Some(callback) = callback {
+    if let Some(callback) = options.callback {
       builder = builder.link_callback(callback);
     }
-    if let Some(engine) = engine {
+    if let Some(engine) = options.engine {
       builder = builder.engine(engine);
     }
 
-    let host = builder.build(module)?;
+    let host = builder.build(&asset).await?;
 
     let sig = host.signature();
     span.in_scope(|| {
-      debug!(root_config=?config.as_ref(),%name,"validating configuration for wasm component");
-      wick_packet::validation::expect_configuration_matches(&name, config.as_ref(), &sig.config)
+      debug!(root_config=?options.config.as_ref(),component=%ns,"validating configuration for wasm component");
+      wick_packet::validation::expect_configuration_matches(location, options.config.as_ref(), &sig.config)
         .map_err(Error::SetupSignature)
     })?;
 
-    let setup = SetupPayload::new(
-      &Entity::component(module.name().clone().unwrap_or_default()),
-      provided,
-      config,
-    );
+    let setup = SetupPayload::new(&Entity::component(ns), options.provided, options.config);
     host.setup(setup).await?;
 
     Ok(Self { host: Arc::new(host) })
@@ -102,33 +119,29 @@ impl Component for WasmComponent {
 
 #[cfg(test)]
 mod tests {
-  use std::path::PathBuf;
   use std::str::FromStr;
 
   use anyhow::Result;
   use flow_component::panic_callback;
   use futures::StreamExt;
   use serde_json::json;
+  use wick_config::AssetReference;
   use wick_packet::{packet_stream, packets, Entity, Packet};
 
   use super::*;
 
   async fn load_component() -> Result<WasmComponent> {
-    let path = PathBuf::from_str("../../integration/test-baseline-component/build/baseline.signed.wasm")?;
-    let component = WickWasmModule::from_file(&path).await?;
+    let file = AssetReference::from_str("../../integration/test-baseline-component/build/baseline.signed.wasm")?;
+    let file = file.with_options(Default::default());
 
-    let c = WasmComponent::try_load(
-      &component,
-      None,
-      None,
-      Some(json!({"default_err":"error from wasm test"}).try_into()?),
-      Some(Arc::new(|_, _, _, _, _, _| {
+    let setup = ComponentSetupBuilder::default()
+      .config(Some(json!({"default_err":"error from wasm test"}).try_into()?))
+      .callback(Some(Arc::new(|_, _, _, _, _, _| {
         Box::pin(async { Ok(packet_stream!(("test", "test"))) })
-      })),
-      Default::default(),
-      Span::current(),
-    )
-    .await?;
+      })))
+      .build()?;
+
+    let c = WasmComponent::try_load("test", file, setup, Span::current()).await?;
     Ok(c)
   }
 

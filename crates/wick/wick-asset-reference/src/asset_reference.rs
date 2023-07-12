@@ -16,6 +16,23 @@ use wick_oci_utils::OciOptions;
 use crate::{normalize_path, Error};
 
 #[derive(Debug, Clone)]
+pub struct FetchableAssetReference<'a>(&'a AssetReference, OciOptions);
+
+impl<'a> FetchableAssetReference<'a> {
+  pub async fn bytes(&self) -> Result<Bytes, Error> {
+    self.0.bytes(&self.1).await
+  }
+}
+
+impl<'a> std::ops::Deref for FetchableAssetReference<'a> {
+  type Target = AssetReference;
+
+  fn deref(&self) -> &Self::Target {
+    self.0
+  }
+}
+
+#[derive(Debug, Clone)]
 #[must_use]
 pub struct AssetReference {
   pub(crate) location: String,
@@ -57,6 +74,12 @@ impl AssetReference {
       cache_location: Default::default(),
       baseurl: Default::default(),
     }
+  }
+
+  /// Embed [OciOptions] with an [AssetReference].
+  #[must_use]
+  pub fn with_options(&self, options: OciOptions) -> FetchableAssetReference<'_> {
+    FetchableAssetReference(self, options)
   }
 
   /// Get the relative part of the path or return an error if the path does not exist within the base URL.
@@ -168,6 +191,7 @@ impl Asset for AssetReference {
           .await
           .map_err(|err| assets::Error::FileOpen(path.clone(), err.to_string()))?;
         let mut bytes = Vec::new();
+
         file.read_to_end(&mut bytes).await?;
         Ok(bytes)
       } else {

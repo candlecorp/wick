@@ -7,7 +7,8 @@ use flate2::write::GzEncoder;
 use flate2::Compression;
 use tar::Builder;
 use tokio::fs::{self};
-use wick_config::config::{AssetReference, Metadata};
+use wick_config::config::Metadata;
+use wick_config::AssetReference;
 use wick_oci_utils::package::annotations::{self, Annotations};
 
 use crate::Error;

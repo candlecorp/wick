@@ -4,7 +4,8 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use flow_component::RuntimeCallback;
-use parking_lot::Mutex;
+use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use tokio::time::timeout;
 use tracing::Span;
@@ -13,6 +14,7 @@ use wasmrs_codec::messagepack::serialize;
 use wasmrs_host::{CallContext, Host, WasiParams};
 use wasmrs_rx::{FluxChannel, Observer};
 use wasmrs_wasmtime::WasmtimeBuilder;
+use wick_config::FetchableAssetReference;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{
   from_raw_wasmrs,
@@ -30,6 +32,8 @@ use wick_wascap::{Claims, WickComponent};
 use crate::error::WasmComponentError;
 use crate::wasm_module::WickWasmModule;
 use crate::{Error, Result};
+
+static CLAIMS_CACHE: Lazy<RwLock<HashMap<String, Claims<WickComponent>>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 
 #[must_use]
 pub struct WasmHostBuilder {
@@ -79,15 +83,13 @@ impl WasmHostBuilder {
     self
   }
 
-  pub fn build(self, module: &WickWasmModule) -> Result<WasmHost> {
-    WasmHost::try_load(module, self.engine, self.wasi_params, &self.callback, self.span)
+  pub async fn build(self, reference: &FetchableAssetReference<'_>) -> Result<WasmHost> {
+    WasmHost::try_load(reference, self.engine, self.wasi_params, &self.callback, self.span).await
   }
 }
 
 #[derive()]
 pub struct WasmHost {
-  #[allow(unused)]
-  host: Arc<Mutex<Host>>,
   claims: Claims<WickComponent>,
   ctx: Arc<CallContext>,
   _rng: seeded_random::Random,
@@ -101,27 +103,20 @@ impl std::fmt::Debug for WasmHost {
 }
 
 impl WasmHost {
-  pub fn try_load(
-    module: &WickWasmModule,
+  pub async fn try_load(
+    asset: &FetchableAssetReference<'_>,
     engine: Option<wasmtime::Engine>,
     wasi_options: Option<WasiParams>,
     callback: &Option<Arc<RuntimeCallback>>,
     span: Span,
   ) -> Result<Self> {
-    let jwt = &module.token.jwt;
     let _span = span.enter();
 
-    wick_wascap::validate_token::<WickComponent>(jwt).map_err(|e| Error::ClaimsInvalid(e.to_string()))?;
-
     let time = Instant::now();
+
+    let path = asset.path()?.to_string_lossy().to_string();
+
     let mut builder = WasmtimeBuilder::new();
-
-    builder = if WasmtimeBuilder::is_cached(module.hash()) {
-      builder.with_cached_module(module.hash()).unwrap()
-    } else {
-      builder.with_module_bytes(module.hash(), &module.bytes)
-    };
-
     builder = if let Some(engine) = engine {
       builder.engine(engine)
     } else {
@@ -132,9 +127,27 @@ impl WasmHost {
       builder = builder.wasi_params(wasi_options);
     }
 
-    let engine = builder
-      .build()
-      .map_err(|e| WasmComponentError::EngineFailure(e.to_string()))?;
+    let (engine, claims) = if WasmtimeBuilder::is_cached(&path) {
+      let claims = CLAIMS_CACHE.read().get(&path).cloned().unwrap();
+      let engine = builder
+        .with_cached_module(&path)
+        .unwrap()
+        .build()
+        .map_err(|e| WasmComponentError::EngineFailure(e.to_string()))?;
+      (engine, claims)
+    } else {
+      let module = WickWasmModule::from_vec(asset.bytes().await?.into())?;
+
+      let jwt = &module.token.jwt;
+      wick_wascap::validate_token::<WickComponent>(jwt).map_err(|e| Error::ClaimsInvalid(e.to_string()))?;
+      let engine = builder
+        .with_module_bytes(&path, &module.bytes)
+        .build()
+        .map_err(|e| WasmComponentError::EngineFailure(e.to_string()))?;
+      CLAIMS_CACHE.write().insert(path, module.token.claims.clone());
+      (engine, module.token.claims)
+    };
+
     trace!(duration_μs = %time.elapsed().as_micros(), "wasmtime instance loaded");
 
     let host = Host::new(engine).map_err(|e| WasmComponentError::EngineFailure(e.to_string()))?;
@@ -152,8 +165,7 @@ impl WasmHost {
 
     drop(_span);
     Ok(Self {
-      claims: module.claims().clone(),
-      host: Arc::new(Mutex::new(host)),
+      claims,
       ctx: Arc::new(ctx),
       _rng: seeded_random::Random::new(),
       span,

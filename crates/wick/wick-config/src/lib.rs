@@ -112,7 +112,7 @@ pub use wick_asset_reference::Error as AssetError;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
-pub use wick_asset_reference::{normalize_path, FetchOptions};
+pub use wick_asset_reference::{normalize_path, AssetReference, FetchOptions, FetchableAssetReference};
 
 /// The type associated with a resolver function.
 pub type Resolver = dyn Fn(&str) -> Option<Result<config::OwnedConfigurationItem>> + Send + Sync;

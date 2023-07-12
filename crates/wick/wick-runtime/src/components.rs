@@ -12,17 +12,11 @@ use flow_graph_interpreter::NamespaceHandler;
 use seeded_random::{Random, Seed};
 use tracing::Instrument;
 use uuid::Uuid;
+use wick_component_wasm::component::{ComponentSetupBuilder, WasmComponent};
 use wick_component_wasm::error::LinkError;
 use wick_config::config::components::{ManifestComponent, Permissions};
-use wick_config::config::{
-  AssetReference,
-  BoundInterface,
-  FetchOptions,
-  Metadata,
-  ResourceDefinition,
-  WasmComponentImplementation,
-};
-use wick_config::{Resolver, WickConfiguration};
+use wick_config::config::{BoundInterface, Metadata, ResourceDefinition, WasmComponentImplementation};
+use wick_config::{AssetReference, FetchOptions, Resolver, WickConfiguration};
 use wick_packet::validation::expect_configuration_matches;
 use wick_packet::{Entity, Invocation, RuntimeConfig};
 
@@ -54,24 +48,26 @@ pub(crate) async fn init_wasm_component(
     .span
     .in_scope(|| trace!(namespace = %namespace, ?opts, "registering wasm component"));
 
-  let component = wick_component_wasm::helpers::fetch_wasm(reference, opts.allow_latest, &opts.allowed_insecure)
-    .instrument(opts.span.clone())
-    .await?;
+  let mut options = FetchOptions::default();
+  options
+    .set_allow_latest(opts.allow_latest)
+    .set_allow_insecure(opts.allowed_insecure.clone());
+  let asset = reference.with_options(options);
 
-  let collection = Arc::new(
-    wick_component_wasm::component::WasmComponent::try_load(
-      &component,
-      Some(WASMTIME_ENGINE.clone()),
-      permissions,
-      opts.config,
-      Some(make_link_callback(opts.runtime_id)),
-      provided,
-      opts.span,
-    )
-    .await?,
-  );
+  let setup = ComponentSetupBuilder::default()
+    .engine(WASMTIME_ENGINE.clone())
+    .permissions(permissions)
+    .config(opts.config)
+    .callback(Some(make_link_callback(opts.runtime_id)))
+    .provided(provided)
+    .build()
+    .unwrap();
 
-  let service = NativeComponentService::new(collection);
+  let component = WasmComponent::try_load(&namespace, asset, setup, opts.span).await?;
+
+  let component = Arc::new(component);
+
+  let service = NativeComponentService::new(component);
 
   Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }

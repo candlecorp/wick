@@ -19,7 +19,7 @@ pub use test_config::*;
 use tokio::fs::read_to_string;
 use tracing::debug;
 pub use types_config::*;
-pub use wick_asset_reference::{AssetReference, FetchOptions};
+use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::Field;
 use wick_packet::validation::expect_configuration_matches;
 use wick_packet::RuntimeConfig;
