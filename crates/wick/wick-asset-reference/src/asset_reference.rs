@@ -94,7 +94,7 @@ impl AssetReference {
     }
     if let Ok(url) = normalize_path(self.location.as_ref(), self.baseurl()) {
       Ok(url)
-    } else if wick_oci_utils::parse_reference(self.location.as_str()).is_ok() {
+    } else if wick_oci_utils::is_oci_reference(self.location.as_str()) {
       Ok(PathBuf::from(&self.location))
     } else {
       Err(Error::Unresolvable(self.location.clone()))
