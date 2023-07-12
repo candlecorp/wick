@@ -34,7 +34,7 @@ fn permissions_to_wasi_params(perms: &Permissions) -> WasiParams {
 
 impl WasmComponent {
   pub async fn try_load(
-    module: &WickWasmModule,
+    module: &WickWasmModule<'_>,
     engine: Option<wasmtime::Engine>,
     permissions: Option<Permissions>,
     config: Option<RuntimeConfig>,
@@ -114,10 +114,8 @@ mod tests {
   use super::*;
 
   async fn load_component() -> Result<WasmComponent> {
-    let component = WickWasmModule::from_file(&PathBuf::from_str(
-      "../../integration/test-baseline-component/build/baseline.signed.wasm",
-    )?)
-    .await?;
+    let path = PathBuf::from_str("../../integration/test-baseline-component/build/baseline.signed.wasm")?;
+    let component = WickWasmModule::from_file(&path).await?;
 
     let c = WasmComponent::try_load(
       &component,

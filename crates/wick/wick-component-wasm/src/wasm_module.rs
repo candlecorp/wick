@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::path::Path;
 
 use wick_wascap::{Claims, Token, WickComponent};
@@ -5,29 +6,41 @@ use wick_wascap::{Claims, Token, WickComponent};
 use crate::error::WasmComponentError;
 
 #[derive(Clone, Debug)]
-pub struct WickWasmModule {
+pub struct WickWasmModule<'a> {
   pub token: Token<WickComponent>,
-  pub bytes: Vec<u8>,
+  pub bytes: Cow<'a, [u8]>,
 }
 
-impl WickWasmModule {
-  /// Create a component from the bytes of a signed WebAssembly module. Attempting to load.
+impl<'a> WickWasmModule<'a> {
+  /// Create a component from the borrowed bytes of a signed WebAssembly module. Attempting to load.
   /// an unsigned module, or a module signed improperly, will result in an error.
-  pub fn from_slice(buf: &[u8]) -> Result<WickWasmModule, WasmComponentError> {
+  pub fn from_slice(buf: &'a [u8]) -> Result<WickWasmModule<'a>, WasmComponentError> {
     let token = wick_wascap::extract_claims(buf).map_err(|e| WasmComponentError::ClaimsError(e.to_string()))?;
     token.map_or(Err(WasmComponentError::ClaimsExtraction), |t| {
       Ok(WickWasmModule {
         token: t,
-        bytes: buf.to_vec(),
+        bytes: Cow::Borrowed(buf),
+      })
+    })
+  }
+
+  /// Create a component from the bytes of a signed WebAssembly module. Attempting to load.
+  /// an unsigned module, or a module signed improperly, will result in an error.
+  pub fn from_vec(buf: Vec<u8>) -> Result<WickWasmModule<'a>, WasmComponentError> {
+    let token = wick_wascap::extract_claims(&buf).map_err(|e| WasmComponentError::ClaimsError(e.to_string()))?;
+    token.map_or(Err(WasmComponentError::ClaimsExtraction), |t| {
+      Ok(WickWasmModule {
+        token: t,
+        bytes: Cow::Owned(buf),
       })
     })
   }
 
   /// Create a component from a signed WebAssembly (`.wasm`) file.
-  pub async fn from_file(path: &Path) -> Result<WickWasmModule, WasmComponentError> {
+  pub async fn from_file(path: &Path) -> Result<WickWasmModule<'a>, WasmComponentError> {
     let file = tokio::fs::read(path).await?;
 
-    WickWasmModule::from_slice(&file)
+    WickWasmModule::from_vec(file)
   }
 
   /// Obtain the component's public key (The `sub` field of the JWT).
