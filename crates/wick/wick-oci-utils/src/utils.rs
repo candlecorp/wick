@@ -1,5 +1,4 @@
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 use oci_distribution::Reference;
 use once_cell::sync::Lazy;
@@ -23,24 +22,29 @@ static RE: Lazy<Regex> = Lazy::new(|| {
 
 pub const DEFAULT_REGISTRY: &str = "registry.candle.dev";
 
-fn normalize_reference(reference: &str) -> Result<String, Error> {
+/// Check if a &str is an OCI reference.
+pub fn is_oci_reference(reference: &str) -> bool {
+  RE.is_match(reference)
+}
+
+/// Parse a `&str` as an OCI Reference.
+pub fn parse_reference(reference: &str) -> Result<Reference, Error> {
   let captures = RE
     .captures(reference)
     .ok_or(Error::InvalidReferenceFormat(reference.to_owned()))?;
   let name = &captures[1];
   let tag = captures.get(2).map(|m| m.as_str().to_owned());
   let digest = captures.get(3).map(|m| m.as_str().to_owned());
-  if tag.is_none() && digest.is_none() {
-    return Err(Error::NoTagOrDigest(reference.to_owned()));
-  }
 
   let (registry, repository) = split_domain(name);
-  Ok(format!(
-    "{}/{}:{}",
-    registry,
-    repository,
-    tag.unwrap_or_else(|| digest.unwrap())
-  ))
+
+  if let Some(tag) = tag {
+    Ok(oci_distribution::Reference::with_tag(registry, repository, tag))
+  } else if let Some(digest) = digest {
+    Ok(oci_distribution::Reference::with_digest(registry, repository, digest))
+  } else {
+    Err(Error::NoTagOrDigest(reference.to_owned()))
+  }
 }
 
 // Also borrowed from oci-distribution who borrowed it from the go docker implementation.
@@ -55,12 +59,6 @@ fn split_domain(name: &str) -> (String, String) {
       }
     }
   }
-}
-
-/// Parse a `&str` as a Reference.
-pub fn parse_reference(reference: &str) -> Result<Reference, Error> {
-  let reference = normalize_reference(reference)?;
-  oci_distribution::Reference::from_str(&reference).map_err(|e| Error::OCIParseError(reference, e.to_string()))
 }
 
 /// Parse a `&str` as a Reference and return the protocol to use.
