@@ -22,8 +22,12 @@ install:
   @echo "Use 'just install-debug' to build debug version."
   cargo install --path crates/bins/wick
 
-# Build wick binary with debug symbols and additional output
+# Build an optimized wick binary with debug symbols
 install-debug:
+  cargo install --profile=release-with-debug --path crates/bins/wick
+
+# Build wick binary with debug symbols and additional output
+install-dev:
   cargo install --path crates/bins/wick --debug
 
 # Build wasm binaries that wick tests depend on

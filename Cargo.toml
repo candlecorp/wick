@@ -21,6 +21,10 @@ exclude = [
   "examples/cli/cli-maker",
 ]
 
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+
 [workspace.dependencies]
 #
 # crates/wick
