@@ -7,7 +7,7 @@ pub(crate) mod component_component;
 pub(crate) mod core_component;
 pub(crate) mod internal_component;
 pub(crate) mod null_component;
-pub(crate) mod schematic_component;
+pub(crate) mod self_component;
 
 use flow_component::Component;
 use wick_interface_types::ComponentSignature;

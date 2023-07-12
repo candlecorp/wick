@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
-use flow_component::{RuntimeCallback, SharedComponent};
+use flow_component::RuntimeCallback;
 use flow_graph::{NodeIndex, PortReference, SCHEMATIC_OUTPUT_INDEX};
 use futures::StreamExt;
 use parking_lot::Mutex;
@@ -16,6 +16,7 @@ use super::error::ExecutionError;
 use crate::graph::types::*;
 use crate::graph::LiquidOperationConfig;
 use crate::interpreter::channel::InterpreterDispatchChannel;
+use crate::interpreter::components::self_component::SelfComponent;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::transaction::operation::port::PortStatus;
 use crate::{HandlerMap, InterpreterOptions};
@@ -64,7 +65,7 @@ impl Transaction {
     mut invocation: Invocation,
     channel: InterpreterDispatchChannel,
     components: &Arc<HandlerMap>,
-    self_component: &SharedComponent,
+    self_component: &SelfComponent,
     callback: Arc<RuntimeCallback>,
     config: LiquidOperationConfig,
     seed: Seed,

@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
-use flow_component::{Component, RuntimeCallback};
+use flow_component::RuntimeCallback;
 use seeded_random::Seed;
 use wick_packet::{Invocation, PacketStream};
 
 use self::error::ExecutionError;
 use self::transaction::Transaction;
 use super::channel::InterpreterDispatchChannel;
+use super::components::self_component::SelfComponent;
 use crate::graph::types::*;
 use crate::graph::LiquidOperationConfig;
 use crate::HandlerMap;
@@ -41,7 +42,7 @@ impl SchematicExecutor {
     &self,
     invocation: Invocation,
     components: Arc<HandlerMap>,
-    self_component: Arc<dyn Component + Send + Sync>,
+    self_component: SelfComponent,
     config: LiquidOperationConfig,
     callback: Arc<RuntimeCallback>,
   ) -> Result<PacketStream> {

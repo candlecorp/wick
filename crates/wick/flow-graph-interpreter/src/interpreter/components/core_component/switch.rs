@@ -24,7 +24,7 @@ use wick_packet::{
 };
 
 use crate::graph::types::{Network, Schematic};
-use crate::interpreter::components::schematic_component::SelfComponent;
+use crate::interpreter::components::self_component::SelfComponent;
 use crate::utils::path_to_entity;
 use crate::{BoxFuture, HandlerMap};
 pub(crate) struct Op {

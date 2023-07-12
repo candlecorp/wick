@@ -26,7 +26,7 @@ use crate::graph::types::*;
 use crate::interpreter::channel::InterpreterChannel;
 use crate::interpreter::components::component_component::ComponentComponent;
 use crate::interpreter::components::null_component::NullComponent;
-use crate::interpreter::components::schematic_component::SelfComponent;
+use crate::interpreter::components::self_component::SelfComponent;
 use crate::interpreter::executor::error::ExecutionError;
 use crate::{NamespaceHandler, Observer, SharedHandler};
 
@@ -37,7 +37,7 @@ pub struct Interpreter {
   event_loop: EventLoop,
   signature: ComponentSignature,
   components: Arc<HandlerMap>,
-  self_component: Arc<SelfComponent>,
+  self_component: SelfComponent,
   dispatcher: InterpreterDispatchChannel,
   namespace: Option<String>,
   callback: Arc<RuntimeCallback>,
