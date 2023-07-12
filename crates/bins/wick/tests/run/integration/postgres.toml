@@ -5,7 +5,7 @@ stdout = """
 
 cli:db: in WebAssembly CLI component
 cli:db: looking up user with id: 1.
-cli:db: calling provided component operation at URL: wick://test-cli-with-db/=>wick://MYDB/get_user
+cli:db: calling provided component operation at URL: wick://cli/=>wick://MYDB/get_user
 cli:db: call succeeded, waiting for response...
 cli:db: row data: {"name":"Test User"}
 cli:db: response stream ended.

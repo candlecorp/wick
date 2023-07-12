@@ -94,7 +94,7 @@ pub mod error;
 /// The crate's error type.
 pub type Error = crate::error::Error;
 
-pub use asset_reference::AssetReference;
+pub use asset_reference::{AssetReference, FetchableAssetReference};
 pub use wick_oci_utils::OciOptions as FetchOptions;
 mod utils;
 pub use utils::normalize_path;

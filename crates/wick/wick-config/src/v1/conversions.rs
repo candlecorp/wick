@@ -4,6 +4,7 @@ mod types;
 
 use flow_expression_parser::ast::{self, InstancePort, InstanceTarget};
 use option_utils::OptionUtils;
+use wick_asset_reference::AssetReference;
 
 use crate::config::components::{self, ComponentReference, GrpcUrlComponent, ManifestComponent};
 use crate::config::package_definition::{PackageConfig, RegistryConfig};
@@ -1481,16 +1482,16 @@ impl TryFrom<test_case::TestPacket> for v1::PacketData {
   }
 }
 
-impl TryFrom<v1::helpers::LocationReference> for config::AssetReference {
+impl TryFrom<v1::helpers::LocationReference> for AssetReference {
   type Error = crate::Error;
   fn try_from(value: v1::helpers::LocationReference) -> Result<Self> {
     Ok(value.0.try_into()?)
   }
 }
 
-impl TryFrom<config::AssetReference> for v1::helpers::LocationReference {
+impl TryFrom<AssetReference> for v1::helpers::LocationReference {
   type Error = crate::Error;
-  fn try_from(value: config::AssetReference) -> Result<Self> {
+  fn try_from(value: AssetReference) -> Result<Self> {
     Ok(Self(value.location().to_owned()))
   }
 }

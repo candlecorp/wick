@@ -15,7 +15,7 @@ async fn baseline_component() -> Result<()> {
   let crate_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
   let manifest = crate_dir.join("../../crates/integration/test-baseline-component/component.yaml");
 
-  let fetch_options = wick_config::config::FetchOptions::default();
+  let fetch_options = wick_config::FetchOptions::default();
 
   let mut root_manifest = WickConfiguration::fetch_all(manifest.to_string_lossy(), fetch_options).await?;
   root_manifest.set_root_config(Some(RuntimeConfig::from(HashMap::from([(

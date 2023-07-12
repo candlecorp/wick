@@ -4,7 +4,7 @@ use std::str::FromStr;
 use tokio::sync::mpsc::Sender;
 use tonic::transport::{Certificate, Identity, Server};
 use tracing::{debug, error, info, trace};
-use wick_config::config::FetchOptions;
+use wick_config::FetchOptions;
 use wick_invocation_server::InvocationServer;
 use wick_rpc::rpc::invocation_service_server::InvocationServiceServer;
 

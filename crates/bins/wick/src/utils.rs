@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use futures::StreamExt;
 use serde_json::Value;
 use wick_component_cli::options::DefaultCliOptions;
-use wick_config::config::{AssetReference, ComponentConfiguration, HttpConfigBuilder, LiquidJsonConfig};
+use wick_config::config::{ComponentConfiguration, HttpConfigBuilder, LiquidJsonConfig};
+use wick_config::AssetReference;
 use wick_packet::{Packet, PacketStream, RuntimeConfig};
 
 pub(crate) fn merge_config(

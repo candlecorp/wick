@@ -1,5 +1,5 @@
 use thiserror::Error;
-use wick_config::config::AssetReference;
+use wick_config::AssetReference;
 
 #[derive(Error, Debug)]
 pub enum ComponentError {

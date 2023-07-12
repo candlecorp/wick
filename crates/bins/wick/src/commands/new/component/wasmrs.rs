@@ -7,6 +7,7 @@ use wick_config::config::{
   OperationDefinitionBuilder,
   WasmComponentImplementationBuilder,
 };
+use wick_config::AssetReference;
 use wick_interface_types::{Field, StructDefinition, Type, TypeDefinition};
 
 use crate::io::File;
@@ -52,7 +53,7 @@ pub(crate) async fn handle(
     config.set_metadata(crate::commands::new::generic_metadata("New WebAssembly wick component"));
 
     let component = WasmComponentImplementationBuilder::default()
-      .reference(config::AssetReference::new(format!("./build/{}", &name)))
+      .reference(AssetReference::new(format!("./build/{}", &name)))
       .operations([
         OperationDefinitionBuilder::default()
           .name("operation_name".to_owned())
