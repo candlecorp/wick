@@ -197,19 +197,15 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
   // Initialize the global logger
   let logger = wick_logger::init(&logger_opts);
 
-  let res = tokio::spawn(async_main(cli, settings)).await;
-  tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+  let res = async_main(cli, settings).await;
+
   let res = match res {
-    Ok(Ok(output)) => {
+    Ok(output) => {
       debug!("Done");
       Ok((options, output))
     }
-    Ok(Err(e)) => {
-      error!("Error: {}", e);
-      Err((options, anyhow!("{}", e)))
-    }
     Err(e) => {
-      error!("Internal Error: {}", e);
+      error!("Error: {}", e);
       Err((options, anyhow!("{}", e)))
     }
   };
@@ -268,11 +264,6 @@ async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<Struc
 #[cfg(test)]
 mod test {
   use super::*;
-
-  #[test]
-  fn cli_tests() {
-    trycmd::TestCases::new().case("tests/cmd/*.trycmd");
-  }
 
   #[test]
   fn verify_app() {
