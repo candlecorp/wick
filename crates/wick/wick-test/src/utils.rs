@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use wasmrs_codec::messagepack;
-use wick_config::config::{LiquidJsonConfig, PacketFlags, TestPacket};
+use wick_config::config::{LiquidJsonConfig, PacketFlag, TestPacket};
 use wick_packet::{
   InherentData,
   Packet,
@@ -46,7 +46,7 @@ pub(crate) fn gen_packet(
         }
         None => None,
       }),
-      convert_flags(data.flags()),
+      convert_flags(data.flag()),
     ),
     TestPacket::ErrorPacket(data) => Packet::new_for_port(
       data.port(),
@@ -56,23 +56,19 @@ pub(crate) fn gen_packet(
           .render(None, Some(&std::env::vars().collect()))
           .map_err(config_error)?,
       )),
-      convert_flags(data.flags()),
+      convert_flags(data.flag()),
     ),
   };
   Ok(packet)
 }
 
-fn convert_flags(flags: Option<&PacketFlags>) -> u8 {
+fn convert_flags(flag: Option<&PacketFlag>) -> u8 {
   let mut byte = 0;
-  if let Some(flags) = flags {
-    if flags.done() {
-      byte |= DONE_FLAG;
-    }
-    if flags.open() {
-      byte |= OPEN_BRACKET;
-    }
-    if flags.close() {
-      byte |= CLOSE_BRACKET;
+  if let Some(flag) = flag {
+    match flag {
+      PacketFlag::Done => byte |= DONE_FLAG,
+      PacketFlag::Open => byte |= OPEN_BRACKET,
+      PacketFlag::Close => byte |= CLOSE_BRACKET,
     }
   }
   byte

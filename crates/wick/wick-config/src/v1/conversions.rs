@@ -66,7 +66,7 @@ impl TryFrom<v1::TestConfiguration> for test_config::TestConfiguration {
 
   fn try_from(value: v1::TestConfiguration) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      cases: value.cases.map_into(),
+      cases: value.cases.try_map_into()?,
       config: value.with.map_into(),
       name: value.name,
       source: None,
@@ -1357,55 +1357,90 @@ impl TryFrom<v1::ResourceBinding> for ResourceBinding {
   }
 }
 
-impl From<v1::TestDefinition> for test_case::TestCase {
-  fn from(value: v1::TestDefinition) -> Self {
-    Self {
+impl TryFrom<v1::TestDefinition> for test_case::TestCase {
+  type Error = crate::Error;
+  fn try_from(value: v1::TestDefinition) -> Result<Self> {
+    Ok(Self {
       name: value.name,
       operation: value.operation,
-      inputs: value.inputs.map_into(),
-      outputs: value.outputs.map_into(),
+      inputs: value.inputs.try_map_into()?,
+      outputs: value.outputs.try_map_into()?,
       inherent: value.inherent.map_into(),
       config: value.with.map_into(),
-    }
+    })
   }
 }
 
-impl From<v1::PacketData> for test_case::TestPacket {
-  fn from(value: v1::PacketData) -> Self {
-    match value {
-      v1::PacketData::SuccessPacket(v) => test_case::TestPacket::SuccessPacket(v.into()),
-      v1::PacketData::ErrorPacket(v) => test_case::TestPacket::ErrorPacket(v.into()),
-    }
+impl TryFrom<v1::PacketData> for test_case::TestPacket {
+  type Error = crate::Error;
+  fn try_from(value: v1::PacketData) -> Result<Self> {
+    Ok(match value {
+      v1::PacketData::SuccessPacket(v) => test_case::TestPacket::SuccessPacket(v.try_into()?),
+      v1::PacketData::ErrorPacket(v) => test_case::TestPacket::ErrorPacket(v.try_into()?),
+    })
   }
 }
 
-impl From<v1::SuccessPacket> for config::SuccessPayload {
-  fn from(value: v1::SuccessPacket) -> Self {
-    Self {
+impl TryFrom<v1::PacketFlags> for config::PacketFlag {
+  type Error = crate::Error;
+  fn try_from(value: v1::PacketFlags) -> Result<Self> {
+    Ok(match value {
+      v1::PacketFlags {
+        done: true,
+        close: false,
+        open: false,
+      } => Self::Done,
+      v1::PacketFlags {
+        done: false,
+        close: true,
+        open: false,
+      } => Self::Close,
+      v1::PacketFlags {
+        done: false,
+        close: false,
+        open: true,
+      } => Self::Open,
+      _ => return Err(crate::Error::InvalidPacketFlags),
+    })
+  }
+}
+
+impl TryFrom<v1::SuccessPacket> for config::SuccessPayload {
+  type Error = crate::Error;
+  fn try_from(value: v1::SuccessPacket) -> Result<Self> {
+    let mut val = Self {
       port: value.name,
-      flags: value.flags.map_into(),
+      flag: value.flag.map_into(),
       data: value.value,
+    };
+    #[allow(deprecated)]
+    if let Some(flags) = value.flags {
+      if val.flag.is_some() {
+        return Err(crate::Error::InvalidPacketFlags);
+      }
+      val.flag = Some(flags.try_into()?);
     }
+    Ok(val)
   }
 }
 
-impl From<v1::ErrorPacket> for config::ErrorPayload {
-  fn from(value: v1::ErrorPacket) -> Self {
-    Self {
+impl TryFrom<v1::ErrorPacket> for config::ErrorPayload {
+  type Error = crate::Error;
+  fn try_from(value: v1::ErrorPacket) -> Result<Self> {
+    let mut val = Self {
       port: value.name,
-      flags: value.flags.map_into(),
+      flag: value.flag.map_into(),
       error: TemplateConfig::new_template(value.error),
+    };
+    #[allow(deprecated)]
+    if let Some(flags) = value.flags {
+      if val.flag.is_some() {
+        return Err(crate::Error::InvalidPacketFlags);
+      }
+      val.flag = Some(flags.try_into()?);
     }
-  }
-}
 
-impl From<v1::PacketFlags> for config::PacketFlags {
-  fn from(value: v1::PacketFlags) -> Self {
-    Self {
-      done: value.done,
-      open: value.open,
-      close: value.close,
-    }
+    Ok(val)
   }
 }
 
@@ -1435,9 +1470,11 @@ impl TryFrom<test_case::TestCase> for v1::TestDefinition {
 impl TryFrom<test_case::ErrorPayload> for v1::ErrorPacket {
   type Error = crate::Error;
   fn try_from(value: test_case::ErrorPayload) -> Result<Self> {
+    #[allow(deprecated)]
     Ok(Self {
       name: value.port,
-      flags: value.flags.map_into(),
+      flag: value.flag.map_into(),
+      flags: None,
       error: value.error.unrender()?,
     })
   }
@@ -1445,20 +1482,32 @@ impl TryFrom<test_case::ErrorPayload> for v1::ErrorPacket {
 
 impl From<test_case::SuccessPayload> for v1::SuccessPacket {
   fn from(value: test_case::SuccessPayload) -> Self {
+    #[allow(deprecated)]
     Self {
       name: value.port,
-      flags: value.flags.map_into(),
+      flag: value.flag.map_into(),
+      flags: None,
       value: value.data,
     }
   }
 }
 
-impl From<test_case::PacketFlags> for v1::PacketFlags {
-  fn from(value: test_case::PacketFlags) -> Self {
-    Self {
-      done: value.done,
-      open: value.open,
-      close: value.close,
+impl From<test_case::PacketFlag> for v1::PacketFlag {
+  fn from(value: test_case::PacketFlag) -> Self {
+    match value {
+      test_case::PacketFlag::Done => Self::Done,
+      test_case::PacketFlag::Close => Self::Close,
+      test_case::PacketFlag::Open => Self::Open,
+    }
+  }
+}
+
+impl From<v1::PacketFlag> for test_case::PacketFlag {
+  fn from(value: v1::PacketFlag) -> Self {
+    match value {
+      v1::PacketFlag::Done => Self::Done,
+      v1::PacketFlag::Close => Self::Close,
+      v1::PacketFlag::Open => Self::Open,
     }
   }
 }

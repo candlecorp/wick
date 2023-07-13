@@ -87,14 +87,24 @@
 
 mod error;
 mod runner;
+mod test_group;
 mod test_suite;
 mod unit_test;
 mod utils;
 
 pub use error::TestError;
 pub use runner::*;
+pub use test_group::*;
 pub use test_suite::*;
 pub use unit_test::*;
+
+pub type ComponentFactory<'a> = Box<
+  dyn Fn(Option<wick_packet::RuntimeConfig>) -> flow_component::BoxFuture<'a, Result<SharedComponent, TestError>>
+    + Sync
+    + Send,
+>;
+
+pub use flow_component::SharedComponent;
 
 #[macro_use]
 extern crate tracing;

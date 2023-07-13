@@ -1,4 +1,6 @@
+use serde_value::Value;
 use thiserror::Error;
+use wick_packet::Packet;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum TestError {
@@ -22,4 +24,24 @@ pub enum TestError {
   OpNotFound(String),
   #[error(transparent)]
   ConfigUnsatisfied(wick_packet::Error),
+  #[error("Test input sent packets after marking input '{0}' as done")]
+  PacketsAfterDone(String),
+  #[error("Got an output packet for a port '{0}' we've never seen")]
+  InvalidPort(String),
+  #[error("Assertion failed")]
+  Assertion(Packet, Packet, AssertionFailure),
+}
+
+#[derive(Error, Debug, PartialEq)]
+pub enum AssertionFailure {
+  #[error("Payload mismatch")]
+  Payload(Value, Value),
+  #[error("Expected data in packet but got none")]
+  ActualNoData,
+  #[error("Expected no data in packet but got some")]
+  ExpectedNoData,
+  #[error("Flag mismatch")]
+  Flags(u8, u8),
+  #[error("Port name mismatch")]
+  Name(String, String),
 }

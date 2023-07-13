@@ -729,8 +729,11 @@ type SuccessPacket {
   "The name of the input or output this packet is going to or coming from."
   name: string @required
 
-  "Any flags set on the packet."
-  flags: PacketFlags?
+  "Any flags set on the packet. Deprecated, use 'flag:' instead"
+  flags: PacketFlags? @deprecated
+
+  "The flag set on the packet."
+  flag: PacketFlag?
 
   "The data to send."
   value: LiquidJsonValue? @alias("data")
@@ -740,8 +743,11 @@ type ErrorPacket {
   "The name of the input or output this packet is going to or coming from."
   name: string @required
 
-  "Any flags set on the packet."
-  flags: PacketFlags?
+  "Any flags set on the packet. Deprecated, use 'flag:' instead"
+  flags: PacketFlags? @deprecated
+
+  "The flag set on the packet."
+  flag: PacketFlag?
 
   "The error message."
   error: LiquidTemplate @required
@@ -757,6 +763,16 @@ type PacketFlags {
 
   "Indicates the closing of a substream context within the parent stream."
   close: bool
+}
+
+"Possible flags that can be set on a packet."
+enum PacketFlag {
+  "Indicates the port should be considered closed."
+  Done = 0 as "done",
+  "Indicates the opening of a new substream context within the parent stream."
+  Open = 1 as "open",
+  "Indicates the closing of a substream context within the parent stream."
+  Close = 2 as "close",
 }
 
 "A dynamic component whose operations are SQL queries to a database."

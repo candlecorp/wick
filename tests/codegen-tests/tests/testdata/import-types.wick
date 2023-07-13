@@ -104,11 +104,5 @@ tests:
               path: '/'
               uri: 'http://localhost:8080/'
               remote_addr: 0.0.0.0
-          - name: output
-            flags:
-              done: true
           - name: time
             value: '2020-07-05T11:39:39.352802472Z'
-          - name: time
-            flags:
-              done: true

@@ -9,7 +9,7 @@ description = "Test runner for Wick components"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 # Wick
-flow-component = { workspace = true }
+flow-component = { workspace = true, features = ["invocation"] }
 wick-packet = { workspace = true }
 wick-config = { workspace = true }
 wick-interface-types = { workspace = true }
@@ -28,3 +28,7 @@ tracing = { workspace = true }
 assert-json-diff = { workspace = true }
 
 [dev-dependencies]
+wick-logger = { workspace = true }
+test-logger = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+anyhow = { workspace = true }
