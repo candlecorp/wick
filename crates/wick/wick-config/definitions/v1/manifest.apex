@@ -232,8 +232,8 @@ type Route {
   operation: ComponentOperationExpression @required @shortform @custom_serializer("crate::v1::helpers::serialize_component_expression")
   "The HTTP methods to serve this route for."
   methods: [HttpMethod]
-  "The name of the route, used for documentation and tooling."
-  name: string?
+  "The unique ID of the route, used for documentation and tooling."
+  id: string?
   "A short description of the route."
   description: string?
   "A longer description of the route."

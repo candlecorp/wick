@@ -25,7 +25,7 @@ use super::{HttpError, RawRouter};
 use crate::triggers::http::component_utils::stream_to_json;
 use crate::Runtime;
 
-pub(crate) const OPENAPI_PATH: &str = "openapi.json";
+pub(crate) const OPENAPI_PATH: &str = "/openapi.json";
 
 #[derive()]
 #[must_use]
