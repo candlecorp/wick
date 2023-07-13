@@ -16,6 +16,8 @@ pub enum Codec {
   Raw = 1,
   /// Form Data
   FormData = 2,
+  /// Xml Data
+  Xml = 3,
 }
 
 impl Default for Codec {
@@ -30,6 +32,7 @@ impl std::fmt::Display for Codec {
       Codec::Json => write!(f, "json"),
       Codec::Raw => write!(f, "raw"),
       Codec::FormData => write!(f, "form-data"),
+      Codec::Xml => write!(f, "xml"),
     }
   }
 }

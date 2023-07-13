@@ -905,6 +905,9 @@ enum Codec {
 
   "Form Data"
   FormData = 2 as "form-data",
+
+  "XML Data"
+  Xml = 3 as "xml-data",
 }
 
 "Supported HTTP methods"

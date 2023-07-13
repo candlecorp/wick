@@ -989,6 +989,7 @@ impl From<config::common::Codec> for v1::Codec {
       config::common::Codec::Json => Self::Json,
       config::common::Codec::Raw => Self::Raw,
       config::common::Codec::FormData => Self::FormData,
+      config::common::Codec::Xml => Self::Xml,
     }
   }
 }
@@ -999,6 +1000,7 @@ impl From<v1::Codec> for config::common::Codec {
       v1::Codec::Json => Self::Json,
       v1::Codec::Raw => Self::Raw,
       v1::Codec::FormData => Self::FormData,
+      v1::Codec::Xml => Self::Xml,
     }
   }
 }

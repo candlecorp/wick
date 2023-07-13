@@ -273,6 +273,9 @@ async fn handle(
           unimplemented!("raw bodies not supported yet")
         }
         Codec::FormData => request_builder.form(&body),
+        Codec::Xml => request_builder
+          .body(body.to_string())
+          .header("Content-Type", "application/xml"),
       }
     } else {
       request_builder
@@ -378,6 +381,27 @@ fn output_task(
         let _ = tx.send(Packet::done("body"));
       }
       Codec::FormData => unreachable!("Form data on the response is not supported."),
+      Codec::Xml => {
+        let bytes: Vec<Base64Bytes> = match body_stream.try_collect().await {
+          Ok(r) => r,
+          Err(e) => {
+            let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
+            return;
+          }
+        };
+        let bytes = bytes.concat();
+
+        let xml = match String::from_utf8(bytes) {
+          Ok(r) => r,
+          Err(e) => {
+            let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
+            return;
+          }
+        };
+        span.in_scope(|| trace!(%xml, "response body"));
+        let _ = tx.send(Packet::encode("body", xml));
+        let _ = tx.send(Packet::done("body"));
+      }
     }
   };
   Box::pin(task)
@@ -422,6 +446,7 @@ mod test {
 
   static GET_OP: &str = "get";
   static POST_OP: &str = "post";
+  static POST_OP_XML: &str = "post_xml";
 
   fn get_config() -> (AppConfiguration, HttpClientComponentConfig) {
     let mut config = HttpClientComponentConfigBuilder::default()
@@ -465,6 +490,18 @@ mod test {
             },
           ),
         ],
+        Some(json!({"key": "{{input}}","other":"{{number | each: '{\"value\": {{el}} }' | json | output }}"}).into()),
+        post_headers.clone(),
+      )
+      .build()
+      .unwrap(),
+    );
+
+    config.operations_mut().push(
+      HttpClientOperationDefinition::new_post(
+        POST_OP_XML,
+        "post?query1={{input}}",
+        vec![Field::new("input", Type::String), Field::new("payload", Type::String)],
         Some(json!({"key": "{{input}}","other":"{{number | each: '{\"value\": {{el}} }' | json | output }}"}).into()),
         post_headers,
       )
@@ -564,6 +601,50 @@ mod test {
             data,
             &json!( {"key": "SENTINEL","other":[{"value":123},{"value":345},{"value":678}]})
           );
+          let response_headers = response.get("headers").unwrap();
+          assert_eq!(
+            response_headers.get("Content-Type").unwrap(),
+            &json!("application/json")
+          );
+          assert_eq!(response_headers.get("X-Custom-Header").unwrap(), &json!("SENTINEL"));
+        } else {
+          let response: HttpResponse = packet.decode().unwrap();
+          assert_eq!(response.version, HttpVersion::Http11);
+        }
+      }
+
+      Ok(())
+    }
+
+    #[test_logger::test(tokio::test)]
+    async fn test_xml_post_request() -> Result<()> {
+      let (app_config, component_config) = get_config();
+      let comp = get_component(app_config, component_config).await;
+      let packets = packet_stream!(("input", "SENTINEL"), ("payload", "<xml>FOOBAR</xml>"));
+      let invocation = Invocation::test(
+        "test_xml_post_request",
+        Entity::local(POST_OP_XML),
+        packets,
+        Default::default(),
+      )?;
+      let stream = comp
+        .handle(invocation, Default::default(), panic_callback())
+        .await?
+        .filter(|p| futures::future::ready(p.as_ref().map_or(false, |p| p.has_data())))
+        .collect::<Vec<_>>()
+        .await;
+
+      let packets = stream.into_iter().collect::<Result<Vec<_>, _>>()?;
+      for packet in packets {
+        if packet.port() == "body" {
+          println!("{:?}", packet);
+          let response = packet.decode_value().unwrap();
+          println!("as json: {:?}", response);
+
+          let args = response.get("args").unwrap();
+          assert_eq!(args, &json!( {"query1": "SENTINEL"}));
+          let data = response.get("data").unwrap().to_string();
+          assert_eq!(data, "<xml>FOOBAR</xml>");
           let response_headers = response.get("headers").unwrap();
           assert_eq!(
             response_headers.get("Content-Type").unwrap(),
