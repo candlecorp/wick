@@ -26,26 +26,31 @@ pub(crate) fn provided_struct(_config: &Config, required: &[BoundInterface]) -> 
     .collect_vec();
   quote! {
     #[allow(unused)]
-    pub(crate) struct Provided {
-      #(#fields),*
-    }
+    #[cfg(target_family = "wasm")]
+    mod provided_wasm {
+      use super::*;
+      pub(crate) struct Provided {
+        #(#fields),*
+      }
 
-    pub(crate) fn get_provided(inherent: wick_component::flow_component::InherentContext) -> Provided {
-      let config = get_config();
-      Provided {
-        #(#required_names,)*
+      pub(crate) fn get_provided(inherent: wick_component::flow_component::InherentContext) -> Provided {
+        let config = get_config();
+        Provided {
+          #(#required_names,)*
+        }
+      }
+
+      pub(crate) trait ProvidedContext {
+        fn provided(&self) -> Provided;
+      }
+
+      impl<T> ProvidedContext for wick_component::flow_component::Context<T> where T:std::fmt::Debug{
+        fn provided(&self) -> Provided {
+          get_provided(self.inherent.clone())
+        }
       }
     }
-
-    pub(crate) trait ProvidedContext {
-      fn provided(&self) -> Provided;
-    }
-
-    impl<T> ProvidedContext for wick_component::flow_component::Context<T> where T:std::fmt::Debug{
-      fn provided(&self) -> Provided {
-        get_provided(self.inherent.clone())
-      }
-    }
-
+    #[cfg(target_family = "wasm")]
+    pub(crate) use provided_wasm::*;
   }
 }

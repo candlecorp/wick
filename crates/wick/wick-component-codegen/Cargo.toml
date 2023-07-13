@@ -21,6 +21,7 @@ serde_json = { workspace = true }
 bitflags = { workspace = true }
 itertools = { workspace = true }
 check_keyword = { workspace = true }
+prettyplease = { workspace = true }
 
 [dev-dependencies]
 wick-logger = { workspace = true }

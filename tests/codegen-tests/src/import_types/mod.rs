@@ -1,9 +1,6 @@
 pub use async_trait::async_trait;
 #[allow(unused)]
-pub(crate) use wick_component::prelude::*;
-#[allow(unused)]
-pub(crate) use wick_component::wasmrs_rx::{Observable, Observer};
-pub use wick_component::{datetime, packet as wick_packet, runtime, wasmrs, wasmrs_codec, wasmrs_rx};
+pub(crate) use wick_component::*;
 #[allow(unused)]
 pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, Box<dyn std::error::Error + Send + Sync>>;
 pub use wick_component::flow_component::Context;
@@ -16,11 +13,87 @@ extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_h
   wick_component::wasmrs_guest::register_request_channel("wick", "testop", Box::new(Component::testop_wrapper));
 }
 #[cfg(target_family = "wasm")]
-thread_local! { static __CONFIG : std :: cell :: UnsafeCell < Option < SetupPayload >> = std :: cell :: UnsafeCell :: new (None) ; }
-#[derive(Debug, Clone, Default, serde :: Serialize, serde :: Deserialize, PartialEq)]
+mod imported_components_wasm {
+  use super::*;
+  #[allow(unused)]
+  pub struct Dep1Component {
+    component: wick_packet::ComponentReference,
+    inherent: flow_component::InherentContext,
+  }
+  impl Dep1Component {
+    pub fn new(component: wick_packet::ComponentReference, inherent: flow_component::InherentContext) -> Self {
+      Self { component, inherent }
+    }
+    #[allow(unused)]
+    pub fn component(&self) -> &wick_packet::ComponentReference {
+      &self.component
+    }
+    #[allow(unused)]
+    pub fn echo(
+      &self,
+      input: impl wick_component::Stream<Item = Result<types::http::HttpRequest, wick_component::BoxError>> + 'static,
+    ) -> std::result::Result<WickStream<types::http::HttpRequest>, wick_packet::Error> {
+      let mut stream = self.echo_raw(input)?;
+      Ok(wick_component::payload_fan_out!(
+          stream, raw : false, wick_component::BoxError, [("output",
+          types::http::HttpRequest)]
+      ))
+    }
+    #[allow(unused)]
+    pub fn echo_raw(
+      &self,
+      input: impl wick_component::Stream<Item = Result<types::http::HttpRequest, wick_component::BoxError>> + 'static,
+    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
+      let input = input.map(wick_component::wick_packet::into_packet("input"));
+      let stream = wick_component::empty();
+      let stream = stream.merge(input);
+      let stream = wick_packet::PacketStream::new(Box::pin(stream));
+      Ok(
+        self
+          .component
+          .call("echo", stream, None, self.inherent.clone().into())?,
+      )
+    }
+  }
+}
+#[cfg(target_family = "wasm")]
+pub use imported_components_wasm::*;
+#[allow(unused)]
+#[cfg(target_family = "wasm")]
+mod provided_wasm {
+  use super::*;
+  pub(crate) struct Provided {
+    pub dep1: Dep1Component,
+  }
+  pub(crate) fn get_provided(inherent: wick_component::flow_component::InherentContext) -> Provided {
+    let config = get_config();
+    Provided {
+      dep1: Dep1Component::new(config.provided.get("DEP1").cloned().unwrap(), inherent.clone()),
+    }
+  }
+  pub(crate) trait ProvidedContext {
+    fn provided(&self) -> Provided;
+  }
+  impl<T> ProvidedContext for wick_component::flow_component::Context<T>
+  where
+    T: std::fmt::Debug,
+  {
+    fn provided(&self) -> Provided {
+      get_provided(self.inherent.clone())
+    }
+  }
+}
+#[cfg(target_family = "wasm")]
+pub(crate) use provided_wasm::*;
+#[cfg(target_family = "wasm")]
+thread_local! {
+    static __CONFIG : std::cell::UnsafeCell < Option < SetupPayload >> =
+    std::cell::UnsafeCell::new(None);
+}
+#[derive(Debug, Clone, Default, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
 pub struct RootConfig {}
 #[cfg(target_family = "wasm")]
-#[derive(Debug, serde :: Deserialize)]
+#[derive(Debug, ::serde::Deserialize)]
 pub(crate) struct SetupPayload {
   #[allow(unused)]
   pub(crate) provided: std::collections::HashMap<String, wick_packet::ComponentReference>,
@@ -79,12 +152,12 @@ where
     }
   }
 }
-#[doc = "Additional generated types"]
+///Additional generated types
 pub mod types {
   #[allow(unused)]
   use super::types;
-  #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-  #[doc = "a useful struct"]
+  #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+  ///a useful struct
   pub struct LocalStruct {
     #[serde(rename = "field1")]
     pub field1: String,
@@ -94,56 +167,56 @@ pub mod types {
     #[serde(deserialize_with = "wick_component::datetime::serde::from_str_or_integer")]
     pub time: wick_component::datetime::DateTime,
   }
-  #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
+  #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
   pub struct LocalStructInner {
     #[serde(rename = "field1")]
     pub field1: String,
     #[serde(rename = "field2")]
     pub field2: String,
   }
-  #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-  #[doc = "a weird union"]
+  #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+  ///a weird union
   #[serde(untagged)]
   pub enum LocalUnion {
-    #[doc = "A string value."]
+    ///A string value.
     String(String),
-    #[doc = "A LocalStructInner value."]
+    ///A LocalStructInner value.
     LocalStructInner(types::LocalStructInner),
-    #[doc = "A datetime value."]
+    ///A datetime value.
     Datetime(wick_component::datetime::DateTime),
   }
   pub mod aaa {
     #[allow(unused)]
     use super::aaa;
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP method enum"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP method enum
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum HttpMethod {
-      #[doc = "HTTP GET method"]
+      ///HTTP GET method
       Get,
-      #[doc = "HTTP POST method"]
+      ///HTTP POST method
       Post,
-      #[doc = "HTTP PUT method"]
+      ///HTTP PUT method
       Put,
-      #[doc = "HTTP DELETE method"]
+      ///HTTP DELETE method
       Delete,
-      #[doc = "HTTP PATCH method"]
+      ///HTTP PATCH method
       Patch,
-      #[doc = "HTTP HEAD method"]
+      ///HTTP HEAD method
       Head,
-      #[doc = "HTTP OPTIONS method"]
+      ///HTTP OPTIONS method
       Options,
-      #[doc = "HTTP TRACE method"]
+      ///HTTP TRACE method
       Trace,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpMethod {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for HttpMethod {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -154,7 +227,7 @@ pub mod types {
     }
     impl HttpMethod {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -211,73 +284,73 @@ pub mod types {
         }
       }
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP request"]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP request
     pub struct HttpRequest {
-      #[doc = "method from request line enum"]
+      ///method from request line enum
       #[serde(rename = "method")]
       pub method: HttpMethod,
-      #[doc = "scheme from request line enum"]
+      ///scheme from request line enum
       #[serde(rename = "scheme")]
       pub scheme: HttpScheme,
-      #[doc = "domain/port and any authentication from request line. optional"]
+      ///domain/port and any authentication from request line. optional
       #[serde(rename = "authority")]
       pub authority: String,
-      #[doc = "query parameters from request line. optional"]
+      ///query parameters from request line. optional
       #[serde(rename = "query_parameters")]
       #[serde(default)]
       #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub query_parameters: std::collections::HashMap<String, Vec<String>>,
-      #[doc = "path from request line (not including query parameters)"]
+      ///path from request line (not including query parameters)
       #[serde(rename = "path")]
       pub path: String,
-      #[doc = "full URI from request line"]
+      ///full URI from request line
       #[serde(rename = "uri")]
       pub uri: String,
-      #[doc = "HTTP version enum"]
+      ///HTTP version enum
       #[serde(rename = "version")]
       pub version: HttpVersion,
-      #[doc = "All request headers. Duplicates are comma separated"]
+      ///All request headers. Duplicates are comma separated
       #[serde(rename = "headers")]
       #[serde(default)]
       #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
-      #[doc = "The remote address of the connected client"]
+      ///The remote address of the connected client
       #[serde(rename = "remote_addr")]
       pub remote_addr: String,
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP response"]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP response
     pub struct HttpResponse {
-      #[doc = "HTTP version enum"]
+      ///HTTP version enum
       #[serde(rename = "version")]
       pub version: HttpVersion,
-      #[doc = "status code enum"]
+      ///status code enum
       #[serde(rename = "status")]
       pub status: StatusCode,
-      #[doc = "All response headers. Supports duplicates."]
+      ///All response headers. Supports duplicates.
       #[serde(rename = "headers")]
       #[serde(default)]
       #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP scheme"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP scheme
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum HttpScheme {
-      #[doc = "HTTP scheme"]
+      ///HTTP scheme
       Http,
-      #[doc = "HTTPS scheme"]
+      ///HTTPS scheme
       Https,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpScheme {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for HttpScheme {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -288,7 +361,7 @@ pub mod types {
     }
     impl HttpScheme {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -327,25 +400,25 @@ pub mod types {
         }
       }
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP version"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP version
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum HttpVersion {
-      #[doc = "HTTP 1.0 version"]
+      ///HTTP 1.0 version
       Http10,
-      #[doc = "HTTP 1.1 version"]
+      ///HTTP 1.1 version
       Http11,
-      #[doc = "HTTP 2.0 version"]
+      ///HTTP 2.0 version
       Http20,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpVersion {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for HttpVersion {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -356,7 +429,7 @@ pub mod types {
     }
     impl HttpVersion {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -401,120 +474,120 @@ pub mod types {
         }
       }
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "A response from pre-request middleware"]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///A response from pre-request middleware
     #[serde(untagged)]
     pub enum RequestMiddlewareResponse {
-      #[doc = "A HttpRequest value."]
+      ///A HttpRequest value.
       HttpRequest(HttpRequest),
-      #[doc = "A HttpResponse value."]
+      ///A HttpResponse value.
       HttpResponse(HttpResponse),
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP status code"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP status code
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum StatusCode {
-      #[doc = "Continue status code"]
+      ///Continue status code
       Continue,
-      #[doc = "SwitchingProtocols status code"]
+      ///SwitchingProtocols status code
       SwitchingProtocols,
-      #[doc = "HTTP OK status code"]
+      ///HTTP OK status code
       Ok,
-      #[doc = "Created status code"]
+      ///Created status code
       Created,
-      #[doc = "Accepted status code"]
+      ///Accepted status code
       Accepted,
-      #[doc = "NonAuthoritativeInformation status code"]
+      ///NonAuthoritativeInformation status code
       NonAuthoritativeInformation,
-      #[doc = "NoContent status code"]
+      ///NoContent status code
       NoContent,
-      #[doc = "ResetContent status code"]
+      ///ResetContent status code
       ResetContent,
-      #[doc = "PartialContent status code"]
+      ///PartialContent status code
       PartialContent,
-      #[doc = "MultipleChoices status code"]
+      ///MultipleChoices status code
       MultipleChoices,
-      #[doc = "MovedPermanently status code"]
+      ///MovedPermanently status code
       MovedPermanently,
-      #[doc = "Found status code"]
+      ///Found status code
       Found,
-      #[doc = "SeeOther status code"]
+      ///SeeOther status code
       SeeOther,
-      #[doc = "NotModified status code"]
+      ///NotModified status code
       NotModified,
-      #[doc = "TemporaryRedirect status code"]
+      ///TemporaryRedirect status code
       TemporaryRedirect,
-      #[doc = "PermanentRedirect status code"]
+      ///PermanentRedirect status code
       PermanentRedirect,
-      #[doc = "BadRequest status code"]
+      ///BadRequest status code
       BadRequest,
-      #[doc = "Unauthorized status code"]
+      ///Unauthorized status code
       Unauthorized,
-      #[doc = "PaymentRequired status code"]
+      ///PaymentRequired status code
       PaymentRequired,
-      #[doc = "Forbidden status code"]
+      ///Forbidden status code
       Forbidden,
-      #[doc = "NotFound status code"]
+      ///NotFound status code
       NotFound,
-      #[doc = "MethodNotAllowed status code"]
+      ///MethodNotAllowed status code
       MethodNotAllowed,
-      #[doc = "NotAcceptable status code"]
+      ///NotAcceptable status code
       NotAcceptable,
-      #[doc = "ProxyAuthenticationRequired status code"]
+      ///ProxyAuthenticationRequired status code
       ProxyAuthenticationRequired,
-      #[doc = "RequestTimeout status code"]
+      ///RequestTimeout status code
       RequestTimeout,
-      #[doc = "Conflict status code"]
+      ///Conflict status code
       Conflict,
-      #[doc = "Gone status code"]
+      ///Gone status code
       Gone,
-      #[doc = "LengthRequired status code"]
+      ///LengthRequired status code
       LengthRequired,
-      #[doc = "PreconditionFailed status code"]
+      ///PreconditionFailed status code
       PreconditionFailed,
-      #[doc = "PayloadTooLarge status code"]
+      ///PayloadTooLarge status code
       PayloadTooLarge,
-      #[doc = "URITooLong status code"]
+      ///URITooLong status code
       UriTooLong,
-      #[doc = "UnsupportedMediaType status code"]
+      ///UnsupportedMediaType status code
       UnsupportedMediaType,
-      #[doc = "RangeNotSatisfiable status code"]
+      ///RangeNotSatisfiable status code
       RangeNotSatisfiable,
-      #[doc = "ExpectationFailed status code"]
+      ///ExpectationFailed status code
       ExpectationFailed,
-      #[doc = "ImATeapot status code"]
+      ///ImATeapot status code
       ImATeapot,
-      #[doc = "UnprocessableEntity status code"]
+      ///UnprocessableEntity status code
       UnprocessableEntity,
-      #[doc = "Locked status code"]
+      ///Locked status code
       Locked,
-      #[doc = "FailedDependency status code"]
+      ///FailedDependency status code
       FailedDependency,
-      #[doc = "TooManyRequests status code"]
+      ///TooManyRequests status code
       TooManyRequests,
-      #[doc = "InternalServerError status code"]
+      ///InternalServerError status code
       InternalServerError,
-      #[doc = "NotImplemented status code"]
+      ///NotImplemented status code
       NotImplemented,
-      #[doc = "BadGateway status code"]
+      ///BadGateway status code
       BadGateway,
-      #[doc = "ServiceUnavailable status code"]
+      ///ServiceUnavailable status code
       ServiceUnavailable,
-      #[doc = "GatewayTimeout status code"]
+      ///GatewayTimeout status code
       GatewayTimeout,
-      #[doc = "HTTPVersionNotSupported status code"]
+      ///HTTPVersionNotSupported status code
       HttpVersionNotSupported,
-      #[doc = "Indicates an unknown status code"]
+      ///Indicates an unknown status code
       Unknown,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for StatusCode {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for StatusCode {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -525,7 +598,7 @@ pub mod types {
     }
     impl StatusCode {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -746,35 +819,35 @@ pub mod types {
   pub mod zzz {
     #[allow(unused)]
     use super::zzz;
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP method enum"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP method enum
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum HttpMethod {
-      #[doc = "HTTP GET method"]
+      ///HTTP GET method
       Get,
-      #[doc = "HTTP POST method"]
+      ///HTTP POST method
       Post,
-      #[doc = "HTTP PUT method"]
+      ///HTTP PUT method
       Put,
-      #[doc = "HTTP DELETE method"]
+      ///HTTP DELETE method
       Delete,
-      #[doc = "HTTP PATCH method"]
+      ///HTTP PATCH method
       Patch,
-      #[doc = "HTTP HEAD method"]
+      ///HTTP HEAD method
       Head,
-      #[doc = "HTTP OPTIONS method"]
+      ///HTTP OPTIONS method
       Options,
-      #[doc = "HTTP TRACE method"]
+      ///HTTP TRACE method
       Trace,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpMethod {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for HttpMethod {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -785,7 +858,7 @@ pub mod types {
     }
     impl HttpMethod {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -842,73 +915,73 @@ pub mod types {
         }
       }
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP request"]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP request
     pub struct HttpRequest {
-      #[doc = "method from request line enum"]
+      ///method from request line enum
       #[serde(rename = "method")]
       pub method: HttpMethod,
-      #[doc = "scheme from request line enum"]
+      ///scheme from request line enum
       #[serde(rename = "scheme")]
       pub scheme: HttpScheme,
-      #[doc = "domain/port and any authentication from request line. optional"]
+      ///domain/port and any authentication from request line. optional
       #[serde(rename = "authority")]
       pub authority: String,
-      #[doc = "query parameters from request line. optional"]
+      ///query parameters from request line. optional
       #[serde(rename = "query_parameters")]
       #[serde(default)]
       #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub query_parameters: std::collections::HashMap<String, Vec<String>>,
-      #[doc = "path from request line (not including query parameters)"]
+      ///path from request line (not including query parameters)
       #[serde(rename = "path")]
       pub path: String,
-      #[doc = "full URI from request line"]
+      ///full URI from request line
       #[serde(rename = "uri")]
       pub uri: String,
-      #[doc = "HTTP version enum"]
+      ///HTTP version enum
       #[serde(rename = "version")]
       pub version: HttpVersion,
-      #[doc = "All request headers. Duplicates are comma separated"]
+      ///All request headers. Duplicates are comma separated
       #[serde(rename = "headers")]
       #[serde(default)]
       #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
-      #[doc = "The remote address of the connected client"]
+      ///The remote address of the connected client
       #[serde(rename = "remote_addr")]
       pub remote_addr: String,
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP response"]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP response
     pub struct HttpResponse {
-      #[doc = "HTTP version enum"]
+      ///HTTP version enum
       #[serde(rename = "version")]
       pub version: HttpVersion,
-      #[doc = "status code enum"]
+      ///status code enum
       #[serde(rename = "status")]
       pub status: StatusCode,
-      #[doc = "All response headers. Supports duplicates."]
+      ///All response headers. Supports duplicates.
       #[serde(rename = "headers")]
       #[serde(default)]
       #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP scheme"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP scheme
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum HttpScheme {
-      #[doc = "HTTP scheme"]
+      ///HTTP scheme
       Http,
-      #[doc = "HTTPS scheme"]
+      ///HTTPS scheme
       Https,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpScheme {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for HttpScheme {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -919,7 +992,7 @@ pub mod types {
     }
     impl HttpScheme {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -958,25 +1031,25 @@ pub mod types {
         }
       }
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP version"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP version
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum HttpVersion {
-      #[doc = "HTTP 1.0 version"]
+      ///HTTP 1.0 version
       Http10,
-      #[doc = "HTTP 1.1 version"]
+      ///HTTP 1.1 version
       Http11,
-      #[doc = "HTTP 2.0 version"]
+      ///HTTP 2.0 version
       Http20,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpVersion {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for HttpVersion {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -987,7 +1060,7 @@ pub mod types {
     }
     impl HttpVersion {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -1032,120 +1105,120 @@ pub mod types {
         }
       }
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "A response from pre-request middleware"]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///A response from pre-request middleware
     #[serde(untagged)]
     pub enum RequestMiddlewareResponse {
-      #[doc = "A HttpRequest value."]
+      ///A HttpRequest value.
       HttpRequest(HttpRequest),
-      #[doc = "A HttpResponse value."]
+      ///A HttpResponse value.
       HttpResponse(HttpResponse),
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP status code"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP status code
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum StatusCode {
-      #[doc = "Continue status code"]
+      ///Continue status code
       Continue,
-      #[doc = "SwitchingProtocols status code"]
+      ///SwitchingProtocols status code
       SwitchingProtocols,
-      #[doc = "HTTP OK status code"]
+      ///HTTP OK status code
       Ok,
-      #[doc = "Created status code"]
+      ///Created status code
       Created,
-      #[doc = "Accepted status code"]
+      ///Accepted status code
       Accepted,
-      #[doc = "NonAuthoritativeInformation status code"]
+      ///NonAuthoritativeInformation status code
       NonAuthoritativeInformation,
-      #[doc = "NoContent status code"]
+      ///NoContent status code
       NoContent,
-      #[doc = "ResetContent status code"]
+      ///ResetContent status code
       ResetContent,
-      #[doc = "PartialContent status code"]
+      ///PartialContent status code
       PartialContent,
-      #[doc = "MultipleChoices status code"]
+      ///MultipleChoices status code
       MultipleChoices,
-      #[doc = "MovedPermanently status code"]
+      ///MovedPermanently status code
       MovedPermanently,
-      #[doc = "Found status code"]
+      ///Found status code
       Found,
-      #[doc = "SeeOther status code"]
+      ///SeeOther status code
       SeeOther,
-      #[doc = "NotModified status code"]
+      ///NotModified status code
       NotModified,
-      #[doc = "TemporaryRedirect status code"]
+      ///TemporaryRedirect status code
       TemporaryRedirect,
-      #[doc = "PermanentRedirect status code"]
+      ///PermanentRedirect status code
       PermanentRedirect,
-      #[doc = "BadRequest status code"]
+      ///BadRequest status code
       BadRequest,
-      #[doc = "Unauthorized status code"]
+      ///Unauthorized status code
       Unauthorized,
-      #[doc = "PaymentRequired status code"]
+      ///PaymentRequired status code
       PaymentRequired,
-      #[doc = "Forbidden status code"]
+      ///Forbidden status code
       Forbidden,
-      #[doc = "NotFound status code"]
+      ///NotFound status code
       NotFound,
-      #[doc = "MethodNotAllowed status code"]
+      ///MethodNotAllowed status code
       MethodNotAllowed,
-      #[doc = "NotAcceptable status code"]
+      ///NotAcceptable status code
       NotAcceptable,
-      #[doc = "ProxyAuthenticationRequired status code"]
+      ///ProxyAuthenticationRequired status code
       ProxyAuthenticationRequired,
-      #[doc = "RequestTimeout status code"]
+      ///RequestTimeout status code
       RequestTimeout,
-      #[doc = "Conflict status code"]
+      ///Conflict status code
       Conflict,
-      #[doc = "Gone status code"]
+      ///Gone status code
       Gone,
-      #[doc = "LengthRequired status code"]
+      ///LengthRequired status code
       LengthRequired,
-      #[doc = "PreconditionFailed status code"]
+      ///PreconditionFailed status code
       PreconditionFailed,
-      #[doc = "PayloadTooLarge status code"]
+      ///PayloadTooLarge status code
       PayloadTooLarge,
-      #[doc = "URITooLong status code"]
+      ///URITooLong status code
       UriTooLong,
-      #[doc = "UnsupportedMediaType status code"]
+      ///UnsupportedMediaType status code
       UnsupportedMediaType,
-      #[doc = "RangeNotSatisfiable status code"]
+      ///RangeNotSatisfiable status code
       RangeNotSatisfiable,
-      #[doc = "ExpectationFailed status code"]
+      ///ExpectationFailed status code
       ExpectationFailed,
-      #[doc = "ImATeapot status code"]
+      ///ImATeapot status code
       ImATeapot,
-      #[doc = "UnprocessableEntity status code"]
+      ///UnprocessableEntity status code
       UnprocessableEntity,
-      #[doc = "Locked status code"]
+      ///Locked status code
       Locked,
-      #[doc = "FailedDependency status code"]
+      ///FailedDependency status code
       FailedDependency,
-      #[doc = "TooManyRequests status code"]
+      ///TooManyRequests status code
       TooManyRequests,
-      #[doc = "InternalServerError status code"]
+      ///InternalServerError status code
       InternalServerError,
-      #[doc = "NotImplemented status code"]
+      ///NotImplemented status code
       NotImplemented,
-      #[doc = "BadGateway status code"]
+      ///BadGateway status code
       BadGateway,
-      #[doc = "ServiceUnavailable status code"]
+      ///ServiceUnavailable status code
       ServiceUnavailable,
-      #[doc = "GatewayTimeout status code"]
+      ///GatewayTimeout status code
       GatewayTimeout,
-      #[doc = "HTTPVersionNotSupported status code"]
+      ///HTTPVersionNotSupported status code
       HttpVersionNotSupported,
-      #[doc = "Indicates an unknown status code"]
+      ///Indicates an unknown status code
       Unknown,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for StatusCode {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for StatusCode {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -1156,7 +1229,7 @@ pub mod types {
     }
     impl StatusCode {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -1377,35 +1450,35 @@ pub mod types {
   pub mod http {
     #[allow(unused)]
     use super::http;
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP method enum"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP method enum
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum HttpMethod {
-      #[doc = "HTTP GET method"]
+      ///HTTP GET method
       Get,
-      #[doc = "HTTP POST method"]
+      ///HTTP POST method
       Post,
-      #[doc = "HTTP PUT method"]
+      ///HTTP PUT method
       Put,
-      #[doc = "HTTP DELETE method"]
+      ///HTTP DELETE method
       Delete,
-      #[doc = "HTTP PATCH method"]
+      ///HTTP PATCH method
       Patch,
-      #[doc = "HTTP HEAD method"]
+      ///HTTP HEAD method
       Head,
-      #[doc = "HTTP OPTIONS method"]
+      ///HTTP OPTIONS method
       Options,
-      #[doc = "HTTP TRACE method"]
+      ///HTTP TRACE method
       Trace,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpMethod {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for HttpMethod {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -1416,7 +1489,7 @@ pub mod types {
     }
     impl HttpMethod {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -1473,73 +1546,73 @@ pub mod types {
         }
       }
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP request"]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP request
     pub struct HttpRequest {
-      #[doc = "method from request line enum"]
+      ///method from request line enum
       #[serde(rename = "method")]
       pub method: HttpMethod,
-      #[doc = "scheme from request line enum"]
+      ///scheme from request line enum
       #[serde(rename = "scheme")]
       pub scheme: HttpScheme,
-      #[doc = "domain/port and any authentication from request line. optional"]
+      ///domain/port and any authentication from request line. optional
       #[serde(rename = "authority")]
       pub authority: String,
-      #[doc = "query parameters from request line. optional"]
+      ///query parameters from request line. optional
       #[serde(rename = "query_parameters")]
       #[serde(default)]
       #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub query_parameters: std::collections::HashMap<String, Vec<String>>,
-      #[doc = "path from request line (not including query parameters)"]
+      ///path from request line (not including query parameters)
       #[serde(rename = "path")]
       pub path: String,
-      #[doc = "full URI from request line"]
+      ///full URI from request line
       #[serde(rename = "uri")]
       pub uri: String,
-      #[doc = "HTTP version enum"]
+      ///HTTP version enum
       #[serde(rename = "version")]
       pub version: HttpVersion,
-      #[doc = "All request headers. Duplicates are comma separated"]
+      ///All request headers. Duplicates are comma separated
       #[serde(rename = "headers")]
       #[serde(default)]
       #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
-      #[doc = "The remote address of the connected client"]
+      ///The remote address of the connected client
       #[serde(rename = "remote_addr")]
       pub remote_addr: String,
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP response"]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP response
     pub struct HttpResponse {
-      #[doc = "HTTP version enum"]
+      ///HTTP version enum
       #[serde(rename = "version")]
       pub version: HttpVersion,
-      #[doc = "status code enum"]
+      ///status code enum
       #[serde(rename = "status")]
       pub status: StatusCode,
-      #[doc = "All response headers. Supports duplicates."]
+      ///All response headers. Supports duplicates.
       #[serde(rename = "headers")]
       #[serde(default)]
       #[serde(skip_serializing_if = "std::collections::HashMap::is_empty")]
       pub headers: std::collections::HashMap<String, Vec<String>>,
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP scheme"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP scheme
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum HttpScheme {
-      #[doc = "HTTP scheme"]
+      ///HTTP scheme
       Http,
-      #[doc = "HTTPS scheme"]
+      ///HTTPS scheme
       Https,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpScheme {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for HttpScheme {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -1550,7 +1623,7 @@ pub mod types {
     }
     impl HttpScheme {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -1589,25 +1662,25 @@ pub mod types {
         }
       }
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP version"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP version
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum HttpVersion {
-      #[doc = "HTTP 1.0 version"]
+      ///HTTP 1.0 version
       Http10,
-      #[doc = "HTTP 1.1 version"]
+      ///HTTP 1.1 version
       Http11,
-      #[doc = "HTTP 2.0 version"]
+      ///HTTP 2.0 version
       Http20,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for HttpVersion {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for HttpVersion {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -1618,7 +1691,7 @@ pub mod types {
     }
     impl HttpVersion {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -1663,120 +1736,120 @@ pub mod types {
         }
       }
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "A response from pre-request middleware"]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///A response from pre-request middleware
     #[serde(untagged)]
     pub enum RequestMiddlewareResponse {
-      #[doc = "A HttpRequest value."]
+      ///A HttpRequest value.
       HttpRequest(HttpRequest),
-      #[doc = "A HttpResponse value."]
+      ///A HttpResponse value.
       HttpResponse(HttpResponse),
     }
-    #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
-    #[doc = "HTTP status code"]
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+    ///HTTP status code
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum StatusCode {
-      #[doc = "Continue status code"]
+      ///Continue status code
       Continue,
-      #[doc = "SwitchingProtocols status code"]
+      ///SwitchingProtocols status code
       SwitchingProtocols,
-      #[doc = "HTTP OK status code"]
+      ///HTTP OK status code
       Ok,
-      #[doc = "Created status code"]
+      ///Created status code
       Created,
-      #[doc = "Accepted status code"]
+      ///Accepted status code
       Accepted,
-      #[doc = "NonAuthoritativeInformation status code"]
+      ///NonAuthoritativeInformation status code
       NonAuthoritativeInformation,
-      #[doc = "NoContent status code"]
+      ///NoContent status code
       NoContent,
-      #[doc = "ResetContent status code"]
+      ///ResetContent status code
       ResetContent,
-      #[doc = "PartialContent status code"]
+      ///PartialContent status code
       PartialContent,
-      #[doc = "MultipleChoices status code"]
+      ///MultipleChoices status code
       MultipleChoices,
-      #[doc = "MovedPermanently status code"]
+      ///MovedPermanently status code
       MovedPermanently,
-      #[doc = "Found status code"]
+      ///Found status code
       Found,
-      #[doc = "SeeOther status code"]
+      ///SeeOther status code
       SeeOther,
-      #[doc = "NotModified status code"]
+      ///NotModified status code
       NotModified,
-      #[doc = "TemporaryRedirect status code"]
+      ///TemporaryRedirect status code
       TemporaryRedirect,
-      #[doc = "PermanentRedirect status code"]
+      ///PermanentRedirect status code
       PermanentRedirect,
-      #[doc = "BadRequest status code"]
+      ///BadRequest status code
       BadRequest,
-      #[doc = "Unauthorized status code"]
+      ///Unauthorized status code
       Unauthorized,
-      #[doc = "PaymentRequired status code"]
+      ///PaymentRequired status code
       PaymentRequired,
-      #[doc = "Forbidden status code"]
+      ///Forbidden status code
       Forbidden,
-      #[doc = "NotFound status code"]
+      ///NotFound status code
       NotFound,
-      #[doc = "MethodNotAllowed status code"]
+      ///MethodNotAllowed status code
       MethodNotAllowed,
-      #[doc = "NotAcceptable status code"]
+      ///NotAcceptable status code
       NotAcceptable,
-      #[doc = "ProxyAuthenticationRequired status code"]
+      ///ProxyAuthenticationRequired status code
       ProxyAuthenticationRequired,
-      #[doc = "RequestTimeout status code"]
+      ///RequestTimeout status code
       RequestTimeout,
-      #[doc = "Conflict status code"]
+      ///Conflict status code
       Conflict,
-      #[doc = "Gone status code"]
+      ///Gone status code
       Gone,
-      #[doc = "LengthRequired status code"]
+      ///LengthRequired status code
       LengthRequired,
-      #[doc = "PreconditionFailed status code"]
+      ///PreconditionFailed status code
       PreconditionFailed,
-      #[doc = "PayloadTooLarge status code"]
+      ///PayloadTooLarge status code
       PayloadTooLarge,
-      #[doc = "URITooLong status code"]
+      ///URITooLong status code
       UriTooLong,
-      #[doc = "UnsupportedMediaType status code"]
+      ///UnsupportedMediaType status code
       UnsupportedMediaType,
-      #[doc = "RangeNotSatisfiable status code"]
+      ///RangeNotSatisfiable status code
       RangeNotSatisfiable,
-      #[doc = "ExpectationFailed status code"]
+      ///ExpectationFailed status code
       ExpectationFailed,
-      #[doc = "ImATeapot status code"]
+      ///ImATeapot status code
       ImATeapot,
-      #[doc = "UnprocessableEntity status code"]
+      ///UnprocessableEntity status code
       UnprocessableEntity,
-      #[doc = "Locked status code"]
+      ///Locked status code
       Locked,
-      #[doc = "FailedDependency status code"]
+      ///FailedDependency status code
       FailedDependency,
-      #[doc = "TooManyRequests status code"]
+      ///TooManyRequests status code
       TooManyRequests,
-      #[doc = "InternalServerError status code"]
+      ///InternalServerError status code
       InternalServerError,
-      #[doc = "NotImplemented status code"]
+      ///NotImplemented status code
       NotImplemented,
-      #[doc = "BadGateway status code"]
+      ///BadGateway status code
       BadGateway,
-      #[doc = "ServiceUnavailable status code"]
+      ///ServiceUnavailable status code
       ServiceUnavailable,
-      #[doc = "GatewayTimeout status code"]
+      ///GatewayTimeout status code
       GatewayTimeout,
-      #[doc = "HTTPVersionNotSupported status code"]
+      ///HTTPVersionNotSupported status code
       HttpVersionNotSupported,
-      #[doc = "Indicates an unknown status code"]
+      ///Indicates an unknown status code
       Unknown,
     }
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for StatusCode {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for StatusCode {
       type Error = String;
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -1787,7 +1860,7 @@ pub mod types {
     }
     impl StatusCode {
       #[allow(unused)]
-      #[doc = "Returns the value of the enum variant as a string."]
+      ///Returns the value of the enum variant as a string.
       #[must_use]
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
@@ -2006,10 +2079,10 @@ pub mod types {
     }
   }
 }
-#[doc = "Types associated with the `echo` operation"]
+///Types associated with the `echo` operation
 pub mod echo {
   use super::*;
-  #[derive(Debug, Clone, Default, serde :: Serialize, serde :: Deserialize, PartialEq)]
+  #[derive(Debug, Clone, Default, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
   pub struct Config {}
   pub struct Outputs {
     #[allow(unused)]
@@ -2020,7 +2093,7 @@ pub mod echo {
     pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
       Self {
         output: wick_packet::Output::new("output", channel.clone()),
-        time: wick_packet::Output::new("time", channel.clone()),
+        time: wick_packet::Output::new("time", channel),
       }
     }
     #[allow(unused)]
@@ -2040,7 +2113,7 @@ pub mod echo {
     }
   }
 }
-# [async_trait :: async_trait (? Send)]
+#[async_trait::async_trait(?Send)]
 #[cfg(target_family = "wasm")]
 pub trait EchoOperation {
   type Error: std::fmt::Display;
@@ -2068,10 +2141,10 @@ pub trait EchoOperation {
     ctx: wick_component::flow_component::Context<Self::Config>,
   ) -> std::result::Result<(), Self::Error>;
 }
-#[doc = "Types associated with the `testop` operation"]
+///Types associated with the `testop` operation
 pub mod testop {
   use super::*;
-  #[derive(Debug, Clone, serde :: Serialize, serde :: Deserialize, PartialEq)]
+  #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
   pub struct Config {
     #[serde(rename = "A")]
     pub a: String,
@@ -2093,7 +2166,7 @@ pub mod testop {
   impl Outputs {
     pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
       Self {
-        output: wick_packet::Output::new("output", channel.clone()),
+        output: wick_packet::Output::new("output", channel),
       }
     }
     #[allow(unused)]
@@ -2110,7 +2183,7 @@ pub mod testop {
     }
   }
 }
-# [async_trait :: async_trait (? Send)]
+#[async_trait::async_trait(?Send)]
 #[cfg(target_family = "wasm")]
 pub trait TestopOperation {
   type Error: std::fmt::Display;
@@ -2137,7 +2210,7 @@ pub trait TestopOperation {
   ) -> std::result::Result<(), Self::Error>;
 }
 #[derive(Default, Clone)]
-#[doc = "The struct that the component implementation hinges around"]
+///The struct that the component implementation hinges around
 pub struct Component;
 impl Component {
   fn echo_wrapper(
@@ -2149,7 +2222,11 @@ impl Component {
     let (channel, rx) = wasmrs_rx::FluxChannel::<wasmrs::RawPayload, wasmrs::PayloadError>::new_parts();
     let outputs = echo::Outputs::new(channel.clone());
     runtime::spawn("echo_wrapper", async move {
-      let (config, input, time) = wick_component :: payload_fan_out ! (input , raw : false , Box < dyn std :: error :: Error + Send + Sync > , echo :: Config , [("input" , types :: http :: HttpRequest) , ("time" , wick_component :: datetime :: DateTime) ,]);
+      let (config, input, time) = wick_component::payload_fan_out!(
+          input, raw : false, Box < dyn std::error::Error + Send + Sync >,
+          echo::Config, [("input", types::http::HttpRequest), ("time",
+          wick_component::datetime::DateTime),]
+      );
       let config = match config.await {
         Ok(Ok(config)) => config,
         Err(e) => {
@@ -2178,7 +2255,10 @@ impl Component {
     let (channel, rx) = wasmrs_rx::FluxChannel::<wasmrs::RawPayload, wasmrs::PayloadError>::new_parts();
     let outputs = testop::Outputs::new(channel.clone());
     runtime::spawn("testop_wrapper", async move {
-      let (config, message) = wick_component :: payload_fan_out ! (input , raw : false , Box < dyn std :: error :: Error + Send + Sync > , testop :: Config , [("message" , types :: http :: HttpResponse) ,]);
+      let (config, message) = wick_component::payload_fan_out!(
+          input, raw : false, Box < dyn std::error::Error + Send + Sync >,
+          testop::Config, [("message", types::http::HttpResponse),]
+      );
       let config = match config.await {
         Ok(Ok(config)) => config,
         Err(e) => {

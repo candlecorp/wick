@@ -143,7 +143,7 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
     #imports
 
     #[allow(unused)]
-    pub(crate) use wick_component::prelude::*;
+    pub(crate) use wick_component::*;
 
     #[allow(unused)]
     pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -158,7 +158,9 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
     #( #trait_defs )*
     #components
   };
-  Ok(expanded.to_string())
+  let reparsed = syn::parse_file(expanded.to_string().as_str())?;
+  let formatted = prettyplease::unparse(&reparsed);
+  Ok(formatted)
 }
 
 pub fn build(config: config::Config) -> Result<()> {

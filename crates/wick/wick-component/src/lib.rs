@@ -88,15 +88,21 @@
 #![allow()]
 
 /// A module implementing custom serializers/deserializers for wick types.
-pub mod serde;
+pub mod serde_util;
 
+//
+//
 /// Macros used by wick components and generated code.
 pub mod macros;
+//
+//
+/// Re-export of the complete [bytes] module.
 #[cfg(feature = "bytes")]
-/// Re-export of the bytes crate.
 pub use bytes;
-#[cfg(feature = "datetime")]
+//
+//
 /// Re-exported methods used for `datetime` types.
+#[cfg(feature = "datetime")]
 pub mod datetime {
   /// Re-export of the chrono crate.
   pub use chrono;
@@ -106,16 +112,40 @@ pub mod datetime {
   pub use chrono::{DateTime as ChronoDateTime, Utc};
   pub use wick_packet::{date_from_millis, serde, DateTime};
 }
+//
+//
+/// Re-export of [serde_json] utilities;
 #[cfg(feature = "json")]
 pub use serde_json::{from_slice, from_str, from_value, json, to_value, Map, Value};
+//
+//
+/// Re-export of [tokio_stream] utilities;
 pub use tokio_stream::{empty, iter as iter_raw, once as once_raw, Stream, StreamExt};
+//
+//
+/// Re-export of wasmrs_guest.
 #[cfg(target_family = "wasm")]
-/// Re-export of wasmrs.
 pub use wasmrs_guest;
+//
+//
+/// Re-export of wasmrs_rx traits and core types.
+pub use wasmrs_rx::{Flux, FluxChannel, Observable, Observer};
+//
+//
+/// Old export name for `wick_packet`
+#[cfg(deprecated)]
+pub use wick_packet as packet;
+//
+//
+/// Re-export of [wick_packet::Base64Bytes] as [Bytes].
 pub use wick_packet::Base64Bytes as Bytes;
-/// Re-exported crates;
-pub use {flow_component, paste, wasmrs, wasmrs_codec, wasmrs_runtime as runtime, wasmrs_rx, wick_packet as packet};
+//
+//
+/// Other re-exported crates;
+pub use {flow_component, paste, wasmrs, wasmrs_codec, wasmrs_runtime as runtime, wasmrs_rx, wick_packet};
 
+//
+//
 /// Generic boxed-error type.
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
@@ -159,8 +189,8 @@ where
 }
 
 /// Useful userland utilities that can be exported via `use wick_component::prelude::*`
+#[cfg(deprecated = "Use `wick_component::*` instead")]
+#[doc(hidden)]
 pub mod prelude {
-  pub use serde_json::Value;
-
-  pub use crate::{iter, once, propagate_if_error, BoxError, Stream, StreamExt};
+  pub use super::*;
 }

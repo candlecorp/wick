@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use anyhow::Result;
-use wick_component::serde::enum_repr::StringOrNum;
+use wick_component::serde_util::enum_repr::StringOrNum;
 use wick_component::{json, Value};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq)]
@@ -10,7 +10,7 @@ struct Test {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq, Clone)]
-#[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+#[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
 enum TestEnum {
   First,
   Second,
