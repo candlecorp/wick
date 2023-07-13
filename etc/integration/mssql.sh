@@ -20,7 +20,7 @@ up() {
   while [ $i -lt $num_tries ]; do
     echo "Waiting for database to be ready..."
     sleep $sleep_time
-    docker exec -it $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -Q "SELECT 1" > /dev/null && break
+    docker exec -i $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -Q "SELECT 1" > /dev/null && break
     i=$((i+1))
   done
 }
@@ -31,16 +31,16 @@ down() {
 
 init() {
   echo "Dropping database 'wick_test'"
-  docker exec -it $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -Q "DROP DATABASE IF EXISTS $db;"
+  docker exec -i $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -Q "DROP DATABASE IF EXISTS $db;"
   sleep 4
   echo "Initializing database 'wick_test'"
-  docker exec -it $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -Q "CREATE DATABASE $db;"
+  docker exec -i $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -Q "CREATE DATABASE $db;"
   echo "Creating table 'users'"
-  docker exec -it $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -d $db -Q "CREATE TABLE users (id INT IDENTITY(1,1) PRIMARY KEY, name VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL);"
+  docker exec -i $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -d $db -Q "CREATE TABLE users (id INT IDENTITY(1,1) PRIMARY KEY, name VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL);"
   echo "Creating user 'Test User'"
-  docker exec -it $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -d $db -Q "INSERT INTO users (name, email) VALUES ('Test User', 'test_user@example.com');"
+  docker exec -i $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -d $db -Q "INSERT INTO users (name, email) VALUES ('Test User', 'test_user@example.com');"
   echo "Creating table 'num_types'"
-  docker exec -it $container_name psql -U $username -h localhost -d $db -c "CREATE TABLE num_types (u8 tinyint, i16 smallint, i32 int, i64 bigint, db_decimal decimal, db_numeric numeric, f32 real, f64 float);"
+  docker exec -i $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -d $db -Q "CREATE TABLE num_types (u8 tinyint, i16 smallint, i32 int, i64 bigint, db_decimal decimal, db_numeric numeric, f32 real, f64 float);"
 }
 
 handle "$@"

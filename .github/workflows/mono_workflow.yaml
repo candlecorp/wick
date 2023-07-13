@@ -38,13 +38,15 @@ jobs:
           GITHUB_REF: ${{ github.ref_name }}
   test:
     needs: tag
-    if: github.event_name == 'pull_request' || github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true
     runs-on: ${{ matrix.config.os }}
     env:
       SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
       SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
       SCCACHE_AZURE_KEY_PREFIX: 'wick-github-actions-test'
       RUSTC_WRAPPER: 'sccache'
+      OCI_USERNAME: ${{ secrets.CANDLE_REG_USERNAME }}
+      OCI_PASSWORD: ${{ secrets.CANDLE_REG_PASSWORD }}
     strategy:
       matrix:
         config:
@@ -121,6 +123,16 @@ jobs:
         id: just-ci-test
         run: |
           just ci-tests
+      # - name: Build wasms for tests
+      #   id: just-wasm
+      #   run: |
+      #     just wasm
+      #     cargo clean
+      # - name: Run just integration
+      #   id: just-integration
+      #   run: |
+      #     just integration
+      #     cargo clean
   build:
     needs: tag
     runs-on: ${{ matrix.config.os }}

@@ -2773,7 +2773,8 @@
         "enum": [
           "Json",
           "Raw",
-          "FormData"
+          "FormData",
+          "Xml"
         ]
       },
       "HttpMethod": {

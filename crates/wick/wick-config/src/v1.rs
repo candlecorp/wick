@@ -1715,6 +1715,8 @@ pub(crate) enum Codec {
   Raw = 1,
   /// Form Data
   FormData = 2,
+  /// XML Data
+  Xml = 3,
 }
 
 impl Default for Codec {
@@ -1729,6 +1731,7 @@ impl FromPrimitive for Codec {
       0 => Self::Json,
       1 => Self::Raw,
       2 => Self::FormData,
+      3 => Self::Xml,
       _ => {
         return None;
       }
@@ -1740,6 +1743,7 @@ impl FromPrimitive for Codec {
       0 => Self::Json,
       1 => Self::Raw,
       2 => Self::FormData,
+      3 => Self::Xml,
       _ => {
         return None;
       }
