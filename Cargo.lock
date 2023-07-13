@@ -6958,12 +6958,14 @@ dependencies = [
 name = "wick-test"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "assert-json-diff",
  "flow-component",
  "serde",
  "serde-value",
  "serde_json",
  "tap-harness",
+ "test-logger",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -6971,6 +6973,7 @@ dependencies = [
  "wasmrs-codec",
  "wick-config",
  "wick-interface-types",
+ "wick-logger",
  "wick-packet",
 ]
 

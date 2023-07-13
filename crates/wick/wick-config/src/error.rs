@@ -113,6 +113,10 @@ pub enum ManifestError {
   /// Error building a configuration
   #[error(transparent)]
   Builder(#[from] BuilderError),
+
+  /// Error converting configured Packet flags.
+  #[error("Error converting configured Packet flags, use the singular version instead")]
+  InvalidPacketFlags,
 }
 
 #[derive(Error, Debug, Clone, Copy)]

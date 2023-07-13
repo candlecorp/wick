@@ -16,25 +16,29 @@ use crate::error::ManifestError;
 ///
 /// A tests configuration is a collection of shareable and reusable unit tests against wick components and operations.
 pub struct TestConfiguration {
-  #[asset(skip)]
   /// The name of the tests configuration.
+  #[asset(skip)]
+  #[builder(default)]
   pub(crate) name: Option<String>,
 
+  /// The source (i.e. url or file on disk) of the configuration.
   #[asset(skip)]
   #[property(skip)]
-  /// The source (i.e. url or file on disk) of the configuration.
+  #[builder(default)]
   pub(crate) source: Option<PathBuf>,
 
-  #[asset(skip)]
   /// The configuration with which to initialize the component before running tests.
+  #[asset(skip)]
+  #[builder(default)]
   pub(crate) config: Option<LiquidJsonConfig>,
 
-  #[asset(skip)]
   /// A suite of test cases to run against component operations.
+  #[asset(skip)]
+  #[builder(default)]
   pub(crate) cases: Vec<config::TestCase>,
 
-  #[asset(skip)]
   /// The environment this configuration has access to.
+  #[asset(skip)]
   #[builder(default)]
   pub(crate) env: Option<HashMap<String, String>>,
 }

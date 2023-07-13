@@ -1993,10 +1993,16 @@
           "type": "string"
         },
         "flags": {
-          "description": "Any flags set on the packet.",
+          "description": "Any flags set on the packet. Deprecated, use &#x27;flag:&#x27; instead",
           "required": false,
 
           "$ref": "#/$defs/v1/PacketFlags"
+        },
+        "flag": {
+          "description": "The flag set on the packet.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/PacketFlag"
         },
         "value": {
           "description": "The data to send.",
@@ -2019,10 +2025,16 @@
           "type": "string"
         },
         "flags": {
-          "description": "Any flags set on the packet.",
+          "description": "Any flags set on the packet. Deprecated, use &#x27;flag:&#x27; instead",
           "required": false,
 
           "$ref": "#/$defs/v1/PacketFlags"
+        },
+        "flag": {
+          "description": "The flag set on the packet.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/PacketFlag"
         },
         "error": {
           "description": "The error message.",
@@ -2055,6 +2067,11 @@
         }
       },
       "required": []
+    },
+
+    "PacketFlag": {
+      "$anchor": "#v1/PacketFlag",
+      "enum": ["Done", "Open", "Close"]
     },
 
     "SqlComponent": {

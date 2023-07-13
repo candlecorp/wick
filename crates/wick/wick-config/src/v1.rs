@@ -1440,11 +1440,17 @@ pub(crate) enum PacketData {
 pub(crate) struct SuccessPacket {
   /// The name of the input or output this packet is going to or coming from.
   pub(crate) name: String,
-  /// Any flags set on the packet.
+  /// Any flags set on the packet. Deprecated, use &#x27;flag:&#x27; instead
 
+  #[deprecated()]
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) flags: Option<PacketFlags>,
+  /// The flag set on the packet.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) flag: Option<PacketFlag>,
   /// The data to send.
 
   #[serde(default)]
@@ -1458,11 +1464,17 @@ pub(crate) struct SuccessPacket {
 pub(crate) struct ErrorPacket {
   /// The name of the input or output this packet is going to or coming from.
   pub(crate) name: String,
-  /// Any flags set on the packet.
+  /// Any flags set on the packet. Deprecated, use &#x27;flag:&#x27; instead
 
+  #[deprecated()]
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) flags: Option<PacketFlags>,
+  /// The flag set on the packet.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) flag: Option<PacketFlag>,
   /// The error message.
   pub(crate) error: LiquidTemplate,
 }
@@ -1483,6 +1495,48 @@ pub(crate) struct PacketFlags {
 
   #[serde(default)]
   pub(crate) close: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Possible flags that can be set on a packet.
+pub(crate) enum PacketFlag {
+  /// Indicates the port should be considered closed.
+  Done = 0,
+  /// Indicates the opening of a new substream context within the parent stream.
+  Open = 1,
+  /// Indicates the closing of a substream context within the parent stream.
+  Close = 2,
+}
+
+impl Default for PacketFlag {
+  fn default() -> Self {
+    Self::from_u16(0).unwrap()
+  }
+}
+
+impl FromPrimitive for PacketFlag {
+  fn from_i64(n: i64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Done,
+      1 => Self::Open,
+      2 => Self::Close,
+      _ => {
+        return None;
+      }
+    })
+  }
+
+  fn from_u64(n: u64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Done,
+      1 => Self::Open,
+      2 => Self::Close,
+      _ => {
+        return None;
+      }
+    })
+  }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
