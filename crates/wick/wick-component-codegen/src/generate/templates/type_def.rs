@@ -118,15 +118,15 @@ pub(crate) fn gen_enum<'a>(
     .map_or_else(|| quote! {}, |desc| quote! {#[doc = #desc]});
 
   let try_from_strnum_impl = quote! {
-    impl TryFrom<wick_component::serde::enum_repr::StringOrNum> for #name {
+    impl TryFrom<wick_component::serde_util::enum_repr::StringOrNum> for #name {
       type Error = String;
 
-      fn try_from(value: wick_component::serde::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
+      fn try_from(value: wick_component::serde_util::enum_repr::StringOrNum) -> std::result::Result<Self, String> {
         use std::str::FromStr;
         match value {
-          wick_component::serde::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
-          wick_component::serde::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
-          wick_component::serde::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::String(v) => Self::from_str(&v),
+          wick_component::serde_util::enum_repr::StringOrNum::Int(v) => Self::from_str(&v.to_string()),
+          wick_component::serde_util::enum_repr::StringOrNum::Float(v) => Self::from_str(&v.to_string()),
         }
       }
     }
@@ -139,9 +139,9 @@ pub(crate) fn gen_enum<'a>(
   };
 
   let enum_impl = quote! {
-    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     #description
-    #[serde(into = "String", try_from = "wick_component::serde::enum_repr::StringOrNum")]
+    #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     pub enum #name {
       #(#variants,)*
     }
@@ -214,7 +214,7 @@ pub(crate) fn gen_struct<'a>(
   let (derive, default_impl) = if ty.fields.is_empty() {
     (
       quote! {
-        #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, PartialEq)]
+        #[derive(Debug, Clone, Default, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
       },
       quote! {},
     )
@@ -222,7 +222,7 @@ pub(crate) fn gen_struct<'a>(
     let fields = ty.fields.iter().map(f::field_default(config, imported)).collect_vec();
     (
       quote! {
-        #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+        #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
       },
       quote! {
         impl Default for #name {
@@ -301,7 +301,7 @@ pub(crate) fn gen_union<'a>(
     .map_or_else(|| quote! {}, |desc| quote! {#[doc = #desc]});
 
   let item = quote! {
-    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+    #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     #description
     #[serde(untagged)]
     pub enum #name {

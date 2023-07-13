@@ -14,7 +14,7 @@ pub(crate) fn component_config(config: &mut config::Config, fields: Option<Vec<F
   let config_def = fields.map_or_else(
     || {
       quote! {
-        #[derive(Debug, serde::Deserialize, serde::Serialize, Clone, Copy, Default)]
+        #[derive(Debug, ::serde::Deserialize, ::serde::Serialize, Clone, Copy, Default)]
         pub(crate) struct RootConfig {}
       }
     },
@@ -41,7 +41,7 @@ pub(crate) fn component_config(config: &mut config::Config, fields: Option<Vec<F
     #config_def
 
     #[cfg(target_family = "wasm")]
-    #[derive(Debug, serde::Deserialize)]
+    #[derive(Debug, ::serde::Deserialize)]
     pub(crate) struct SetupPayload {
       #[allow(unused)]
       pub(crate) provided: std::collections::HashMap<String,wick_packet::ComponentReference>,

@@ -15,38 +15,31 @@ pub(crate) enum Dependency {
   WickPacket,
 }
 
+// This has become largely useless once most dependencies have consolidated under wick_component.
+// I'm unsure of whether to finish removing it or keep it around.
 impl ToTokens for Dependency {
   fn to_tokens(&self, tokens: &mut TokenStream) {
     match self {
       Dependency::WasmRsRx => {
-        tokens.extend(quote! {
-        pub use wick_component::wasmrs_rx;
-        #[allow(unused)]
-        pub(crate) use wick_component::wasmrs_rx::{Observer,Observable}; });
+        tokens.extend(quote! {});
       }
       Dependency::WasmRsRuntime => {
-        tokens.extend(quote! { pub use wick_component::runtime; });
+        tokens.extend(quote! {});
       }
       Dependency::Chrono => {
-        tokens.extend(quote! { pub use wick_component::datetime; });
+        tokens.extend(quote! {});
       }
-
       Dependency::WasmRs => {
-        tokens.extend(quote! { pub use wick_component::wasmrs; });
+        tokens.extend(quote! {});
       }
       Dependency::WasmRsCodec => {
-        tokens.extend(quote! { pub use wick_component::wasmrs_codec; });
+        tokens.extend(quote! {});
       }
-      Dependency::WickPacket => tokens.extend(quote! { pub use wick_component::packet as wick_packet; }),
-      Dependency::SerdeJson => tokens.extend(quote! {
-        pub use wick_component::Value;
-      }),
-      Dependency::Bytes => tokens.extend(quote! { pub use wick_component::Bytes; }),
+      Dependency::WickPacket => tokens.extend(quote! {}),
+      Dependency::SerdeJson => tokens.extend(quote! {}),
+      Dependency::Bytes => tokens.extend(quote! {}),
       Dependency::AsyncTrait => tokens.extend(quote! { pub use async_trait::async_trait; }),
-      Dependency::WickComponent => tokens.extend(quote! {
-        pub use wick_component;
-        pub use wick_component::StreamExt;
-      }),
+      Dependency::WickComponent => tokens.extend(quote! {}),
     }
   }
 }

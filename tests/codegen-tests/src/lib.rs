@@ -44,7 +44,7 @@ mod test1 {
     use flow_component::{panic_callback, Context};
     use types::http;
     use wick_component::datetime::TimeZone;
-    use wick_component::prelude::*;
+    use wick_component::*;
     use wick_packet::{ContextTransport, FluxChannel, InherentData};
 
     use super::*;

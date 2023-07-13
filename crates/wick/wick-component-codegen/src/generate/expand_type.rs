@@ -92,6 +92,18 @@ pub(crate) fn expand_input_fields(
     .collect_vec()
 }
 
+pub(crate) fn field_names(fields: &[Field]) -> Vec<TokenStream> {
+  fields
+    .iter()
+    .map(|input| {
+      let name = id(&snake(input.name()));
+      quote! {
+        #name
+      }
+    })
+    .collect_vec()
+}
+
 pub(crate) fn expand_field_types(
   config: &mut config::Config,
   fields: &[Field],

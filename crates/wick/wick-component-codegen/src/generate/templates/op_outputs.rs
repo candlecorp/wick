@@ -47,10 +47,15 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
   let output_ports_new = op
     .outputs()
     .iter()
-    .map(|i| {
-      let port_name = &i.name;
-      let port_field_name = id(&snake(&i.name));
-      quote! {#port_field_name: wick_packet::Output::new(#port_name, channel.clone())}
+    .enumerate()
+    .map(|(i, out)| {
+      let port_name = &out.name;
+      let port_field_name = id(&snake(&out.name));
+      if i < op.outputs.len() - 1 {
+        quote! {#port_field_name: wick_packet::Output::new(#port_name, channel.clone())}
+      } else {
+        quote! {#port_field_name: wick_packet::Output::new(#port_name, channel)}
+      }
     })
     .collect_vec();
 

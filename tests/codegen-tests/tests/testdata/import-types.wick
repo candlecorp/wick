@@ -39,6 +39,17 @@ types:
         type: string
       - name: field2
         type: string
+requires:
+  - name: DEP1
+    interface:
+      operations:
+        - name: echo
+          inputs:
+            - name: input
+              type: http::HttpRequest
+          outputs:
+            - name: output
+              type: http::HttpRequest
 component:
   kind: wick/component/composite@v1
   operations:
