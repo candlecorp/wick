@@ -151,10 +151,10 @@ fn route_to_path_item(route: &RestRoute, named: &mut HashSet<String>) -> PathIte
   }
   let oapi_operation = Operation {
     tags: Default::default(),
-    summary: route.config.summary().cloned(),
-    description: route.config.description().cloned(),
+    operation_id: route.config.id().cloned(),
+    summary: None,
+    description: None,
     external_docs: Default::default(),
-    operation_id: Default::default(),
     parameters: Default::default(),
     request_body: Default::default(),
     responses: Responses::default(),

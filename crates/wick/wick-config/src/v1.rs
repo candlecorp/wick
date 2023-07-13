@@ -439,11 +439,11 @@ pub(crate) struct Route {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) methods: Vec<HttpMethod>,
-  /// The name of the route, used for documentation and tooling.
+  /// The unique ID of the route, used for documentation and tooling.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) name: Option<String>,
+  pub(crate) id: Option<String>,
   /// A short description of the route.
 
   #[serde(default)]

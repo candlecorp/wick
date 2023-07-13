@@ -589,7 +589,7 @@ impl TryFrom<v1::Route> for config::RestRoute {
 
   fn try_from(value: v1::Route) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      name: value.name,
+      id: value.id,
       methods: value.methods.map_into(),
       sub_path: value.sub_path,
       operation: value.operation.try_into()?,
@@ -604,7 +604,7 @@ impl TryFrom<config::RestRoute> for v1::Route {
 
   fn try_from(value: config::RestRoute) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      name: value.name,
+      id: value.id,
       methods: value.methods.map_into(),
       sub_path: value.sub_path,
       operation: value.operation.try_into()?,

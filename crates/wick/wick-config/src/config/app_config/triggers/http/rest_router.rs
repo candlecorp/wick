@@ -101,7 +101,7 @@ pub struct Contact {
 pub struct RestRoute {
   /// The name of the route, used for documentation and tooling.
   #[asset(skip)]
-  pub(crate) name: Option<String>,
+  pub(crate) id: Option<String>,
   /// The HTTP methods to serve this route for.
   #[asset(skip)]
   pub(crate) methods: Vec<HttpMethod>,

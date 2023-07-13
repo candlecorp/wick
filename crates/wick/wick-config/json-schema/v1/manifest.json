@@ -603,8 +603,8 @@
             "$ref": "#/$defs/v1/HttpMethod"
           }
         },
-        "name": {
-          "description": "The name of the route, used for documentation and tooling.",
+        "id": {
+          "description": "The unique ID of the route, used for documentation and tooling.",
           "required": false,
 
           "type": "string"
