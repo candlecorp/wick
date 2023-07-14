@@ -16,8 +16,5 @@ jobs:
         with:
           toolchain: nightly
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-
       - name: Clippy check
         run: cargo clippy --workspace --bins
