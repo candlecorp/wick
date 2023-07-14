@@ -19,7 +19,7 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
     let composite = config::CompositeComponentImplementation {
       operations: flows,
       config: Default::default(),
-      expose: None,
+      extends: Default::default(),
     };
     Ok(config::ComponentConfiguration {
       source: None,

@@ -46,7 +46,7 @@ impl RuntimeService {
 
     let mut components = HandlerMap::default();
 
-    let inherit_from = if let ComponentImplementation::Composite(config) = init.manifest.component() {
+    let extends = if let ComponentImplementation::Composite(config) = init.manifest.component() {
       // Initialize any native components for composite components.
       for native_comp in init.native_components.inner() {
         components
@@ -54,7 +54,7 @@ impl RuntimeService {
           .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
       }
 
-      config.inherit()
+      config.extends()
     } else {
       // Instantiate the non-composite component as an exposed, standalone component.
       let component_init = init.child_init(init.manifest.root_config().cloned());
@@ -77,26 +77,26 @@ impl RuntimeService {
           .add(main_component)
           .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
       }
-      None
+      &[]
     };
 
-    if inherit_from.is_some() && !init.manifest.import().keys().any(|k| Some(k) == inherit_from) {
-      return Err(EngineError::RuntimeInit(
-        init.manifest.source().map(Into::into),
-        format!("Inherited component '{}' not found", inherit_from.unwrap()),
-      ));
+    for id in extends {
+      if !init.manifest.import().keys().any(|k| k == id) {
+        return Err(EngineError::RuntimeInit(
+          init.manifest.source().map(Into::into),
+          format!("Inherited component '{}' not found", id),
+        ));
+      }
     }
 
-    for component in init.manifest.import().values() {
-      let component_init = init.child_init(component.config().cloned());
-      if let Some(component) = instantiate_import(component, component_init).await? {
-        if let Some(inherit) = inherit_from {
-          if inherit == component.namespace() {
-            component.expose();
-            span.in_scope(|| {
-              debug!(component = inherit, "exposing inherited component");
-            });
-          }
+    for binding in init.manifest.import().values() {
+      let component_init = init.child_init(binding.config().cloned());
+      if let Some(component) = instantiate_import(binding, component_init).await? {
+        if extends.iter().any(|n| n == component.namespace()) {
+          component.expose();
+          span.in_scope(|| {
+            debug!(component = component.namespace(), "extending imported component");
+          });
         }
         components
           .add(component)
