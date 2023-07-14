@@ -1523,8 +1523,21 @@
               "$ref": "#/$defs/v1/Field"
             }
           },
-          "inherit": {
-            "description": "A component to inherit operations from if they are not defined in this component.",
+          "experimental": {
+            "description": "Experimental configuration for composite components.",
+            "required": false,
+            "$ref": "#/$defs/v1/ExperimentalCompositeConfig"
+          }
+        },
+        "required": []
+      },
+      "ExperimentalCompositeConfig": {
+        "$anchor": "#v1/ExperimentalCompositeConfig",
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "expose": {
+            "description": "A component whose operations you want to expose from this component.",
             "required": false,
             "type": "string"
           }

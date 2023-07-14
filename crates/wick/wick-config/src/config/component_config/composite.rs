@@ -28,7 +28,7 @@ pub struct CompositeComponentImplementation {
   /// A component id to inherit operations from.
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) inherit: Option<String>,
+  pub(crate) expose: Option<String>,
 }
 
 impl CompositeComponentImplementation {
