@@ -1,0 +1,26 @@
+name: db_cli
+kind: wick/app@v1
+metadata:
+  description: Example showing how to wire together a WebAssembly component with a SQL component into a CLI Trigger.
+  version: 0.0.1
+  authors:
+    - 'Wick Maintainers'
+  vendors:
+    - 'Candle Corporation'
+  licenses:
+    - Apache-2.0
+resources:
+  - name: DBADDR
+    resource:
+      kind: wick/resource/url@v1
+      url: postgres://postgres:{{ ctx.env.TEST_PASSWORD }}@{{ ctx.env.TEST_HOST }}:{{ ctx.env.POSTGRES_PORT }}/wick_test
+import:
+  - name: CLI
+    component:
+      kind: wick/component/manifest@v1
+      ref: ../composite-inherit.wick
+      provide:
+        db: MYDB
+triggers:
+  - kind: wick/trigger/cli@v1
+    operation: CLI::main

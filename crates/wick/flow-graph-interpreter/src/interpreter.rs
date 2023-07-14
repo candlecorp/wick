@@ -28,7 +28,7 @@ use crate::interpreter::components::component_component::ComponentComponent;
 use crate::interpreter::components::null_component::NullComponent;
 use crate::interpreter::components::self_component::SelfComponent;
 use crate::interpreter::executor::error::ExecutionError;
-use crate::{NamespaceHandler, Observer, SharedHandler};
+use crate::{NamespaceHandler, Observer};
 
 #[must_use]
 #[derive()]
@@ -41,7 +41,7 @@ pub struct Interpreter {
   dispatcher: InterpreterDispatchChannel,
   namespace: Option<String>,
   callback: Arc<RuntimeCallback>,
-  exposed_ops: HashMap<String, SharedHandler>, // A map from op name to the ns of the handler that exposes it.
+  exposed_ops: HashMap<String, NamespaceHandler>, // A map from op name to the ns of the handler that exposes it.
   span: Span,
 }
 
@@ -79,10 +79,10 @@ impl Interpreter {
         exposed.iter().map(|h| h.namespace().to_owned()).collect(),
       ));
     }
-    let signature = exposed.get(0).map(|handler| {
+    let signature = exposed.get(0).copied().map(|handler| {
       for op in &handler.component.signature().operations {
         trace!(operation = op.name, "interpreter:exposing operation");
-        exposed_ops.insert(op.name.clone(), handler.component.clone());
+        exposed_ops.insert(op.name.clone(), handler.clone());
       }
       handler.component.signature().clone()
     });
@@ -219,7 +219,7 @@ impl Interpreter {
 impl Component for Interpreter {
   fn handle(
     &self,
-    invocation: Invocation,
+    mut invocation: Invocation,
     config: Option<RuntimeConfig>,
     cb: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, ComponentError>> {
@@ -238,9 +238,12 @@ impl Component for Interpreter {
       let stream = match &invocation.target {
         Entity::Operation(ns, _) => {
           if ns == SelfComponent::ID || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
-            if let Some(component) = from_exposed {
-              span.in_scope(|| trace!(entity=%invocation.target, "invoke::exposed::operation"));
-              return component
+            if let Some(handler) = from_exposed {
+              let new_target = Entity::operation(handler.namespace(), invocation.target.operation_id());
+              span.in_scope(|| trace!(original_target=%invocation.target, %new_target, "invoke::exposed::operation"));
+              invocation.target = new_target;
+              return handler
+                .component
                 .handle(invocation, config, cb)
                 .instrument(span)
                 .await

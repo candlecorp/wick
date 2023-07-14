@@ -7,7 +7,7 @@ use crate::{BoxFuture, HandlerMap};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Error {
-  #[error("Component with id '{0}' not found on this network. This resource handles ids: {}", .1.join(", "))]
+  #[error("Component with id '{0}' not found on this component. This resource handles ids: {}", .1.join(", "))]
   ComponentNotFound(String, Vec<String>),
 }
 

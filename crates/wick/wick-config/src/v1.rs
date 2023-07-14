@@ -762,6 +762,11 @@ pub(crate) struct CompositeComponentConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) with: Vec<Field>,
+  /// A component to inherit operations from if they are not defined in this component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) inherit: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

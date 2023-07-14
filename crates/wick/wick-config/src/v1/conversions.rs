@@ -287,6 +287,7 @@ impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentImplemen
     Ok(Self {
       operations: value.operations.try_map_into()?,
       config: value.with.try_map_into()?,
+      inherit: value.inherit,
     })
   }
 }
@@ -297,6 +298,7 @@ impl TryFrom<CompositeComponentImplementation> for v1::CompositeComponentConfigu
     Ok(Self {
       operations: value.operations.try_map_into()?,
       with: value.config.try_map_into()?,
+      inherit: value.inherit,
     })
   }
 }

@@ -13,7 +13,7 @@ use crate::{BoxFuture, HandlerMap};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Error {
-  #[error("Schematic {0} not found on this network")]
+  #[error("Operation '{0}' not found on this component")]
   SchematicNotFound(String),
 }
 

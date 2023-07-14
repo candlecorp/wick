@@ -24,6 +24,11 @@ pub struct CompositeComponentImplementation {
   #[asset(skip)]
   #[builder(default)]
   pub(crate) config: Vec<Field>,
+
+  /// A component id to inherit operations from.
+  #[asset(skip)]
+  #[builder(default)]
+  pub(crate) inherit: Option<String>,
 }
 
 impl CompositeComponentImplementation {

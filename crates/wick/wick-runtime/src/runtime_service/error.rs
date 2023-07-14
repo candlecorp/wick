@@ -5,10 +5,18 @@ use wick_packet::Entity;
 
 use crate::dev::prelude::*;
 
+fn display_path(pb: &Option<PathBuf>) -> String {
+  pb.as_ref()
+    .map_or_else(|| "<unknown>".into(), |p| p.to_string_lossy().to_string())
+}
+
 #[derive(Error, Debug)]
 pub enum EngineError {
-  #[error("Could not start interpreter from '{}': {1}", .0.as_ref().map_or_else(|| "<unknown>".into(), |p| p.to_string_lossy().to_string()))]
+  #[error("Could not start interpreter from '{}': {1}", display_path(.0))]
   InterpreterInit(Option<PathBuf>, Box<flow_graph_interpreter::error::InterpreterError>),
+
+  #[error("Could not start runtime from '{}': {1}", display_path(.0))]
+  RuntimeInit(Option<PathBuf>, String),
 
   #[error("Could not complete building the runtime. Component {0} failed to initialize: {1}")]
   ComponentInit(String, String),

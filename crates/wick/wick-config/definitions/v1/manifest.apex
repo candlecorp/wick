@@ -420,6 +420,9 @@ type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
 
   "Configuration necessary to provide when instantiating the component."
   with: [Field]
+
+  "A component to inherit operations from if they are not defined in this component."
+  inherit: string?
 }
 
 "A component whose implementation is a WasmRS WebAssembly module."

@@ -7,7 +7,7 @@ import:
   - name: baseline
     component:
       kind: wick/component/manifest@v1
-      ref: ../../../../integration/test-baseline-component/component.yaml
+      ref: ../../../../../integration/test-baseline-component/component.yaml
       with:
         default_err: '...'
 component:

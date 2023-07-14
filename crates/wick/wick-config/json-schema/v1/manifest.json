@@ -1107,6 +1107,12 @@
           "items": {
             "$ref": "#/$defs/v1/Field"
           }
+        },
+        "inherit": {
+          "description": "A component to inherit operations from if they are not defined in this component.",
+          "required": false,
+
+          "type": "string"
         }
       },
       "required": []

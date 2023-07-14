@@ -55,7 +55,7 @@ pub enum Error {
   #[error("Could not retrieve a complete set of packets. Stream '{0}' completed or failed before providing a packet.")]
   StreamMapMissing(String /* port */),
 
-  #[error("Data provided for component '{0}' does not match expected signature, {1}")]
+  #[error("Configuration provided for component '{0}' does not match expected signature, {1}")]
   Signature(String, String),
 
   #[cfg(feature = "datetime")]

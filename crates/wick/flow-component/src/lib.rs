@@ -112,7 +112,7 @@ pub struct ComponentError {
 impl std::error::Error for ComponentError {}
 impl std::fmt::Display for ComponentError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "Component error: {}", self.source)
+    f.write_str(self.source.to_string().as_str())
   }
 }
 impl ComponentError {
