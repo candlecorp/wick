@@ -421,14 +421,8 @@ type CompositeComponentConfiguration @tagged("wick/component/composite@v1") {
   "Configuration necessary to provide when instantiating the component."
   with: [Field]
 
-  "Experimental configuration for composite components."
-  experimental: ExperimentalCompositeConfig?
-}
-
-"Settings that may change in the future. Use at your own risk."
-type ExperimentalCompositeConfig {
-  "A component whose operations you want to expose from this component."
-  expose: string?
+  "A component or components whose operations you want to inherit from."
+  extends: [string]
 }
 
 "A component whose implementation is a WasmRS WebAssembly module."

@@ -762,22 +762,11 @@ pub(crate) struct CompositeComponentConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) with: Vec<Field>,
-  /// Experimental configuration for composite components.
+  /// A component or components whose operations you want to inherit from.
 
   #[serde(default)]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) experimental: Option<ExperimentalCompositeConfig>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-/// Settings that may change in the future. Use at your own risk.
-pub(crate) struct ExperimentalCompositeConfig {
-  /// A component whose operations you want to expose from this component.
-
-  #[serde(default)]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) expose: Option<String>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) extends: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

@@ -25,10 +25,10 @@ pub struct CompositeComponentImplementation {
   #[builder(default)]
   pub(crate) config: Vec<Field>,
 
-  /// A component id to inherit operations from.
+  /// A component or components this component inherits operations from.
   #[asset(skip)]
   #[builder(default)]
-  pub(crate) expose: Option<String>,
+  pub(crate) extends: Vec<String>,
 }
 
 impl CompositeComponentImplementation {

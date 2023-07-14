@@ -7,5 +7,4 @@ import:
       ref: ./flow_with_inputless_component.yaml
 component:
   kind: wick/component/composite@v1
-  experimental:
-    expose: COMP
+  extends: [COMP]

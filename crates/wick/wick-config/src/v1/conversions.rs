@@ -287,7 +287,7 @@ impl TryFrom<v1::CompositeComponentConfiguration> for CompositeComponentImplemen
     Ok(Self {
       operations: value.operations.try_map_into()?,
       config: value.with.try_map_into()?,
-      expose: value.experimental.and_then(|u| u.expose),
+      extends: value.extends,
     })
   }
 }
@@ -298,9 +298,7 @@ impl TryFrom<CompositeComponentImplementation> for v1::CompositeComponentConfigu
     Ok(Self {
       operations: value.operations.try_map_into()?,
       with: value.config.try_map_into()?,
-      experimental: value
-        .expose
-        .map(|expose| v1::ExperimentalCompositeConfig { expose: Some(expose) }),
+      extends: value.extends,
     })
   }
 }
