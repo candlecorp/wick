@@ -262,7 +262,7 @@ mod integration_test {
 
   #[test_logger::test(tokio::test)]
   async fn it_works() -> Result<()> {
-    let docker_host = std::env::var("DOCKER_HOST").unwrap();
+    let docker_host = std::env::var("TEST_HOST").unwrap();
     let pg_host = docker_host.split(':').next().unwrap();
     let password = std::env::var("TEST_PASSWORD").unwrap();
     let port = std::env::var("POSTGRES_PORT").unwrap();
