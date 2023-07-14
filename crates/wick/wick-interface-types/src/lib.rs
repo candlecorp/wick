@@ -102,7 +102,9 @@ mod traits;
 
 mod signatures;
 
-pub use field::{Field, FieldValue};
+pub use field::Field;
+#[cfg(feature = "value")]
+pub use field::FieldValue;
 pub use signatures::*;
 pub use traits::*;
 pub use types::*;

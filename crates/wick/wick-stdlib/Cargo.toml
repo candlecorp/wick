@@ -11,7 +11,7 @@ description = "The default standard library for the Wick project."
 
 [dependencies]
 wick-packet = { workspace = true }
-flow-component = { workspace = true }
+flow-component = { workspace = true, features = ["invocation"] }
 wick-rpc = { workspace = true }
 wick-interface-types = { workspace = true, features = ["parser"] }
 seeded-random = { workspace = true, features = ["uuid"] }
