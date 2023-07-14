@@ -103,8 +103,8 @@ where
   T: std::fmt::Debug,
   T: LocalAwareSend,
 {
-  #[cfg(feature = "invocation")]
   /// Create a new context.
+  #[cfg(feature = "invocation")]
   pub fn new(config: T, inherent: &InherentData, callback: Arc<crate::RuntimeCallback>) -> Self {
     Self {
       inherent: InherentContext {
@@ -116,9 +116,9 @@ where
     }
   }
 
-  #[cfg(not(feature = "invocation"))]
   /// Create a new context.
-  pub fn new(config: T, inherent: InherentData) -> Self {
+  #[cfg(not(feature = "invocation"))]
+  pub fn new(config: T, inherent: &InherentData) -> Self {
     Self {
       inherent: InherentContext {
         rng: Random::from_seed(Seed::unsafe_new(inherent.seed)),

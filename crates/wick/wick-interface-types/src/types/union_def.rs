@@ -20,7 +20,7 @@ pub struct UnionDefinition {
 }
 
 impl UnionDefinition {
-  /// Constructor for [EnumDefinition]
+  /// Constructor for [UnionDefinition]
   pub fn new<T: AsRef<str>>(name: T, types: Vec<Type>) -> Self {
     Self {
       name: name.as_ref().to_owned(),

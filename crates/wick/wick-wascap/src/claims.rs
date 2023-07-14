@@ -23,7 +23,7 @@ pub enum ClaimsOptions {
 }
 
 impl ClaimsOptions {
-  /// Create a new [v0::ClaimsOptions] struct.
+  /// Create a new v0 claims.
   #[must_use]
   pub fn v0(
     revision: Option<u32>,
@@ -39,7 +39,7 @@ impl ClaimsOptions {
     })
   }
 
-  /// Create a new [v1::ClaimsOptions] struct.
+  /// Create a new v1 claims.
   #[must_use]
   pub fn v1(version: Option<String>, expires_in_days: Option<u64>, not_before_days: Option<u64>) -> Self {
     Self::V1(v1::ClaimsOptions {
