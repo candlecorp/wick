@@ -602,7 +602,7 @@ mod test {
     #[test_logger::test(tokio::test)]
     async fn test_raw_router() -> Result<()> {
       std::env::set_var("HTTP_PORT", PORT);
-      let app_config = load_test_manifest("app-http-server-wasm.wick")
+      let app_config = load_test_manifest("app_config/app-http-server-wasm.wick")
         .await?
         .try_app_config()?;
 

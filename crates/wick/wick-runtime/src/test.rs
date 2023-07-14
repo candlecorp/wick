@@ -12,7 +12,9 @@ use crate::test::prelude::*;
 use crate::{Runtime, RuntimeBuilder};
 
 pub(crate) async fn init_engine_from_yaml(path: &str) -> Result<(Runtime, uuid::Uuid)> {
-  let def = WickConfiguration::load_from_file(path)
+  let crate_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+  let def = WickConfiguration::load_from_file(crate_dir.join("tests").join(path))
     .await?
     .finish()?
     .try_component_config()?;
@@ -26,7 +28,7 @@ pub(crate) async fn init_engine_from_yaml(path: &str) -> Result<(Runtime, uuid::
 
 pub(crate) async fn load_test_manifest(name: &str) -> Result<WickConfiguration> {
   let crate_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-  let manifest_dir = crate_dir.join("../../../tests/testdata/manifests");
+  let manifest_dir = crate_dir.join("tests/manifests/v1");
   let yaml = manifest_dir.join(name);
   let mut config = wick_config::config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default()).await?;
 

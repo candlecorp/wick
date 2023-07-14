@@ -4,7 +4,7 @@ network:
   collections:
     - namespace: subnet
       kind: Network
-      reference: ./manifests/v0/sub-network-child.yaml
+      reference: ./tests/manifests/v0/sub-network-child.yaml
   schematics:
     - name: parent
       instances:

@@ -195,8 +195,7 @@ _run-wasm-task task:
 
 # Run `wick` tests for db components
 _wick-db-tests:
-  cargo run -p wick-cli -- test ./examples/db/flow-with-postgres.wick
-  cargo run -p wick-cli -- test ./examples/db/postgres-numeric.wick
+  cargo run -p wick-cli -- test ./examples/db/postgres-numeric-tests.wick
 
 # Run `wick` tests for http components
 _wick-http-tests:
@@ -205,6 +204,7 @@ _wick-http-tests:
 # Run `wick` tests for generic components
 _wick-component-tests:
   cargo run -p wick-cli -- test ./examples/components/hello-world.wick
+  cargo run -p wick-cli -- test ./examples/components/composite-db-import.wick
 
 # Run component-codegen unit tests
 _codegen-tests:

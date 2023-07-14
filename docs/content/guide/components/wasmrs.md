@@ -1,7 +1,7 @@
 ---
 title: WasmRS Components
 weight: 1
-file: data/examples/db/wasm-calling-postgres.wick
+file: data/examples/cli/wasm-calling-postgres.wick
 ref: wasmcomponentconfiguration
 description: A component whose implementation is a WebAssembly module leveraging the wasmRS RSocket protocol.
 ---

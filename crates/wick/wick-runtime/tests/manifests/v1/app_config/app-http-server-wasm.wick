@@ -17,4 +17,4 @@ triggers:
           name: http_handler
           component:
             kind: wick/component/manifest@v1
-            ref: ../../../crates/integration/test-http-trigger-component/component.yaml
+            ref: ../../../../../../integration/test-http-trigger-component/component.yaml

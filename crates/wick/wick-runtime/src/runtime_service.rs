@@ -12,7 +12,7 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use utils::{assert_constraints, instantiate_import};
 use uuid::Uuid;
-use wick_config::config::{ComponentDefinition, ComponentKind};
+use wick_config::config::{ComponentDefinition, ComponentImplementation};
 
 use self::utils::instantiate_component;
 use crate::components::make_link_callback;
@@ -46,13 +46,15 @@ impl RuntimeService {
 
     let mut components = HandlerMap::default();
 
-    if init.manifest.component().kind() == ComponentKind::Composite {
+    let inherit_from = if let ComponentImplementation::Composite(config) = init.manifest.component() {
       // Initialize any native components for composite components.
       for native_comp in init.native_components.inner() {
         components
           .add(native_comp(init.seed())?)
           .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
       }
+
+      config.inherit()
     } else {
       // Instantiate the non-composite component as an exposed, standalone component.
       let component_init = init.child_init(init.manifest.root_config().cloned());
@@ -75,13 +77,29 @@ impl RuntimeService {
           .add(main_component)
           .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
       }
+      None
+    };
+
+    if inherit_from.is_some() && !init.manifest.import().keys().any(|k| Some(k) == inherit_from) {
+      return Err(EngineError::RuntimeInit(
+        init.manifest.source().map(Into::into),
+        format!("Inherited component '{}' not found", inherit_from.unwrap()),
+      ));
     }
 
     for component in init.manifest.import().values() {
       let component_init = init.child_init(component.config().cloned());
-      if let Some(p) = instantiate_import(component, component_init).await? {
+      if let Some(component) = instantiate_import(component, component_init).await? {
+        if let Some(inherit) = inherit_from {
+          if inherit == component.namespace() {
+            component.expose();
+            span.in_scope(|| {
+              debug!(component = inherit, "exposing inherited component");
+            });
+          }
+        }
         components
-          .add(p)
+          .add(component)
           .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
       }
     }

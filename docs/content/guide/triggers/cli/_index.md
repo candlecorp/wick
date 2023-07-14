@@ -1,7 +1,7 @@
 ---
 title: CLI Trigger
 weight: 3
-file: data/examples/db/wasm-calling-postgres.wick
+file: data/examples/cli/wasm-calling-postgres.wick
 description: A trigger whose events are initiated upon CLI execution and whose operations produce exit codes.
 ref: clitrigger
 ---

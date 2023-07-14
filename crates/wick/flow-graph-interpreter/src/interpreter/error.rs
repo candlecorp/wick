@@ -18,7 +18,7 @@ pub enum Error {
   #[error("Could not find operation '{}' ({0}). Known operations are: {}",.0.operation_id(), .1.join(", "))]
   OpNotFound(Entity, Vec<String>),
 
-  #[error("Could not find target '{}' ({0}). Namespaces handled by this resource are: {}", .0.operation_id(), .1.join(", "))]
+  #[error("Could not find component '{}' ({0}). Namespaces handled by this resource are: {}", .0.component_id(), .1.join(", "))]
   TargetNotFound(Entity, Vec<String>),
 
   #[error("Error shutting down component: {0}")]

@@ -1,0 +1,10 @@
+name: composite_inherit
+kind: wick/component@v1
+import:
+  - name: COMP
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./flow_with_inputless_component.yaml
+component:
+  kind: wick/component/composite@v1
+  inherit: COMP

@@ -33,7 +33,7 @@ async fn test_panic() -> Result<()> {
 async fn test_error() -> Result<()> {
   test_failure(
     "./tests/manifests/v0/bad-cases/error.yaml",
-    "Operation wick://test/error failed: Component error: This operation always errors",
+    "Operation wick://test/error failed: This operation always errors",
   )
   .await
 }

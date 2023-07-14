@@ -279,7 +279,9 @@ mod test {
     #[test_logger::test(tokio::test)]
     async fn rest_errors() -> Result<()> {
       std::env::set_var("HTTP_PORT", PORT);
-      let app_config = load_test_manifest("rest-router-errors.wick").await?.try_app_config()?;
+      let app_config = load_test_manifest("app_config/rest-router-errors.wick")
+        .await?
+        .try_app_config()?;
 
       let trigger = Http::default();
       let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;

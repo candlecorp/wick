@@ -44,7 +44,6 @@ triggers:
       - kind: wick/router/rest@v1
         path: /
         routes:
-          # - uri: '/this/{first:string}/some/{second:u32}?third:string[]&fourth:bool' # TODO: fix broken test
-          - uri: '/this/{first:string}/some/{second:u32}?third:string&fourth:bool'
+          - sub_path: '/this/{first:string}/some/{second:u32}?third:string&fourth:bool'
             operation: sample::echo
             description: 'Echoes inputs first, second, third, and fourth back as JSON'

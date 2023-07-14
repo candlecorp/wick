@@ -1,10 +1,15 @@
 name: mycli
 kind: wick/component@v1
+metadata:
+  version: 0.0.1
+  description: Example showing how to import a DB component and use it in a flow.
+  licenses:
+    - Apache-2.0
 import:
   - name: MYDB
     component:
       kind: wick/component/manifest@v1
-      ref: ./postgres-component.wick
+      ref: ../db/postgres-component.wick
       with:
         password: '{{ ctx.root_config.password }}'
         host: '{{ ctx.root_config.host }}'
