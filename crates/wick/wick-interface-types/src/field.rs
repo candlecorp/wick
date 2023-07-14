@@ -17,6 +17,7 @@ pub struct Field {
   pub ty: Type,
 
   /// Whether the field is required.
+  #[cfg(feature = "value")]
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub default: Option<serde_json::Value>,
 
@@ -34,6 +35,7 @@ impl Field {
     Self {
       name: name.as_ref().to_owned(),
       description: None,
+      #[cfg(feature = "value")]
       default: None,
       required: true,
       ty,
@@ -59,6 +61,7 @@ impl Field {
 
   /// Get the default value of the field
   #[must_use]
+  #[cfg(feature = "value")]
   pub fn default(&self) -> Option<&serde_json::Value> {
     self.default.as_ref()
   }
@@ -71,6 +74,7 @@ impl Field {
 
   /// Consume the [Field] and return a [FieldValue] with the given value.
   #[must_use]
+  #[cfg(feature = "value")]
   pub fn with_value(self, value: impl Into<serde_json::Value>) -> FieldValue {
     FieldValue::new(self, value.into())
   }
@@ -85,6 +89,7 @@ impl std::fmt::Display for Field {
 }
 
 /// A field and its value.
+#[cfg(feature = "value")]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct FieldValue {
   /// The field.
@@ -93,6 +98,7 @@ pub struct FieldValue {
   pub value: serde_json::Value,
 }
 
+#[cfg(feature = "value")]
 impl FieldValue {
   /// Create a new field value.
   #[must_use]

@@ -45,7 +45,7 @@ pub trait RenderConfiguration {
   /// The configuration source for the implementer.
   type ConfigSource: std::fmt::Debug;
 
-  /// The `decode_config` function decodes a [GenericConfig] into the implementer's configuration type.
+  /// The `decode_config` function decodes a [RuntimeConfig] into the implementer's configuration type.
   fn decode_config(data: Option<Self::ConfigSource>) -> Result<Self::Config, ComponentError>;
 }
 

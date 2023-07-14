@@ -114,12 +114,12 @@ pub mod datetime {
 }
 //
 //
-/// Re-export of [serde_json] utilities;
+/// Re-export of serde_json utilities;
 #[cfg(feature = "json")]
 pub use serde_json::{from_slice, from_str, from_value, json, to_value, Map, Value};
 //
 //
-/// Re-export of [tokio_stream] utilities;
+/// Re-export of tokio_stream utilities;
 pub use tokio_stream::{empty, iter as iter_raw, once as once_raw, Stream, StreamExt};
 //
 //

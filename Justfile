@@ -131,6 +131,10 @@ check-unused:
 sanity: early-errors
   just unit-tests
 
+# Build the document site
+docsite:
+  cd docs && hugo --minify
+
 # Run the development hugo server
 devdocs:
   cd docs && hugo serve --disableFastRender --cleanDestinationDir --ignoreCache --gc

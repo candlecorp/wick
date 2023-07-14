@@ -9,7 +9,7 @@ description = "Generic implementation of a wick RPC server."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 wick-rpc = { workspace = true }
-flow-component = { workspace = true }
+flow-component = { workspace = true, features = ["invocation"] }
 tonic = { workspace = true, features = ["tls"] }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }
 tokio-stream = { workspace = true, features = ["net"] }

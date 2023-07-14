@@ -90,7 +90,7 @@ pub enum ManifestError {
   #[error("Could not render configuration template: {0}")]
   ConfigurationTemplate(String),
 
-  /// Passed [RuntimeConfig] is invalid for the configuration required by this component.
+  /// Passed [wick_packet::RuntimeConfig] is invalid for the configuration required by this component.
   #[error(transparent)]
   ConfigurationInvalid(#[from] wick_packet::Error),
 

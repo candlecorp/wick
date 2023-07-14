@@ -18,6 +18,7 @@ node_modules
 crates/wick-rpc/src/generated/wick.rs
 crates/**/src/generated/mod.rs
 /crates/integration/*/build
+docs/static/rustdoc/
 
 
 # misc

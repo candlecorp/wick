@@ -127,7 +127,7 @@ impl TestPacket {
   }
 }
 
-/// A utility wrapper for an [Option<PacketFlag>] that allows for more ergonomic assertions.
+/// A utility wrapper for an [Option]-wrapped [PacketFlag] that allows for more ergonomic assertions.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MaybePacketFlag(Option<PacketFlag>);
 

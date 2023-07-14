@@ -1,0 +1,33 @@
+name: Docs check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: install protobuf
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustc, cargo, rust-docs
+
+      - uses: extractions/setup-just@v1
+
+      - name: Build rustdocs
+        run: just rustdoc
+
+      - name: Build doc site
+        run: just docsite

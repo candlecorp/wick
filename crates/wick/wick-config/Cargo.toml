@@ -14,7 +14,11 @@ wick-packet = { workspace = true, default-features = false, features = [
   "validation",
   "std"
 ] }
-wick-interface-types = { workspace = true, features = ["yaml", "parser"] }
+wick-interface-types = { workspace = true, features = [
+  "yaml",
+  "parser",
+  "value"
+] }
 wick-asset-reference = { workspace = true }
 regex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

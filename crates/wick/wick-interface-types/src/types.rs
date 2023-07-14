@@ -9,7 +9,6 @@ mod struct_def;
 mod union_def;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 pub use self::enum_def::{EnumDefinition, EnumVariant};
 pub use self::struct_def::StructDefinition;
@@ -153,20 +152,20 @@ impl Type {
       Type::String => TypeId::of::<String>(),
       Type::Datetime => TypeId::of::<String>(),
       Type::Bytes => TypeId::of::<Vec<u8>>(),
-      Type::Named(_) => TypeId::of::<Value>(),
+      Type::Named(_) => TypeId::of::<serde_json::Value>(),
       Type::List { .. } => TypeId::of::<Vec<Box<dyn std::any::Any>>>(),
       Type::Optional { .. } => TypeId::of::<Option<Box<dyn std::any::Any>>>(),
       Type::Map { .. } => TypeId::of::<std::collections::HashMap<Box<dyn std::any::Any>, Box<dyn std::any::Any>>>(),
-      Type::Link { .. } => TypeId::of::<Value>(),
-      Type::Object => TypeId::of::<Value>(),
+      Type::Link { .. } => TypeId::of::<serde_json::Value>(),
+      Type::Object => TypeId::of::<serde_json::Value>(),
       Type::AnonymousStruct(_) => unimplemented!(),
     }
   }
 
   #[cfg(feature = "value")]
-  pub fn coerce_str<'a>(&self, value: &'a str) -> Result<Value, &'a str> {
+  pub fn coerce_str<'a>(&self, value: &'a str) -> Result<serde_json::Value, &'a str> {
     let val = match self {
-      Type::String => Value::String(value.to_owned()),
+      Type::String => serde_json::Value::String(value.to_owned()),
       Type::U8
       | Type::U16
       | Type::U32
@@ -176,29 +175,29 @@ impl Type {
       | Type::I32
       | Type::I64
       | Type::F32
-      | Type::F64 => Value::Number(value.parse().map_err(|_| value)?),
-      Type::Bool => Value::Bool(value.parse().map_err(|_| value)?),
+      | Type::F64 => serde_json::Value::Number(value.parse().map_err(|_| value)?),
+      Type::Bool => serde_json::Value::Bool(value.parse().map_err(|_| value)?),
       Type::Object => match serde_json::from_str(value) {
         Ok(v) => v,
         Err(_) => serde_json::from_str(&format!("\"{}\"", value)).map_err(|_| value)?,
       },
       Type::List { ty } => {
-        let val: Value = serde_json::from_str(value).map_err(|_| value)?;
+        let val: serde_json::Value = serde_json::from_str(value).map_err(|_| value)?;
         if val.is_array() {
           val
         } else {
-          Value::Array(vec![ty.coerce_str(value)?])
+          serde_json::Value::Array(vec![ty.coerce_str(value)?])
         }
       }
-      Type::Datetime => Value::String(value.to_owned()),
-      Type::Bytes => Value::String(value.to_owned()),
-      Type::Named(_) => Value::Object(serde_json::from_str(value).map_err(|_| value)?),
+      Type::Datetime => serde_json::Value::String(value.to_owned()),
+      Type::Bytes => serde_json::Value::String(value.to_owned()),
+      Type::Named(_) => serde_json::Value::Object(serde_json::from_str(value).map_err(|_| value)?),
       Type::Optional { ty } => {
-        return Ok(ty.coerce_str(value).unwrap_or(Value::Null));
+        return Ok(ty.coerce_str(value).unwrap_or(serde_json::Value::Null));
       }
       Type::Map { .. } => serde_json::from_str(value).map_err(|_| value)?,
       Type::Link { .. } => unimplemented!(),
-      Type::AnonymousStruct(_) => Value::Object(serde_json::from_str(value).map_err(|_| value)?),
+      Type::AnonymousStruct(_) => serde_json::Value::Object(serde_json::from_str(value).map_err(|_| value)?),
     };
     Ok(val)
   }
@@ -346,7 +345,7 @@ mod test {
   #[case(TS::U32, "48", json!(48))]
   #[case(TS::List{ty:b(TS::U32)}, "48", json!([48]))]
   #[case(TS::List{ty:b(TS::String)}, "48", json!(["48"]))]
-  fn test_coerce(#[case] ty: Type, #[case] string: &str, #[case] json: Value) -> Result<()> {
+  fn test_coerce(#[case] ty: Type, #[case] string: &str, #[case] json: serde_json::Value) -> Result<()> {
     let val = ty.coerce_str(string).unwrap();
 
     assert_eq!(val, json);

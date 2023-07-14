@@ -43,7 +43,7 @@ pub enum Error {
   #[error("Could not retrieve configuration item '{0}'")]
   ContextKey(String),
 
-  /// Returned when trying to decode a non-JSON object into [crate::GenericConfig].
+  /// Returned when trying to decode a non-JSON object into [crate::RuntimeConfig].
   #[error("Can only convert JSON Objects to a operation and component configuration, got '{0}'")]
   BadJson(serde_json::Value),
 
