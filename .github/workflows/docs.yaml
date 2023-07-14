@@ -18,6 +18,11 @@ jobs:
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
 
+      - name: install protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Rust toolchain cache
         uses: actions/cache@v3
         with:
