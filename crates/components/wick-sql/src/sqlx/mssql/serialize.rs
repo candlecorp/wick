@@ -192,7 +192,7 @@ mod integration_test {
   }
 
   async fn connect() -> MssqlConnection {
-    let docker_host = std::env::var("DOCKER_HOST").unwrap();
+    let docker_host = std::env::var("TEST_HOST").unwrap();
     let db_host = docker_host.split(':').next().unwrap();
     let password = std::env::var("TEST_PASSWORD").unwrap();
     let port = std::env::var("MSSQL_PORT").unwrap();

@@ -38,7 +38,7 @@ mod integration_test {
   use crate::SqlXComponent;
 
   async fn init_mssql_component() -> Result<SqlXComponent> {
-    let docker_host = std::env::var("DOCKER_HOST").unwrap();
+    let docker_host = std::env::var("TEST_HOST").unwrap();
     let password = std::env::var("TEST_PASSWORD").unwrap();
     let db_host = docker_host.split(':').next().unwrap();
     let port = std::env::var("MSSQL_PORT").unwrap();
