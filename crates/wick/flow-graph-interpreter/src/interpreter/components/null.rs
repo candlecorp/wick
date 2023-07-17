@@ -5,11 +5,20 @@ use tokio_stream::StreamExt;
 use wick_interface_types::{operation, ComponentSignature};
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
+use crate::graph::types::Node;
+use crate::graph::NodeDecorator;
 use crate::BoxFuture;
 
 #[derive(Debug)]
 pub(crate) struct NullComponent {
   signature: ComponentSignature,
+}
+
+impl NodeDecorator for NullComponent {
+  fn decorate(node: &mut Node) -> Result<(), String> {
+    node.add_input("input");
+    Ok(())
+  }
 }
 
 impl NullComponent {

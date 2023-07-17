@@ -1030,12 +1030,8 @@ pub(crate) struct BlockExpression {
 /// A connection between Operations and their ports. This can be specified in short-form syntax.
 pub(crate) struct ConnectionDefinition {
   /// An upstream operation&#x27;s output.
-
-  #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
   pub(crate) from: ConnectionTargetDefinition,
   /// A downstream operation&#x27;s input.
-
-  #[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]
   pub(crate) to: ConnectionTargetDefinition,
 }
 
@@ -1046,7 +1042,10 @@ pub(crate) struct ConnectionTargetDefinition {
   /// The instance ID of the component operation.
   pub(crate) instance: String,
   /// The operation&#x27;s input or output (depending on to/from).
-  pub(crate) port: String,
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) port: Option<String>,
   /// The default value to provide on this connection in the event of an error.
 
   #[serde(default)]

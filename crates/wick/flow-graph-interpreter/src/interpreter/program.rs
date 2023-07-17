@@ -205,6 +205,7 @@ fn get_signature(
           .ok_or(ValidationError::UnknownInput {
             operation: ext.name().to_owned(),
             component: ext.component_id().to_owned(),
+            id: port.node().name().to_owned(),
             port: name.to_owned(),
           })?,
         PortDirection::Out => operation
@@ -215,6 +216,7 @@ fn get_signature(
           .ok_or(ValidationError::UnknownOutput {
             operation: ext.name().to_owned(),
             component: ext.component_id().to_owned(),
+            id: port.node().name().to_owned(),
             port: name.to_owned(),
           })?,
       };

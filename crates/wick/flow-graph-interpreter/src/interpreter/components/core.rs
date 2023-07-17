@@ -6,11 +6,11 @@ use crate::graph::types::Network;
 use crate::interpreter::components::dyn_component_id;
 use crate::{BoxFuture, HandlerMap};
 
-mod collect;
-mod merge;
-mod pluck;
-mod sender;
-mod switch;
+pub(crate) mod collect;
+pub(crate) mod merge;
+pub(crate) mod pluck;
+pub(crate) mod sender;
+pub(crate) mod switch;
 
 pub(crate) static DYNAMIC_OPERATIONS: &[&str] = &[collect::Op::ID, merge::Op::ID, switch::Op::ID];
 

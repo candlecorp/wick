@@ -1,3 +1,4 @@
+use flow_graph::iterators::{SchematicWalker, WalkDirection};
 use flow_graph::NodeKind;
 
 use self::error::{OperationInvalid, ValidationError};
@@ -11,16 +12,18 @@ type Result = std::result::Result<(), Vec<OperationInvalid>>;
 pub(crate) struct Validator {}
 
 impl Validator {
+  #[allow(clippy::too_many_lines)]
   fn validate_external_components(&self, program: &Program) -> Result {
     let mut errors = Vec::new();
     let state = &program.state();
 
     let components = &state.components;
     for schematic in state.network.schematics() {
-      for operation in schematic.nodes() {
+      let schematic_name = schematic.name();
+      for node in schematic.nodes() {
         let mut validation_errors = Vec::new();
 
-        if let NodeKind::External(reference) = operation.kind() {
+        if let NodeKind::External(reference) = node.kind() {
           let component = components.get(reference.component_id());
 
           if component.is_none() {
@@ -30,12 +33,7 @@ impl Validator {
           }
           let component = component.unwrap();
 
-          let id = reconcile_op_id(
-            reference.component_id(),
-            reference.name(),
-            schematic.name(),
-            operation.id(),
-          );
+          let id = reconcile_op_id(reference.component_id(), reference.name(), schematic_name, node.id());
 
           let operation_sig = component.operations.iter().find(|op| op.name == id);
 
@@ -48,11 +46,12 @@ impl Validator {
           }
 
           let operation_sig = operation_sig.unwrap();
-          for port in operation.inputs() {
+          for port in node.inputs() {
             let port_def = operation_sig.inputs.iter().find(|p| p.name == port.name());
             if port_def.is_none() {
               validation_errors.push(ValidationError::InvalidPort {
                 port: port.name().to_owned(),
+                id: node.name.clone(),
                 operation: reference.name().to_owned(),
                 component: reference.component_id().to_owned(),
               });
@@ -60,11 +59,12 @@ impl Validator {
             }
           }
 
-          for port in operation.outputs() {
+          for port in node.outputs() {
             let port_def = operation_sig.outputs.iter().find(|p| p.name == port.name());
             if port_def.is_none() {
               validation_errors.push(ValidationError::InvalidPort {
                 port: port.name().to_owned(),
+                id: node.name.clone(),
                 operation: reference.name().to_owned(),
                 component: reference.component_id().to_owned(),
               });
@@ -73,27 +73,58 @@ impl Validator {
           }
 
           for field in &operation_sig.inputs {
-            let port = operation.find_input(&field.name);
-            if port.is_none() {
-              validation_errors.push(ValidationError::MissingConnection {
-                port: field.name.clone(),
-                operation: reference.name().to_owned(),
-                component: reference.component_id().to_owned(),
-              });
-              continue;
-            }
+            match node.find_input(&field.name) {
+              Some(port) => {
+                let mut walker = SchematicWalker::from_port(schematic, port.detached(), WalkDirection::Up);
+                let next = walker.nth(1);
+
+                if next.is_none() {
+                  validation_errors.push(ValidationError::MissingConnection {
+                    port: field.name.clone(),
+                    id: node.name.clone(),
+                    operation: reference.name().to_owned(),
+                    component: reference.component_id().to_owned(),
+                  });
+                  continue;
+                }
+              }
+              None => {
+                validation_errors.push(ValidationError::MissingPort {
+                  port: field.name.clone(),
+                  id: node.name.clone(),
+                  operation: reference.name().to_owned(),
+                  component: reference.component_id().to_owned(),
+                });
+                continue;
+              }
+            };
           }
 
           for field in &operation_sig.outputs {
-            let port = operation.find_output(&field.name);
-            if port.is_none() {
-              validation_errors.push(ValidationError::UnusedOutput {
-                port: field.name.clone(),
-                operation: reference.name().to_owned(),
-                component: reference.component_id().to_owned(),
-              });
-              continue;
-            }
+            match node.find_output(&field.name) {
+              Some(port) => {
+                let mut walker = SchematicWalker::from_port(schematic, port.detached(), WalkDirection::Down);
+                let next = walker.nth(1);
+                if next.is_none() {
+                  validation_errors.push(ValidationError::UnusedOutput {
+                    port: field.name.clone(),
+                    id: node.name.clone(),
+                    operation: reference.name().to_owned(),
+                    component: reference.component_id().to_owned(),
+                  });
+                  continue;
+                }
+              }
+              None => {
+                validation_errors.push(ValidationError::MissingPort {
+                  port: field.name.clone(),
+                  id: node.name.clone(),
+                  operation: reference.name().to_owned(),
+                  component: reference.component_id().to_owned(),
+                });
+                continue;
+              }
+            };
           }
         }
 

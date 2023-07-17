@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use flow_graph::{NodeIndex, PortReference};
+use parking_lot::Mutex;
+use tokio::task::JoinHandle;
 use tokio_stream::StreamExt;
 use tracing::Span;
 use tracing_futures::Instrument;
@@ -19,6 +21,7 @@ use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::components::self_component::SelfComponent;
 use crate::interpreter::error::StateError;
 use crate::interpreter::executor::error::ExecutionError;
+use crate::utils::Bucket;
 use crate::{HandlerMap, InterpreterOptions};
 type Result<T> = std::result::Result<T, ExecutionError>;
 
@@ -29,6 +32,7 @@ pub(crate) mod port;
 pub(crate) struct InstanceHandler {
   reference: Reference,
   identifier: String,
+  invocation: Bucket<Invocation>,
   index: NodeIndex,
   sender: PacketSender,
   inputs: InputPorts,
@@ -36,7 +40,9 @@ pub(crate) struct InstanceHandler {
   schematic: Arc<Schematic>,
   pending: AtomicU32,
   components: Arc<HandlerMap>,
+  task: InstanceTask,
   self_component: SelfComponent,
+  span: Span,
 }
 
 impl std::fmt::Debug for InstanceHandler {
@@ -60,25 +66,31 @@ impl std::fmt::Display for InstanceHandler {
 impl InstanceHandler {
   pub(super) fn new(
     schematic: Arc<Schematic>,
-    operation: &Operation,
+    invocation: Invocation,
+    op_node: &OperationNode,
     components: Arc<HandlerMap>,
     self_component: SelfComponent,
   ) -> Self {
-    let inputs = operation.inputs().to_vec();
-    let outputs = operation.outputs().to_vec();
-    let reference = operation.kind().cref().into();
+    let inputs = op_node.inputs().to_vec();
+    let outputs = op_node.outputs().to_vec();
+    let reference: Reference = op_node.kind().cref().into();
+
+    let span = invocation.following_span(debug_span!("instance", entity = %invocation.target));
 
     Self {
       schematic,
-      inputs: InputPorts::new(operation.id(), inputs),
-      outputs: OutputPorts::new(operation.id(), outputs),
+      inputs: InputPorts::new(op_node.id(), inputs),
+      outputs: OutputPorts::new(op_node.id(), outputs),
+      invocation: Bucket::new(invocation),
       reference,
-      index: operation.index(),
-      identifier: operation.id().to_owned(),
+      index: op_node.index(),
+      identifier: op_node.id().to_owned(),
       components,
       sender: FluxChannel::new(),
       pending: AtomicU32::new(0),
       self_component,
+      task: Default::default(),
+      span,
     }
   }
 
@@ -98,8 +110,8 @@ impl InstanceHandler {
     &self.identifier
   }
 
-  pub(super) fn take_packets(&self) -> Result<Vec<Packet>> {
-    self.inputs.take_packets()
+  pub(super) fn drain_inputs(&self) -> Result<Vec<Packet>> {
+    self.inputs.drain_packets()
   }
 
   pub(super) fn take_output(&self, port: &PortReference) -> Option<Packet> {
@@ -162,6 +174,21 @@ impl InstanceHandler {
     Ok(())
   }
 
+  pub(super) fn is_finished(&self) -> bool {
+    if !self.task.has_started() {
+      return false;
+    }
+    self.task.is_done()
+  }
+
+  pub(super) fn is_running(&self) -> bool {
+    self.task.has_started() && !self.task.is_done()
+  }
+
+  pub(super) fn has_started(&self) -> bool {
+    self.task.has_started()
+  }
+
   pub(crate) fn handle_stream_complete(&self, status: CompletionStatus) -> Result<Vec<PortReference>> {
     self.decrement_pending()?;
     Ok(self.set_outputs_closed(status))
@@ -200,13 +227,26 @@ impl InstanceHandler {
   pub(crate) async fn start(
     self: Arc<Self>,
     tx_id: Uuid,
-    mut invocation: Invocation,
     channel: InterpreterDispatchChannel,
     options: &InterpreterOptions,
     callback: Arc<RuntimeCallback>,
     config: LiquidOperationConfig,
   ) -> Result<()> {
+    if self.task.has_started() {
+      #[cfg(debug_assertions)]
+      self
+        .span
+        .in_scope(|| warn!("BUG: trying to start instance when one is already running"));
+      return Ok(());
+    }
+
+    self.span.in_scope(|| debug!("instance:starting"));
+
     let identifier = self.id().to_owned();
+
+    let Some(mut invocation) = self.invocation.take() else {
+      return Err(StateError::InvocationMissing(identifier).into());
+    };
 
     let entity = self.entity();
     let namespace = self.namespace().to_owned();
@@ -294,16 +334,78 @@ impl InstanceHandler {
       }
     };
 
-    tokio::spawn(async move {
-      if let Err(error) = output_handler(tx_id, &self, stream, channel, timeout, span.clone()).await {
-        span.in_scope(|| error!(%error, "error in output handler"));
-      }
-    });
+    self
+      .task
+      .start(tx_id, self.clone(), stream, channel, timeout, span.clone());
+
     Ok(())
   }
 
   pub(crate) fn num_pending(&self) -> u32 {
     self.pending.load(Ordering::Relaxed)
+  }
+}
+
+#[derive(Default, Clone)]
+struct InstanceTask {
+  task: Arc<Mutex<Option<JoinHandle<Result<()>>>>>,
+  start_time: Arc<Mutex<Option<Instant>>>,
+  end_time: Arc<Mutex<Option<Instant>>>,
+}
+
+impl InstanceTask {
+  fn start(
+    &self,
+    tx_id: Uuid,
+    instance: Arc<InstanceHandler>,
+    stream: PacketStream,
+    channel: InterpreterDispatchChannel,
+    timeout: Duration,
+    span: Span,
+  ) {
+    if self.has_started() {
+      #[cfg(debug_assertions)]
+      span.in_scope(|| warn!("BUG: trying to start instance task when one is already running"));
+      return;
+    }
+    self.start_time.lock().replace(Instant::now());
+
+    let end_time = self.end_time.clone();
+
+    span.in_scope(|| debug!(instance = instance.id(), "task:start"));
+    let task = tokio::spawn(async move {
+      let result = output_handler(tx_id, &instance, stream, channel, timeout, span.clone()).await;
+      if let Err(error) = &result {
+        span.in_scope(|| error!(%error, "error in output handler"));
+      }
+      let now = Instant::now();
+      span.in_scope(|| {
+        let elapsed = now - instance.task.start_time.lock().unwrap();
+        debug!(instance = instance.id(), elapsed_ms = elapsed.as_millis(), "task:end");
+      });
+
+      end_time.lock().replace(now);
+      result
+    });
+    self.task.lock().replace(task);
+  }
+
+  fn has_started(&self) -> bool {
+    self.task.lock().is_some()
+  }
+
+  #[allow(unused)]
+  fn is_done(&self) -> bool {
+    self.end_time.lock().is_some()
+  }
+
+  #[allow(unused)]
+  async fn join(&self) -> Result<()> {
+    let task = self.task.lock().take();
+    if let Some(task) = task {
+      return task.await.map_err(ExecutionError::OperationFailure)?;
+    }
+    Ok(())
   }
 }
 

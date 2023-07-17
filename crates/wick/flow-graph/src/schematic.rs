@@ -154,7 +154,8 @@ where
     self.nodes.get(index)
   }
 
-  pub(crate) fn get_mut(&mut self, index: NodeIndex) -> Option<&mut Node<DATA>> {
+  #[must_use]
+  pub fn get_mut(&mut self, index: NodeIndex) -> Option<&mut Node<DATA>> {
     self.nodes.get_mut(index)
   }
 
@@ -226,6 +227,12 @@ where
   pub fn add_external<T: AsStr>(&mut self, name: T, reference: NodeReference, data: DATA) -> NodeIndex {
     let name = name.as_ref().to_owned();
     self.add_node(name, NodeKind::External(reference), data)
+  }
+
+  pub fn add_and_get_mut<T: AsStr>(&mut self, name: T, reference: NodeReference, data: DATA) -> &mut Node<DATA> {
+    let name = name.as_ref().to_owned();
+    let index = self.add_node(name, NodeKind::External(reference), data);
+    self.get_mut(index).unwrap()
   }
 
   pub fn add_inherent<T: AsStr>(&mut self, name: T, reference: NodeReference, data: DATA) -> NodeIndex {

@@ -1,12 +1,21 @@
 use std::collections::HashMap;
 
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 use crate::{parse, Error};
 
-lazy_static::lazy_static! {
-    pub(crate) static ref CONNECTION_TARGET_REGEX: Regex = Regex::new(&format!(r"^({}|{}|{}|{}|{}|[a-zA-Z][a-zA-Z0-9_]*)(?:\[(\w*)\])?$", DEFAULT_ID, parse::SCHEMATIC_INPUT, parse::SCHEMATIC_OUTPUT, parse::NS_LINK, parse::CORE_ID)).unwrap();
-}
+pub(crate) static CONNECTION_TARGET_REGEX: Lazy<Regex> = Lazy::new(|| {
+  Regex::new(&format!(
+    r"^({}|{}|{}|{}|{}|[a-zA-Z][a-zA-Z0-9_]*)(?:\[(\w*)\])?$",
+    DEFAULT_ID,
+    parse::SCHEMATIC_INPUT,
+    parse::SCHEMATIC_OUTPUT,
+    parse::NS_LINK,
+    parse::CORE_ID
+  ))
+  .unwrap()
+});
 
 /// The separator in a connection between connection targets.
 pub static CONNECTION_SEPARATOR: &str = "=>";
@@ -42,12 +51,6 @@ pub fn parse_id(id: &str) -> Result<(&str, &str)> {
     id.split_once("::")
       .ok_or_else(|| Error::ComponentIdError(id.to_owned()))
   }
-}
-
-/// Parse a connection target, injecting defaults where applicable.
-pub fn parse_connection_target(s: &str) -> Result<(&str, &str)> {
-  let (t_ref, t_port) = parse_target(s)?;
-  Ok((t_ref.unwrap_or(DEFAULT_ID), t_port.unwrap_or(DEFAULT_ID)))
 }
 
 type ConnectionDefinitionParts = (String, String, Option<HashMap<String, serde_json::Value>>);

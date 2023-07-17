@@ -92,7 +92,6 @@ pub(crate) struct {{name.value}} {
       {{#case "Named"}}
         {{#switch type.name.value}}
           {{#case "ComponentOperationExpression"}}#[serde(deserialize_with = "crate::v1::parse::component_operation_syntax")]{{/case}}
-          {{#case "ConnectionTargetDefinition"}}#[serde(deserialize_with = "crate::v1::parse::connection_target_shortform")]{{/case}}
           {{#case "ComponentDefinition"}}#[serde(deserialize_with = "crate::v1::parse::component_shortform")]{{/case}}
         {{/switch}}
       {{/case}}

@@ -1920,6 +1920,7 @@
           },
           "port": {
             "description": "The operation&#x27;s input or output (depending on to/from).",
+            "required": false,
             "type": "string"
           },
           "data": {
@@ -1934,8 +1935,7 @@
           }
         },
         "required": [
-          "instance",
-          "port"
+          "instance"
         ]
       },
       "OperationDefinition": {

@@ -21,6 +21,14 @@ pub(crate) struct Config {
   field: Vec<String>,
 }
 
+impl crate::graph::NodeDecorator for Op {
+  fn decorate(node: &mut crate::graph::types::Node) -> Result<(), String> {
+    node.add_input("input");
+    node.add_output("output");
+    Ok(())
+  }
+}
+
 impl Op {
   pub(crate) fn new() -> Self {
     Self {

@@ -15,37 +15,56 @@ pub enum ValidationError {
   #[error("Missing operation '{name}' on component '{component}'")]
   MissingOperation { component: String, name: String },
 
-  #[error("Invalid port '{port}' on operation '{component}::{operation}'")]
+  #[error("Invalid port '{port}' on operation '{id}' ('{component}::{operation}')")]
   InvalidPort {
     port: String,
+    id: String,
     component: String,
     operation: String,
   },
 
-  #[error("Input port '{port}' on operation '{component}::{operation}' not connected to anything")]
+  #[error("Input port '{port}' on operation '{id}' ('{component}::{operation}') not connected to anything")]
   MissingConnection {
     port: String,
+    id: String,
     component: String,
     operation: String,
   },
 
-  #[error("Input '{port}' on operation '{component}::{operation}' is connected but does not exist on operation.")]
+  #[error(
+    "Signature for operation '{id}' ('{component}::{operation}') describes port '{port}' but '{port}' not found in graph"
+  )]
+  MissingPort {
+    port: String,
+    id: String,
+    component: String,
+    operation: String,
+  },
+
+  #[error(
+    "Input '{port}' on operation '{id}' ('{component}::{operation}') is connected but does not exist on operation."
+  )]
   UnknownInput {
     port: String,
+    id: String,
     component: String,
     operation: String,
   },
 
-  #[error("Output '{port}' on operation '{component}::{operation}' is connected but does not exist on operation.")]
+  #[error(
+    "Output '{port}' on operation '{id}' ('{component}::{operation}') is connected but does not exist on operation."
+  )]
   UnknownOutput {
     port: String,
+    id: String,
     component: String,
     operation: String,
   },
 
-  #[error("Unused output port '{port}' on component '{component}::{operation}'")]
+  #[error("Unused output port '{port}' on operation '{id}' ('{component}::{operation}')")]
   UnusedOutput {
     port: String,
+    id: String,
     component: String,
     operation: String,
   },

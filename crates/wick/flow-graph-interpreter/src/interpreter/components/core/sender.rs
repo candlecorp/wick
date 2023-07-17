@@ -23,6 +23,13 @@ impl Op {
   }
 }
 
+impl crate::graph::NodeDecorator for Op {
+  fn decorate(node: &mut crate::graph::types::Node) -> Result<(), String> {
+    node.add_output("output");
+    Ok(())
+  }
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub(crate) struct SenderData {
   output: Value,

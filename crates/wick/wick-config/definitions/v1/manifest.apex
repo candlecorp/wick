@@ -562,7 +562,7 @@ type ConnectionTargetDefinition {
   instance: string @required,
 
   "The operation's input or output (depending on to/from)."
-  port: string @required,
+  port: string?,
 
   "The default value to provide on this connection in the event of an error."
   data: {string: LiquidJsonValue}?,

@@ -2,7 +2,7 @@ kind: wick/tests@v1
 cases:
   - name: test
     operation: test-component
-    input:
+    inputs:
       - name: input
         error: 'test'
       - name: input

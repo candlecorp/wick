@@ -1,107 +1,10 @@
-pub(crate) mod types {
-  #![allow(unused)]
-  use super::AssociatedData;
-
-  pub(crate) type Network = flow_graph::Network<AssociatedData>;
-  pub(crate) type Operation = flow_graph::Node<AssociatedData>;
-  pub(crate) type OperationPort = flow_graph::NodePort;
-  pub(crate) type Schematic = flow_graph::Schematic<AssociatedData>;
-  pub(crate) type Node = flow_graph::Node<AssociatedData>;
-  pub(crate) type Port<'a> = flow_graph::iterators::Port<'a, AssociatedData>;
-}
+mod error;
+mod helpers;
+mod operation_settings;
+pub(crate) mod types;
 use std::collections::HashMap;
-pub(crate) type AssociatedData = OperationSettings;
 
-#[derive(Debug, Clone, Default)]
-pub struct OperationSettings {
-  pub(crate) config: LiquidOperationConfig,
-  pub(crate) settings: Option<ExecutionSettings>,
-}
-
-impl OperationSettings {
-  /// Initialize a new OperationSettings with the specified config and settings.
-  pub(crate) fn new(config: LiquidOperationConfig, settings: Option<ExecutionSettings>) -> Self {
-    Self { config, settings }
-  }
-}
-
-#[derive(Debug, Clone, Default)]
-pub(crate) struct LiquidOperationConfig {
-  root: Option<RuntimeConfig>,
-  template: Option<LiquidJsonConfig>,
-  value: Option<RuntimeConfig>,
-}
-
-impl LiquidOperationConfig {
-  #[must_use]
-  pub(crate) fn new_value(value: Option<RuntimeConfig>) -> Self {
-    Self {
-      template: None,
-      value,
-      root: None,
-    }
-  }
-
-  pub(crate) fn render(&self, inherent: &InherentData) -> Result<Option<RuntimeConfig>, InterpreterError> {
-    if let Some(template) = self.template() {
-      Ok(Some(
-        template
-          .render(self.root.as_ref(), self.value.as_ref(), None, Some(inherent))
-          .map_err(|e| InterpreterError::Configuration(e.to_string()))?,
-      ))
-    } else {
-      Ok(self.value.clone())
-    }
-  }
-
-  #[must_use]
-  pub(crate) fn value(&self) -> Option<&RuntimeConfig> {
-    self.value.as_ref()
-  }
-
-  #[must_use]
-  pub(crate) fn template(&self) -> Option<&LiquidJsonConfig> {
-    self.template.as_ref()
-  }
-
-  #[must_use]
-  pub(crate) fn root(&self) -> Option<&RuntimeConfig> {
-    self.root.as_ref()
-  }
-
-  pub(crate) fn set_root(&mut self, root: Option<RuntimeConfig>) {
-    self.root = root;
-  }
-
-  pub(crate) fn set_template(&mut self, template: Option<LiquidJsonConfig>) {
-    self.template = template;
-  }
-
-  pub(crate) fn set_value(&mut self, value: Option<RuntimeConfig>) {
-    self.value = value;
-  }
-}
-
-impl From<Option<LiquidJsonConfig>> for LiquidOperationConfig {
-  fn from(value: Option<LiquidJsonConfig>) -> Self {
-    LiquidOperationConfig {
-      template: value,
-      value: None,
-      root: None,
-    }
-  }
-}
-
-impl From<Option<RuntimeConfig>> for LiquidOperationConfig {
-  fn from(value: Option<RuntimeConfig>) -> Self {
-    LiquidOperationConfig {
-      template: None,
-      value,
-      root: None,
-    }
-  }
-}
-
+pub use error::Error as GraphError;
 use flow_expression_parser::ast::{
   BlockExpression,
   ConnectionExpression,
@@ -114,11 +17,17 @@ use flow_graph::NodeReference;
 use serde_json::Value;
 use types::*;
 use wick_config::config::components::{ComponentConfig, OperationConfig};
-use wick_config::config::{ComponentImplementation, ExecutionSettings, FlowOperation, LiquidJsonConfig};
-use wick_packet::{InherentData, RuntimeConfig};
+use wick_config::config::{ComponentImplementation, ExecutionSettings, FlowOperation};
+use wick_packet::RuntimeConfig;
 
-use crate::error::InterpreterError;
-use crate::interpreter::components::null_component::NullComponent;
+use self::helpers::{ensure_added, ParseHelper};
+pub(crate) use self::operation_settings::{LiquidOperationConfig, OperationSettings};
+use crate::interpreter::components::core;
+use crate::HandlerMap;
+
+pub(crate) trait NodeDecorator {
+  fn decorate(node: &mut Node) -> Result<(), String>;
+}
 
 #[derive(Debug)]
 #[must_use]
@@ -143,13 +52,14 @@ fn register_operation(
   mut scope: Vec<String>,
   network: &mut Network,
   flow: &mut FlowOperation,
-  op_config: &LiquidOperationConfig,
-) -> Result<(), flow_graph::error::Error> {
+  handlers: &HandlerMap,
+  op_config_base: &LiquidOperationConfig,
+) -> Result<(), GraphError> {
   scope.push(flow.name().to_owned());
 
   for flow in flow.flows_mut() {
     let scope = scope.clone();
-    register_operation(scope, network, flow, op_config)?;
+    register_operation(scope, network, flow, handlers, op_config_base)?;
   }
   let name = scope.join("::");
   let mut schematic = Schematic::new(name, Default::default(), Default::default());
@@ -159,31 +69,37 @@ fn register_operation(
   for name in ids {
     let def = flow.instances().get(&name).unwrap();
     debug!(%name, config=?def.data(),settings=?def.settings(), "registering operation");
-    let mut op_config = op_config.clone();
+    let mut op_config = op_config_base.clone();
     op_config.set_template(def.data().cloned());
 
-    schematic.add_external(
+    let node = schematic.add_and_get_mut(
       name,
       NodeReference::new(def.component_id(), def.name()),
-      OperationSettings::new(op_config, def.settings().cloned()),
+      OperationSettings::new(op_config.clone(), def.settings().cloned()),
     );
+    helpers::decorate(def.component_id(), def.name(), node, handlers)?;
   }
 
-  expand_expressions(&mut schematic, flow.expressions_mut())?;
+  expand_until_done(&mut schematic, flow, handlers, op_config_base, expand_expressions)?;
 
   for expression in flow.expressions() {
-    process_flow_expression(&mut schematic, expression)?;
+    process_flow_expression(&mut schematic, expression, handlers)?;
   }
+
   network.add_schematic(schematic);
   Ok(())
 }
 
-fn process_flow_expression(schematic: &mut Schematic, expr: &FlowExpression) -> Result<(), flow_graph::error::Error> {
+fn process_flow_expression(
+  schematic: &mut Schematic,
+  expr: &FlowExpression,
+  handlers: &HandlerMap,
+) -> Result<(), GraphError> {
   match expr {
-    FlowExpression::ConnectionExpression(expr) => process_connection_expression(schematic, expr)?,
+    FlowExpression::ConnectionExpression(expr) => process_connection_expression(schematic, expr, handlers)?,
     FlowExpression::BlockExpression(expr) => {
       for expr in expr.iter() {
-        process_flow_expression(schematic, expr)?;
+        process_flow_expression(schematic, expr, handlers)?;
       }
     }
   }
@@ -193,23 +109,34 @@ fn process_flow_expression(schematic: &mut Schematic, expr: &FlowExpression) -> 
 fn process_connection_expression(
   schematic: &mut Schematic,
   expr: &ConnectionExpression,
-) -> Result<(), flow_graph::error::Error> {
+  _handlers: &HandlerMap,
+) -> Result<(), GraphError> {
   let from = expr.from();
   let to = expr.to();
+  assert!(
+    to.port().name().is_some(),
+    "Missing downstream port for expr: {:?}",
+    expr
+  );
   let to_port = schematic
     .find_mut(to.instance().id().unwrap())
-    .map(|component| component.add_input(to.port().name()));
+    .map(|component| component.add_input(to.port().name().unwrap()));
 
   if to_port.is_none() {
     error!("Missing downstream: instance {:?}", to);
-    return Err(flow_graph::error::Error::MissingDownstream(
-      to.instance().id().unwrap().to_owned(),
-    ));
+    return Err(GraphError::missing_downstream(to.instance().id().unwrap()));
   }
   let to_port = to_port.unwrap();
 
   if let Some(component) = schematic.find_mut(from.instance().id().unwrap()) {
-    let from_port = component.add_output(from.port().name());
+    let from_port = component.add_output(from.port().name().unwrap());
+    trace!(
+      ?from_port,
+      from = %expr.from(),
+      ?to_port,
+      to = %expr.to(),
+      "graph:connecting"
+    );
     schematic.connect(from_port, to_port, Default::default())?;
   } else {
     panic!("Can't find component {}", from.instance());
@@ -217,146 +144,333 @@ fn process_connection_expression(
   Ok(())
 }
 
+#[allow(trivial_casts)]
+fn expand_until_done(
+  schematic: &mut Schematic,
+  expressions: &mut FlowOperation,
+  handlers: &HandlerMap,
+  config: &LiquidOperationConfig,
+  func: fn(
+    &mut Schematic,
+    &mut FlowOperation,
+    &HandlerMap,
+    &LiquidOperationConfig,
+    &mut usize,
+  ) -> Result<ExpandResult, GraphError>,
+) -> Result<(), GraphError> {
+  let mut id_index = 0;
+  loop {
+    let result = func(schematic, expressions, handlers, config, &mut id_index)?;
+
+    if result == ExpandResult::Done {
+      break;
+    }
+  }
+  Ok(())
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+enum ExpandResult {
+  Done,
+  Continue,
+}
+
+impl ExpandResult {
+  fn update(self, next: ExpandResult) -> Self {
+    if self == ExpandResult::Continue {
+      self
+    } else {
+      next
+    }
+  }
+}
+
 #[allow(clippy::option_if_let_else)]
 fn expand_expressions(
   schematic: &mut Schematic,
-  expressions: &mut [FlowExpression],
-) -> Result<(), flow_graph::error::Error> {
-  expand_port_paths(schematic, expressions)?;
-  expand_inline_operations(schematic, expressions)?;
+  flow: &mut FlowOperation,
+  handlers: &HandlerMap,
+  config: &LiquidOperationConfig,
+  inline_id: &mut usize,
+) -> Result<ExpandResult, GraphError> {
+  let result = ExpandResult::Done;
+
+  let config_map = flow
+    .instances()
+    .iter()
+    .map(|(k, v)| {
+      let mut base = config.clone();
+      base.set_template(v.data().cloned());
+
+      Ok::<_, GraphError>((k.clone(), (base, v.settings().cloned())))
+    })
+    .collect::<Result<HashMap<_, _>, _>>()?;
+  add_nodes_to_schematic(schematic, flow.expressions_mut(), handlers, &config_map, inline_id)?;
+  let result = result.update(expand_port_paths(schematic, flow.expressions_mut())?);
+  let result = result.update(expand_defaulted_ports(schematic, flow.expressions_mut())?);
+  Ok(result)
+}
+
+fn add_nodes_to_schematic(
+  schem: &mut Schematic,
+  flow: &mut [FlowExpression],
+  handlers: &HandlerMap,
+  config_map: &HashMap<String, (LiquidOperationConfig, Option<ExecutionSettings>)>,
+  id_index: &mut usize,
+) -> Result<(), GraphError> {
+  for (_i, expression) in flow.iter_mut().enumerate() {
+    match expression {
+      FlowExpression::ConnectionExpression(conn) => {
+        let config = conn
+          .from()
+          .instance()
+          .id()
+          .and_then(|id| config_map.get(id).cloned())
+          .unwrap_or((LiquidOperationConfig::default(), None));
+
+        ensure_added(schem, conn.from_mut().instance_mut(), handlers, config, id_index)?;
+
+        let config = conn
+          .to()
+          .instance()
+          .id()
+          .and_then(|id| config_map.get(id).cloned())
+          .unwrap_or((LiquidOperationConfig::default(), None));
+
+        ensure_added(schem, conn.to_mut().instance_mut(), handlers, config, id_index)?;
+      }
+      FlowExpression::BlockExpression(expressions) => {
+        add_nodes_to_schematic(schem, expressions.inner_mut(), handlers, config_map, id_index)?;
+      }
+    }
+  }
 
   Ok(())
+}
+
+fn connection(
+  from: (InstanceTarget, impl Into<InstancePort>),
+  to: (InstanceTarget, impl Into<InstancePort>),
+) -> FlowExpression {
+  FlowExpression::connection(ConnectionExpression::new(
+    ConnectionTargetExpression::new(from.0, from.1),
+    ConnectionTargetExpression::new(to.0, to.1),
+  ))
+}
+
+#[allow(clippy::option_if_let_else, clippy::too_many_lines)]
+fn expand_defaulted_ports(
+  schematic: &mut Schematic,
+  expressions: &mut [FlowExpression],
+) -> Result<ExpandResult, GraphError> {
+  let mut result = ExpandResult::Done;
+  for (_i, expression) in expressions.iter_mut().enumerate() {
+    match expression {
+      FlowExpression::ConnectionExpression(expr) => {
+        let (from, to) = expr.clone().into_parts();
+        let (from_inst, from_port, _) = from.into_parts();
+        let (to_inst, to_port, _) = to.into_parts();
+        match (from_port, to_port) {
+          (InstancePort::None, InstancePort::None) => {
+            let from_node = schematic.get_node(&from_inst)?;
+            let to_node = schematic.get_node(&to_inst)?;
+            let from_node_ports = from_node.outputs();
+            let to_node_ports = to_node.inputs();
+            debug!(
+              from = %from_inst, from_ports = ?from_node_ports, to = %to_inst, to_ports = ?to_node_ports,
+              "graph:inferring ports for both up and down"
+            );
+            if from_node_ports.is_empty() && to_node_ports.is_empty() {
+              // can't do anything yet.
+              continue;
+            }
+
+            // If there's only one port on each side, connect them.
+            if from_node_ports.len() == 1 && to_node_ports.len() == 1 {
+              expression.replace(connection(
+                (from_inst, from_node_ports[0].name()),
+                (to_inst, to_node_ports[0].name()),
+              ));
+              result = ExpandResult::Continue;
+              continue;
+            }
+
+            let mut new_connections = Vec::new();
+            // if either side is a schematic input/output node, adopt the names of all ports we're pointing to.
+            if matches!(from_inst, InstanceTarget::Input | InstanceTarget::Default) {
+              for port in to_node_ports {
+                new_connections.push(connection(
+                  (from_inst.clone(), port.name()),
+                  (to_inst.clone(), port.name()),
+                ));
+              }
+            } else if matches!(to_inst, InstanceTarget::Output | InstanceTarget::Default) {
+              for port in from_node_ports {
+                new_connections.push(connection(
+                  (from_inst.clone(), port.name()),
+                  (to_inst.clone(), port.name()),
+                ));
+              }
+            } else {
+              for port in from_node_ports {
+                if !to_node_ports.contains(port) && !matches!(to_inst, InstanceTarget::Output | InstanceTarget::Default)
+                {
+                  return Err(GraphError::port_inference_down(
+                    &from_inst,
+                    port.name(),
+                    to_inst,
+                    to_node_ports,
+                  ));
+                }
+                new_connections.push(connection(
+                  (from_inst.clone(), port.name()),
+                  (to_inst.clone(), port.name()),
+                ));
+              }
+            }
+
+            assert!(!new_connections.is_empty(), "unhandled case for port inference");
+            result = ExpandResult::Continue;
+            expression.replace(FlowExpression::block(BlockExpression::new(new_connections)));
+          }
+          (InstancePort::None, to_port) => {
+            let port_name = to_port.name().unwrap();
+            let from_node = schematic.get_node(&from_inst)?;
+            let ports = from_node.outputs();
+            debug!(
+              from = %from_inst, from_ports = ?ports, to = %to_inst,
+              "graph:inferring ports for upstream"
+            );
+            // if we're at a schematic input node, adopt the name of what we're pointing to.
+            if matches!(from_inst, InstanceTarget::Input | InstanceTarget::Default) {
+              expression.replace(connection((from_inst, port_name), (to_inst, to_port.clone())));
+              result = ExpandResult::Continue;
+              continue;
+            }
+            if ports.len() == 1 {
+              expression.replace(connection((from_inst, ports[0].name()), (to_inst, to_port.clone())));
+              result = ExpandResult::Continue;
+              continue;
+            }
+
+            if !ports.iter().any(|p| p.name() == port_name) {
+              return Err(GraphError::port_inference_up(&to_inst, port_name, from_inst, ports));
+            }
+
+            result = ExpandResult::Continue;
+            expression.replace(connection((from_inst, port_name), (to_inst, to_port.clone())));
+          }
+          (from_port, InstancePort::None) => {
+            let port_name = from_port.name().unwrap();
+            let to_node = schematic.get_node(&to_inst)?;
+            let ports = to_node.inputs();
+            debug!(
+              from = %from_inst, to = %to_inst, to_ports = ?ports,
+              "graph:inferring ports for downstream"
+            );
+
+            // if we're at a schematic input node, adopt the name of what we're pointing to.
+            if matches!(to_inst, InstanceTarget::Output | InstanceTarget::Default) {
+              expression.replace(connection((from_inst, from_port.clone()), (to_inst, port_name)));
+              result = ExpandResult::Continue;
+              continue;
+            }
+
+            if ports.len() == 1 {
+              expression.replace(connection((from_inst, from_port.clone()), (to_inst, ports[0].name())));
+              result = ExpandResult::Continue;
+              continue;
+            }
+
+            if !ports.iter().any(|p| p.name() == port_name) {
+              return Err(GraphError::port_inference_down(&from_inst, port_name, to_inst, ports));
+            }
+
+            result = ExpandResult::Continue;
+            expression.replace(connection((from_inst, from_port.clone()), (to_inst, port_name)));
+          }
+          _ => continue,
+        }
+      }
+      FlowExpression::BlockExpression(expressions) => {
+        result = result.update(expand_defaulted_ports(schematic, expressions.inner_mut())?);
+      }
+    }
+  }
+  Ok(result)
 }
 
 #[allow(clippy::option_if_let_else)]
 fn expand_port_paths(
   schematic: &mut Schematic,
   expressions: &mut [FlowExpression],
-) -> Result<(), flow_graph::error::Error> {
+) -> Result<ExpandResult, GraphError> {
+  let mut result = ExpandResult::Done;
   for (i, expression) in expressions.iter_mut().enumerate() {
-    if let FlowExpression::ConnectionExpression(expr) = expression {
-      let (from, to) = expr.clone().into_parts();
-      let (from_inst, from_port, _) = from.into_parts();
-      let (to_inst, to_port, _) = to.into_parts();
-      if let InstancePort::Path(name, parts) = from_port {
-        let id = format!("{}_pluck_{}_{}_[{}]", schematic.name(), i, name, parts.join(","));
-        let config = HashMap::from([(
-          "path".to_owned(),
-          Value::Array(parts.into_iter().map(Value::String).collect()),
-        )]);
-        schematic.add_external(
-          &id,
-          NodeReference::new("core", "pluck"),
-          OperationSettings::new(Some(RuntimeConfig::from(config)).into(), None),
-        );
-        *expression = FlowExpression::block(BlockExpression::new(vec![
-          FlowExpression::connection(ConnectionExpression::new(
-            ConnectionTargetExpression::new(from_inst, InstancePort::named(&name)),
-            ConnectionTargetExpression::new(InstanceTarget::named(&id), InstancePort::named("input")),
-          )),
-          FlowExpression::connection(ConnectionExpression::new(
-            ConnectionTargetExpression::new(InstanceTarget::named(&id), InstancePort::named("output")),
-            ConnectionTargetExpression::new(to_inst, to_port),
-          )),
-        ]));
-      }
-    }
-  }
-  Ok(())
-}
+    match expression {
+      FlowExpression::ConnectionExpression(expr) => {
+        let (from, to) = expr.clone().into_parts();
+        let (from_inst, from_port, _) = from.into_parts();
+        let (to_inst, to_port, _) = to.into_parts();
+        if let InstancePort::Path(name, parts) = from_port {
+          let id = format!("{}_pluck_{}_{}_[{}]", schematic.name(), i, name, parts.join(","));
+          let config = HashMap::from([(
+            "path".to_owned(),
+            Value::Array(parts.into_iter().map(Value::String).collect()),
+          )]);
 
-#[allow(clippy::option_if_let_else)]
-fn expand_inline_operations(
-  schematic: &mut Schematic,
-  expressions: &mut [FlowExpression],
-) -> Result<(), flow_graph::error::Error> {
-  let mut inline_id = 0;
-  let mut anonymous_path_ids: HashMap<String, (Vec<String>, String)> = HashMap::new();
-  for expression in expressions.iter_mut() {
-    expand_flow_expression(schematic, expression, &mut inline_id, &mut anonymous_path_ids)?;
-  }
-  Ok(())
-}
+          let node = schematic.add_and_get_mut(
+            &id,
+            NodeReference::new("core", "pluck"),
+            OperationSettings::new(Some(RuntimeConfig::from(config)).into(), None),
+          );
+          core::pluck::Op::decorate(node).map_err(|e| GraphError::config(id.clone(), e))?;
 
-fn expand_flow_expression(
-  schematic: &mut Schematic,
-  expression: &mut FlowExpression,
-  inline_id: &mut usize,
-  anonymous_path_ids: &mut HashMap<String, (Vec<String>, String)>,
-) -> Result<(), flow_graph::error::Error> {
-  match expression {
-    FlowExpression::ConnectionExpression(expr) => {
-      expand_operation(schematic, expr, inline_id, anonymous_path_ids)?;
-    }
-    FlowExpression::BlockExpression(block) => {
-      for expr in block.iter_mut() {
-        expand_flow_expression(schematic, expr, inline_id, anonymous_path_ids)?;
-      }
-    }
-  }
-  Ok(())
-}
-
-fn expand_operation(
-  schematic: &mut Schematic,
-  expr: &mut Box<ConnectionExpression>,
-  inline_id: &mut usize,
-  anonymous_path_ids: &mut HashMap<String, (Vec<String>, String)>,
-) -> Result<(), flow_graph::error::Error> {
-  if let InstanceTarget::Path(path, id) = expr.from().instance() {
-    let id = id.as_ref().or(anonymous_path_ids.get(path).map(|(_, id)| id));
-    #[allow(clippy::option_if_let_else)]
-    if let Some(id) = id {
-      let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
-      schematic.add_external(id, NodeReference::new(component_id, op), Default::default());
-    } else {
-      todo!()
-    }
-  }
-  let to_port = expr.to().port().clone();
-  let instance = expr.to_mut().instance_mut();
-  match instance {
-    InstanceTarget::Path(path, id) => {
-      if let Some(id) = id {
-        let (component_id, op) = path.split_once("::").unwrap(); // unwrap OK if we come from a parsed config.
-        schematic.add_external(id, NodeReference::new(component_id, op), Default::default());
-      } else if let Some((ports, generated_id)) = anonymous_path_ids.get_mut(path) {
-        if ports.contains(to_port.name()) {
-          return Err(flow_graph::error::Error::AmbiguousOperation(path.clone()));
+          expression.replace(FlowExpression::block(BlockExpression::new(vec![
+            connection((from_inst, &name), (InstanceTarget::named(&id), InstancePort::None)),
+            connection((InstanceTarget::named(&id), InstancePort::None), (to_inst, to_port)),
+          ])));
+          result = ExpandResult::Continue;
         }
-        ports.push(to_port.name().clone());
-        id.replace(generated_id.clone());
+      }
+      FlowExpression::BlockExpression(expressions) => {
+        result = result.update(expand_port_paths(schematic, expressions.inner_mut())?);
       }
     }
-    InstanceTarget::Null(id) => {
-      *inline_id += 1;
-      let id_str = format!("drop_{}", inline_id);
-      id.replace(id_str.clone());
-      schematic.add_external(
-        id_str,
-        NodeReference::new(NullComponent::ID, "drop"),
-        Default::default(),
-      );
-    }
-    _ => {}
   }
-  Ok(())
+  Ok(result)
 }
 
 pub fn from_def(
   manifest: &mut wick_config::config::ComponentConfiguration,
-) -> Result<Network, flow_graph::error::Error> {
+  handlers: &HandlerMap,
+) -> Result<Network, GraphError> {
   let mut network = Network::new(
     manifest.name().cloned().unwrap_or_default(),
     OperationSettings::new(manifest.root_config().cloned().into(), None),
   );
 
-  let mut op_config = LiquidOperationConfig::default();
-  op_config.set_root(manifest.root_config().cloned());
+  let mut op_config_base = LiquidOperationConfig::default();
+  op_config_base.set_root(manifest.root_config().cloned());
 
   if let ComponentImplementation::Composite(composite) = manifest.component_mut() {
     for flow in composite.operations_mut() {
-      register_operation(vec![], &mut network, flow, &op_config)?;
+      register_operation(vec![], &mut network, flow, handlers, &op_config_base)?;
+    }
+  }
+
+  #[cfg(debug_assertions)]
+  {
+    let names: Vec<_> = network.schematics().iter().map(|s| s.name()).collect();
+    trace!(nodes=?names,"graph:nodes");
+    for schematic in network.schematics() {
+      let schem_name = &schematic.name();
+      for node in schematic.nodes() {
+        let name = &node.name;
+        let inputs = node.inputs().iter().map(|n| n.name()).collect::<Vec<_>>();
+        let outputs = node.outputs().iter().map(|n| n.name()).collect::<Vec<_>>();
+        trace!(schematic = schem_name, node = name, ?inputs, ?outputs, data=?node.data(), "graph:node");
+      }
     }
   }
 

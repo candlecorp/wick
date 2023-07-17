@@ -39,6 +39,28 @@ impl std::fmt::Debug for Op {
   }
 }
 
+impl crate::graph::NodeDecorator for Op {
+  fn decorate(node: &mut crate::graph::types::Node) -> Result<(), String> {
+    let Ok(config) = node.data().config.render(&InherentData::unsafe_default()) else {
+      return Err(format!("Could not render config for {}", Op::ID));
+    };
+    let config = match Op::decode_config(config) {
+      Ok(c) => c,
+      Err(e) => {
+        return Err(e.to_string());
+      }
+    };
+    for field in config.inputs {
+      node.add_input(field.name());
+    }
+    for field in config.outputs {
+      node.add_output(field.name());
+    }
+    node.add_input("match");
+    Ok(())
+  }
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub(crate) struct Config {
   #[serde(alias = "context")]

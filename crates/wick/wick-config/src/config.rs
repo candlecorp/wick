@@ -97,12 +97,15 @@ impl WickConfiguration {
   /// # Example
   ///
   /// ```rust
+  /// # tokio_test::block_on(async {
   /// use wick_config::WickConfiguration;
   /// use wick_asset_reference::FetchOptions;
   ///
   /// let opts = FetchOptions::default();
   ///
   /// let manifest = WickConfiguration::fetch_all("path/to/manifest.yaml", opts).await?;
+  /// # Ok::<_,anyhow::Error>(())
+  /// # });
   /// ```
   pub async fn fetch_all(
     path: impl Into<String> + Send,
@@ -118,13 +121,15 @@ impl WickConfiguration {
   /// # Example
   ///
   /// ```rust
-  ///
+  /// # tokio_test::block_on(async {
   /// use wick_config::WickConfiguration;
   /// use wick_asset_reference::FetchOptions;
   ///
   /// let opts = FetchOptions::default();
   ///
   /// let manifest = WickConfiguration::fetch("path/to/manifest.yaml", opts).await?;
+  /// # Ok::<_,anyhow::Error>(())
+  /// # });
   /// ```
   ///
   pub async fn fetch(
@@ -166,15 +171,17 @@ impl WickConfiguration {
   /// # Example
   ///
   /// ```rust
-  ///
+  /// # tokio_test::block_on(async {
   /// use wick_config::WickConfiguration;
+  /// use std::path::PathBuf;
   ///
   /// let path = PathBuf::from("path/to/manifest.yaml");
   ///
   /// let bytes = std::fs::read(&path)?;
   ///
-  /// let manifest = WickConfiguration::load_from_bytes(bytes, &Some(path))?;
-  ///
+  /// let manifest = WickConfiguration::load_from_bytes(&bytes, &Some(path))?;
+  /// # Ok::<_,anyhow::Error>(())
+  /// # });
   /// ```
   pub fn load_from_bytes(bytes: &[u8], source: &Option<PathBuf>) -> Result<UninitializedConfiguration, Error> {
     let string = &String::from_utf8(bytes.to_vec()).map_err(|_| Error::Utf8)?;
@@ -187,15 +194,17 @@ impl WickConfiguration {
   /// # Example
   ///
   /// ```rust
-  ///
+  /// # tokio_test::block_on(async {
+  /// use std::path::PathBuf;
   /// use wick_config::WickConfiguration;
   ///
   /// let path = PathBuf::from("path/to/manifest.yaml");
   ///
   /// let string = std::fs::read_to_string(&path)?;
   ///
-  /// let manifest = WickConfiguration::load_from_string(string, &Some(path))?;
-  ///
+  /// let manifest = WickConfiguration::from_yaml(&string, &Some(path))?;
+  /// # Ok::<_,anyhow::Error>(())
+  /// # });
   /// ```
   ///
   pub fn from_yaml(src: &str, source: &Option<PathBuf>) -> Result<UninitializedConfiguration, Error> {
@@ -207,16 +216,18 @@ impl WickConfiguration {
   /// # Example
   ///
   /// ```rust
-  ///
+  /// # tokio_test::block_on(async {
   /// use wick_config::WickConfiguration;
   /// use wick_asset_reference::FetchOptions;
   ///
   /// let opts = FetchOptions::default();
   ///
   /// let manifest = WickConfiguration::fetch_all("path/to/manifest.yaml", opts).await?;
+  /// let manifest = manifest.finish()?;
   ///
   /// let v1_yaml = manifest.into_v1_yaml()?;
-  ///
+  /// # Ok::<_,anyhow::Error>(())
+  /// # });
   /// ```
   pub fn into_v1_yaml(self) -> Result<String, Error> {
     let v1_manifest = match self {
