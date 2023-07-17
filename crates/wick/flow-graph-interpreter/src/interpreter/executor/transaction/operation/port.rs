@@ -156,7 +156,7 @@ impl InputPorts {
     }
   }
 
-  pub(super) fn is_empty(&self) -> bool {
+  pub(crate) fn is_empty(&self) -> bool {
     self.inner.is_empty()
   }
 
@@ -185,7 +185,7 @@ impl InputPorts {
     self.inner.find_ref(name)
   }
 
-  pub(super) fn take_packets(&self) -> Result<Vec<Packet>> {
+  pub(super) fn drain_packets(&self) -> Result<Vec<Packet>> {
     let mut vec = Vec::new();
 
     for handler in &self.inner.inner {

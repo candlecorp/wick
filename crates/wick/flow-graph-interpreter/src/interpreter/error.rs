@@ -1,6 +1,6 @@
 use wick_packet::Entity;
 
-use super::components::core_component::OpInitError;
+use super::components::core::OpInitError;
 use super::executor::error::ExecutionError;
 use super::program::validator::error::{OperationInvalid, ValidationError};
 
@@ -56,6 +56,8 @@ pub enum StateError {
   MissingPortName(String),
   #[error("Attempted to access nonexistant component '{0}'")]
   MissingComponent(String),
+  #[error("Attempted to start an instance ('{0}') more than once")]
+  InvocationMissing(String),
   #[error("Tried to decrement pending counter for non-existent or zero ID.")]
   TooManyComplete,
 }

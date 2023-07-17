@@ -1,7 +1,19 @@
 use std::path::PathBuf;
 
+use flow_expression_parser::ast::{
+  ConnectionExpression,
+  ConnectionTargetExpression,
+  FlowExpression,
+  InstancePort,
+  InstanceTarget,
+};
 use wick_config::config::components::ComponentConfig;
-use wick_config::config::{AppConfiguration, CompositeComponentImplementation};
+use wick_config::config::{
+  AppConfiguration,
+  ComponentImplementation,
+  CompositeComponentImplementation,
+  FlowOperationBuilder,
+};
 use wick_config::error::ManifestError;
 use wick_config::*;
 use wick_packet::RuntimeConfig;
@@ -57,12 +69,45 @@ async fn test_operations() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test(tokio::test)]
-async fn test_main() -> Result<(), ManifestError> {
+async fn test_component() -> Result<(), ManifestError> {
   let component = load("./tests/manifests/v1/component.yaml")
     .await?
     .try_component_config()?;
 
   assert!(matches!(component.component().kind(), config::ComponentKind::Wasm));
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_component_singular_input_field() -> Result<(), ManifestError> {
+  let component = load("./tests/manifests/v1/component-old.yaml")
+    .await?
+    .try_component_config()?;
+
+  assert!(matches!(component.component().kind(), config::ComponentKind::Wasm));
+
+  Ok(())
+}
+#[test_logger::test(tokio::test)]
+async fn test_component_extended() -> Result<(), ManifestError> {
+  let component = load("./tests/manifests/v1/component-extended.yaml")
+    .await?
+    .try_component_config()?;
+
+  if let ComponentImplementation::Composite(config) = component.component() {
+    let op = FlowOperationBuilder::default()
+      .name("test")
+      .expressions(vec![FlowExpression::connection(ConnectionExpression::new(
+        ConnectionTargetExpression::new(InstanceTarget::Input, InstancePort::named("input")),
+        ConnectionTargetExpression::new(InstanceTarget::Output, InstancePort::named("output")),
+      ))])
+      .build()
+      .unwrap();
+    assert_eq!(config.operations(), &[op])
+  } else {
+    panic!("Wrong component type");
+  }
 
   Ok(())
 }

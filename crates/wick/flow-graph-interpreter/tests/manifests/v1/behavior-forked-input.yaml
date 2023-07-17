@@ -1,0 +1,12 @@
+kind: wick/component@v1
+name: test
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: test
+      uses:
+        - name: empty
+          operation: test::empty_stream
+      flow:
+        - <>.input -> drop
+        - test::empty_stream -> test::echo -> <>

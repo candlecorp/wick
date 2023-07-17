@@ -7,6 +7,7 @@ use anyhow::Result;
 use flow_component::Component;
 use pretty_assertions::assert_eq;
 use serde_json::json;
+use test::*;
 use wick_packet::{packets, ComponentReference, Entity, Packet, RuntimeConfig};
 
 #[test_logger::test(tokio::test)]
@@ -25,6 +26,32 @@ async fn test_echo() -> Result<()> {
   let expected = Packet::encode("output", "hello world");
 
   assert_eq!(wrapper.unwrap(), expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_no_timeout_downstream() -> Result<()> {
+  // this test pipes a packet through an op with an extended timeout and
+  // should NOT cause downstream components to time out.
+  let sleep_for = 1000;
+  let (interpreter, mut outputs) = test::base_setup(
+    "./tests/manifests/v1/component-notimeout-downstream.yaml",
+    Entity::local("test"),
+    packets!(("input", sleep_for)),
+    None,
+    None,
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _wrapper = outputs.pop().unwrap(); //done signal
+  let wrapper = outputs.pop().unwrap();
+  let slept_for: u64 = wrapper?.decode()?;
+  assert!(slept_for >= sleep_for);
+
   interpreter.shutdown().await?;
 
   Ok(())
@@ -115,6 +142,27 @@ async fn test_anon_nodes() -> Result<()> {
   let (interpreter, mut outputs) = test::common_setup(
     "./tests/manifests/v1/inline-node-ids.yaml",
     "testop",
+    packets!(("input", "Hello world!")),
+  )
+  .await?;
+
+  assert_eq!(outputs.len(), 2);
+
+  let _wrapper = outputs.pop().unwrap(); //done signal
+  let wrapper = outputs.pop().unwrap();
+  let expected = Packet::encode("output", "!DLROW OLLEH");
+
+  assert_eq!(wrapper.unwrap(), expected);
+  interpreter.shutdown().await?;
+
+  Ok(())
+}
+
+#[test_logger::test(tokio::test)]
+async fn test_sequences() -> Result<()> {
+  let (interpreter, mut outputs) = test::common_setup(
+    "./tests/manifests/v1/flow-sequences.yaml",
+    "test",
     packets!(("input", "Hello world!")),
   )
   .await?;
@@ -382,204 +430,12 @@ async fn test_stream_multi() -> Result<()> {
   Ok(())
 }
 
-// #[test_logger::test(tokio::test)]
-// async fn test_inherent() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/inherent.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-//   let inputs = PacketMap::default();
-
-//   let invocation = invocation("inherent","test");
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let mut outputs: Vec<_> = stream.drain().await;
-//   println!("{:#?}", outputs);
-
-//   let wrapper = outputs.pop().unwrap();
-//   assert_true!(matches!(wrapper.payload, MessageTransport::Success(_)));
-
-//   interpreter.shutdown().await?;
-
-//   Ok(())
-// }
-
-// #[test_logger::test(tokio::test)]
-// async fn test_inherent_nested() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/inherent-nested.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-//   let inputs = PacketMap::default();
-
-//   let invocation = invocation("inherent_nested","test");
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let mut outputs: Vec<_> = stream.drain().await;
-//   interpreter.shutdown().await?;
-//   println!("{:#?}", outputs);
-
-//   let wrapper = outputs.pop().unwrap();
-//   assert_true!(matches!(wrapper.payload, MessageTransport::Success(_)));
-
-//   let wrapper = outputs.pop().unwrap();
-//   assert_true!(matches!(wrapper.payload, MessageTransport::Success(_)));
-
-//   let wrapper = outputs.pop().unwrap();
-//   assert_true!(matches!(wrapper.payload, MessageTransport::Success(_)));
-
-//   Ok(())
-// }
-
-// #[test_logger::test(tokio::test)]
-// async fn test_inherent_disconnected() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/inherent-disconnected.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-//   let inputs = PacketMap::from([("input", "Hello world".to_owned())]);
-
-//   let invocation = invocation("inherent_disconnected","test");
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let mut outputs: Vec<_> = stream.drain().await;
-//   println!("{:#?}", outputs);
-//   assert_eq!(outputs.len(), 1);
-
-//   let wrapper = outputs.pop().unwrap();
-//   assert_true!(matches!(wrapper.payload, MessageTransport::Success(_)));
-
-//   interpreter.shutdown().await?;
-
-//   Ok(())
-// }
-
-// #[test_logger::test(tokio::test)]
-// async fn test_stream() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/stream.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-//   let input_str = "Hello world".to_owned();
-//   let inputs = PacketMap::from([("input", input_str.clone())]);
-
-//   let invocation = invocation("stream","test");
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let outputs: Vec<_> = stream.drain().await;
-//   println!("{:#?}", outputs);
-//   assert_eq!(outputs.len(), 5);
-
-//   for wrapper in outputs {
-//     let output: String = wrapper.payload.deserialize()?;
-//     assert_eq!(output, input_str);
-//   }
-//   interpreter.shutdown().await?;
-
-//   Ok(())
-// }
-
-// #[test_logger::test(tokio::test)]
-// #[ignore]
-// async fn test_stream_collection_ref() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/stream-collection-ref.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-
-//   let inputs = PacketMap::from([("input", "my-input".to_owned())]);
-//   let invocation = invocation("stream_collection_ref","test");
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let outputs: Vec<_> = stream.drain().await;
-//   interpreter.shutdown().await?;
-//   println!("{:#?}", outputs);
-
-//   assert_eq!(outputs.len(), 5);
-
-//   for wrapper in outputs {
-//     assert_true!(matches!(wrapper.payload, MessageTransport::Success(_)));
-//   }
-
-//   Ok(())
-// }
-
-// #[test_logger::test(tokio::test)]
-// async fn test_stream_multi() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/stream-multi.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-
-//   let payload_stream: Flux<Payload, PayloadError> = Flux::new();
-//   // TODO metadata
-//   let metadata = b"";
-//   let payload = Payload::new_data(metadata, wasmrs_codec::messagepack::serialize("hello world")?);
-//   payload_stream.send(payload);
-
-//   let invocation = InvocationStream::new(
-//     Entity::Test("test_stream_multi"),
-//     Entity::local("test"),
-//     payload_stream.take_rx().unwrap(),
-//     None,
-//   );
-
-//   // let inputs = PacketMap::from([("input", "hello world".to_owned())]);
-//   // let invocation = invocation("stream_multi","test");
-
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let mut stream = interpreter.invoke(invocation).await?;
-
-//   let outputs: Vec<_> = stream.drain().await;
-//   interpreter.shutdown().await?;
-//   println!("{:#?}", outputs);
-//   assert_eq!(outputs.len(), 11);
-
-//   let (mut vowels, mut rest): (Vec<_>, Vec<_>) = outputs.into_iter().partition(|wrapper| wrapper.port == "vowels");
-
-//   let mut expected_vowels: Vec<_> = "eoo".chars().collect();
-//   while let Some(ch) = expected_vowels.pop() {
-//     let wrapper = vowels.pop().unwrap();
-//     assert_eq!(wrapper.payload, MessageTransport::success(&ch));
-//   }
-
-//   let mut expected_other: Vec<_> = "hll wrld".chars().collect();
-//   while let Some(ch) = expected_other.pop() {
-//     let wrapper = rest.pop().unwrap();
-//     assert_eq!(wrapper.payload, MessageTransport::success(&ch));
-//   }
-
-//   Ok(())
-// }
-
-// #[test_logger::test(tokio::test)]
-// async fn test_no_inputs() -> Result<()> {
-//   let manifest = load("./tests/manifests/v0/no-inputs.yaml")?;
-//   let network = from_def(&manifest)?;
-//   let collections = HandlerMap::new(vec![NamespaceHandler::new("test", Box::new(TestCollection::new()))]);
-
-//   let inputs = PacketMap::default();
-
-//   let invocation = invocation("no-inputs","test");
-//   let mut interpreter = Interpreter::new(Some(Seed::unsafe_new(1)), network, None, Some(collections))?;
-//   interpreter.start(OPTIONS, Some(Box::new(JsonWriter::default()))).await;
-//   let stream = interpreter.invoke(invocation).await?;
-
-//   let mut outputs: Vec<_> = stream.collect().await;
-//   println!("{:#?}", outputs);
-//   assert_eq!(outputs.len(), 2);
-
-//   let _wrapper = outputs.pop().unwrap(); //done signal
-//   let wrapper = outputs.pop().unwrap();
-//   let result: String = wrapper.deserialize()?;
-
-//   assert_eq!(result, "Hello world".to_owned());
-//   interpreter.shutdown().await?;
-
-//   Ok(())
-// }
+#[test_logger::test(tokio::test)]
+async fn test_subflows() -> Result<()> {
+  first_packet_test(
+    "./tests/manifests/v1/children-operations.yaml",
+    packets!(("input", "hello WORLD")),
+    "DLROW OLLEH",
+  )
+  .await
+}

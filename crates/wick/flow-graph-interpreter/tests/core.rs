@@ -1,13 +1,11 @@
-#![allow(unused_attributes, clippy::box_default)]
-
 mod test;
 
 use anyhow::Result;
 use flow_component::Component;
 use pretty_assertions::assert_eq;
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use wick_packet::{packets, Entity, Packet, RuntimeConfig};
+use serde_json::json;
+use test::*;
+use wick_packet::{packets, Packet, RuntimeConfig};
 
 #[test_logger::test(tokio::test)]
 async fn test_senders() -> Result<()> {
@@ -111,7 +109,6 @@ async fn test_merge() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
-// #[ignore]
 async fn test_sender_merge() -> Result<()> {
   let (interpreter, mut outputs) =
     test::common_setup("./tests/manifests/v1/core-sender-merge.yaml", "test", Vec::new()).await?;
@@ -129,7 +126,6 @@ async fn test_sender_merge() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
-// #[ignore]
 async fn test_multi_sender() -> Result<()> {
   let (interpreter, mut outputs) =
     test::common_setup("./tests/manifests/v1/core-multi-sender.yaml", "test", Vec::new()).await?;
@@ -149,16 +145,6 @@ async fn test_multi_sender() -> Result<()> {
   interpreter.shutdown().await?;
 
   Ok(())
-}
-
-#[test_logger::test(tokio::test)]
-async fn test_subflows() -> Result<()> {
-  first_packet_test(
-    "./tests/manifests/v1/children-operations.yaml",
-    packets!(("input", "hello WORLD")),
-    "DLROW OLLEH",
-  )
-  .await
 }
 
 #[test_logger::test(tokio::test)]
@@ -628,128 +614,4 @@ async fn test_switch_case_multi_input_streams() -> Result<()> {
     ],
   )
   .await
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct SuccessPacket {
-  #[serde(default)]
-  flags: u8,
-  #[serde(default)]
-  payload: Option<Value>,
-  port: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct ErrorPacket {
-  port: String,
-  error: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(untagged)]
-enum JsonPacket {
-  Error(ErrorPacket),
-  Success(SuccessPacket),
-}
-
-impl From<JsonPacket> for Packet {
-  fn from(value: JsonPacket) -> Self {
-    match value {
-      JsonPacket::Error(v) => Packet::err(v.port, v.error),
-      JsonPacket::Success(v) => {
-        if v.payload.is_some() {
-          Packet::encode(v.port, v.payload)
-        } else if v.flags == 64 {
-          Packet::open_bracket(v.port)
-        } else if v.flags == 32 {
-          Packet::close_bracket(v.port)
-        } else {
-          Packet::done(v.port)
-        }
-      }
-    }
-  }
-}
-
-#[allow(unused)]
-fn from_packet_file(file: &str) -> Result<Vec<Packet>> {
-  let file = std::fs::read_to_string(file).unwrap();
-  let mut packets = Vec::new();
-  for line in file.lines() {
-    let json = serde_json::from_str::<JsonPacket>(line)?;
-    let packet: Packet = json.into();
-    packets.push(packet);
-  }
-
-  Ok(packets)
-}
-
-async fn first_packet_test(file: &str, packets: Vec<Packet>, expected: &str) -> Result<()> {
-  first_packet_test_op("test", file, packets, expected).await
-}
-
-async fn first_packet_test_op(op_name: &str, file: &str, packets: Vec<Packet>, expected: &str) -> Result<()> {
-  let (interpreter, mut outputs) = test::common_setup(file, op_name, packets).await?;
-
-  assert_eq!(outputs.len(), 2);
-
-  let _ = outputs.pop();
-  let wrapper = outputs.pop().unwrap().unwrap();
-  let actual: String = wrapper.decode()?;
-  assert_eq!(actual, expected);
-  println!("shutting down interpreter");
-  interpreter.shutdown().await?;
-  println!("done");
-
-  Ok(())
-}
-
-async fn first_packet_test_config(
-  file: &str,
-  root_config: Option<RuntimeConfig>,
-  config: Option<RuntimeConfig>,
-  packets: Vec<Packet>,
-  expected: impl Into<Value>,
-) -> Result<()> {
-  let (interpreter, mut outputs) = test::base_setup(file, Entity::local("test"), packets, root_config, config).await?;
-
-  assert_eq!(outputs.len(), 2);
-
-  let _ = outputs.pop();
-  let wrapper = outputs.pop().unwrap().unwrap();
-  let actual: Value = wrapper.decode()?;
-  assert_eq!(actual, expected.into());
-  interpreter.shutdown().await?;
-
-  Ok(())
-}
-
-async fn test_config(
-  file: &str,
-  root_config: Option<RuntimeConfig>,
-  config: Option<RuntimeConfig>,
-  packets: Vec<Packet>,
-  expected: Vec<Packet>,
-) -> Result<()> {
-  let (interpreter, outputs) = test::base_setup(file, Entity::local("test"), packets, root_config, config).await?;
-
-  for (i, expected) in expected.into_iter().enumerate() {
-    let actual_packet = outputs.get(i).cloned().unwrap().unwrap();
-    println!("actual[{}] raw: {:?}", i, actual_packet);
-    println!("expected[{}] raw: {:?}", i, expected);
-
-    if actual_packet.has_data() {
-      let actual: Value = actual_packet.decode()?;
-      let expected: Value = expected.decode()?;
-      println!("actual[{}] value: {}", i, actual);
-      println!("expected[{}] value: {}", i, expected);
-      assert_eq!(actual, expected);
-    } else {
-      assert_eq!(actual_packet, expected);
-    }
-  }
-
-  interpreter.shutdown().await?;
-
-  Ok(())
 }

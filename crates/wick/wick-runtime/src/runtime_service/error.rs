@@ -15,6 +15,9 @@ pub enum EngineError {
   #[error("Could not start interpreter from '{}': {1}", display_path(.0))]
   InterpreterInit(Option<PathBuf>, Box<flow_graph_interpreter::error::InterpreterError>),
 
+  #[error("Could not generate graph from '{}': {1}", display_path(.0))]
+  Graph(Option<PathBuf>, Box<flow_graph_interpreter::graph::GraphError>),
+
   #[error("Could not start runtime from '{}': {1}", display_path(.0))]
   RuntimeInit(Option<PathBuf>, String),
 

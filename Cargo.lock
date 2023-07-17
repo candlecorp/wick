@@ -1645,17 +1645,20 @@ name = "flow-expression-parser"
 version = "0.5.0"
 dependencies = [
  "anyhow",
- "lazy_static",
  "liquid-json",
  "nom",
+ "once_cell",
+ "parking_lot 0.12.1",
  "pretty_assertions",
  "regex",
  "rstest",
+ "seeded-random",
  "serde",
  "serde_json",
  "test-logger",
  "thiserror",
  "tracing",
+ "uuid",
  "wick-logger",
 ]
 
@@ -5082,6 +5085,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-test"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53474327ae5e166530d17f2d956afcb4f8a004de581b3cae10f12006bc8163e3"
+dependencies = [
+ "async-stream",
+ "bytes 1.4.0",
+ "futures-core",
+ "tokio",
+ "tokio-stream",
+]
+
+[[package]]
 name = "tokio-util"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6496,6 +6512,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tokio-test",
  "tracing",
  "url",
  "wick-asset-reference",

@@ -21,12 +21,12 @@ tests:
     cases:
       - name: render
         operation: render
-        inputs:
+        input:
           - name: template
             value: 'Hello {{ name }}!'
           - name: data
             value:
               name: 'jinja'
-        outputs:
+        output:
           - name: output
             value: 'Hello jinja!'

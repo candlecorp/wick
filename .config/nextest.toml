@@ -95,7 +95,12 @@ store-failure-output = true
 
 [test-groups]
 port-limited = { max-threads = 1 }
+rng-limited = { max-threads = 1 }
 
 [[profile.default.overrides]]
 filter = 'test(port_limited::)'
 test-group = 'port-limited'
+
+[[profile.default.overrides]]
+filter = 'test(rng_limited::)'
+test-group = 'rng-limited'

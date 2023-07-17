@@ -83,7 +83,7 @@ async fn load_shortform_yaml() -> Result<(), ManifestError> {
     expr,
     &FlowExpression::connection(ConnectionExpression::new(
       ConnectionTargetExpression::new(InstanceTarget::Input, InstancePort::named("input")),
-      ConnectionTargetExpression::new(InstanceTarget::named("logger"), InstancePort::named("input"))
+      ConnectionTargetExpression::new(InstanceTarget::Named("logger".to_owned()), InstancePort::named("input"))
     ))
   );
 

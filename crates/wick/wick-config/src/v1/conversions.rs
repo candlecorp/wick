@@ -1071,7 +1071,7 @@ impl TryFrom<ast::ConnectionTargetExpression> for v1::ConnectionTargetDefinition
     Ok(Self {
       data,
       instance: instance.to_string(),
-      port: port.to_string(),
+      port: port.to_option_string(),
     })
   }
 }
@@ -1204,7 +1204,9 @@ impl TryFrom<crate::v1::ConnectionTargetDefinition> for ast::ConnectionTargetExp
   fn try_from(def: crate::v1::ConnectionTargetDefinition) -> Result<Self> {
     Ok(ast::ConnectionTargetExpression::new_data(
       InstanceTarget::from_str(&def.instance)?,
-      InstancePort::from_str(&def.port)?,
+      def
+        .port
+        .map_or(Ok(InstancePort::None), |p| InstancePort::from_str(&p))?,
       def.data,
     ))
   }

@@ -3,17 +3,17 @@ use std::fmt::Debug;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-pub(crate) mod component_component;
-pub(crate) mod core_component;
-pub(crate) mod internal_component;
-pub(crate) mod null_component;
+pub(crate) mod component;
+pub(crate) mod core;
+pub(crate) mod internal;
+pub(crate) mod null;
 pub(crate) mod self_component;
 
 use flow_component::Component;
-use wick_interface_types::ComponentSignature;
+use wick_interface_types::{ComponentSignature, OperationSignature};
 
-use self::core_component::CoreComponent;
-use self::internal_component::InternalComponent;
+use self::core::CoreComponent;
+use self::internal::InternalComponent;
 use crate::error::InterpreterError;
 use crate::graph::types::Network;
 use crate::SharedHandler;
@@ -86,6 +86,19 @@ impl HandlerMap {
   pub(crate) fn keys(&self) -> Vec<String> {
     self.components.keys().cloned().collect()
   }
+
+  #[allow(unused)]
+  pub(crate) fn get_signature(&self, namespace: &str) -> Option<&ComponentSignature> {
+    self.components.get(namespace).map(|c| c.component.signature())
+  }
+
+  #[allow(unused)]
+  pub(crate) fn get_op_signature(&self, namespace: &str, name: &str) -> Option<&OperationSignature> {
+    self
+      .components
+      .get(namespace)
+      .and_then(|c| c.component.signature().get_operation(name))
+  }
 }
 
 pub(crate) fn dyn_component_id(name: &str, schematic: &str, instance: &str) -> String {
@@ -93,7 +106,7 @@ pub(crate) fn dyn_component_id(name: &str, schematic: &str, instance: &str) -> S
 }
 
 pub(crate) fn reconcile_op_id(ns: &str, name: &str, schematic: &str, instance: &str) -> String {
-  if ns == CoreComponent::ID && core_component::DYNAMIC_OPERATIONS.contains(&name) {
+  if ns == CoreComponent::ID && core::DYNAMIC_OPERATIONS.contains(&name) {
     dyn_component_id(name, schematic, instance)
   } else {
     name.to_owned()

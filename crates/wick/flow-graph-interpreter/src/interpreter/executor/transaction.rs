@@ -9,7 +9,7 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wasmrs_rx::Observer;
-use wick_packet::{Invocation, Packet, PacketError, PacketSender, PacketStream};
+use wick_packet::{Entity, Invocation, Packet, PacketError, PacketSender, PacketStream};
 
 use self::operation::InstanceHandler;
 use super::error::ExecutionError;
@@ -31,7 +31,8 @@ type Result<T> = std::result::Result<T, ExecutionError>;
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum TxState {
   OutputPending,
-  OutputComplete,
+  Finished,
+  CompleteWithTasksPending,
 }
 
 #[derive()]
@@ -48,6 +49,7 @@ pub struct Transaction {
   span: tracing::Span,
   callback: Arc<RuntimeCallback>,
   config: LiquidOperationConfig,
+  options: Option<InterpreterOptions>,
   pub(crate) last_access_time: Mutex<SystemTime>,
   pub(crate) stats: TransactionStatistics,
 }
@@ -73,10 +75,14 @@ impl Transaction {
     let instances: Vec<_> = schematic
       .nodes()
       .iter()
-      .map(|component| {
+      .map(|op_node| {
         Arc::new(InstanceHandler::new(
           schematic.clone(),
-          component,
+          invocation.next_tx(
+            invocation.origin.clone(),
+            Entity::operation(op_node.cref().component_id(), op_node.cref().name()),
+          ),
+          op_node,
           components.clone(),
           self_component.clone(),
         ))
@@ -94,6 +100,7 @@ impl Transaction {
 
     Self {
       channel,
+      options: None,
       invocation,
       schematic,
       config,
@@ -129,6 +136,14 @@ impl Transaction {
     &self.instances[index]
   }
 
+  pub(crate) fn instances_pending(&self) -> Vec<&Arc<InstanceHandler>> {
+    self.instances.iter().filter(|i| !i.is_finished()).collect()
+  }
+
+  pub(crate) fn active_instances(&self) -> Vec<&Arc<InstanceHandler>> {
+    self.instances.iter().filter(|i| i.is_running()).collect()
+  }
+
   pub(crate) fn done(&self) -> bool {
     let output_handler = self.output_handler();
     let outputs_done = output_handler
@@ -144,26 +159,27 @@ impl Transaction {
     self.stats.start("execution");
     self.span.in_scope(|| trace!("starting transaction"));
 
+    self.options = Some(options.clone());
+
     self.start_time = Instant::now();
 
     for instance in self.instances.iter() {
       if instance.index() == SCHEMATIC_OUTPUT_INDEX {
         continue;
       }
-      let invocation = self
-        .invocation
-        .next_tx(self.invocation.origin.clone(), instance.entity());
-      instance
-        .clone()
-        .start(
-          self.id(),
-          invocation,
-          self.channel.clone(),
-          options,
-          self.callback.clone(),
-          self.config.clone(),
-        )
-        .await?;
+      // start operations that have no inputs.
+      if instance.inputs().is_empty() {
+        instance
+          .clone()
+          .start(
+            self.id(),
+            self.channel.clone(),
+            options,
+            self.callback.clone(),
+            self.config.clone(),
+          )
+          .await?;
+      }
     }
 
     let incoming = self.invocation.eject_stream();
@@ -171,6 +187,20 @@ impl Transaction {
     self.prime_input_ports(self.schematic.input().index(), incoming)?;
 
     self.stats.mark("start_done");
+    Ok(())
+  }
+
+  pub(crate) async fn start_instance(&self, instance: Arc<InstanceHandler>) -> Result<()> {
+    instance
+      .start(
+        self.id(),
+        self.channel.clone(),
+        self.options.as_ref().unwrap(),
+        self.callback.clone(),
+        self.config.clone(),
+      )
+      .await?;
+
     Ok(())
   }
 
@@ -254,27 +284,28 @@ impl Transaction {
   pub(crate) fn take_tx_output(&self) -> Result<Vec<Packet>> {
     let output = self.output_handler();
     output
-      .take_packets()
+      .drain_inputs()
       .map_err(|_| ExecutionError::InvalidState(StateError::PayloadMissing(output.id().to_owned())))
   }
 
-  pub(crate) fn _take_packets(&self, instance: &InstanceHandler) -> Result<Vec<Packet>> {
-    instance.take_packets()
-  }
-
-  pub(crate) fn take_component_output(&self, port: &PortReference) -> Option<Packet> {
+  pub(crate) fn take_instance_output(&self, port: &PortReference) -> Option<Packet> {
     let instance = self.instance(port.node_index());
     instance.take_output(port)
   }
 
-  pub(crate) fn take_component_input(&self, port: &PortReference) -> Option<Packet> {
+  pub(crate) fn take_instance_input(&self, port: &PortReference) -> Option<Packet> {
     let instance = self.instance(port.node_index());
     instance.take_input(port)
   }
 
   pub(crate) fn check_stalled(&self) -> Result<TxState> {
     if self.done() {
-      Ok(TxState::OutputComplete)
+      let active_instances = self.active_instances();
+      if active_instances.is_empty() {
+        Ok(TxState::Finished)
+      } else {
+        Ok(TxState::CompleteWithTasksPending)
+      }
     } else {
       self.span.in_scope(|| warn!(tx_id = %self.id(), "transaction hung"));
       self.emit_output_message(vec![Packet::component_error("Transaction hung")])?;
@@ -282,8 +313,11 @@ impl Transaction {
     }
   }
 
-  pub(crate) fn push_packets(&self, index: NodeIndex, packets: Vec<Packet>) -> Result<()> {
+  pub(crate) async fn push_packets(&self, index: NodeIndex, packets: Vec<Packet>) -> Result<()> {
     let instance = self.instance(index).clone();
+    if !instance.has_started() {
+      self.start_instance(instance.clone()).await?;
+    }
 
     let _ = instance.accept_packets(packets);
 

@@ -1487,6 +1487,7 @@
         },
         "port": {
           "description": "The operation&#x27;s input or output (depending on to/from).",
+          "required": false,
 
           "type": "string"
         },
@@ -1502,7 +1503,7 @@
           }
         }
       },
-      "required": ["instance", "port"]
+      "required": ["instance"]
     },
 
     "OperationDefinition": {

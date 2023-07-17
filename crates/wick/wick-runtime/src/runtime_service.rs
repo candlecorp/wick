@@ -4,6 +4,8 @@ pub(crate) mod error;
 mod init;
 mod utils;
 
+use std::path::PathBuf;
+
 pub(crate) use child_init::{init_child, ChildInit};
 pub(crate) use component_registry::{ComponentFactory, ComponentRegistry};
 use flow_graph_interpreter::{HandlerMap, InterpreterOptions};
@@ -37,13 +39,8 @@ pub(crate) struct RuntimeService {
 impl RuntimeService {
   pub(crate) async fn start(mut init: ServiceInit) -> Result<Arc<Self>> {
     let span = init.span.clone();
+    let manifest_source: Option<PathBuf> = init.manifest.source().map(Into::into);
     let ns = init.namespace.clone().unwrap_or_else(|| init.id.to_string());
-    let graph = init.span.in_scope(|| {
-      debug!("initializing engine service");
-
-      Ok::<_, EngineError>(flow_graph_interpreter::graph::from_def(&mut init.manifest)?)
-    })?;
-
     let mut components = HandlerMap::default();
 
     let extends = if let ComponentImplementation::Composite(config) = init.manifest.component() {
@@ -51,7 +48,7 @@ impl RuntimeService {
       for native_comp in init.native_components.inner() {
         components
           .add(native_comp(init.seed())?)
-          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
+          .map_err(|e| EngineError::InterpreterInit(manifest_source.clone(), Box::new(e)))?;
       }
 
       config.extends()
@@ -75,7 +72,7 @@ impl RuntimeService {
 
         components
           .add(main_component)
-          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
+          .map_err(|e| EngineError::InterpreterInit(manifest_source.clone(), Box::new(e)))?;
       }
       &[]
     };
@@ -83,7 +80,7 @@ impl RuntimeService {
     for id in extends {
       if !init.manifest.import().keys().any(|k| k == id) {
         return Err(EngineError::RuntimeInit(
-          init.manifest.source().map(Into::into),
+          manifest_source.clone(),
           format!("Inherited component '{}' not found", id),
         ));
       }
@@ -100,13 +97,19 @@ impl RuntimeService {
         }
         components
           .add(component)
-          .map_err(|e| EngineError::InterpreterInit(init.manifest.source().map(Into::into), Box::new(e)))?;
+          .map_err(|e| EngineError::InterpreterInit(manifest_source.clone(), Box::new(e)))?;
       }
     }
 
-    let source = init.manifest.source();
     let callback = make_link_callback(init.id);
     assert_constraints(&init.constraints, &components)?;
+
+    let graph = init.span.in_scope(|| {
+      debug!("generating graph");
+
+      flow_graph_interpreter::graph::from_def(&mut init.manifest, &components)
+        .map_err(|e| EngineError::Graph(manifest_source.clone(), Box::new(e)))
+    })?;
 
     let mut interpreter = flow_graph_interpreter::Interpreter::new(
       graph,
@@ -116,7 +119,7 @@ impl RuntimeService {
       callback,
       &span,
     )
-    .map_err(|e| EngineError::InterpreterInit(source.map(Into::into), Box::new(e)))?;
+    .map_err(|e| EngineError::InterpreterInit(manifest_source.clone(), Box::new(e)))?;
 
     let options = InterpreterOptions { ..Default::default() };
     interpreter.start(Some(options), None).await;

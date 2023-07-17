@@ -24,6 +24,7 @@ pub(crate) struct EventLoop {
 impl EventLoop {
   pub(crate) const WAKE_TIMEOUT: Duration = Duration::from_millis(500);
   pub(crate) const STALLED_TX_TIMEOUT: Duration = Duration::from_secs(60 * 5);
+  pub(crate) const SLOW_TX_TIMEOUT: Duration = Duration::from_secs(10);
 
   pub(super) fn new(channel: InterpreterChannel) -> Self {
     let dispatcher = channel.dispatcher();
@@ -166,7 +167,7 @@ async fn event_loop(
         break Ok(());
       }
       Err(_) => {
-        if let Err(error) = state.check_stalled() {
+        if let Err(error) = state.run_cleanup() {
           error!(%error,"Error checking hung transactions");
           channel.dispatcher().dispatch_close(Some(error));
         };

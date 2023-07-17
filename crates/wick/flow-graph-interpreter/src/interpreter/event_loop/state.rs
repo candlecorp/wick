@@ -32,18 +32,27 @@ impl State {
     &self.transactions
   }
 
-  pub(super) fn check_stalled(&mut self) -> Result<(), ExecutionError> {
+  pub(super) fn run_cleanup(&mut self) -> Result<(), ExecutionError> {
     let mut cleanup = Vec::new();
     for (tx_id, tx) in self.transactions.iter() {
-      let last_update = tx.last_access();
-      if last_update.elapsed().unwrap() > EventLoop::STALLED_TX_TIMEOUT {
+      let last_update = tx.last_access().elapsed().unwrap();
+
+      if last_update > EventLoop::SLOW_TX_TIMEOUT {
+        let active_instances = tx.active_instances().iter().map(|i| i.id()).collect::<Vec<_>>();
+        warn!(%tx_id, ?active_instances, "slow tx: no packet received in a long time");
+      }
+      if last_update > EventLoop::STALLED_TX_TIMEOUT {
         match tx.check_stalled() {
+          Ok(TxState::Finished) => {
+            // transaction has completed its output and isn't generating more data, clean it up.
+            cleanup.push(*tx_id);
+          }
           Ok(TxState::OutputPending) => {
             error!(%tx_id, "tx reached timeout while still waiting for output data");
             cleanup.push(*tx_id);
           }
-          Ok(TxState::OutputComplete) => {
-            // transaction has completed its output and isn't generating more data, clean it up.
+          Ok(TxState::CompleteWithTasksPending) => {
+            error!(%tx_id, "tx reached timeout while still waiting for tasks to complete");
             cleanup.push(*tx_id);
           }
           Err(error) => {
@@ -118,8 +127,8 @@ impl State {
 
     if is_schematic_output {
       tx.handle_schematic_output()?;
-    } else if let Some(packet) = tx.take_component_input(&port) {
-      tx.push_packets(port.node_index(), vec![packet])?;
+    } else if let Some(packet) = tx.take_instance_input(&port) {
+      tx.push_packets(port.node_index(), vec![packet]).await?;
     }
     Ok(())
   }
@@ -152,7 +161,7 @@ impl State {
     tx.stats
       .mark(format!("output:{}:{}:ready", port.node_index(), port.port_index()));
 
-    if let Some(message) = tx.take_component_output(&port) {
+    if let Some(message) = tx.take_instance_output(&port) {
       trace!(?message, "delivering component output",);
       let connections = graph.get_port(&port).connections();
       for index in connections {

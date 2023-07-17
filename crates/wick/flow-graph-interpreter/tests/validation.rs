@@ -4,7 +4,7 @@ mod test;
 use anyhow::Result;
 use flow_component::{panic_callback, Component, ComponentError};
 use flow_graph_interpreter::error::{InterpreterError, OperationInvalid, ValidationError};
-use flow_graph_interpreter::graph::from_def;
+use flow_graph_interpreter::graph::{from_def, GraphError};
 use flow_graph_interpreter::{HandlerMap, Interpreter, NamespaceHandler};
 use pretty_assertions::assert_eq;
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
@@ -45,13 +45,14 @@ fn collections(sig: ComponentSignature) -> HandlerMap {
 }
 
 fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interpreter, InterpreterError> {
-  let network = from_def(&mut load(path).unwrap()).unwrap();
+  let components = collections(sig);
+  let network = from_def(&mut load(path).unwrap(), &components).unwrap();
 
   Interpreter::new(
     network,
     None,
     None,
-    Some(collections(sig)),
+    Some(components),
     panic_callback(),
     &Span::current(),
   )
@@ -60,30 +61,35 @@ fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interprete
 #[test_logger::test(tokio::test)]
 async fn test_missing_collections() -> Result<()> {
   let mut manifest = load("./tests/manifests/v0/external.yaml")?;
-  let network = from_def(&mut manifest)?;
-  let result: std::result::Result<Interpreter, _> =
-    Interpreter::new(network, None, None, None, panic_callback(), &Span::current());
-  let validation_errors = ValidationError::ComponentIdNotFound("test".to_owned());
-  if let Err(InterpreterError::EarlyError(e)) = result {
-    assert_eq!(e, validation_errors);
-  } else {
-    panic!()
-  }
+  let result = from_def(&mut manifest, &Default::default());
+
+  let err = result.unwrap_err();
+
+  assert_eq!(
+    GraphError::MissingOperation {
+      component: "test".to_owned(),
+      operation: "echo".to_owned(),
+    },
+    err
+  );
   Ok(())
 }
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_component() -> Result<()> {
-  let result = interp("./tests/manifests/v0/external.yaml", ComponentSignature::default());
-  let validation_errors = ValidationError::MissingOperation {
-    component: "test".to_owned(),
-    name: "echo".to_owned(),
-  };
-  if let Err(InterpreterError::EarlyError(e)) = result {
-    assert_eq!(e, validation_errors);
-  } else {
-    panic!()
-  }
+  let result = from_def(
+    &mut load("./tests/manifests/v0/external.yaml").unwrap(),
+    &Default::default(),
+  );
+
+  let e = result.unwrap_err();
+  assert_eq!(
+    e,
+    GraphError::MissingOperation {
+      component: "test".to_owned(),
+      operation: "echo".to_owned()
+    }
+  );
 
   Ok(())
 }
@@ -102,6 +108,7 @@ async fn test_invalid_port() -> Result<()> {
       e,
       ValidationError::UnknownInput {
         port: "input".to_owned(),
+        id: "INSTANCE".to_owned(),
         operation: "echo".to_owned(),
         component: "test".to_owned(),
       }
@@ -114,6 +121,7 @@ async fn test_invalid_port() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
+
 async fn test_missing_port() -> Result<()> {
   let signature = ComponentSignature::new("test")
     .version("0.0.0")
@@ -131,11 +139,13 @@ async fn test_missing_port() -> Result<()> {
   let errors = vec![
     ValidationError::MissingConnection {
       port: "OTHER_IN".to_owned(),
+      id: "INSTANCE".to_owned(),
       component: "test".to_owned(),
       operation: "echo".to_owned(),
     },
     ValidationError::UnusedOutput {
       port: "OTHER_OUT".to_owned(),
+      id: "INSTANCE".to_owned(),
       component: "test".to_owned(),
       operation: "echo".to_owned(),
     },
@@ -144,7 +154,7 @@ async fn test_missing_port() -> Result<()> {
   if let Err(InterpreterError::ValidationError(e)) = result {
     assert_eq!(e, vec![OperationInvalid::new("test".to_owned(), errors)]);
   } else {
-    panic!()
+    panic!("{:?}", result);
   }
 
   Ok(())

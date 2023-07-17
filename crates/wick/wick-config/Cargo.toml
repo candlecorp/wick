@@ -50,6 +50,7 @@ pretty_assertions = { workspace = true }
 wick-logger = { workspace = true }
 test-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio-test = { workspace = true }
 asset-container = { workspace = true }
 tokio-stream = { workspace = true }
 rstest = { workspace = true }

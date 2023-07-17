@@ -2,8 +2,19 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use liquid_json::LiquidJsonValue;
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 
 use crate::{parse, Error};
+
+pub(crate) static RNG: Lazy<Mutex<seeded_random::Random>> = Lazy::new(|| Mutex::new(seeded_random::Random::new()));
+
+/// Set the seed for the RNG.
+///
+/// The RNG is most commonly used for generating UUIDs for anonymous nodes.
+pub fn set_seed(seed: u64) {
+  *RNG.lock() = seeded_random::Random::from_seed(seeded_random::Seed::unsafe_new(seed));
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[must_use]
@@ -24,7 +35,12 @@ pub enum InstanceTarget {
   /// A named node instance.
   Named(String),
   /// An instance created inline.
-  Path(String, Option<String>),
+  Path {
+    /// The path to the operation, i.e. namespace::operation
+    path: String,
+    /// The optional ID to use for this instance.
+    id: TargetId,
+  },
 }
 
 impl InstanceTarget {
@@ -47,7 +63,7 @@ impl InstanceTarget {
       InstanceTarget::Default => panic!("Cannot get id of default instance"),
       InstanceTarget::Link => Some(parse::NS_LINK),
       InstanceTarget::Named(name) => Some(name),
-      InstanceTarget::Path(_, id) => id.as_deref(),
+      InstanceTarget::Path { id, .. } => id.to_opt_str(),
     }
   }
 
@@ -57,13 +73,34 @@ impl InstanceTarget {
   }
 
   /// Create a new [InstanceTarget::Path] from a path and id.
-  pub fn path(path: impl AsRef<str>, id: impl AsRef<str>) -> Self {
-    Self::Path(path.as_ref().to_owned(), Some(id.as_ref().to_owned()))
+  pub(crate) fn path(path: impl AsRef<str>, id: impl AsRef<str>) -> Self {
+    Self::Path {
+      path: path.as_ref().to_owned(),
+      id: TargetId::Named(id.as_ref().to_owned()),
+    }
   }
 
   /// Create a new [InstanceTarget::Path] from a path without an id.
-  pub fn anonymous_path(path: impl AsRef<str>) -> Self {
-    Self::Path(path.as_ref().to_owned(), None)
+  pub(crate) fn anonymous_path(path: impl AsRef<str>) -> Self {
+    Self::Path {
+      path: path.as_ref().to_owned(),
+      id: TargetId::None,
+    }
+  }
+
+  /// Create a new [InstanceTarget::Path] from a path without an id.
+  #[cfg(test)]
+  pub(crate) fn generated_path(path: impl AsRef<str>) -> Self {
+    Self::Path {
+      path: path.as_ref().to_owned(),
+      id: TargetId::new_generated(&path.as_ref().replace("::", "_")),
+    }
+  }
+
+  pub(crate) fn ensure_id(&mut self) {
+    if let InstanceTarget::Path { id, path } = self {
+      id.ensure_id(&path.replace("::", "_"));
+    }
   }
 }
 
@@ -85,46 +122,66 @@ impl std::fmt::Display for InstanceTarget {
       InstanceTarget::Default => f.write_str("<>"),
       InstanceTarget::Link => f.write_str(parse::NS_LINK),
       InstanceTarget::Named(name) => f.write_str(name),
-      InstanceTarget::Path(path, id) => match id {
-        Some(id) => write!(f, "{}[{}]", path, id),
-        None => write!(f, "{}", path),
-      },
+      InstanceTarget::Path { path, id } => write!(f, "{}{}", path, id.as_inline_id()),
     }
   }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[must_use]
-/// A port on a node instance, used to connect node instances together.
-pub struct ConnectionTarget {
-  pub(crate) target: InstanceTarget,
-  pub(crate) port: String,
+/// [TargetId] differentiates between user-provided IDs, generated IDs, and no IDs.
+pub enum TargetId {
+  /// An automatically generated ID
+  Generated(String),
+  /// No ID provided
+  None,
+  /// A user-provided ID
+  Named(String),
 }
 
-impl ConnectionTarget {
-  /// Create a new ConnectionTarget.
-  pub fn new(target: InstanceTarget, port: impl AsRef<str>) -> Self {
-    Self {
-      target,
-      port: port.as_ref().to_owned(),
+fn generate_id(prefix: &str) -> String {
+  format!(
+    "{}_{}",
+    prefix,
+    RNG.lock().uuid().to_string().split_once('-').unwrap().0
+  )
+}
+
+impl TargetId {
+  #[cfg(test)]
+  #[must_use]
+  pub fn new_generated(prefix: &str) -> Self {
+    TargetId::Generated(generate_id(prefix))
+  }
+
+  /// Convert the [TargetId] to an Option<String>.
+  #[must_use]
+  pub fn to_opt_str(&self) -> Option<&str> {
+    match self {
+      TargetId::Generated(id) => Some(id),
+      TargetId::None => None,
+      TargetId::Named(name) => Some(name),
     }
   }
 
-  /// Get the target port
+  /// Turn the [TargetId] into something that can be appended as an inline ID.
   #[must_use]
-  pub fn port(&self) -> &str {
-    &self.port
+  pub fn as_inline_id(&self) -> String {
+    match self {
+      TargetId::Generated(id) => format!("[{}]", id),
+      TargetId::None => "".to_owned(),
+      TargetId::Named(name) => format!("[{}]", name),
+    }
   }
 
-  /// Get the target instance
-  pub fn target(&self) -> &InstanceTarget {
-    &self.target
+  fn ensure_id(&mut self, prefix: &str) {
+    if *self == TargetId::None {
+      *self = TargetId::Generated(generate_id(prefix));
+    }
   }
-}
 
-impl std::fmt::Display for ConnectionTarget {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}.{}", self.target, self.port)
+  /// Replace the [TargetId] with a [TargetId::Named] variant.
+  pub fn replace(&mut self, value: impl AsRef<str>) {
+    *self = TargetId::Named(value.as_ref().to_owned());
   }
 }
 
@@ -201,11 +258,20 @@ impl FromStr for FlowExpression {
 }
 
 impl FlowExpression {
-  /// Get the expression as a ConnectionExpression.
+  /// Get the expression as a [ConnectionExpression].
   #[must_use]
   pub fn as_connection(&self) -> Option<&ConnectionExpression> {
     match self {
       FlowExpression::ConnectionExpression(expr) => Some(expr),
+      _ => None,
+    }
+  }
+
+  /// Get the expression as a [BlockExpression].
+  #[must_use]
+  pub fn as_block(&self) -> Option<&BlockExpression> {
+    match self {
+      FlowExpression::BlockExpression(expr) => Some(expr),
       _ => None,
     }
   }
@@ -220,6 +286,11 @@ impl FlowExpression {
   /// Make a new [FlowExpression::BlockExpression] from a [BlockExpression].
   pub fn block(expr: BlockExpression) -> Self {
     FlowExpression::BlockExpression(expr)
+  }
+
+  /// Convenience method to replace the expression with a new one.
+  pub fn replace(&mut self, expr: Self) {
+    *self = expr;
   }
 }
 
@@ -240,6 +311,18 @@ impl BlockExpression {
   #[must_use]
   pub fn into_parts(self) -> Vec<FlowExpression> {
     self.expressions
+  }
+
+  /// Get a list of the inner expressions.
+  #[must_use]
+  pub fn inner(&self) -> &[FlowExpression] {
+    &self.expressions
+  }
+
+  /// Get a mutable list of the inner expressions.
+  #[must_use]
+  pub fn inner_mut(&mut self) -> &mut Vec<FlowExpression> {
+    &mut self.expressions
   }
 
   /// Get the expressions in the block as a mutable iterator.
@@ -280,6 +363,23 @@ pub enum InstancePort {
   Named(String),
   /// A named port with a path to an inner value.
   Path(String, Vec<String>),
+  /// An unnamed port that must be inferred or it's an error.
+  None,
+}
+
+impl From<&str> for InstancePort {
+  fn from(s: &str) -> Self {
+    match s {
+      "" => Self::None,
+      _ => Self::Named(s.to_owned()),
+    }
+  }
+}
+
+impl From<&String> for InstancePort {
+  fn from(s: &String) -> Self {
+    s.as_str().into()
+  }
 }
 
 impl FromStr for InstancePort {
@@ -294,6 +394,7 @@ impl FromStr for InstancePort {
 impl std::fmt::Display for InstancePort {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
+      InstancePort::None => f.write_str("<none>"),
       InstancePort::Named(name) => write!(f, "{}", name),
       InstancePort::Path(name, path) => write!(
         f,
@@ -320,10 +421,21 @@ impl InstancePort {
 
   /// Get the name of the port.
   #[must_use]
-  pub fn name(&self) -> &String {
+  pub fn name(&self) -> Option<&str> {
     match self {
-      InstancePort::Named(name) => name,
-      InstancePort::Path(name, _) => name,
+      InstancePort::Named(name) => Some(name),
+      InstancePort::Path(name, _) => Some(name),
+      InstancePort::None => None,
+    }
+  }
+
+  /// Convert the [InstancePort] to an Option<String> representing the (optional) parseable value.
+  #[must_use]
+  pub fn to_option_string(&self) -> Option<String> {
+    match self {
+      InstancePort::Named(_) => Some(self.to_string()),
+      InstancePort::Path(_, _) => Some(self.to_string()),
+      InstancePort::None => None,
     }
   }
 }

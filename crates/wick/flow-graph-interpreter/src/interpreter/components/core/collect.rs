@@ -6,7 +6,7 @@ use serde_json::{json, Value};
 use tokio_stream::StreamExt;
 use wasmrs_rx::Observer;
 use wick_interface_types::{OperationSignature, Type};
-use wick_packet::{Invocation, Packet, PacketStream, RuntimeConfig};
+use wick_packet::{InherentData, Invocation, Packet, PacketStream, RuntimeConfig};
 
 use crate::BoxFuture;
 pub(crate) struct Op {}
@@ -14,6 +14,25 @@ pub(crate) struct Op {}
 impl std::fmt::Debug for Op {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct(Op::ID).finish()
+  }
+}
+
+impl crate::graph::NodeDecorator for Op {
+  fn decorate(node: &mut crate::graph::types::Node) -> Result<(), String> {
+    let Ok(config) = node.data().config.render(&InherentData::unsafe_default()) else {
+      return Err(format!("Could not render config for {}", Op::ID));
+    };
+    let config = match Op::decode_config(config) {
+      Ok(c) => c,
+      Err(e) => {
+        return Err(e.to_string());
+      }
+    };
+    for field in config.inputs {
+      node.add_input(&field);
+    }
+    node.add_output("output");
+    Ok(())
   }
 }
 

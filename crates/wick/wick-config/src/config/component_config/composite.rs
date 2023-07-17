@@ -82,7 +82,7 @@ impl From<FlowOperation> for wick_interface_types::OperationSignature {
   }
 }
 
-#[derive(Debug, Clone, Builder, Default, property::Property)]
+#[derive(Debug, Clone, PartialEq, Builder, Default, property::Property)]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
 #[builder(setter(into))]
 /// A FlowOperation is an operation definition whose implementation is defined by
