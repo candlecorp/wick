@@ -1,9 +1,14 @@
 use tracing::warn;
-use wick_interface_types::Field;
+use wick_interface_types::{Field, Type};
 
 use crate::{Error, RuntimeConfig};
 
 pub fn expect_configuration_matches(name: &str, config: Option<&RuntimeConfig>, fields: &[Field]) -> Result<(), Error> {
+  let fields = fields
+    .iter()
+    .filter(|f| f.required() || !matches!(f.ty(), Type::Optional { .. }))
+    .collect::<Vec<&Field>>();
+
   if config.is_none() {
     if fields.is_empty() {
       return Ok(());
@@ -47,6 +52,9 @@ mod test {
 
   #[rstest::rstest]
   #[case(json!({"required_field": "value"}),vec![Field::new("required_field", Type::String)])]
+  #[case(json!({"optional_field": "value"}),vec![Field::new("optional_field", Type::Optional { ty: Box::new(Type::String)})])]
+  #[case(json!({"optional_field": serde_json::Value::Null}),vec![Field::new("optional_field", Type::Optional { ty: Box::new(Type::String)})])]
+  #[case(json!({}),vec![Field::new("optional_field", Type::Optional { ty: Box::new(Type::String)})])]
   #[case(json!({}),vec![])]
 
   fn config_validation_positive(#[case] config: serde_json::Value, #[case] fields: Vec<Field>) -> Result<()> {

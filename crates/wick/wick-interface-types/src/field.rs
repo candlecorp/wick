@@ -37,7 +37,7 @@ impl Field {
       description: None,
       #[cfg(feature = "value")]
       default: None,
-      required: true,
+      required: !matches!(ty, Type::Optional { .. }),
       ty,
     }
   }
