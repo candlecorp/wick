@@ -241,7 +241,7 @@ struct SwitchRouter {
   conditions: VecDeque<Condition>,
   buffer: VecDeque<Packet>,
   raw_buffer: VecDeque<Packet>,
-  max: Option<usize>,
+  num_conditions: Option<usize>,
   span: Span,
 }
 
@@ -251,7 +251,7 @@ impl SwitchRouter {
       conditions: Default::default(),
       buffer: Default::default(),
       raw_buffer: Default::default(),
-      max: None,
+      num_conditions: None,
       span,
     }
   }
@@ -276,10 +276,14 @@ impl SwitchRouter {
   }
 
   fn freeze(&mut self) {
-    self
-      .span
-      .in_scope(|| trace!(conditions = self.conditions.len(), "switch:case: freezing conditions"));
-    self.max = Some(self.conditions.len() - 1);
+    self.span.in_scope(|| {
+      if self.conditions.is_empty() {
+        debug!("switch:case: match stream done with no conditions set");
+      } else {
+        trace!(conditions = self.conditions.len(), "switch:case: freezing conditions");
+      }
+    });
+    self.num_conditions = Some(self.conditions.len());
   }
 
   fn is_ready(&self, index: usize) -> bool {
@@ -297,7 +301,7 @@ impl SwitchRouter {
   }
 
   fn is_frozen(&self) -> bool {
-    self.max.is_some()
+    self.num_conditions.is_some()
   }
 
   fn handle_packet(&mut self, index: usize, packet: Packet) {
