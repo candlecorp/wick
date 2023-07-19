@@ -7,14 +7,16 @@ use parking_lot::RwLock;
 use tracing::error;
 use wick_asset_reference::AssetReference;
 
-#[derive(Debug, Clone, Default, property::Property)]
+#[derive(Debug, Clone, Default, property::Property, serde::Serialize)]
 #[property(get(public), set(private), mut(disable))]
 /// A glob pattern for finding assets.
 pub struct Glob {
   pub(crate) glob: String,
   #[property(skip)]
+  #[serde(skip)]
   pub(crate) assets: Arc<RwLock<Vec<AssetReference>>>,
   #[property(skip)]
+  #[serde(skip)]
   pub(crate) baseurl: Arc<RwLock<Option<PathBuf>>>,
 }
 

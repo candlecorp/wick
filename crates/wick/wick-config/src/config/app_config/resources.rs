@@ -9,7 +9,7 @@ use wick_packet::RuntimeConfig;
 use crate::config::TemplateConfig;
 use crate::error::ManifestError;
 
-#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
 #[asset(asset(AssetReference))]
 #[builder(derive(Debug), setter(into))]
 #[property(get(public), set(private), mut(disable))]
@@ -33,9 +33,10 @@ impl ResourceBinding {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, serde::Serialize)]
 #[asset(asset(AssetReference))]
 /// Normalized representation of a resource definition.
+#[serde(rename_all = "kebab-case")]
 pub enum ResourceDefinition {
   /// A TCP port.
   #[asset(skip)]
@@ -103,7 +104,7 @@ impl TryFrom<String> for UrlResource {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Builder)]
+#[derive(Debug, Clone, PartialEq, Builder, serde::Serialize)]
 /// A filesystem or network volume.
 #[must_use]
 pub struct Volume {
@@ -158,7 +159,7 @@ impl asset_container::AssetManager for Volume {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, property::Property)]
+#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]
 /// A URL resource.
 #[must_use]
 #[property(get(public), set(private), mut(disable))]
@@ -198,7 +199,7 @@ impl std::fmt::Display for UrlResource {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, property::Property)]
+#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]
 /// Normalized representation of a TCP port configuration.
 #[property(get(public), set(private), mut(disable))]
 pub struct TcpPort {
@@ -235,7 +236,7 @@ impl TcpPort {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, property::Property)]
+#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]
 /// Normalized representation of a UDP port configuration.
 #[property(get(public), set(private), mut(disable))]
 pub struct UdpPort {

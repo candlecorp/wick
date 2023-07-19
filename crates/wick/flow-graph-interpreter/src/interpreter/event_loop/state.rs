@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::atomic::AtomicBool;
 
 use flow_graph::{PortDirection, PortReference};
 use uuid::Uuid;
@@ -24,7 +25,7 @@ impl State {
     }
   }
 
-  fn get_tx(&self, uuid: &Uuid) -> Option<&Transaction> {
+  fn get_tx(&self, uuid: &Uuid) -> Option<&(Transaction, Metadata)> {
     self.transactions.get(uuid)
   }
 
@@ -34,12 +35,13 @@ impl State {
 
   pub(super) fn run_cleanup(&mut self) -> Result<(), ExecutionError> {
     let mut cleanup = Vec::new();
-    for (tx_id, tx) in self.transactions.iter() {
+    for (tx_id, (tx, meta)) in self.transactions.iter() {
       let last_update = tx.last_access().elapsed().unwrap();
 
-      if last_update > EventLoop::SLOW_TX_TIMEOUT {
+      if last_update > EventLoop::SLOW_TX_TIMEOUT && !meta.have_warned() {
         let active_instances = tx.active_instances().iter().map(|i| i.id()).collect::<Vec<_>>();
         warn!(%tx_id, ?active_instances, "slow tx: no packet received in a long time");
+        meta.set_have_warned();
       }
       if last_update > EventLoop::STALLED_TX_TIMEOUT {
         match tx.check_stalled() {
@@ -98,7 +100,7 @@ impl State {
 
   #[allow(clippy::unused_async)]
   async fn handle_input_data(&mut self, tx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
-    let tx = match self.get_tx(&tx_id) {
+    let (tx, _) = match self.get_tx(&tx_id) {
       Some(tx) => tx,
       None => {
         // This is a warning, not an error, because it's possible the transaction completes OK, it's just that a
@@ -135,7 +137,7 @@ impl State {
 
   #[allow(clippy::unused_async)]
   async fn handle_output_data(&mut self, tx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
-    let tx = match self.get_tx(&tx_id) {
+    let (tx, _) = match self.get_tx(&tx_id) {
       Some(tx) => tx,
       None => {
         // This is a warning, not an error, because it's possible the transaction completes OK, it's just that a
@@ -194,7 +196,7 @@ impl State {
 
   #[allow(clippy::unused_async)]
   pub(super) async fn handle_call_complete(&self, tx_id: Uuid, data: CallComplete) -> Result<(), ExecutionError> {
-    let tx = match self.get_tx(&tx_id) {
+    let (tx, _) = match self.get_tx(&tx_id) {
       Some(tx) => tx,
       None => {
         // This is a warning, not an error, because it's possible the transaction completes OK, it's just that a
@@ -222,34 +224,59 @@ impl State {
   }
 }
 
+#[derive(Debug)]
+struct Metadata {
+  have_warned_long_tx: AtomicBool,
+}
+
+impl Default for Metadata {
+  fn default() -> Self {
+    Self {
+      have_warned_long_tx: AtomicBool::new(false),
+    }
+  }
+}
+
+impl Metadata {
+  fn have_warned(&self) -> bool {
+    self.have_warned_long_tx.load(std::sync::atomic::Ordering::Relaxed)
+  }
+
+  fn set_have_warned(&self) {
+    self
+      .have_warned_long_tx
+      .store(true, std::sync::atomic::Ordering::Relaxed);
+  }
+}
+
 #[derive(Debug, Default)]
 #[must_use]
-pub struct TransactionMap(HashMap<Uuid, Transaction>);
+pub struct TransactionMap(HashMap<Uuid, (Transaction, Metadata)>);
 
 impl TransactionMap {
   pub(crate) fn init_tx(&mut self, uuid: Uuid, transaction: Transaction) {
-    self.0.insert(uuid, transaction);
+    self.0.insert(uuid, (transaction, Metadata::default()));
   }
 
-  fn get(&self, uuid: &Uuid) -> Option<&Transaction> {
+  fn get(&self, uuid: &Uuid) -> Option<&(Transaction, Metadata)> {
     self.0.get(uuid).map(|tx| {
-      tx.update_last_access();
+      tx.0.update_last_access();
       tx
     })
   }
 
   fn get_mut(&mut self, uuid: &Uuid) -> Option<&mut Transaction> {
     self.0.get_mut(uuid).map(|tx| {
-      tx.update_last_access();
-      tx
+      tx.0.update_last_access();
+      &mut tx.0
     })
   }
 
-  fn remove(&mut self, uuid: &Uuid) -> Option<Transaction> {
+  fn remove(&mut self, uuid: &Uuid) -> Option<(Transaction, Metadata)> {
     self.0.remove(uuid)
   }
 
-  fn iter(&self) -> impl Iterator<Item = (&Uuid, &Transaction)> {
+  fn iter(&self) -> impl Iterator<Item = (&Uuid, &(Transaction, Metadata))> {
     self.0.iter()
   }
 }

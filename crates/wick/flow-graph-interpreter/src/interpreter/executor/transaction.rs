@@ -136,10 +136,6 @@ impl Transaction {
     &self.instances[index]
   }
 
-  pub(crate) fn instances_pending(&self) -> Vec<&Arc<InstanceHandler>> {
-    self.instances.iter().filter(|i| !i.is_finished()).collect()
-  }
-
   pub(crate) fn active_instances(&self) -> Vec<&Arc<InstanceHandler>> {
     self.instances.iter().filter(|i| i.is_running()).collect()
   }

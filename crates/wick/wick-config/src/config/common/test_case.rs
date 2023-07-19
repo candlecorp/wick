@@ -3,48 +3,58 @@ use liquid_json::LiquidJsonValue;
 
 use crate::config::{LiquidJsonConfig, TemplateConfig};
 
-#[derive(Debug, Clone, PartialEq, property::Property, Builder)]
+#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize, Builder)]
 #[property(get(public), set(private), mut(disable))]
 /// A test case for a component.
 pub struct TestCase {
   /// The name of the test.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) name: Option<String>,
   /// The operaton to test.
   #[builder(default, setter(into))]
   pub(crate) operation: String,
   /// The configuration for the operation being tested, if any.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) config: Option<LiquidJsonConfig>,
   /// Inherent data to use for the test.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) inherent: Option<InherentConfig>,
   /// The inputs to the test.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) inputs: Vec<TestPacket>,
   /// The expected outputs of the operation.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) outputs: Vec<TestPacket>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Copy, property::Property, Builder)]
+#[derive(Debug, Default, Clone, PartialEq, Copy, property::Property, serde::Serialize, Builder)]
 #[property(get(public), set(private), mut(disable))]
 /// Data inherent to transactions.
 pub struct InherentConfig {
   /// An RNG seed.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) seed: Option<u64>,
   /// A timestamp.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) timestamp: Option<u64>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 /// Either a success packet or an error packet.
+#[serde(rename_all = "kebab-case")]
 pub enum TestPacket {
   /// A variant representing a [SuccessPayload] type.
+  #[serde(rename = "success")]
   SuccessPacket(SuccessPayload),
   /// A variant representing a [ErrorPayload] type.
+  #[serde(rename = "error")]
   ErrorPacket(ErrorPayload),
 }
 
@@ -159,32 +169,36 @@ impl MaybePacketFlag {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, property::Property)]
+#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]
 #[property(get(public), set(private), mut(disable))]
 /// A simplified representation of a Wick data packet & payload, used to write tests.
 pub struct SuccessPayload {
   /// The name of the port to send the data to.
   pub(crate) port: String,
   /// The flag set on the packet.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) flag: Option<PacketFlag>,
   /// The data to send.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) data: Option<LiquidJsonValue>,
 }
 
-#[derive(Debug, Clone, PartialEq, property::Property)]
+#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]
 #[property(get(public), set(private), mut(disable))]
 /// A simplified representation of a Wick error packet & payload, used to write tests.
 pub struct ErrorPayload {
   /// The name of the port to send the data to.
   pub(crate) port: String,
   /// The flag set on the packet.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) flag: Option<PacketFlag>,
   /// The error message.
   pub(crate) error: TemplateConfig<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
 /// Possible flags that can be set on a packet.
+#[serde(rename_all = "kebab-case")]
 pub enum PacketFlag {
   /// Indicates the port should be considered closed.
   Done = 0,

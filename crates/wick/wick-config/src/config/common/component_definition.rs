@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+#![allow(missing_docs, deprecated)]
 use std::collections::HashMap;
 
 // delete when we move away from the `property` crate.
@@ -10,7 +10,9 @@ use crate::config::{self, ExecutionSettings, LiquidJsonConfig};
 use crate::error::ManifestError;
 
 /// A reference to an operation.
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, Builder)]
+#[derive(
+  Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize, Builder,
+)]
 #[builder(setter(into))]
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(config::AssetReference))]
@@ -24,10 +26,12 @@ pub struct ComponentOperationExpression {
   /// Configuration to associate with this operation.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) config: Option<LiquidJsonConfig>,
   /// Per-operation settings that override global execution settings.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) settings: Option<ExecutionSettings>,
 }
 
@@ -82,10 +86,11 @@ impl std::str::FromStr for ComponentOperationExpression {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, serde::Serialize)]
 #[asset(asset(config::AssetReference))]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
 #[must_use]
+#[serde(rename_all = "kebab-case")]
 pub enum HighLevelComponent {
   /// A SQL Component.
   #[asset(skip)]
@@ -95,10 +100,12 @@ pub enum HighLevelComponent {
   HttpClient(config::components::HttpClientComponentConfig),
 }
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, serde::Serialize)]
 #[asset(asset(config::AssetReference))]
+
 /// The kinds of collections that can operate in a flow.
 #[must_use]
+#[serde(rename_all = "kebab-case")]
 pub enum ComponentDefinition {
   #[doc(hidden)]
   #[asset(skip)]

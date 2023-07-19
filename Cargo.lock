@@ -6321,6 +6321,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "pretty_assertions",
  "rstest",
+ "serde",
  "test-logger",
  "thiserror",
  "tokio",

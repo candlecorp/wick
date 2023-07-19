@@ -9,10 +9,15 @@ use crate::Error;
 // TODO:REFACTOR LiquidJsonConfig is too similar to the string-oriented TemplateConfig now.
 
 /// A generic configuration that may include LiquidJson values
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, serde::Serialize)]
 pub struct LiquidJsonConfig {
+  #[serde(skip)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) value: Option<RuntimeConfig>,
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub(crate) template: HashMap<String, LiquidJsonValue>,
+  #[serde(skip)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) root_config: Option<RuntimeConfig>,
 }
 

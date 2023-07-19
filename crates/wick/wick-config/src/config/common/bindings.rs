@@ -6,7 +6,7 @@ use super::{ComponentDefinition, HighLevelComponent, ImportDefinition, Interface
 use crate::config::components::WasmComponent;
 use crate::config::{self};
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 /// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
@@ -74,7 +74,7 @@ impl ImportBinding {
   }
 }
 
-#[derive(Debug, Default, Clone, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Default, Clone, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(crate::config::AssetReference))]
 #[must_use]

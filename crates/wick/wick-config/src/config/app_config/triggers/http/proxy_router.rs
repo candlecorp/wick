@@ -1,6 +1,6 @@
 use wick_asset_reference::AssetReference;
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
 #[asset(asset(AssetReference))]
 #[property(get(public), set(private), mut(disable))]
 
@@ -11,6 +11,7 @@ pub struct ProxyRouterConfig {
   pub(crate) path: String,
   /// Middleware operations for this router.
   #[property(get(disable))]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) middleware: Option<super::middleware::Middleware>,
   /// The URL resource to proxy to.
   #[asset(skip)]

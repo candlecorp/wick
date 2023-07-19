@@ -7,9 +7,11 @@ license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
 description = "Parser for flow expressions in the Wick configuration manifest."
 
+
+
 [dependencies]
 regex = { workspace = true }
-serde = { workspace = true }
+serde = { workspace = true,features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 nom = { workspace = true, features = ["alloc"] }
@@ -18,6 +20,7 @@ uuid = { workspace = true, features = ["v4"] }
 once_cell = { workspace = true }
 seeded-random = { workspace = true, features = ["std", "rng", "uuid"] }
 parking_lot = { workspace = true }
+
 
 [dev-dependencies]
 tracing = { workspace = true }

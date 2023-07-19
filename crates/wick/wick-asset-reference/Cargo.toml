@@ -18,6 +18,7 @@ tokio-stream = { workspace = true }
 parking_lot = { workspace = true }
 normpath = { workspace = true }
 getset = { workspace = true }
+serde = {workspace=true, features = ["derive"]}
 
 [dev-dependencies]
 anyhow = { workspace = true }

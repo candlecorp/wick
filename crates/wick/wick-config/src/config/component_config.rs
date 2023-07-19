@@ -20,7 +20,9 @@ use crate::import_cache::{setup_cache, ImportCache};
 use crate::utils::{make_resolver, RwOption};
 use crate::{config, v1, Error, Resolver, Result};
 
-#[derive(Debug, Default, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
+#[derive(
+  Debug, Default, Clone, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[builder(
   derive(Debug),
   setter(into),
@@ -36,6 +38,7 @@ use crate::{config, v1, Error, Resolver, Result};
 pub struct ComponentConfiguration {
   #[asset(skip)]
   #[builder(setter(strip_option), default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   /// The name of the component configuration.
   pub(crate) name: Option<String>,
 
@@ -45,6 +48,7 @@ pub struct ComponentConfiguration {
   #[asset(skip)]
   #[builder(setter(strip_option), default)]
   #[property(skip)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   /// The source (i.e. url or file on disk) of the configuration.
   pub(crate) source: Option<PathBuf>,
 
@@ -52,56 +56,67 @@ pub struct ComponentConfiguration {
   #[builder(default)]
   #[property(skip)]
   /// Any types referenced or exported by this component.
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) types: Vec<TypeDefinition>,
 
   #[builder(default)]
   /// Any imports this component makes available to its implementation.
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub(crate) import: HashMap<String, ImportBinding>,
 
   #[asset(skip)]
   #[builder(default)]
   /// Any components or resources that must be provided to this component upon instantiation.
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub(crate) requires: HashMap<String, BoundInterface>,
 
   #[builder(default)]
   /// Any resources this component defines.
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub(crate) resources: HashMap<String, ResourceBinding>,
 
   #[asset(skip)]
   #[builder(default)]
   /// The configuration to use when running this component as a microservice.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) host: Option<config::HostConfig>,
 
   #[asset(skip)]
   #[builder(default)]
   /// Any embedded test cases that should be run against this component.
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) tests: Vec<TestConfiguration>,
 
   #[asset(skip)]
   #[builder(default)]
   /// The metadata for this component.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) metadata: Option<config::Metadata>,
 
   #[builder(default)]
   /// The package configuration for this component.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) package: Option<PackageConfig>,
 
   #[asset(skip)]
   #[doc(hidden)]
   #[property(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) root_config: Option<RuntimeConfig>,
 
   #[asset(skip)]
   #[builder(setter(skip))]
   #[property(skip)]
   #[doc(hidden)]
+  #[serde(skip)]
   pub(crate) type_cache: ImportCache,
 
   #[asset(skip)]
   #[builder(setter(skip))]
   #[property(skip)]
   #[doc(hidden)]
+  #[serde(skip)]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
 }
 

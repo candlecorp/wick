@@ -6,7 +6,7 @@ use crate::config::components::{ComponentConfig, OperationConfig};
 use crate::config::{self, OperationDefinition};
 use crate::utils::VecMapInto;
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager, Builder, property::Property)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, Builder, property::Property, serde::Serialize)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[builder(setter(into))]
 #[asset(asset(config::AssetReference))]
@@ -19,12 +19,14 @@ pub struct WasmComponentImplementation {
   /// The configuration for the component.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) config: Vec<Field>,
 
   /// The operations defined by the component.
   #[asset(skip)]
   #[builder(default)]
   #[property(skip)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
 }
 

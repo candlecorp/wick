@@ -33,6 +33,7 @@ pub(crate) struct RuntimeService {
   started_time: std::time::Instant,
   pub(crate) id: Uuid,
   pub(super) namespace: String,
+  pub(super) active_config: ComponentConfiguration,
   interpreter: Arc<flow_graph_interpreter::Interpreter>,
 }
 
@@ -128,6 +129,7 @@ impl RuntimeService {
       started_time: std::time::Instant::now(),
       id: init.id,
       namespace: ns,
+      active_config: init.manifest,
       interpreter: Arc::new(interpreter),
     });
 
@@ -149,6 +151,10 @@ impl RuntimeService {
 
   pub(crate) fn render_dotviz(&self, op: &str) -> std::result::Result<String, RuntimeError> {
     self.interpreter.render_dotviz(op).map_err(RuntimeError::DotViz)
+  }
+
+  pub(crate) fn active_config(&self) -> &ComponentConfiguration {
+    &self.active_config
   }
 }
 

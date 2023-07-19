@@ -15,6 +15,7 @@ pub use app_config::*;
 use asset_container::Asset;
 pub use common::*;
 pub use component_config::*;
+use serde_json::Value;
 pub use test_config::*;
 use tokio::fs::read_to_string;
 use tracing::debug;
@@ -77,9 +78,10 @@ impl UninitializedConfiguration {
   }
 }
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager)]
-#[asset(asset(AssetReference))]
 /// A catch-all enum for root-level Wick configurations.
+#[derive(Debug, Clone, derive_asset_container::AssetManager, serde::Serialize)]
+#[asset(asset(AssetReference))]
+#[serde(untagged)]
 pub enum WickConfiguration {
   /// A [component_config::ComponentConfiguration] configuration.
   Component(ComponentConfiguration),
@@ -230,14 +232,38 @@ impl WickConfiguration {
   /// # });
   /// ```
   pub fn into_v1_yaml(self) -> Result<String, Error> {
-    let v1_manifest = match self {
-      WickConfiguration::Component(c) => v1::WickConfig::ComponentConfiguration(c.try_into()?),
-      WickConfiguration::App(c) => v1::WickConfig::AppConfiguration(c.try_into()?),
-      WickConfiguration::Types(c) => v1::WickConfig::TypesConfiguration(c.try_into()?),
-      WickConfiguration::Tests(c) => v1::WickConfig::TestConfiguration(c.try_into()?),
-    };
+    Ok(serde_yaml::to_string(&self.into_v1()?).unwrap())
+  }
 
-    Ok(serde_yaml::to_string(&v1_manifest).unwrap())
+  /// Convert a WickConfiguration into a V1 configuration JSON value.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// # tokio_test::block_on(async {
+  /// use wick_config::WickConfiguration;
+  /// use wick_asset_reference::FetchOptions;
+  ///
+  /// let opts = FetchOptions::default();
+  ///
+  /// let manifest = WickConfiguration::fetch_all("path/to/manifest.yaml", opts).await?;
+  /// let manifest = manifest.finish()?;
+  ///
+  /// let v1_json = manifest.into_v1_json()?;
+  /// # Ok::<_,anyhow::Error>(())
+  /// # });
+  /// ```
+  pub fn into_v1_json(self) -> Result<Value, Error> {
+    Ok(serde_json::to_value(&self.into_v1()?).unwrap())
+  }
+
+  fn into_v1(self) -> Result<v1::WickConfig, Error> {
+    match self {
+      WickConfiguration::Component(c) => Ok(v1::WickConfig::ComponentConfiguration(c.try_into()?)),
+      WickConfiguration::App(c) => Ok(v1::WickConfig::AppConfiguration(c.try_into()?)),
+      WickConfiguration::Types(c) => Ok(v1::WickConfig::TypesConfiguration(c.try_into()?)),
+      WickConfiguration::Tests(c) => Ok(v1::WickConfig::TestConfiguration(c.try_into()?)),
+    }
   }
 
   /// Get the name (if any) associated with the inner configuration.

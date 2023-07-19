@@ -12,7 +12,7 @@ use super::OperationDefinition;
 use crate::config;
 use crate::error::ManifestError;
 
-#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]
 #[must_use]
@@ -24,24 +24,30 @@ pub struct TypesConfiguration {
   #[asset(skip)]
   #[builder(setter(strip_option), default)]
   /// The name of the types configuration.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) name: Option<String>,
   #[asset(skip)]
   #[property(skip)]
   /// The source (i.e. url or file on disk) of the configuration.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) source: Option<PathBuf>,
   #[asset(skip)]
   #[builder(default)]
   /// Any metadata associated with the configuration.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) metadata: Option<config::Metadata>,
   #[asset(skip)]
   /// A list of types defined in this configuration.
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) types: Vec<TypeDefinition>,
   #[asset(skip)]
   #[property(skip)]
   /// A list of operation signatures defined in this configuration.
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
   #[builder(default)]
   /// The package configuration for this configuration.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) package: Option<PackageConfig>,
 }
 

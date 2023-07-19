@@ -7,7 +7,9 @@ use wick_interface_types::{Field, OperationSignatures};
 use super::{ComponentConfig, OperationConfig};
 use crate::config::{self, ErrorBehavior};
 
-#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[derive(
+  Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
@@ -25,12 +27,14 @@ pub struct SqlComponentConfig {
   /// The configuration for the component.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) config: Vec<Field>,
 
   /// A list of operations to expose on this component.
   #[asset(skip)]
   #[builder(default)]
   #[property(skip)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<SqlOperationKind>,
 }
 
@@ -63,7 +67,8 @@ impl ComponentConfig for SqlComponentConfig {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum SqlOperationKind {
   Query(SqlOperationDefinition),
   Exec(SqlExecOperationDefinition),
@@ -174,7 +179,9 @@ impl From<SqlExecOperationDefinition> for wick_interface_types::OperationSignatu
     }
   }
 }
-#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[derive(
+  Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
@@ -189,17 +196,20 @@ pub struct SqlOperationDefinition {
   #[asset(skip)]
   #[property(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) inputs: Vec<Field>,
 
   /// Types of the outputs to the operation.
   #[asset(skip)]
   #[property(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) outputs: Vec<Field>,
 
   /// The configuration the operation needs.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) config: Vec<Field>,
 
   /// The query to execute.
@@ -209,6 +219,7 @@ pub struct SqlOperationDefinition {
   /// The arguments to the query, defined as a list of input names.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) arguments: Vec<String>,
 
   /// The query to execute.
@@ -217,7 +228,9 @@ pub struct SqlOperationDefinition {
   pub(crate) on_error: ErrorBehavior,
 }
 
-#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[derive(
+  Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
@@ -232,17 +245,20 @@ pub struct SqlExecOperationDefinition {
   #[asset(skip)]
   #[property(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) inputs: Vec<Field>,
 
   /// Types of the outputs to the operation.
   #[asset(skip)]
   #[property(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) outputs: Vec<Field>,
 
   /// The configuration the operation needs.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) config: Vec<Field>,
 
   /// The query to execute.
@@ -252,6 +268,7 @@ pub struct SqlExecOperationDefinition {
   /// The arguments to the query, defined as a list of input names.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) arguments: Vec<String>,
 
   /// The query to execute.

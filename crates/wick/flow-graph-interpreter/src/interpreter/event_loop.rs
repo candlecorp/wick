@@ -24,7 +24,7 @@ pub(crate) struct EventLoop {
 impl EventLoop {
   pub(crate) const WAKE_TIMEOUT: Duration = Duration::from_millis(500);
   pub(crate) const STALLED_TX_TIMEOUT: Duration = Duration::from_secs(60 * 5);
-  pub(crate) const SLOW_TX_TIMEOUT: Duration = Duration::from_secs(10);
+  pub(crate) const SLOW_TX_TIMEOUT: Duration = Duration::from_secs(15);
 
   pub(super) fn new(channel: InterpreterChannel) -> Self {
     let dispatcher = channel.dispatcher();

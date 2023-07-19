@@ -116,6 +116,7 @@ impl ComponentHost {
     let runtime = rt_builder.build(seed).await?;
 
     self.runtime = Some(runtime);
+
     Ok(())
   }
 
@@ -197,6 +198,13 @@ impl ComponentHost {
       Some(runtime) => Ok(runtime.render_dotviz(op)?),
       None => Err(crate::Error::InvalidHostState("No runtime available".into())),
     }
+  }
+
+  pub fn get_active_config(&self) -> Result<&ComponentConfiguration> {
+    self.runtime.as_ref().map_or_else(
+      || Err(crate::Error::InvalidHostState("No runtime available".into())),
+      |runtime| Ok(runtime.active_config()),
+    )
   }
 }
 

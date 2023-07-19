@@ -5,10 +5,11 @@ use wick_packet::RuntimeConfig;
 use crate::config::{self};
 use crate::error::ManifestError;
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, serde::Serialize)]
 #[asset(asset(config::AssetReference))]
 /// The kinds of collections that can operate in a flow.
 #[must_use]
+#[serde(rename_all = "kebab-case")]
 pub enum ImportDefinition {
   /// A wick component.
   Component(config::ComponentDefinition),

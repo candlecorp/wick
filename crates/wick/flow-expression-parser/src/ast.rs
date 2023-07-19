@@ -16,8 +16,9 @@ pub fn set_seed(seed: u64) {
   *RNG.lock() = seeded_random::Random::from_seed(seeded_random::Seed::unsafe_new(seed));
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize)]
 #[must_use]
+#[serde(rename_all = "kebab-case")]
 /// A node instance
 pub enum InstanceTarget {
   /// A flow input node.
@@ -127,8 +128,9 @@ impl std::fmt::Display for InstanceTarget {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize)]
 /// [TargetId] differentiates between user-provided IDs, generated IDs, and no IDs.
+#[serde(into = "Option<String>")]
 pub enum TargetId {
   /// An automatically generated ID
   Generated(String),
@@ -185,8 +187,14 @@ impl TargetId {
   }
 }
 
+impl From<TargetId> for Option<String> {
+  fn from(value: TargetId) -> Self {
+    value.to_opt_str().map(ToOwned::to_owned)
+  }
+}
+
 /// A connection between two targets.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 #[must_use]
 pub struct ConnectionExpression {
   from: ConnectionTargetExpression,
@@ -239,8 +247,9 @@ impl ConnectionExpression {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 /// A flow expression.
+#[serde(untagged)]
 pub enum FlowExpression {
   /// A [ConnectionExpression].
   ConnectionExpression(Box<ConnectionExpression>),
@@ -294,9 +303,10 @@ impl FlowExpression {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 /// A block expression.
 pub struct BlockExpression {
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   expressions: Vec<FlowExpression>,
 }
 
@@ -336,9 +346,10 @@ impl BlockExpression {
   }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 /// A flow program.
 pub struct FlowProgram {
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   expressions: Vec<FlowExpression>,
 }
 
@@ -356,7 +367,8 @@ impl FlowProgram {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(untagged)]
 /// The port associated with an instance in a connection.
 pub enum InstancePort {
   /// A simple, named port.
@@ -441,10 +453,11 @@ impl InstancePort {
 }
 
 /// A connection target, specified by an instance and a port.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct ConnectionTargetExpression {
   instance: InstanceTarget,
   port: InstancePort,
+  #[serde(skip_serializing_if = "Option::is_none")]
   data: Option<HashMap<String, LiquidJsonValue>>,
 }
 

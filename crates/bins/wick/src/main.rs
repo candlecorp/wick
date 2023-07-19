@@ -102,6 +102,7 @@ mod keys;
 mod oci;
 mod options;
 mod panic;
+mod wick_host;
 
 pub(crate) use options::LoggingOptions;
 use structured_output::StructuredOutput;
@@ -259,7 +260,8 @@ async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<Struc
       show::SubCommands::Env(cmd) => commands::show::env::handle(cmd, settings, span).await,
     },
     CliCommand::Config(cmd) => match cmd {
-      config::SubCommands::Dotviz(cmd) => commands::config::dotviz::handle(cmd, settings, span).await,
+      config::SubCommands::Dot(cmd) => commands::config::dot::handle(cmd, settings, span).await,
+      config::SubCommands::Expand(cmd) => commands::config::expand::handle(cmd, settings, span).await,
     },
   }
 }

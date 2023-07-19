@@ -9,10 +9,11 @@ pub use cli::*;
 pub use http::*;
 pub use time::*;
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, serde::Serialize)]
 #[asset(asset(AssetReference))]
 
 /// Normalized representation of a trigger definition.
+#[serde(rename_all = "kebab-case")]
 pub enum TriggerDefinition {
   /// A CLI trigger.
   Cli(CliConfig),
@@ -55,7 +56,7 @@ impl std::fmt::Display for TriggerKind {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, serde::Serialize)]
 #[asset(asset(AssetReference))]
 #[must_use]
 

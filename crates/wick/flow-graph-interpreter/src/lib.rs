@@ -83,7 +83,7 @@
 #![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
-#![allow(missing_docs, dead_code)]
+#![allow(missing_docs)]
 
 mod default;
 pub mod error;

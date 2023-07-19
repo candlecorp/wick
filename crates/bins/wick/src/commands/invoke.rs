@@ -1,20 +1,16 @@
 use std::collections::HashSet;
-use std::path::PathBuf;
 use std::time::SystemTime;
 
 use anyhow::Result;
 use clap::Args;
-use seeded_random::Seed;
 use serde_json::json;
 use structured_output::StructuredOutput;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_component_cli::parse_args;
-use wick_config::WickConfiguration;
-use wick_host::ComponentHostBuilder;
 use wick_packet::{InherentData, Packet, PacketStream};
 
-use crate::options::get_auth_for_scope;
-use crate::utils::{self, merge_config, parse_config_string};
+use crate::utils::{self, parse_config_string};
+use crate::wick_host::build_component_host;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
@@ -76,45 +72,19 @@ pub(crate) async fn handle(
   settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
-  let configured_creds = settings.credentials.iter().find(|c| opts.path.starts_with(&c.scope));
-
-  let (username, password) = get_auth_for_scope(
-    configured_creds,
-    opts.oci.username.as_deref(),
-    opts.oci.password.as_deref(),
-  );
-  let env = wick_xdg::Settings::new();
-
-  let mut fetch_opts: wick_oci_utils::OciOptions = opts.oci.clone().into();
-  fetch_opts.set_username(username).set_password(password);
-
-  let path = PathBuf::from(&opts.path);
-
-  if !path.exists() {
-    fetch_opts.set_cache_dir(env.global().cache().clone());
-  } else {
-    let mut path_dir = path.clone();
-    path_dir.pop();
-    fetch_opts.set_cache_dir(path_dir.join(env.local().cache()));
-  };
-
   let root_config = parse_config_string(opts.with.as_deref())?;
-
-  let mut manifest = WickConfiguration::fetch_all(&opts.path, fetch_opts).await?;
-  manifest.set_root_config(root_config);
-  let manifest = manifest.finish()?.try_component_config()?;
-
-  let server_options = DefaultCliOptions { ..Default::default() };
-
-  let manifest = merge_config(&manifest, &opts.oci, Some(server_options));
-
-  let op_config = parse_config_string(opts.op_with.as_deref())?;
-
+  let server_settings = DefaultCliOptions { ..Default::default() };
+  let host = build_component_host(
+    &opts.path,
+    opts.oci,
+    root_config,
+    settings,
+    opts.seed,
+    Some(server_settings),
+    span,
+  )
+  .await?;
   let operation = opts.operation;
-
-  let mut host = ComponentHostBuilder::default().manifest(manifest).span(span).build()?;
-
-  host.start_runtime(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
   let op_signature = signature.get_operation(&operation).ok_or_else(|| {
@@ -130,6 +100,7 @@ pub(crate) async fn handle(
         .join(", ")
     )
   })?;
+  let op_config = parse_config_string(opts.op_with.as_deref())?;
 
   let check_stdin = if op_signature.inputs.is_empty() {
     false

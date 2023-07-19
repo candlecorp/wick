@@ -9,7 +9,7 @@ use wick_packet::RuntimeConfig;
 use crate::config::LiquidJsonConfig;
 use crate::error::ManifestError;
 
-#[derive(Debug, Clone, PartialEq, property::Property)]
+#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]
 /// A liquid template configuration that retains portions of its context
 /// and can be unrendered into the original template or value.
 pub struct TemplateConfig<V>
@@ -17,8 +17,13 @@ where
   V: Clone + std::fmt::Debug + std::fmt::Display + PartialEq + FromStr,
 {
   #[property(skip)]
+  #[serde(skip)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) value: Option<V>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) template: Option<LiquidJsonValue>,
+  #[serde(skip)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) root_config: Option<RuntimeConfig>,
 }
 
