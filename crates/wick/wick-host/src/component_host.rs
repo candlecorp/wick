@@ -71,8 +71,8 @@ impl ComponentHost {
 
   pub fn get_signature(&self) -> Result<ComponentSignature> {
     match &self.runtime {
-      Some(engine) => Ok(engine.get_signature()?),
-      None => Err(Error::NoEngine),
+      Some(runtime) => Ok(runtime.get_signature()?),
+      None => Err(Error::NoRuntime),
     }
   }
 
@@ -84,23 +84,23 @@ impl ComponentHost {
   /// Stops a running host.
   pub async fn stop(self) {
     self.span.in_scope(|| debug!("host stopping"));
-    if let Some(engine) = self.runtime {
-      let _ = engine.shutdown().await;
+    if let Some(runtime) = self.runtime {
+      let _ = runtime.shutdown().await;
     }
   }
 
-  pub fn get_engine(&self) -> Result<&Runtime> {
-    self.runtime.as_ref().ok_or(Error::NoEngine)
+  pub fn get_runtime(&self) -> Result<&Runtime> {
+    self.runtime.as_ref().ok_or(Error::NoRuntime)
   }
 
-  pub fn get_engine_uid(&self) -> Result<Uuid> {
-    self.runtime.as_ref().ok_or(Error::NoEngine).map(|engine| engine.uid)
+  pub fn get_runtime_uid(&self) -> Result<Uuid> {
+    self.runtime.as_ref().ok_or(Error::NoRuntime).map(|runtime| runtime.uid)
   }
 
   pub async fn start_runtime(&mut self, seed: Option<Seed>) -> Result<()> {
     ensure!(
       self.runtime.is_none(),
-      crate::Error::InvalidHostState("Host already has a engine running".into())
+      crate::Error::InvalidHostState("Host already has a runtime running".into())
     );
 
     let mut rt_builder = RuntimeBuilder::from_definition(self.manifest.clone());
@@ -120,7 +120,7 @@ impl ComponentHost {
   }
 
   async fn start_servers(&mut self) -> Result<ServerState> {
-    let nuid = self.get_engine_uid()?;
+    let nuid = self.get_runtime_uid()?;
 
     let host_config = self.manifest.host().cloned().unwrap_or_default();
 
@@ -165,14 +165,14 @@ impl ComponentHost {
         );
         Ok(runtime.invoke(invocation, config).await?)
       }
-      None => Err(crate::Error::InvalidHostState("No engine available".into())),
+      None => Err(crate::Error::InvalidHostState("No runtime available".into())),
     }
   }
 
   pub async fn invoke(&self, invocation: Invocation, data: Option<RuntimeConfig>) -> Result<PacketStream> {
     match &self.runtime {
       Some(runtime) => Ok(runtime.invoke(invocation, data).await?),
-      None => Err(crate::Error::InvalidHostState("No engine available".into())),
+      None => Err(crate::Error::InvalidHostState("No runtime available".into())),
     }
   }
 
@@ -190,6 +190,13 @@ impl ComponentHost {
   #[must_use]
   pub fn is_started(&self) -> bool {
     self.runtime.is_some()
+  }
+
+  pub fn render_dotviz(&self, op: &str) -> Result<String> {
+    match &self.runtime {
+      Some(runtime) => Ok(runtime.render_dotviz(op)?),
+      None => Err(crate::Error::InvalidHostState("No runtime available".into())),
+    }
   }
 }
 

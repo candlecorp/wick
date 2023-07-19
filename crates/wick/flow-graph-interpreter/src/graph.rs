@@ -287,10 +287,10 @@ fn expand_defaulted_ports(
 
             // If there's only one port on each side, connect them.
             if from_node_ports.len() == 1 && to_node_ports.len() == 1 {
-              expression.replace(connection(
-                (from_inst, from_node_ports[0].name()),
-                (to_inst, to_node_ports[0].name()),
-              ));
+              let from_port = from_node_ports[0].name();
+              let to_port = to_node_ports[0].name();
+              debug!(from = %from_inst, from_port,to = %to_inst, to_port, reason="unary", "graph:inferred ports");
+              expression.replace(connection((from_inst, from_port), (to_inst, to_port)));
               result = ExpandResult::Continue;
               continue;
             }
@@ -299,17 +299,15 @@ fn expand_defaulted_ports(
             // if either side is a schematic input/output node, adopt the names of all ports we're pointing to.
             if matches!(from_inst, InstanceTarget::Input | InstanceTarget::Default) {
               for port in to_node_ports {
-                new_connections.push(connection(
-                  (from_inst.clone(), port.name()),
-                  (to_inst.clone(), port.name()),
-                ));
+                let port_name = port.name();
+                debug!(from = %from_inst, from_port=port_name,to = %to_inst, to_port=port_name, reason="upstream_default", "graph:inferred ports");
+                new_connections.push(connection((from_inst.clone(), port_name), (to_inst.clone(), port_name)));
               }
             } else if matches!(to_inst, InstanceTarget::Output | InstanceTarget::Default) {
               for port in from_node_ports {
-                new_connections.push(connection(
-                  (from_inst.clone(), port.name()),
-                  (to_inst.clone(), port.name()),
-                ));
+                let port_name = port.name();
+                debug!(from = %from_inst, from_port=port_name,to = %to_inst, to_port=port_name, reason="downstream_default", "graph:inferred ports");
+                new_connections.push(connection((from_inst.clone(), port_name), (to_inst.clone(), port_name)));
               }
             } else {
               for port in from_node_ports {
@@ -322,6 +320,8 @@ fn expand_defaulted_ports(
                     to_node_ports,
                   ));
                 }
+                let port_name = port.name();
+                debug!(from = %from_inst, from_port=port_name,to = %to_inst, to_port=port_name, reason="all_downstream", "graph:inferred ports");
                 new_connections.push(connection(
                   (from_inst.clone(), port.name()),
                   (to_inst.clone(), port.name()),

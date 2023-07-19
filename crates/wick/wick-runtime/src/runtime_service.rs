@@ -146,6 +146,10 @@ impl RuntimeService {
     let _ = self.interpreter.shutdown().await;
     Ok(())
   }
+
+  pub(crate) fn render_dotviz(&self, op: &str) -> std::result::Result<String, RuntimeError> {
+    self.interpreter.render_dotviz(op).map_err(RuntimeError::DotViz)
+  }
 }
 
 impl InvocationHandler for RuntimeService {

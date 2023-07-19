@@ -13,7 +13,7 @@ pub enum HostError {
   FileNotFound(String),
 
   #[error("No engine started yet")]
-  NoEngine,
+  NoRuntime,
 
   #[error("Configuration disallows fetching artifacts with the :latest tag ({0})")]
   LatestDisallowed(String),
