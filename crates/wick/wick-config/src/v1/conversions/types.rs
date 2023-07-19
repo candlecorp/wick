@@ -131,13 +131,11 @@ impl TryFrom<v1::Field> for wick::Field {
   type Error = ManifestError;
 
   fn try_from(value: v1::Field) -> std::result::Result<Self, Self::Error> {
-    Ok(Self {
-      name: value.name,
-      description: value.description,
-      ty: value.ty.try_into()?,
-      default: None,
-      required: true,
-    })
+    Ok(Self::new_with_description(
+      value.name,
+      value.ty.try_into()?,
+      value.description,
+    ))
   }
 }
 

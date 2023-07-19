@@ -1,0 +1,36 @@
+---
+name: 'test'
+kind: wick/component@v1
+metadata:
+  version: '0.0.2'
+import:
+  - name: child
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./component-context-vars-passthrough-child.yaml
+      with:
+        required: '{{ ctx.root_config.required }}'
+        optional: '{% if ctx.root_config contains "optional" %}{{ ctx.root_config.optional | output }}{% endif %}{% unless ctx.root_config contains "optional" %}{{ nil | output }}{% endunless %}'
+component:
+  kind: wick/component/composite@v1
+  with:
+    - name: required
+      type: string
+    - name: optional
+      type: string?
+  operations:
+    - name: test
+      with:
+        - name: required
+          type: string
+        - name: optional
+          type: string?
+      uses:
+        - name: CHILD_OP
+          operation: child::test
+          with:
+            required: '{{ ctx.config.required }}'
+            optional: '{% if ctx.config contains "optional" %}{{ ctx.config.optional | output }}{% endif %}{% unless ctx.config contains "optional" %}{{ nil | output }}{% endunless %}'
+      flow:
+        - <>.input -> CHILD_OP.input
+        - CHILD_OP.output -> <>.output
