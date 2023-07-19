@@ -23,7 +23,8 @@ async fn good_wasm_component_v1() -> Result<()> {
     packet_stream!(("left", 10), ("right", 1001)),
     "add",
     vec![Packet::encode("output", 1011), Packet::done("output")],
-    json!({"default_err":"custom error"}).try_into()?,
+    Some(json!({"default_err":"custom error"}).try_into()?),
+    None,
   )
   .await
 }

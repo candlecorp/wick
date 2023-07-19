@@ -38,7 +38,7 @@ pub(crate) async fn base_setup(
   use tokio_stream::StreamExt;
   use wick_packet::{Entity, Invocation};
   let options = Some(InterpreterOptions { ..Default::default() });
-  let mut def = wick_config::WickConfiguration::load_from_file_sync(manifest)?;
+  let mut def = wick_config::WickConfiguration::fetch(manifest, Default::default()).await?;
   def.set_root_config(component_config);
   let mut def = def.finish()?.try_component_config()?;
   let network = from_def(&mut def)?;

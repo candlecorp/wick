@@ -32,9 +32,13 @@ pub struct Field {
 
 impl Field {
   pub fn new(name: impl AsRef<str>, ty: Type) -> Self {
+    Self::new_with_description(name, ty, None)
+  }
+
+  pub fn new_with_description(name: impl AsRef<str>, ty: Type, desc: Option<String>) -> Self {
     Self {
       name: name.as_ref().to_owned(),
-      description: None,
+      description: desc,
       #[cfg(feature = "value")]
       default: None,
       required: !matches!(ty, Type::Optional { .. }),

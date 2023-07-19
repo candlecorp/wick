@@ -25,7 +25,7 @@ pub async fn common_test(
   target: &str,
   mut expected: Vec<Packet>,
 ) -> anyhow::Result<()> {
-  base_test(path, stream, Entity::local(target), expected, None).await
+  base_test(path, stream, Entity::local(target), expected, None, None).await
 }
 
 #[allow(unused)]
@@ -34,9 +34,10 @@ pub async fn test_with_config(
   stream: PacketStream,
   target: &str,
   mut expected: Vec<Packet>,
-  config: RuntimeConfig,
+  root_config: Option<RuntimeConfig>,
+  config: Option<RuntimeConfig>,
 ) -> anyhow::Result<()> {
-  base_test(path, stream, Entity::local(target), expected, Some(config)).await
+  base_test(path, stream, Entity::local(target), expected, root_config, config).await
 }
 
 #[allow(unused)]
@@ -45,10 +46,11 @@ pub async fn base_test(
   stream: PacketStream,
   target: Entity,
   mut expected: Vec<Packet>,
+  root_config: Option<RuntimeConfig>,
   config: Option<RuntimeConfig>,
 ) -> anyhow::Result<()> {
   let cwd = std::env::current_dir()?;
-  let (engine, _) = init_engine_from_yaml(path, config).await?;
+  let (engine, _) = init_engine_from_yaml(path, root_config).await?;
   let inherent = InherentData::new(1, 1000);
 
   let target = if target.component_id() == Entity::LOCAL {
@@ -60,7 +62,7 @@ pub async fn base_test(
   let result = engine
     .invoke(
       Invocation::test("simple schematic", target, stream, Some(inherent))?,
-      Default::default(),
+      config,
     )
     .await?;
 
