@@ -7,7 +7,9 @@ use wick_interface_types::{Field, OperationSignatures};
 use crate::config::components::{ComponentConfig, OperationConfig};
 use crate::config::{self, ExecutionSettings, LiquidJsonConfig};
 
-#[derive(Debug, Default, Clone, derive_asset_container::AssetManager, Builder, property::Property)]
+#[derive(
+  Debug, Default, Clone, derive_asset_container::AssetManager, Builder, property::Property, serde::Serialize,
+)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[builder(setter(into))]
 #[asset(asset(crate::config::AssetReference))]
@@ -18,16 +20,19 @@ pub struct CompositeComponentImplementation {
   #[asset(skip)]
   #[builder(default)]
   #[property(skip)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<FlowOperation>,
 
   /// The configuration for the component.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) config: Vec<Field>,
 
   /// A component or components this component inherits operations from.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) extends: Vec<String>,
 }
 
@@ -82,7 +87,7 @@ impl From<FlowOperation> for wick_interface_types::OperationSignature {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Builder, Default, property::Property)]
+#[derive(Debug, Clone, PartialEq, Builder, Default, property::Property, serde::Serialize)]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
 #[builder(setter(into))]
 /// A FlowOperation is an operation definition whose implementation is defined by
@@ -96,27 +101,33 @@ pub struct FlowOperation {
   /// A list of the input types for the operation.
   #[builder(default)]
   #[property(skip)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) inputs: Vec<Field>,
 
   /// A list of the input types for the operation.
   #[builder(default)]
   #[property(skip)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) outputs: Vec<Field>,
 
   /// Any configuration required for the component to operate.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) config: Vec<Field>,
 
   /// A mapping of instance names to the components they refer to.
   #[builder(default)]
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub(crate) instances: HashMap<String, InstanceReference>,
 
   /// A list of connections from and to ports on instances defined in the instance map.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) expressions: Vec<ast::FlowExpression>,
 
   /// Additional flows scoped to this operation.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) flows: Vec<FlowOperation>,
 }
 
@@ -131,7 +142,7 @@ impl From<FlowOperation> for config::OperationDefinition {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, property::Property)]
+#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]
 #[property(get(public), set(private), mut(disable))]
 /// A definition of a component used to reference a component registered under a collection.
 /// Note: [InstanceReference] include embed the concept of a namespace so two identical.
@@ -142,8 +153,10 @@ pub struct InstanceReference {
   /// The id of the component.
   pub(crate) component_id: String,
   /// Data associated with the component instance.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) data: Option<LiquidJsonConfig>,
   /// Per-operation settings that override global execution settings.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) settings: Option<ExecutionSettings>,
 }
 

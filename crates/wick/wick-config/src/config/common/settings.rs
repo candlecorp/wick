@@ -1,7 +1,7 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::time::Duration;
 
-#[derive(Debug, Clone, PartialEq, property::Property)]
+#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]
 #[property(get(public), set(private), mut(disable))]
 #[allow(missing_copy_implementations)]
 /// Settings related to execution behavior.

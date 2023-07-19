@@ -7,7 +7,9 @@ use wick_interface_types::OperationSignatures;
 use super::{ComponentConfig, OperationConfig};
 use crate::config::{self, Codec, HttpMethod};
 
-#[derive(Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property)]
+#[derive(
+  Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
@@ -21,17 +23,20 @@ pub struct HttpClientComponentConfig {
   /// The configuration for the component.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) config: Vec<wick_interface_types::Field>,
 
   /// The codec to use when encoding/decoding data.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) codec: Option<Codec>,
 
   /// A list of operations to expose on this component.
   #[asset(skip)]
   #[builder(default)]
   #[property(skip)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<HttpClientOperationDefinition>,
 }
 
@@ -116,7 +121,7 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
   }
 }
 
-#[derive(Debug, Clone, Builder, PartialEq, property::Property)]
+#[derive(Debug, Clone, Builder, PartialEq, property::Property, serde::Serialize)]
 #[property(get(public), set(private), mut(disable))]
 #[builder(setter(into))]
 #[must_use]
@@ -128,10 +133,12 @@ pub struct HttpClientOperationDefinition {
 
   /// The configuration the operation needs.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) config: Vec<wick_interface_types::Field>,
 
   /// Types of the inputs to the operation.
   #[property(skip)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) inputs: Vec<wick_interface_types::Field>,
 
   /// The path to append to our base URL, processed as a liquid template with each input as part of the template data.
@@ -139,14 +146,17 @@ pub struct HttpClientOperationDefinition {
 
   /// The codec to use when encoding/decoding data.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) codec: Option<Codec>,
 
   /// The body to send with the request.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) body: Option<liquid_json::LiquidJsonValue>,
 
   /// The headers to send with the request.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) headers: Option<HashMap<String, Vec<String>>>,
 
   /// The HTTP method to use.

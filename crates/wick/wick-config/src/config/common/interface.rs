@@ -6,7 +6,7 @@ use wick_interface_types::{OperationSignatures, TypeDefinition};
 use crate::config::components::ComponentConfig;
 use crate::config::{self};
 
-#[derive(Debug, Default, Clone, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Default, Clone, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(crate::config::AssetReference))]
 #[must_use]
@@ -14,11 +14,13 @@ use crate::config::{self};
 pub struct InterfaceDefinition {
   /// Types used by the interface's operations.
   #[asset(skip)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) types: Vec<TypeDefinition>,
 
   /// The operations the interface exposes.
   #[asset(skip)]
   #[property(skip)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
 }
 

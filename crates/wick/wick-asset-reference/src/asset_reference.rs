@@ -32,11 +32,13 @@ impl<'a> std::ops::Deref for FetchableAssetReference<'a> {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 #[must_use]
 pub struct AssetReference {
   pub(crate) location: String,
+  #[serde(skip)]
   pub(crate) cache_location: Arc<RwLock<Option<PathBuf>>>,
+  #[serde(skip)]
   pub(crate) baseurl: Arc<RwLock<Option<PathBuf>>>,
 }
 

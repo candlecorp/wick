@@ -1,5 +1,6 @@
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
 /// What to do when an error occurs.
+#[serde(rename_all = "kebab-case")]
 pub enum ErrorBehavior {
   /// The operation will commit what has succeeded.
   Commit = 0,

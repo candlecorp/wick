@@ -4,22 +4,26 @@ use wick_asset_reference::AssetReference;
 
 use super::Glob;
 
-#[derive(Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property)]
+#[derive(
+  Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference), lazy)]
 /// The package details for an application or component.
 pub struct PackageConfig {
   /// The list of files and folders to be included with the package.
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) files: Vec<Glob>,
 
   /// Configuration for publishing the package to a registry. This will be used if the package is published without any additional arguments on the command line. If a tag is specified on the command line, that tag will be used instead.
   #[builder(default)]
   #[asset(skip)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) registry: Option<RegistryConfig>,
 }
 
-#[derive(Debug, Default, Builder, Clone, PartialEq, property::Property)]
+#[derive(Debug, Default, Builder, Clone, PartialEq, property::Property, serde::Serialize)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 /// Configuration for publishing the package to a registry.
 pub struct RegistryConfig {

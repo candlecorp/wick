@@ -41,18 +41,7 @@ impl Program {
   }
 
   pub(crate) fn dotviz(&self, op: &str) -> Result<String, Error> {
-    let schematic = self.state.network.schematic(op).ok_or_else(|| {
-      Error::OpNotFound(
-        Entity::operation(&self.state.network.name, op),
-        self
-          .state
-          .network
-          .schematics()
-          .iter()
-          .map(|s| s.name().to_owned())
-          .collect(),
-      )
-    })?;
+    let schematic = self.state.get_schematic(op)?;
     Ok(schematic.render_dot())
   }
 }
@@ -253,5 +242,14 @@ pub(crate) struct ProgramState {
 impl ProgramState {
   pub(crate) fn new(network: Network, components: ComponentMap) -> Self {
     Self { network, components }
+  }
+
+  fn get_schematic(&self, op: &str) -> Result<&Schematic, Error> {
+    self.network.schematic(op).ok_or_else(|| {
+      Error::OpNotFound(
+        Entity::operation(&self.network.name, op),
+        self.network.schematics().iter().map(|s| s.name().to_owned()).collect(),
+      )
+    })
   }
 }

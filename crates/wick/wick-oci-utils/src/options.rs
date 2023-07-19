@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use oci_distribution::secrets::RegistryAuth;
 
-#[derive(getset::Getters, getset::Setters, Clone)]
+#[derive(getset::Getters, getset::Setters, Clone, serde::Serialize)]
 #[must_use]
 pub struct OciOptions {
   #[getset(get = "pub", set = "pub")]

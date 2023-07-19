@@ -8,7 +8,7 @@ use super::LiquidJsonConfig;
 use crate::config;
 use crate::error::ManifestError;
 
-#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property)]
+#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(crate::config::AssetReference))]
 #[must_use]
@@ -19,27 +19,32 @@ pub struct TestConfiguration {
   /// The name of the tests configuration.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) name: Option<String>,
 
   /// The source (i.e. url or file on disk) of the configuration.
   #[asset(skip)]
   #[property(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) source: Option<PathBuf>,
 
   /// The configuration with which to initialize the component before running tests.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) config: Option<LiquidJsonConfig>,
 
   /// A suite of test cases to run against component operations.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) cases: Vec<config::TestCase>,
 
   /// The environment this configuration has access to.
   #[asset(skip)]
   #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) env: Option<HashMap<String, String>>,
 }
 

@@ -21,7 +21,9 @@ use crate::import_cache::{setup_cache, ImportCache};
 use crate::utils::{make_resolver, resolve, RwOption};
 use crate::{config, v1, Resolver, Result};
 
-#[derive(Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property)]
+#[derive(
+  Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]
 #[builder(
@@ -42,53 +44,64 @@ pub struct AppConfiguration {
   #[builder(setter(strip_option), default)]
   #[property(skip)]
   /// The source (i.e. url or file on disk) of the configuration.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) source: Option<PathBuf>,
 
   #[builder(setter(strip_option), default)]
   /// The metadata for the application.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) metadata: Option<config::Metadata>,
 
   #[builder(setter(strip_option), default)]
   /// The package configuration for this application.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) package: Option<PackageConfig>,
 
   #[builder(default)]
   /// The components that make up the application.
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub(crate) import: HashMap<String, ImportBinding>,
 
   #[builder(default)]
   /// Any resources this application defines.
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub(crate) resources: HashMap<String, ResourceBinding>,
 
   #[builder(default)]
   /// The triggers that initialize upon a `run` and make up the application.
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) triggers: Vec<TriggerDefinition>,
 
   #[asset(skip)]
   #[doc(hidden)]
   #[builder(default)]
   #[property(skip)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) root_config: Option<RuntimeConfig>,
 
   #[asset(skip)]
   #[builder(default)]
   #[property(skip)]
   /// The environment this configuration has access to.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) env: Option<HashMap<String, String>>,
 
   #[asset(skip)]
   #[builder(setter(skip))]
   #[property(skip)]
   #[doc(hidden)]
+  #[serde(skip)]
   pub(crate) type_cache: ImportCache,
 
   #[asset(skip)]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) options: Option<FetchOptions>,
 
   #[asset(skip)]
   #[builder(default)]
   #[property(skip)]
   #[doc(hidden)]
+  #[serde(skip)]
   pub(crate) cached_types: RwOption<Vec<TypeDefinition>>,
 }
 

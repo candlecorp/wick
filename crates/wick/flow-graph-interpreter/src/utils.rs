@@ -21,6 +21,7 @@ impl<T> Bucket<T> {
     self.inner.lock().take()
   }
 
+  #[allow(dead_code)]
   pub(crate) fn replace(&self, inner: T) -> Option<T> {
     self.inner.lock().replace(inner)
   }

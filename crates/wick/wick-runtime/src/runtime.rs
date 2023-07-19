@@ -87,6 +87,10 @@ impl Runtime {
   pub fn render_dotviz(&self, op: &str) -> Result<String> {
     self.inner.render_dotviz(op)
   }
+
+  pub fn active_config(&self) -> &ComponentConfiguration {
+    self.inner.active_config()
+  }
 }
 
 impl std::fmt::Debug for RuntimeBuilder {

@@ -12,7 +12,7 @@ mod raw_router;
 mod rest_router;
 mod static_router;
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property, Builder)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property, serde::Serialize, Builder)]
 #[builder(setter(into))]
 #[property(get(public), set(private), mut(disable))]
 #[asset(asset(AssetReference))]
@@ -21,12 +21,14 @@ pub struct HttpTriggerConfig {
   #[asset(skip)]
   pub(crate) resource: String,
   #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) routers: Vec<HttpRouterConfig>,
 }
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, serde::Serialize)]
 #[asset(asset(AssetReference))]
 #[must_use]
+#[serde(rename_all = "kebab-case")]
 pub enum HttpRouterConfig {
   RawRouter(RawRouterConfig),
   RestRouter(RestRouterConfig),
@@ -61,7 +63,8 @@ pub trait WickRouter {
   fn path(&self) -> &str;
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum HttpRouterKind {
   RawRouter,
   RestRouter,

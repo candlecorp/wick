@@ -174,13 +174,6 @@ impl InstanceHandler {
     Ok(())
   }
 
-  pub(super) fn is_finished(&self) -> bool {
-    if !self.task.has_started() {
-      return false;
-    }
-    self.task.is_done()
-  }
-
   pub(super) fn is_running(&self) -> bool {
     self.task.has_started() && !self.task.is_done()
   }

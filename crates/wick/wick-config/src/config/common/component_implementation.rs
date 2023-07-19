@@ -3,10 +3,11 @@ use wick_interface_types::OperationSignatures;
 use crate::config::components::WasmComponent;
 use crate::config::{self, ComponentDefinition, HighLevelComponent};
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, serde::Serialize)]
 #[asset(asset(config::AssetReference))]
 #[must_use]
 /// A root-level wick component implementation.
+#[serde(rename_all = "kebab-case")]
 pub enum ComponentImplementation {
   /// A wasm component.
   Wasm(config::WasmComponentImplementation),
@@ -58,9 +59,10 @@ impl Default for ComponentImplementation {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
 #[must_use]
 /// The kind of component represented by ComponentImplementation.
+#[serde(rename_all = "kebab-case")]
 pub enum ComponentKind {
   /// A wasm component.
   Wasm,
