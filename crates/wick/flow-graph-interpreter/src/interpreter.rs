@@ -214,6 +214,10 @@ impl Interpreter {
 
     shutdown
   }
+
+  pub fn render_dotviz(&self, op: &str) -> Result<String, Error> {
+    self.program.dotviz(op)
+  }
 }
 
 impl Component for Interpreter {

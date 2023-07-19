@@ -142,6 +142,7 @@ fn connection_expression_sequence(input: &str) -> IResult<&str, FlowExpression> 
   let mut connections = Vec::new();
 
   let mut last_hop = from;
+  last_hop.0.ensure_id();
   for mut hop in hops {
     hop.0.ensure_id();
     connections.push(FlowExpression::ConnectionExpression(Box::new(connect(
@@ -401,6 +402,15 @@ mod tests {
         (InstTgt::Output, InstPort::None)
         ])
     )]
+    #[case(
+      "test::in -> test::middle -> test::out",
+      flow_block(0,||[
+        (InstTgt::generated_path("test::in"), InstPort::None),
+        (InstTgt::generated_path("test::middle"), InstPort::None),
+        (InstTgt::generated_path("test::out"), InstPort::None),
+        ])
+    )]
+
     fn test_flow_expression(#[case] input: &'static str, #[case] expected: FE) -> Result<()> {
       set_seed(0);
       let (t, actual) = flow_expression(input)?;

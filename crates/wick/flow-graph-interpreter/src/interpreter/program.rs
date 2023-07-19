@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use flow_graph::iterators::{SchematicHop, WalkDirection};
 use flow_graph::{NodeKind, PortDirection};
 use wick_interface_types::{ComponentSignature, Field, OperationSignature, Type};
+use wick_packet::Entity;
 
 use crate::error::ValidationError;
 use crate::graph::types::*;
@@ -37,6 +38,22 @@ impl Program {
   pub(crate) fn validate(&self) -> Result<(), Error> {
     self::validator::validate(self)?;
     Ok(())
+  }
+
+  pub(crate) fn dotviz(&self, op: &str) -> Result<String, Error> {
+    let schematic = self.state.network.schematic(op).ok_or_else(|| {
+      Error::OpNotFound(
+        Entity::operation(&self.state.network.name, op),
+        self
+          .state
+          .network
+          .schematics()
+          .iter()
+          .map(|s| s.name().to_owned())
+          .collect(),
+      )
+    })?;
+    Ok(schematic.render_dot())
   }
 }
 

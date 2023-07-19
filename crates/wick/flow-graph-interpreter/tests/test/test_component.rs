@@ -34,6 +34,7 @@ impl TestComponent {
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
+      .add_operation(OperationSignature::new("empty_stream").add_output("output", Type::String))
       .add_operation(
         OperationSignature::new("wait")
           .add_input("input", Type::U64)
@@ -212,6 +213,13 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
           }
           defer(vec![send(payload.set_port("output"))]);
         }
+        defer(vec![send(Packet::done("output"))]);
+      });
+      Ok(stream)
+    }
+    "empty_stream" => {
+      let (mut send, stream) = stream(1);
+      spawn(async move {
         defer(vec![send(Packet::done("output"))]);
       });
       Ok(stream)

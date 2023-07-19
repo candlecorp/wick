@@ -136,20 +136,12 @@ async fn test_missing_port() -> Result<()> {
 
   let result = interp("./tests/manifests/v0/external.yaml", signature);
 
-  let errors = vec![
-    ValidationError::MissingConnection {
-      port: "OTHER_IN".to_owned(),
-      id: "INSTANCE".to_owned(),
-      component: "test".to_owned(),
-      operation: "echo".to_owned(),
-    },
-    ValidationError::UnusedOutput {
-      port: "OTHER_OUT".to_owned(),
-      id: "INSTANCE".to_owned(),
-      component: "test".to_owned(),
-      operation: "echo".to_owned(),
-    },
-  ];
+  let errors = vec![ValidationError::MissingConnection {
+    port: "OTHER_IN".to_owned(),
+    id: "INSTANCE".to_owned(),
+    component: "test".to_owned(),
+    operation: "echo".to_owned(),
+  }];
 
   if let Err(InterpreterError::ValidationError(e)) = result {
     assert_eq!(e, vec![OperationInvalid::new("test".to_owned(), errors)]);

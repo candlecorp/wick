@@ -1,3 +1,4 @@
+pub(crate) mod config;
 pub(crate) mod invoke;
 pub(crate) mod key;
 pub(crate) mod list;
@@ -57,6 +58,10 @@ pub(crate) enum CliCommand {
   /// Show information about wick's configuration or manifest details.
   #[clap(subcommand, name = "show")]
   Show(show::SubCommands),
+
+  /// Commands to help audit, explain, and validate configurations.
+  #[clap(subcommand, name = "config")]
+  Config(config::SubCommands),
 
   /// Commands for WebAssembly component.
   #[clap(subcommand, name = "wasm")]

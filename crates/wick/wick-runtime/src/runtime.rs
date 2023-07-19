@@ -83,6 +83,10 @@ impl Runtime {
   pub fn namespace(&self) -> &str {
     &self.inner.namespace
   }
+
+  pub fn render_dotviz(&self, op: &str) -> Result<String> {
+    self.inner.render_dotviz(op)
+  }
 }
 
 impl std::fmt::Debug for RuntimeBuilder {

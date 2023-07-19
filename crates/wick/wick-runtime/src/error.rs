@@ -47,6 +47,9 @@ pub enum RuntimeError {
 
   #[error("Runtime can not be built without a wick configuration")]
   MissingComponentDefinition,
+
+  #[error("Could not render dotviz: {0}")]
+  DotViz(flow_graph_interpreter::error::InterpreterError),
 }
 
 impl From<Infallible> for RuntimeError {

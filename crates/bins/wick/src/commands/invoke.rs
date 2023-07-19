@@ -110,18 +110,18 @@ pub(crate) async fn handle(
 
   let op_config = parse_config_string(opts.op_with.as_deref())?;
 
-  let component = opts.operation;
+  let operation = opts.operation;
 
   let mut host = ComponentHostBuilder::default().manifest(manifest).span(span).build()?;
 
   host.start_runtime(opts.seed.map(Seed::unsafe_new)).await?;
 
   let signature = host.get_signature()?;
-  let op_signature = signature.get_operation(&component).ok_or_else(|| {
+  let op_signature = signature.get_operation(&operation).ok_or_else(|| {
     anyhow::anyhow!(
       "Could not invoke operation '{}', '{}' not found. Reported operations are [{}]",
-      component,
-      component,
+      operation,
+      operation,
       signature
         .operations
         .iter()
@@ -170,7 +170,7 @@ pub(crate) async fn handle(
     // }
   } else {
     let args = parse_args(&opts.args, op_signature)
-      .map_err(|e| anyhow!("Failed to parse arguments for operation {}: {}", component, e))?;
+      .map_err(|e| anyhow!("Failed to parse arguments for operation {}: {}", operation, e))?;
     trace!(args= ?args, "parsed CLI arguments");
     let mut packets = Vec::new();
     let mut seen_ports = HashSet::new();
@@ -184,7 +184,7 @@ pub(crate) async fn handle(
     debug!(cli_packets= ?packets, "wick invoke");
     let stream = PacketStream::new(futures::stream::iter(packets));
 
-    let stream = host.request(&component, op_config, stream, inherent_data).await?;
+    let stream = host.request(&operation, op_config, stream, inherent_data).await?;
 
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }

@@ -35,7 +35,7 @@ impl Validator {
 
           let id = reconcile_op_id(reference.component_id(), reference.name(), schematic_name, node.id());
 
-          let operation_sig = component.operations.iter().find(|op| op.name == id);
+          let operation_sig = component.get_operation(&id);
 
           if operation_sig.is_none() {
             validation_errors.push(ValidationError::MissingOperation {
@@ -106,13 +106,14 @@ impl Validator {
                 let mut walker = SchematicWalker::from_port(schematic, port.detached(), WalkDirection::Down);
                 let next = walker.nth(1);
                 if next.is_none() {
-                  validation_errors.push(ValidationError::UnusedOutput {
-                    port: field.name.clone(),
-                    id: node.name.clone(),
-                    operation: reference.name().to_owned(),
-                    component: reference.component_id().to_owned(),
-                  });
-                  continue;
+                  warn!(id=node.name.clone(), operation = %reference, port = %field.name, "unhandled downstream connection");
+                  // validation_errors.push(ValidationError::UnusedOutput {
+                  //   port: field.name.clone(),
+                  //   id: node.name.clone(),
+                  //   operation: reference.name().to_owned(),
+                  //   component: reference.component_id().to_owned(),
+                  // });
+                  // continue;
                 }
               }
               None => {
