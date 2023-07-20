@@ -20,7 +20,7 @@ RUN tar -xzf wick.tar.gz
 FROM ubuntu:latest
 LABEL org.opencontainers.image.source="https://github.com/candlecorp/wick"
 
-RUN apt-get update && apt-get install -y ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates sqlite3
 
 COPY --from=builder /opt/wick /usr/bin/wick
 RUN chmod +x /usr/bin/wick
