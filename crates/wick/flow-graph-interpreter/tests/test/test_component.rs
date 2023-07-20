@@ -202,15 +202,36 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
   let mut payload_stream = invocation.packets;
   let operation = invocation.target.operation_id().to_owned();
   println!("handling {}", operation);
+  let (mut send, stream) = stream(1);
+
+  macro_rules! break_if_done {
+    ($($id:ident),*) => {
+      $(
+        if $id.is_done() { break; }
+      )*
+    };
+  }
+
+  macro_rules! continue_if_bracket {
+    ($($id:ident),*, $($output:literal),*) => {
+      let ports = vec![$($output),*];
+      $(
+        if $id.is_bracket() {
+        for port in ports {
+            defer(vec![send($id.clone().set_port(port))]);
+        }
+        continue;
+      }
+      )*
+    }
+  }
+
   match operation.as_str() {
     "echo" => {
-      let (mut send, stream) = stream(1);
       spawn(async move {
         let mut input = fan_out!(payload_stream, "input");
         while let Some(Ok(payload)) = input.next().await {
-          if payload.is_done() {
-            break;
-          }
+          break_if_done!(payload);
           defer(vec![send(payload.set_port("output"))]);
         }
         defer(vec![send(Packet::done("output"))]);
@@ -218,70 +239,61 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
       Ok(stream)
     }
     "empty_stream" => {
-      let (mut send, stream) = stream(1);
       spawn(async move {
         defer(vec![send(Packet::done("output"))]);
       });
       Ok(stream)
     }
     "wait" => {
-      let (mut send, stream) = stream(1);
       spawn(async move {
         let mut input = fan_out!(payload_stream, "input");
         println!("got echo: waiting for payload");
         while let Some(Ok(payload)) = input.next().await {
-          if payload.is_signal() {
-            defer(vec![send(payload.set_port("output"))]);
-          } else {
-            let millis = payload.decode::<u64>().unwrap();
-            let before = SystemTime::now();
-            tokio::time::sleep(Duration::from_millis(millis)).await;
-            let slept_for = SystemTime::now().duration_since(before).unwrap().as_millis() as u64;
-            println!("slept for {}ms", slept_for);
-            defer(vec![send(Packet::encode("output", slept_for))]);
-          }
+          break_if_done!(payload);
+          continue_if_bracket!(payload, "output");
+
+          let millis = payload.decode::<u64>().unwrap();
+          let before = SystemTime::now();
+          tokio::time::sleep(Duration::from_millis(millis)).await;
+          let slept_for = SystemTime::now().duration_since(before).unwrap().as_millis() as u64;
+          println!("slept for {}ms", slept_for);
+          defer(vec![send(Packet::encode("output", slept_for))]);
         }
         defer(vec![send(Packet::done("output"))]);
       });
       Ok(stream)
     }
     "call" => {
-      let (mut send, stream) = stream(1);
       spawn(async move {
         let (mut message, mut component) = fan_out!(payload_stream, "message", "component");
         while let (Some(Ok(message)), Some(Ok(component))) = (message.next().await, component.next().await) {
-          if message.is_done() || component.is_done() {
-            break;
-          }
-          if message.is_signal() {
-            defer(vec![send(message.set_port("output"))]);
-          } else if component.is_signal() {
-            defer(vec![send(component.set_port("output"))]);
-          } else {
-            println!("got compref: {:?}", component.payload());
-            let link: ComponentReference = component.decode().unwrap();
-            let message: String = message.decode().unwrap();
-            let packets = packet_stream!(("input", message));
-            let mut response = callback(
-              link,
-              "reverse".to_owned(),
-              packets,
-              InherentData::unsafe_default(),
-              Default::default(),
-              &Span::current(),
-            )
-            .await
-            .unwrap();
-            while let Some(Ok(res)) = response.next().await {
-              defer(vec![send(res.set_port("output"))]);
-            }
+          break_if_done!(message);
+          break_if_done!(component);
+          continue_if_bracket!(message, "output");
+          continue_if_bracket!(component, "output");
+
+          println!("got compref: {:?}", component.payload());
+          let link: ComponentReference = component.decode().unwrap();
+          let message: String = message.decode().unwrap();
+          let packets = packet_stream!(("input", message));
+          let mut response = callback(
+            link,
+            "reverse".to_owned(),
+            packets,
+            InherentData::unsafe_default(),
+            Default::default(),
+            &Span::current(),
+          )
+          .await
+          .unwrap();
+          while let Some(Ok(res)) = response.next().await {
+            defer(vec![send(res.set_port("output"))]);
           }
         }
       });
       Ok(stream)
     }
     "reverse" => {
-      let (mut send, stream) = stream(1);
       spawn(async move {
         let mut input = fan_out!(payload_stream, "input");
         while let Some(packet) = input.next().await {
@@ -290,20 +302,17 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
           if packet.port() != "input" {
             panic!("invalid port: {:?}", packet);
           }
+          break_if_done!(packet);
+          continue_if_bracket!(packet, "output");
 
-          if packet.is_signal() {
-            let _ = send(packet.set_port("output")).await;
-          } else {
-            let msg: String = packet.decode().unwrap();
-            let _ = send(Packet::encode("output", &msg.chars().rev().collect::<String>())).await;
-          }
+          let msg: String = packet.decode().unwrap();
+          let _ = send(Packet::encode("output", &msg.chars().rev().collect::<String>())).await;
         }
         defer(vec![send(Packet::done("output"))]);
       });
       Ok(stream)
     }
     "uppercase" => {
-      let (mut send, stream) = stream(1);
       spawn(async move {
         let mut input = fan_out!(payload_stream, "input");
         while let Some(packet) = input.next().await {
@@ -312,34 +321,30 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
           if packet.port() != "input" {
             panic!("invalid port: {:?}", packet);
           }
-          if packet.is_signal() {
-            let _ = send(packet.set_port("output")).await;
-          } else {
-            let msg: String = packet.decode().unwrap();
-            let _ = send(Packet::encode("output", &msg.to_ascii_uppercase())).await;
-          }
+          break_if_done!(packet);
+          continue_if_bracket!(packet, "output");
+
+          let msg: String = packet.decode().unwrap();
+          let _ = send(Packet::encode("output", &msg.to_ascii_uppercase())).await;
         }
         defer(vec![send(Packet::done("output"))]);
       });
       Ok(stream)
     }
     "concat" => {
-      let (mut send, stream) = stream(1);
       spawn(async move {
         let (mut left, mut right) = fan_out!(payload_stream, "left", "right");
         while let (Some(left), Some(right)) = (left.next().await, right.next().await) {
           match (left, right) {
             (Ok(left), Ok(right)) => {
               let mut packets = Vec::new();
-              if left.has_data() && right.has_data() {
-                let left: String = left.decode().unwrap();
-                let right: String = right.decode().unwrap();
-                packets.push(send(Packet::encode("output", format!("{}{}", left, right))));
-              } else if left.is_signal() {
-                packets.push(send(left.set_port("output")));
-              } else if right.is_signal() {
-                packets.push(send(right.set_port("output")));
-              }
+              break_if_done!(left, right);
+              continue_if_bracket!(left, right, "output");
+
+              let left: String = left.decode().unwrap();
+              let right: String = right.decode().unwrap();
+              packets.push(send(Packet::encode("output", format!("{}{}", left, right))));
+
               defer(packets);
             }
             (Err(e), _) => {
@@ -355,20 +360,17 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
       Ok(stream)
     }
     "add" => {
-      let (mut send, stream) = stream(1);
       spawn(async move {
         let (mut left, mut right) = fan_out!(payload_stream, "left", "right");
         while let (Some(Ok(left)), Some(Ok(right))) = (left.next().await, right.next().await) {
+          break_if_done!(left, right);
+          continue_if_bracket!(left, right, "output");
+
           let mut packets = Vec::new();
-          if left.has_data() && right.has_data() {
-            let left: u64 = left.decode().unwrap();
-            let right: u64 = right.decode().unwrap();
-            packets.push(send(Packet::encode("output", left + right)));
-          } else if left.is_signal() {
-            packets.push(send(left.set_port("output")));
-          } else if right.is_signal() {
-            packets.push(send(right.set_port("output")));
-          }
+          let left: u64 = left.decode().unwrap();
+          let right: u64 = right.decode().unwrap();
+          packets.push(send(Packet::encode("output", left + right)));
+
           defer(packets);
         }
         defer(vec![send(Packet::done("output"))]);
@@ -377,22 +379,19 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
     }
     "copy" => {
       let (mut input, mut times) = fan_out!(payload_stream, "input", "times");
-      let (mut send, stream) = stream(1);
+
       let task = async move {
         while let (Some(Ok(input)), Some(Ok(times))) = (input.next().await, times.next().await) {
+          break_if_done!(input, times);
+          continue_if_bracket!(input, times, "output");
+
           let mut packets = Vec::new();
-          if input.has_data() && times.has_data() {
-            let input: String = input.decode()?;
-            let times: u64 = times.decode()?;
-            for _ in 0..times {
-              packets.push(send(Packet::encode("output", &input)));
-            }
-            packets.push(send(Packet::done("output")));
-          } else if input.is_signal() {
-            packets.push(send(input.set_port("output")));
-          } else if times.is_signal() {
-            packets.push(send(times.set_port("output")));
+          let input: String = input.decode()?;
+          let times: u64 = times.decode()?;
+          for _ in 0..times {
+            packets.push(send(Packet::encode("output", &input)));
           }
+          packets.push(send(Packet::done("output")));
           defer(packets);
         }
         Ok::<_, wick_packet::Error>(())
@@ -402,33 +401,31 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
     }
     "splitter" => {
       let mut input = fan_out!(payload_stream, "input");
-      let (mut send, stream) = stream(1);
+
       let task = async move {
         while let Some(Ok(input)) = input.next().await {
-          if input.is_signal() {
-            defer(vec![send(input.clone().set_port("rest"))]);
-            defer(vec![send(input.set_port("vowels"))]);
-          } else {
-            let input: String = input.decode()?;
-            let vowels: Vec<_> = input
-              .chars()
-              .filter(|c| matches!(c, 'a' | 'e' | 'i' | 'o' | 'u'))
-              .collect();
-            let rest: Vec<_> = input
-              .chars()
-              .filter(|c| !matches!(c, 'a' | 'e' | 'i' | 'o' | 'u'))
-              .collect();
+          break_if_done!(input);
+          continue_if_bracket!(input, "rest", "vowels");
 
-            let mut vowel_packets = vowels.iter().map(|v| Packet::encode("vowels", v)).collect::<Vec<_>>();
-            vowel_packets.push(Packet::done("vowels"));
+          let input: String = input.decode()?;
+          let vowels: Vec<_> = input
+            .chars()
+            .filter(|c| matches!(c, 'a' | 'e' | 'i' | 'o' | 'u'))
+            .collect();
+          let rest: Vec<_> = input
+            .chars()
+            .filter(|c| !matches!(c, 'a' | 'e' | 'i' | 'o' | 'u'))
+            .collect();
 
-            let mut rest_packets = rest.iter().map(|v| Packet::encode("rest", v)).collect::<Vec<_>>();
-            rest_packets.push(Packet::done("rest"));
-            println!("{:#?}", vowel_packets);
-            println!("{:#?}", rest_packets);
-            defer(vowel_packets.into_iter().map(&mut send).collect());
-            defer(rest_packets.into_iter().map(&mut send).collect());
-          }
+          let mut vowel_packets = vowels.iter().map(|v| Packet::encode("vowels", v)).collect::<Vec<_>>();
+          vowel_packets.push(Packet::done("vowels"));
+
+          let mut rest_packets = rest.iter().map(|v| Packet::encode("rest", v)).collect::<Vec<_>>();
+          rest_packets.push(Packet::done("rest"));
+          println!("{:#?}", vowel_packets);
+          println!("{:#?}", rest_packets);
+          defer(vowel_packets.into_iter().map(&mut send).collect());
+          defer(rest_packets.into_iter().map(&mut send).collect());
         }
         Ok::<_, wick_packet::Error>(())
       };
@@ -441,21 +438,18 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
       panic!();
     }
     "error" => Err(anyhow!("This operation always errors")),
-    "noimpl" => {
-      let (_send, stream) = stream(1);
-      Ok(stream)
-    }
+    "noimpl" => Ok(stream),
     "component_error" => {
-      let (mut send, stream) = stream(1);
       send(Packet::component_error("Oh no"));
       Ok(stream)
     }
     "timeout-nodone" => {
       let mut input = fan_out!(payload_stream, "input");
-      let (mut send, stream) = stream(1);
+
       let task = async move {
         while let Some(input) = input.next().await {
           let input = input?;
+          break_if_done!(input);
           defer(vec![send(input.set_port("output"))]);
         }
         Ok::<_, wick_packet::Error>(())
@@ -465,10 +459,7 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
       Ok(stream)
     }
 
-    "timeout" => {
-      let (_send, stream) = stream(1);
-      Ok(stream)
-    }
+    "timeout" => Ok(stream),
 
     _ => Err(anyhow::anyhow!("Operation {} not handled", operation)),
   }

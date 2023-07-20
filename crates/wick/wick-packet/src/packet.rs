@@ -187,6 +187,11 @@ impl Packet {
     self.extra.flags() > 0
   }
 
+  /// Returns true if this packet is a bracket packet (i.e open_bracket, close_bracket, etc).
+  pub fn is_bracket(&self) -> bool {
+    self.extra.flags() & (OPEN_BRACKET | CLOSE_BRACKET) > 0
+  }
+
   /// Returns true if this packet is a done packet.
   pub fn is_done(&self) -> bool {
     self.extra.is_done()
