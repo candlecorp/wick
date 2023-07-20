@@ -17,7 +17,7 @@ macro_rules! request_response {
             $(if $ikey.is_done() {
               break None;
             })*
-            $(if $ikey.is_signal() {
+            $(if $ikey.is_bracket() {
               tx.send($ikey.set_port($okey))?;
               continue;
             })*
