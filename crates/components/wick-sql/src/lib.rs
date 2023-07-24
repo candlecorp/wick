@@ -93,11 +93,12 @@ pub use error::Error;
 
 pub(crate) mod common;
 
-mod mssql_tiberius;
-mod sqlx;
+mod component;
 
-pub use self::mssql_tiberius::AzureSqlComponent;
-pub use self::sqlx::SqlXComponent;
+pub(crate) mod mssql_tiberius;
+pub(crate) mod sqlx;
+
+pub use self::component::SqlComponent;
 
 #[macro_use]
 extern crate tracing;

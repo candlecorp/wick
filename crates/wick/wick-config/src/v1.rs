@@ -1587,8 +1587,8 @@ pub(crate) struct SqlComponent {
 #[serde(untagged)]
 pub(crate) enum SqlQueryKind {
   /// A variant representing a [SqlOperationDefinition] type.
-  #[serde(rename = "SqlOperationDefinition")]
-  SqlOperationDefinition(SqlOperationDefinition),
+  #[serde(rename = "SqlQueryOperationDefinition")]
+  SqlQueryOperationDefinition(SqlQueryOperationDefinition),
   /// A variant representing a [SqlExecOperationDefinition] type.
   #[serde(rename = "SqlExecOperationDefinition")]
   SqlExecOperationDefinition(SqlExecOperationDefinition),
@@ -1597,7 +1597,7 @@ pub(crate) enum SqlQueryKind {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A dynamic operation whose implementation is a SQL query.
-pub(crate) struct SqlOperationDefinition {
+pub(crate) struct SqlQueryOperationDefinition {
   /// The name of the operation.
 
   #[serde(default)]

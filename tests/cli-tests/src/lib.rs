@@ -25,6 +25,8 @@ mod test {
     let bin = build_wick()?;
     set_dir()?;
 
+    std::env::set_var("TRYCMD", "dump");
+
     let trycmd = trycmd::TestCases::new();
     trycmd
       .case(path)

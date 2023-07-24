@@ -14,12 +14,14 @@ node_modules
 
 # general wick/wasm
 /build
-.wick/
 crates/wick-rpc/src/generated/wick.rs
 crates/**/src/generated/mod.rs
 /crates/integration/*/build
 docs/static/rustdoc/
 
+# Test & scratch files
+.wick-test.sqlite3.db
+.wick/
 
 # misc
 archive

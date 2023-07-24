@@ -244,28 +244,9 @@ pub(crate) async fn init_hlc_component(
   component: wick_config::config::HighLevelComponent,
   resolver: Box<Resolver>,
 ) -> ComponentInitResult {
-  let comp: Box<dyn Component + Send + Sync> = match component {
+  let mut comp: Box<dyn Component + Send + Sync> = match component {
     config::HighLevelComponent::Sql(comp) => {
-      let url = resolver(comp.resource())?.try_resource()?;
-      let scheme = match &url {
-        ResourceDefinition::Url(url) => url.url().value_unchecked().scheme(),
-        _ => {
-          return Err(EngineError::ComponentInit(
-            "sql or azure-sql".to_owned(),
-            "no resource found".to_owned(),
-          ))
-        }
-      };
-      if scheme == "mssql" {
-        Box::new(wick_sql::AzureSqlComponent::new(
-          comp,
-          root_config,
-          metadata,
-          &resolver,
-        )?)
-      } else {
-        Box::new(wick_sql::SqlXComponent::new(comp, root_config, metadata, &resolver)?)
-      }
+      Box::new(wick_sql::SqlComponent::new(comp, root_config, metadata, &resolver)?)
     }
     config::HighLevelComponent::HttpClient(comp) => Box::new(wick_http_client::HttpClientComponent::new(
       comp,

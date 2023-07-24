@@ -182,7 +182,7 @@ impl From<SqlExecOperationDefinition> for wick_interface_types::OperationSignatu
 #[derive(
   Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize,
 )]
-#[property(get(public), set(private), mut(disable))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
 /// An operation whose implementation is a SQL query to execute on a database.
@@ -231,7 +231,7 @@ pub struct SqlOperationDefinition {
 #[derive(
   Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize,
 )]
-#[property(get(public), set(private), mut(disable))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
 /// An operation whose implementation is a SQL query to execute on a database and returns the number of rows affected or failure.

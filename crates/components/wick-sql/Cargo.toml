@@ -28,16 +28,16 @@ url = { workspace = true }
 sqlx = { workspace = true, features = [
   "runtime-tokio-rustls",
   "postgres",
-  "mssql",
+  "sqlite",
   "json",
   "any",
-  "chrono"
+  "chrono",
 ] }
 # tiberius & pool
 tiberius = { workspace = true, features = [
   "rustls",
   "tds73",
-  "chrono"
+  "chrono",
 ], default-features = false }
 bb8-tiberius = { workspace = true, features = ["with-tokio"] }
 bb8 = { workspace = true }
@@ -53,6 +53,9 @@ serde_json = { workspace = true }
 #
 bytes = { workspace = true }
 chrono = { workspace = true }
+regex = { workspace = true }
+once_cell = { workspace = true }
+async-trait = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
@@ -60,4 +63,5 @@ wick-logger = { workspace = true }
 test-logger = { workspace = true }
 anyhow = { workspace = true }
 pretty_assertions = { workspace = true }
+rstest = { workspace = true }
 wick-packet = { workspace = true, features = ["test"] }
