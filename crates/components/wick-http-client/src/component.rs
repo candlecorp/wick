@@ -131,7 +131,7 @@ impl Component for HttpClientComponent {
     &self.signature
   }
 
-  fn init(&self) -> std::pin::Pin<Box<dyn futures::Future<Output = Result<(), ComponentError>> + Send + 'static>> {
+  fn init(&mut self) -> std::pin::Pin<Box<dyn futures::Future<Output = Result<(), ComponentError>> + Send + 'static>> {
     let container = self.ctx.clone();
     let config = self.config.clone();
 
@@ -524,7 +524,7 @@ mod test {
     component_config: HttpClientComponentConfig,
   ) -> HttpClientComponent {
     let resolver = app_config.resolver();
-    let component = HttpClientComponent::new(component_config, None, None, &resolver).unwrap();
+    let mut component = HttpClientComponent::new(component_config, None, None, &resolver).unwrap();
     component.init().await.unwrap();
     component
   }

@@ -1,18 +1,15 @@
-use std::borrow::BorrowMut;
 use std::mem;
 
-use bytes::BufMut;
-use chrono::{NaiveDate, NaiveTime};
 use serde_json::Value;
 use sqlx::encode::IsNull;
-use sqlx::mssql::MssqlTypeInfo;
-use sqlx::{Encode, Mssql, Type as SqlxType};
+use sqlx::sqlite::SqliteTypeInfo;
+use sqlx::{Encode, Sqlite, Type as SqlxType};
 use wick_interface_types::Type;
 use wick_packet::{parse_date, TypeWrapper};
 
 use crate::common::sql_wrapper::SqlWrapper;
 
-impl<'q> Encode<'q, Mssql> for SqlWrapper {
+impl<'q> Encode<'q, Sqlite> for SqlWrapper {
   #[inline]
   fn size_hint(&self) -> usize {
     match self.0.type_signature() {
@@ -41,39 +38,10 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
     }
   }
 
-  // sqlx doesn't expose these types so we can't implement this on the public release.
-  // Holding on to this for now in case we maintain a fork in the near future.
-  // fn produces(&self) -> Option<MssqlTypeInfo> {
-  //   let ty = match self.0.type_signature() {
-  //     TypeSignature::I8 => DataType::SmallInt,
-  //     TypeSignature::I16 => DataType::Int,
-  //     TypeSignature::I32 => DataType::Int,
-  //     TypeSignature::I64 => DataType::BigInt,
-  //     TypeSignature::U8 => DataType::TinyInt,
-  //     TypeSignature::U16 => DataType::SmallInt,
-  //     TypeSignature::U32 => DataType::Int,
-  //     TypeSignature::U64 => DataType::BigInt,
-  //     TypeSignature::F32 => DataType::Real,
-  //     TypeSignature::F64 => DataType::Float,
-  //     TypeSignature::Bool => DataType::Bit,
-  //     TypeSignature::String => DataType::NVarChar,
-  //     TypeSignature::Datetime => DataType::DateTimeN,
-  //     TypeSignature::Bytes => DataType::Binary,
-  //     TypeSignature::Named(_) => todo!(),
-  //     TypeSignature::Ref { .. } => todo!(),
-  //     TypeSignature::List { .. } => todo!(),
-  //     TypeSignature::Optional { .. } => todo!(),
-  //     TypeSignature::Map { .. } => todo!(),
-  //     TypeSignature::Link { .. } => todo!(),
-  //     TypeSignature::Object => todo!(),
-  //     TypeSignature::AnonymousStruct(_) => todo!(),
-  //   };
-  //   let size = Encode::<Mssql>::size_hint(&self) as u32;
-
-  //   Some(MssqlTypeInfo(TypeInfo::new(ty, size)))
-  // }
-
-  fn encode_by_ref(&self, buf: &mut <Mssql as sqlx::database::HasArguments<'q>>::ArgumentBuffer) -> IsNull {
+  fn encode_by_ref<'a, 'b>(
+    &'a self,
+    buf: &'a mut <Sqlite as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
+  ) -> IsNull {
     let sig = self.0.type_signature();
     let v = self.0.inner();
     match sig {
@@ -81,8 +49,7 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
       Type::I16 => convert_int::<i16>(v, buf).unwrap(),
       Type::I32 => {
         let v: u32 = v.as_i64().unwrap().try_into().unwrap();
-        buf.extend(v.to_le_bytes());
-        IsNull::No
+        Encode::<Sqlite>::encode(v, buf)
       }
       Type::I64 => convert_int::<i64>(v, buf).unwrap(),
       Type::U8 => convert_int::<i8>(v, buf).unwrap(),
@@ -93,51 +60,33 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
       Type::F64 => convert_float(v, buf),
       Type::Bool => {
         let v = v.as_bool().unwrap();
-        Encode::<Mssql>::encode(v, buf)
+        Encode::<Sqlite>::encode(v, buf)
       }
       Type::String => {
-        let len_pos = buf.len();
-        let v = v.as_str().unwrap().encode_utf16();
-        buf.put_u16_le(0u16);
-        for chr in v {
-          buf.put_u16_le(chr);
-        }
-        let length = buf.len() - len_pos - 2;
-
-        let dst: &mut [u8] = buf.borrow_mut();
-        let mut dst = &mut dst[len_pos..];
-        dst.put_u16_le(length as u16);
-        IsNull::No
+        let v = v.as_str().unwrap().to_owned();
+        Encode::<Sqlite>::encode(v, buf)
       }
       Type::Datetime => {
         let datetime = parse_date(v.as_str().unwrap()).unwrap();
-
-        let days_duration = datetime.date_naive() - NaiveDate::from_ymd_opt(1900, 1, 1).unwrap();
-        let ms_duration = datetime.time() - NaiveTime::from_hms_opt(0, 0, 0).unwrap();
-        let days = days_duration.num_days() as i32;
-        let ms: i32 = (ms_duration.num_milliseconds() / 300) as i32;
-        buf.extend(&days.to_le_bytes());
-        buf.extend_from_slice(&ms.to_le_bytes());
-
-        IsNull::No
+        Encode::<Sqlite>::encode(datetime, buf)
       }
       Type::Named(_) => unimplemented!(),
       Type::Bytes => encode_array(&Type::U8, v, buf),
       Type::List { ty } => encode_array(ty, v, buf),
       Type::Optional { ty } => {
         if v.is_null() {
-          buf.put_u8(0);
           IsNull::Yes
         } else {
-          Encode::<Mssql>::encode(SqlWrapper(TypeWrapper::new(*ty.clone(), v.clone())), buf)
+          Encode::<Sqlite>::encode(SqlWrapper(TypeWrapper::new(*ty.clone(), v.clone())), buf)
         }
       }
       Type::Map { value, .. } => {
         let v = v.as_object().unwrap();
-        buf.put_u32(v.len() as u32);
+        let _ = Encode::<Sqlite>::encode(v.len() as u32, buf);
+
         for (k, v) in v {
-          let _ = Encode::<Mssql>::encode(k, buf);
-          let _ = Encode::<Mssql>::encode(SqlWrapper(TypeWrapper::new(*value.clone(), v.clone())), buf);
+          let _ = Encode::<Sqlite>::encode(k, buf);
+          let _ = Encode::<Sqlite>::encode(SqlWrapper(TypeWrapper::new(*value.clone(), v.clone())), buf);
         }
         IsNull::No
       }
@@ -152,36 +101,36 @@ impl<'q> Encode<'q, Mssql> for SqlWrapper {
 fn encode_array(
   _ty: &Type,
   _v: &Value,
-  _buf: &mut <Mssql as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
+  _buf: &mut <Sqlite as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
 ) -> IsNull {
   unimplemented!()
 }
 
 fn convert_int<'q, T>(
   v: &Value,
-  buf: &mut <Mssql as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
+  buf: &mut <Sqlite as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
 ) -> Result<IsNull, T::Error>
 where
   T: TryFrom<i64>,
   T::Error: std::fmt::Debug,
-  T: Encode<'q, Mssql>,
+  T: Encode<'q, Sqlite>,
   T: std::fmt::Debug,
 {
   let v: T = v.as_i64().unwrap().try_into()?;
-  Ok(Encode::<Mssql>::encode(v, buf))
+  Ok(Encode::<Sqlite>::encode(v, buf))
 }
 
-fn convert_float(v: &Value, buf: &mut <Mssql as sqlx::database::HasArguments<'_>>::ArgumentBuffer) -> IsNull {
+fn convert_float(v: &Value, buf: &mut <Sqlite as sqlx::database::HasArguments<'_>>::ArgumentBuffer) -> IsNull {
   let v = v.as_f64().unwrap();
-  Encode::<Mssql>::encode(v, buf)
+  Encode::<Sqlite>::encode(v, buf)
 }
 
-impl SqlxType<Mssql> for SqlWrapper {
-  fn type_info() -> MssqlTypeInfo {
-    <i32 as SqlxType<Mssql>>::type_info()
+impl SqlxType<Sqlite> for SqlWrapper {
+  fn type_info() -> SqliteTypeInfo {
+    <i32 as SqlxType<Sqlite>>::type_info()
   }
 
-  fn compatible(_ty: &<Mssql as sqlx::Database>::TypeInfo) -> bool {
+  fn compatible(_ty: &<Sqlite as sqlx::Database>::TypeInfo) -> bool {
     true
   }
 }
@@ -195,7 +144,7 @@ mod test {
 
   #[test]
   fn test_ints() -> Result<()> {
-    let mut buf = <Mssql as sqlx::database::HasArguments<'_>>::ArgumentBuffer::default();
+    let mut buf = <Sqlite as sqlx::database::HasArguments<'_>>::ArgumentBuffer::default();
     convert_int::<i32>(&json!(i32::MAX), &mut buf)?;
     convert_int::<i64>(&json!(u32::MAX), &mut buf)?;
     convert_int::<i64>(&json!(i64::MAX), &mut buf)?;

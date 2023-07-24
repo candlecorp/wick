@@ -1,0 +1,16 @@
+#:schema https://raw.githubusercontent.com/assert-rs/trycmd/main/schema.json
+bin.name = "wick"
+args = [
+  "invoke",
+  "examples/db/azuresql-component-transaction.wick",
+  '--with',
+  "{\"password\":\"{{ctx.env.TEST_PASSWORD}}\",\"port\":\"{{ctx.env.MSSQL_PORT}}\",\"host\":\"{{ctx.env.TEST_HOST}}\"}",
+  "set_user",
+  "--",
+  "--name",
+  "TEST_NAME",
+  "--email",
+  "TEST_EMAIL@example.com",
+]
+stdout = """{"payload":{"value":{"email":"TEST_EMAIL@example.com","id":[..],"name":"TEST_NAME"}},"port":"output"}
+"""

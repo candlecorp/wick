@@ -28,6 +28,9 @@ pub enum Error {
   #[error("Failed to connect to Postgres Server: {0}")]
   PostgresConnect(String),
 
+  #[error("Failed to open to Sqlite DB: {0}")]
+  SqliteConnect(String),
+
   #[error("{0}")]
   Pool(String),
 
@@ -75,6 +78,9 @@ pub enum Error {
 
   #[error("Resource valid but its value could not be retrieved")]
   InvalidResourceConfig,
+
+  #[error("Got a row with no data")]
+  NoRow,
 }
 
 impl From<Error> for ComponentError {

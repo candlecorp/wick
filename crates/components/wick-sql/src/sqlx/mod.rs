@@ -1,5 +1,5 @@
 mod component;
-pub(crate) mod mssql;
 pub(crate) mod postgres;
+pub(crate) mod sqlite;
 
-pub use component::SqlXComponent;
+pub(crate) use component::SqlXComponent;

@@ -806,10 +806,10 @@ type SqlComponent @tagged("wick/component/sql@v1") {
   operations: [SqlQueryKind]
 }
 
-union SqlQueryKind @untagged = SqlOperationDefinition | SqlExecOperationDefinition
+union SqlQueryKind @untagged = SqlQueryOperationDefinition | SqlExecOperationDefinition
 
 "A dynamic operation whose implementation is a SQL query."
-type SqlOperationDefinition {
+type SqlQueryOperationDefinition {
   "The name of the operation."
   name: string
 

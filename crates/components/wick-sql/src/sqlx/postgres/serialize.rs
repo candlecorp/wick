@@ -5,7 +5,7 @@ use sqlx::postgres::{PgRow, PgValueRef};
 use sqlx::{Column, Decode, Postgres, Row, TypeInfo, ValueRef};
 
 /// Can be used with serialize_with
-pub(crate) fn serialize_pgvalueref<S>(value: &PgValueRef, s: S) -> Result<S::Ok, S::Error>
+pub(crate) fn serialize_valueref<S>(value: &PgValueRef, s: S) -> Result<S::Ok, S::Error>
 where
   S: Serializer,
 {
@@ -183,15 +183,15 @@ pub(crate) struct SerVecPgRow(#[serde(serialize_with = "serialize_pgrow_as_vec")
 /// SerMapPgRow::from(pg_row) will make your row serialize as a map.
 /// If you have multiple columns with the same name, the last one will win.
 #[derive(Serialize)]
-pub(crate) struct SerMapPgRow(#[serde(serialize_with = "serialize_pgrow_as_map")] PgRow);
+pub(crate) struct SerMapRow(#[serde(serialize_with = "serialize_pgrow_as_map")] PgRow);
 
-impl From<PgRow> for SerMapPgRow {
+impl From<PgRow> for SerMapRow {
   fn from(row: PgRow) -> Self {
-    SerMapPgRow(row)
+    SerMapRow(row)
   }
 }
 
-impl std::ops::Deref for SerMapPgRow {
+impl std::ops::Deref for SerMapRow {
   type Target = PgRow;
 
   fn deref(&self) -> &Self::Target {
@@ -199,21 +199,21 @@ impl std::ops::Deref for SerMapPgRow {
   }
 }
 
-impl std::ops::DerefMut for SerMapPgRow {
+impl std::ops::DerefMut for SerMapRow {
   fn deref_mut(&mut self) -> &mut Self::Target {
     &mut self.0
   }
 }
 
-impl From<SerMapPgRow> for PgRow {
-  fn from(row: SerMapPgRow) -> Self {
+impl From<SerMapRow> for PgRow {
+  fn from(row: SerMapRow) -> Self {
     row.0
   }
 }
 
 /// SerPgValueRef::from(pg_value_ref) will make your value serialize as its closest serde type.
 #[derive(Serialize)]
-pub(crate) struct SerPgValueRef<'r>(#[serde(serialize_with = "serialize_pgvalueref")] PgValueRef<'r>);
+pub(crate) struct SerPgValueRef<'r>(#[serde(serialize_with = "serialize_valueref")] PgValueRef<'r>);
 
 impl From<PgRow> for SerVecPgRow {
   fn from(row: PgRow) -> Self {
@@ -294,7 +294,7 @@ mod integration_test {
     assert_eq!(row[0], Value::Null);
 
     let row = conn.fetch_one("select 1 as foo, 'hello' as bar").await.unwrap();
-    let row = SerMapPgRow::from(row);
+    let row = SerMapRow::from(row);
     let row = serde_json::to_string(&row).unwrap();
     assert_eq!(row, r#"{"foo":1,"bar":"hello"}"#);
 
