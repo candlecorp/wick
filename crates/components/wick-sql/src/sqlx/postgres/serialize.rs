@@ -13,141 +13,63 @@ where
   let info = value.type_info();
   let name = info.name();
   match name {
-        "BOOL" => {
-            let v: bool = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_bool(v)
-        }
-        "INT2" => {
-            let v: i16 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_i16(v)
-        }
-        "INT4" => {
-            let v: i32 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_i32(v)
-        }
-        "INT8" => {
-            let v: i64 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_i64(v)
-        }
-        "FLOAT4" => {
-            let v: f32 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_f32(v)
-        }
-        "FLOAT8" | "NUMERIC" => {
-            let v: f64 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_f64(v)
-        }
-        "CHAR" | "VARCHAR" | "TEXT" | "\"CHAR\"" => {
-            let v: String = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_str(&v)
-        }
-        "BYTEA" => {
-            let v: Vec<u8> = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_some(&v)
-        }
-        "JSON" | "JSONB" => {
-            let v: Value = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_some(&v)
-        }
-        "TIMESTAMP" => {
-            let v: wick_packet::DateTime = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_str(&v.to_rfc3339())
-        }
-        "TIMESTAMPTZ" => {
-          let v: wick_packet::DateTime = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-          s.serialize_str(&v.to_rfc3339())
-      }
-        "UUID" => {
-            let v: String = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_str(&v)
-        }
-        _ => {
-            let v: String = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
-            s.serialize_str(&v)
-        }
-        // PgType::Name => "NAME",
-        // PgType::Oid => "OID",
-        // PgType::JsonArray => "JSON[]",
-        // PgType::Point => "POINT",
-        // PgType::Lseg => "LSEG",
-        // PgType::Path => "PATH",
-        // PgType::Box => "BOX",
-        // PgType::Polygon => "POLYGON",
-        // PgType::Line => "LINE",
-        // PgType::LineArray => "LINE[]",
-        // PgType::Cidr => "CIDR",
-        // PgType::CidrArray => "CIDR[]",
-        // PgType::Unknown => "UNKNOWN",
-        // PgType::Circle => "CIRCLE",
-        // PgType::CircleArray => "CIRCLE[]",
-        // PgType::Macaddr8 => "MACADDR8",
-        // PgType::Macaddr8Array => "MACADDR8[]",
-        // PgType::Macaddr => "MACADDR",
-        // PgType::Inet => "INET",
-        // PgType::BoolArray => "BOOL[]",
-        // PgType::ByteaArray => "BYTEA[]",
-        // PgType::CharArray => "\"CHAR\"[]",
-        // PgType::NameArray => "NAME[]",
-        // PgType::Int2Array => "INT2[]",
-        // PgType::Int4Array => "INT4[]",
-        // PgType::TextArray => "TEXT[]",
-        // PgType::BpcharArray => "CHAR[]",
-        // PgType::VarcharArray => "VARCHAR[]",
-        // PgType::Int8Array => "INT8[]",
-        // PgType::PointArray => "POINT[]",
-        // PgType::LsegArray => "LSEG[]",
-        // PgType::PathArray => "PATH[]",
-        // PgType::BoxArray => "BOX[]",
-        // PgType::Float4Array => "FLOAT4[]",
-        // PgType::Float8Array => "FLOAT8[]",
-        // PgType::PolygonArray => "POLYGON[]",
-        // PgType::OidArray => "OID[]",
-        // PgType::MacaddrArray => "MACADDR[]",
-        // PgType::InetArray => "INET[]",
-        // PgType::Date => "DATE",
-        // PgType::Time => "TIME",
-        // PgType::Timestamp => "TIMESTAMP",
-        // PgType::TimestampArray => "TIMESTAMP[]",
-        // PgType::DateArray => "DATE[]",
-        // PgType::TimeArray => "TIME[]",
-        // PgType::Timestamptz => "TIMESTAMPTZ",
-        // PgType::TimestamptzArray => "TIMESTAMPTZ[]",
-        // PgType::Interval => "INTERVAL",
-        // PgType::IntervalArray => "INTERVAL[]",
-        // PgType::NumericArray => "NUMERIC[]",
-        // PgType::Timetz => "TIMETZ",
-        // PgType::TimetzArray => "TIMETZ[]",
-        // PgType::Bit => "BIT",
-        // PgType::BitArray => "BIT[]",
-        // PgType::Varbit => "VARBIT",
-        // PgType::VarbitArray => "VARBIT[]",
-        // PgType::Numeric => "NUMERIC",
-        // PgType::Record => "RECORD",
-        // PgType::RecordArray => "RECORD[]",
-        // PgType::UuidArray => "UUID[]",
-        // PgType::JsonbArray => "JSONB[]",
-        // PgType::Int4Range => "INT4RANGE",
-        // PgType::Int4RangeArray => "INT4RANGE[]",
-        // PgType::NumRange => "NUMRANGE",
-        // PgType::NumRangeArray => "NUMRANGE[]",
-        // PgType::TsRange => "TSRANGE",
-        // PgType::TsRangeArray => "TSRANGE[]",
-        // PgType::TstzRange => "TSTZRANGE",
-        // PgType::TstzRangeArray => "TSTZRANGE[]",
-        // PgType::DateRange => "DATERANGE",
-        // PgType::DateRangeArray => "DATERANGE[]",
-        // PgType::Int8Range => "INT8RANGE",
-        // PgType::Int8RangeArray => "INT8RANGE[]",
-        // PgType::Jsonpath => "JSONPATH",
-        // PgType::JsonpathArray => "JSONPATH[]",
-        // PgType::Money => "MONEY",
-        // PgType::MoneyArray => "MONEY[]",
-        // PgType::Void => "VOID",
+    "BOOL" => {
+      let v: bool = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_bool(v)
     }
+    "INT2" => {
+      let v: i16 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_i16(v)
+    }
+    "INT4" => {
+      let v: i32 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_i32(v)
+    }
+    "INT8" => {
+      let v: i64 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_i64(v)
+    }
+    "FLOAT4" => {
+      let v: f32 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_f32(v)
+    }
+    "FLOAT8" | "NUMERIC" => {
+      let v: f64 = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_f64(v)
+    }
+    "CHAR" | "VARCHAR" | "TEXT" | "\"CHAR\"" => {
+      let v: String = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_str(&v)
+    }
+    "BYTEA" => {
+      let v: Vec<u8> = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_some(&v)
+    }
+    "JSON" | "JSONB" => {
+      let v: Value = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_some(&v)
+    }
+    "TIMESTAMP" => {
+      let v: wick_packet::DateTime = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_str(&v.to_rfc3339())
+    }
+    "TIMESTAMPTZ" => {
+      let v: wick_packet::DateTime = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_str(&v.to_rfc3339())
+    }
+    "UUID" => {
+      let v: String = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_str(&v)
+    }
+    _ => {
+      let v: String = Decode::<Postgres>::decode(value).map_err(serde::ser::Error::custom)?;
+      s.serialize_str(&v)
+    }
+  }
 }
 
 /// Can be used with serialize_with
-pub(crate) fn serialize_pgrow_as_vec<S>(x: &PgRow, s: S) -> Result<S::Ok, S::Error>
+pub(crate) fn serialize_row_as_vec<S>(x: &PgRow, s: S) -> Result<S::Ok, S::Error>
 where
   S: Serializer,
 {
@@ -162,7 +84,7 @@ where
 }
 
 /// Can be used with serialize_with
-pub(crate) fn serialize_pgrow_as_map<S>(x: &PgRow, s: S) -> Result<S::Ok, S::Error>
+pub(crate) fn serialize_row_as_map<S>(x: &PgRow, s: S) -> Result<S::Ok, S::Error>
 where
   S: Serializer,
 {
@@ -176,38 +98,15 @@ where
   map.end()
 }
 
-/// SerVecPgRow::from(pg_row) will make your row serialize as a vector.
 #[derive(Serialize)]
-pub(crate) struct SerVecPgRow(#[serde(serialize_with = "serialize_pgrow_as_vec")] PgRow);
+pub(crate) struct SerVecPgRow(#[serde(serialize_with = "serialize_row_as_vec")] PgRow);
 
-/// SerMapPgRow::from(pg_row) will make your row serialize as a map.
-/// If you have multiple columns with the same name, the last one will win.
 #[derive(Serialize)]
-pub(crate) struct SerMapRow(#[serde(serialize_with = "serialize_pgrow_as_map")] PgRow);
+pub(crate) struct SerMapRow(#[serde(serialize_with = "serialize_row_as_map")] PgRow);
 
 impl From<PgRow> for SerMapRow {
   fn from(row: PgRow) -> Self {
     SerMapRow(row)
-  }
-}
-
-impl std::ops::Deref for SerMapRow {
-  type Target = PgRow;
-
-  fn deref(&self) -> &Self::Target {
-    &self.0
-  }
-}
-
-impl std::ops::DerefMut for SerMapRow {
-  fn deref_mut(&mut self) -> &mut Self::Target {
-    &mut self.0
-  }
-}
-
-impl From<SerMapRow> for PgRow {
-  fn from(row: SerMapRow) -> Self {
-    row.0
   }
 }
 
@@ -218,26 +117,6 @@ pub(crate) struct SerPgValueRef<'r>(#[serde(serialize_with = "serialize_valueref
 impl From<PgRow> for SerVecPgRow {
   fn from(row: PgRow) -> Self {
     SerVecPgRow(row)
-  }
-}
-
-impl std::ops::Deref for SerVecPgRow {
-  type Target = PgRow;
-
-  fn deref(&self) -> &Self::Target {
-    &self.0
-  }
-}
-
-impl std::ops::DerefMut for SerVecPgRow {
-  fn deref_mut(&mut self) -> &mut Self::Target {
-    &mut self.0
-  }
-}
-
-impl From<SerVecPgRow> for PgRow {
-  fn from(row: SerVecPgRow) -> Self {
-    row.0
   }
 }
 

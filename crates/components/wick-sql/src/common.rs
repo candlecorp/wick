@@ -1,7 +1,9 @@
 pub(crate) mod sql_wrapper;
 
+use futures::stream::BoxStream;
+use serde_json::Value;
 use url::Url;
-use wick_config::config::{Metadata, UrlResource};
+use wick_config::config::{ErrorBehavior, Metadata, UrlResource};
 use wick_config::Resolver;
 use wick_interface_types::{component, ComponentSignature, Field, OperationSignature, Type};
 use wick_packet::{Packet, TypeWrapper};
@@ -127,6 +129,64 @@ mod test {
     assert_eq!(bound_args[3].clone().decode::<String>().unwrap(), "value3");
     assert_eq!(*bound_args[3].0.type_signature(), Type::String);
 
+    Ok(())
+  }
+}
+
+#[async_trait::async_trait]
+pub(crate) trait DatabaseProvider {
+  fn get_statement<'a>(&'a self, id: &'a str) -> Option<&'a str>;
+  async fn get_connection<'a, 'b>(&'a self) -> Result<Connection<'b>>
+  where
+    'a: 'b;
+}
+
+#[async_trait::async_trait]
+pub(crate) trait ClientConnection: Send + Sync {
+  async fn query<'a, 'b>(
+    &'a mut self,
+    stmt: &'a str,
+    bound_args: Vec<SqlWrapper>,
+  ) -> Result<BoxStream<'b, Result<Value>>>
+  where
+    'a: 'b;
+
+  async fn exec(&mut self, stmt: String, bound_args: Vec<SqlWrapper>) -> Result<u64>;
+  async fn finish(&mut self) -> Result<()>;
+  async fn handle_error(&mut self, e: Error, behavior: ErrorBehavior) -> Result<()>;
+}
+
+#[derive()]
+pub(crate) struct Connection<'a>(Box<dyn ClientConnection + Sync + Send + 'a>);
+
+impl<'conn> Connection<'conn> {
+  pub(crate) fn new(conn: Box<dyn ClientConnection + Sync + Send + 'conn>) -> Self {
+    Self(conn)
+  }
+
+  pub(crate) async fn query<'a, 'b>(
+    &'a mut self,
+    stmt: &'a str,
+    bound_args: Vec<SqlWrapper>,
+  ) -> Result<BoxStream<'b, Result<Value>>>
+  where
+    'a: 'b,
+  {
+    let stream = self.0.query(stmt, bound_args).await?;
+
+    Ok(stream)
+  }
+  pub(crate) async fn exec(&mut self, stmt: String, bound_args: Vec<SqlWrapper>) -> Result<u64> {
+    self.0.exec(stmt, bound_args).await
+  }
+
+  pub(crate) async fn handle_error(&mut self, e: Error, behavior: ErrorBehavior) -> Result<()> {
+    self.0.handle_error(e, behavior).await
+  }
+
+  #[allow(clippy::unused_async)]
+  pub(crate) async fn finish(&mut self) -> Result<()> {
+    // todo
     Ok(())
   }
 }

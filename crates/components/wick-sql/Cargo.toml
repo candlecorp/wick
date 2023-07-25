@@ -16,15 +16,7 @@ wick-config = { workspace = true }
 wick-rpc = { workspace = true }
 wick-interface-types = { workspace = true, features = ["parser"] }
 url = { workspace = true }
-# v0.7.0-alpha
-# sqlx = { workspace = true, features = [
-#   "runtime-tokio",
-#   "tls-rustls",
-#   "postgres",
-#   "json"
-# ] }
-#
-# v0.6
+# sqlx
 sqlx = { workspace = true, features = [
   "runtime-tokio-rustls",
   "postgres",

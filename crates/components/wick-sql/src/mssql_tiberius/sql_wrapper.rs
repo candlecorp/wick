@@ -5,7 +5,6 @@ use wick_packet::{parse_date, TypeWrapper};
 
 use crate::common::sql_wrapper::SqlWrapper;
 
-#[allow(unused)]
 #[derive(thiserror::Error, Debug, Copy, Clone)]
 pub enum MsSqlConversionError {
   #[error("i8")]

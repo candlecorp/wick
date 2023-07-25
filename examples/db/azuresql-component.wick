@@ -34,6 +34,18 @@ component:
       arguments:
         - name
         - email
+    - name: set_user_with_id
+      inputs:
+        - name: id
+          type: i32
+        - name: name
+          type: string
+        - name: email
+          type: string
+      query: INSERT INTO users(id, name, email) OUTPUT INSERTED.* VALUES ($1, $2, $3)
+      arguments:
+        - name
+        - email
     - name: set_user_with_columns
       inputs:
         - name: input

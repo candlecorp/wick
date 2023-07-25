@@ -1,26 +1,21 @@
-#![allow(unused_imports)]
 use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::{Duration, SystemTime};
 
 use bb8::{Pool, PooledConnection};
 use bb8_tiberius::ConnectionManager;
-use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
+use flow_component::ComponentError;
 use futures::stream::BoxStream;
-use futures::{Future, StreamExt};
-use parking_lot::Mutex;
+use futures::StreamExt;
 use serde_json::{Map, Value};
 use tiberius::{Query, Row};
-use tracing::Span;
 use url::Url;
-use wick_config::config::components::{ComponentConfig, OperationConfig, SqlComponentConfig, SqlOperationKind};
-use wick_config::config::{ErrorBehavior, Metadata};
+use wick_config::config::components::{ComponentConfig, OperationConfig, SqlComponentConfig};
+use wick_config::config::ErrorBehavior;
 use wick_config::{ConfigValidation, Resolver};
-use wick_interface_types::{ComponentSignature, Field, OperationSignatures, Type};
-use wick_packet::{FluxChannel, Invocation, Observer, Packet, PacketSender, PacketStream, RuntimeConfig};
+use wick_interface_types::{Field, Type};
 
 use super::sql_wrapper::{FromSqlWrapper, MsSqlWrapper};
-use crate::component::{ClientConnection, Connection, DatabaseProvider};
+use crate::common::sql_wrapper::SqlWrapper;
+use crate::common::{ClientConnection, Connection, DatabaseProvider};
 use crate::{common, Error};
 
 #[derive(Clone)]
@@ -35,32 +30,49 @@ impl std::fmt::Debug for Context {
 }
 
 impl Context {
-  async fn get<'a, 'b>(&'a self) -> Result<Connection<'b>, Error> {
+  async fn get<'a, 'b>(&'a self) -> Result<Connection<'b>, Error>
+  where
+    'a: 'b,
+  {
     let conn = self.db.get().await.map_err(|e| Error::PoolConnection(e.to_string()))?;
     Ok(Connection::new(Box::new(conn)))
   }
 }
 
 #[async_trait::async_trait]
-impl<'a> ClientConnection<'a> for PooledConnection<'a, ConnectionManager> {
-  async fn finish(&'a mut self) -> Result<(), Error> {
-    todo!()
+impl<'a> ClientConnection for PooledConnection<'a, ConnectionManager> {
+  async fn finish(&mut self) -> Result<(), Error> {
+    // todo
+    Ok(())
   }
 
-  async fn handle_error(&'a mut self, _e: Error, _behavior: ErrorBehavior) -> Result<(), Error> {
-    todo!()
+  async fn handle_error(&mut self, _e: Error, _behavior: ErrorBehavior) -> Result<(), Error> {
+    // todo
+    Ok(())
   }
 
-  async fn exec(&'a mut self, _stmt: String, _bound_args: Vec<common::sql_wrapper::SqlWrapper>) -> Result<u64, Error> {
-    todo!()
+  async fn exec(&mut self, stmt: String, bound_args: Vec<SqlWrapper>) -> Result<u64, Error> {
+    let mut query = Query::new(stmt);
+
+    for param in bound_args {
+      query.bind(MsSqlWrapper::try_from(&param).map_err(|e| Error::SqlServerEncodingFault(param.0, e))?);
+    }
+
+    query
+      .execute(self)
+      .await
+      .map_err(|e| Error::Failed(e.to_string()))
+      .map(|r| r.rows_affected()[0])
   }
 
-  async fn query<'b>(
-    &'a mut self,
+  async fn query<'b, 'c>(
+    &'b mut self,
     stmt: &'b str,
-    bound_args: Vec<common::sql_wrapper::SqlWrapper>,
-  ) -> Result<BoxStream<Result<Value, Error>>, Error> {
-    #[allow(trivial_casts)]
+    bound_args: Vec<SqlWrapper>,
+  ) -> Result<BoxStream<'c, Result<Value, Error>>, Error>
+  where
+    'b: 'c,
+  {
     let mut query = Query::new(stmt);
 
     for param in bound_args {
@@ -71,6 +83,7 @@ impl<'a> ClientConnection<'a> for PooledConnection<'a, ConnectionManager> {
 
     Ok(
       result
+        .filter(|row| futures::future::ready(!matches!(row, Ok(tiberius::QueryItem::Metadata(_)))))
         .map(|row| {
           row.map_err(|e| Error::OperationFailed(e.to_string())).and_then(|row| {
             row
@@ -88,35 +101,24 @@ impl<'a> ClientConnection<'a> for PooledConnection<'a, ConnectionManager> {
 #[must_use]
 pub(crate) struct AzureSqlComponent {
   context: Context,
-  #[allow(unused)]
-  root_config: Option<RuntimeConfig>,
-  prepared_queries: HashMap<String, Arc<(String, String)>>,
+  prepared_queries: HashMap<String, String>,
 }
 
 impl AzureSqlComponent {
-  #[allow(clippy::needless_pass_by_value)]
   /// Instantiate a new Azure SQL component.
-  pub(crate) async fn new(
-    config: SqlComponentConfig,
-    root_config: Option<RuntimeConfig>,
-    resolver: &Resolver,
-  ) -> Result<Self, Error> {
+  pub(crate) async fn new(config: SqlComponentConfig, resolver: &Resolver) -> Result<Self, Error> {
     validate(&config, resolver)?;
 
     let url = common::convert_url_resource(resolver, config.resource())?;
     let mut queries = HashMap::new();
     trace!(count=%config.operations().len(), "preparing queries");
     for op in config.operations() {
-      queries.insert(
-        op.name().to_owned(),
-        Arc::new((op.query().to_owned(), op.query().to_owned())),
-      );
+      queries.insert(op.name().to_owned(), op.query().to_owned());
     }
     let context = init_context(&config, url.clone()).await?;
 
     Ok(Self {
       context,
-      root_config,
       prepared_queries: queries,
     })
   }
@@ -124,8 +126,8 @@ impl AzureSqlComponent {
 
 #[async_trait::async_trait]
 impl DatabaseProvider for AzureSqlComponent {
-  fn get_statement(&self, id: &str) -> Option<&str> {
-    self.prepared_queries.get(id).map(|e| e.1.as_str())
+  fn get_statement<'a>(&'a self, id: &'a str) -> Option<&'a str> {
+    self.prepared_queries.get(id).map(|e| e.as_str())
   }
 
   async fn get_connection<'a, 'b>(&'a self) -> Result<Connection<'b>, Error>
@@ -135,273 +137,6 @@ impl DatabaseProvider for AzureSqlComponent {
     self.context.get().await
   }
 }
-
-// impl Component for AzureSqlComponent {
-//   fn handle(
-//     &self,
-//     mut invocation: Invocation,
-//     _data: Option<RuntimeConfig>,
-//     _callback: Arc<RuntimeCallback>,
-//   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-//     let ctx = self.context.clone();
-
-//     Box::pin(async move {
-//       let (opdef, pool, stmt) = match ctx.lock().as_ref() {
-//         Some(ctx) => {
-//           let opdef = ctx
-//             .config
-//             .get_operation(invocation.target.operation_id())
-//             .ok_or_else(|| Error::MissingOperation(invocation.target.operation_id().to_owned()))?
-//             .clone();
-//           let client = ctx.db.clone();
-//           let stmt = ctx
-//             .prepared_queries
-//             .get(invocation.target.operation_id())
-//             .unwrap()
-//             .clone();
-//           (opdef, client, stmt)
-//         }
-//         None => return Err(Error::Uninitialized.into()),
-//       };
-
-//       let input_names: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
-//       let input_streams = wick_packet::split_stream(invocation.eject_stream(), input_names);
-//       let (tx, rx) = invocation.make_response();
-//       tokio::spawn(async move {
-//         let start = SystemTime::now();
-//         let span = invocation.span.clone();
-//         if let Err(e) = handle_call(pool, opdef, input_streams, tx.clone(), stmt, span).await {
-//           invocation.trace(|| {
-//             error!(error = %e, "error in sql operation");
-//           });
-//           let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
-//         }
-//         let _ = tx.send(Packet::done("output"));
-//         let duration = SystemTime::now().duration_since(start).unwrap();
-//         invocation.trace(|| {
-//           debug!(?duration, target=%invocation.target,"mssql operation complete");
-//         });
-//       });
-
-//       Ok(rx)
-//     })
-//   }
-
-//   fn signature(&self) -> &ComponentSignature {
-//     &self.signature
-//   }
-
-//   fn init(&self) -> std::pin::Pin<Box<dyn Future<Output = Result<(), ComponentError>> + Send + 'static>> {
-//     let ctx = self.context.clone();
-//     let addr = self.url.clone();
-//     let config = self.config.clone();
-
-//     Box::pin(async move {
-//       let new_ctx = init_context(config, addr).await?;
-
-//       ctx.lock().replace(new_ctx);
-
-//       Ok(())
-//     })
-//   }
-// }
-
-// async fn handle_call(
-//   pool: Pool<ConnectionManager>,
-//   opdef: SqlOperationKind,
-//   input_streams: Vec<PacketStream>,
-//   tx: PacketSender,
-//   stmt: Arc<(String, String)>,
-//   span: Span,
-// ) -> Result<(), Error> {
-//   let mut client = pool.get().await.map_err(|e| Error::PoolConnection(e.to_string()))?;
-//   let error_behavior = opdef.on_error();
-//   match error_behavior {
-//     ErrorBehavior::Commit | ErrorBehavior::Rollback => {
-//       client.simple_query("BEGIN TRAN").await.map_err(|_| Error::TxStart)?;
-//     }
-//     _ => {}
-//   }
-//   if let Err(e) = handle_stream(&mut client, opdef, input_streams, tx, stmt.clone(), span).await {
-//     match error_behavior {
-//       wick_config::config::ErrorBehavior::Commit => {
-//         error!(error=%e, on_error=?error_behavior, "error in sql operation, committing transaction");
-//         client.simple_query("COMMIT").await.map_err(|_| Error::TxCommit)?;
-//       }
-//       wick_config::config::ErrorBehavior::Rollback => {
-//         error!(error=%e, on_error=?error_behavior, "error in sql operation, rolling back transaction");
-//         client.simple_query("ROLLBACK").await.map_err(|_| Error::TxRollback)?;
-//       }
-//       _ => {}
-//     }
-//     return Err(Error::OperationFailed(e.to_string()));
-//   }
-//   match error_behavior {
-//     ErrorBehavior::Commit | ErrorBehavior::Rollback => {
-//       client.simple_query("COMMIT").await.map_err(|_| Error::TxCommit)?;
-//     }
-//     _ => {}
-//   }
-
-//   Ok(())
-// }
-
-// async fn handle_stream(
-//   client: &mut PooledConnection<'_, ConnectionManager>,
-//   opdef: SqlOperationKind,
-//   mut input_streams: Vec<PacketStream>,
-//   tx: PacketSender,
-//   stmt: Arc<(String, String)>,
-//   span: Span,
-// ) -> Result<(), Error> {
-//   span.in_scope(|| debug!(stmt = %stmt.0, "preparing query for stream"));
-//   'outer: loop {
-//     let mut incoming_packets = Vec::new();
-
-//     for input in &mut input_streams {
-//       let packet = input.next().await;
-
-//       incoming_packets.push(packet);
-//     }
-
-//     let num_done = incoming_packets.iter().filter(|r| r.is_none()).count();
-//     if num_done > 0 {
-//       if num_done != opdef.inputs().len() {
-//         return Err(Error::MissingInput);
-//       }
-//       break 'outer;
-//     }
-//     let incoming_packets = incoming_packets.into_iter().map(|r| r.unwrap()).collect::<Vec<_>>();
-
-//     if let Some(Err(e)) = incoming_packets.iter().find(|r| r.is_err()) {
-//       return Err(Error::ComponentError(e.clone()));
-//     }
-//     let fields = opdef.inputs();
-//     let mut type_wrappers = Vec::new();
-
-//     for packet in incoming_packets {
-//       let packet = packet.unwrap();
-//       if packet.is_done() {
-//         break 'outer;
-//       }
-//       if packet.is_open_bracket() || packet.is_close_bracket() {
-//         let _ = tx.send(packet.set_port("output"));
-//         continue 'outer;
-//       }
-//       let ty = fields.iter().find(|f| f.name() == packet.port()).unwrap().ty().clone();
-//       type_wrappers.push((ty, packet));
-//     }
-
-//     let start = SystemTime::now();
-//     let result = match &opdef {
-//       SqlOperationKind::Query(_) => {
-//         query(
-//           client,
-//           tx.clone(),
-//           opdef.clone(),
-//           type_wrappers,
-//           stmt.clone(),
-//           span.clone(),
-//         )
-//         .await
-//       }
-//       SqlOperationKind::Exec(_) => {
-//         exec(
-//           client,
-//           tx.clone(),
-//           opdef.clone(),
-//           type_wrappers,
-//           stmt.clone(),
-//           span.clone(),
-//         )
-//         .await
-//       }
-//     };
-//     let duration = SystemTime::now().duration_since(start).unwrap();
-
-//     span.in_scope(|| debug!(μs = duration.as_micros(), "executed query"));
-
-//     if let Err(e) = result {
-//       if opdef.on_error() == ErrorBehavior::Ignore {
-//         let _ = tx.send(Packet::err("output", e.to_string()));
-//       } else {
-//         return Err(Error::OperationFailed(e.to_string()));
-//       }
-//     };
-
-//     if opdef.inputs().len() == 0 {
-//       break 'outer;
-//     }
-//   }
-//   Ok(())
-// }
-
-// async fn query(
-//   client: &mut PooledConnection<'_, ConnectionManager>,
-//   tx: FluxChannel<Packet, wick_packet::Error>,
-//   def: SqlOperationKind,
-//   args: Vec<(Type, Packet)>,
-//   stmt: Arc<(String, String)>,
-//   _span: Span,
-// ) -> Result<Duration, Error> {
-//   let start = SystemTime::now();
-
-//   let bound_args = common::bind_args(def.arguments(), &args)?;
-
-//   #[allow(trivial_casts)]
-//   let mut query = Query::new(&stmt.1);
-
-//   for param in bound_args {
-//     query.bind(MsSqlWrapper::try_from(&param).map_err(|e| Error::SqlServerEncodingFault(param.0, e))?);
-//   }
-
-//   let mut result = query.query(client).await.map_err(|e| Error::Failed(e.to_string()))?;
-
-//   while let Some(row) = result.next().await {
-//     if let Err(e) = row {
-//       let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
-//       return Err(Error::Fetch(e.to_string()));
-//     }
-//     let row = row.unwrap();
-//     if let Some(row) = row.into_row() {
-//       let packet = Packet::encode("output", row_to_json(&row));
-//       let _ = tx.send(packet);
-//     }
-//   }
-//   let duration = SystemTime::now().duration_since(start).unwrap();
-
-//   Ok(duration)
-// }
-
-// async fn exec(
-//   client: &mut PooledConnection<'_, ConnectionManager>,
-//   tx: FluxChannel<Packet, wick_packet::Error>,
-//   def: SqlOperationKind,
-//   args: Vec<(Type, Packet)>,
-//   stmt: Arc<(String, String)>,
-//   _span: Span,
-// ) -> Result<Duration, Error> {
-//   let start = SystemTime::now();
-
-//   let bound_args = common::bind_args(def.arguments(), &args)?;
-
-//   #[allow(trivial_casts)]
-//   let mut query = Query::new(&stmt.1);
-
-//   for param in bound_args {
-//     query.bind(MsSqlWrapper::try_from(&param).map_err(|e| Error::SqlServerEncodingFault(param.0, e))?);
-//   }
-
-//   let packet = match query.execute(client).await.map_err(|e| Error::Failed(e.to_string())) {
-//     Ok(result) => Packet::encode("output", result.rows_affected()),
-//     Err(err) => Packet::err("output", err.to_string()),
-//   };
-//   let _ = tx.send(packet);
-
-//   let duration = SystemTime::now().duration_since(start).unwrap();
-
-//   Ok(duration)
-// }
 
 impl ConfigValidation for AzureSqlComponent {
   type Config = SqlComponentConfig;
@@ -430,10 +165,7 @@ fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Err
 
 async fn init_client(config: &SqlComponentConfig, addr: Url) -> Result<Pool<ConnectionManager>, Error> {
   let pool = match addr.scheme() {
-    "mssql" => super::mssql::connect(&config, &addr).await?,
-    "postgres" => unimplemented!("Use the sql component instead"),
-    "mysql" => unimplemented!("Use the sql component instead"),
-    "sqllite" => unimplemented!("Use the sql component instead"),
+    "mssql" => super::mssql::connect(config, &addr).await?,
     s => return Err(Error::InvalidScheme(s.to_owned())),
   };
   debug!(%addr, "connected to db");
@@ -458,7 +190,7 @@ fn row_to_json(row: &Row) -> Value {
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder};
+  use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder, SqlOperationKind};
   use wick_config::config::{ResourceDefinition, TcpPort};
   use wick_interface_types::{Field, Type};
 

@@ -246,7 +246,7 @@ pub(crate) async fn init_hlc_component(
 ) -> ComponentInitResult {
   let mut comp: Box<dyn Component + Send + Sync> = match component {
     config::HighLevelComponent::Sql(comp) => {
-      Box::new(wick_sql::SqlComponent::new(comp, root_config, metadata, &resolver)?)
+      Box::new(wick_sql::SqlComponent::new(comp, root_config, metadata, &resolver).await?)
     }
     config::HighLevelComponent::HttpClient(comp) => Box::new(wick_http_client::HttpClientComponent::new(
       comp,
