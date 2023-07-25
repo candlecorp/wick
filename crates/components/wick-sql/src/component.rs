@@ -4,11 +4,9 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
-use futures::stream::BoxStream;
 use futures::StreamExt;
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
-use serde_json::Value;
 use tracing::Span;
 use url::Url;
 use wick_config::config::components::{ComponentConfig, OperationConfig, SqlComponentConfig, SqlOperationKind};
@@ -17,7 +15,7 @@ use wick_config::Resolver;
 use wick_interface_types::{ComponentSignature, Field, OperationSignatures, Type};
 use wick_packet::{Invocation, Observer, Packet, PacketSender, PacketStream, RuntimeConfig};
 
-use crate::common::sql_wrapper::SqlWrapper;
+use crate::common::{Connection, DatabaseProvider};
 use crate::{common, Error};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -35,23 +33,23 @@ impl Client {
   async fn new(
     url: &Url,
     config: &mut SqlComponentConfig,
-    metadata: Option<Metadata>,
-    root_config: Option<RuntimeConfig>,
+    _metadata: Option<Metadata>,
+    _root_config: Option<RuntimeConfig>, // TODO use this
     resolver: &Resolver,
   ) -> Result<Self, Error> {
     let client: Arc<dyn DatabaseProvider + Send + Sync> = match url.scheme() {
       "mssql" => {
         normalize_operations(config.operations_mut(), DbKind::Mssql);
-        Arc::new(crate::mssql_tiberius::AzureSqlComponent::new(config.clone(), root_config, resolver).await?)
+        Arc::new(crate::mssql_tiberius::AzureSqlComponent::new(config.clone(), resolver).await?)
       }
       "postgres" => {
         normalize_operations(config.operations_mut(), DbKind::Postgres);
-        Arc::new(crate::sqlx::SqlXComponent::new(config.clone(), root_config, metadata, resolver).await?)
+        Arc::new(crate::sqlx::SqlXComponent::new(config.clone(), resolver).await?)
       }
       "sqlite" => {
         normalize_operations(config.operations_mut(), DbKind::Sqlite);
 
-        Arc::new(crate::sqlx::SqlXComponent::new(config.clone(), root_config, metadata, resolver).await?)
+        Arc::new(crate::sqlx::SqlXComponent::new(config.clone(), resolver).await?)
       }
 
       _ => {
@@ -68,49 +66,18 @@ impl Client {
 }
 
 #[async_trait::async_trait]
-pub(crate) trait ClientConnection<'a>: Send + Sync {
-  async fn query<'b>(
-    &'a mut self,
-    stmt: &'b str,
-    bound_args: Vec<SqlWrapper>,
-  ) -> Result<BoxStream<Result<Value, Error>>, Error>;
-
-  async fn exec(&'a mut self, stmt: String, bound_args: Vec<SqlWrapper>) -> Result<u64, Error>;
-  async fn finish(&'a mut self) -> Result<(), Error>;
-  async fn handle_error(&'a mut self, e: Error, behavior: ErrorBehavior) -> Result<(), Error>;
-}
-
-#[derive()]
-pub(crate) struct Connection<'a>(Box<dyn ClientConnection<'a> + Sync + Send>);
-
-impl<'a> Connection<'a> {
-  pub(crate) fn new(conn: Box<dyn ClientConnection<'a> + Sync + Send>) -> Self {
-    Self(conn)
+impl DatabaseProvider for Client {
+  fn get_statement<'a>(&'a self, id: &'a str) -> Option<&'a str> {
+    self.inner().get_statement(id)
   }
 
-  async fn query<'b>(
-    &'a mut self,
-    stmt: &'b str,
-    bound_args: Vec<SqlWrapper>,
-  ) -> Result<BoxStream<Result<Value, Error>>, Error> {
-    let stream = self.0.query(stmt, bound_args).await?;
-
-    Ok(stream)
-  }
-  async fn exec(&'a mut self, stmt: String, bound_args: Vec<SqlWrapper>) -> Result<u64, Error> {
-    self.0.exec(stmt, bound_args).await
-  }
-
-  async fn handle_error(&'a mut self, e: Error, behavior: ErrorBehavior) -> Result<(), Error> {
-    self.0.handle_error(e, behavior).await
-  }
-
-  #[allow(clippy::unused_async)]
-  async fn finish(&'a mut self) -> Result<(), Error> {
-    todo!()
+  async fn get_connection<'a, 'b>(&'a self) -> Result<Connection<'b>, Error>
+  where
+    'a: 'b,
+  {
+    self.inner().get_connection().await
   }
 }
-
 // pub(crate) struct Transaction<'a>(Arc<dyn ClientConnection + Sync + Send + 'a>);
 
 // impl<'a> Transaction<'a> {
@@ -140,28 +107,6 @@ impl<'a> Connection<'a> {
 //   }
 // }
 
-#[async_trait::async_trait]
-impl DatabaseProvider for Client {
-  fn get_statement(&self, id: &str) -> Option<&str> {
-    self.inner().get_statement(id)
-  }
-
-  async fn get_connection<'a, 'b>(&'a self) -> Result<Connection<'b>, Error>
-  where
-    'a: 'b,
-  {
-    self.inner().get_connection().await
-  }
-}
-
-#[async_trait::async_trait]
-pub(crate) trait DatabaseProvider {
-  fn get_statement(&self, id: &str) -> Option<&str>;
-  async fn get_connection<'a, 'b>(&'a self) -> Result<Connection<'b>, Error>
-  where
-    'a: 'b;
-}
-
 /// The Azure SQL Wick component.
 #[derive(Clone)]
 #[must_use]
@@ -170,7 +115,6 @@ pub struct SqlComponent {
   signature: Arc<ComponentSignature>,
   url: Url,
   config: SqlComponentConfig,
-  #[allow(unused)]
   root_config: Option<RuntimeConfig>,
 }
 
@@ -186,7 +130,6 @@ impl std::fmt::Debug for SqlComponent {
 }
 
 impl SqlComponent {
-  #[allow(clippy::needless_pass_by_value)]
   /// Instantiate a new Azure SQL component.
   pub async fn new(
     mut config: SqlComponentConfig,
@@ -233,7 +176,7 @@ impl Component for SqlComponent {
 
     Box::pin(async move {
       let opdef = opdef?;
-      let stmt = client.get_statement(opdef.query()).unwrap().clone();
+      let stmt = client.get_statement(opdef.name()).unwrap().to_owned();
 
       let input_names: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
       let input_streams = wick_packet::split_stream(invocation.eject_stream(), input_names);
@@ -241,7 +184,7 @@ impl Component for SqlComponent {
       tokio::spawn(async move {
         let start = SystemTime::now();
         let span = invocation.span.clone();
-        if let Err(e) = handle_call(&client, opdef, input_streams, tx.clone(), stmt, span).await {
+        if let Err(e) = handle_call(&client, opdef, input_streams, tx.clone(), &stmt, span).await {
           invocation.trace(|| {
             error!(error = %e, "error in sql operation");
           });
@@ -288,14 +231,18 @@ async fn handle_call<'a, 'b>(
   tx: PacketSender,
   stmt: &'b str,
   span: Span,
-) -> Result<(), Error> {
+) -> Result<(), Error>
+where
+  'b: 'a,
+{
   let error_behavior = opdef.on_error();
   let mut connection = match error_behavior {
     ErrorBehavior::Commit | ErrorBehavior::Rollback => client.get_connection().await?, // TODO make transaction
     _ => client.get_connection().await?,
   };
 
-  if let Err(e) = handle_stream(&mut connection, opdef, input_streams, tx, stmt, span).await {
+  let result = handle_stream(&mut connection, opdef, input_streams, tx, stmt, span).await;
+  if let Err(e) = result {
     let err = Error::OperationFailed(e.to_string());
     connection.handle_error(e, error_behavior).await?;
     return Err(err);
@@ -314,7 +261,7 @@ async fn handle_stream<'a, 'b, 'c>(
   span: Span,
 ) -> Result<(), Error>
 where
-  'a: 'c,
+  'b: 'a,
 {
   span.in_scope(|| debug!(stmt = %stmt, "preparing query for stream"));
   'outer: loop {
@@ -389,7 +336,7 @@ async fn query<'a, 'b, 'c>(
   _span: Span,
 ) -> Result<Duration, Error>
 where
-  'a: 'c,
+  'b: 'a,
 {
   let start = SystemTime::now();
 
@@ -418,7 +365,7 @@ async fn exec<'a, 'b, 'c>(
   _span: Span,
 ) -> Result<Duration, Error>
 where
-  'a: 'c,
+  'b: 'a,
 {
   let start = SystemTime::now();
 

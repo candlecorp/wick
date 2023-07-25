@@ -21,6 +21,13 @@ mod test {
     Ok(())
   }
 
+  fn reset_dir() -> Result<()> {
+    let crate_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    std::env::set_current_dir(crate_dir)?;
+
+    Ok(())
+  }
+
   fn run_tests(path: &str) -> Result<()> {
     let bin = build_wick()?;
     set_dir()?;
@@ -35,6 +42,7 @@ mod test {
       .register_bin("wick", bin.path());
 
     trycmd.run();
+    reset_dir()?;
     Ok(())
   }
 
@@ -44,6 +52,7 @@ mod test {
     #[test]
     fn db_tests() -> Result<()> {
       run_tests("tests/cli-tests/tests/cmd/db/*.toml")?;
+      run_tests("tests/cli-tests/tests/cmd/db/*.trycmd")?;
       Ok(())
     }
   }

@@ -13,7 +13,7 @@ where
   let value = value.as_ref();
 
   let name = info.name();
-  info!(name=%name,"type");
+
   match name {
     "NULL" => s.serialize_none(),
 
@@ -102,52 +102,12 @@ impl From<SqliteRow> for SerMapRow {
   }
 }
 
-impl std::ops::Deref for SerMapRow {
-  type Target = SqliteRow;
-
-  fn deref(&self) -> &Self::Target {
-    &self.0
-  }
-}
-
-impl std::ops::DerefMut for SerMapRow {
-  fn deref_mut(&mut self) -> &mut Self::Target {
-    &mut self.0
-  }
-}
-
-impl From<SerMapRow> for SqliteRow {
-  fn from(row: SerMapRow) -> Self {
-    row.0
-  }
-}
-
 #[derive(Serialize)]
 pub(crate) struct SerValueRef<'r>(#[serde(serialize_with = "serialize_value_ref")] SqliteValueRef<'r>);
 
 impl From<SqliteRow> for SerVecRow {
   fn from(row: SqliteRow) -> Self {
     SerVecRow(row)
-  }
-}
-
-impl std::ops::Deref for SerVecRow {
-  type Target = SqliteRow;
-
-  fn deref(&self) -> &Self::Target {
-    &self.0
-  }
-}
-
-impl std::ops::DerefMut for SerVecRow {
-  fn deref_mut(&mut self) -> &mut Self::Target {
-    &mut self.0
-  }
-}
-
-impl From<SerVecRow> for SqliteRow {
-  fn from(row: SerVecRow) -> Self {
-    row.0
   }
 }
 
@@ -175,7 +135,6 @@ mod integration_test {
   async fn connect() -> SqliteConnection {
     let db = std::env::var("SQLITE_DB").unwrap();
     let conn_string = format!("sqlite://{}", db);
-    info!("connection string {}", conn_string);
 
     SqliteConnection::connect(&conn_string).await.unwrap()
   }
