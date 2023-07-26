@@ -430,12 +430,25 @@ type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
   "The path or OCI reference to the WebAssembly module"
   ref: LocationReference @rename("reference") @required
 
+  "Volumes to expose to the component."
+  volumes: [ExposedVolume]
+
   "Configuration necessary to provide when instantiating the component."
   with: [Field]
 
   "A list of operations implemented by the WebAssembly module."
   operations: [OperationDefinition]
 }
+
+"Volumes to expose to a component and the internal paths they map to."
+type ExposedVolume {
+  "The resource ID of the volume."
+  resource: string @required
+  "The path to map it to in the component."
+  path: string @required
+}
+
+
 
 "Root component types. These are the components that can be instantiated and run."
 union ComponentKind = WasmComponentConfiguration | CompositeComponentConfiguration | SqlComponent | HttpClientComponent

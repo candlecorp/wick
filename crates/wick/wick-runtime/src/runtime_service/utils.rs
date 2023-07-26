@@ -52,12 +52,12 @@ pub(crate) async fn instantiate_import(
   opts.span.in_scope(|| debug!(?binding, ?opts, "instantiating import"));
   let id = binding.id().to_owned();
   match binding.kind() {
-    config::ImportDefinition::Component(c) => instantiate_component(id, c, opts).await,
+    config::ImportDefinition::Component(c) => instantiate_imported_component(id, c, opts).await,
     config::ImportDefinition::Types(_) => Ok(None),
   }
 }
 
-pub(crate) async fn instantiate_component(
+pub(crate) async fn instantiate_imported_component(
   id: String,
   kind: &ComponentDefinition,
   opts: ChildInit,
@@ -65,20 +65,13 @@ pub(crate) async fn instantiate_component(
   match kind {
     #[allow(deprecated)]
     config::ComponentDefinition::Wasm(def) => Ok(Some(
-      init_wasm_component(
-        def.reference(),
-        Some(def.permissions().clone()),
-        id,
-        opts,
-        Default::default(),
-      )
-      .await?,
+      init_wasm_component(def.reference(), id, opts, None, Default::default()).await?,
     )),
     config::ComponentDefinition::Manifest(def) => Ok(Some(init_manifest_component(def, id, opts).await?)),
     config::ComponentDefinition::Reference(_) => unreachable!(),
     config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
     config::ComponentDefinition::HighLevelComponent(hlc) => {
-      init_hlc_component(id, opts.config.clone(), None, hlc.clone(), opts.resolver)
+      init_hlc_component(id, opts.root_config.clone(), None, hlc.clone(), opts.resolver)
         .await
         .map(Some)
     }

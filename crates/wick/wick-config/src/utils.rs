@@ -136,25 +136,25 @@ pub(crate) fn resolve(
   resources: &HashMap<String, ResourceBinding>,
   runtime_config: Option<&RuntimeConfig>,
   env: Option<&HashMap<String, String>>,
-) -> Option<Result<OwnedConfigurationItem>> {
+) -> Result<OwnedConfigurationItem> {
   if let Some(import) = imports.get(name) {
     match &import.kind {
       ImportDefinition::Component(component) => {
         let mut component = component.clone();
-        return Some(match component.render_config(runtime_config, env) {
+        return match component.render_config(runtime_config, env) {
           Ok(_) => Ok(OwnedConfigurationItem::Component(component)),
           Err(e) => Err(e),
-        });
+        };
       }
       ImportDefinition::Types(_) => todo!(),
     }
   }
   if let Some(resource) = resources.get(name) {
     let mut resource = resource.kind.clone();
-    return Some(match resource.render_config(runtime_config, env) {
+    return match resource.render_config(runtime_config, env) {
       Ok(_) => Ok(OwnedConfigurationItem::Resource(resource)),
       Err(e) => Err(e),
-    });
+    };
   }
-  None
+  Err(Error::IdNotFound(name.to_owned()))
 }

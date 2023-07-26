@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use asset_container::AssetManager;
 
 use super::LiquidJsonConfig;
-use crate::config;
+use crate::config::test_case;
 use crate::error::ManifestError;
 
 #[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
@@ -39,7 +39,7 @@ pub struct TestConfiguration {
   #[asset(skip)]
   #[builder(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) cases: Vec<config::TestCase>,
+  pub(crate) cases: Vec<test_case::TestCase>,
 
   /// The environment this configuration has access to.
   #[asset(skip)]

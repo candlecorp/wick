@@ -7,7 +7,22 @@ use wick_asset_reference::AssetReference;
 use wick_packet::RuntimeConfig;
 
 use crate::config::TemplateConfig;
-use crate::error::ManifestError;
+use crate::error::{ManifestError, ReferenceError};
+
+macro_rules! try_kind {
+  ($self:ident, $kind:ident) => {
+    match $self {
+      ResourceDefinition::$kind(v) => Ok(v),
+      _ => Err(
+        ReferenceError::ResourceType {
+          expected: ResourceKind::$kind,
+          actual: $self.kind(),
+        }
+        .into(),
+      ),
+    }
+  };
+}
 
 #[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
 #[asset(asset(AssetReference))]
@@ -29,6 +44,26 @@ impl ResourceBinding {
     Self {
       id: name.as_ref().to_owned(),
       kind,
+    }
+  }
+}
+
+/// A resource type.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ResourceKind {
+  TcpPort,
+  UdpPort,
+  Url,
+  Volume,
+}
+
+impl std::fmt::Display for ResourceKind {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Self::TcpPort => write!(f, "TcpPort"),
+      Self::UdpPort => write!(f, "UdpPort"),
+      Self::Url => write!(f, "Url"),
+      Self::Volume => write!(f, "Volume"),
     }
   }
 }
@@ -64,6 +99,32 @@ impl ResourceDefinition {
       ResourceDefinition::Url(v) => v.render_config(root_config, env),
       ResourceDefinition::Volume(v) => v.render_config(root_config, env),
     }
+  }
+
+  #[must_use]
+  pub fn kind(&self) -> ResourceKind {
+    match self {
+      ResourceDefinition::TcpPort(_) => ResourceKind::TcpPort,
+      ResourceDefinition::UdpPort(_) => ResourceKind::UdpPort,
+      ResourceDefinition::Url(_) => ResourceKind::Url,
+      ResourceDefinition::Volume(_) => ResourceKind::Volume,
+    }
+  }
+
+  pub fn try_tcpport(self) -> Result<TcpPort, ManifestError> {
+    try_kind!(self, TcpPort)
+  }
+
+  pub fn try_udpport(self) -> Result<UdpPort, ManifestError> {
+    try_kind!(self, UdpPort)
+  }
+
+  pub fn try_url(self) -> Result<UrlResource, ManifestError> {
+    try_kind!(self, Url)
+  }
+
+  pub fn try_volume(self) -> Result<Volume, ManifestError> {
+    try_kind!(self, Volume)
   }
 }
 

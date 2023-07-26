@@ -161,7 +161,19 @@ impl WasmHost {
       trace!(index, "wasmrs callback index");
     }
     let buffer_size: u32 = 5 * 1024 * 1024;
-    let ctx = host.new_context(buffer_size, buffer_size).unwrap();
+    let ctx = match host.new_context(buffer_size, buffer_size) {
+      Ok(ctx) => ctx,
+      Err(e) => {
+        // wasmtime has junk errors so we need to parse the string to provide useful information.
+
+        let errstr = e.to_string();
+
+        if errstr.contains("wasi_snapshot") {
+          error!("wasi error initializing component, this may be because a component was compiled with wasi extensions that are not enabled in wick");
+        }
+        return Err(Error::ContextInit(e));
+      }
+    };
 
     drop(_span);
     Ok(Self {

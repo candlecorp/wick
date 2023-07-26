@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use wasmrs_codec::messagepack;
-use wick_config::config::{LiquidJsonConfig, PacketFlag, TestPacket};
+use wick_config::config::test_case::{PacketFlag, TestPacket};
+use wick_config::config::LiquidJsonConfig;
 use wick_packet::{
   InherentData,
   Packet,

@@ -1,7 +1,6 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-pub(super) mod resources;
 pub(super) mod triggers;
 
 use asset_container::{AssetManager, Assets};
@@ -10,12 +9,12 @@ use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::TypeDefinition;
 use wick_packet::RuntimeConfig;
 
-pub use self::resources::*;
 pub use self::triggers::*;
 use super::common::component_definition::ComponentDefinition;
 use super::common::package_definition::PackageConfig;
 use super::components::TypesComponent;
 use super::{ImportBinding, ImportDefinition};
+use crate::config::common::resources::*;
 use crate::error::{ManifestError, ReferenceError};
 use crate::import_cache::{setup_cache, ImportCache};
 use crate::utils::{make_resolver, resolve, RwOption};
@@ -134,8 +133,8 @@ impl AppConfiguration {
   }
 
   /// Get the configuration item a binding points to.
-  #[must_use]
-  pub fn resolve_binding(&self, name: &str) -> Option<Result<OwnedConfigurationItem>> {
+
+  pub fn resolve_binding(&self, name: &str) -> Result<OwnedConfigurationItem> {
     let env = std::env::vars().collect();
     resolve(
       name,
@@ -284,16 +283,16 @@ pub enum OwnedConfigurationItem {
 
 impl OwnedConfigurationItem {
   /// Get the component definition or return an error.
-  pub fn try_component(&self) -> Result<ComponentDefinition> {
+  pub fn try_component(self) -> Result<ComponentDefinition> {
     match self {
-      Self::Component(c) => Ok(c.clone()),
+      Self::Component(c) => Ok(c),
       _ => Err(ManifestError::Reference(ReferenceError::Component)),
     }
   }
   /// Get the resource definition or return an error.
-  pub fn try_resource(&self) -> Result<ResourceDefinition> {
+  pub fn try_resource(self) -> Result<ResourceDefinition> {
     match self {
-      Self::Resource(c) => Ok(c.clone()),
+      Self::Resource(c) => Ok(c),
       _ => Err(ManifestError::Reference(ReferenceError::Resource)),
     }
   }

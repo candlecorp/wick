@@ -14,11 +14,10 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use utils::{assert_constraints, instantiate_import};
 use uuid::Uuid;
-use wick_config::config::{ComponentDefinition, ComponentImplementation};
+use wick_config::config::ComponentImplementation;
 
-use self::utils::instantiate_component;
-use crate::components::make_link_callback;
 use crate::components::validation::expect_signature_match;
+use crate::components::{init_component_implementation, make_link_callback};
 use crate::dev::prelude::*;
 
 type ServiceMap = HashMap<Uuid, Arc<RuntimeService>>;
@@ -55,26 +54,28 @@ impl RuntimeService {
       config.extends()
     } else {
       // Instantiate the non-composite component as an exposed, standalone component.
+
       let component_init = init.child_init(init.manifest.root_config().cloned());
-      let def: ComponentDefinition = init.manifest.component().clone().into();
 
       span.in_scope(|| debug!(%ns,options=?component_init,"instantiating component"));
-      if let Some(main_component) = instantiate_component(ns.clone(), &def, component_init).await? {
-        let reported_sig = main_component.component().signature();
-        let manifest_sig = init.manifest.signature()?;
 
-        expect_signature_match(
-          init.manifest.source(),
-          reported_sig,
-          init.manifest.source(),
-          &manifest_sig,
-        )?;
-        main_component.expose();
+      let main_component =
+        init_component_implementation(&init.manifest, ns.clone(), component_init, Default::default()).await?;
+      let reported_sig = main_component.component().signature();
+      let manifest_sig = init.manifest.signature()?;
 
-        components
-          .add(main_component)
-          .map_err(|e| EngineError::InterpreterInit(manifest_source.clone(), Box::new(e)))?;
-      }
+      expect_signature_match(
+        init.manifest.source(),
+        reported_sig,
+        init.manifest.source(),
+        &manifest_sig,
+      )?;
+      main_component.expose();
+
+      components
+        .add(main_component)
+        .map_err(|e| EngineError::InterpreterInit(manifest_source.clone(), Box::new(e)))?;
+
       &[]
     };
 

@@ -1135,6 +1135,14 @@
 
           "type": "string"
         },
+        "volumes": {
+          "description": "Volumes to expose to the component.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/ExposedVolume"
+          }
+        },
         "with": {
           "description": "Configuration necessary to provide when instantiating the component.",
 
@@ -1153,6 +1161,25 @@
         }
       },
       "required": ["ref"]
+    },
+
+    "ExposedVolume": {
+      "$anchor": "#v1/ExposedVolume",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "resource": {
+          "description": "The resource ID of the volume.",
+
+          "type": "string"
+        },
+        "path": {
+          "description": "The path to map it to in the component.",
+
+          "type": "string"
+        }
+      },
+      "required": ["resource", "path"]
     },
 
     "ComponentKind": {

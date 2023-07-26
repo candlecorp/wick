@@ -1,6 +1,6 @@
 use flow_component::SharedComponent;
 use tap_harness::TestRunner;
-use wick_config::config::TestCase;
+use wick_config::config::test_case::TestCase;
 use wick_packet::RuntimeConfig;
 
 use crate::{run_test, TestError, UnitTest};

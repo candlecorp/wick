@@ -255,6 +255,7 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentImplementation {
       reference: value.reference.try_into()?,
       config: value.with.try_map_into()?,
       operations: value.operations.try_map_into()?,
+      volumes: value.volumes.try_map_into()?,
     })
   }
 }
@@ -310,6 +311,29 @@ impl TryFrom<WasmComponentImplementation> for v1::WasmComponentConfiguration {
       operations: value.operations.try_map_into()?,
       reference: value.reference.try_into()?,
       with: value.config.try_map_into()?,
+      volumes: value.volumes.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<v1::ExposedVolume> for config::ExposedVolume {
+  type Error = ManifestError;
+
+  fn try_from(value: v1::ExposedVolume) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      path: value.path,
+      resource: value.resource,
+    })
+  }
+}
+
+impl TryFrom<config::ExposedVolume> for v1::ExposedVolume {
+  type Error = ManifestError;
+
+  fn try_from(value: config::ExposedVolume) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      path: value.path,
+      resource: value.resource,
     })
   }
 }
@@ -1387,7 +1411,7 @@ impl TryFrom<v1::PacketData> for test_case::TestPacket {
   }
 }
 
-impl TryFrom<v1::PacketFlags> for config::PacketFlag {
+impl TryFrom<v1::PacketFlags> for test_case::PacketFlag {
   type Error = crate::Error;
   fn try_from(value: v1::PacketFlags) -> Result<Self> {
     Ok(match value {
@@ -1411,7 +1435,7 @@ impl TryFrom<v1::PacketFlags> for config::PacketFlag {
   }
 }
 
-impl TryFrom<v1::SuccessPacket> for config::SuccessPayload {
+impl TryFrom<v1::SuccessPacket> for test_case::SuccessPayload {
   type Error = crate::Error;
   fn try_from(value: v1::SuccessPacket) -> Result<Self> {
     let mut val = Self {
@@ -1430,7 +1454,7 @@ impl TryFrom<v1::SuccessPacket> for config::SuccessPayload {
   }
 }
 
-impl TryFrom<v1::ErrorPacket> for config::ErrorPayload {
+impl TryFrom<v1::ErrorPacket> for test_case::ErrorPayload {
   type Error = crate::Error;
   fn try_from(value: v1::ErrorPacket) -> Result<Self> {
     let mut val = Self {
@@ -1450,7 +1474,7 @@ impl TryFrom<v1::ErrorPacket> for config::ErrorPayload {
   }
 }
 
-impl From<v1::InherentData> for config::InherentConfig {
+impl From<v1::InherentData> for test_case::InherentConfig {
   fn from(value: v1::InherentData) -> Self {
     Self {
       seed: value.seed,

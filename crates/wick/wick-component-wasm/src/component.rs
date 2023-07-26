@@ -4,7 +4,7 @@ use std::sync::Arc;
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use tracing::Span;
 use wasmrs_host::WasiParams;
-use wick_config::config::components::Permissions;
+use wick_config::config::Permissions;
 use wick_config::FetchableAssetReference;
 use wick_packet::{Entity, Invocation, PacketStream, RuntimeConfig};
 
@@ -72,7 +72,8 @@ impl WasmComponent {
       span.in_scope(|| debug!(component=%ns, config=?config, "wasi enabled"));
       builder = builder.wasi_params(permissions_to_wasi_params(&config));
     } else {
-      span.in_scope(|| debug!(component=%ns, "wasi disabled"));
+      span.in_scope(|| debug!(component=%ns, "wasi enabled with inherited STDIO only"));
+      builder = builder.wasi_params(WasiParams::default());
     }
 
     if let Some(callback) = options.callback {

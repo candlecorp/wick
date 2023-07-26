@@ -57,7 +57,6 @@ impl HttpClientComponent {
   ) -> Result<Self, ComponentError> {
     validate(&config, resolver)?;
     let addr: UrlResource = resolver(config.resource())
-      .ok_or_else(|| ComponentError::message(&format!("Could not resolve resource ID {}", config.resource())))?
       .and_then(|r| r.try_resource())
       .map_err(ComponentError::new)?
       .into();

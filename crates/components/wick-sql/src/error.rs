@@ -67,14 +67,11 @@ pub enum Error {
   #[error(transparent)]
   ComponentError(wick_packet::Error),
 
-  #[error("Could not resolve resource: {0}")]
-  ResourceNotFound(String),
-
   #[error("Database connection not initialized")]
   Uninitialized,
 
-  #[error("Invalid resource passed to component: {0}")]
-  InvalidResource(ManifestError),
+  #[error(transparent)]
+  Configuration(#[from] ManifestError),
 
   #[error("Resource valid but its value could not be retrieved")]
   InvalidResourceConfig,
