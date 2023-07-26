@@ -17,9 +17,6 @@ use crate::wick_host::build_component_host;
 #[group(skip)]
 pub(crate) struct Options {
   #[clap(flatten)]
-  wasi: crate::wasm::WasiOptions,
-
-  #[clap(flatten)]
   pub(crate) oci: crate::oci::Options,
 
   /// Turn on info logging.

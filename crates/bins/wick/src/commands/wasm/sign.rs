@@ -57,7 +57,7 @@ pub(crate) async fn handle(
   source_file.read_to_end(&mut buf).unwrap();
 
   let (account, subject) = get_module_keys(
-    Some(opts.source.clone()),
+    interface.name().map(|s| s.as_str()),
     opts.common.directory,
     opts.common.signer,
     opts.common.subject,
