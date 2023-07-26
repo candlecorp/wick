@@ -17,9 +17,6 @@ pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) oci: crate::oci::Options,
 
-  #[clap(flatten)]
-  wasi: crate::wasm::WasiOptions,
-
   /// The path or OCI URL to a wick manifest or wasm file.
   #[clap(action)]
   pub(crate) location: String,

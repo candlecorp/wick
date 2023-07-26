@@ -22,9 +22,6 @@ pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) oci: crate::oci::Options,
 
-  #[clap(flatten)]
-  wasi: crate::wasm::WasiOptions,
-
   /// Turn on info logging.
   #[clap(long = "info", action)]
   pub(crate) info: bool,

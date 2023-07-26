@@ -65,39 +65,39 @@ fn get_key_home() -> PathBuf {
 }
 
 pub(crate) async fn get_module_keys(
-  subject_file: Option<String>,
+  name: Option<&str>,
   directory: Option<PathBuf>,
   signer_key: Option<String>,
   subject_key: Option<String>,
 ) -> Result<(KeyPair, KeyPair)> {
   let account_keys = match signer_key {
     Some(seed) => KeyPair::from_seed(&seed)?,
-    None => get_or_create(subject_file.clone(), directory.clone(), KeyPairType::Account).await?,
+    None => get_or_create(name, directory.clone(), KeyPairType::Account).await?,
   };
 
   let subject_keys = match subject_key {
     Some(seed) => KeyPair::from_seed(&seed)?,
-    None => get_or_create(subject_file, directory, KeyPairType::Module).await?,
+    None => get_or_create(name, directory, KeyPairType::Module).await?,
   };
 
   Ok((account_keys, subject_keys))
 }
 
 pub(crate) async fn get_or_create(
-  subject: Option<String>,
+  name: Option<&str>,
   directory: Option<PathBuf>,
   kp_type: KeyPairType,
 ) -> Result<KeyPair> {
-  if subject.is_none() {
-    return Err(anyhow!("Keypair path or string not supplied."));
+  if name.is_none() {
+    return Err(anyhow!("Component name must be supplied to generate signing keys."));
   }
-  let module = subject.unwrap();
+  let name = name.unwrap();
 
   let dir = directory.map_or_else(get_key_home, |dir| dir);
 
   let module_name = match kp_type {
     KeyPairType::Account => std::env::var("USER").unwrap_or_else(|_| "user".to_owned()),
-    _ => PathBuf::from(module).file_stem().unwrap().to_str().unwrap().to_owned(),
+    _ => PathBuf::from(name).file_stem().unwrap().to_str().unwrap().to_owned(),
   };
 
   let path = format!(
