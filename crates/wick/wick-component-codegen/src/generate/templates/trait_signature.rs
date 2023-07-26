@@ -9,7 +9,7 @@ use crate::generate::ids::*;
 use crate::generate::{config, f, Direction};
 
 pub(crate) fn trait_signature(config: &mut config::Config, op: &OperationSignature) -> TokenStream {
-  let trait_name = id(&format!("{}Operation", &pascal(op.name())));
+  let trait_name = id("Operation");
   let impl_name = id(&snake(op.name()));
 
   let inputs = op

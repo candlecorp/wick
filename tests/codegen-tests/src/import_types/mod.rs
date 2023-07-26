@@ -14,6 +14,7 @@ extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_h
 }
 #[cfg(target_family = "wasm")]
 mod imported_components_wasm {
+  #[allow(unused)]
   use super::*;
   #[allow(unused)]
   pub struct Dep1Component {
@@ -61,6 +62,7 @@ pub use imported_components_wasm::*;
 #[allow(unused)]
 #[cfg(target_family = "wasm")]
 mod provided_wasm {
+  #[allow(unused)]
   use super::*;
   pub(crate) struct Provided {
     pub dep1: Dep1Component,
@@ -2081,6 +2083,7 @@ pub mod types {
 }
 ///Types associated with the `echo` operation
 pub mod echo {
+  #[allow(unused)]
   use super::*;
   #[derive(Debug, Clone, Default, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
   pub struct Config {}
@@ -2089,6 +2092,11 @@ pub mod echo {
     pub(crate) output: wick_packet::Output<types::http::HttpRequest>,
     pub(crate) time: wick_packet::Output<wick_component::datetime::DateTime>,
   }
+  impl wick_component::Broadcast for Outputs {
+    fn outputs_mut(&mut self) -> wick_packet::OutputIterator<'_> {
+      wick_packet::OutputIterator::new(vec![&mut self.output, &mut self.time])
+    }
+  }
   impl Outputs {
     pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
       Self {
@@ -2096,53 +2104,39 @@ pub mod echo {
         time: wick_packet::Output::new("time", channel),
       }
     }
-    #[allow(unused)]
-    pub fn broadcast_open(&mut self) {
-      self.output.open_bracket();
-      self.time.open_bracket();
-    }
-    #[allow(unused)]
-    pub fn broadcast_close(&mut self) {
-      self.output.close_bracket();
-      self.time.close_bracket();
-    }
-    #[allow(unused)]
-    pub fn broadcast_err(&mut self, err: impl AsRef<str>) {
-      self.output.error(&err);
-      self.time.error(&err);
-    }
   }
-}
-#[async_trait::async_trait(?Send)]
-#[cfg(target_family = "wasm")]
-pub trait EchoOperation {
-  type Error: std::fmt::Display;
-  type Outputs;
-  type Config: std::fmt::Debug;
-  #[allow(unused)]
-  async fn echo(
-    input: WickStream<types::http::HttpRequest>,
-    time: WickStream<wick_component::datetime::DateTime>,
-    outputs: Self::Outputs,
-    ctx: wick_component::flow_component::Context<Self::Config>,
-  ) -> std::result::Result<(), Self::Error>;
-}
-#[async_trait::async_trait]
-#[cfg(not(target_family = "wasm"))]
-pub trait EchoOperation {
-  type Error: std::fmt::Display + Send;
-  type Outputs: Send;
-  type Config: std::fmt::Debug + Send;
-  #[allow(unused)]
-  async fn echo(
-    input: WickStream<types::http::HttpRequest>,
-    time: WickStream<wick_component::datetime::DateTime>,
-    outputs: Self::Outputs,
-    ctx: wick_component::flow_component::Context<Self::Config>,
-  ) -> std::result::Result<(), Self::Error>;
+  #[async_trait::async_trait(?Send)]
+  #[cfg(target_family = "wasm")]
+  pub trait Operation {
+    type Error: std::fmt::Display;
+    type Outputs;
+    type Config: std::fmt::Debug;
+    #[allow(unused)]
+    async fn echo(
+      input: WickStream<types::http::HttpRequest>,
+      time: WickStream<wick_component::datetime::DateTime>,
+      outputs: Self::Outputs,
+      ctx: wick_component::flow_component::Context<Self::Config>,
+    ) -> std::result::Result<(), Self::Error>;
+  }
+  #[async_trait::async_trait]
+  #[cfg(not(target_family = "wasm"))]
+  pub trait Operation {
+    type Error: std::fmt::Display + Send;
+    type Outputs: Send;
+    type Config: std::fmt::Debug + Send;
+    #[allow(unused)]
+    async fn echo(
+      input: WickStream<types::http::HttpRequest>,
+      time: WickStream<wick_component::datetime::DateTime>,
+      outputs: Self::Outputs,
+      ctx: wick_component::flow_component::Context<Self::Config>,
+    ) -> std::result::Result<(), Self::Error>;
+  }
 }
 ///Types associated with the `testop` operation
 pub mod testop {
+  #[allow(unused)]
   use super::*;
   #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
   pub struct Config {
@@ -2163,51 +2157,49 @@ pub mod testop {
     #[allow(unused)]
     pub(crate) output: wick_packet::Output<String>,
   }
+  impl wick_component::Broadcast for Outputs {
+    fn outputs_mut(&mut self) -> wick_packet::OutputIterator<'_> {
+      wick_packet::OutputIterator::new(vec![&mut self.output])
+    }
+  }
+  impl wick_component::SingleOutput for Outputs {
+    fn single_output(&mut self) -> &mut dyn wick_packet::Port {
+      &mut self.output
+    }
+  }
   impl Outputs {
     pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
       Self {
         output: wick_packet::Output::new("output", channel),
       }
     }
-    #[allow(unused)]
-    pub fn broadcast_open(&mut self) {
-      self.output.open_bracket();
-    }
-    #[allow(unused)]
-    pub fn broadcast_close(&mut self) {
-      self.output.close_bracket();
-    }
-    #[allow(unused)]
-    pub fn broadcast_err(&mut self, err: impl AsRef<str>) {
-      self.output.error(&err);
-    }
   }
-}
-#[async_trait::async_trait(?Send)]
-#[cfg(target_family = "wasm")]
-pub trait TestopOperation {
-  type Error: std::fmt::Display;
-  type Outputs;
-  type Config: std::fmt::Debug;
-  #[allow(unused)]
-  async fn testop(
-    message: WickStream<types::http::HttpResponse>,
-    outputs: Self::Outputs,
-    ctx: wick_component::flow_component::Context<Self::Config>,
-  ) -> std::result::Result<(), Self::Error>;
-}
-#[async_trait::async_trait]
-#[cfg(not(target_family = "wasm"))]
-pub trait TestopOperation {
-  type Error: std::fmt::Display + Send;
-  type Outputs: Send;
-  type Config: std::fmt::Debug + Send;
-  #[allow(unused)]
-  async fn testop(
-    message: WickStream<types::http::HttpResponse>,
-    outputs: Self::Outputs,
-    ctx: wick_component::flow_component::Context<Self::Config>,
-  ) -> std::result::Result<(), Self::Error>;
+  #[async_trait::async_trait(?Send)]
+  #[cfg(target_family = "wasm")]
+  pub trait Operation {
+    type Error: std::fmt::Display;
+    type Outputs;
+    type Config: std::fmt::Debug;
+    #[allow(unused)]
+    async fn testop(
+      message: WickStream<types::http::HttpResponse>,
+      outputs: Self::Outputs,
+      ctx: wick_component::flow_component::Context<Self::Config>,
+    ) -> std::result::Result<(), Self::Error>;
+  }
+  #[async_trait::async_trait]
+  #[cfg(not(target_family = "wasm"))]
+  pub trait Operation {
+    type Error: std::fmt::Display + Send;
+    type Outputs: Send;
+    type Config: std::fmt::Debug + Send;
+    #[allow(unused)]
+    async fn testop(
+      message: WickStream<types::http::HttpResponse>,
+      outputs: Self::Outputs,
+      ctx: wick_component::flow_component::Context<Self::Config>,
+    ) -> std::result::Result<(), Self::Error>;
+  }
 }
 #[derive(Default, Clone)]
 ///The struct that the component implementation hinges around
@@ -2240,6 +2232,7 @@ impl Component {
           return;
         }
       };
+      use echo::Operation;
       if let Err(e) = Component::echo(Box::pin(input), Box::pin(time), outputs, config).await {
         let _ = channel.send_result(wick_packet::Packet::component_error(e.to_string()).into());
       }
@@ -2272,6 +2265,7 @@ impl Component {
           return;
         }
       };
+      use testop::Operation;
       if let Err(e) = Component::testop(Box::pin(message), outputs, config).await {
         let _ = channel.send_result(wick_packet::Packet::component_error(e.to_string()).into());
       }

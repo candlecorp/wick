@@ -1,2 +1,0 @@
-[build]
-target = "wasm32-unknown-unknown" # build for the target triple in case you run `cargo build` instead of `just build` and for rust-analyzer

@@ -27,3 +27,6 @@ anyhow = "1.0"
 
 [build-dependencies]
 wick-component-codegen = { path = "../../wick/wick-component-codegen" }
+
+# Including this section keeps this crate out of a workspace without needing to alter the workspace.
+[workspace]

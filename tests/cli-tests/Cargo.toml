@@ -14,4 +14,4 @@ publish = false
 trycmd = { workspace = true }
 rstest = { workspace = true }
 anyhow = { workspace = true }
-escargot = { workspace = true, features = ["print"] }
+escargot = { workspace = true }

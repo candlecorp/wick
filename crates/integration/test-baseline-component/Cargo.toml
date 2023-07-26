@@ -24,8 +24,11 @@ wick-component = { path = "../../wick/wick-component", features = ["datetime"] }
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"
 seeded-random = { path = "../../misc/seeded-random", default-features = false, features = [
-  "uuid"
+  "uuid",
 ] }
 
 [build-dependencies]
 wick-component-codegen = { path = "../../wick/wick-component-codegen" }
+
+# Including this section keeps this crate out of a workspace without needing to alter the workspace.
+[workspace]

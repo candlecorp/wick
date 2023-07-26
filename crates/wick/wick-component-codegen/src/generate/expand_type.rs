@@ -14,7 +14,7 @@ pub(super) fn expand_type(
   ty: &wick_interface_types::Type,
 ) -> TokenStream {
   if config.raw && dir != Direction::Out {
-    return quote! { wick_component::packet::Packet };
+    return quote! { wick_component::wick_packet::Packet };
   }
   match ty {
     wick_interface_types::Type::Bool => quote! { bool },
@@ -60,7 +60,7 @@ pub(super) fn expand_type(
     #[allow(deprecated)]
     wick_interface_types::Type::Link { .. } => {
       config.add_dep(Dependency::WickComponent);
-      quote! {wick_component::packet::ComponentReference}
+      quote! {wick_component::wick_packet::ComponentReference}
     }
     wick_interface_types::Type::Datetime => {
       config.add_dep(Dependency::Chrono);

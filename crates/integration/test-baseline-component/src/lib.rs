@@ -13,7 +13,7 @@ use wick::*;
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
-impl AddOperation for Component {
+impl add::Operation for Component {
   type Error = String;
   type Outputs = add::Outputs;
   type Config = add::Config;
@@ -34,7 +34,7 @@ impl AddOperation for Component {
         }
         (Err(err), _) | (_, Err(err)) => {
           println!("op:add: received error, propagating forward");
-          outputs.output.error(format!("Error adding numbers: {}", err));
+          outputs.output.error(&format!("Error adding numbers: {}", err));
         }
       }
     }
@@ -46,7 +46,7 @@ impl AddOperation for Component {
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
-impl PowerOperation for Component {
+impl power::Operation for Component {
   type Error = String;
   type Outputs = power::Outputs;
   type Config = power::Config;
@@ -68,7 +68,7 @@ impl PowerOperation for Component {
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
-impl ErrorOperation for Component {
+impl error::Operation for Component {
   type Error = String;
   type Outputs = error::Outputs;
   type Config = error::Config;
@@ -92,7 +92,7 @@ impl ErrorOperation for Component {
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
-impl UuidOperation for Component {
+impl uuid::Operation for Component {
   type Error = String;
   type Outputs = uuid::Outputs;
   type Config = uuid::Config;
@@ -108,7 +108,7 @@ impl UuidOperation for Component {
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
-impl ValidateOperation for Component {
+impl validate::Operation for Component {
   type Error = String;
   type Outputs = validate::Outputs;
   type Config = validate::Config;
@@ -123,10 +123,10 @@ impl ValidateOperation for Component {
 
       if password.len() < MINIMUM_LENGTH {
         println!("Too short!");
-        outputs.output.error(LengthError::TooShort.to_string());
+        outputs.output.error(&LengthError::TooShort.to_string());
       } else if password.len() > MAXIMUM_LENGTH {
         println!("Too long!!");
-        outputs.output.error(LengthError::TooLong.to_string());
+        outputs.output.error(&LengthError::TooLong.to_string());
       } else {
         println!("Just right!");
         outputs.output.send(&password);
@@ -167,7 +167,7 @@ static MAXIMUM_LENGTH: usize = 512;
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait(Send))]
-impl StrftimeOperation for Component {
+impl strftime::Operation for Component {
   type Error = String;
   type Outputs = strftime::Outputs;
   type Config = strftime::Config;
