@@ -1,15 +1,50 @@
-project_name := "{{project-name | snake_case}}"
+{% raw %}
+
+# The wick command to use for this project (usually just "wick" but can be a local path during development)
+wick := "wick"
+
+# Get the crate name from the Cargo.toml file (this uses wick instead of {{wick}} due to justfile limitations)
+crate_name := `wick query -f Cargo.toml '.package.name'`
+# Convert crate name to snake case for rust naming conventions.
+project_name := snakecase(crate_name)
+
+# The target to build for release.
+build_target := "wasm32-unknown-unknown"
+# The target to build for debug (wasm32-wasi can give easy access to println & STDIO for debugging)
+debug_target := "wasm32-wasi"
+
+# Build and sign a WebAssembly component implementation
 build: setup
-    cargo build --release --target=wasm32-unknown-unknown
-    cp ./target/wasm32-unknown-unknown/release/{% raw %}{{project_name}}{% endraw %}.wasm ./build/
-    wick wasm sign ./build/{% raw %}{{project_name}}{% endraw %}.wasm component.wick
+    cargo build --release --target="{{build_target}}"
+    cp "./target/{{build_target}}/release/{{project_name}}.wasm" ./build/component.wasm
+    {{wick}} wasm sign ./build/component.wasm component.wick
+
+# Build a debug version of a WebAssembly component
 debug: setup
-    cargo +nightly build --target=wasm32-wasi
-    cp ./target/wasm32-wasi/debug/{% raw %}{{project_name}}{% endraw %}.wasm ./build/
-    wick wasm sign ./build/{% raw %}{{project_name}}{% endraw %}.wasm component.wick
+    cargo +nightly build --target="{{debug_target}}"
+    cp "./target/{{debug_target}}/debug/{{project_name}}.wasm" ./build/component.wasm
+    {{wick}} wasm sign ./build/component.wasm component.wick
+
+# Echo variables used by this justfile
+debug-justfile:
+    @echo "Wick command: {{wick}}"
+    @echo "---"
+    @echo "Crate name: {{crate_name}}"
+    @echo "Crate name (rustified): {{project_name}}"
+    @echo "---"
+    @echo "Build target: {{build_target}}"
+    @echo "Debug target: {{debug_target}}"
+
+# Setup any environment needed for the build
 setup:
     mkdir -p build
+
+# Run tests
 test: build
-    wick test component.wick
+    {{wick}} test component.wick
+
+# Clean the project directory
 clean:
   cargo clean
+
+{% endraw %}

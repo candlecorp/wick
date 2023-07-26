@@ -4,7 +4,7 @@ mod wick {
 use wick::*;
 
 #[async_trait::async_trait(?Send)]
-impl RequestOperation for Component {
+impl request::Operation for Component {
   type Error = anyhow::Error;
   type Outputs = request::Outputs;
   type Config = request::Config;

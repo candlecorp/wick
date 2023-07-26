@@ -63,6 +63,7 @@ pub(crate) fn gen_wrapper_fn(config: &mut config::Config, component: &Ident, op:
             return;
           }
         };
+        use #impl_name::Operation;
         if let Err(e) = #component::#impl_name(#(Box::pin(#inputs),)* outputs, config).await {
           let _ = channel.send_result(
             wick_packet::Packet::component_error(e.to_string()).into(),

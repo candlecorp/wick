@@ -8,7 +8,7 @@ use wick::*;
 use self::wick::types::http::{self, RequestMiddlewareResponse};
 
 #[async_trait::async_trait(?Send)]
-impl RedirectOperation for Component {
+impl redirect::Operation for Component {
   type Error = anyhow::Error;
   type Outputs = redirect::Outputs;
   type Config = redirect::Config;
@@ -49,7 +49,7 @@ thread_local! {
 }
 
 #[async_trait::async_trait(?Send)]
-impl CountOperation for Component {
+impl count::Operation for Component {
   type Error = anyhow::Error;
   type Outputs = count::Outputs;
   type Config = count::Config;

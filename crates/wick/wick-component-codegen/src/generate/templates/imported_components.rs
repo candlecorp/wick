@@ -43,6 +43,7 @@ pub(crate) fn imported_components(config: &mut Config, required: Vec<BoundInterf
   quote! {
     #[cfg(target_family = "wasm")]
     mod imported_components_wasm {
+      #[allow(unused)]
       use super::*;
 
       #(#components)*

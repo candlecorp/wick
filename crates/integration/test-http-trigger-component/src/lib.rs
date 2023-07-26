@@ -23,7 +23,7 @@ struct Response {
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl HttpHandlerOperation for Component {
+impl http_handler::Operation for Component {
   type Error = Box<dyn std::error::Error + Send + Sync>;
   type Outputs = http_handler::Outputs;
   type Config = http_handler::Config;

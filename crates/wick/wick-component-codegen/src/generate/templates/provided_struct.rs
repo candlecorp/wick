@@ -28,6 +28,7 @@ pub(crate) fn provided_struct(_config: &Config, required: &[BoundInterface]) -> 
     #[allow(unused)]
     #[cfg(target_family = "wasm")]
     mod provided_wasm {
+      #[allow(unused)]
       use super::*;
       pub(crate) struct Provided {
         #(#fields),*

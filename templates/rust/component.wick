@@ -6,7 +6,7 @@ metadata:
   version: '0.0.1'
 component:
   kind: wick/component/wasmrs@v1
-  ref: build/{{project-name | snake_case}}.signed.wasm
+  ref: build/component.signed.wasm
   operations:
     - name: greet
       inputs:

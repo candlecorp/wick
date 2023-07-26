@@ -4,7 +4,7 @@ mod wick {
 use wick::*;
 
 #[async_trait::async_trait(?Send)]
-impl AddOperation for Component {
+impl add::Operation for Component {
   type Error = anyhow::Error;
   type Outputs = add::Outputs;
   type Config = add::Config;
@@ -24,7 +24,7 @@ impl AddOperation for Component {
 }
 
 #[async_trait::async_trait(?Send)]
-impl GreetOperation for Component {
+impl greet::Operation for Component {
   type Error = anyhow::Error;
   type Outputs = greet::Outputs;
   type Config = greet::Config;

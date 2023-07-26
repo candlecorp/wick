@@ -29,3 +29,6 @@ serde_json = "1.0.94"
 
 [build-dependencies]
 wick-component-codegen = { path = "../../wick/wick-component-codegen" }
+
+# Including this section keeps this crate out of a workspace without needing to alter the workspace.
+[workspace]

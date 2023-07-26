@@ -13,7 +13,7 @@ use wick::*;
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl MainOperation for Component {
+impl main::Operation for Component {
   type Error = Box<dyn std::error::Error>;
   type Outputs = main::Outputs;
   type Config = main::Config;

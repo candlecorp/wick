@@ -4,7 +4,7 @@ mod test1 {
   use crate::import_types::*;
   # [cfg_attr (target_family = "wasm" , async_trait :: async_trait (? Send))]
   #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-  impl TestopOperation for Component {
+  impl testop::Operation for Component {
     type Error = anyhow::Error;
     type Outputs = testop::Outputs;
     type Config = testop::Config;
@@ -21,7 +21,7 @@ mod test1 {
 
   # [cfg_attr (target_family = "wasm" , async_trait :: async_trait (? Send))]
   #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-  impl EchoOperation for Component {
+  impl echo::Operation for Component {
     type Error = anyhow::Error;
     type Outputs = echo::Outputs;
     type Config = echo::Config;
@@ -48,6 +48,7 @@ mod test1 {
     use wick_packet::{ContextTransport, FluxChannel, InherentData};
 
     use super::*;
+    use crate::import_types::testop::Operation;
     use crate::import_types::types::http::HttpResponse;
 
     #[tokio::test]
