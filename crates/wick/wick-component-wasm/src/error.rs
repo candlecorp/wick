@@ -33,6 +33,9 @@ pub enum WasmComponentError {
   #[error("WebAssembly engine failed: {0}")]
   EngineFailure(String),
 
+  #[error(transparent)]
+  ContextInit(wasmrs_host::errors::Error),
+
   #[error("Could not extract claims from component. Is it a signed WebAssembly module?")]
   ClaimsExtraction,
 

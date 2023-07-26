@@ -22,6 +22,7 @@ json = []
 
 [dependencies]
 wick-packet = { workspace = true, default-features = false }
+wick-operation = { workspace = true }
 flow-component = { workspace = true, default-features = false }
 wasmrs = { workspace = true }
 wasmrs-rx = { workspace = true }
@@ -33,6 +34,8 @@ serde_json = { workspace = true }
 serde = { workspace = true }
 chrono = { workspace = true, features = ["std"], optional = true }
 bytes = { workspace = true, optional = true }
+async-recursion = { workspace = true }
+tracing = { workspace = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasmrs-guest = { workspace = true }

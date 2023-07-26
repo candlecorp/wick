@@ -17,7 +17,7 @@ pub(crate) struct ChildInit {
   pub(crate) runtime_id: Uuid,
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
-  pub(crate) config: Option<RuntimeConfig>,
+  pub(crate) root_config: Option<RuntimeConfig>,
   pub(crate) resolver: Box<Resolver>,
   #[allow(unused)]
   pub(crate) span: Span,
@@ -30,7 +30,7 @@ impl std::fmt::Debug for ChildInit {
       .field("runtime_id", &self.runtime_id)
       .field("allow_latest", &self.allow_latest)
       .field("allowed_insecure", &self.allowed_insecure)
-      .field("config", &self.config)
+      .field("root_config", &self.root_config)
       .finish()
   }
 }

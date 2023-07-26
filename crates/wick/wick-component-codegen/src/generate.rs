@@ -75,11 +75,13 @@ fn gen_trait_fns<'a>(
     quote! {
       #[doc = #desc]
       pub mod #op_name {
+        #[allow(unused)]
         use super::*;
         #op_config
         #op_output
+        #trait_sig
       }
-      #trait_sig
+
     }
   })
   .collect_vec()

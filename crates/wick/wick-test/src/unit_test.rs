@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_value::Value;
-use wick_config::config::TestCase;
+use wick_config::config::test_case::TestCase;
 use wick_packet::{InherentData, Packet, PacketStream, RuntimeConfig};
 
 use crate::error::AssertionFailure;

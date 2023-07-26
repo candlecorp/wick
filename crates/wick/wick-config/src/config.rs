@@ -5,6 +5,7 @@ pub(crate) mod common;
 pub(crate) mod component_config;
 /// Specific component-level configuration and types.
 pub mod components;
+pub(crate) mod permissions;
 pub(crate) mod test_config;
 pub(crate) mod types_config;
 
@@ -15,6 +16,7 @@ pub use app_config::*;
 use asset_container::Asset;
 pub use common::*;
 pub use component_config::*;
+pub use permissions::{Permissions, PermissionsBuilder};
 use serde_json::Value;
 pub use test_config::*;
 use tokio::fs::read_to_string;

@@ -14,8 +14,15 @@ use tracing::Instrument;
 use uuid::Uuid;
 use wick_component_wasm::component::{ComponentSetupBuilder, WasmComponent};
 use wick_component_wasm::error::LinkError;
-use wick_config::config::components::{ManifestComponent, Permissions};
-use wick_config::config::{BoundInterface, Metadata, ResourceDefinition, WasmComponentImplementation};
+use wick_config::config::components::ManifestComponent;
+use wick_config::config::{
+  BoundInterface,
+  Metadata,
+  Permissions,
+  PermissionsBuilder,
+  ResourceDefinition,
+  WasmComponentImplementation,
+};
 use wick_config::{AssetReference, FetchOptions, Resolver, WickConfiguration};
 use wick_packet::validation::expect_configuration_matches;
 use wick_packet::{Entity, Invocation, RuntimeConfig};
@@ -39,14 +46,14 @@ type ComponentInitResult = std::result::Result<NamespaceHandler, EngineError>;
 
 pub(crate) async fn init_wasm_component(
   reference: &AssetReference,
-  permissions: Option<Permissions>,
   namespace: String,
   opts: ChildInit,
+  permissions: Option<Permissions>,
   provided: HashMap<String, String>,
 ) -> ComponentInitResult {
   opts
     .span
-    .in_scope(|| trace!(namespace = %namespace, ?opts, "registering wasm component"));
+    .in_scope(|| trace!(namespace = %namespace, ?opts, ?permissions, "registering wasm component"));
 
   let mut options = FetchOptions::default();
   options
@@ -57,7 +64,7 @@ pub(crate) async fn init_wasm_component(
   let setup = ComponentSetupBuilder::default()
     .engine(WASMTIME_ENGINE.clone())
     .permissions(permissions)
-    .config(opts.config)
+    .config(opts.root_config)
     .callback(Some(make_link_callback(opts.runtime_id)))
     .provided(provided)
     .build()
@@ -76,9 +83,10 @@ pub(crate) async fn init_wasm_impl_component(
   kind: &WasmComponentImplementation,
   namespace: String,
   opts: ChildInit,
+  permissions: Option<Permissions>,
   provided: HashMap<String, String>,
 ) -> ComponentInitResult {
-  init_wasm_component(kind.reference(), None, namespace, opts, provided).await
+  init_wasm_component(kind.reference(), namespace, opts, permissions, provided).await
 }
 
 pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
@@ -109,7 +117,7 @@ pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
 pub(crate) async fn init_manifest_component(
   kind: &ManifestComponent,
   id: String,
-  mut opts: ChildInit,
+  opts: ChildInit,
 ) -> ComponentInitResult {
   let span = opts.span.clone();
   span.in_scope(|| trace!(namespace = %id, ?opts, "registering wick component"));
@@ -123,25 +131,46 @@ pub(crate) async fn init_manifest_component(
   let mut builder = WickConfiguration::fetch(kind.reference().path()?.to_string_lossy(), options)
     .instrument(span.clone())
     .await?;
-  builder.set_root_config(opts.config.clone());
+  builder.set_root_config(opts.root_config.clone());
   let manifest = builder.finish()?.try_component_config()?;
 
+  let requires = manifest.requires();
+  let provided =
+    generate_provides(requires, kind.provide()).map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
+  init_component_implementation(&manifest, id, opts, provided).await
+}
+
+pub(crate) async fn init_component_implementation(
+  manifest: &ComponentConfiguration,
+  id: String,
+  mut opts: ChildInit,
+  provided: HashMap<String, String>,
+) -> ComponentInitResult {
+  let span = opts.span.clone();
   span.in_scope(|| {
     debug!(%id,"validating configuration for wick component");
-    expect_configuration_matches(&id, opts.config.as_ref(), manifest.config()).map_err(EngineError::Setup)
+    expect_configuration_matches(&id, opts.root_config.as_ref(), manifest.config()).map_err(EngineError::Setup)
   })?;
 
   let rng = Random::from_seed(opts.rng_seed);
   opts.rng_seed = rng.seed();
   let uuid = rng.uuid();
-  let requires = manifest.requires();
   let metadata = manifest.metadata();
-  let provided =
-    generate_provides(requires, kind.provide()).map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
-
   match manifest.component() {
     config::ComponentImplementation::Wasm(wasmimpl) => {
-      let comp = init_wasm_impl_component(wasmimpl, id.clone(), opts, provided).await?;
+      let mut dirs = HashMap::new();
+      for volume in wasmimpl.volumes() {
+        let resource = (opts.resolver)(volume.resource())?.try_resource()?.try_volume()?;
+        dirs.insert(volume.path().to_owned(), resource.path()?.to_string_lossy().to_string());
+      }
+      let perms = if !dirs.is_empty() {
+        let mut perms = PermissionsBuilder::default();
+        perms.dirs(dirs);
+        Some(perms.build().unwrap())
+      } else {
+        None
+      };
+      let comp = init_wasm_impl_component(wasmimpl, id.clone(), opts, perms, provided).await?;
       let signed_sig = comp.component().signature();
       let manifest_sig = manifest.signature()?;
       span.in_scope(|| {
@@ -155,7 +184,7 @@ pub(crate) async fn init_manifest_component(
       Ok(comp)
     }
     config::ComponentImplementation::Composite(_) => {
-      let _engine = init_child(uuid, manifest, Some(id.clone()), opts).await?;
+      let _engine = init_child(uuid, manifest.clone(), Some(id.clone()), opts).await?;
 
       let component = Arc::new(engine_component::EngineComponent::new(uuid));
       let service = NativeComponentService::new(component);
@@ -164,7 +193,7 @@ pub(crate) async fn init_manifest_component(
     config::ComponentImplementation::Sql(c) => {
       init_hlc_component(
         id,
-        opts.config.clone(),
+        opts.root_config.clone(),
         metadata.cloned(),
         wick_config::config::HighLevelComponent::Sql(c.clone()),
         manifest.resolver(),
@@ -174,7 +203,7 @@ pub(crate) async fn init_manifest_component(
     config::ComponentImplementation::HttpClient(c) => {
       init_hlc_component(
         id,
-        opts.config.clone(),
+        opts.root_config.clone(),
         metadata.cloned(),
         wick_config::config::HighLevelComponent::HttpClient(c.clone()),
         manifest.resolver(),
@@ -217,10 +246,7 @@ pub(crate) async fn init_hlc_component(
 ) -> ComponentInitResult {
   let comp: Box<dyn Component + Send + Sync> = match component {
     config::HighLevelComponent::Sql(comp) => {
-      let url = resolver(comp.resource())
-        .ok_or_else(|| EngineError::ComponentInit("sql or azure-sql".to_owned(), "no resource found".to_owned()))??
-        .try_resource()
-        .unwrap();
+      let url = resolver(comp.resource())?.try_resource()?;
       let scheme = match &url {
         ResourceDefinition::Url(url) => url.url().value_unchecked().scheme(),
         _ => {

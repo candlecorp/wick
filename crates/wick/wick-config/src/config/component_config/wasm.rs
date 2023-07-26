@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use wick_interface_types::{Field, OperationSignatures};
 
 use crate::config::components::{ComponentConfig, OperationConfig};
-use crate::config::{self, OperationDefinition};
+use crate::config::{self, ExposedVolume, OperationDefinition};
 use crate::utils::VecMapInto;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager, Builder, property::Property, serde::Serialize)]
@@ -21,6 +21,12 @@ pub struct WasmComponentImplementation {
   #[builder(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) config: Vec<Field>,
+
+  /// Volumes to expose to the component and the paths they map to.
+  #[asset(skip)]
+  #[builder(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) volumes: Vec<ExposedVolume>,
 
   /// The operations defined by the component.
   #[asset(skip)]

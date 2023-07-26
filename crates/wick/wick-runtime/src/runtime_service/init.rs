@@ -46,11 +46,11 @@ impl ServiceInit {
     }
   }
 
-  pub(super) fn child_init(&self, config: Option<RuntimeConfig>) -> ChildInit {
+  pub(super) fn child_init(&self, root_config: Option<RuntimeConfig>) -> ChildInit {
     ChildInit {
       rng_seed: self.rng.seed(),
       runtime_id: self.id,
-      config,
+      root_config,
       allow_latest: self.allow_latest,
       allowed_insecure: self.allowed_insecure.clone(),
       resolver: self.manifest.resolver(),

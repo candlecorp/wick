@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use derive_builder::UninitializedFieldError;
 use thiserror::Error;
 
+use crate::config::resources::ResourceKind;
 use crate::config::{self};
 
 // type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
@@ -86,6 +87,10 @@ pub enum ManifestError {
   #[error("Invalid authority: {0}")]
   InvalidUrl(String),
 
+  /// Identifier not found.
+  #[error("Could not find definition for id '{0}'")]
+  IdNotFound(String),
+
   /// Attempted to use configuration before it was renderable.
   #[error("Could not render configuration template: {0}")]
   ConfigurationTemplate(String),
@@ -108,7 +113,7 @@ pub enum ManifestError {
 
   /// Error resolving reference.
   #[error(transparent)]
-  Reference(ReferenceError),
+  Reference(#[from] ReferenceError),
 
   /// Error building a configuration
   #[error(transparent)]
@@ -133,6 +138,15 @@ pub enum ReferenceError {
   /// The referenced item was not a resource.
   #[error("Referenced item is not a resource")]
   Resource,
+
+  /// The resource was not the requested type.
+  #[error("Expected a resource of type {expected}, found type {actual}")]
+  ResourceType {
+    /// The expected resource type.
+    expected: ResourceKind,
+    /// The actual resource type.
+    actual: ResourceKind,
+  },
 }
 /// Errors generated when building a configuration.
 #[derive(Error, Debug)]

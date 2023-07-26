@@ -74,15 +74,8 @@ pub(crate) fn resolve_or_import_component(
   if let ComponentDefinition::Reference(cref) = operation.component() {
     let _assert = app_config
       .resolve_binding(cref.id())
-      .ok_or_else(|| {
-        RuntimeError::InitializationFailed(format!("Could not find a component by the name of {}", cref.id()))
-      })?
       .map_err(|e| {
-        RuntimeError::InitializationFailed(format!(
-          "Could not render configuration for component {}: error was {}",
-          cref.id(),
-          e
-        ))
+        RuntimeError::InitializationFailed(format!("Error initializing component {}: error was {}", cref.id(), e))
       })?
       .try_component()
       .map_err(|e| RuntimeError::ReferenceError(cref.id().to_owned(), e))?;
@@ -102,15 +95,8 @@ pub(crate) fn resolve_ref(
   let def = if let ComponentDefinition::Reference(cref) = component {
     app_config
       .resolve_binding(cref.id())
-      .ok_or_else(|| {
-        RuntimeError::InitializationFailed(format!("Could not find a component by the name of {}", cref.id()))
-      })?
       .map_err(|e| {
-        RuntimeError::InitializationFailed(format!(
-          "Could not render configuration for component {}: error was {}",
-          cref.id(),
-          e
-        ))
+        RuntimeError::InitializationFailed(format!("Error initializing component {}: error was {}", cref.id(), e))
       })?
       .try_component()
       .map_err(|e| RuntimeError::ReferenceError(cref.id().to_owned(), e))?

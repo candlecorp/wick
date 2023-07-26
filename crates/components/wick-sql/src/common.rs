@@ -33,10 +33,7 @@ pub(crate) fn gen_signature(
 }
 
 pub(crate) fn convert_url_resource(resolver: &Resolver, id: &str) -> Result<Url> {
-  let addr = resolver(id)
-    .ok_or_else(|| Error::ResourceNotFound(id.to_owned()))?
-    .and_then(|r| r.try_resource())
-    .map_err(Error::InvalidResource)?;
+  let addr = resolver(id).and_then(|r| r.try_resource())?;
 
   let resource: UrlResource = addr.into();
   resource.url().value().cloned().ok_or(Error::InvalidResourceConfig)

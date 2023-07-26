@@ -5,7 +5,6 @@ use flow_expression_parser::ast::{self, InstancePort, InstanceTarget};
 use flow_expression_parser::parse_id;
 use liquid_json::LiquidJsonValue;
 use option_utils::OptionUtils;
-use serde_json::Value;
 
 use crate::error::ManifestError;
 use crate::utils::{opt_str_to_ipv4addr, VecTryMapInto};
@@ -71,7 +70,6 @@ impl TryFrom<crate::v0::CollectionDefinition> for config::ComponentDefinition {
       #[allow(deprecated)]
       crate::v0::CollectionKind::WaPC => config::ComponentDefinition::Wasm(config::components::WasmComponent {
         reference: def.reference.clone().try_into()?,
-        permissions: json_struct_to_permissions(def.data.as_ref().and_then(|v| v.get("wasi").cloned()))?,
         config: def.data.map(Into::into),
         provide: Default::default(),
       }),
@@ -85,16 +83,6 @@ impl TryFrom<crate::v0::CollectionDefinition> for config::ComponentDefinition {
     };
     Ok(kind)
   }
-}
-
-fn json_struct_to_permissions(json_perms: Option<Value>) -> Result<config::components::Permissions> {
-  let perms = if let Some(json_perms) = json_perms {
-    serde_json::from_value(json_perms).map_err(crate::Error::Invalid)?
-  } else {
-    config::components::Permissions::default()
-  };
-
-  Ok(perms)
 }
 
 impl TryFrom<crate::v0::SchematicManifest> for config::FlowOperation {

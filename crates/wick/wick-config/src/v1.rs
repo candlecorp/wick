@@ -777,6 +777,11 @@ pub(crate) struct WasmComponentConfiguration {
 
   #[serde(rename = "ref")]
   pub(crate) reference: crate::v1::helpers::LocationReference,
+  /// Volumes to expose to the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) volumes: Vec<ExposedVolume>,
   /// Configuration necessary to provide when instantiating the component.
 
   #[serde(default)]
@@ -787,6 +792,16 @@ pub(crate) struct WasmComponentConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Volumes to expose to a component and the internal paths they map to.
+pub(crate) struct ExposedVolume {
+  /// The resource ID of the volume.
+  pub(crate) resource: String,
+  /// The path to map it to in the component.
+  pub(crate) path: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
