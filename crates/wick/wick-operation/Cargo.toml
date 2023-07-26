@@ -1,0 +1,22 @@
+[package]
+name = "wick-operation"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+include = ["src/lib.rs", "README.md"]
+license = "Apache-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "Proc macro for generating operation implementations"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true, features = ["full"] }
+proc-macro-crate = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+wick-logger = { workspace = true }

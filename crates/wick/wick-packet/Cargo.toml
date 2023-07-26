@@ -32,6 +32,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 wasmrs = { workspace = true }
+wasmrs-runtime = { workspace = true }
 wasmrs-frames = { workspace = true, features = ["derive_serde"] }
 wasmrs-rx = { workspace = true }
 wasmrs-codec = { workspace = true }

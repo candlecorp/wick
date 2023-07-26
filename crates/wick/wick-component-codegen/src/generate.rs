@@ -148,7 +148,7 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
     pub(crate) use wick_component::*;
 
     #[allow(unused)]
-    pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, Box<dyn std::error::Error + Send + Sync>>;
+    pub(crate) use wick_component::WickStream;
     pub use wick_component::flow_component::Context;
 
     #init

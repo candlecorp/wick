@@ -10,30 +10,6 @@ use crate::generate::{config, f, Direction};
 
 pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -> TokenStream {
   let outputs_name = id(&op_outputs_name(op));
-  let broadcast_err_statements = op.outputs().iter().map(|i| {
-    let field_name = id(&snake(&i.name));
-    quote! {
-      self.#field_name.error(&err);
-    }
-  });
-
-  let broadcast_open_statements = op.outputs().iter().map(|output| {
-    let name = &output.name;
-    let field_name = id(&snake(name));
-
-    quote! {
-      self.#field_name.open_bracket();
-    }
-  });
-
-  let broadcast_close_statements = op.outputs().iter().map(|output| {
-    let name = &output.name;
-    let field_name = id(&snake(name));
-
-    quote! {
-      self.#field_name.close_bracket();
-    }
-  });
 
   let output_port_fields = op
     .outputs()
@@ -44,6 +20,16 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
       quote! {pub(crate) #port_field_name: wick_packet::Output<#port_type>}
     })
     .collect_vec();
+
+  let output_port_fields_mut = op
+    .outputs()
+    .iter()
+    .map(|i| {
+      let port_field_name = id(&snake(&i.name));
+      quote! {&mut self.#port_field_name}
+    })
+    .collect_vec();
+
   let output_ports_new = op
     .outputs()
     .iter()
@@ -59,6 +45,20 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
     })
     .collect_vec();
 
+  let single_output_impl = if op.outputs().len() == 1 {
+    let output = op.outputs().first().unwrap();
+    let name = id(&snake(output.name()));
+    Some(quote! {
+      impl wick_component::SingleOutput for #outputs_name {
+        fn single_output(&mut self) -> &mut dyn wick_packet::Port {
+          &mut self.#name
+        }
+      }
+    })
+  } else {
+    None
+  };
+
   let outputs = f::gen_if(
     config.output_structs,
     || {
@@ -73,26 +73,20 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
       #(#output_port_fields,)*
     }
 
+    impl wick_component::Broadcast for #outputs_name {
+      fn outputs_mut(&mut self) -> wick_packet::OutputIterator<'_>{
+        wick_packet::OutputIterator::new(vec![#(#output_port_fields_mut),*])
+      }
+    }
+
+    #single_output_impl
+
+
     impl #outputs_name {
       pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
         Self {
           #(#output_ports_new,)*
         }
-      }
-
-      #[allow(unused)]
-      pub fn broadcast_open(&mut self) {
-        #(#broadcast_open_statements)*
-      }
-
-      #[allow(unused)]
-      pub fn broadcast_close(&mut self) {
-        #(#broadcast_close_statements)*
-      }
-
-      #[allow(unused)]
-      pub fn broadcast_err(&mut self, err: impl AsRef<str>) {
-        #(#broadcast_err_statements)*
       }
     }},
   );

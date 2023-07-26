@@ -118,7 +118,7 @@ pub use inherent::InherentData;
 #[cfg(feature = "invocation")]
 pub use invocation::Invocation;
 pub use metadata::{Flags, WickMetadata, CLOSE_BRACKET, DONE_FLAG, OPEN_BRACKET};
-pub use output::Output;
+pub use output::{Output, OutputIterator, Port, ValuePort};
 pub use packet::{from_raw_wasmrs, from_wasmrs, packetstream_to_wasmrs, Packet, PacketError, PacketPayload};
 pub use packet_stream::{into_packet, PacketSender, PacketStream};
 pub use stream_map::StreamMap;

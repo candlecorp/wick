@@ -8,6 +8,12 @@ rustup := `command -v rustup >/dev/null && echo true || echo false`
 # use #!{{python}} to ensure that the python path is correct across platforms.
 python := if os() == 'windows' { 'python' } else { '/usr/bin/env python3' }
 
+# The wick repository
+repository := "https://github.com/candlecorp/wick"
+
+# The root directory of this project
+wick_root := justfile_directory()
+
 set dotenv-load
 set positional-arguments
 set export
@@ -145,6 +151,18 @@ rustdoc:
   mkdir -p docs/static/rustdoc/
   rsync -av --delete --exclude=".*" target/doc/ docs/static/rustdoc/
 
+# Quickly generate a new rust WebAssembly example
+new-rust-example name path="examples/components":
+  echo "Generating new rust example: {{name}}"
+  echo "Note: This is optimized for macOS, if it breaks on your platform, please open an issue at {{repository}}"
+  cd {{path}} && cargo generate -p {{wick_root}}/templates/rust --name {{name}}
+
+  RELATIVE=$(realpath --relative-to={{wick_root}}/{{path}}/{{name}} {{wick_root}}); \
+    sed -E -i '' "s,([A-Za-z0-9_-]*) = { git = \\\"{{repository}}.git\\\",\\1 = { path = \\\"$RELATIVE/crates/wick/\\1\\\",g" "{{wick_root}}/{{path}}/{{name}}/Cargo.toml"; \
+    sed -E -i '' "s,wick := \\\"wick\\\",wick := \\\"cargo run --manifest-path=$RELATIVE/Cargo.toml -p wick-cli --\\\",g" "{{wick_root}}/{{path}}/{{name}}/justfile";
+
+  echo "New rust example generated at {{path}}/{{name}}"
+
 ##################################
 ### Private, dependency tasks. ###
 ##################################
@@ -191,6 +209,7 @@ _run-wasm-task task:
     "crates/integration/test-cli-trigger-component",
     "crates/integration/test-cli-with-db",
     "examples/http/middleware/request",
+    "examples/components/wasi-fs",
     "examples/http/wasm-http-call/wasm-component",
   ]
   for dir in wasm:
@@ -209,6 +228,7 @@ _wick-http-tests:
 _wick-component-tests:
   cargo run -p wick-cli -- test ./examples/components/hello-world.wick
   cargo run -p wick-cli -- test ./examples/components/composite-db-import.wick
+  DIR=./examples/components/wasi-fs/ cargo run -p wick-cli -- test ./examples/components/wasi-fs/component.wick
 
 # Run component-codegen unit tests
 _codegen-tests:
