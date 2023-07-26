@@ -76,7 +76,7 @@ wick-tests:
   just _wick-db-tests
 
 # Run tests suitable for CI
-ci-tests: wasm
+ci-tests: install-dev wasm
   just unit-tests
 
 # Run unit, integration, and slow tests
