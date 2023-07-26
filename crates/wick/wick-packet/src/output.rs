@@ -1,8 +1,9 @@
 use tracing::warn;
 use wasmrs::{PayloadError, RawPayload};
+use wasmrs_runtime::ConditionallySend;
 use wasmrs_rx::{FluxChannel, Observer};
 
-use crate::Packet;
+use crate::{Packet, PacketPayload};
 
 pub struct Output<T>
 where
@@ -19,6 +20,70 @@ impl std::fmt::Debug for Output<()> {
   }
 }
 
+pub trait Port: ConditionallySend {
+  fn send_packet(&mut self, value: Packet);
+
+  fn send_raw_payload(&mut self, value: PacketPayload) {
+    self.send_packet(Packet::new_for_port(self.name(), value, 0));
+  }
+
+  fn name(&self) -> &str;
+
+  fn open_bracket(&mut self) {
+    self.send_packet(Packet::open_bracket(self.name()));
+  }
+
+  fn close_bracket(&mut self) {
+    self.send_packet(Packet::close_bracket(self.name()));
+  }
+
+  fn done(&mut self) {
+    self.send_packet(Packet::done(self.name()));
+  }
+
+  fn error(&mut self, err: &str) {
+    self.send_packet(Packet::err(self.name(), err));
+  }
+}
+
+pub trait ValuePort<T>: Port
+where
+  T: serde::Serialize,
+{
+  fn send(&mut self, value: &T) {
+    self.send_packet(Packet::encode(self.name(), value));
+  }
+
+  fn send_result(&mut self, value: Result<T, impl std::fmt::Display>) {
+    match value {
+      Ok(value) => self.send(&value),
+      Err(err) => self.error(err.to_string().as_str()),
+    }
+  }
+}
+
+impl<T> Port for Output<T>
+where
+  T: serde::Serialize + ConditionallySend,
+{
+  fn send_packet(&mut self, value: Packet) {
+    let value = value.set_port(&self.name);
+    if let Err(e) = self.channel.send_result(value.into()) {
+      warn!(
+        port = self.name,
+        error = %e,
+        "failed sending packet on output channel, this is a bug"
+      );
+    };
+  }
+
+  fn name(&self) -> &str {
+    &self.name
+  }
+}
+
+impl<T> ValuePort<T> for Output<T> where T: serde::Serialize + ConditionallySend {}
+
 impl<T> Output<T>
 where
   T: serde::Serialize,
@@ -30,41 +95,34 @@ where
       _phantom: Default::default(),
     }
   }
+}
 
-  pub fn send(&mut self, value: &T) {
-    self.send_raw(Packet::encode(&self.name, value));
+/// Iterator over a mutable set of output ports
+#[must_use]
+pub struct OutputIterator<'a> {
+  outputs: Vec<&'a mut dyn Port>,
+}
+
+impl<'a> std::fmt::Debug for OutputIterator<'a> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("OutputIterator")
+      .field("outputs", &self.outputs.iter().map(|a| a.name()).collect::<Vec<_>>())
+      .finish()
   }
-
-  pub fn send_result(&mut self, value: Result<T, impl std::fmt::Display>) {
-    match value {
-      Ok(value) => self.send(&value),
-      Err(err) => self.error(err.to_string()),
-    }
+}
+impl<'a> OutputIterator<'a> {
+  /// Create a new [OutputIterator]
+  pub fn new(outputs: Vec<&'a mut dyn Port>) -> Self {
+    Self { outputs }
   }
+}
 
-  pub fn send_raw(&mut self, value: Packet) {
-    if let Err(e) = self.channel.send_result(value.into()) {
-      warn!(
-        port = self.name,
-        error = %e,
-        "failed sending packet on output channel, this is a bug"
-      );
-    };
-  }
+impl<'a> IntoIterator for OutputIterator<'a> {
+  type Item = &'a mut dyn Port;
 
-  pub fn open_bracket(&mut self) {
-    self.send_raw(Packet::open_bracket(&self.name));
-  }
+  type IntoIter = std::vec::IntoIter<Self::Item>;
 
-  pub fn close_bracket(&mut self) {
-    self.send_raw(Packet::close_bracket(&self.name));
-  }
-
-  pub fn done(&mut self) {
-    self.send_raw(Packet::done(&self.name));
-  }
-
-  pub fn error(&mut self, err: impl AsRef<str>) {
-    self.send_raw(Packet::err(&self.name, err));
+  fn into_iter(self) -> Self::IntoIter {
+    self.outputs.into_iter()
   }
 }

@@ -138,7 +138,7 @@ pub use wick_packet as packet;
 //
 //
 /// Re-export of [wick_packet::Base64Bytes] as [Bytes].
-pub use wick_packet::Base64Bytes as Bytes;
+pub use wick_packet::{Base64Bytes as Bytes, Packet, PacketSender, Port, ValuePort};
 //
 //
 /// Other re-exported crates;
@@ -148,6 +148,11 @@ pub use {flow_component, paste, wasmrs, wasmrs_codec, wasmrs_runtime as runtime,
 //
 /// Generic boxed-error type.
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
+
+//
+//
+/// A stream of `Result<T,BoxError>`.
+pub type WickStream<T> = wasmrs_rx::BoxFlux<T, BoxError>;
 
 /// Create a stream of `Result<T, BoxError>` that yields one value and ends.
 ///
@@ -187,6 +192,17 @@ where
 {
   tokio_stream::iter(i.into_iter().map(|i| Ok(i)))
 }
+
+mod adapters;
+/// Functions and macros for common operation types.
+pub use adapters::*;
+
+mod outputs;
+pub use outputs::{Broadcast, SingleOutput};
+//
+//
+/// The proc macro to automatically implement common operaton types.
+pub use wick_operation::operation;
 
 /// Useful userland utilities that can be exported via `use wick_component::prelude::*`
 #[cfg(deprecated = "Use `wick_component::*` instead")]

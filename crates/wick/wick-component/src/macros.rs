@@ -168,6 +168,20 @@ macro_rules! payload_fan_out {
     };
 }
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! propagate_if_error_then {
+  ($result:expr, $outputs:ident, $bail:expr) => {
+    match $result {
+      Ok(value) => value,
+      Err(err) => {
+        $outputs.broadcast_err(err.to_string());
+        $bail;
+      }
+    }
+  };
+}
+
 /// Unwrap a [Result] value to its [Result::Ok] value or propagate the error to the downstream inputs and
 /// short circuit the logic.
 ///
@@ -192,32 +206,51 @@ macro_rules! payload_fan_out {
 #[macro_export]
 macro_rules! propagate_if_error {
   ($result:expr, $outputs:ident, continue) => {
-    match $result {
-      Ok(value) => value,
-      Err(err) => {
-        $outputs.broadcast_err(err.to_string());
-        continue;
-      }
-    }
+    $crate::propagate_if_error_then!($result, $outputs, continue)
   };
   ($result:expr,$outputs:ident, break) => {
-    match $result {
-      Ok(value) => value,
-      Err(err) => {
-        $outputs.broadcast_err(err.to_string());
-        break;
-      }
-    }
+    $crate::propagate_if_error_then!($result, $outputs, break)
   };
   ($result:expr,$outputs:ident, return $rv:expr) => {
-    match $result {
-      Ok(value) => value,
-      Err(err) => {
-        $outputs.broadcast_err(err.to_string());
-        return $rv;
-      }
-    }
+    $crate::propagate_if_error_then!($result, $outputs, $rv)
   };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! if_done_close_then {
+  ([$($id:ident),*], $do:expr) => {{
+    $(
+      if $id.is_done() || $id.is_close_bracket(){
+        $do;
+      }
+    )*
+  }};
+}
+
+#[allow(missing_docs)]
+#[macro_export]
+macro_rules! await_next_ok_or {
+  ($stream:ident, $outputs:ident, continue) => {{
+    let Some(next) = ($stream.next().await) else { break };
+    let packet = propagate_if_error!(next, $outputs, continue);
+    packet
+  }};
+  ($stream:ident, $outputs:ident, break) => {{
+    let Some(next) = ($stream.next().await) else { break };
+    let packet = propagate_if_error!(next, $outputs, break);
+    packet
+  }};
+}
+
+#[allow(missing_docs)]
+#[macro_export]
+macro_rules! make_substream_window {
+  ($outputs:ident, $block:block) => {{
+    $outputs.broadcast_open();
+    $block;
+    $outputs.broadcast_close();
+  }};
 }
 
 #[cfg(test)]

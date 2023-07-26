@@ -7,20 +7,9 @@ members = [
   "crates/components/*",
   "crates/bins/*",
   "crates/wick/*",
-  "tests/*"
+  "tests/*",
 ]
-exclude = [
-  "crates/wick/wick-rpc/codegen",
-  "crates/integration/test-baseline-component",
-  "crates/integration/test-cli-trigger-component",
-  "crates/integration/test-cli-with-db",
-  "crates/integration/test-http-trigger-component",
-  "tests/template",
-  "tests/testdata",
-  "examples/http/middleware/request",
-  "examples/http/wasm-http-call/wasm-component",
-  "examples/cli/cli-maker",
-]
+exclude = ["crates/wick/wick-rpc/codegen", "tests/template", "tests/testdata"]
 
 [profile.release-with-debug]
 inherits = "release"
@@ -45,6 +34,7 @@ wick-host = { path = "./crates/wick/wick-host", version = "0.4.0" }
 wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.15.0" }
 wick-invocation-server = { path = "./crates/wick/wick-invocation-server", version = "0.1.0" }
 wick-oci-utils = { path = "./crates/wick/wick-oci-utils", version = "0.3.0", default-features = false }
+wick-operation = { path = "./crates/wick/wick-operation", version = "0.1.0", default-features = false }
 wick-package = { path = "./crates/wick/wick-package", version = "0.2.0" }
 wick-packet = { path = "./crates/wick/wick-packet", version = "0.15.0", default-features = false }
 wick-settings = { path = "./crates/wick/wick-settings", version = "0.1.0" }
@@ -74,24 +64,24 @@ wick-interface-cli = { path = "./crates/interfaces/wick-interface-cli", version 
 wick-sql = { path = "./crates/components/wick-sql", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
 # wasmtime (must align with version in wasmrs)
-wasmtime = { version = "10.0.1", default-features = false, features = [
+wasmtime = { version = "11.0", default-features = false, features = [
   "cache",
   "jitdump",
   "parallel-compilation",
   "cranelift",
-  "vtune"
+  "vtune",
 ] }
-wasmtime-wasi = { version = "10.0.1", features = ["sync"] }
-wasi-common = { version = "10.0.1" }
+wasmtime-wasi = { version = "11.0", features = ["sync"] }
+wasi-common = { version = "11.0" }
 # wasmrs
-wasmrs = { version = "0.13.0" }
-wasmrs-codec = { version = "0.13.0" }
-wasmrs-frames = { version = "0.13.0" }
-wasmrs-guest = { version = "0.13.0" }
-wasmrs-host = { version = "0.13.0" }
-wasmrs-runtime = { version = "0.13.0" }
-wasmrs-rx = { version = "0.13.0" }
-wasmrs-wasmtime = { version = "0.13.0" }
+wasmrs = { version = "0.14.0" }
+wasmrs-codec = { version = "0.14.0" }
+wasmrs-frames = { version = "0.14.0" }
+wasmrs-guest = { version = "0.14.0" }
+wasmrs-host = { version = "0.14.0" }
+wasmrs-runtime = { version = "0.14.0" }
+wasmrs-rx = { version = "0.14.0" }
+wasmrs-wasmtime = { version = "0.14.0" }
 #
 # Other
 #

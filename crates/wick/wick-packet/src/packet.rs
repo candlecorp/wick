@@ -120,10 +120,7 @@ impl Packet {
 
   /// Encode a value into a [Packet] for the given port.
   pub fn encode<T: Serialize>(port: impl AsRef<str>, data: T) -> Self {
-    match wasmrs_codec::messagepack::serialize(&data) {
-      Ok(bytes) => Self::new_for_port(port, PacketPayload::Ok(Some(bytes.into())), 0),
-      Err(err) => Self::new_for_port(port, PacketPayload::Err(PacketError::new(err.to_string())), 0),
-    }
+    Self::new_for_port(port, PacketPayload::encode(data), 0)
   }
 
   /// Get the flags for this packet.
@@ -267,6 +264,14 @@ impl PacketPayload {
     Self::Err(PacketError::new(err))
   }
 
+  /// Encode a value into a [PacketPayload]
+  pub fn encode<T: Serialize>(data: T) -> Self {
+    match wasmrs_codec::messagepack::serialize(&data) {
+      Ok(bytes) => PacketPayload::Ok(Some(bytes.into())),
+      Err(err) => PacketPayload::err(err.to_string()),
+    }
+  }
+
   /// Try to deserialize a [Packet] into the target type
   pub fn decode<T: DeserializeOwned>(self) -> Result<T, Error> {
     match self {
@@ -282,6 +287,10 @@ impl PacketPayload {
       PacketPayload::Ok(None) => Err(crate::Error::NoData),
       PacketPayload::Err(err) => Err(crate::Error::PayloadError(err)),
     }
+  }
+
+  pub fn err(msg: impl AsRef<str>) -> Self {
+    Self::Err(PacketError::new(msg))
   }
 
   /// Partially process a [Packet] as [Type].

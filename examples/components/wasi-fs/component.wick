@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://github.com/candlecorp/wick/releases/download/nightly/schema.json
+---
+name: 'wasi-fs'
+kind: wick/component@v1
+metadata:
+  version: '0.0.1'
+resources:
+  - name: ROOT
+    resource:
+      kind: wick/resource/volume@v1
+      path: '{{ctx.root_config.root}}'
+component:
+  kind: wick/component/wasmrs@v1
+  ref: build/component.signed.wasm
+  volumes:
+    - resource: ROOT
+      path: /
+  with:
+    - name: root
+      type: string
+  operations:
+    - name: read_string
+      inputs:
+        - name: filename
+          type: string
+      outputs:
+        - name: output
+          type: string
+    - name: read_bytes
+      inputs:
+        - name: filename
+          type: string
+      outputs:
+        - name: output
+          type: bytes
+    - name: write_string
+      inputs:
+        - name: filename
+          type: string
+        - name: contents
+          type: string
+      outputs:
+        - name: bytes_written
+          type: int
+    # - name: write_bytes
+    #   inputs:
+    #     - name: filename
+    #       type: string
+    #     - name: contents
+    #       type: bytes
+    #   outputs:
+    #     - name: bytes_written
+    #       type: int
+tests:
+  - with:
+      root: '{{ctx.env.DIR}}'
+    cases:
+      - operation: read_string
+        inputs:
+          - name: filename
+            value: tests/testdata/file.txt
+        outputs:
+          - name: output
+            value: '# Hello World!'
+      - operation: read_bytes
+        inputs:
+          - name: filename
+            value: tests/testdata/file.txt
+        outputs:
+          - name: output
+            value: "{{'# Hello World!'| base64_encode}}"
+      - operation: write_string
+        inputs:
+          - name: filename
+            value: tests/testdata/custom.txt
+          - name: contents
+            value: "{{'now' | date: '%Y-%m-%d %H' }}"
+        outputs:
+          - name: bytes_written
+            value: 13
+      - operation: read_string
+        inputs:
+          - name: filename
+            value: tests/testdata/custom.txt
+        outputs:
+          - name: output
+            value: "{{'now' | date: '%Y-%m-%d %H' }}"
