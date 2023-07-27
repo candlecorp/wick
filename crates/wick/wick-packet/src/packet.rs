@@ -4,16 +4,8 @@ use wasmrs::{BoxFlux, Metadata, Payload, PayloadError, RawPayload};
 use wick_interface_types::Type;
 
 use crate::metadata::DONE_FLAG;
-use crate::{
-  Base64Bytes,
-  ComponentReference,
-  Error,
-  PacketStream,
-  TypeWrapper,
-  WickMetadata,
-  CLOSE_BRACKET,
-  OPEN_BRACKET,
-};
+use crate::wrapped_type::coerce;
+use crate::{Base64Bytes, Error, PacketStream, TypeWrapper, WickMetadata, CLOSE_BRACKET, OPEN_BRACKET};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[must_use]
@@ -295,37 +287,8 @@ impl PacketPayload {
 
   /// Partially process a [Packet] as [Type].
   pub fn type_wrapper(self, sig: Type) -> Result<TypeWrapper, Error> {
-    let val = match sig {
-      Type::I8 => TypeWrapper::new(sig, self.decode::<i8>()?.into()),
-      Type::I16 => TypeWrapper::new(sig, self.decode::<i16>()?.into()),
-      Type::I32 => TypeWrapper::new(sig, self.decode::<i32>()?.into()),
-      Type::I64 => TypeWrapper::new(sig, self.decode::<i64>()?.into()),
-      Type::U8 => TypeWrapper::new(sig, self.decode::<u8>()?.into()),
-      Type::U16 => TypeWrapper::new(sig, self.decode::<u16>()?.into()),
-      Type::U32 => TypeWrapper::new(sig, self.decode::<u32>()?.into()),
-      Type::U64 => TypeWrapper::new(sig, self.decode::<u64>()?.into()),
-      Type::F32 => TypeWrapper::new(sig, self.decode::<f32>()?.into()),
-      Type::F64 => TypeWrapper::new(sig, self.decode::<f64>()?.into()),
-      Type::Bool => TypeWrapper::new(sig, self.decode::<bool>()?.into()),
-      Type::String => TypeWrapper::new(sig, self.decode::<String>()?.into()),
-      Type::Datetime => TypeWrapper::new(sig, self.decode::<String>()?.into()),
-      Type::Bytes => TypeWrapper::new(sig, self.decode::<Vec<u8>>()?.into()),
-      Type::Named(_) => TypeWrapper::new(sig, self.decode::<serde_json::Value>()?),
-      Type::List { .. } => TypeWrapper::new(sig, self.decode::<Vec<serde_json::Value>>()?.into()),
-      Type::Optional { .. } => TypeWrapper::new(sig, self.decode::<Option<serde_json::Value>>()?.into()),
-      Type::Map { .. } => TypeWrapper::new(
-        sig,
-        serde_json::Value::Object(self.decode::<serde_json::Map<String, serde_json::Value>>()?),
-      ),
-      #[allow(deprecated)]
-      Type::Link { .. } => TypeWrapper::new(
-        sig,
-        serde_json::Value::String(self.decode::<ComponentReference>()?.to_string()),
-      ),
-      Type::Object => TypeWrapper::new(sig, self.decode::<serde_json::Value>()?),
-      Type::AnonymousStruct(_) => unimplemented!(),
-    };
-    Ok(val)
+    let val = coerce(self.decode::<serde_json::Value>()?, &sig)?;
+    Ok(TypeWrapper::new(sig, val))
   }
 
   pub fn bytes(&self) -> Option<&Base64Bytes> {
@@ -495,7 +458,9 @@ impl From<Packet> for Result<RawPayload, PayloadError> {
 mod test {
   use anyhow::Result;
   use serde_json::Value;
+  use wick_interface_types::Type;
 
+  use super::PacketPayload;
   use crate::{Base64Bytes, Packet};
 
   #[test]
@@ -520,6 +485,20 @@ mod test {
     println!("{:?}", packet);
     let res = packet.decode_value()?;
     assert_eq!(res, expected);
+    Ok(())
+  }
+
+  #[rstest::rstest]
+  #[case("2", Type::String, Value::String("2".into()))]
+  #[case(2, Type::String, Value::String("2".into()))]
+  fn test_type_wrapper<T>(#[case] value: T, #[case] ty: Type, #[case] expected: Value) -> Result<()>
+  where
+    T: serde::Serialize + std::fmt::Debug,
+  {
+    let packet = PacketPayload::encode(value);
+    println!("{:?}", packet);
+    let wrapper = packet.type_wrapper(ty)?;
+    assert_eq!(wrapper.into_inner(), expected);
     Ok(())
   }
 

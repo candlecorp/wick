@@ -11,6 +11,9 @@ python := if os() == 'windows' { 'python' } else { '/usr/bin/env python3' }
 # The wick repository
 repository := "https://github.com/candlecorp/wick"
 
+# The `wick` command to ensure that the build from source is used.
+wick := "cargo run -p wick-cli --"
+
 # The root directory of this project
 wick_root := justfile_directory()
 
@@ -92,7 +95,7 @@ integration: integration-setup && integration-teardown
 integration-setup:
   rm -rf ~/.cache/wick
   just _run-integration-task up init
-  cargo run -p wick-cli -- reg push --debug ./crates/integration/test-baseline-component/component.yaml --insecure-oci=${DOCKER_REGISTRY}
+  {{wick}} reg push --debug ./crates/integration/test-baseline-component/component.yaml --insecure-oci=${DOCKER_REGISTRY}
 
 # Tear down the environment for integration tests
 integration-teardown:
@@ -218,17 +221,18 @@ _run-wasm-task task:
 
 # Run `wick` tests for db components
 _wick-db-tests:
-  cargo run -p wick-cli -- test ./examples/db/postgres-numeric-tests.wick
+  {{wick}} test ./examples/db/postgres-numeric-tests.wick
+  {{wick}} test ./tests/cli-tests/tests/cmd/db/azuresql-tx-test.wick
 
 # Run `wick` tests for http components
 _wick-http-tests:
-  cargo run -p wick-cli -- test ./examples/http/wasm-http-call/harness.wick
+  {{wick}} test ./examples/http/wasm-http-call/harness.wick
 
 # Run `wick` tests for generic components
 _wick-component-tests:
-  cargo run -p wick-cli -- test ./examples/components/hello-world.wick
-  cargo run -p wick-cli -- test ./examples/components/composite-db-import.wick
-  DIR=./examples/components/wasi-fs/ cargo run -p wick-cli -- test ./examples/components/wasi-fs/component.wick
+  {{wick}} test ./examples/components/hello-world.wick
+  {{wick}} test ./examples/components/composite-db-import.wick
+  DIR=./examples/components/wasi-fs/ {{wick}} test ./examples/components/wasi-fs/component.wick
 
 # Run component-codegen unit tests
 _codegen-tests:

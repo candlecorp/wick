@@ -1,0 +1,178 @@
+name: my_component
+kind: wick/component@v1
+resources:
+  - name: DBADDR
+    resource:
+      kind: wick/resource/url@v1
+      url: mssql://SA:{{ ctx.root_config.password }}@{{ ctx.root_config.host }}:{{ ctx.root_config.port }}/wick_test
+component:
+  kind: wick/component/sql@v1
+  resource: DBADDR
+  tls: false
+  with:
+    - name: password
+      type: string
+    - name: host
+      type: string
+    - name: port
+      type: string
+  operations:
+    - name: delete_test_users
+      inputs:
+        - name: min
+          type: i32
+        - name: max
+          type: i32
+      query: |
+        DELETE FROM users WHERE id > ${min} AND id < ${max};
+        SELECT 1 as OK;
+    - name: get_test_users
+      inputs:
+        - name: min
+          type: i32
+        - name: max
+          type: i32
+      query: |
+        SELECT * FROM users WHERE id > ${min} AND id < ${max} ORDER BY id ASC;
+    - name: set_user_columns
+      inputs:
+        - name: columns
+          type: string[]
+      query: SET IDENTITY_INSERT users ON; INSERT INTO users(id, name, email) OUTPUT INSERTED.* VALUES (cast($1 as int) , $2, $3)
+      arguments:
+        - columns...
+    - name: set_user_columns_rollback
+      inputs:
+        - name: columns
+          type: string[]
+      query: SET IDENTITY_INSERT users ON; INSERT INTO users(id, name, email) OUTPUT INSERTED.* VALUES (cast($1 as int) , $2, $3)
+      on_error: Rollback
+      arguments:
+        - columns...
+tests:
+  - with:
+      password: '{{ ctx.env.TEST_PASSWORD }}'
+      host: '{{ ctx.env.TEST_HOST }}'
+      port: '{{ ctx.env.MSSQL_PORT }}'
+    cases:
+      - operation: delete_test_users
+        inputs:
+          - name: min
+            value: 10000
+          - name: max
+            value: 10100
+        outputs:
+          - name: output
+            value:
+              OK: 1
+      - operation: set_user_columns
+        inputs:
+          - name: columns
+            value: [10001, 'test1', 'test1@foo.com']
+          - name: columns
+            value: [10002, 'test2', 'test2@foo.com']
+          - name: columns
+            value: [10003, 'test3', 'test3@foo.com']
+        outputs:
+          - name: output
+            value:
+              id: 10001
+              name: test1
+              email: test1@foo.com
+          - name: output
+            value:
+              id: 10002
+              name: test2
+              email: 'test2@foo.com'
+          - name: output
+            value:
+              id: 10003
+              name: test3
+              email: 'test3@foo.com'
+      - operation: delete_test_users
+        inputs:
+          - name: min
+            value: 10000
+          - name: max
+            value: 10100
+        outputs:
+          - name: output
+            value:
+              OK: 1
+      - operation: set_user_columns
+        inputs:
+          - name: columns
+            value: [10001, 'test1', 'test1@foo.com']
+          - name: columns
+            value: [10001, 'test2', 'test2@foo.com'] # duplicate id
+          - name: columns
+            value: [10003, 'test3', 'test3@foo.com']
+        outputs:
+          - name: output
+            value:
+              id: 10001
+              name: test1
+              email: test1@foo.com
+          - name: output
+            error: SQL Query failed, check log for details
+          - name: output
+            value:
+              id: 10003
+              name: test3
+              email: 'test3@foo.com'
+      - operation: get_test_users
+        inputs:
+          - name: min
+            value: 10000
+          - name: max
+            value: 10100
+        outputs:
+          - name: output
+            value:
+              id: 10001
+              name: test1
+              email: test1@foo.com
+          - name: output
+            value:
+              id: 10003
+              name: test3
+              email: test3@foo.com
+      - operation: delete_test_users
+        inputs:
+          - name: min
+            value: 10000
+          - name: max
+            value: 10100
+        outputs:
+          - name: output
+            value:
+              OK: 1
+      # TODO: Fix rollback & transactions
+      # - operation: set_user_columns_rollback
+      #   inputs:
+      #     - name: columns
+      #       value: [10001, 'test1', 'test1@foo.com']
+      #     - name: columns
+      #       value: [10001, 'test2', 'test2@foo.com'] # duplicate id
+      #     - name: columns
+      #       value: [10003, 'test3', 'test3@foo.com']
+      #   outputs:
+      #     - name: output
+      #       value:
+      #         id: 10001
+      #         name: test1
+      #         email: test1@foo.com
+      #     - name: output
+      #       error: SQL Query failed, check log for details
+      #     - name: output
+      #       value:
+      #         id: 10003
+      #         name: test3
+      #         email: 'test3@foo.com'
+      # - operation: get_test_users
+      #   inputs:
+      #     - name: min
+      #       value: 10000
+      #     - name: max
+      #       value: 10100
+      #   outputs: []

@@ -1,2 +1,3 @@
 /target
 /build
+/tests/testdata/custom.txt

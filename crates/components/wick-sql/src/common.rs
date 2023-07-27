@@ -152,8 +152,9 @@ pub(crate) trait ClientConnection: Send + Sync {
     'a: 'b;
 
   async fn exec(&mut self, stmt: String, bound_args: Vec<SqlWrapper>) -> Result<u64>;
-  async fn finish(&mut self) -> Result<()>;
+  async fn finish(&mut self, behavior: ErrorBehavior) -> Result<()>;
   async fn handle_error(&mut self, e: Error, behavior: ErrorBehavior) -> Result<()>;
+  async fn start(&mut self, behavior: ErrorBehavior) -> Result<()>;
 }
 
 #[derive()]
@@ -182,6 +183,10 @@ impl<'conn> Connection<'conn> {
 
   pub(crate) async fn handle_error(&mut self, e: Error, behavior: ErrorBehavior) -> Result<()> {
     self.0.handle_error(e, behavior).await
+  }
+
+  pub(crate) async fn start(&mut self, behavior: ErrorBehavior) -> Result<()> {
+    self.0.start(behavior).await
   }
 
   #[allow(clippy::unused_async)]

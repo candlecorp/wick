@@ -184,9 +184,15 @@ impl Component for SqlComponent {
       tokio::spawn(async move {
         let start = SystemTime::now();
         let span = invocation.span.clone();
-        if let Err(e) = handle_call(&client, opdef, input_streams, tx.clone(), &stmt, span).await {
+        let Ok(mut connection) = client.get_connection().await else {
           invocation.trace(|| {
-            error!(error = %e, "error in sql operation");
+            error!("could not get connection to database");
+          });
+          return;
+        };
+        if let Err(e) = handle_call(&mut connection, opdef, input_streams, tx.clone(), &stmt, span).await {
+          invocation.trace(|| {
+            error!(error = %e, "error handling sql operation");
           });
           let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
         }
@@ -224,8 +230,8 @@ fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Err
   Ok(())
 }
 
-async fn handle_call<'a, 'b>(
-  client: &'a Client,
+async fn handle_call<'a, 'b, 'c>(
+  connection: &'a mut Connection<'c>,
   opdef: SqlOperationKind,
   input_streams: Vec<PacketStream>,
   tx: PacketSender,
@@ -236,13 +242,12 @@ where
   'b: 'a,
 {
   let error_behavior = opdef.on_error();
-  let mut connection = match error_behavior {
-    ErrorBehavior::Commit | ErrorBehavior::Rollback => client.get_connection().await?, // TODO make transaction
-    _ => client.get_connection().await?,
-  };
 
-  let result = handle_stream(&mut connection, opdef, input_streams, tx, stmt, span).await;
+  connection.start(error_behavior).await?;
+
+  let result = handle_stream(connection, opdef, input_streams, tx, stmt, span.clone()).await;
   if let Err(e) = result {
+    span.in_scope(|| error!(error = %e, "error in sql operation"));
     let err = Error::OperationFailed(e.to_string());
     connection.handle_error(e, error_behavior).await?;
     return Err(err);
@@ -316,7 +321,7 @@ where
       if opdef.on_error() == ErrorBehavior::Ignore {
         let _ = tx.send(Packet::err("output", e.to_string()));
       } else {
-        return Err(Error::OperationFailed(e.to_string()));
+        return Err(Error::ErrorInStream(e.to_string()));
       }
     };
 

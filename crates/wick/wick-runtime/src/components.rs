@@ -15,14 +15,7 @@ use uuid::Uuid;
 use wick_component_wasm::component::{ComponentSetupBuilder, WasmComponent};
 use wick_component_wasm::error::LinkError;
 use wick_config::config::components::ManifestComponent;
-use wick_config::config::{
-  BoundInterface,
-  Metadata,
-  Permissions,
-  PermissionsBuilder,
-  ResourceDefinition,
-  WasmComponentImplementation,
-};
+use wick_config::config::{BoundInterface, Metadata, Permissions, PermissionsBuilder, WasmComponentImplementation};
 use wick_config::{AssetReference, FetchOptions, Resolver, WickConfiguration};
 use wick_packet::validation::expect_configuration_matches;
 use wick_packet::{Entity, Invocation, RuntimeConfig};
