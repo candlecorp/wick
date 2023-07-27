@@ -142,7 +142,7 @@ mod integration_test {
   #[test_logger::test(tokio::test)]
   async fn test_int() -> Result<()> {
     let mut conn = connect().await;
-    let row = conn.fetch_one("select cast(3 as integer);").await.unwrap();
+    let row = conn.fetch_one("select cast(3 as integer);").await?;
     let row = read_row(&row);
     assert_eq!(row[0].as_i64().unwrap(), 3);
     Ok(())
@@ -155,8 +155,7 @@ mod integration_test {
 
     let row = conn
       .fetch_one("select cast(1 as tinyint) as foo, cast('hello' as nvarchar(50)) as bar")
-      .await
-      .unwrap();
+      .await?;
     let row = SerMapRow::from(row);
     let row = serde_json::to_string(&row).unwrap();
     assert_eq!(row, r#"{"foo":1,"bar":"hello"}"#);

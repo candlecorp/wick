@@ -1,3 +1,6 @@
+use serde_json::Value;
+use wick_interface_types::Type;
+
 use crate::PacketError;
 
 /// Errors originating from WASM components.
@@ -45,7 +48,7 @@ pub enum Error {
 
   /// Returned when trying to decode a non-JSON object into [crate::RuntimeConfig].
   #[error("Can only convert JSON Objects to a operation and component configuration, got '{0}'")]
-  BadJson(serde_json::Value),
+  BadJson(Value),
 
   /// Couldn't retrieve a complete set of packets from a [crate::StreamMap]
   #[error("Could not retrieve a complete set of packets. Stream '{0}' failed to provide a packet: '{1}'")]
@@ -65,6 +68,9 @@ pub enum Error {
   #[cfg(feature = "datetime")]
   #[error("Error parsing date '{0}', date must be milliseconds from the UNIX epoch")]
   ParseDateMillis(u64),
+
+  #[error("Could not coerce value {value} to a {desired}")]
+  Coersion { value: Value, desired: Type },
 }
 
 impl Error {

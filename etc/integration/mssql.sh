@@ -38,7 +38,7 @@ init() {
   echo "Creating table 'users'"
   docker exec -i $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -d $db -Q "CREATE TABLE users (id INT IDENTITY(1,1) PRIMARY KEY, name VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL);"
   echo "Creating user 'Test User'"
-  docker exec -i $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -d $db -Q "INSERT INTO users (name, email) VALUES ('Test User', 'test_user@example.com');"
+  docker exec -i $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -d $db -Q "SET IDENTITY_INSERT users ON; INSERT INTO users (id, name, email) VALUES (1, 'Test User', 'test_user@example.com');"
   echo "Creating table 'num_types'"
   docker exec -i $container_name /opt/mssql-tools/bin/sqlcmd -S localhost -U $username -P "$test_pw" -d $db -Q "CREATE TABLE num_types (u8 tinyint, i16 smallint, i32 int, i64 bigint, db_decimal decimal, db_numeric numeric, f32 real, f64 float);"
 }

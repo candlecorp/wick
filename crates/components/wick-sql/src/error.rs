@@ -49,6 +49,12 @@ pub enum Error {
   #[error("Operation failed: {0}")]
   OperationFailed(String),
 
+  #[error("SQL Query failed, check log for details")]
+  QueryFailed,
+
+  #[error("SQL error reported within stream: {0}")]
+  ErrorInStream(String),
+
   #[error("Query failed: {0}")]
   Failed(String),
 

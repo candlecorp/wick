@@ -1,9 +1,9 @@
 pub use async_trait::async_trait;
+pub use wick_component::flow_component::Context;
+#[allow(unused)]
+pub(crate) use wick_component::WickStream;
 #[allow(unused)]
 pub(crate) use wick_component::*;
-#[allow(unused)]
-pub(crate) type WickStream<T> = wick_component::wasmrs_rx::BoxFlux<T, Box<dyn std::error::Error + Send + Sync>>;
-pub use wick_component::flow_component::Context;
 #[no_mangle]
 #[cfg(target_family = "wasm")]
 extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_host_frame_len: u32) {

@@ -142,7 +142,12 @@ impl DatabaseProvider for SqlXComponent {
 
 #[async_trait::async_trait]
 impl ClientConnection for CtxPool {
-  async fn finish(&mut self) -> Result<(), Error> {
+  async fn finish(&mut self, _behavior: ErrorBehavior) -> Result<(), Error> {
+    // todo
+    Ok(())
+  }
+
+  async fn start(&mut self, _behavior: ErrorBehavior) -> Result<(), Error> {
     // todo
     Ok(())
   }

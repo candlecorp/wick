@@ -41,13 +41,33 @@ impl Context {
 
 #[async_trait::async_trait]
 impl<'a> ClientConnection for PooledConnection<'a, ConnectionManager> {
-  async fn finish(&mut self) -> Result<(), Error> {
+  async fn finish(&mut self, _behavior: ErrorBehavior) -> Result<(), Error> {
     // todo
     Ok(())
   }
 
-  async fn handle_error(&mut self, _e: Error, _behavior: ErrorBehavior) -> Result<(), Error> {
-    // todo
+  async fn start(&mut self, behavior: ErrorBehavior) -> Result<(), Error> {
+    match behavior {
+      ErrorBehavior::Commit | ErrorBehavior::Rollback => {
+        self.simple_query("BEGIN TRAN").await.map_err(|_| Error::TxStart)?;
+      }
+      _ => {}
+    }
+    Ok(())
+  }
+
+  async fn handle_error(&mut self, e: Error, behavior: ErrorBehavior) -> Result<(), Error> {
+    match behavior {
+      ErrorBehavior::Commit => {
+        error!(error=%e, on_error=?behavior, "error in sql operation, committing transaction");
+        self.simple_query("COMMIT").await.map_err(|_| Error::TxCommit)?;
+      }
+      ErrorBehavior::Rollback => {
+        error!(error=%e, on_error=?behavior, "error in sql operation, rolling back transaction");
+        self.simple_query("ROLLBACK").await.map_err(|_| Error::TxCommit)?;
+      }
+      _ => {}
+    }
     Ok(())
   }
 
@@ -85,11 +105,16 @@ impl<'a> ClientConnection for PooledConnection<'a, ConnectionManager> {
       result
         .filter(|row| futures::future::ready(!matches!(row, Ok(tiberius::QueryItem::Metadata(_)))))
         .map(|row| {
-          row.map_err(|e| Error::OperationFailed(e.to_string())).and_then(|row| {
-            row
-              .into_row()
-              .map_or_else(|| Err(Error::NoRow), |row| Ok(row_to_json(&row)))
-          })
+          row
+            .map_err(|e| {
+              tracing::Span::current().in_scope(|| tracing::error!(error=%e,"sql error in stream"));
+              Error::QueryFailed
+            })
+            .and_then(|row| {
+              row
+                .into_row()
+                .map_or_else(|| Err(Error::NoRow), |row| Ok(row_to_json(&row)))
+            })
         })
         .boxed(),
     )
