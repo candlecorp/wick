@@ -39,7 +39,7 @@ pub(crate) async fn build_component_host(
     fetch_opts.set_cache_dir(path_dir.join(env.local().cache()));
   };
 
-  let mut manifest = WickConfiguration::fetch_all(path, fetch_opts).await?;
+  let mut manifest = WickConfiguration::fetch(path, fetch_opts).await?;
   manifest.set_root_config(root_config);
   let manifest = manifest.finish()?.try_component_config()?;
 

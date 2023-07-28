@@ -17,7 +17,7 @@ async fn baseline_component() -> Result<()> {
 
   let fetch_options = wick_config::FetchOptions::default();
 
-  let mut root_manifest = WickConfiguration::fetch_all(manifest.to_string_lossy(), fetch_options).await?;
+  let mut root_manifest = WickConfiguration::fetch(manifest.to_string_lossy(), fetch_options).await?;
   root_manifest.set_root_config(Some(RuntimeConfig::from(HashMap::from([(
     "default_err".into(),
     "err".into(),

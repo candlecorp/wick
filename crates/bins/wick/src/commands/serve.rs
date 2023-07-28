@@ -35,7 +35,7 @@ pub(crate) async fn handle(
 
   let with_config = parse_config_string(opts.with.as_deref())?;
 
-  let mut manifest = WickConfiguration::fetch_all(&opts.location, fetch_options).await?;
+  let mut manifest = WickConfiguration::fetch(&opts.location, fetch_options).await?;
   manifest.set_root_config(with_config);
   let manifest = manifest.finish()?.try_component_config()?;
 

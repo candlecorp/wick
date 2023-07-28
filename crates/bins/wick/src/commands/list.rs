@@ -30,7 +30,7 @@ pub(crate) async fn handle(
 ) -> Result<StructuredOutput> {
   let fetch_options: wick_oci_utils::OciOptions = opts.oci.clone().into();
 
-  let manifest = WickConfiguration::fetch_all(&opts.location, fetch_options)
+  let manifest = WickConfiguration::fetch(&opts.location, fetch_options)
     .await?
     .finish()?
     .try_component_config()?;
