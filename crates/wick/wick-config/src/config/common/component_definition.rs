@@ -6,6 +6,7 @@ use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
 use wick_packet::RuntimeConfig;
 
+use super::template_config::Renderable;
 use crate::config::{self, ExecutionSettings, LiquidJsonConfig};
 use crate::error::ManifestError;
 
@@ -173,9 +174,10 @@ impl ComponentDefinition {
       ComponentDefinition::HighLevelComponent(_) => None,
     };
   }
+}
 
-  /// Render the resource configuration
-  pub(crate) fn render_config(
+impl Renderable for ComponentDefinition {
+  fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,

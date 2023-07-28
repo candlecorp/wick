@@ -15,6 +15,7 @@ use wick_packet::RuntimeConfig;
 
 use super::common::package_definition::PackageConfig;
 use super::{ImportBinding, TestConfiguration};
+use crate::config::template_config::Renderable;
 use crate::config::{BoundInterface, ResourceBinding};
 use crate::import_cache::{setup_cache, ImportCache};
 use crate::utils::{make_resolver, RwOption};
@@ -152,12 +153,18 @@ impl ComponentConfiguration {
 
   /// Set the source location of the configuration.
   pub fn set_source(&mut self, source: &Path) {
-    let mut source = source.to_path_buf();
-    self.source = Some(source.clone());
+    let source = source.to_path_buf();
+    self.source = Some(source);
+  }
+
+  pub(super) fn update_baseurls(&self) {
+    #[allow(clippy::expect_used)]
+    let mut source = self.source.clone().expect("No source set for this configuration");
     // Source is (should be) a file, so pop the filename before setting the baseurl.
     if !source.is_dir() {
       source.pop();
     }
+
     self.set_baseurl(&source);
   }
 

@@ -424,6 +424,7 @@ impl WickConfiguration {
       WickConfiguration::Types(_) => (),
       WickConfiguration::Tests(_) => (),
     }
+    self.update_baseurls();
     Ok(self)
   }
 
@@ -462,6 +463,15 @@ impl WickConfiguration {
       WickConfiguration::App(v) => v.set_source(src),
       WickConfiguration::Types(v) => v.set_source(src),
       WickConfiguration::Tests(v) => v.set_source(src),
+    }
+  }
+
+  fn update_baseurls(&self) {
+    match self {
+      WickConfiguration::Component(v) => v.update_baseurls(),
+      WickConfiguration::App(v) => v.update_baseurls(),
+      WickConfiguration::Types(v) => v.update_baseurls(),
+      WickConfiguration::Tests(v) => v.update_baseurls(),
     }
   }
 
