@@ -2152,13 +2152,13 @@
 
     "SqlQueryKind": {
       "oneOf": [
-        { "$ref": "#/$defs/v1/SqlOperationDefinition" },
+        { "$ref": "#/$defs/v1/SqlQueryOperationDefinition" },
         { "$ref": "#/$defs/v1/SqlExecOperationDefinition" }
       ]
     },
 
-    "SqlOperationDefinition": {
-      "$anchor": "#v1/SqlOperationDefinition",
+    "SqlQueryOperationDefinition": {
+      "$anchor": "#v1/SqlQueryOperationDefinition",
       "additionalProperties": false,
       "type": "object",
       "properties": {
@@ -2385,7 +2385,7 @@
 
     "Codec": {
       "$anchor": "#v1/Codec",
-      "enum": ["Json", "Raw", "FormData", "Xml"]
+      "enum": ["Json", "Raw", "FormData", "Text"]
     },
 
     "HttpMethod": {

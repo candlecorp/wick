@@ -1586,7 +1586,7 @@ pub(crate) struct SqlComponent {
 #[serde(deny_unknown_fields)]
 #[serde(untagged)]
 pub(crate) enum SqlQueryKind {
-  /// A variant representing a [SqlOperationDefinition] type.
+  /// A variant representing a [SqlQueryOperationDefinition] type.
   #[serde(rename = "SqlQueryOperationDefinition")]
   SqlQueryOperationDefinition(SqlQueryOperationDefinition),
   /// A variant representing a [SqlExecOperationDefinition] type.
@@ -1784,12 +1784,12 @@ pub(crate) struct HttpClientOperationDefinition {
 pub(crate) enum Codec {
   /// JSON data
   Json = 0,
-  /// Raw
+  /// Raw bytes
   Raw = 1,
   /// Form Data
   FormData = 2,
-  /// XML Data
-  Xml = 3,
+  /// Raw text
+  Text = 3,
 }
 
 impl Default for Codec {
@@ -1804,7 +1804,7 @@ impl FromPrimitive for Codec {
       0 => Self::Json,
       1 => Self::Raw,
       2 => Self::FormData,
-      3 => Self::Xml,
+      3 => Self::Text,
       _ => {
         return None;
       }
@@ -1816,7 +1816,7 @@ impl FromPrimitive for Codec {
       0 => Self::Json,
       1 => Self::Raw,
       2 => Self::FormData,
-      3 => Self::Xml,
+      3 => Self::Text,
       _ => {
         return None;
       }

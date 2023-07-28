@@ -916,14 +916,14 @@ enum Codec {
   "JSON data"
   Json = 0 as "json",
 
-  "Raw"
+  "Raw bytes"
   Raw = 1 as "raw",
 
   "Form Data"
   FormData = 2 as "form-data",
 
-  "XML Data"
-  Xml = 3 as "xml-data",
+  "Raw text"
+  Text = 3 as "text",
 }
 
 "Supported HTTP methods"

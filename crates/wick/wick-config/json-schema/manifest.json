@@ -2607,15 +2607,15 @@
       "SqlQueryKind": {
         "oneOf": [
           {
-            "$ref": "#/$defs/v1/SqlOperationDefinition"
+            "$ref": "#/$defs/v1/SqlQueryOperationDefinition"
           },
           {
             "$ref": "#/$defs/v1/SqlExecOperationDefinition"
           }
         ]
       },
-      "SqlOperationDefinition": {
-        "$anchor": "#v1/SqlOperationDefinition",
+      "SqlQueryOperationDefinition": {
+        "$anchor": "#v1/SqlQueryOperationDefinition",
         "additionalProperties": false,
         "type": "object",
         "properties": {
@@ -2825,7 +2825,7 @@
           "Json",
           "Raw",
           "FormData",
-          "Xml"
+          "Text"
         ]
       },
       "HttpMethod": {
