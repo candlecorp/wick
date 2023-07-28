@@ -29,14 +29,13 @@ macro_rules! unary_simple {
 }
 
 /// Operation helper for common binary operations that have one output.
-pub async fn simple<'f, 'c, INPUT, OUTPUT, CONTEXT, OUTPORT, F, E>(
+pub async fn simple<'c, INPUT, OUTPUT, CONTEXT, OUTPORT, F, E>(
   input: WickStream<Packet>,
   outputs: &mut OUTPORT,
   ctx: &'c CONTEXT,
-  func: &'f F,
+  func: &'static F,
 ) -> Result<(), E>
 where
-  'f: 'static,
   CONTEXT: Clone + wasmrs_runtime::ConditionallySendSync,
   F: Fn(INPUT, CONTEXT) -> BoxFuture<Result<OUTPUT, E>> + wasmrs_runtime::ConditionallySendSync,
   OUTPORT: SingleOutput + wasmrs_runtime::ConditionallySendSync,
@@ -52,14 +51,13 @@ where
 
 #[cfg_attr(not(target_family = "wasm"), async_recursion::async_recursion)]
 #[cfg_attr(target_family = "wasm", async_recursion::async_recursion(?Send))]
-async fn inner<'f, 'out, 'c, INPUT, OUTPUT, CONTEXT, OUTPORT, F, E>(
+async fn inner<'out, 'c, INPUT, OUTPUT, CONTEXT, OUTPORT, F, E>(
   mut input_stream: WickStream<Packet>,
   outputs: &'out mut OUTPORT,
   ctx: &'c CONTEXT,
-  func: &'f F,
+  func: &'static F,
 ) -> WickStream<Packet>
 where
-  'f: 'static,
   CONTEXT: Clone + wasmrs_runtime::ConditionallySendSync,
   F: Fn(INPUT, CONTEXT) -> BoxFuture<Result<OUTPUT, E>> + wasmrs_runtime::ConditionallySendSync,
   OUTPORT: SingleOutput + wasmrs_runtime::ConditionallySendSync,
