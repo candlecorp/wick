@@ -1,3 +1,4 @@
+#!/usr/bin/env wick
 ---
 kind: wick/app@v1
 name: static_file_server

@@ -86,6 +86,7 @@
 // !!END_LINTS
 // Add exceptions here
 
+use std::path::PathBuf;
 use std::thread::sleep;
 
 use anyhow::Result;
@@ -183,7 +184,24 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
   #[cfg(not(debug_assertions))]
   panic::setup(human_panic::PanicStyle::Human);
 
-  let mut cli = Cli::parse();
+  let mut args = std::env::args().collect::<Vec<_>>();
+  // first arg is always the command name, so get the first argument after.
+  if let Some(first) = args.get(1) {
+    // If the first real argument contains a dot or any slash, make the default subcommand `wick run`
+    if first.contains('.') || first.contains('/') || first.contains('\\') {}
+  }
+
+  let matches = <Cli as clap::CommandFactory>::command().try_get_matches_from(&args);
+  if let Err(e) = matches {
+    // If we have an invalid subcommand...
+    if matches!(e.kind(), clap::error::ErrorKind::InvalidSubcommand) {
+      // If we have an invalid subcommand and the subcommand is a filename that exists, make the default subcommand `wick run`
+      if args.get(1).map_or_else(|| false, |arg| PathBuf::from(arg).exists()) {
+        args.insert(1, "run".to_owned());
+      }
+    }
+  }
+  let mut cli = Cli::parse_from(args);
   let options = cli.output.clone();
 
   // Do a preliminary logger init to catch any logs from the local settings.
