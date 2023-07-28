@@ -33,15 +33,14 @@ macro_rules! binary_paired_right_stream {
 }
 
 /// Operation helper for common for binary operations that pair single packets with potential streams of packets.
-pub async fn paired_right_stream<'f, 'c, LEFT, RIGHT, OUTPUT, CONTEXT, OUTPORT, F, E>(
+pub async fn paired_right_stream<'c, LEFT, RIGHT, OUTPUT, CONTEXT, OUTPORT, F, E>(
   left: WickStream<Packet>,
   right: WickStream<Packet>,
   outputs: &mut OUTPORT,
   ctx: &'c CONTEXT,
-  func: &'f F,
+  func: &'static F,
 ) -> Result<(), E>
 where
-  'f: 'static,
   CONTEXT: Clone + wasmrs_runtime::ConditionallySendSync,
   F: Fn(LEFT, WickStream<RIGHT>, CONTEXT) -> BoxFuture<Result<OUTPUT, E>> + wasmrs_runtime::ConditionallySendSync,
   OUTPORT: SingleOutput + wasmrs_runtime::ConditionallySendSync,
@@ -58,15 +57,14 @@ where
 
 #[cfg_attr(not(target_family = "wasm"), async_recursion::async_recursion)]
 #[cfg_attr(target_family = "wasm", async_recursion::async_recursion(?Send))]
-async fn inner<'f, 'out, 'c, LEFT, RIGHT, OUTPUT, CONTEXT, OUTPORT, F, E>(
+async fn inner<'out, 'c, LEFT, RIGHT, OUTPUT, CONTEXT, OUTPORT, F, E>(
   mut l_stream: WickStream<Packet>,
   mut r_stream: WickStream<Packet>,
   outputs: &'out mut OUTPORT,
   ctx: &'c CONTEXT,
-  func: &'f F,
+  func: &'static F,
 ) -> (WickStream<Packet>, WickStream<Packet>)
 where
-  'f: 'static,
   CONTEXT: Clone + wasmrs_runtime::ConditionallySendSync,
   F: Fn(LEFT, WickStream<RIGHT>, CONTEXT) -> BoxFuture<Result<OUTPUT, E>> + wasmrs_runtime::ConditionallySendSync,
   OUTPORT: SingleOutput + wasmrs_runtime::ConditionallySendSync,
