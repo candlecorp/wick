@@ -272,9 +272,7 @@ async fn handle(
           unimplemented!("raw bodies not supported yet")
         }
         Codec::FormData => request_builder.form(&body),
-        Codec::Xml => request_builder
-          .body(body.to_string())
-          .header("Content-Type", "application/xml"),
+        Codec::Text => request_builder.body(body.to_string()),
       }
     } else {
       request_builder
@@ -380,7 +378,7 @@ fn output_task(
         let _ = tx.send(Packet::done("body"));
       }
       Codec::FormData => unreachable!("Form data on the response is not supported."),
-      Codec::Xml => {
+      Codec::Text => {
         let bytes: Vec<Base64Bytes> = match body_stream.try_collect().await {
           Ok(r) => r,
           Err(e) => {
@@ -390,15 +388,15 @@ fn output_task(
         };
         let bytes = bytes.concat();
 
-        let xml = match String::from_utf8(bytes) {
+        let text = match String::from_utf8(bytes) {
           Ok(r) => r,
           Err(e) => {
             let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
             return;
           }
         };
-        span.in_scope(|| trace!(%xml, "response body"));
-        let _ = tx.send(Packet::encode("body", xml));
+        span.in_scope(|| trace!(%text, "response body"));
+        let _ = tx.send(Packet::encode("body", text));
         let _ = tx.send(Packet::done("body"));
       }
     }
@@ -445,7 +443,7 @@ mod test {
 
   static GET_OP: &str = "get";
   static POST_OP: &str = "post";
-  static POST_OP_XML: &str = "post_xml";
+  static POST_OP_TEXT: &str = "post_text";
 
   fn get_config() -> (AppConfiguration, HttpClientComponentConfig) {
     let mut config = HttpClientComponentConfigBuilder::default()
@@ -498,7 +496,7 @@ mod test {
 
     config.operations_mut().push(
       HttpClientOperationDefinition::new_post(
-        POST_OP_XML,
+        POST_OP_TEXT,
         "post?query1={{input}}",
         vec![Field::new("input", Type::String), Field::new("payload", Type::String)],
         Some(json!({"key": "{{input}}","other":"{{number | each: '{\"value\": {{el}} }' | json | output }}"}).into()),
@@ -616,13 +614,13 @@ mod test {
     }
 
     #[test_logger::test(tokio::test)]
-    async fn test_xml_post_request() -> Result<()> {
+    async fn test_text_post_request() -> Result<()> {
       let (app_config, component_config) = get_config();
       let comp = get_component(app_config, component_config).await;
       let packets = packet_stream!(("input", "SENTINEL"), ("payload", "<xml>FOOBAR</xml>"));
       let invocation = Invocation::test(
-        "test_xml_post_request",
-        Entity::local(POST_OP_XML),
+        "test_text_post_request",
+        Entity::local(POST_OP_TEXT),
         packets,
         Default::default(),
       )?;
