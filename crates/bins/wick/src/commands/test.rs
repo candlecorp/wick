@@ -49,7 +49,7 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let oci_opts: OciOptions = opts.oci.clone().into();
-  let root_manifest = WickConfiguration::fetch_all(&opts.location, oci_opts.clone())
+  let root_manifest = WickConfiguration::fetch(&opts.location, oci_opts.clone())
     .await?
     .into_inner()
     .try_component_config()?;
@@ -57,7 +57,7 @@ pub(crate) async fn handle(
   let mut suite = TestSuite::from_configuration(root_manifest.tests())?;
 
   let test_files: Vec<_> = futures::future::join_all(opts.tests.iter().map(|path| {
-    WickConfiguration::fetch_all(path, oci_opts.clone())
+    WickConfiguration::fetch(path, oci_opts.clone())
       .and_then(|config| futures::future::ready(config.finish().and_then(|c| c.try_test_config())))
   }))
   .await

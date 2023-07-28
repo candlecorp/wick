@@ -53,7 +53,7 @@ component:
     #       type: int
 tests:
   - with:
-      root: '{{ctx.env.DIR}}'
+      root: '.'
     cases:
       - operation: read_string
         inputs:

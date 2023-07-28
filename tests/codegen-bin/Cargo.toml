@@ -12,21 +12,10 @@ publish = false
 
 [dependencies]
 wick-component-codegen = { workspace = true }
+wick-logger = { workspace = true }
 
 [[bin]]
 name = "test-codegen"
 path = "src/main.rs"
 
 [build-dependencies]
-# wick-rpc = { workspace = true }
-# tracing = { workspace = true }
-# futures = { workspace = true }
-# test-logger = { workspace = true }
-# tokio = { workspace = true, features = ["macros", "process", "rt"] }
-# wick-logger = { workspace = true }
-# clap = { version = "3.0", features = ["derive", "env"] }
-# pretty_assertions = { workspace = true }
-# wick-component-cli = { workspace = true }
-# tonic = { workspace = true }
-# wick-invocation-server = { workspace = true }
-# tokio-stream = { workspace = true }

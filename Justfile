@@ -232,7 +232,7 @@ _wick-http-tests:
 _wick-component-tests:
   {{wick}} test ./examples/components/hello-world.wick
   {{wick}} test ./examples/components/composite-db-import.wick
-  DIR=./examples/components/wasi-fs/ {{wick}} test ./examples/components/wasi-fs/component.wick
+  {{wick}} test ./examples/components/wasi-fs/component.wick
 
 # Run component-codegen unit tests
 _codegen-tests:

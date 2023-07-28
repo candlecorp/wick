@@ -1,3 +1,5 @@
+use wick_logger::LoggingOptions;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   let spec = std::env::args().nth(1).unwrap();
   let dir = std::env::args().nth(2).unwrap();
@@ -6,6 +8,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn gen(spec: &str, dir: &str) -> Result<(), Box<dyn std::error::Error>> {
+  let _guard = wick_logger::init(&LoggingOptions {
+    verbose: true,
+    silly: true,
+    level: wick_logger::LogLevel::Trace,
+    log_json: false,
+    log_dir: None,
+    otlp_endpoint: None,
+    app_name: "codegen-bin".to_owned(),
+    global: true,
+  });
   println!("Generating code from {} in {}", spec, dir);
   wick_component_codegen::configure().out_dir(dir).generate(spec)?;
 

@@ -3,7 +3,7 @@ network:
   collections:
     - namespace: wapc
       kind: WaPC
-      reference: ../../integration/test-baseline-component/build/baseline.signed.wasm
+      reference: ../../../../../integration/test-baseline-component/build/baseline.signed.wasm
       data:
         default_err: 'error from global-collection-def.yaml'
   schematics:

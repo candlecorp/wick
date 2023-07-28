@@ -222,7 +222,6 @@ impl asset_container::AssetManager for Volume {
   }
 
   fn set_baseurl(&self, baseurl: &std::path::Path) {
-    #[allow(clippy::option_if_let_else)]
     if let Some(path) = &self.path.value {
       path.update_baseurl(baseurl);
       match self.path() {
@@ -235,8 +234,6 @@ impl asset_container::AssetManager for Volume {
           tracing::warn!(%path,error=%e,"volume path could not be resolved");
         }
       }
-    } else {
-      tracing::error!("could not update baseurl: {}", baseurl.display());
     }
   }
 

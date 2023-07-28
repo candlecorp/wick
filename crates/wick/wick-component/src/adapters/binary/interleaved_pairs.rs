@@ -17,7 +17,7 @@ macro_rules! binary_interleaved_pairs {
   ($name:ident) => {
     #[async_trait::async_trait(?Send)]
     impl $name::Operation for Component {
-      type Error = anyhow::Error;
+      type Error = Box<dyn std::error::Error + 'static>;
       type Outputs = $name::Outputs;
       type Config = $name::Config;
 

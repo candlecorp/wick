@@ -104,9 +104,11 @@ pub(crate) fn resolve_configuration(src: &str, source: &Option<PathBuf>) -> Resu
     0 => {
       let host_config = serde_yaml::from_str::<v0::HostManifest>(src)
         .map_err(|e| Error::YamlError(source.clone(), e.to_string(), e.location()))?;
-      Ok(UninitializedConfiguration::new(WickConfiguration::Component(
-        host_config.try_into()?,
-      )))
+      let mut config = WickConfiguration::Component(host_config.try_into()?);
+      if let Some(src) = source {
+        config.set_source(src);
+      }
+      Ok(UninitializedConfiguration::new(config))
     }
     1 => {
       let base_config = serde_yaml::from_str::<v1::WickConfig>(src)

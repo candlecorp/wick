@@ -148,6 +148,7 @@ impl WickConfiguration {
       .path()
       .unwrap_or_else(|e| PathBuf::from(format!("<ERROR:{}>", e)));
     let config = WickConfiguration::load_from_bytes(&bytes, &Some(source))?;
+    config.manifest.update_baseurls();
     match &config.manifest {
       WickConfiguration::Component(c) => {
         c.setup_cache(options).await?;
