@@ -40,8 +40,12 @@ impl State {
 
       if last_update > EventLoop::SLOW_TX_TIMEOUT && !meta.have_warned() {
         let active_instances = tx.active_instances().iter().map(|i| i.id()).collect::<Vec<_>>();
-        warn!(%tx_id, ?active_instances, "slow tx: no packet received in a long time");
-        meta.set_have_warned();
+        if active_instances.is_empty() {
+          cleanup.push(*tx_id);
+        } else {
+          warn!(%tx_id, ?active_instances, "slow tx: no packet received in a long time");
+          meta.set_have_warned();
+        }
       }
       if last_update > EventLoop::STALLED_TX_TIMEOUT {
         match tx.check_stalled() {
