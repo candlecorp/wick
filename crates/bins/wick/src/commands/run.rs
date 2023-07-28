@@ -64,7 +64,7 @@ pub(crate) async fn handle(
     fetch_opts.set_cache_dir(path_dir.join(xdg.local().cache()));
   };
 
-  let mut builder = WickConfiguration::fetch_all(&opts.path, fetch_opts.clone())
+  let mut builder = WickConfiguration::fetch(&opts.path, fetch_opts.clone())
     .instrument(span.clone())
     .await?;
 

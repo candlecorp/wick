@@ -148,3 +148,11 @@ fn value_to_string(value: &Value) -> Result<String, ManifestError> {
     serde_json::Value::Object(_) => Err(ManifestError::TemplateStructure),
   }
 }
+
+pub(crate) trait Renderable {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError>;
+}

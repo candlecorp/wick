@@ -10,6 +10,7 @@ use serde::de::DeserializeOwned;
 use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_packet::RuntimeConfig;
 
+use crate::config::template_config::Renderable;
 use crate::config::{
   ImportBinding,
   ImportDefinition,

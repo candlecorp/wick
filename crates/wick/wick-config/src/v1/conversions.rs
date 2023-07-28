@@ -775,7 +775,7 @@ impl TryFrom<config::Volume> for v1::Volume {
   type Error = ManifestError;
   fn try_from(value: config::Volume) -> Result<Self> {
     Ok(Self {
-      path: value.path.to_string(),
+      path: value.unrender()?,
     })
   }
 }
@@ -1015,7 +1015,7 @@ impl From<config::common::Codec> for v1::Codec {
       config::common::Codec::Json => Self::Json,
       config::common::Codec::Raw => Self::Raw,
       config::common::Codec::FormData => Self::FormData,
-      config::common::Codec::Xml => Self::Xml,
+      config::common::Codec::Text => Self::Text,
     }
   }
 }
@@ -1026,7 +1026,7 @@ impl From<v1::Codec> for config::common::Codec {
       v1::Codec::Json => Self::Json,
       v1::Codec::Raw => Self::Raw,
       v1::Codec::FormData => Self::FormData,
-      v1::Codec::Xml => Self::Xml,
+      v1::Codec::Text => Self::Text,
     }
   }
 }
@@ -1250,9 +1250,7 @@ impl TryFrom<v1::ResourceDefinition> for ResourceDefinition {
 
 impl From<v1::Volume> for config::Volume {
   fn from(value: v1::Volume) -> Self {
-    config::Volume {
-      path: TemplateConfig::new_template(value.path),
-    }
+    config::Volume::new(value.path)
   }
 }
 

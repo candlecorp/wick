@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use wick_packet::RuntimeConfig;
 
+use super::template_config::Renderable;
 use crate::config::{self};
 use crate::error::ManifestError;
 
@@ -35,9 +36,10 @@ impl ImportDefinition {
       ImportDefinition::Types(_) => None,
     }
   }
+}
 
-  /// Render the configuration associated with this import.
-  pub(crate) fn render_config(
+impl Renderable for ImportDefinition {
+  fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,

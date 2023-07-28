@@ -6,6 +6,7 @@ use url::Url;
 use wick_asset_reference::AssetReference;
 use wick_packet::RuntimeConfig;
 
+use super::template_config::Renderable;
 use crate::config::TemplateConfig;
 use crate::error::{ManifestError, ReferenceError};
 
@@ -86,9 +87,8 @@ pub enum ResourceDefinition {
   Volume(Volume),
 }
 
-impl ResourceDefinition {
-  /// Render the resource configuration
-  pub(crate) fn render_config(
+impl Renderable for ResourceDefinition {
+  fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
@@ -100,7 +100,9 @@ impl ResourceDefinition {
       ResourceDefinition::Volume(v) => v.render_config(root_config, env),
     }
   }
+}
 
+impl ResourceDefinition {
   #[must_use]
   pub fn kind(&self) -> ResourceKind {
     match self {
@@ -169,10 +171,19 @@ impl TryFrom<String> for UrlResource {
 /// A filesystem or network volume.
 #[must_use]
 pub struct Volume {
-  pub(crate) path: TemplateConfig<AssetReference>,
+  path: TemplateConfig<AssetReference>,
 }
 
 impl Volume {
+  pub fn new(template: String) -> Self {
+    let template = TemplateConfig::new_template(template);
+    Self { path: template }
+  }
+
+  pub(crate) fn unrender(&self) -> Result<String, ManifestError> {
+    self.path.unrender()
+  }
+
   pub fn path(&self) -> Result<PathBuf, ManifestError> {
     if let Some(path) = &self.path.value {
       Ok(path.path()?)
@@ -183,9 +194,10 @@ impl Volume {
       )))
     }
   }
+}
 
-  /// Render the resource configuration
-  pub(crate) fn render_config(
+impl Renderable for Volume {
+  fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
@@ -210,8 +222,21 @@ impl asset_container::AssetManager for Volume {
   }
 
   fn set_baseurl(&self, baseurl: &std::path::Path) {
+    #[allow(clippy::option_if_let_else)]
     if let Some(path) = &self.path.value {
       path.update_baseurl(baseurl);
+      match self.path() {
+        Ok(p) => {
+          if !p.is_dir() {
+            tracing::warn!(%path,"volume path is not a directory");
+          }
+        }
+        Err(e) => {
+          tracing::warn!(%path,error=%e,"volume path could not be resolved");
+        }
+      }
+    } else {
+      tracing::error!("could not update baseurl: {}", baseurl.display());
     }
   }
 
@@ -242,21 +267,22 @@ impl UrlResource {
   pub fn into_inner(self) -> TemplateConfig<Url> {
     self.url
   }
+}
 
-  /// Render the resource configuration
-  pub(crate) fn render_config(
+impl std::fmt::Display for UrlResource {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.url)
+  }
+}
+
+impl Renderable for UrlResource {
+  fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     self.url.set_value(self.url.render(root_config, env)?);
     Ok(())
-  }
-}
-
-impl std::fmt::Display for UrlResource {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", self.url)
   }
 }
 
@@ -284,9 +310,10 @@ impl TcpPort {
   pub fn address(&self) -> String {
     format!("{}:{}", self.host, self.port)
   }
+}
 
-  /// Render the resource configuration
-  pub(crate) fn render_config(
+impl Renderable for TcpPort {
+  fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
@@ -321,9 +348,10 @@ impl UdpPort {
   pub fn address(&self) -> String {
     format!("{}:{}", self.host, self.port)
   }
+}
 
-  /// Render the resource configuration
-  pub(crate) fn render_config(
+impl Renderable for UdpPort {
+  fn render_config(
     &mut self,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
