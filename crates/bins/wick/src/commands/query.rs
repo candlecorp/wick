@@ -115,7 +115,16 @@ pub(crate) async fn handle(
       match val {
         Ok(result) => {
           let result: Value = result.into();
-          lines.push(result.to_string());
+          if let Value::String(v) = &result {
+            if opts.raw_output {
+              lines.push(v.clone());
+            } else {
+              lines.push(result.to_string());
+            }
+          } else {
+            lines.push(result.to_string());
+          }
+
           json.push(result);
         }
         Err(e) => error!("Error: {}", e),

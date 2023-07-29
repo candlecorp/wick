@@ -2933,6 +2933,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mslnk"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86c97310150b7f496a93f31690da7822b99d95ff68ca9d30fb09d3ad54375c76"
+dependencies = [
+ "bitflags 1.3.2",
+ "byteorder",
+ "log",
+]
+
+[[package]]
 name = "multimap"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5090,6 +5101,7 @@ name = "test-codegen-bin"
 version = "0.1.0"
 dependencies = [
  "wick-component-codegen",
+ "wick-logger",
 ]
 
 [[package]]
@@ -6608,6 +6620,7 @@ dependencies = [
  "human-panic",
  "jaq-core",
  "markup-converter",
+ "mslnk",
  "nkeys",
  "openssl",
  "option-utils",

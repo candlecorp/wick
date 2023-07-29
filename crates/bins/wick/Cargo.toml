@@ -13,7 +13,7 @@ cross = ["openssl/vendored"]
 console = [
   "wick-logger/console",
   "tokio/full",
-  "tokio/tracing"
+  "tokio/tracing",
 ] # Build with RUSTFLAGS="--cfg tokio_unstable"
 mem-profiler = ["dhat"]
 
@@ -53,6 +53,9 @@ option-utils = { workspace = true }
 structured-output = { workspace = true }
 regex = { workspace = true }
 dhat = { version = "0.3.2", optional = true }
+
+[target.'cfg(windows)'.dependencies]
+mslnk = { workspace = true }
 
 [dev-dependencies]
 test_bin = { workspace = true }

@@ -466,7 +466,7 @@ impl std::fmt::Display for ConnectionTargetExpression {
     #[allow(clippy::option_if_let_else)]
     if let Some(_data) = &self.data {
       // TODO: Implement data syntax. There's no way of stringifying this yet.
-      Err(std::fmt::Error::default())
+      Err(std::fmt::Error)
     } else {
       write!(f, "{}.{}", self.instance, self.port)
     }

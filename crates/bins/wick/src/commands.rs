@@ -1,4 +1,5 @@
 pub(crate) mod config;
+pub(crate) mod install;
 pub(crate) mod invoke;
 pub(crate) mod key;
 pub(crate) mod list;
@@ -54,6 +55,10 @@ pub(crate) enum CliCommand {
   /// Create new app and component configurations.
   #[clap(subcommand, name = "new")]
   New(new::SubCommands),
+
+  /// Install a wick app to the local system.
+  #[clap(name = "install")]
+  Install(install::Options),
 
   /// Show information about wick's configuration or manifest details.
   #[clap(subcommand, name = "show")]
