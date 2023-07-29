@@ -91,8 +91,8 @@ impl AssetReference {
 
     let base_dir = base_dir.normalize().map_err(|_| Error::NotFound(path.clone()))?;
     let mut base_dir = base_dir.as_path().to_string_lossy().to_string();
-    if !base_dir.ends_with('/') {
-      base_dir.push('/');
+    if !base_dir.ends_with(std::path::MAIN_SEPARATOR_STR) {
+      base_dir.push_str(std::path::MAIN_SEPARATOR_STR);
     }
 
     path.strip_prefix(&base_dir).map_or_else(
@@ -156,6 +156,11 @@ impl Asset for AssetReference {
 
   #[allow(clippy::expect_used)]
   fn update_baseurl(&self, baseurl: &Path) {
+    tracing::warn!(
+      location = self.location,
+      "update baseurl final: {}",
+      baseurl.to_string_lossy()
+    );
     let baseurl = if baseurl.starts_with(".") {
       let mut path = std::env::current_dir().expect("failed to get current dir");
       path.push(baseurl);
@@ -188,7 +193,7 @@ impl Asset for AssetReference {
           return Err(assets::Error::IsDirectory(path.clone()));
         }
 
-        debug!(path = ?path, "fetching local asset");
+        debug!(path = %path.display(), "fetching local asset");
         let mut file = tokio::fs::File::open(&path)
           .await
           .map_err(|err| assets::Error::FileOpen(path.clone(), err.to_string()))?;
@@ -198,7 +203,7 @@ impl Asset for AssetReference {
         Ok(bytes)
       } else {
         let path = location;
-        debug!(path = ?path, "fetching remote asset");
+        debug!(%path, "fetching remote asset");
         let (cache_loc, bytes) = retrieve_remote(&path, options)
           .await
           .map_err(|err| assets::Error::RemoteFetch(path, err.to_string()))?;
@@ -305,11 +310,12 @@ mod test {
     location.set_baseurl(&crate_dir);
     println!("crate_dir: {}", crate_dir.to_string_lossy());
     println!("actual: {:#?}", location);
-    let mut expected = PathBuf::from(&crate_dir);
-    expected.push("../src/utils.rs");
+    let expected = PathBuf::from(&crate_dir);
+    let expected = expected.join("..").join("src").join("utils.rs");
     println!("expected: {}", expected.to_string_lossy());
+    println!("actual: {}", location.path()?.to_string_lossy());
 
-    let expected = expected.canonicalize()?;
+    let expected = expected.normalize()?;
     assert_eq!(location.path()?, expected);
 
     Ok(())
