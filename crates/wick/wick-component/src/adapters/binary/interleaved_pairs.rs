@@ -61,14 +61,14 @@ where
 
 #[cfg_attr(not(target_family = "wasm"), async_recursion::async_recursion)]
 #[cfg_attr(target_family = "wasm", async_recursion::async_recursion(?Send))]
-async fn inner<'f, 'out, 'c, LEFT, RIGHT, OUTPUT, CONTEXT, OUTPORT, F, E>(
+async fn inner<'out, 'c, LEFT, RIGHT, OUTPUT, CONTEXT, OUTPORT, F, E>(
   last_left: Option<LEFT>,
   last_right: Option<RIGHT>,
   mut l_stream: WickStream<Packet>,
   mut r_stream: WickStream<Packet>,
   outputs: &'out mut OUTPORT,
   ctx: &'c CONTEXT,
-  func: &'f F,
+  func: &'static F,
 ) -> (WickStream<Packet>, WickStream<Packet>)
 where
   CONTEXT: Clone + wasmrs_runtime::ConditionallySendSync,
