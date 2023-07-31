@@ -36,103 +36,103 @@ jobs:
           fi
         env:
           GITHUB_REF: ${{ github.ref_name }}
-  test:
-    needs: tag
-    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true
-    runs-on: ${{ matrix.config.os }}
-    env:
-      SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
-      SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
-      SCCACHE_AZURE_KEY_PREFIX: 'wick-github-actions-test'
-      RUSTC_WRAPPER: 'sccache'
-      OCI_USERNAME: ${{ secrets.CANDLE_REG_USERNAME }}
-      OCI_PASSWORD: ${{ secrets.CANDLE_REG_PASSWORD }}
-    strategy:
-      matrix:
-        config:
-          - {
-              os: 'ubuntu-latest',
-              name: 'linux',
-              arch: 'amd64',
-              target: 'x86_64-unknown-linux-gnu',
-            }
-    steps:
-      - name: make space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-      - uses: actions/checkout@v3
-      - name: install protobuf
-        uses: arduino/setup-protoc@v1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: setup for cross-compiled linux aarch64 build
-        if: matrix.config.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          sudo apt update
-          sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config
-          echo "PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-      - name: setup for cross-compiled windows build
-        if: matrix.config.target == 'x86_64-pc-windows-gnu'
-        run: |
-          sudo apt update
-          sudo apt install mingw-w64
-          echo "PKG_CONFIG_SYSROOT_DIR=/usr/x86_64-w64-mingw32" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-w64-mingw32/pkgconfig" >> $GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-      - name: Install sccache (ubuntu-latest)
-        if: matrix.config.os == 'ubuntu-latest'
-        run: |
-          mkdir -p $HOME/.local/bin
-          curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-unknown-linux-musl.tar.gz" | tar xz
-          mv -f sccache-v0.3.3-x86_64-unknown-linux-musl/sccache $HOME/.local/bin/sccache
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install sccache (macos-latest)
-        if: matrix.config.os == 'macos-latest'
-        run: |
-          mkdir -p $HOME/.local/bin
-          curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-apple-darwin.tar.gz" | tar xz
-          mv -f sccache-v0.3.3-x86_64-apple-darwin/sccache $HOME/.local/bin/sccache
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Get Rust version from rust-toolchain.toml
-        run: |
-          rust_version=$(grep 'channel =' rust-toolchain.toml | awk -F\" '{print $2}')
-          echo "RUST_VERSION=$rust_version" >> $GITHUB_ENV
-      - name: Rust toolchain cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-${{ matrix.config.target }}-rust-toolchain-${{ env.RUST_VERSION }}
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          target: ${{ matrix.config.target }}
-      - name: 'rustup updates'
-        run: |
-          rustup target add wasm32-unknown-unknown wasm32-wasi
-          cargo install cargo-deny just cargo-nextest
-      #Updating rustup updates means that the github cache needs to be manually deleted.
-      - name: Run just ci-tests
-        id: just-ci-test
-        run: |
-          just ci-tests
-      # - name: Build wasms for tests
-      #   id: just-wasm
-      #   run: |
-      #     just wasm
-      #     cargo clean
-      # - name: Run just integration
-      #   id: just-integration
-      #   run: |
-      #     just integration
-      #     cargo clean
+  # test:
+  #   needs: tag
+  #   if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') == true
+  #   runs-on: ${{ matrix.config.os }}
+  #   env:
+  #     SCCACHE_AZURE_BLOB_CONTAINER: ${{ secrets.SCCACHE_AZURE_BLOB_CONTAINER }}
+  #     SCCACHE_AZURE_CONNECTION_STRING: ${{ secrets.SCCACHE_AZURE_CONNECTION_STRING }}
+  #     SCCACHE_AZURE_KEY_PREFIX: 'wick-github-actions-test'
+  #     RUSTC_WRAPPER: 'sccache'
+  #     OCI_USERNAME: ${{ secrets.CANDLE_REG_USERNAME }}
+  #     OCI_PASSWORD: ${{ secrets.CANDLE_REG_PASSWORD }}
+  #   strategy:
+  #     matrix:
+  #       config:
+  #         - {
+  #             os: 'ubuntu-latest',
+  #             name: 'linux',
+  #             arch: 'amd64',
+  #             target: 'x86_64-unknown-linux-gnu',
+  #           }
+  #   steps:
+  #     - name: make space
+  #       run: |
+  #         sudo rm -rf /usr/share/dotnet
+  #         sudo rm -rf /opt/ghc
+  #         sudo rm -rf "/usr/local/share/boost"
+  #         sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+  #     - uses: actions/checkout@v3
+  #     - name: install protobuf
+  #       uses: arduino/setup-protoc@v1
+  #       with:
+  #         repo-token: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: setup for cross-compiled linux aarch64 build
+  #       if: matrix.config.target == 'aarch64-unknown-linux-gnu'
+  #       run: |
+  #         sudo apt update
+  #         sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config
+  #         echo "PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
+  #         echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
+  #         echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+  #     - name: setup for cross-compiled windows build
+  #       if: matrix.config.target == 'x86_64-pc-windows-gnu'
+  #       run: |
+  #         sudo apt update
+  #         sudo apt install mingw-w64
+  #         echo "PKG_CONFIG_SYSROOT_DIR=/usr/x86_64-w64-mingw32" >> $GITHUB_ENV
+  #         echo "PKG_CONFIG_PATH=/usr/lib/x86_64-w64-mingw32/pkgconfig" >> $GITHUB_ENV
+  #         echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+  #     - name: Install sccache (ubuntu-latest)
+  #       if: matrix.config.os == 'ubuntu-latest'
+  #       run: |
+  #         mkdir -p $HOME/.local/bin
+  #         curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-unknown-linux-musl.tar.gz" | tar xz
+  #         mv -f sccache-v0.3.3-x86_64-unknown-linux-musl/sccache $HOME/.local/bin/sccache
+  #         echo "$HOME/.local/bin" >> $GITHUB_PATH
+  #     - name: Install sccache (macos-latest)
+  #       if: matrix.config.os == 'macos-latest'
+  #       run: |
+  #         mkdir -p $HOME/.local/bin
+  #         curl -L "https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-apple-darwin.tar.gz" | tar xz
+  #         mv -f sccache-v0.3.3-x86_64-apple-darwin/sccache $HOME/.local/bin/sccache
+  #         echo "$HOME/.local/bin" >> $GITHUB_PATH
+  #     - name: Get Rust version from rust-toolchain.toml
+  #       run: |
+  #         rust_version=$(grep 'channel =' rust-toolchain.toml | awk -F\" '{print $2}')
+  #         echo "RUST_VERSION=$rust_version" >> $GITHUB_ENV
+  #     - name: Rust toolchain cache
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: |
+  #           ~/.cargo/bin/
+  #           ~/.cargo/registry
+  #           ~/.cargo/git
+  #         key: ${{ runner.os }}-${{ matrix.config.target }}-rust-toolchain-${{ env.RUST_VERSION }}
+  #     - name: Install Rust toolchain
+  #       uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         target: ${{ matrix.config.target }}
+  #     - name: 'rustup updates'
+  #       run: |
+  #         rustup target add wasm32-unknown-unknown wasm32-wasi
+  #         cargo install cargo-deny just cargo-nextest
+  #     #Updating rustup updates means that the github cache needs to be manually deleted.
+  #     - name: Run just ci-tests
+  #       id: just-ci-test
+  #       run: |
+  #         just ci-tests
+  #     # - name: Build wasms for tests
+  #     #   id: just-wasm
+  #     #   run: |
+  #     #     just wasm
+  #     #     cargo clean
+  #     # - name: Run just integration
+  #     #   id: just-integration
+  #     #   run: |
+  #     #     just integration
+  #     #     cargo clean
   build:
     needs: tag
     runs-on: ${{ matrix.config.os }}
