@@ -1,4 +1,7 @@
+use std::path::PathBuf;
+
 use clap::Args;
+use wick_oci_utils::OciOptions;
 use wick_settings::Credential;
 
 #[derive(Args, Debug, Default, Clone)]
@@ -125,4 +128,28 @@ pub(crate) fn get_auth_for_scope(
   }
 
   (username, password)
+}
+
+pub(crate) fn reconcile_fetch_options(
+  reference: &str,
+  settings: &wick_settings::Settings,
+  opts: crate::oci::Options,
+  force: bool,
+  output: Option<PathBuf>,
+) -> OciOptions {
+  let configured_creds = settings.credentials.iter().find(|c| reference.starts_with(&c.scope));
+
+  let (username, password) = get_auth_for_scope(configured_creds, opts.username.as_deref(), opts.password.as_deref());
+
+  let mut oci_opts = OciOptions::default();
+  oci_opts
+    .set_allow_insecure(opts.insecure_registries)
+    .set_allow_latest(true)
+    .set_username(username)
+    .set_password(password)
+    .set_overwrite(force);
+  if let Some(output) = output {
+    oci_opts.set_cache_dir(output);
+  }
+  oci_opts
 }

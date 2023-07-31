@@ -14,16 +14,14 @@ pub(crate) async fn handle(
   _span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let settings_text = serde_yaml::to_string(&settings)?;
-  let settings_json = serde_json::to_string(&settings)?;
 
   let xdg = wick_xdg::Settings::new();
 
   let env_text = serde_yaml::to_string(&xdg)?;
-  let env_json = serde_json::to_string(&xdg)?;
 
   let json = serde_json::json!({
-    "settings": settings_json,
-    "env": env_json,
+    "settings": &settings,
+    "env": &xdg,
   });
 
   let text = format!(

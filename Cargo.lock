@@ -5090,6 +5090,7 @@ name = "test-codegen-bin"
 version = "0.1.0"
 dependencies = [
  "wick-component-codegen",
+ "wick-logger",
 ]
 
 [[package]]
@@ -6596,7 +6597,7 @@ dependencies = [
 
 [[package]]
 name = "wick-cli"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "anyhow",
  "atty",
@@ -6972,6 +6973,7 @@ dependencies = [
  "clap",
  "env_logger 0.10.0",
  "flate2",
+ "normpath",
  "serde_json",
  "sha256",
  "tar",

@@ -55,5 +55,19 @@ mod test {
       run_tests("tests/cli-tests/tests/cmd/db/*.trycmd")?;
       Ok(())
     }
+
+    #[test]
+    fn wick_run() -> Result<()> {
+      run_tests("tests/cli-tests/tests/cmd/run/*.toml")?;
+      run_tests("tests/cli-tests/tests/cmd/run/*.trycmd")?;
+      Ok(())
+    }
+
+    #[test]
+    fn wick_install() -> Result<()> {
+      run_tests("tests/cli-tests/tests/cmd/install/*.toml")?;
+      run_tests("tests/cli-tests/tests/cmd/install/*.trycmd")?;
+      Ok(())
+    }
   }
 }

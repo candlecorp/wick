@@ -1,4 +1,5 @@
 use tokio_stream::StreamExt;
+use wasmrs_runtime::BoxFuture;
 use wick_packet::Packet;
 
 use crate::adapters::encode;
@@ -27,7 +28,7 @@ macro_rules! binary_interleaved_pairs {
         mut outputs: Self::Outputs,
         ctx: Context<Self::Config>,
       ) -> Result<(), Self::Error> {
-        wick_component::binary::interleaved_pairs(left, right, &mut outputs, &ctx, $name).await?;
+        wick_component::binary::interleaved_pairs(left, right, &mut outputs, &ctx, &$name).await?;
 
         Ok(())
       }
@@ -41,18 +42,18 @@ pub async fn interleaved_pairs<'c, LEFT, RIGHT, OUTPUT, CONTEXT, OUTPORT, F, E>(
   right: WickStream<Packet>,
   outputs: &mut OUTPORT,
   ctx: &'c CONTEXT,
-  func: F,
+  func: &'static F,
 ) -> Result<(), E>
 where
   CONTEXT: Clone + wasmrs_runtime::ConditionallySendSync,
-  F: Fn(LEFT, RIGHT, CONTEXT) -> Result<OUTPUT, E> + wasmrs_runtime::ConditionallySendSync,
+  F: Fn(LEFT, RIGHT, CONTEXT) -> BoxFuture<Result<OUTPUT, E>> + wasmrs_runtime::ConditionallySendSync,
   OUTPORT: SingleOutput + wasmrs_runtime::ConditionallySendSync,
   LEFT: serde::de::DeserializeOwned + Clone + wasmrs_runtime::ConditionallySendSync,
   RIGHT: serde::de::DeserializeOwned + Clone + wasmrs_runtime::ConditionallySendSync,
   OUTPUT: serde::Serialize + wasmrs_runtime::ConditionallySendSync,
   E: std::fmt::Display + wasmrs_runtime::ConditionallySendSync,
 {
-  let (_, _) = inner::<LEFT, RIGHT, OUTPUT, CONTEXT, OUTPORT, F, E>(None, None, left, right, outputs, ctx, &func).await;
+  let (_, _) = inner::<LEFT, RIGHT, OUTPUT, CONTEXT, OUTPORT, F, E>(None, None, left, right, outputs, ctx, func).await;
   outputs.single_output().done();
 
   Ok(())
@@ -71,7 +72,7 @@ async fn inner<'f, 'out, 'c, LEFT, RIGHT, OUTPUT, CONTEXT, OUTPORT, F, E>(
 ) -> (WickStream<Packet>, WickStream<Packet>)
 where
   CONTEXT: Clone + wasmrs_runtime::ConditionallySendSync,
-  F: Fn(LEFT, RIGHT, CONTEXT) -> Result<OUTPUT, E> + wasmrs_runtime::ConditionallySendSync,
+  F: Fn(LEFT, RIGHT, CONTEXT) -> BoxFuture<Result<OUTPUT, E>> + wasmrs_runtime::ConditionallySendSync,
   OUTPORT: SingleOutput + wasmrs_runtime::ConditionallySendSync,
   LEFT: serde::de::DeserializeOwned + Clone + wasmrs_runtime::ConditionallySendSync,
   RIGHT: serde::de::DeserializeOwned + Clone + wasmrs_runtime::ConditionallySendSync,
@@ -92,7 +93,7 @@ where
           let right: RIGHT = propagate_if_error!(right.decode(), outputs, continue);
           outputs
             .single_output()
-            .send_raw_payload(encode(func(left.clone(), right, ctx.clone())));
+            .send_raw_payload(encode(func(left.clone(), right, ctx.clone()).await));
         }
       }
       (None, Some(right)) => {
@@ -107,7 +108,7 @@ where
           let left: LEFT = propagate_if_error!(left.decode(), outputs, continue);
           outputs
             .single_output()
-            .send_raw_payload(encode(func(left, right.clone(), ctx.clone())));
+            .send_raw_payload(encode(func(left, right.clone(), ctx.clone()).await));
         }
       }
       (None, None) => {
@@ -142,7 +143,7 @@ where
             let right: RIGHT = propagate_if_error!(right.decode(), outputs, continue);
             outputs
               .single_output()
-              .send_raw_payload(encode(func(left, right, ctx.clone())));
+              .send_raw_payload(encode(func(left, right, ctx.clone()).await));
           }
         }
       }

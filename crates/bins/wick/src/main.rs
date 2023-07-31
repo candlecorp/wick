@@ -265,6 +265,7 @@ async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<Struc
       commands::rpc::SubCommands::Stats(cmd) => commands::rpc::stats::handle(cmd, settings, span).await,
     },
     CliCommand::Query(cmd) => commands::query::handle(cmd, settings, span).await,
+    CliCommand::Install(cmd) => commands::install::handle(cmd, settings, span).await,
     CliCommand::New(cmd) => match cmd {
       new::SubCommands::Component(cmd) => match cmd {
         new::component::SubCommands::Http(cmd) => new::component::http::handle(cmd, settings, span).await,

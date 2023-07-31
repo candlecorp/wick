@@ -3,6 +3,7 @@ use std::future::Future;
 use std::path::{Path, PathBuf};
 
 use asset_container::{Asset, AssetFlags, AssetManager, Assets};
+use normpath::PathExt;
 use sha256::digest;
 use tokio::fs;
 use tracing::trace;
@@ -142,13 +143,14 @@ impl WickPackage {
     ) {
       return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string()));
     }
-    let full_path = tokio::fs::canonicalize(path)
-      .await
-      .map_err(|e| Error::ReadFile(path.to_path_buf(), e))?;
+    let full_path = path
+      .normalize()
+      .map_err(|e| Error::ReadFile(path.to_path_buf(), e))?
+      .into_path_buf();
+
     let parent_dir = full_path
       .parent()
       .map_or_else(|| PathBuf::from("/"), |v| v.to_path_buf());
-    let extra_files;
 
     if config.metadata().is_none() {
       return Err(Error::NoMetadata(path.to_string_lossy().to_string()));
@@ -165,27 +167,27 @@ impl WickPackage {
     };
     let registry = config.package().and_then(|package| package.registry().cloned());
 
-    let (version, parent_dir) = match &config {
+    let (version, extra_files) = match &config {
       WickConfiguration::App(config) => {
         let version = config.version();
 
-        extra_files = config.package_files().to_owned();
+        let extra_files = config.package_files().to_owned();
 
-        (version, parent_dir)
+        (version, extra_files)
       }
       WickConfiguration::Component(config) => {
         let version = config.version();
 
-        extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
+        let extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
 
-        (version, parent_dir)
+        (version, extra_files)
       }
       WickConfiguration::Types(config) => {
         let version = config.version();
 
-        extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
+        let extra_files = config.package_files().map_or_else(Vec::new, |files| files.to_owned());
 
-        (version, parent_dir)
+        (version, extra_files)
       }
       _ => return Err(Error::InvalidWickConfig(path.to_string_lossy().to_string())),
     };

@@ -18,6 +18,7 @@ sha256 = { workspace = true }
 tar = { workspace = true }
 flate2 = { workspace = true }
 tracing = { workspace = true }
+normpath = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
