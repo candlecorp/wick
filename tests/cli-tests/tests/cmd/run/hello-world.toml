@@ -1,0 +1,5 @@
+#:schema https://raw.githubusercontent.com/assert-rs/trycmd/main/schema.json
+bin.name = "wick"
+args = ["run", "examples/components/cli-trigger/app.wick"]
+stdout = """Hello world!
+"""

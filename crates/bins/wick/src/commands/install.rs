@@ -1,7 +1,10 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::Args;
 use structured_output::StructuredOutput;
 use wick_config::WickConfiguration;
+use wick_package::WickPackage;
 
 use crate::options::reconcile_fetch_options;
 
@@ -12,9 +15,13 @@ pub(crate) struct Options {
   #[clap(flatten)]
   pub(crate) oci: crate::oci::Options,
 
-  /// Path or OCI url to manifest or wasm file.
+  /// Alternate path to install to.
+  #[clap(long = "path", action)]
+  pub(crate) path: Option<PathBuf>,
+
+  /// Path or OCI url to application manifest file.
   #[clap(action)]
-  path: String,
+  application: String,
 }
 
 #[allow(clippy::unused_async)]
@@ -24,13 +31,19 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let xdg = wick_xdg::Settings::new();
-  let bin_dir = xdg.global().root().join("bin");
+  let bin_dir = opts.path.unwrap_or_else(|| xdg.global().root().join("bin"));
   std::fs::create_dir_all(&bin_dir)?;
 
-  span.in_scope(|| info!(app = opts.path, to = %bin_dir.display(), "installing wick app"));
+  span.in_scope(|| info!(app = opts.application, path = %bin_dir.display(), "installing wick app"));
 
-  let oci_opts = reconcile_fetch_options(&opts.path, &settings, opts.oci, false, None);
-  let package = crate::oci::pull(opts.path, oci_opts).await?;
+  let oci_opts = reconcile_fetch_options(&opts.application, &settings, opts.oci, false, None);
+  let app_as_path = PathBuf::from(&opts.application);
+  let package = if app_as_path.exists() {
+    WickPackage::from_path(&app_as_path).await?
+  } else {
+    crate::oci::pull(opts.application, oci_opts).await?
+  };
+
   let path = package.path();
   let config = WickConfiguration::fetch(path.to_string_lossy(), Default::default())
     .await?
@@ -38,30 +51,25 @@ pub(crate) async fn handle(
 
   let config = match config {
     WickConfiguration::App(config) => config,
-    _ => anyhow::bail!("{} is not an application configuration", path.display()),
+    _ => anyhow::bail!(
+      "{} is not a wick application, it's a {} configuration",
+      path.display(),
+      config.kind()
+    ),
   };
 
   let bin_path = bin_dir.join(config.name());
 
   #[cfg(not(target_os = "windows"))]
   {
-    let sh = format!(
-      r#"
-    #!/bin/sh
-
-    wick run {}
-    "#,
-      path.display()
-    )
-    .replace("    ", "");
+    std::fs::write(&bin_path, make_sh(path.to_str().unwrap()))?;
 
     use std::os::unix::fs::PermissionsExt;
 
     let mut perms = std::fs::metadata(path)?.permissions();
     perms.set_mode(0o755);
 
-    std::fs::write(&bin_path, sh)?;
-
+    info!(target=%path.to_string_lossy(),bin=%bin_path.to_string_lossy(), "installing");
     std::fs::set_permissions(&bin_path, perms)?;
   }
   #[cfg(target_os = "windows")]
@@ -86,10 +94,33 @@ pub(crate) async fn handle(
   Ok(output)
 }
 
+#[cfg(not(target_os = "windows"))]
+fn make_sh(target: &str) -> String {
+  format!(
+    r#"#!/bin/sh
+basename=$(echo "$0" | sed -e 's,\\\\,/,g')
+basedir=$(dirname "$basename")
+
+case uname in
+    CYGWIN|MINGW|MSYS) basedir=cygpath -w "$basedir";;
+esac
+
+app_path="{}"
+
+if [ -x "$basedir/wick" ]; then
+  exec "$basedir/wick" "run" "$app_path" "$@"
+else
+  exec wick "run" "$app_path" "$@"
+fi
+  "#,
+    target
+  )
+}
+
+#[cfg(target_os = "windows")]
 fn make_ps1(target: &str) -> String {
   format!(
-    r#"
-#!/usr/bin/env pwsh
+    r#"#!/usr/bin/env pwsh
 $basedir=Split-Path $MyInvocation.MyCommand.Definition -Parent
 
 $exe=""
@@ -123,10 +154,10 @@ exit $ret
   )
 }
 
+#[cfg(target_os = "windows")]
 fn make_bat(target: &str) -> String {
   format!(
-    r#"
-@ECHO off
+    r#"@ECHO off
 GOTO start
 :find_dp0
 SET dp0=%~dp0

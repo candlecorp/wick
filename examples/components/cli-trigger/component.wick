@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://github.com/candlecorp/wick/releases/download/nightly/schema.json
+---
+name: 'cli-hello-world'
+kind: wick/component@v1
+metadata:
+  version: '0.0.1'
+package:
+  registry:
+    host: registry.candle.dev
+    namespace: jsoverson
+import:
+  - name: cli
+    component:
+      kind: wick/component/types@v1
+      ref: ../../../crates/interfaces/wick-interface-cli/component.yaml
+component:
+  kind: wick/component/wasmrs@v1
+  ref: ./build/component.signed.wasm
+  operations:
+    - name: main
+      inputs:
+        - name: args
+          type: string[]
+        - name: interactive
+          type: cli::Interactive
+      outputs:
+        - name: code
+          type: u32

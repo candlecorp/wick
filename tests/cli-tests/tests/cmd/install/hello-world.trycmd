@@ -1,0 +1,4 @@
+```console
+$ wick install examples/components/cli-trigger/app.wick --path=. --quiet
+installed hello-world to ./hello-world[..]
+```

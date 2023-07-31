@@ -156,11 +156,6 @@ impl Asset for AssetReference {
 
   #[allow(clippy::expect_used)]
   fn update_baseurl(&self, baseurl: &Path) {
-    tracing::warn!(
-      location = self.location,
-      "update baseurl final: {}",
-      baseurl.to_string_lossy()
-    );
     let baseurl = if baseurl.starts_with(".") {
       let mut path = std::env::current_dir().expect("failed to get current dir");
       path.push(baseurl);

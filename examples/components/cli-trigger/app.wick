@@ -1,0 +1,19 @@
+kind: wick/app@v1
+name: hello-world
+package:
+  registry:
+    host: registry.candle.dev
+    namespace: jsoverson
+metadata:
+  version: 0.0.1
+  description: Simple wick application that prints hello world
+  licenses:
+    - Apache-2.0
+import:
+  - name: MAIN_COMPONENT
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./component.wick
+triggers:
+  - kind: wick/trigger/cli@v1
+    operation: MAIN_COMPONENT::main
