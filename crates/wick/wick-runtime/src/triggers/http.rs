@@ -712,7 +712,7 @@ mod test {
         )
         .await?;
 
-      let res: serde_json::Value = get("/this/FIRST_VALUE/some/222?third=third_a&fourth=true")
+      let res: serde_json::Value = get("/api/this/FIRST_VALUE/some/222?third=third_a&fourth=true")
         .await?
         .json()
         .await?;
@@ -723,7 +723,7 @@ mod test {
         json!({"first":"FIRST_VALUE", "second": 222,"third":["third_a"], "fourth":true })
       );
 
-      let res: serde_json::Value = get("/this/FIRST_VALUE/some/222?third=third_a&third=third_b&fourth=true")
+      let res: serde_json::Value = get("/api/this/FIRST_VALUE/some/222?third=third_a&third=third_b&fourth=true")
         .await?
         .json()
         .await?;

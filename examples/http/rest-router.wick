@@ -26,9 +26,9 @@ import:
   - name: openapi
     component:
       kind: wick/component/manifest@v1
-      ref: registry.candle.dev/common/openapi-ui:4
+      ref: registry.candle.dev/common/openapi-ui:0.4.0
       with:
-        schema_url: /openapi.json
+        schema_url: /api/openapi.json
 triggers:
   - kind: wick/trigger/http@v1
     resource: http
@@ -38,7 +38,7 @@ triggers:
         codec: Raw
         operation: openapi::serve
       - kind: wick/router/rest@v1
-        path: /
+        path: /api
         tools:
           openapi: true
         info:
