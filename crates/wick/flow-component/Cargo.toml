@@ -5,6 +5,7 @@ edition = "2021"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
 description = "Create components to execute in Wick runtimes"
+include = ["src/**/*", "LICENSE"]
 
 [features]
 default = []
