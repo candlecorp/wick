@@ -5,6 +5,7 @@ edition = "2021"
 license = "Apache-2.0"
 description = "Derive AssetManager trait"
 repository = "https://github.com/candlecorp/wick"
+include = ["src/lib.rs"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]

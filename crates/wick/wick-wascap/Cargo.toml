@@ -5,6 +5,7 @@ edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/candlecorp/wick"
 description = "WASM Capabilities library for Wick"
+include = ["src/**/*", "README.md", "test/test_wasi_component.wasm", "!**/test/**/*"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
