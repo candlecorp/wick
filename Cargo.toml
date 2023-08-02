@@ -107,6 +107,7 @@ console = "0.15"
 cron = "0.12"
 data-encoding = "2.3.2"
 derive_builder = "0.12"
+dhat = { version = "0.3.2" }
 dialoguer = "0.10"
 dyn-clone = "1.0"
 env_logger = "0.10"
