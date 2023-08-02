@@ -88,27 +88,22 @@
 #![allow()]
 #![recursion_limit = "512"]
 
+mod claims;
 mod component;
+mod error;
 mod parser;
-
 mod v0;
 mod v1;
 
+use ::base64::engine::general_purpose::URL_SAFE_NO_PAD as base64;
+pub use claims::{extract_claims, sign_buffer_with_claims, validate_token, Claims, ClaimsOptions, Token};
 pub use component::WickComponent;
-pub use wascap;
-pub use wascap::jwt::Token;
-pub use wascap::prelude::{validate_token, Claims, Invocation, KeyPair};
-
-/// The crate's error module.
-pub mod error;
 pub use error::Error;
-mod claims;
-
-pub use claims::{extract_claims, sign_buffer_with_claims, ClaimsOptions};
 
 #[cfg(test)]
 mod test {
   use anyhow::Result;
+  use nkeys::KeyPair;
   use wick_interface_types::ComponentSignature;
   static MODULE_BYTES: &[u8] = include_bytes!("../test/test_wasi_component.wasm");
 

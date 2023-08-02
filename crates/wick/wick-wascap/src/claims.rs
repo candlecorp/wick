@@ -1,17 +1,127 @@
+mod validate;
+
 use std::borrow::Cow;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use base64::Engine;
+use nkeys::KeyPair;
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use tracing::debug;
-use wascap::jwt::Token;
-use wascap::prelude::{Claims, KeyPair};
-use wascap::wasm::days_from_now_to_jwt_time;
+pub use validate::validate_token;
 use wick_interface_types::ComponentSignature;
 
 use crate::component::WickComponent;
 use crate::parser::{CustomSection, ParsedModule};
-use crate::{error, v0, v1};
+use crate::{base64, error, v0, v1, Error};
+const HEADER_TYPE: &str = "jwt";
+const HEADER_ALGORITHM: &str = "Ed25519";
 
-type Result<T> = std::result::Result<T, error::Error>;
+type Result<T> = std::result::Result<T, Error>;
+
+/// A structure containing a JWT and its associated decoded claims
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct Token<T> {
+  /// The JWT itself
+  pub jwt: String,
+  /// The decoded claims
+  pub claims: Claims<T>,
+}
+
+/// Represents a set of [RFC 7519](https://tools.ietf.org/html/rfc7519) compliant JSON Web Token
+/// claims.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
+pub struct Claims<T> {
+  /// All timestamps in JWTs are stored in _seconds since the epoch_ format
+  /// as described as `NumericDate` in the RFC. Corresponds to the `exp` field in a JWT.
+  #[serde(rename = "exp", skip_serializing_if = "Option::is_none")]
+  pub expires: Option<u64>,
+
+  /// Corresponds to the `jti` field in a JWT.
+  #[serde(rename = "jti")]
+  pub id: String,
+
+  /// The `iat` field, stored in _seconds since the epoch_
+  #[serde(rename = "iat")]
+  pub issued_at: u64,
+
+  /// Issuer of the token, by convention usually the public key of the _account_ that
+  /// signed the token
+  #[serde(rename = "iss")]
+  pub issuer: String,
+
+  /// Subject of the token, usually the public key of the _module_ corresponding to the WebAssembly file
+  /// being signed
+  #[serde(rename = "sub")]
+  pub subject: String,
+
+  /// The `nbf` JWT field, indicates the time when the token becomes valid. If `None` token is valid immediately
+  #[serde(rename = "nbf", skip_serializing_if = "Option::is_none")]
+  pub not_before: Option<u64>,
+
+  /// Custom jwt claims in the `wascap` namespace
+  #[serde(rename = "wascap", skip_serializing_if = "Option::is_none")]
+  pub metadata: Option<T>,
+}
+
+impl<T> Claims<T>
+where
+  T: Serialize + DeserializeOwned + Named,
+{
+  pub(crate) fn encode(&self, kp: &KeyPair) -> Result<String> {
+    let header = ClaimsHeader {
+      header_type: HEADER_TYPE.to_owned(),
+      algorithm: HEADER_ALGORITHM.to_owned(),
+    };
+    let jheader = to_jwt_segment(&header)?;
+    let jclaims = to_jwt_segment(self)?;
+
+    let head_and_claims = format!("{}.{}", jheader, jclaims);
+    let sig = kp.sign(head_and_claims.as_bytes()).map_err(Error::Sign)?;
+    let sig64 = base64.encode(sig);
+    Ok(format!("{}.{}", head_and_claims, sig64))
+  }
+
+  pub(crate) fn decode(input: &str) -> Result<Claims<T>> {
+    let segments: Vec<&str> = input.split('.').collect();
+    if segments.len() != 3 {
+      return Err(Error::Token);
+    }
+    let claims: Claims<T> = from_jwt_segment(segments[1])?;
+
+    Ok(claims)
+  }
+
+  /// The name of the module described by the claims
+  pub fn name(&self) -> String {
+    self.metadata.as_ref().map_or("Anonymous".to_owned(), |md| md.name())
+  }
+}
+
+fn to_jwt_segment<T: Serialize>(input: &T) -> Result<String> {
+  let encoded = serde_json::to_string(input)?;
+  Ok(base64.encode(encoded.as_bytes()))
+}
+
+fn from_jwt_segment<B: AsRef<str>, T: DeserializeOwned>(encoded: B) -> Result<T> {
+  let decoded = base64.decode(encoded.as_ref())?;
+  let s = String::from_utf8(decoded).map_err(|_| Error::Utf8("jwt segment".to_owned()))?;
+
+  Ok(serde_json::from_str(&s)?)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ClaimsHeader {
+  #[serde(rename = "typ")]
+  header_type: String,
+
+  #[serde(rename = "alg")]
+  algorithm: String,
+}
+
+pub trait Named: Clone {
+  fn name(&self) -> String;
+}
 
 /// A common struct to group related options together.
 #[derive(Debug, Clone)]
@@ -75,6 +185,25 @@ impl ClaimsOptions {
       Self::V1(opts) => opts.version.clone(),
     }
   }
+}
+
+/// The result of the validation process perform on a JWT
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct TokenValidation {
+  /// Indicates whether or not this token has expired, as determined by the current OS system clock.
+  /// If `true`, you should treat the associated token as invalid
+  pub expired: bool,
+  /// Indicates whether this token is _not yet_ valid. If `true`, do not use this token
+  pub cannot_use_yet: bool,
+  /// A human-friendly (lowercase) description of the _relative_ expiration date (e.g. "in 3 hours").
+  /// If the token never expires, the value will be "never"
+  pub expires_human: String,
+  /// A human-friendly description of the relative time when this token will become valid (e.g. "in 2 weeks").
+  /// If the token has not had a "not before" date set, the value will be "immediately"
+  pub not_before_human: String,
+  /// Indicates whether the signature is valid according to a cryptographic comparison. If `false` you should
+  /// reject this token.
+  pub signature_valid: bool,
 }
 
 /// Extract the claims embedded in a WebAssembly module.
@@ -174,4 +303,8 @@ pub fn sign_buffer_with_claims(
 fn since_the_epoch() -> std::time::Duration {
   let start = SystemTime::now();
   start.duration_since(UNIX_EPOCH).unwrap()
+}
+
+fn days_from_now_to_jwt_time(stamp: Option<u64>) -> Option<u64> {
+  stamp.map(|e| since_the_epoch().as_secs() + e * 86400)
 }

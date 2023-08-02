@@ -11,13 +11,16 @@ description = "WASM Capabilities library for Wick"
 serde = { workspace = true, features = ["derive"] }
 wick-interface-types = { workspace = true, features = ["value"] }
 thiserror = { workspace = true }
-wascap = { workspace = true }
 wasmparser = { workspace = true }
 wasm-encoder = { workspace = true }
 data-encoding = { workspace = true }
 ring = { workspace = true }
 nuid = { workspace = true }
 tracing = { workspace = true }
+base64 = { workspace = true, features = ["std"] }
+serde_json = { workspace = true }
+nkeys = { workspace = true }
+humantime = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

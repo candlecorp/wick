@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
-use wascap::jwt::WascapEntity;
 use wick_interface_types::ComponentSignature;
+
+use crate::claims::Named;
 
 /// The metadata that corresponds to a wick component module.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -23,7 +24,7 @@ pub struct WickComponent {
   pub ver: Option<String>,
 }
 
-impl WascapEntity for WickComponent {
+impl Named for WickComponent {
   fn name(&self) -> String {
     self.interface.name.as_ref().unwrap_or(&"Anonymous".to_owned()).clone()
   }
