@@ -12,9 +12,16 @@ description = "Proc macro for generating operation implementations"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = { workspace = true }
-quote = { workspace = true }
-syn = { workspace = true, features = ["full"] }
+proc-macro2 = { workspace = true, features = ["proc-macro"] }
+quote = { workspace = true, features = ["proc-macro"] }
+syn = { workspace = true, features = [
+  "full",
+  "derive",
+  "proc-macro",
+  "clone-impls",
+  "printing",
+  "parsing",
+] }
 proc-macro-crate = { workspace = true }
 
 [dev-dependencies]
