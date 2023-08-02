@@ -20,10 +20,6 @@ pub enum Error {
   Utf8Error(#[from] Utf8Error),
 
   #[error(transparent)]
-  /// Upstream error from [wascap].
-  WascapError(#[from] wascap::Error),
-
-  #[error(transparent)]
   /// Error reading a buffer.
   IoError(#[from] std::io::Error),
 
@@ -40,4 +36,44 @@ pub enum Error {
   #[error("General error : {0}")]
   /// General error.
   Other(String),
+
+  /// Invalid token format
+  #[error("Invalid token format")]
+  Token,
+
+  /// Error parsing JSON
+  #[error(transparent)]
+  Json(#[from] serde_json::Error),
+
+  /// Error decoding base64
+  #[error(transparent)]
+  Base64(#[from] base64::DecodeError),
+
+  /// Error signing token
+  #[error(transparent)]
+  Sign(#[from] nkeys::error::Error),
+
+  /// Error decoding utf8 bytes
+  #[error("{0} not utf8 bytes")]
+  Utf8(String),
+
+  /// Token is not yet valid
+  #[error("Token is not yet valid")]
+  TokenTooEarly,
+
+  /// Token has expired
+  #[error("Token has expired")]
+  ExpiredToken,
+
+  /// Token is missing an issuer
+  #[error("Token is missing an issuer")]
+  MissingIssuer,
+
+  /// Token is missing a subject
+  #[error("Token is missing a subject")]
+  MissingSubject,
+
+  /// Token uses an invalid algorithm
+  #[error("Token uses an invalid algorithm")]
+  InvalidAlgorithm,
 }

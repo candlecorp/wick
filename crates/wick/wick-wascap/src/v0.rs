@@ -1,8 +1,7 @@
 use data_encoding::HEXUPPER;
 use ring::digest::{Context, SHA256};
-use wascap::jwt::Token;
-use wascap::prelude::Claims;
 
+use crate::claims::{Claims, Token};
 use crate::parser::ParsedModule;
 use crate::{Error, WickComponent};
 
