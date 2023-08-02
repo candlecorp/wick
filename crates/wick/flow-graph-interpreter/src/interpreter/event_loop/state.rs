@@ -68,7 +68,6 @@ impl State {
       }
     }
     for tx_id in cleanup {
-      debug!(%tx_id, "transaction hung");
       self.transactions.remove(&tx_id);
     }
     Ok(())

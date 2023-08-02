@@ -68,11 +68,14 @@ pub(super) async fn handle(
         Ok(b) => {
           let bytes = b.join(&0);
           trace!(?bytes, "http:codec:json:bytes");
-          let Ok(value): Result<Value, _> = serde_json::from_slice(&bytes) else {
-            let _ = tx.error(wick_packet::Error::component_error("Could not decode body as JSON"));
-            return;
-          };
-          let _ = tx.send(Packet::encode("body", value));
+          serde_json::from_slice::<Value>(&bytes).map_or_else(
+            |_| {
+              let _ = tx.send(Packet::err("body", "Could not decode body as JSON"));
+            },
+            |value| {
+              let _ = tx.send(Packet::encode("body", value));
+            },
+          );
         }
         Err(e) => {
           let _ = tx.send(Packet::err("body", e.to_string()));
