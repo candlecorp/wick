@@ -13,7 +13,7 @@ wick-config = { workspace = true }
 wick-interface-types = { workspace = true }
 anyhow = { workspace = true }
 quote = { workspace = true }
-syn = { workspace = true }
+syn = { workspace = true, features = ["parsing"] }
 proc-macro2 = { workspace = true }
 heck = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "fs"] }

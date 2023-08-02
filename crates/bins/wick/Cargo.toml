@@ -44,10 +44,10 @@ dialoguer = { workspace = true, features = ["password"] }
 human-panic = { workspace = true }
 futures = { workspace = true }
 thiserror = { workspace = true }
-clap = { workspace = true, features = ["derive"] }
+clap = { workspace = true, features = ["derive", "std"] }
 nkeys = { workspace = true }
 atty = { workspace = true }
-jaq-core = { workspace = true }
+jaq-core = { workspace = true, features = ["serde_json"] }
 markup-converter = { workspace = true }
 openssl = { workspace = true, features = ["vendored"], optional = true }
 option-utils = { workspace = true }

@@ -19,7 +19,8 @@ tracing-subscriber = { workspace = true, features = [
   "env-filter",
   "fmt",
   "time",
-  "parking_lot"
+  "parking_lot",
+  "ansi",
 ] }
 tracing-appender = { workspace = true }
 time = { workspace = true, features = ["formatting"] }
@@ -28,4 +29,8 @@ tokio = { workspace = true }
 thiserror = { workspace = true }
 tracing-opentelemetry = { workspace = true }
 opentelemetry = { workspace = true, features = ["rt-tokio"] }
-opentelemetry-otlp = { workspace = true, features = ["tokio"] }
+opentelemetry-otlp = { workspace = true, features = [
+  "tokio",
+  "grpc-tonic",
+  "trace",
+] }

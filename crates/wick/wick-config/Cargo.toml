@@ -13,22 +13,21 @@ flow-component = { workspace = true }
 flow-expression-parser = { workspace = true }
 wick-packet = { workspace = true, default-features = false, features = [
   "validation",
-  "std"
+  "std",
 ] }
 wick-interface-types = { workspace = true, features = [
   "yaml",
   "parser",
-  "value"
+  "value",
 ] }
 wick-asset-reference = { workspace = true }
 regex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
-serde_with = { workspace = true }
+serde_with = { workspace = true, features = ["std", "macros"] }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-shellexpand = { workspace = true }
 serde-value = { workspace = true }
 num-traits = { workspace = true }
 serde-with-expand-env = { workspace = true }

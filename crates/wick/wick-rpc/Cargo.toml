@@ -14,8 +14,13 @@ client = ["tokio/fs"]
 [dependencies]
 wick-packet = { workspace = true, features = ["invocation"] }
 wick-interface-types = { workspace = true }
-tonic = { workspace = true, features = ["tls", "transport"] }
-prost = { workspace = true }
+tonic = { workspace = true, features = [
+  "tls",
+  "transport",
+  "codegen",
+  "prost",
+] }
+prost = { workspace = true, features = ["prost-derive"] }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }
 tokio-stream = { workspace = true, features = ["net"] }
 serde = { workspace = true, features = ["derive"] }

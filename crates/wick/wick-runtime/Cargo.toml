@@ -33,8 +33,6 @@ wick-http-client = { workspace = true }
 # Wasmtime
 #
 wasmtime = { workspace = true }
-wasmtime-wasi = { workspace = true }
-wasi-common = { workspace = true }
 #
 # For Time trigger
 #

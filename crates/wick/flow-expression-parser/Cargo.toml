@@ -8,15 +8,13 @@ repository = "https://github.com/candlecorp/wick"
 description = "Parser for flow expressions in the Wick configuration manifest."
 
 
-
 [dependencies]
 regex = { workspace = true }
-serde = { workspace = true,features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 nom = { workspace = true, features = ["alloc"] }
-liquid-json = { workspace = true }
-uuid = { workspace = true, features = ["v4"] }
+liquid-json = { workspace = true, features = ["serde"] }
 once_cell = { workspace = true }
 seeded-random = { workspace = true, features = ["std", "rng", "uuid"] }
 parking_lot = { workspace = true }

@@ -24,7 +24,7 @@ bytes = { workspace = true }
 regex = { workspace = true }
 once_cell = { workspace = true }
 tar = { workspace = true }
-flate2 = { workspace = true }
+flate2 = { workspace = true, features = ["rust_backend"] }
 derive_builder = { workspace = true }
 getset = { workspace = true }
 

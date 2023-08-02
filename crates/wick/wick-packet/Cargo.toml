@@ -29,14 +29,13 @@ test = ["invocation", "std"]
 wick-interface-types = { workspace = true, features = ["typeid"] }
 tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
+serde_json = { workspace = true, features = ["std"] }
 thiserror = { workspace = true }
 wasmrs = { workspace = true }
 wasmrs-runtime = { workspace = true }
 wasmrs-frames = { workspace = true, features = ["derive_serde"] }
 wasmrs-rx = { workspace = true }
 wasmrs-codec = { workspace = true }
-liquid-json = { workspace = true, features = ["serde"] }
 bytes = { workspace = true, features = ["serde"] }
 parking_lot = { workspace = true }
 url = { workspace = true }

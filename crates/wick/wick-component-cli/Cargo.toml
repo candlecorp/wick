@@ -36,7 +36,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
-clap = { workspace = true, features = ["derive", "env"] }
+clap = { workspace = true, features = ["derive", "env", "std"] }
 uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]

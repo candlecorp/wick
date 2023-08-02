@@ -12,7 +12,6 @@ default = []
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 thiserror = { workspace = true }
-xdg = { workspace = true }
 getset = { workspace = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 

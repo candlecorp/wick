@@ -91,6 +91,7 @@ async fn load_shortform_yaml() -> Result<(), ManifestError> {
 }
 
 #[test_logger::test(tokio::test)]
+#[ignore = "env expansion in v0 configuration has been removed"]
 async fn load_env() -> Result<(), ManifestError> {
   env::set_var("TEST_ENV_VAR", "load_manifest_yaml_with_env");
   let manifest = load_component("./tests/manifests/v0/env.yaml").await?;
