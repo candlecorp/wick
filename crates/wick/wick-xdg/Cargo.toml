@@ -14,6 +14,6 @@ default = []
 thiserror = { workspace = true }
 xdg = { workspace = true }
 getset = { workspace = true }
-serde = { version = "1", features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]

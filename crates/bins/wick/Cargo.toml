@@ -52,7 +52,7 @@ openssl = { workspace = true, features = ["vendored"], optional = true }
 option-utils = { workspace = true }
 structured-output = { workspace = true }
 regex = { workspace = true }
-dhat = { version = "0.3.2", optional = true }
+dhat = { workspace = true, optional = true }
 
 [dev-dependencies]
 test_bin = { workspace = true }
