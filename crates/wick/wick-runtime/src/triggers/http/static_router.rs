@@ -7,7 +7,8 @@ use futures::future::BoxFuture;
 use hyper::service::Service;
 use hyper::{Body, Method, Request, Response};
 use hyper_staticfile::{resolve_path, ResolveResult, ResponseBuilder};
-use tracing::Span;
+use tracing::{Instrument, Span};
+use uuid::Uuid;
 
 use super::{HttpError, RawRouter};
 use crate::Runtime;
@@ -16,31 +17,31 @@ use crate::Runtime;
 #[must_use]
 pub(super) struct StaticRouter {
   handler: Static,
-  #[allow(unused)]
-  span: Span,
 }
 
 impl StaticRouter {
   pub(super) fn new(root: PathBuf, strip: Option<String>, fallback: Option<String>) -> Self {
-    let span = debug_span!("http:static");
-
-    span.in_scope(|| debug!(directory = %root.display(), "serving"));
+    debug!(directory = %root.display(), "http:static:serving");
     let handler = Static::new(root, strip, fallback);
-    Self { handler, span }
+    Self { handler }
   }
 }
 
 impl RawRouter for StaticRouter {
   fn handle(
     &self,
+    _tx_id: Uuid,
     _remote_addr: SocketAddr,
     _runtime: Arc<Runtime>,
     request: Request<Body>,
+    span: &Span,
   ) -> BoxFuture<Result<Response<Body>, HttpError>> {
+    let span = info_span!(parent: span, "static");
     let handler = self.handler.clone();
     let fut = async move {
       let response = handler
         .serve(request)
+        .instrument(span)
         .await
         .map_err(|e| HttpError::OperationError(e.to_string()))?;
       Ok(response)

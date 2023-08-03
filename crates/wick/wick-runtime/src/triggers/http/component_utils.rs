@@ -1,16 +1,14 @@
 use std::collections::HashMap;
-use std::net::SocketAddr;
 use std::sync::Arc;
 
-use bytes::Bytes;
-use futures::TryStreamExt;
 use hyper::header::CONTENT_LENGTH;
 use hyper::http::response::Builder;
 use hyper::http::{HeaderName, HeaderValue};
-use hyper::{Body, Request, Response, StatusCode};
+use hyper::{Body, Response, StatusCode};
 use serde_json::{Map, Value};
 use tokio_stream::StreamExt;
 use tracing::Span;
+use uuid::Uuid;
 use wick_config::config::Codec;
 use wick_interface_http::types as wick_http;
 use wick_packet::{
@@ -19,7 +17,6 @@ use wick_packet::{
   Entity,
   InherentData,
   Invocation,
-  Observer,
   Packet,
   PacketPayload,
   PacketStream,
@@ -28,91 +25,24 @@ use wick_packet::{
 
 use super::conversions::convert_response;
 use super::HttpError;
-use crate::triggers::http::conversions::request_and_body_to_wick;
 use crate::Runtime;
 
-pub(super) async fn handle(
-  target: Entity,
-  codec: Codec,
-  engine: Arc<Runtime>,
-  req: Request<Body>,
-  remote_addr: SocketAddr,
-  config: Option<RuntimeConfig>,
-  path_prefix: &str,
-) -> Result<PacketStream, HttpError> {
-  let (tx, rx) = PacketStream::new_channels();
-
-  let invocation = Invocation::new(
-    Entity::server("http_client"),
-    target,
-    rx,
-    InherentData::unsafe_default(),
-    &Span::current(),
-  );
-
-  let stream = engine
-    .invoke(invocation, config)
-    .await
-    .map_err(|e| HttpError::OperationError(e.to_string()));
-  let (mut req, mut body) = request_and_body_to_wick(req, remote_addr)?;
-  req.path = req.path.trim_start_matches(path_prefix).to_owned();
-
-  let packets = packets!(("request", req));
-  for packet in packets {
-    let _ = tx.send(packet);
-  }
-  tokio::spawn(async move {
-    if codec == Codec::Json {
-      let bytes: Result<Vec<Bytes>, _> = body.try_collect().await;
-      match bytes {
-        Ok(b) => {
-          let bytes = b.join(&0);
-          trace!(?bytes, "http:codec:json:bytes");
-          serde_json::from_slice::<Value>(&bytes).map_or_else(
-            |_| {
-              let _ = tx.send(Packet::err("body", "Could not decode body as JSON"));
-            },
-            |value| {
-              let _ = tx.send(Packet::encode("body", value));
-            },
-          );
-        }
-        Err(e) => {
-          let _ = tx.send(Packet::err("body", e.to_string()));
-        }
-      }
-    } else {
-      while let Some(bytes) = body.next().await {
-        trace!(?bytes, "http:codec:raw:bytes");
-        match bytes {
-          Ok(b) => {
-            let _ = tx.send(Packet::encode("body", Base64Bytes::new(b)));
-          }
-          Err(e) => {
-            let _ = tx.send(Packet::err("body", e.to_string()));
-          }
-        }
-      }
-    }
-    trace!("http:request:done");
-    let _ = tx.send(Packet::done("body"));
-  });
-  stream
-}
-
 pub(super) async fn handle_request_middleware(
+  tx_id: Uuid,
   target: Entity,
   operation_config: Option<RuntimeConfig>,
   engine: Arc<Runtime>,
   req: &wick_http::HttpRequest,
+  span: &Span,
 ) -> Result<Option<wick_http::RequestMiddlewareResponse>, HttpError> {
   let packets = packets!(("request", req));
-  let invocation = Invocation::new(
+  let invocation = Invocation::new_with_id(
+    tx_id,
     Entity::server("http_client"),
     target.clone(),
     packets,
     InherentData::unsafe_default(),
-    &Span::current(),
+    span,
   );
 
   let stream = engine
@@ -152,19 +82,22 @@ pub(super) async fn handle_request_middleware(
 }
 
 pub(super) async fn handle_response_middleware(
+  tx_id: Uuid,
   target: Entity,
   operation_config: Option<RuntimeConfig>,
   engine: Arc<Runtime>,
   req: &wick_http::HttpRequest,
   res: &wick_http::HttpResponse,
+  span: &Span,
 ) -> Result<Option<wick_http::HttpResponse>, HttpError> {
   let packets = packets!(("request", req), ("response", res));
-  let invocation = Invocation::new(
+  let invocation = Invocation::new_with_id(
+    tx_id,
     Entity::server("http_client"),
     target.clone(),
     packets,
     InherentData::unsafe_default(),
-    &Span::current(),
+    span,
   );
 
   let stream = engine

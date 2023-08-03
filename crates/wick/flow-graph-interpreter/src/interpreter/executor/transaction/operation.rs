@@ -42,7 +42,6 @@ pub(crate) struct InstanceHandler {
   components: Arc<HandlerMap>,
   task: InstanceTask,
   self_component: SelfComponent,
-  span: Span,
 }
 
 impl std::fmt::Debug for InstanceHandler {
@@ -75,7 +74,7 @@ impl InstanceHandler {
     let outputs = op_node.outputs().to_vec();
     let reference: Reference = op_node.kind().cref().into();
 
-    let span = invocation.following_span(debug_span!("instance", entity = %invocation.target));
+    // let span = debug_span!(parent:&invocation.span,"interpreter:op:instance", entity = %invocation.target);
 
     Self {
       schematic,
@@ -90,7 +89,6 @@ impl InstanceHandler {
       pending: AtomicU32::new(0),
       self_component,
       task: Default::default(),
-      span,
     }
   }
 
@@ -227,19 +225,16 @@ impl InstanceHandler {
   ) -> Result<()> {
     if self.task.has_started() {
       #[cfg(debug_assertions)]
-      self
-        .span
-        .in_scope(|| warn!("BUG: trying to start instance when one is already running"));
+      warn!("BUG: trying to start instance when one is already running");
       return Ok(());
     }
-
-    self.span.in_scope(|| debug!("instance:starting"));
 
     let identifier = self.id().to_owned();
 
     let Some(mut invocation) = self.invocation.take() else {
       return Err(StateError::InvocationMissing(identifier).into());
     };
+    let span = debug_span!(parent:&invocation.span,"interpreter:op:instance", otel.name=format!("starting:{}",invocation.target));
 
     let entity = self.entity();
     let namespace = self.namespace().to_owned();
@@ -264,10 +259,6 @@ impl InstanceHandler {
       .as_ref()
       .and_then(|v| v.timeout)
       .unwrap_or(options.output_timeout);
-
-    let span = invocation.following_span(trace_span!(
-      "next", operation = %format!("{} ({})", identifier, entity)
-    ));
 
     self.increment_pending();
     let stream = if self.inputs.is_empty() {

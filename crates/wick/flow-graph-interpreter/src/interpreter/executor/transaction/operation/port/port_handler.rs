@@ -114,7 +114,6 @@ impl PortHandler {
 
   pub(super) fn take(&self) -> Option<PacketType> {
     let result = self.buffer.take();
-    trace!(port=%self,payload=?result, "taking from buffer");
 
     let status = self.get_status();
     if self.is_empty() && status == PortStatus::DoneClosing {

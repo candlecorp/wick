@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 
-use tracing::{debug_span, Span};
+use tracing::{info_span, Span};
 use uuid::Uuid;
 
 use crate::{Entity, InherentData, PacketSender, PacketStream, ParseError};
@@ -26,24 +26,60 @@ pub struct Invocation {
 }
 
 impl Invocation {
+  /// Creates a new transaction id.
+  #[must_use]
+  pub fn new_tx_id() -> Uuid {
+    get_uuid()
+  }
+
   /// Creates an invocation with a new transaction id.
   pub fn new(
     origin: impl Into<Entity>,
     target: impl Into<Entity>,
     packets: impl Into<PacketStream>,
     inherent: InherentData,
-    following_span: &Span,
+    parent: &Span,
   ) -> Invocation {
     let tx_id = get_uuid();
     let invocation_id = get_uuid();
-    let span = debug_span!("invocation",id=%invocation_id,tx_id=%tx_id);
-    span.follows_from(following_span.id());
+    let target = target.into();
+    let span =
+      info_span!(parent:parent,"invocation",otel.name=format!("invocation:{}", target),id=%invocation_id,tx_id=%tx_id);
+
     let mut packets: PacketStream = packets.into();
     packets.set_span(span.clone());
 
     Invocation {
       origin: origin.into(),
-      target: target.into(),
+      target,
+      id: invocation_id,
+      tx_id,
+      inherent,
+      span,
+      packets,
+    }
+  }
+
+  /// Creates an invocation with the passed transaction id.
+  pub fn new_with_id(
+    tx_id: Uuid,
+    origin: impl Into<Entity>,
+    target: impl Into<Entity>,
+    packets: impl Into<PacketStream>,
+    inherent: InherentData,
+    parent: &Span,
+  ) -> Invocation {
+    let invocation_id = get_uuid();
+    let target = target.into();
+    let span =
+      info_span!(parent:parent,"invocation",otel.name=format!("invocation:{}", target),id=%invocation_id,tx_id=%tx_id);
+
+    let mut packets: PacketStream = packets.into();
+    packets.set_span(span.clone());
+
+    Invocation {
+      origin: origin.into(),
+      target,
       id: invocation_id,
       tx_id,
       inherent,
@@ -57,16 +93,17 @@ impl Invocation {
     origin: impl Into<Entity>,
     target: impl Into<Entity>,
     inherent: InherentData,
-    following_span: &Span,
+    parent: &Span,
   ) -> Invocation {
     let tx_id = get_uuid();
     let invocation_id = get_uuid();
-    let span = debug_span!("invocation",id=%invocation_id,tx_id=%tx_id);
-    span.follows_from(following_span.id());
+    let target = target.into();
+    let span =
+      info_span!(parent:parent,"invocation",otel.name=format!("invocation:{}", target),id=%invocation_id,tx_id=%tx_id);
 
     Invocation {
       origin: origin.into(),
-      target: target.into(),
+      target,
       id: invocation_id,
       tx_id,
       inherent,
@@ -125,8 +162,8 @@ impl Invocation {
   /// invocations.
   pub fn next_tx(&self, origin: Entity, target: Entity) -> Invocation {
     let invocation_id = get_uuid();
-    let span = debug_span!("invocation",id=%invocation_id, %target);
-    span.follows_from(&self.span);
+    let span = info_span!(parent:&self.span,"invocation",otel.name=format!("invocation:{}", target),id=%invocation_id);
+
     let mut packets: PacketStream = PacketStream::empty();
     packets.set_span(span.clone());
 
@@ -186,17 +223,10 @@ impl Invocation {
     self.span.in_scope(f)
   }
 
-  /// Mark a span as following from this invocation.
-  #[must_use]
-  pub fn following_span(&self, span: Span) -> Span {
-    span.follows_from(&self.span);
-    span
-  }
-
   pub fn make_response(&self) -> (PacketSender, PacketStream) {
     let (tx, mut rx) = PacketStream::new_channels();
-    let span = debug_span!("invocation-response", id=%self.id, target=%self.target);
-    span.follows_from(&self.span);
+    let span = info_span!(parent:&self.span,"invocation:response", id=%self.id, target=%self.target);
+
     rx.set_span(span);
     (tx, rx)
   }

@@ -124,13 +124,12 @@ struct HttpInstance {
 
 impl HttpInstance {
   async fn new(engine: Runtime, routers: Vec<HttpRouter>, initiating_span: &Span, socket: &SocketAddr) -> Self {
-    let span = debug_span!("http_server", %socket);
-    span.follows_from(initiating_span);
+    let span = debug_span!(parent:initiating_span,"http:server", %socket);
 
     span.in_scope(|| trace!(%socket,"http server starting"));
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
     let (running_tx, running_rx) = tokio::sync::oneshot::channel::<()>();
-    let server = Server::bind(socket).serve(ServiceFactory::new(engine, routers, span.clone()));
+    let server = Server::bind(socket).serve(ServiceFactory::new(engine, routers, span.id()));
     let shutdown_span = span.clone();
     let handle = tokio::spawn(async move {
       let _ = server
@@ -242,6 +241,8 @@ impl Http {
     socket: &SocketAddr,
   ) -> Result<HttpInstance, RuntimeError> {
     let mut rt = build_trigger_runtime(&app_config, span.clone())?;
+
+    let span = debug_span!(parent: &span,"trigger:http:routers");
 
     let routers = span.in_scope(|| {
       let mut routers = Vec::new();
@@ -574,9 +575,11 @@ impl fmt::Display for Http {
 trait RawRouter {
   fn handle(
     &self,
+    tx_id: Uuid,
     remote_addr: SocketAddr,
     runtime: Arc<Runtime>,
     request: Request<Body>,
+    span: &Span,
   ) -> BoxFuture<Result<Response<Body>, HttpError>>;
 }
 

@@ -1,4 +1,5 @@
 use flow_graph::{NodeIndex, PortReference};
+use tracing::Span;
 use uuid::Uuid;
 use wick_packet::{Invocation, PacketPayload};
 
@@ -16,11 +17,12 @@ const CHANNEL_UUID: Uuid = Uuid::from_bytes([
 pub struct Event {
   pub(crate) tx_id: Uuid,
   pub(crate) kind: EventKind,
+  pub(crate) span: Option<Span>,
 }
 
 impl Event {
-  pub(crate) fn new(tx_id: Uuid, kind: EventKind) -> Self {
-    Self { tx_id, kind }
+  pub(crate) fn new(tx_id: Uuid, kind: EventKind, span: Option<Span>) -> Self {
+    Self { tx_id, kind, span }
   }
 
   #[must_use]
@@ -108,8 +110,8 @@ impl InterpreterChannel {
     Self { sender, receiver }
   }
 
-  pub(crate) fn dispatcher(&self) -> InterpreterDispatchChannel {
-    InterpreterDispatchChannel::new(self.sender.clone())
+  pub(crate) fn dispatcher(&self, span: Option<Span>) -> InterpreterDispatchChannel {
+    InterpreterDispatchChannel::new(self.sender.clone(), span)
   }
 
   pub(crate) async fn accept(&mut self) -> Option<Event> {
@@ -119,6 +121,7 @@ impl InterpreterChannel {
 
 #[derive(Clone)]
 pub(crate) struct InterpreterDispatchChannel {
+  span: Option<Span>,
   sender: tokio::sync::mpsc::Sender<Event>,
 }
 
@@ -129,8 +132,15 @@ impl std::fmt::Debug for InterpreterDispatchChannel {
 }
 
 impl InterpreterDispatchChannel {
-  fn new(sender: tokio::sync::mpsc::Sender<Event>) -> Self {
-    Self { sender }
+  fn new(sender: tokio::sync::mpsc::Sender<Event>, span: Option<Span>) -> Self {
+    Self { sender, span }
+  }
+
+  pub(crate) fn with_span(self, span: Span) -> Self {
+    Self {
+      sender: self.sender,
+      span: Some(span),
+    }
   }
 
   pub(crate) fn dispatch(&self, event: Event) {
@@ -144,23 +154,27 @@ impl InterpreterDispatchChannel {
   }
 
   pub(crate) fn dispatch_done(&self, tx_id: Uuid) {
-    self.dispatch(Event::new(tx_id, EventKind::TransactionDone));
+    self.dispatch(Event::new(tx_id, EventKind::TransactionDone, self.span.clone()));
   }
 
   pub(crate) fn dispatch_data(&self, tx_id: Uuid, port: PortReference) {
-    self.dispatch(Event::new(tx_id, EventKind::PortData(port)));
+    self.dispatch(Event::new(tx_id, EventKind::PortData(port), self.span.clone()));
   }
 
   pub(crate) fn dispatch_close(&self, error: Option<ExecutionError>) {
-    self.dispatch(Event::new(CHANNEL_UUID, EventKind::Close(error)));
+    self.dispatch(Event::new(CHANNEL_UUID, EventKind::Close(error), self.span.clone()));
   }
 
   pub(crate) fn dispatch_start(&self, tx: Box<Transaction>) {
-    self.dispatch(Event::new(tx.id(), EventKind::TransactionStart(tx)));
+    self.dispatch(Event::new(tx.id(), EventKind::TransactionStart(tx), self.span.clone()));
   }
 
   pub(crate) fn dispatch_call_complete(&self, tx_id: Uuid, op_index: usize) {
-    self.dispatch(Event::new(tx_id, EventKind::CallComplete(CallComplete::new(op_index))));
+    self.dispatch(Event::new(
+      tx_id,
+      EventKind::CallComplete(CallComplete::new(op_index)),
+      self.span.clone(),
+    ));
   }
 
   pub(crate) fn dispatch_op_err(&self, tx_id: Uuid, op_index: usize, signal: PacketPayload) {
@@ -170,6 +184,7 @@ impl InterpreterDispatchChannel {
         index: op_index,
         err: Some(signal),
       }),
+      self.span.clone(),
     ));
   }
 }
@@ -206,9 +221,9 @@ mod test {
   async fn test_channel() -> anyhow::Result<()> {
     let mut channel = InterpreterChannel::new();
 
-    let child1 = channel.dispatcher();
-    let child2 = channel.dispatcher();
-    let child3 = channel.dispatcher();
+    let child1 = channel.dispatcher(None);
+    let child2 = channel.dispatcher(None);
+    let child3 = channel.dispatcher(None);
 
     let join_handle = tokio::task::spawn(async move {
       println!("Handling requests");
@@ -232,14 +247,14 @@ mod test {
     tokio::spawn(async move {
       let num = 1;
       println!("Child 1 PING({})", num);
-      child1.dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num)));
+      child1.dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num), None));
     })
     .await?;
 
     tokio::spawn(async move {
       let num = 2;
       println!("Child 2 PING({})", num);
-      child2.dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num)));
+      child2.dispatch(Event::new(Uuid::new_v4(), EventKind::Ping(num), None));
     })
     .await?;
 

@@ -38,14 +38,14 @@ impl State {
     for (tx_id, (tx, meta)) in self.transactions.iter() {
       let last_update = tx.last_access().elapsed().unwrap();
 
+      let active_instances = tx.active_instances().iter().map(|i| i.id()).collect::<Vec<_>>();
+      if active_instances.is_empty() {
+        cleanup.push(*tx_id);
+        continue;
+      }
       if last_update > EventLoop::SLOW_TX_TIMEOUT && !meta.have_warned() {
-        let active_instances = tx.active_instances().iter().map(|i| i.id()).collect::<Vec<_>>();
-        if active_instances.is_empty() {
-          cleanup.push(*tx_id);
-        } else {
-          warn!(%tx_id, ?active_instances, "slow tx: no packet received in a long time");
-          meta.set_have_warned();
-        }
+        warn!(%tx_id, ?active_instances, "slow tx: no packet received in a long time");
+        meta.set_have_warned();
       }
       if last_update > EventLoop::STALLED_TX_TIMEOUT {
         match tx.check_stalled() {
@@ -94,9 +94,16 @@ impl State {
 
   #[allow(clippy::unused_async)]
   pub(super) async fn handle_transaction_done(&mut self, tx_id: Uuid) -> Result<(), ExecutionError> {
-    if let Some(tx) = self.get_mut(&tx_id) {
+    let is_done = if let Some(tx) = self.get_mut(&tx_id) {
       let statistics = tx.finish()?;
       trace!(?statistics);
+      tx.active_instances().is_empty()
+    } else {
+      false
+    };
+    if is_done {
+      debug!("transaction done");
+      self.transactions.remove(&tx_id);
     }
     Ok(())
   }
@@ -119,20 +126,27 @@ impl State {
     let port_name = graph.get_port_name(&port);
     let instance = tx.instance(port.node_index());
 
-    debug!(
-      operation = %instance,
-      port = port_name,
-      "handling port input"
-    );
-
     tx.stats
       .mark(format!("input:{}:{}:ready", port.node_index(), port.port_index()));
 
     let is_schematic_output = port.node_index() == graph.output().index();
 
     if is_schematic_output {
+      debug!(
+        operation = %instance,
+        port = port_name,
+        "handling schematic output"
+      );
+
       tx.handle_schematic_output()?;
     } else if let Some(packet) = tx.take_instance_input(&port) {
+      debug!(
+        operation = %instance,
+        port = port_name,
+        payload = ?packet,
+        "handling port input"
+      );
+
       tx.push_packets(port.node_index(), vec![packet]).await?;
     }
     Ok(())
@@ -157,17 +171,16 @@ impl State {
 
     let instance = tx.instance(port.node_index());
 
-    debug!(
-      operation = %instance,
-      port = port_name,
-      "handling port output"
-    );
-
     tx.stats
       .mark(format!("output:{}:{}:ready", port.node_index(), port.port_index()));
 
-    if let Some(message) = tx.take_instance_output(&port) {
-      trace!(?message, "delivering component output",);
+    if let Some(packet) = tx.take_instance_output(&port) {
+      debug!(
+        operation = %instance,
+        port = port_name,
+        payload = ?packet,
+        "handling port output"
+      );
       let connections = graph.get_port(&port).connections();
       for index in connections {
         let connection = &graph.connections()[*index];
@@ -176,8 +189,8 @@ impl State {
 
         let channel = self.channel.clone();
         let downstream_instance = tx.instance(downport.node_index()).clone();
-        let message = message.clone().set_port(name);
-        trace!(%connection, ?message, "delivering packet",);
+        let message = packet.clone().set_port(name);
+        trace!(%connection, "delivering packet to downstream",);
         downstream_instance.buffer_in(&downport, message);
         channel.dispatch_data(tx_id, downport);
       }

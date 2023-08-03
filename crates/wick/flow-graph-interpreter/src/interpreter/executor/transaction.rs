@@ -94,7 +94,8 @@ impl Transaction {
     invocation.tx_id = id;
     let stats = TransactionStatistics::new(id);
     stats.mark("new");
-    let span = invocation.following_span(trace_span!("tx",tx_id=%id));
+    let span = trace_span!(parent:&invocation.span,"tx:flow",tx_id=%id);
+    let channel = channel.with_span(span.clone());
 
     let (tx, rx) = invocation.make_response();
 
@@ -114,6 +115,11 @@ impl Transaction {
       finished: AtomicBool::new(false),
       callback,
     }
+  }
+
+  pub fn run(self) {
+    let channel = self.channel.clone();
+    channel.dispatch_start(Box::new(self));
   }
 
   pub fn id(&self) -> Uuid {

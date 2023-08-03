@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use liquid_json::LiquidJsonValue;
-use tracing::{debug_span, trace};
+use tracing::trace;
 use wick_packet::{date_from_millis, InherentData, RuntimeConfig};
 
 use crate::Error;
@@ -71,7 +71,7 @@ impl LiquidJsonConfig {
     env: Option<&HashMap<String, String>>,
     inherent: Option<&InherentData>,
   ) -> Result<RuntimeConfig, Error> {
-    let ctx = debug_span!("liquid-json-config").in_scope(|| Self::make_context(None, root, config, env, inherent))?;
+    let ctx = Self::make_context(None, root, config, env, inherent)?;
 
     let mut map = HashMap::new();
     for (k, v) in self.template.iter() {

@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use flow_component::{Component, ComponentError, RuntimeCallback};
-use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
@@ -101,9 +100,8 @@ impl Component for SelfComponent {
       .ok_or_else(|| Error::SchematicNotFound(operation.clone()));
 
     Box::pin(async move {
-      let span = trace_span!("ns_self", name = %operation);
       match fut {
-        Ok(fut) => fut.instrument(span).await.map_err(ComponentError::new),
+        Ok(fut) => fut.await.map_err(ComponentError::new),
         Err(e) => Err(ComponentError::new(e)),
       }
     })
