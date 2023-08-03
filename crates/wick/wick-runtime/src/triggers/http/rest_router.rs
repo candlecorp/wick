@@ -7,6 +7,7 @@ use hyper::body::to_bytes;
 use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
 use tracing::{Instrument, Span};
+use uuid::Uuid;
 use wick_config::config::{
   AppConfiguration,
   ComponentOperationExpression,
@@ -30,7 +31,6 @@ pub(crate) const OPENAPI_PATH: &str = "/openapi.json";
 #[derive()]
 #[must_use]
 pub(super) struct RestRouter {
-  span: Span,
   context: Arc<Context>,
 }
 
@@ -40,19 +40,15 @@ impl RestRouter {
     config: RestRouterConfig,
     routes: Vec<RestRoute>,
   ) -> Result<Self, RestError> {
-    let span = debug_span!("http:rest", path = %config.path());
-
     let title = config
       .info()
       .and_then(|i| i.title().cloned())
       .unwrap_or_else(|| "Untitled API".to_owned());
 
-    span.in_scope(|| {
-      debug!(api = %title, path=%config.path(), "serving");
-      for route in &routes {
-        debug!(route = ?route.route, "route");
-      }
-    });
+    debug!(api = %title, path=%config.path(), "router:rest:serving");
+    for route in &routes {
+      debug!(route = ?route.route, "router:rest:route");
+    }
 
     let oapi = config.tools().map_or(false, |t| t.openapi());
     let oapi = if oapi {
@@ -71,7 +67,6 @@ impl RestRouter {
         root: config.path().to_owned(),
         openapi: oapi,
       }),
-      span,
     })
   }
 }
@@ -79,13 +74,15 @@ impl RestRouter {
 impl RawRouter for RestRouter {
   fn handle(
     &self,
+    tx_id: Uuid,
     _remote_addr: SocketAddr,
     runtime: Arc<Runtime>,
     request: Request<Body>,
+    span: &Span,
   ) -> BoxFuture<Result<Response<Body>, HttpError>> {
-    let span = debug_span!("handling");
-    span.follows_from(&self.span);
-    let handler = RestHandler::new(runtime, self.context.clone(), span);
+    let span = info_span!(parent: span, "rest");
+
+    let handler = RestHandler::new(tx_id, runtime, self.context.clone(), span);
     let fut = async move {
       let response = handler
         .serve(request)
@@ -107,18 +104,29 @@ struct Context {
 struct RestHandler {
   context: Arc<Context>,
   runtime: Arc<Runtime>,
+  tx_id: Uuid,
   span: Span,
 }
 
 impl RestHandler {
-  fn new(runtime: Arc<Runtime>, context: Arc<Context>, span: Span) -> Self {
-    RestHandler { context, runtime, span }
+  fn new(tx_id: Uuid, runtime: Arc<Runtime>, context: Arc<Context>, span: Span) -> Self {
+    RestHandler {
+      tx_id,
+      context,
+      runtime,
+      span,
+    }
   }
 
   /// Serve a request.
   #[allow(clippy::unused_async)]
   async fn serve(self, request: Request<Body>) -> Result<Response<Body>, HttpError> {
-    let Self { context, runtime, span } = self;
+    let Self {
+      context,
+      runtime,
+      span,
+      tx_id,
+    } = self;
     let method = match *request.method() {
       hyper::Method::GET => wick_config::config::HttpMethod::Get,
       hyper::Method::POST => wick_config::config::HttpMethod::Post,
@@ -189,7 +197,8 @@ impl RestHandler {
         packets.push(Packet::done(port));
       }
 
-      let invocation = Invocation::new(
+      let invocation = Invocation::new_with_id(
+        tx_id,
         Entity::server("http"),
         Entity::operation(route.component.id(), route.operation.name()),
         packets,

@@ -26,15 +26,16 @@ impl EventLoop {
   pub(crate) const STALLED_TX_TIMEOUT: Duration = Duration::from_secs(60 * 5);
   pub(crate) const SLOW_TX_TIMEOUT: Duration = Duration::from_secs(15);
 
-  pub(super) fn new(channel: InterpreterChannel) -> Self {
-    let dispatcher = channel.dispatcher();
-    let span = debug_span!("event_loop");
-    span.follows_from(Span::current());
+  pub(super) fn new(channel: InterpreterChannel, span: &Span) -> Self {
+    let event_span = debug_span!("event_loop");
+    event_span.follows_from(span);
+    let dispatcher = channel.dispatcher(Some(event_span.clone()));
+
     Self {
       channel: Some(channel),
       dispatcher,
       task: Mutex::new(None),
-      span,
+      span: event_span,
     }
   }
 
@@ -42,7 +43,7 @@ impl EventLoop {
     let channel = self.channel.take().unwrap();
 
     let span = self.span.clone();
-    let handle = tokio::spawn(async move { event_loop(channel, options, observer).instrument(span).await });
+    let handle = tokio::spawn(async move { event_loop(channel, options, observer, span).await });
     let mut lock = self.task.lock();
     lock.replace(handle);
   }
@@ -102,9 +103,10 @@ async fn event_loop(
   mut channel: InterpreterChannel,
   options: InterpreterOptions,
   observer: Option<Box<dyn Observer + Send + Sync>>,
+  _span: Span,
 ) -> Result<(), ExecutionError> {
   debug!(?options, "started");
-  let mut state = State::new(channel.dispatcher());
+  let mut state = State::new(channel.dispatcher(None));
 
   let mut num: usize = 0;
 
@@ -118,22 +120,23 @@ async fn event_loop(
           observer.on_event(num, &event);
         }
 
-        let evt_span = trace_span!(parent:&Span::current(),"event", otel.name = event.name(), i = num, %tx_id);
-        evt_span.in_scope(|| debug!(event = ?event, tx_id = ?tx_id));
         let name = event.name().to_owned();
+        let tx_span = event.span.unwrap_or_else(Span::current);
+
+        tx_span.in_scope(|| debug!(event = ?event.kind, tx_id = ?tx_id));
 
         let result = match event.kind {
           EventKind::Invocation(_index, _invocation) => {
             error!("invocation not supported");
             panic!("invocation not supported")
           }
-          EventKind::CallComplete(data) => state.handle_call_complete(tx_id, data).instrument(evt_span).await,
-          EventKind::PortData(data) => state.handle_port_data(tx_id, data).instrument(evt_span).await,
-          EventKind::TransactionDone => state.handle_transaction_done(tx_id).instrument(evt_span).await,
+          EventKind::CallComplete(data) => state.handle_call_complete(tx_id, data).instrument(tx_span).await,
+          EventKind::PortData(data) => state.handle_port_data(tx_id, data).instrument(tx_span).await,
+          EventKind::TransactionDone => state.handle_transaction_done(tx_id).instrument(tx_span).await,
           EventKind::TransactionStart(transaction) => {
             state
               .handle_transaction_start(*transaction, &options)
-              .instrument(evt_span)
+              .instrument(tx_span)
               .await
           }
           EventKind::Ping(ping) => {
@@ -142,11 +145,11 @@ async fn event_loop(
           }
           EventKind::Close(error) => match error {
             Some(error) => {
-              evt_span.in_scope(|| error!(%error,"stopped with error"));
+              tx_span.in_scope(|| error!(%error,"stopped with error"));
               break Err(error);
             }
             None => {
-              evt_span.in_scope(|| debug!("stopping"));
+              tx_span.in_scope(|| debug!("stopping"));
               break Ok(());
             }
           },
@@ -169,7 +172,7 @@ async fn event_loop(
       Err(_) => {
         if let Err(error) = state.run_cleanup() {
           error!(%error,"Error checking hung transactions");
-          channel.dispatcher().dispatch_close(Some(error));
+          channel.dispatcher(None).dispatch_close(Some(error));
         };
       }
     }

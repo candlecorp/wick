@@ -1,4 +1,3 @@
-use tracing::Instrument;
 use uuid::Uuid;
 
 use crate::dev::prelude::*;
@@ -32,11 +31,13 @@ impl Component for EngineComponent {
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target_url = invocation.target_url();
 
-    let span = debug_span!(
-      "invoke",
-      engine_id = %self.engine_id,
-      target =  %invocation.target
-    );
+    invocation.trace(|| {
+      debug!(
+        engine_id = %self.engine_id,
+        target =  %invocation.target,
+        "runtime:invoke",
+      );
+    });
 
     Box::pin(async move {
       let engine = RuntimeService::for_id(&self.engine_id)
@@ -47,7 +48,6 @@ impl Component for EngineComponent {
       let result: InvocationResponse = engine
         .invoke(invocation, config)
         .map_err(flow_component::ComponentError::new)?
-        .instrument(span)
         .await
         .map_err(flow_component::ComponentError::new)?;
 

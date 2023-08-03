@@ -41,8 +41,8 @@ pub(crate) fn init_child(
   namespace: Option<String>,
   opts: ChildInit,
 ) -> BoxFuture<'static, Result<Arc<RuntimeService>, EngineError>> {
-  let child_span = debug_span!("child",id=%uid);
-  child_span.follows_from(opts.span);
+  let child_span = debug_span!(parent:opts.span,"runtime:child",id=%uid);
+
   let config = RuntimeInit {
     manifest,
     allow_latest: opts.allow_latest,

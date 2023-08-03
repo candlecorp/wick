@@ -62,7 +62,7 @@ impl SchematicExecutor {
       seed,
     );
     let stream = transaction.take_stream().unwrap();
-    self.channel.dispatch_start(Box::new(transaction));
+    Transaction::run(transaction);
     Ok(stream)
   }
 }

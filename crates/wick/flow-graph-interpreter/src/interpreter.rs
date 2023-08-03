@@ -66,8 +66,8 @@ impl Interpreter {
     callback: Arc<RuntimeCallback>,
     parent_span: &Span,
   ) -> Result<Self, Error> {
-    let span = trace_span!("interpreter");
-    span.follows_from(parent_span);
+    let span = trace_span!(parent: parent_span, "interpreter");
+
     let _guard = span.enter();
     let mut handlers = components.unwrap_or_default();
     debug!(handlers = ?handlers.keys(), "initializing interpreter");
@@ -105,7 +105,7 @@ impl Interpreter {
     program.validate()?;
 
     let channel = InterpreterChannel::new();
-    let dispatcher = channel.dispatcher();
+    let dispatcher = channel.dispatcher(Some(span.clone()));
 
     // Make the self:: component
     let components = Arc::new(handlers);
@@ -117,7 +117,7 @@ impl Interpreter {
 
     debug!(?signature, "signature");
 
-    let event_loop = EventLoop::new(channel);
+    let event_loop = EventLoop::new(channel, &span);
     let mut handled_opts = program.operations().iter().map(|s| s.name()).collect::<Vec<_>>();
     handled_opts.extend(exposed_ops.keys().map(|s: &String| s.as_str()));
     debug!(
@@ -234,7 +234,8 @@ impl Component for Interpreter {
       }
       hosted
     };
-    let span = trace_span!("invoke", tx_id = %invocation.tx_id);
+    let span = invocation.span.clone();
+
     span.in_scope(|| trace!(?invocation, "invoking"));
     let from_exposed = self.exposed_ops.get(invocation.target.operation_id());
 

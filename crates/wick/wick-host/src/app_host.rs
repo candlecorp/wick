@@ -73,6 +73,7 @@ impl AppHost {
           let inner = loader.clone();
           let resources = resources.clone();
           let span = debug_span!("trigger", kind=%trigger_config.kind());
+          span.follows_from(&self.span);
 
           let task = tokio::spawn(async move {
             span.in_scope(|| trace!("initializing trigger"));

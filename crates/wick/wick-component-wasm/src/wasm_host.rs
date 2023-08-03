@@ -155,8 +155,8 @@ impl WasmHost {
     debug!(duration_μs = ?time.elapsed().as_micros(), "wasmtime initialize");
     if let Some(callback) = callback {
       let index = host.register_request_channel("wick", "__callback", make_host_callback(callback));
-      let cb_span = debug_span!("wasmrs event");
-      cb_span.follows_from(&span);
+      let cb_span = debug_span!(parent:&span,"wasmrs:event");
+
       host.register_fire_and_forget("wick", "__event", make_event_callback(cb_span));
       trace!(index, "wasmrs callback index");
     }
@@ -269,7 +269,7 @@ fn make_host_callback(
   rt_cb: &Arc<RuntimeCallback>,
 ) -> OperationHandler<wasmrs::IncomingStream, wasmrs::OutgoingStream> {
   let cb = rt_cb.clone();
-  let span = tracing::info_span!("wasmrs callback");
+  let span = tracing::info_span!("wasmrs:callback");
   let func = move |mut incoming: wasmrs::IncomingStream| -> std::result::Result<wasmrs::OutgoingStream, GenericError> {
     use tokio_stream::StreamExt;
     let (tx, rx) = FluxChannel::new_parts();
