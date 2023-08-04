@@ -114,7 +114,7 @@ async fn event_loop(
     let task = tokio::time::timeout(EventLoop::WAKE_TIMEOUT, channel.accept());
     match task.await {
       Ok(Some(event)) => {
-        let tx_id = event.tx_id;
+        let ctx_id = event.ctx_id;
 
         if let Some(observer) = &observer {
           observer.on_event(num, &event);
@@ -123,22 +123,17 @@ async fn event_loop(
         let name = event.name().to_owned();
         let tx_span = event.span.unwrap_or_else(Span::current);
 
-        tx_span.in_scope(|| debug!(event = ?event.kind, tx_id = ?tx_id));
+        tx_span.in_scope(|| debug!(event = ?event.kind, ctx_id = ?ctx_id));
 
         let result = match event.kind {
           EventKind::Invocation(_index, _invocation) => {
             error!("invocation not supported");
             panic!("invocation not supported")
           }
-          EventKind::CallComplete(data) => state.handle_call_complete(tx_id, data).instrument(tx_span).await,
-          EventKind::PortData(data) => state.handle_port_data(tx_id, data).instrument(tx_span).await,
-          EventKind::TransactionDone => state.handle_transaction_done(tx_id).instrument(tx_span).await,
-          EventKind::TransactionStart(transaction) => {
-            state
-              .handle_transaction_start(*transaction, &options)
-              .instrument(tx_span)
-              .await
-          }
+          EventKind::CallComplete(data) => state.handle_call_complete(ctx_id, data).instrument(tx_span).await,
+          EventKind::PortData(data) => state.handle_port_data(ctx_id, data).instrument(tx_span).await,
+          EventKind::ExecutionDone => state.handle_exec_done(ctx_id).instrument(tx_span).await,
+          EventKind::ExecutionStart(context) => state.handle_exec_start(*context, &options).instrument(tx_span).await,
           EventKind::Ping(ping) => {
             trace!(ping);
             Ok(())
@@ -156,9 +151,9 @@ async fn event_loop(
         };
 
         if let Err(e) = result {
-          warn!(event = %name, tx_id = ?tx_id, response_error = %e, "iteration:end");
+          warn!(event = %name, ctx_id = ?ctx_id, response_error = %e, "iteration:end");
         } else {
-          trace!(event = %name, tx_id = ?tx_id, "iteration:end");
+          trace!(event = %name, ctx_id = ?ctx_id, "iteration:end");
         }
 
         if let Some(observer) = &observer {
@@ -171,7 +166,7 @@ async fn event_loop(
       }
       Err(_) => {
         if let Err(error) = state.run_cleanup() {
-          error!(%error,"Error checking hung transactions");
+          error!(%error,"Error checking hung invocations");
           channel.dispatcher(None).dispatch_close(Some(error));
         };
       }
@@ -204,7 +199,7 @@ mod test {
   {
   }
 
-  #[test_logger::test]
+  #[test]
   fn test_sync_send() -> Result<()> {
     sync_send::<EventLoop>();
     Ok(())

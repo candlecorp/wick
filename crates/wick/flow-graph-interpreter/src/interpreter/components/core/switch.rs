@@ -521,7 +521,7 @@ impl Operation for Op {
                 (CaseId::Match(CaseValue(&case.case)), &case.case_do, case.with.clone())
               },
             );
-            let span = trace_span!(parent:&invocation.span,"switch:case:handler",%condition);
+            let span = trace_span!(parent:&invocation.span,"switch:case:handler",otel.name=format!("case:{}",condition),%condition);
             router.push(Condition::new(
               condition,
               condition_level,

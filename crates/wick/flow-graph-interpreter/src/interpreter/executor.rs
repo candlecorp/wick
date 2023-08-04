@@ -4,8 +4,8 @@ use flow_component::RuntimeCallback;
 use seeded_random::Seed;
 use wick_packet::{Invocation, PacketStream};
 
+use self::context::ExecutionContext;
 use self::error::ExecutionError;
-use self::transaction::Transaction;
 use super::channel::InterpreterDispatchChannel;
 use super::components::self_component::SelfComponent;
 use crate::graph::types::*;
@@ -14,7 +14,7 @@ use crate::HandlerMap;
 
 pub(crate) mod error;
 // mod output_channel;
-pub(crate) mod transaction;
+pub(crate) mod context;
 
 type Result<T> = std::result::Result<T, ExecutionError>;
 
@@ -51,7 +51,7 @@ impl SchematicExecutor {
 
     let seed = Seed::unsafe_new(invocation.seed());
 
-    let mut transaction = Transaction::new(
+    let mut ctx = ExecutionContext::new(
       self.schematic.clone(),
       invocation,
       self.channel.clone(),
@@ -61,8 +61,8 @@ impl SchematicExecutor {
       config,
       seed,
     );
-    let stream = transaction.take_stream().unwrap();
-    Transaction::run(transaction);
+    let stream = ctx.take_stream().unwrap();
+    ExecutionContext::run(ctx);
     Ok(stream)
   }
 }

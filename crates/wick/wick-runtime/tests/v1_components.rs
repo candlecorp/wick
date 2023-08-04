@@ -14,7 +14,7 @@ async fn flow_with_inputless_component() -> Result<()> {
     packet_stream!(("input", "hello world")),
     "test",
     vec![
-      Packet::encode("uuid", "aa38fc21-01bd-ade2-254b-185bf88a15f7"),
+      Packet::encode("uuid", "66cdda0a-0c2d-5edf-0f27-37150112a14d"),
       Packet::done("uuid"),
       Packet::encode("output", "hello world"),
       Packet::done("output"),
@@ -30,7 +30,7 @@ async fn composite_inherit() -> Result<()> {
     packet_stream!(("input", "hello world")),
     "test",
     vec![
-      Packet::encode("uuid", "aa38fc21-01bd-ade2-254b-185bf88a15f7"),
+      Packet::encode("uuid", "66cdda0a-0c2d-5edf-0f27-37150112a14d"),
       Packet::done("uuid"),
       Packet::encode("output", "hello world"),
       Packet::done("output"),

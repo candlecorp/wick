@@ -3,7 +3,7 @@ use std::time::SystemTime;
 use tracing::{info_span, Span};
 use uuid::Uuid;
 
-use crate::{Entity, InherentData, PacketSender, PacketStream, ParseError};
+use crate::{Entity, InherentData, PacketSender, PacketStream};
 
 /// A complete invocation request.
 #[derive(Debug)]
@@ -41,23 +41,8 @@ impl Invocation {
     parent: &Span,
   ) -> Invocation {
     let tx_id = get_uuid();
-    let invocation_id = get_uuid();
-    let target = target.into();
-    let span =
-      info_span!(parent:parent,"invocation",otel.name=format!("invocation:{}", target),id=%invocation_id,tx_id=%tx_id);
 
-    let mut packets: PacketStream = packets.into();
-    packets.set_span(span.clone());
-
-    Invocation {
-      origin: origin.into(),
-      target,
-      id: invocation_id,
-      tx_id,
-      inherent,
-      span,
-      packets,
-    }
+    Self::new_with_id(tx_id, origin, target, packets, inherent, parent)
   }
 
   /// Creates an invocation with the passed transaction id.
@@ -89,60 +74,13 @@ impl Invocation {
   }
 
   /// Creates an invocation with a new transaction id.
-  pub fn new_empty(
-    origin: impl Into<Entity>,
-    target: impl Into<Entity>,
-    inherent: InherentData,
-    parent: &Span,
-  ) -> Invocation {
-    let tx_id = get_uuid();
-    let invocation_id = get_uuid();
-    let target = target.into();
-    let span =
-      info_span!(parent:parent,"invocation",otel.name=format!("invocation:{}", target),id=%invocation_id,tx_id=%tx_id);
-
-    Invocation {
-      origin: origin.into(),
-      target,
-      id: invocation_id,
-      tx_id,
-      inherent,
-      span,
-      packets: PacketStream::empty(),
-    }
-  }
-
-  /// Creates an invocation with a new transaction id.
-  pub fn try_new<O, T, OE, TE>(
-    origin: O,
-    target: T,
-    packets: impl Into<PacketStream>,
-    inherent: InherentData,
-    following_span: &Span,
-  ) -> Result<Invocation, ParseError>
-  where
-    O: TryInto<Entity, Error = OE>,
-    OE: std::error::Error + Send + Sync + 'static,
-    T: TryInto<Entity, Error = TE>,
-    TE: std::error::Error + Send + Sync + 'static,
-  {
-    Ok(Invocation::new(
-      origin.try_into().map_err(|e| ParseError::Conversion(Box::new(e)))?,
-      target.try_into().map_err(|e| ParseError::Conversion(Box::new(e)))?,
-      packets,
-      inherent,
-      following_span,
-    ))
-  }
-
-  /// Creates an invocation with a new transaction id.
   #[cfg(feature = "test")]
   pub fn test<T, TE>(
     name: &str,
     target: T,
     packets: impl Into<PacketStream>,
     inherent: Option<InherentData>,
-  ) -> Result<Invocation, ParseError>
+  ) -> Result<Invocation, crate::ParseError>
   where
     T: TryInto<Entity, Error = TE>,
     TE: std::error::Error + Send + Sync + 'static,
@@ -151,7 +89,9 @@ impl Invocation {
 
     Ok(Invocation::new(
       Entity::test(name),
-      target.try_into().map_err(|e| ParseError::Conversion(Box::new(e)))?,
+      target
+        .try_into()
+        .map_err(|e| crate::ParseError::Conversion(Box::new(e)))?,
       packets,
       inherent,
       &Span::current(),
@@ -225,7 +165,7 @@ impl Invocation {
 
   pub fn make_response(&self) -> (PacketSender, PacketStream) {
     let (tx, mut rx) = PacketStream::new_channels();
-    let span = info_span!(parent:&self.span,"invocation:response", id=%self.id, target=%self.target);
+    let span = info_span!(parent:&self.span,"invocation:response", otel.name=format!("invocation:response:{}", self.target), id=%self.id, target=%self.target);
 
     rx.set_span(span);
     (tx, rx)

@@ -153,8 +153,29 @@ impl LoggingGuard {
   }
 
   /// Flush any remaining logs.
-  pub fn flush(&self) {
-    opentelemetry::global::shutdown_tracer_provider();
+  pub fn flush(&mut self) {
+    let has_otel = self.tracer_provider.take().is_some();
+
+    if has_otel {
+      // Shut down the global tracer provider.
+      // This has to be done in a separate thread because it will deadlock
+      // if any of its requests have stalled.
+      // See: https://github.com/open-telemetry/opentelemetry-rust/issues/868
+      let (sender, receiver) = std::sync::mpsc::channel();
+      let handle = std::thread::spawn(move || {
+        opentelemetry::global::shutdown_tracer_provider();
+        let _ = sender.send(());
+      });
+
+      // Wait a bit to see if the shutdown completes gracefully.
+      let _ = receiver.recv_timeout(std::time::Duration::from_millis(200));
+
+      // Otherwise, issue a warning because opentelemetry will complain
+      // and we want to add context to the warning.
+      if !handle.is_finished() {
+        warn!("open telemetry tracer provider did not shut down in time, forcing shutdown");
+      }
+    }
   }
 }
 
@@ -231,7 +252,7 @@ where
 
   // This is ugly. If you can improve it, go for it, but
   // start here to understand why it's laid out like this: https://github.com/tokio-rs/tracing/issues/575
-  let (verbose_layer, normal_layer, logfile_guard, otel_layer, test_layer) = match environment {
+  let (verbose_layer, normal_layer, logfile_guard, test_layer) = match environment {
     Environment::Prod => {
       if opts.verbose {
         (
@@ -249,7 +270,6 @@ where
           ),
           None,
           None,
-          otel_layer,
           None,
         )
       } else {
@@ -266,7 +286,6 @@ where
               .with_filter(wick_filter(opts)),
           ),
           None,
-          otel_layer,
           None,
         )
       }
@@ -275,7 +294,6 @@ where
       None,
       None,
       None,
-      otel_layer,
       Some(
         tracing_subscriber::fmt::layer()
           .with_writer(stderr_writer)

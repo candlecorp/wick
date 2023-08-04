@@ -58,6 +58,7 @@ pub(crate) struct PortList {
   inner: Vec<PortHandler>,
 }
 
+#[allow(unused)]
 impl PortList {
   pub(super) fn new(operation_instance: impl AsRef<str>, ports: Vec<OperationPort>) -> Self {
     let ports = ports
@@ -108,6 +109,7 @@ pub(crate) struct OutputPorts {
   inner: PortList,
 }
 
+#[allow(unused)]
 impl OutputPorts {
   pub(super) fn new(operation_instance: impl AsRef<str>, ports: Vec<OperationPort>) -> Self {
     Self {
@@ -149,6 +151,8 @@ impl OutputPorts {
 pub(crate) struct InputPorts {
   inner: PortList,
 }
+
+#[allow(unused)]
 impl InputPorts {
   pub(super) fn new(operation_instance: impl AsRef<str>, ports: Vec<OperationPort>) -> Self {
     Self {
