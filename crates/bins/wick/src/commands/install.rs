@@ -108,9 +108,9 @@ esac
 app_path="{}"
 
 if [ -x "$basedir/wick" ]; then
-  exec "$basedir/wick" "run" "$app_path" "$@"
+  exec "$basedir/wick" "run" "$app_path" "--" "$@"
 else
-  exec wick "run" "$app_path" "$@"
+  exec wick "run" "$app_path" "--" "$@"
 fi
   "#,
     target

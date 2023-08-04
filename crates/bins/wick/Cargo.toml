@@ -44,7 +44,7 @@ dialoguer = { workspace = true, features = ["password"] }
 human-panic = { workspace = true }
 futures = { workspace = true }
 thiserror = { workspace = true }
-clap = { workspace = true, features = ["derive", "std"] }
+clap = { workspace = true, default-features = true, features = ["derive"] }
 nkeys = { workspace = true }
 atty = { workspace = true }
 jaq-core = { workspace = true, features = ["serde_json"] }
