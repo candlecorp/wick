@@ -212,7 +212,7 @@ impl Transaction {
         } else if packet.is_noop() {
           // TODO: propagate this and/or its context if it becomes an issue.
         } else {
-          warn!(port = packet.port(), "dropping packet for unconnected port");
+          debug!(port = packet.port(), "dropping packet for unconnected port");
         }
       }
     });

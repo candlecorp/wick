@@ -106,7 +106,7 @@ impl Validator {
                 let mut walker = SchematicWalker::from_port(schematic, port.detached(), WalkDirection::Down);
                 let next = walker.nth(1);
                 if next.is_none() {
-                  warn!(id=node.name.clone(), operation = %reference, port = %field.name, "unhandled downstream connection");
+                  debug!(id=node.name.clone(), operation = %reference, port = %field.name, "unhandled downstream connection");
                   // validation_errors.push(ValidationError::UnusedOutput {
                   //   port: field.name.clone(),
                   //   id: node.name.clone(),
