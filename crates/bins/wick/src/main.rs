@@ -185,11 +185,6 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
   panic::setup(human_panic::PanicStyle::Human);
 
   let mut args = std::env::args().collect::<Vec<_>>();
-  // first arg is always the command name, so get the first argument after.
-  if let Some(first) = args.get(1) {
-    // If the first real argument contains a dot or any slash, make the default subcommand `wick run`
-    if first.contains('.') || first.contains('/') || first.contains('\\') {}
-  }
 
   let matches = <Cli as clap::CommandFactory>::command().try_get_matches_from(&args);
   if let Err(e) = matches {
@@ -201,6 +196,7 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
       }
     }
   }
+
   let mut cli = Cli::parse_from(args);
   let options = cli.output.clone();
 

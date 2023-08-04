@@ -15,10 +15,6 @@ pub(crate) struct Options {
   #[clap(action)]
   pub(crate) path: String,
 
-  /// Operation to render.
-  #[clap(action)]
-  pub(crate) operation: String,
-
   #[clap(flatten)]
   pub(crate) oci: crate::oci::Options,
 
