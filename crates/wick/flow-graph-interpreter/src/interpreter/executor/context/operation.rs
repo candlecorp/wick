@@ -12,7 +12,7 @@ use tracing::Span;
 use tracing_futures::Instrument;
 use uuid::Uuid;
 use wasmrs_rx::{FluxChannel, Observer};
-use wick_packet::{Entity, Invocation, Packet, PacketError, PacketPayload, PacketSender, PacketStream};
+use wick_packet::{Entity, InherentData, Invocation, Packet, PacketError, PacketPayload, PacketSender, PacketStream};
 
 use self::port::{InputPorts, OutputPorts, PortStatus};
 use crate::graph::types::*;
@@ -27,12 +27,57 @@ type Result<T> = std::result::Result<T, ExecutionError>;
 
 pub(crate) mod port;
 
+pub(crate) struct FutureInvocation {
+  origin: Entity,
+  target: Entity,
+  span: Span,
+  tx_id: Uuid,
+  inherent: InherentData,
+}
+
+impl FutureInvocation {
+  pub(crate) fn new(tx_id: Uuid, origin: Entity, target: Entity, inherent: InherentData, span: Span) -> Self {
+    Self {
+      origin,
+      target,
+      span,
+      inherent,
+      tx_id,
+    }
+  }
+
+  pub(crate) fn next(value: &Invocation, target: Entity, seed: u64) -> Self {
+    let inherent = InherentData {
+      seed,
+      timestamp: std::time::SystemTime::now()
+        .duration_since(std::time::SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64,
+    };
+
+    Self::new(value.tx_id, value.target.clone(), target, inherent, value.span.clone())
+  }
+}
+
+impl From<FutureInvocation> for Invocation {
+  fn from(value: FutureInvocation) -> Self {
+    Self::new_with_id(
+      value.tx_id,
+      value.origin,
+      value.target,
+      PacketStream::empty(),
+      value.inherent,
+      &value.span,
+    )
+  }
+}
+
 #[derive()]
 #[must_use]
 pub(crate) struct InstanceHandler {
   reference: Reference,
   identifier: String,
-  invocation: Bucket<Invocation>,
+  invocation: Bucket<FutureInvocation>,
   index: NodeIndex,
   sender: PacketSender,
   inputs: InputPorts,
@@ -65,7 +110,7 @@ impl std::fmt::Display for InstanceHandler {
 impl InstanceHandler {
   pub(super) fn new(
     schematic: Arc<Schematic>,
-    invocation: Invocation,
+    invocation: FutureInvocation,
     op_node: &OperationNode,
     components: Arc<HandlerMap>,
     self_component: SelfComponent,
@@ -121,14 +166,10 @@ impl InstanceHandler {
   }
 
   pub(crate) fn buffer_in(&self, port: &PortReference, value: Packet) {
-    trace!(operation=%self, port=self.inputs.get_handler(port).name(), ?value, "buffering input message");
-
     self.inputs.receive(port, value);
   }
 
   pub(crate) fn buffer_out(&self, port: &PortReference, value: Packet) {
-    trace!(operation=%self, port=self.outputs.get_handler(port).name(), ?value, "buffering output message");
-
     self.outputs.receive(port, value);
   }
 
@@ -217,7 +258,7 @@ impl InstanceHandler {
 
   pub(crate) async fn start(
     self: Arc<Self>,
-    tx_id: Uuid,
+    ctx_id: Uuid,
     channel: InterpreterDispatchChannel,
     options: &InterpreterOptions,
     callback: Arc<RuntimeCallback>,
@@ -231,9 +272,10 @@ impl InstanceHandler {
 
     let identifier = self.id().to_owned();
 
-    let Some(mut invocation) = self.invocation.take() else {
+    let Some(invocation) = self.invocation.take() else {
       return Err(StateError::InvocationMissing(identifier).into());
     };
+    let mut invocation: Invocation = invocation.into();
     let span = debug_span!(parent:&invocation.span,"interpreter:op:instance", otel.name=format!("starting:{}",invocation.target));
 
     let entity = self.entity();
@@ -313,20 +355,16 @@ impl InstanceHandler {
 
         span.in_scope(|| warn!(%msg, "component error"));
 
-        channel.dispatch_op_err(tx_id, self.index(), PacketPayload::Err(PacketError::new(msg)));
+        channel.dispatch_op_err(ctx_id, self.index(), PacketPayload::Err(PacketError::new(msg)));
         return Ok(());
       }
     };
 
     self
       .task
-      .start(tx_id, self.clone(), stream, channel, timeout, span.clone());
+      .start(ctx_id, self.clone(), stream, channel, timeout, span.clone());
 
     Ok(())
-  }
-
-  pub(crate) fn num_pending(&self) -> u32 {
-    self.pending.load(Ordering::Relaxed)
   }
 }
 
@@ -340,7 +378,7 @@ struct InstanceTask {
 impl InstanceTask {
   fn start(
     &self,
-    tx_id: Uuid,
+    ctx_id: Uuid,
     instance: Arc<InstanceHandler>,
     stream: PacketStream,
     channel: InterpreterDispatchChannel,
@@ -358,7 +396,7 @@ impl InstanceTask {
 
     span.in_scope(|| debug!(instance = instance.id(), "task:start"));
     let task = tokio::spawn(async move {
-      let result = output_handler(tx_id, &instance, stream, channel, timeout, span.clone()).await;
+      let result = output_handler(ctx_id, &instance, stream, channel, timeout, span.clone()).await;
       if let Err(error) = &result {
         span.in_scope(|| error!(%error, "error in output handler"));
       }
@@ -394,7 +432,7 @@ impl InstanceTask {
 }
 
 async fn output_handler(
-  tx_id: Uuid,
+  ctx_id: Uuid,
   instance: &InstanceHandler,
   mut stream: PacketStream,
   channel: InterpreterDispatchChannel,
@@ -412,7 +450,7 @@ async fn output_handler(
         num_received += 1;
         if let Err(e) = message {
           span.in_scope(|| warn!(error=?e,"component-wide error"));
-          channel.dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(e.to_string()));
+          channel.dispatch_op_err(ctx_id, instance.index(), PacketPayload::fatal_error(e.to_string()));
           break CompletionStatus::Error;
         }
         let message = message.unwrap();
@@ -423,7 +461,7 @@ async fn output_handler(
 
         if message.is_fatal_error() {
           span.in_scope(|| warn!(error=?message,"component-wide error"));
-          channel.dispatch_op_err(tx_id, instance.index(), message.payload);
+          channel.dispatch_op_err(ctx_id, instance.index(), message.payload);
           break CompletionStatus::Error;
         }
 
@@ -446,23 +484,23 @@ async fn output_handler(
         }
 
         instance.buffer_out(&port, message);
-        channel.dispatch_data(tx_id, port);
+        channel.dispatch_data(ctx_id, port);
       }
       Err(error) => {
         span.in_scope(|| warn!(%error,"timeout"));
         let msg = format!(
-          "Transaction timed out waiting for output from operation {} ({})",
+          "Execution timed out waiting for output from operation {} ({})",
           instance.id(),
           instance.entity()
         );
-        channel.dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(msg));
+        channel.dispatch_op_err(ctx_id, instance.index(), PacketPayload::fatal_error(msg));
         break CompletionStatus::Timeout;
       }
       Ok(None) => {
         if num_received == 0 && instance.outputs().len() > 0 {
           let err = "operation produced no output, likely due to a panic or misconfiguration";
           span.in_scope(|| warn!(error = err, "stream complete"));
-          channel.dispatch_op_err(tx_id, instance.index(), PacketPayload::fatal_error(err));
+          channel.dispatch_op_err(ctx_id, instance.index(), PacketPayload::fatal_error(err));
           break CompletionStatus::Error;
         }
         for (portref, port) in hanging {
@@ -475,7 +513,7 @@ async fn output_handler(
     }
   };
   instance.handle_stream_complete(reason)?;
-  channel.dispatch_call_complete(tx_id, instance.index());
+  channel.dispatch_call_complete(ctx_id, instance.index());
   Ok(())
 }
 

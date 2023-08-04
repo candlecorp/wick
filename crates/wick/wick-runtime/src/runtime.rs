@@ -171,8 +171,7 @@ impl RuntimeBuilder {
 
   /// Constructs an instance of a Wick [Runtime].
   pub async fn build(self, seed: Option<Seed>) -> Result<Runtime> {
-    let from_span = self.span.unwrap_or_else(tracing::Span::current);
-    let span = debug_span!(parent:from_span,"runtime");
+    let span = self.span.unwrap_or_else(tracing::Span::current);
 
     let definition = self.manifest.ok_or(RuntimeError::MissingComponentDefinition)?;
     Runtime::new(

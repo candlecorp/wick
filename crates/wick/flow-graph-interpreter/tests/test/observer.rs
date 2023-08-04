@@ -9,35 +9,35 @@ pub struct JsonWriter {
 
 impl Observer for JsonWriter {
   fn on_event(&self, index: usize, event: &flow_graph_interpreter::Event) {
-    let tx_id = event.tx_id();
+    let ctx_id = event.ctx_id();
     let entry = match event.kind() {
       EventKind::Ping(_) => serde_json::Value::Null,
-      EventKind::TransactionStart(tx) => {
+      EventKind::ExecutionStart(tx) => {
         serde_json::json!({
           "type":event.name(),
           "index": index,
-          "tx_id": tx_id.to_string(),
+          "ctx_id": ctx_id.to_string(),
           "name" : tx.schematic_name()})
       }
-      EventKind::TransactionDone => {
+      EventKind::ExecutionDone => {
         serde_json::json!({
           "type":event.name(),
           "index": index,
-          "tx_id": tx_id.to_string()
+          "ctx_id": ctx_id.to_string()
         })
       }
       EventKind::CallComplete(data) => {
         serde_json::json!({
           "type":event.name(),
           "index": index,
-          "tx_id": tx_id.to_string(),
+          "ctx_id": ctx_id.to_string(),
           "component_index":data.index()})
       }
       EventKind::Invocation(component_index, _invocation) => {
         serde_json::json!({
           "type":event.name(),
           "index": index,
-          "tx_id": tx_id.to_string(),
+          "ctx_id": ctx_id.to_string(),
           "invocation": "temp",
           "component_index":component_index})
       }
@@ -45,7 +45,7 @@ impl Observer for JsonWriter {
         serde_json::json!({
           "type":event.name(),
           "index": index,
-          "tx_id": tx_id.to_string(),
+          "ctx_id": ctx_id.to_string(),
           "dir":port.direction().to_string(),
           "port_index":port.port_index(),
           "component_index":port.node_index()

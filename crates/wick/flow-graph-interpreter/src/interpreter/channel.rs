@@ -5,7 +5,7 @@ use wick_packet::{Invocation, PacketPayload};
 
 pub(crate) use self::error::Error;
 use super::executor::error::ExecutionError;
-use crate::interpreter::executor::transaction::Transaction;
+use crate::interpreter::executor::context::ExecutionContext;
 
 static CHANNEL_SIZE: usize = 50;
 
@@ -15,19 +15,19 @@ const CHANNEL_UUID: Uuid = Uuid::from_bytes([
 
 #[derive(Debug)]
 pub struct Event {
-  pub(crate) tx_id: Uuid,
+  pub(crate) ctx_id: Uuid,
   pub(crate) kind: EventKind,
   pub(crate) span: Option<Span>,
 }
 
 impl Event {
-  pub(crate) fn new(tx_id: Uuid, kind: EventKind, span: Option<Span>) -> Self {
-    Self { tx_id, kind, span }
+  pub(crate) fn new(ctx_id: Uuid, kind: EventKind, span: Option<Span>) -> Self {
+    Self { ctx_id, kind, span }
   }
 
   #[must_use]
-  pub fn tx_id(&self) -> &Uuid {
-    &self.tx_id
+  pub fn ctx_id(&self) -> &Uuid {
+    &self.ctx_id
   }
 
   #[must_use]
@@ -44,8 +44,8 @@ impl Event {
 #[must_use]
 pub enum EventKind {
   Ping(usize),
-  TransactionStart(Box<Transaction>),
-  TransactionDone,
+  ExecutionStart(Box<ExecutionContext>),
+  ExecutionDone,
   PortData(PortReference),
   Invocation(NodeIndex, Box<Invocation>),
   CallComplete(CallComplete),
@@ -56,8 +56,8 @@ impl EventKind {
   pub(crate) fn name(&self) -> &str {
     match self {
       EventKind::Ping(_) => "ping",
-      EventKind::TransactionStart(_) => "tx_start",
-      EventKind::TransactionDone => "tx_done",
+      EventKind::ExecutionStart(_) => "exec_start",
+      EventKind::ExecutionDone => "exec_done",
       EventKind::PortData(_) => "port_data",
       EventKind::Invocation(_, _) => "invocation",
       EventKind::CallComplete(_) => "call_complete",
@@ -153,33 +153,33 @@ impl InterpreterDispatchChannel {
     });
   }
 
-  pub(crate) fn dispatch_done(&self, tx_id: Uuid) {
-    self.dispatch(Event::new(tx_id, EventKind::TransactionDone, self.span.clone()));
+  pub(crate) fn dispatch_done(&self, ctx_id: Uuid) {
+    self.dispatch(Event::new(ctx_id, EventKind::ExecutionDone, self.span.clone()));
   }
 
-  pub(crate) fn dispatch_data(&self, tx_id: Uuid, port: PortReference) {
-    self.dispatch(Event::new(tx_id, EventKind::PortData(port), self.span.clone()));
+  pub(crate) fn dispatch_data(&self, ctx_id: Uuid, port: PortReference) {
+    self.dispatch(Event::new(ctx_id, EventKind::PortData(port), self.span.clone()));
   }
 
   pub(crate) fn dispatch_close(&self, error: Option<ExecutionError>) {
     self.dispatch(Event::new(CHANNEL_UUID, EventKind::Close(error), self.span.clone()));
   }
 
-  pub(crate) fn dispatch_start(&self, tx: Box<Transaction>) {
-    self.dispatch(Event::new(tx.id(), EventKind::TransactionStart(tx), self.span.clone()));
+  pub(crate) fn dispatch_start(&self, ctx: Box<ExecutionContext>) {
+    self.dispatch(Event::new(ctx.id(), EventKind::ExecutionStart(ctx), self.span.clone()));
   }
 
-  pub(crate) fn dispatch_call_complete(&self, tx_id: Uuid, op_index: usize) {
+  pub(crate) fn dispatch_call_complete(&self, ctx_id: Uuid, op_index: usize) {
     self.dispatch(Event::new(
-      tx_id,
+      ctx_id,
       EventKind::CallComplete(CallComplete::new(op_index)),
       self.span.clone(),
     ));
   }
 
-  pub(crate) fn dispatch_op_err(&self, tx_id: Uuid, op_index: usize, signal: PacketPayload) {
+  pub(crate) fn dispatch_op_err(&self, ctx_id: Uuid, op_index: usize, signal: PacketPayload) {
     self.dispatch(Event::new(
-      tx_id,
+      ctx_id,
       EventKind::CallComplete(CallComplete {
         index: op_index,
         err: Some(signal),

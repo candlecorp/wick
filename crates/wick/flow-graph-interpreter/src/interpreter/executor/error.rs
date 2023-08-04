@@ -18,7 +18,7 @@ pub enum ExecutionError {
   #[error("Channel send failure")]
   ChannelSend,
 
-  #[error("Transaction '{0}' hung and error_on_hung set")]
+  #[error("Execution id:{0} hung and error_on_hung set")]
   HungTransaction(Uuid),
 
   #[error("{0}")]

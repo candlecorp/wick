@@ -210,7 +210,7 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
   logger_opts.global = true;
 
   // Initialize the global logger
-  let logger = wick_logger::init(&logger_opts);
+  let mut logger = wick_logger::init(&logger_opts);
 
   let res = async_main(cli, settings).await;
 

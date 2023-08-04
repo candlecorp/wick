@@ -11,20 +11,20 @@ use uuid::Uuid;
 use wasmrs_rx::Observer;
 use wick_packet::{Entity, Invocation, Packet, PacketError, PacketSender, PacketStream};
 
-use self::operation::InstanceHandler;
+use self::operation::{FutureInvocation, InstanceHandler};
 use super::error::ExecutionError;
 use crate::graph::types::*;
 use crate::graph::LiquidOperationConfig;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::components::self_component::SelfComponent;
 use crate::interpreter::error::StateError;
-use crate::interpreter::executor::transaction::operation::port::PortStatus;
+use crate::interpreter::executor::context::operation::port::PortStatus;
 use crate::{HandlerMap, InterpreterOptions};
 
 pub(crate) mod operation;
 
 pub(crate) mod statistics;
-pub(crate) use statistics::TransactionStatistics;
+pub(crate) use statistics::ExecutionStatistics;
 
 type Result<T> = std::result::Result<T, ExecutionError>;
 
@@ -37,7 +37,7 @@ pub(crate) enum TxState {
 
 #[derive()]
 #[must_use]
-pub struct Transaction {
+pub struct ExecutionContext {
   schematic: Arc<Schematic>,
   output: (Option<PacketSender>, Option<PacketStream>),
   channel: InterpreterDispatchChannel,
@@ -51,20 +51,20 @@ pub struct Transaction {
   config: LiquidOperationConfig,
   options: Option<InterpreterOptions>,
   pub(crate) last_access_time: Mutex<SystemTime>,
-  pub(crate) stats: TransactionStatistics,
+  pub(crate) stats: ExecutionStatistics,
 }
 
-impl std::fmt::Debug for Transaction {
+impl std::fmt::Debug for ExecutionContext {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("Transaction").field("id", &self.id).finish()
+    f.debug_struct("ExecutionContext").field("id", &self.id).finish()
   }
 }
 
 #[allow(clippy::too_many_arguments)]
-impl Transaction {
+impl ExecutionContext {
   pub(crate) fn new(
     schematic: Arc<Schematic>,
-    mut invocation: Invocation,
+    invocation: Invocation,
     channel: InterpreterDispatchChannel,
     components: &Arc<HandlerMap>,
     self_component: &SelfComponent,
@@ -72,15 +72,19 @@ impl Transaction {
     config: LiquidOperationConfig,
     seed: Seed,
   ) -> Self {
+    let rng = Random::from_seed(seed);
+    let id = invocation.id;
+
     let instances: Vec<_> = schematic
       .nodes()
       .iter()
       .map(|op_node| {
         Arc::new(InstanceHandler::new(
           schematic.clone(),
-          invocation.next_tx(
-            invocation.origin.clone(),
+          FutureInvocation::next(
+            &invocation,
             Entity::operation(op_node.cref().component_id(), op_node.cref().name()),
+            rng.gen(),
           ),
           op_node,
           components.clone(),
@@ -89,12 +93,9 @@ impl Transaction {
       })
       .collect();
 
-    let rng = Random::from_seed(seed);
-    let id = rng.uuid();
-    invocation.tx_id = id;
-    let stats = TransactionStatistics::new(id);
+    let stats = ExecutionStatistics::new(invocation.id);
     stats.mark("new");
-    let span = trace_span!(parent:&invocation.span,"tx:flow",tx_id=%id);
+    let span = trace_span!(parent:&invocation.span,"execution_flow",ctx_id=%id);
     let channel = channel.with_span(span.clone());
 
     let (tx, rx) = invocation.make_response();
@@ -159,7 +160,7 @@ impl Transaction {
   pub(crate) async fn start(&mut self, options: &InterpreterOptions) -> Result<()> {
     self.stats.mark("start");
     self.stats.start("execution");
-    self.span.in_scope(|| trace!("starting transaction"));
+    self.span.in_scope(|| trace!("starting execution"));
 
     self.options = Some(options.clone());
 
@@ -209,12 +210,12 @@ impl Transaction {
   fn prime_input_ports(&self, index: NodeIndex, mut payloads: PacketStream) -> Result<()> {
     let input = self.instance(index).clone();
     let channel = self.channel.clone();
-    let tx_id = self.id();
+    let ctx_id = self.id();
 
     tokio::spawn(async move {
       while let Some(Ok(packet)) = payloads.next().await {
         if let Ok(port) = input.find_input(packet.port()) {
-          accept_input(tx_id, port, &input, &channel, packet);
+          accept_input(ctx_id, port, &input, &channel, packet);
         } else if packet.is_noop() {
           // TODO: propagate this and/or its context if it becomes an issue.
         } else {
@@ -234,11 +235,11 @@ impl Transaction {
     *self.last_access_time.lock()
   }
 
-  // Run when the transaction has finished delivering output to its output ports.
+  // Run when the execution context has finished delivering output to its output ports.
   //
-  // A transaction may still be executing operations with side effects after this point.
-  pub(crate) fn finish(&mut self) -> Result<&TransactionStatistics> {
-    self.span.in_scope(|| trace!("finishing transaction core"));
+  // A context may still be executing operations with side effects after this point.
+  pub(crate) fn finish(&mut self) -> Result<&ExecutionStatistics> {
+    self.span.in_scope(|| trace!("finishing execution output"));
 
     // drop our output sender;
     drop(self.output.0.take());
@@ -261,7 +262,7 @@ impl Transaction {
     } else if packets.iter().any(|p| !p.is_done()) {
       self
         .span
-        .in_scope(|| error!(tx_id = %self.id(), "attempted to send output message after tx finished"));
+        .in_scope(|| error!(ctx_id = %self.id(), "attempted to send output message after tx finished"));
     }
 
     if self.done() {
@@ -309,8 +310,8 @@ impl Transaction {
         Ok(TxState::CompleteWithTasksPending)
       }
     } else {
-      self.span.in_scope(|| warn!(tx_id = %self.id(), "transaction hung"));
-      self.emit_output_message(vec![Packet::component_error("Transaction hung")])?;
+      self.span.in_scope(|| warn!("execution hung"));
+      self.emit_output_message(vec![Packet::component_error("execution hung")])?;
       Ok(TxState::OutputPending)
     }
   }
@@ -354,34 +355,34 @@ impl Transaction {
 }
 
 pub(crate) fn accept_input(
-  tx_id: Uuid,
+  ctx_id: Uuid,
   port: PortReference,
   instance: &Arc<InstanceHandler>,
   channel: &InterpreterDispatchChannel,
   payload: Packet,
 ) {
   instance.buffer_in(&port, payload);
-  channel.dispatch_data(tx_id, port);
+  channel.dispatch_data(ctx_id, port);
 }
 
 pub(crate) fn accept_outputs(
-  tx_id: Uuid,
+  ctx_id: Uuid,
   port: PortReference,
   instance: &Arc<InstanceHandler>,
   channel: &InterpreterDispatchChannel,
   msgs: Vec<Packet>,
 ) {
   for payload in msgs {
-    accept_output(tx_id, port, instance, channel, payload);
+    accept_output(ctx_id, port, instance, channel, payload);
   }
 }
 pub(crate) fn accept_output(
-  tx_id: Uuid,
+  ctx_id: Uuid,
   port: PortReference,
   instance: &Arc<InstanceHandler>,
   channel: &InterpreterDispatchChannel,
   payload: Packet,
 ) {
   instance.buffer_out(&port, payload);
-  channel.dispatch_data(tx_id, port);
+  channel.dispatch_data(ctx_id, port);
 }

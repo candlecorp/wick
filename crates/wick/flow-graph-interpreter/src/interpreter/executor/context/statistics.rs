@@ -4,13 +4,13 @@ use uuid::Uuid;
 
 #[derive(Debug)]
 #[must_use]
-pub(crate) struct TransactionStatistics {
+pub(crate) struct ExecutionStatistics {
   #[allow(unused)]
   pub(crate) id: Uuid,
   pub(crate) performance: Mutex<Performance>,
 }
 
-impl TransactionStatistics {
+impl ExecutionStatistics {
   pub(crate) fn new(uuid: Uuid) -> Self {
     Self {
       id: uuid,
