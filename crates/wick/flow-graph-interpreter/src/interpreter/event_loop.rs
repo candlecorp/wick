@@ -27,7 +27,7 @@ impl EventLoop {
   pub(crate) const SLOW_TX_TIMEOUT: Duration = Duration::from_secs(15);
 
   pub(super) fn new(channel: InterpreterChannel, span: &Span) -> Self {
-    let event_span = debug_span!("event_loop");
+    let event_span = info_span!("event_loop");
     event_span.follows_from(span);
     let dispatcher = channel.dispatcher(Some(event_span.clone()));
 

@@ -104,7 +104,7 @@ impl ComponentHost {
     );
 
     let mut rt_builder = RuntimeBuilder::from_definition(self.manifest.clone());
-    let span = debug_span!(parent: &self.span, "component_host");
+    let span = info_span!(parent: &self.span, "component_host");
 
     rt_builder = rt_builder.span(span);
     rt_builder = rt_builder.namespace(self.get_host_id());

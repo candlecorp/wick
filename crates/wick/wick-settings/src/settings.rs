@@ -122,7 +122,7 @@ impl Default for LogModifier {
 
 impl Settings {
   pub fn new() -> Self {
-    let _span = tracing::debug_span!("settings").entered();
+    let _span = tracing::info_span!("settings").entered();
     let extensions = vec!["yaml", "yml"];
 
     let xdg = wick_xdg::Settings::new();

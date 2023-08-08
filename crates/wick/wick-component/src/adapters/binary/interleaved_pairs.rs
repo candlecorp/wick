@@ -1,24 +1,22 @@
+use crate::runtime::BoxFuture;
 use tokio_stream::StreamExt;
-use wasmrs_runtime::BoxFuture;
 use wick_packet::Packet;
+
+use crate::runtime as wasmrs_runtime;
 
 use crate::adapters::encode;
 use crate::{
-  await_next_ok_or,
-  if_done_close_then,
-  make_substream_window,
-  propagate_if_error,
-  SingleOutput,
-  WickStream,
+  await_next_ok_or, if_done_close_then, make_substream_window, propagate_if_error, SingleOutput, WickStream,
 };
 
 #[macro_export]
 /// This macro will generate the implementations for simple binary operations, operations that take two inputs, produce one output, and are largely want to remain ignorant of stream state.
 macro_rules! binary_interleaved_pairs {
   ($name:ident) => {
-    #[async_trait::async_trait(?Send)]
+    #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
+    #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
     impl $name::Operation for Component {
-      type Error = Box<dyn std::error::Error + 'static>;
+      type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
       type Outputs = $name::Outputs;
       type Config = $name::Config;
 

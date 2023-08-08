@@ -169,7 +169,7 @@ fn expand_wrapper(inner_test: Tokens, wrappee: &ItemFn) -> TokenStream {
         #body
       }
       #logging_init
-      let span = tracing::trace_span!(stringify!(#test_name));
+      let span = tracing::info_span!(stringify!(#test_name));
       #enter_
       let result = test_impl()#await_;
       if let Err(e) = &result {

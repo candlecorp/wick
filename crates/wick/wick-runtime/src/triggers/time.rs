@@ -52,7 +52,7 @@ async fn create_schedule(
 ) -> tokio::task::JoinHandle<()> {
   // Create a scheduler loop
   tokio::spawn(async move {
-    let span = debug_span!("trigger:schedule", schedule = ?schedule);
+    let span = info_span!("trigger:schedule", schedule = ?schedule);
     let schedule_component = match resolve_ref(&app_config, config.operation().component()) {
       Ok(component) => component,
       Err(err) => panic!("Unable to resolve component: {}", err),

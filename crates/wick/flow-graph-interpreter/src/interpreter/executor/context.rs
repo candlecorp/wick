@@ -95,7 +95,7 @@ impl ExecutionContext {
 
     let stats = ExecutionStatistics::new(invocation.id);
     stats.mark("new");
-    let span = trace_span!(parent:&invocation.span,"execution_flow",ctx_id=%id);
+    let span = info_span!(parent:&invocation.span,"execution_flow",ctx_id=%id);
     let channel = channel.with_span(span.clone());
 
     let (tx, rx) = invocation.make_response();

@@ -60,7 +60,7 @@ async fn run_unit<'a>(
   component: SharedComponent,
   root_config: Option<RuntimeConfig>,
 ) -> Result<TestBlock, TestError> {
-  let span = debug_span!("unit test", name = def.test.name());
+  let span = info_span!("unit test", name = def.test.name());
 
   let op_config = render_config(def.test.config(), None)?;
   let signature = get_operation(&component, def.test.operation())?;
@@ -119,8 +119,8 @@ async fn run_unit<'a>(
         TestError::Assertion(_ex, _act, assertion) => match assertion {
           crate::error::AssertionFailure::Payload(exv, acv) => {
             let diagnostic = assert_json_diff::assert_json_matches_no_panic(
-              &exv,
               &acv,
+              &exv,
               assert_json_diff::Config::new(assert_json_diff::CompareMode::Inclusive),
             );
             let diagnostic = Some(split_and_indent(&diagnostic.err().unwrap_or_default(), 3));

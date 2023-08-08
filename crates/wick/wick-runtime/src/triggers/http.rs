@@ -124,7 +124,7 @@ struct HttpInstance {
 
 impl HttpInstance {
   async fn new(engine: Runtime, routers: Vec<HttpRouter>, initiating_span: &Span, socket: &SocketAddr) -> Self {
-    let span = debug_span!(parent:initiating_span,"http:server", %socket);
+    let span = info_span!(parent:initiating_span,"http:server", %socket);
 
     span.in_scope(|| trace!(%socket,"http server starting"));
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
@@ -242,7 +242,7 @@ impl Http {
   ) -> Result<HttpInstance, RuntimeError> {
     let mut rt = build_trigger_runtime(&app_config, span.clone())?;
 
-    let span = debug_span!(parent: &span,"trigger:http:routers");
+    let span = info_span!(parent: &span,"trigger:http:routers");
 
     let routers = span.in_scope(|| {
       let mut routers = Vec::new();

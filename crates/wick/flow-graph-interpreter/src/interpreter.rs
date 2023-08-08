@@ -12,7 +12,7 @@ use std::time::Duration;
 use flow_component::{Component, ComponentError, RuntimeCallback};
 use futures::{FutureExt, TryFutureExt};
 use parking_lot::Mutex;
-use tracing::{trace_span, Span};
+use tracing::{info_span, Span};
 use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, Invocation, PacketStream, RuntimeConfig};
@@ -66,7 +66,7 @@ impl Interpreter {
     callback: Arc<RuntimeCallback>,
     parent_span: &Span,
   ) -> Result<Self, Error> {
-    let span = trace_span!(parent: parent_span, "interpreter");
+    let span = info_span!(parent: parent_span, "interpreter");
 
     let _guard = span.enter();
     let mut handlers = components.unwrap_or_default();
