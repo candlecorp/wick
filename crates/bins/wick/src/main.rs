@@ -230,7 +230,7 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
 }
 
 async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<StructuredOutput> {
-  let span = trace_span!(target:"cli","cli");
+  let span = info_span!(target:"cli","cli");
 
   span.in_scope(|| trace!(cli_options=?cli, settings=?settings,"starting cli"));
 

@@ -119,7 +119,7 @@ impl InstanceHandler {
     let outputs = op_node.outputs().to_vec();
     let reference: Reference = op_node.kind().cref().into();
 
-    // let span = debug_span!(parent:&invocation.span,"interpreter:op:instance", entity = %invocation.target);
+    // let span = info_span!(parent:&invocation.span,"interpreter:op:instance", entity = %invocation.target);
 
     Self {
       schematic,
@@ -276,7 +276,8 @@ impl InstanceHandler {
       return Err(StateError::InvocationMissing(identifier).into());
     };
     let mut invocation: Invocation = invocation.into();
-    let span = debug_span!(parent:&invocation.span,"interpreter:op:instance", otel.name=format!("starting:{}",invocation.target));
+    let span =
+      info_span!(parent:&invocation.span,"interpreter:op:instance", otel.name=format!("starting:{}",invocation.target));
 
     let entity = self.entity();
     let namespace = self.namespace().to_owned();

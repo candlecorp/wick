@@ -155,7 +155,7 @@ impl WasmHost {
     debug!(duration_μs = ?time.elapsed().as_micros(), "wasmtime initialize");
     if let Some(callback) = callback {
       let index = host.register_request_channel("wick", "__callback", make_host_callback(callback));
-      let cb_span = debug_span!(parent:&span,"wasmrs:event");
+      let cb_span = info_span!(parent:&span,"wasmrs:event");
 
       host.register_fire_and_forget("wick", "__event", make_event_callback(cb_span));
       trace!(index, "wasmrs callback index");

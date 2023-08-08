@@ -72,7 +72,7 @@ impl AppHost {
           let loader = loader()?;
           let inner = loader.clone();
           let resources = resources.clone();
-          let span = debug_span!("trigger", kind=%trigger_config.kind());
+          let span = info_span!("trigger", kind=%trigger_config.kind());
           span.follows_from(&self.span);
 
           let task = tokio::spawn(async move {

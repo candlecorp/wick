@@ -48,7 +48,7 @@ impl InvocationHandler for NativeComponentService {
   ) -> Result<BoxFuture<Result<InvocationResponse>>> {
     let tx_id = invocation.tx_id;
 
-    let span = debug_span!(parent:&invocation.span,"runtime:handle");
+    let span = info_span!(parent:&invocation.span,"runtime:handle");
     let fut = self.handle(invocation, config, panic_callback());
 
     let task = async move {
