@@ -82,8 +82,6 @@ pub(crate) async fn print_stream_json(
   while let Some(packet) = stream.next().await {
     match packet {
       Ok(packet) => {
-        trace!(message = ?packet, "cli:output");
-
         if (packet.is_done()) && !raw {
           continue;
         }

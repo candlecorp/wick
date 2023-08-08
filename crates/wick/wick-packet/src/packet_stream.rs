@@ -3,7 +3,7 @@ use std::task::Poll;
 
 use pin_project_lite::pin_project;
 use tokio_stream::Stream;
-use tracing::Span;
+use tracing::{span_enabled, Span};
 use wasmrs_rx::FluxChannel;
 
 use crate::{BoxError, ContextTransport, InherentData, Packet, Result, RuntimeConfig};
@@ -118,12 +118,18 @@ impl Stream for PacketStream {
               .into(),
           );
           tracing::trace!("attached context to packet on port '{}'", packet.port());
-          // if cfg!(debug_assertions) {
-          //   self.span.in_scope(|| {
-          //     tracing::trace!(flags=packet.flags(),port=packet.port(),packet=%packet.clone().decode_value().map_or_else(|_| format!("{:?}", packet.payload()),|j|j.to_string())
-          //     , "packetstream:packet");
-          //   });
-          // }
+          if cfg!(debug_assertions) {
+            self.span.in_scope(|| {
+              if span_enabled!(tracing::Level::TRACE) {
+                let debug_packet = packet
+                  .clone()
+                  .decode_value()
+                  .map_or_else(|_| format!("{:?}", packet.payload()), |j| j.to_string());
+                let until = std::cmp::min(debug_packet.len(), 2048);
+                tracing::trace!(flags=packet.flags(), port=packet.port(), packet=%&debug_packet[..until], "packet");
+              }
+            });
+          }
           Poll::Ready(Some(Ok(packet)))
         }
         x => {
@@ -132,14 +138,20 @@ impl Stream for PacketStream {
         }
       }
     } else {
-      // if let Poll::Ready(Some(Ok(packet))) = &poll {
-      // if cfg!(debug_assertions) {
-      //   self.span.in_scope(|| {
-      //       tracing::trace!(flags=packet.flags(),port=packet.port(),packet=%packet.clone().decode_value().map_or_else(|_| format!("{:?}", packet.payload()),|j|j.to_string())
-      //         , "packetstream:packet");
-      //     });
-      // }
-      // }
+      if let Poll::Ready(Some(Ok(packet))) = &poll {
+        if cfg!(debug_assertions) {
+          self.span.in_scope(|| {
+            if span_enabled!(tracing::Level::TRACE) {
+              let debug_packet = packet
+                .clone()
+                .decode_value()
+                .map_or_else(|_| format!("{:?}", packet.payload()), |j| j.to_string());
+              let until = std::cmp::min(debug_packet.len(), 2048);
+              tracing::trace!(flags=packet.flags(), port=packet.port(), packet=%&debug_packet[..until], "packet");
+            }
+          });
+        }
+      }
       poll
     }
   }
