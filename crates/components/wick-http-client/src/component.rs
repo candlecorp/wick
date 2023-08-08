@@ -89,7 +89,6 @@ impl Component for HttpClientComponent {
     op_config: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| trace!("http:client"));
     let ctx = self.ctx.clone();
     let config = self.config.clone();
     let baseurl = self.base.clone();
@@ -189,6 +188,7 @@ async fn handle(
 
   let input_list: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
   let mut inputs = wick_packet::StreamMap::from_stream(invocation.eject_stream(), input_list);
+  let mut handles = Vec::new();
 
   'outer: loop {
     let inputs = match inputs.next_set().await {
@@ -238,8 +238,6 @@ async fn handle(
       None => None,
     };
 
-    invocation.trace(|| trace!(body=?body, "http:client:request_body"));
-
     let append_path = match liquid_json::render_string(&template.0, &ctx)
       .map_err(|e| Error::PathTemplate(template.1.clone(), e.to_string()))
     {
@@ -255,7 +253,7 @@ async fn handle(
     request_url.set_path(&format!("{}{}", request_url.path(), path));
     request_url.set_query((!query.is_empty()).then_some(query));
 
-    invocation.trace(|| trace!(url= %request_url, "http:client:request_url"));
+    invocation.trace(|| trace!(url= %request_url,body=?body, "http:client:request"));
 
     let request = match opdef.method() {
       HttpMethod::Get => Request::new(Method::GET, request_url),
@@ -327,14 +325,17 @@ async fn handle(
     invocation.trace(|| debug!(response = ?our_response, "http:client:response"));
 
     let _ = tx.send(Packet::encode("response", our_response));
-    let _ = tx.send(Packet::done("response"));
-    tokio::spawn(output_task(
+    handles.push(tokio::spawn(output_task(
       invocation.span.clone(),
       codec,
       Box::pin(body_stream),
       tx.clone(),
-    ));
+    )));
   }
+  let _ = tx.send(Packet::done("response"));
+  let _ = futures::future::join_all(handles).await;
+  let _ = tx.send(Packet::done("body"));
+
   Ok(())
 }
 
@@ -365,7 +366,6 @@ fn output_task(
         };
         span.in_scope(|| trace!(%json, "http:client:response_body"));
         let _ = tx.send(Packet::encode("body", json));
-        let _ = tx.send(Packet::done("body"));
       }
       Codec::Raw => {
         let _ = tx.send(Packet::open_bracket("body"));
@@ -375,7 +375,6 @@ fn output_task(
           let _ = tx.send(Packet::encode("body", bytes));
         }
         let _ = tx.send(Packet::close_bracket("body"));
-        let _ = tx.send(Packet::done("body"));
       }
       Codec::FormData => unreachable!("Form data on the response is not supported."),
       Codec::Text => {
@@ -397,7 +396,6 @@ fn output_task(
         };
         span.in_scope(|| trace!(%text, "response body"));
         let _ = tx.send(Packet::encode("body", text));
-        let _ = tx.send(Packet::done("body"));
       }
     }
   };

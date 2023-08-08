@@ -1,4 +1,3 @@
-use serde::Deserialize;
 use serde_json::Value;
 use wick_interface_types::{OperationSignature, Type};
 use wick_packet::Packet;
@@ -31,7 +30,7 @@ pub fn parse_args(args: &[String], sig: &OperationSignature) -> Result<Vec<Packe
     }
     let input = input.unwrap();
     let value: Value = match input.ty() {
-      // Datetime can be parsed from a string or a number but number's need to be stringified.
+      // Datetime can be parsed from a string or a number but numbers need to be stringified.
       // Strings must be explicit because a bare number will be parsed as a number.
       Type::Datetime | Type::String => {
         if is_valid(value) {
@@ -42,7 +41,7 @@ pub fn parse_args(args: &[String], sig: &OperationSignature) -> Result<Vec<Packe
         }
       }
       // serde_json does an adequate job on the rest.
-      _ => encode::<Value>(name, value, input.ty())?,
+      _ => encode(value),
     };
     // Note on above: complex objects with embedded Datetime/Strings
     // may not be parsed correctly but that's an edge case we're ignoring for now.
@@ -55,20 +54,20 @@ pub fn parse_args(args: &[String], sig: &OperationSignature) -> Result<Vec<Packe
   Ok(packets)
 }
 
-fn encode<'de, T: Deserialize<'de>>(name: &str, value: &'de str, ty: &Type) -> Result<T, Error> {
-  serde_json::from_str(value).map_err(|_e| Error::Encoding(name.to_owned(), value.to_owned(), ty.clone()))
+fn encode(value: &str) -> Value {
+  serde_json::from_str::<Value>(value).unwrap_or_else(|_| Value::String(value.to_owned()))
 }
 
 fn coerce_string(name: &str, value: &str, ty: &Type) -> Result<Value, Error> {
-  let val = serde_json::from_str::<Value>(value)
-    .map_err(|_e| Error::Encoding(name.to_owned(), value.to_owned(), ty.clone()))?;
+  let val = serde_json::from_str::<Value>(value).unwrap_or_else(|_| Value::String(value.to_owned()));
+
   Ok(match val {
     serde_json::Value::Null => Value::String("null".to_owned()),
     serde_json::Value::Bool(v) => Value::String(v.to_string()),
     serde_json::Value::Number(v) => Value::String(v.to_string()),
     serde_json::Value::String(v) => Value::String(v),
-    serde_json::Value::Array(_v) => return Err(Error::Encoding(name.to_owned(), value.to_owned(), ty.clone())),
-    serde_json::Value::Object(_v) => return Err(Error::Encoding(name.to_owned(), value.to_owned(), ty.clone())),
+    serde_json::Value::Array(_v) => return Err(Error::encoding(name, value, ty.clone())),
+    serde_json::Value::Object(_v) => return Err(Error::encoding(name, value, ty.clone())),
   })
 }
 

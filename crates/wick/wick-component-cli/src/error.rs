@@ -43,11 +43,28 @@ pub enum CliError {
   /// A general configuration error.
   Configuration(String),
 
-  #[error("Could not convert data '{1}' to a format suitable for port {0}'s type {2}")]
+  #[error("Could not convert data '{data}' to a format suitable for port {port}'s type {ty}")]
   /// Could not convert passed argument to a suitable intermediary format.
-  Encoding(String, String, Type),
+  Encoding {
+    /// The data that could not be converted.
+    data: String,
+    /// The port that the data was being passed to.
+    port: String,
+    /// The type of the port.
+    ty: Type,
+  },
 
   #[error("Found argument '{0}' which requires a value but no value was supplied")]
   /// Dangling arguments (e.g. --arg instead of --arg value or --arg=value)
   MissingArgumentValue(String),
+}
+
+impl CliError {
+  pub(crate) fn encoding(port: impl AsRef<str>, data: impl AsRef<str>, ty: Type) -> Self {
+    Self::Encoding {
+      data: data.as_ref().to_owned(),
+      port: port.as_ref().to_owned(),
+      ty,
+    }
+  }
 }
