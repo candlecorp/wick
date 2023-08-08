@@ -1,12 +1,16 @@
-use crate::runtime::BoxFuture;
 use tokio_stream::StreamExt;
 use wick_packet::Packet;
 
-use crate::runtime as wasmrs_runtime;
-
 use crate::adapters::encode;
+use crate::runtime::BoxFuture;
 use crate::{
-  await_next_ok_or, if_done_close_then, make_substream_window, propagate_if_error, SingleOutput, WickStream,
+  await_next_ok_or,
+  if_done_close_then,
+  make_substream_window,
+  propagate_if_error,
+  runtime as wasmrs_runtime,
+  SingleOutput,
+  WickStream,
 };
 
 #[macro_export]
