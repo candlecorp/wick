@@ -111,7 +111,11 @@ where
         return false;
       }
       if silly_modules(module) {
-        matches!(*metadata.level(), tracing::Level::ERROR | tracing::Level::WARN)
+        if metadata.is_span() {
+          true
+        } else {
+          matches!(*metadata.level(), tracing::Level::ERROR | tracing::Level::WARN)
+        }
       } else {
         true
       }
