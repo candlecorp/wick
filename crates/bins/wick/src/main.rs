@@ -107,6 +107,7 @@ mod wick_host;
 
 pub(crate) use options::LoggingOptions;
 use structured_output::StructuredOutput;
+use tracing::Span;
 
 use self::commands::*;
 use self::options::{apply_log_settings, GlobalOptions};
@@ -212,9 +213,11 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
   // Initialize the global logger
   let mut logger = wick_logger::init(&logger_opts);
 
-  let res = async_main(cli, settings).await;
+  let span = info_span!(target:"cli","cli");
 
-  let res = match res {
+  let res = async_main(span.clone(), cli, settings).await;
+
+  let res = span.in_scope(|| match res {
     Ok(output) => {
       debug!("Done");
       Ok((options, output))
@@ -223,15 +226,14 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
       error!("Error: {}", e);
       Err((options, anyhow!("{}", e)))
     }
-  };
+  });
+
   logger.flush();
 
   res
 }
 
-async fn async_main(cli: Cli, settings: wick_settings::Settings) -> Result<StructuredOutput> {
-  let span = info_span!(target:"cli","cli");
-
+async fn async_main(span: Span, cli: Cli, settings: wick_settings::Settings) -> Result<StructuredOutput> {
   span.in_scope(|| trace!(cli_options=?cli, settings=?settings,"starting cli"));
 
   match cli.command {

@@ -1,10 +1,8 @@
 use opentelemetry::global;
-use tracing::Subscriber;
 use tracing_appender::non_blocking::{NonBlocking, WorkerGuard};
-use tracing_subscriber::filter::DynFilterFn;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::prelude::*;
-use tracing_subscriber::{filter, Layer};
+use tracing_subscriber::Layer;
 mod otel;
 
 use crate::error::LoggerError;
@@ -47,79 +45,6 @@ pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
   match try_init::<()>(&opts, Environment::Test, None) {
     Ok(Either::Logger(guard)) => Some(guard),
     _ => None,
-  }
-}
-
-fn hushed_modules(module: &str) -> bool {
-  ["h2", "tokio_util", "tower", "tonic", "hyper", "wasi_common", "tiberius"].contains(&module)
-}
-
-fn silly_modules(module: &str) -> bool {
-  [
-    "flow_graph_interpreter",
-    "wasmtime_provider",
-    "wasmrs",
-    "wasmrs_rx",
-    "wasmrs_runtime",
-    "wasmrs_guest",
-    "wasmrs_wasmtime",
-    "wick_wascap",
-    "flow_graph",
-  ]
-  .contains(&module)
-}
-
-#[must_use]
-#[allow(clippy::too_many_lines)]
-fn wick_filter<S>(opts: &LoggingOptions) -> DynFilterFn<S>
-where
-  S: Subscriber + for<'lookup> tracing_subscriber::registry::LookupSpan<'lookup>,
-{
-  // This is split up into an if/else because FilterFn needs an fn type.
-  // If the closure captures opts.silly then it won't be coercable to an fn.
-  if opts.silly {
-    filter::dynamic_filter_fn(move |_metadata, _cx| {
-      !hushed_modules(
-        _metadata
-          .module_path()
-          .unwrap_or_default()
-          .split("::")
-          .next()
-          .unwrap_or_default(),
-      )
-    })
-  } else {
-    filter::dynamic_filter_fn(move |metadata, _cx| {
-      let module = &metadata
-        .module_path()
-        .unwrap_or_default()
-        .split("::")
-        .next()
-        .unwrap_or_default();
-
-      #[cfg(feature = "audit")]
-      if _cx.current_span().metadata().is_none() && !hushed_modules(module) {
-        warn!(
-          "Logging without a span: {} at {}:{}",
-          metadata.module_path().unwrap_or_default(),
-          metadata.file().unwrap_or_default(),
-          metadata.line().unwrap_or_default()
-        );
-      }
-
-      if hushed_modules(module) {
-        return false;
-      }
-      if silly_modules(module) {
-        if metadata.is_span() {
-          true
-        } else {
-          matches!(*metadata.level(), tracing::Level::ERROR | tracing::Level::WARN)
-        }
-      } else {
-        true
-      }
-    })
   }
 }
 
@@ -195,17 +120,6 @@ fn get_stderr_writer(_opts: &LoggingOptions) -> (NonBlocking, WorkerGuard) {
   (stderr_writer, console_guard)
 }
 
-fn get_levelfilter(opts: &LoggingOptions) -> tracing::level_filters::LevelFilter {
-  match opts.level {
-    crate::LogLevel::Quiet => filter::LevelFilter::OFF,
-    crate::LogLevel::Error => filter::LevelFilter::ERROR,
-    crate::LogLevel::Warn => filter::LevelFilter::WARN,
-    crate::LogLevel::Info => filter::LevelFilter::INFO,
-    crate::LogLevel::Debug => filter::LevelFilter::DEBUG,
-    crate::LogLevel::Trace => filter::LevelFilter::TRACE,
-  }
-}
-
 enum Either<T> {
   Logger(LoggingGuard),
   ScopeReturn(T),
@@ -247,8 +161,7 @@ where
       let layer = Some(
         tracing_opentelemetry::layer()
           .with_tracer(tracer)
-          .with_filter(get_levelfilter(opts))
-          .with_filter(wick_filter(opts)),
+          .with_filter(opts.levels.telemetry.clone()),
       );
       (layer, Some(provider))
     },
@@ -269,8 +182,7 @@ where
               .with_target(cfg!(debug_assertions))
               .with_file(cfg!(debug_assertions))
               .with_line_number(cfg!(debug_assertions))
-              .with_filter(get_levelfilter(opts))
-              .with_filter(wick_filter(opts)),
+              .with_filter(opts.levels.stderr.clone()),
           ),
           None,
           None,
@@ -286,8 +198,7 @@ where
               .with_ansi(with_color)
               .with_target(false)
               .with_timer(timer)
-              .with_filter(get_levelfilter(opts))
-              .with_filter(wick_filter(opts)),
+              .with_filter(opts.levels.stderr.clone()),
           ),
           None,
           None,
@@ -305,8 +216,7 @@ where
           .without_time()
           .with_target(true)
           .with_test_writer()
-          .with_filter(get_levelfilter(opts))
-          .with_filter(wick_filter(opts)),
+          .with_filter(opts.levels.stderr.clone()),
       ),
     ),
   };
@@ -317,9 +227,7 @@ where
     .with(verbose_layer)
     .with(normal_layer);
 
-  trace!("Logger initialized");
-
-  if let Some(f) = with_default {
+  let guards = if let Some(f) = with_default {
     Ok(Either::ScopeReturn(tracing::subscriber::with_default(subscriber, f)))
   } else if opts.global {
     #[cfg(feature = "console")]
@@ -333,5 +241,8 @@ where
     )))
   } else {
     panic!("Logger must be global or scoped")
-  }
+  };
+  trace!(options=?opts,"logger initialized");
+
+  guards
 }

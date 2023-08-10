@@ -10,8 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn gen(spec: &str, dir: &str) -> Result<(), Box<dyn std::error::Error>> {
   let _guard = wick_logger::init(&LoggingOptions {
     verbose: true,
-    silly: true,
-    level: wick_logger::LogLevel::Trace,
+    levels: wick_logger::LogFilters::with_level(wick_logger::LogLevel::Trace),
     log_json: false,
     log_dir: None,
     otlp_endpoint: None,

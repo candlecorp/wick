@@ -123,6 +123,10 @@ impl ExecutionContext {
     channel.dispatch_start(Box::new(self));
   }
 
+  pub fn in_scope<F: FnOnce() -> T, T>(&self, f: F) -> T {
+    self.span.in_scope(f)
+  }
+
   pub fn id(&self) -> Uuid {
     self.id
   }
@@ -250,6 +254,8 @@ impl ExecutionContext {
     // print stats if we're in tests.
     #[cfg(test)]
     self.stats.print();
+
+    self.span.in_scope(|| trace!(statistics=?self.stats));
 
     Ok(&self.stats)
   }

@@ -103,7 +103,7 @@ async fn event_loop(
   mut channel: InterpreterChannel,
   options: InterpreterOptions,
   observer: Option<Box<dyn Observer + Send + Sync>>,
-  _span: Span,
+  span: Span,
 ) -> Result<(), ExecutionError> {
   debug!(?options, "started");
   let mut state = State::new(channel.dispatcher(None));
@@ -131,7 +131,7 @@ async fn event_loop(
             panic!("invocation not supported")
           }
           EventKind::CallComplete(data) => state.handle_call_complete(ctx_id, data).instrument(tx_span).await,
-          EventKind::PortData(data) => state.handle_port_data(ctx_id, data).instrument(tx_span).await,
+          EventKind::PortData(data) => state.handle_port_data(ctx_id, data, &tx_span).await,
           EventKind::ExecutionDone => state.handle_exec_done(ctx_id).instrument(tx_span).await,
           EventKind::ExecutionStart(context) => state.handle_exec_start(*context, &options).instrument(tx_span).await,
           EventKind::Ping(ping) => {
@@ -150,11 +150,13 @@ async fn event_loop(
           },
         };
 
-        if let Err(e) = result {
-          warn!(event = %name, ctx_id = ?ctx_id, response_error = %e, "iteration:end");
-        } else {
-          trace!(event = %name, ctx_id = ?ctx_id, "iteration:end");
-        }
+        span.in_scope(|| {
+          if let Err(e) = result {
+            warn!(event = %name, ctx_id = ?ctx_id, response_error = %e, "iteration:end");
+          } else {
+            trace!(event = %name, ctx_id = ?ctx_id, "iteration:end");
+          }
+        });
 
         if let Some(observer) = &observer {
           observer.on_after_event(num, &state);
@@ -165,10 +167,12 @@ async fn event_loop(
         break Ok(());
       }
       Err(_) => {
-        if let Err(error) = state.run_cleanup() {
-          error!(%error,"Error checking hung invocations");
-          channel.dispatcher(None).dispatch_close(Some(error));
-        };
+        span.in_scope(|| {
+          if let Err(error) = state.run_cleanup() {
+            error!(%error,"Error checking hung invocations");
+            channel.dispatcher(None).dispatch_close(Some(error));
+          };
+        });
       }
     }
   };

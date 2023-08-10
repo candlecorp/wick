@@ -36,6 +36,23 @@ pub struct TraceSettings {
   /// Logging modifier.
   #[serde(default)]
   pub modifier: LogModifier,
+  /// Telemetry filter settings.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub telemetry: Option<LogSettings>,
+  /// STDERR logging settings.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub stderr: Option<LogSettings>,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+/// Log filter settings
+pub struct LogSettings {
+  /// Inclusion filter.
+  pub include: Option<String>,
+  /// Exclusion filter.
+  pub exclude: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -110,8 +127,6 @@ pub enum LogModifier {
   None,
   /// Additional location and file data.
   Verbose,
-  /// Include all logging possible.
-  Silly,
 }
 
 impl Default for LogModifier {
