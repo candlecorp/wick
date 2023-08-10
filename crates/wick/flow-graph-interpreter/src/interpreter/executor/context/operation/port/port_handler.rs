@@ -2,6 +2,7 @@ use std::ops::RangeBounds;
 
 use flow_graph::PortReference;
 use parking_lot::Mutex;
+use tracing::Span;
 use wick_packet::Packet;
 
 use super::port_buffer::PortBuffer;
@@ -68,25 +69,27 @@ impl PortHandler {
     let curr_status = self.get_status();
 
     if curr_status != new_status {
-      if curr_status == PortStatus::DoneClosed && new_status != PortStatus::DoneClosed {
-        debug!(
-          op = %self.operation_instance,
-          port = %self.port,
-          dir  = %self.port.direction(),
-          from = %curr_status,
-          to = %new_status,
-          "trying to set new status on closed port");
-      } else {
-        trace!(
-          op = %self.operation_instance,
-          port = %self.port,
-          dir  = %self.port.direction(),
-          from = %curr_status,
-          to = %new_status,
-          "setting port status");
+      Span::current().in_scope(|| {
+        if curr_status == PortStatus::DoneClosed && new_status != PortStatus::DoneClosed {
+          debug!(
+            op = %self.operation_instance,
+            port = %self.port,
+            dir  = %self.port.direction(),
+            from = %curr_status,
+            to = %new_status,
+            "trying to set new status on closed port");
+        } else {
+          trace!(
+            op = %self.operation_instance,
+            port = %self.port,
+            dir  = %self.port.direction(),
+            from = %curr_status,
+            to = %new_status,
+            "setting port status");
 
-        *self.status.lock() = new_status;
-      }
+          *self.status.lock() = new_status;
+        }
+      });
     }
   }
 

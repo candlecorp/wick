@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use clap::Args;
+use wick_logger::{FilterOptions, TargetLevel};
 use wick_oci_utils::{OciOptions, OnExisting};
 use wick_settings::Credential;
 
@@ -32,8 +33,24 @@ pub(crate) struct LoggingOptions {
   pub(crate) trace: bool,
 
   /// The endpoint to send jaeger-format traces.
-  #[clap(long = "otlp", env = "OTLP_ENDPOINT", action)]
+  #[clap(long = "otlp", env = "OTLP_ENDPOINT", global = true, action)]
   pub(crate) otlp_endpoint: Option<String>,
+
+  /// The inclusion filter to apply to events posted to STDERR.
+  #[clap(long = "log-keep", env = "LOG_INCLUDE", global = true, action)]
+  pub(crate) log_include: Option<String>,
+
+  /// The exclusion filter to apply to events posted to STDERR.
+  #[clap(long = "log-filter", env = "LOG_EXCLUDE", global = true, action)]
+  pub(crate) log_exclude: Option<String>,
+
+  /// The inclusion filter to apply to events posted to the OTLP endpoint.
+  #[clap(long = "otel-keep", env = "OTEL_INCLUDE", global = true, action)]
+  pub(crate) otel_include: Option<String>,
+
+  /// The exclusion filter to apply to events posted to the OTLP endpoint.
+  #[clap(long = "otel-filter", env = "OTEL_EXCLUDE", global = true, action)]
+  pub(crate) otel_exclude: Option<String>,
 
   /// The application doing the logging.
   #[clap(skip)]
@@ -48,25 +65,66 @@ impl LoggingOptions {
   }
 }
 
+fn parse_logstr(value: &str) -> Vec<TargetLevel> {
+  value
+    .split(',')
+    .filter_map(|s| {
+      if s.is_empty() || !s.contains('=') {
+        return None;
+      }
+      let mut parts = s.split('=');
+      let target = parts.next()?;
+      let level = parts.next().unwrap_or("info");
+      Some(TargetLevel {
+        target: target.to_owned(),
+        level: level.parse().ok()?,
+      })
+    })
+    .collect()
+}
+
 impl From<&LoggingOptions> for wick_logger::LoggingOptions {
   fn from(value: &LoggingOptions) -> Self {
+    let stderr_inc = value.log_include.as_deref().map_or_else(Vec::new, parse_logstr);
+    let stderr_exc = value.log_exclude.as_deref().map_or_else(Vec::new, parse_logstr);
+    let otel_inc = value.otel_include.as_deref().map_or_else(Vec::new, parse_logstr);
+    let otel_exc = value.otel_exclude.as_deref().map_or_else(Vec::new, parse_logstr);
+
+    let global_level = if value.quiet {
+      wick_logger::LogLevel::Quiet
+    } else if value.trace {
+      wick_logger::LogLevel::Trace
+    } else if value.debug {
+      wick_logger::LogLevel::Debug
+    } else {
+      wick_logger::LogLevel::Info
+    };
+
+    let default_inc = vec![TargetLevel::new("flow", wick_logger::LogLevel::Warn)];
+    let default_exc = vec![
+      TargetLevel::new("wasmrs", wick_logger::LogLevel::Error),
+      TargetLevel::new("wasmrs_runtime", wick_logger::LogLevel::Error),
+      TargetLevel::new("wasmrs_wasmtime", wick_logger::LogLevel::Error),
+    ];
     Self {
       verbose: value.verbose == 1,
-      silly: value.verbose >= 2,
-      level: if value.quiet {
-        wick_logger::LogLevel::Quiet
-      } else if value.trace {
-        wick_logger::LogLevel::Trace
-      } else if value.debug {
-        wick_logger::LogLevel::Debug
-      } else {
-        wick_logger::LogLevel::Info
-      },
       log_json: false,
       log_dir: None,
       otlp_endpoint: value.otlp_endpoint.clone(),
       app_name: value.app_name.clone(),
       global: false,
+      levels: wick_logger::LogFilters {
+        telemetry: FilterOptions {
+          level: global_level,
+          include: [otel_inc, default_inc.clone()].concat(),
+          exclude: [otel_exc, default_exc.clone()].concat(),
+        },
+        stderr: FilterOptions {
+          level: global_level,
+          include: [stderr_inc, default_inc].concat(),
+          exclude: [stderr_exc, default_exc].concat(),
+        },
+      },
     }
   }
 }
@@ -83,16 +141,20 @@ pub(crate) fn apply_log_settings(settings: &wick_settings::Settings, options: &m
     options.debug = settings.trace.level == wick_settings::LogLevel::Debug;
     options.trace = settings.trace.level == wick_settings::LogLevel::Trace;
   }
+
   if settings.trace.level == wick_settings::LogLevel::Off {
     options.quiet = true;
   }
-  if options.verbose == 0 {
-    if settings.trace.modifier == wick_settings::LogModifier::Verbose {
-      options.verbose = 1;
-    }
-    if settings.trace.modifier == wick_settings::LogModifier::Silly {
-      options.verbose = 2;
-    }
+  if options.verbose == 0 && settings.trace.modifier == wick_settings::LogModifier::Verbose {
+    options.verbose = 1;
+  }
+  if let Some(otel_settings) = &settings.trace.telemetry {
+    options.otel_include = otel_settings.include.clone();
+    options.otel_exclude = otel_settings.exclude.clone();
+  }
+  if let Some(log_settings) = &settings.trace.stderr {
+    options.log_include = log_settings.include.clone();
+    options.log_exclude = log_settings.exclude.clone();
   }
   if options.otlp_endpoint.is_none() {
     options.otlp_endpoint = settings.trace.otlp.clone();

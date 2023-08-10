@@ -98,11 +98,10 @@ fn expand_logging_init() -> Tokens {
   match found_crate {
     FoundCrate::Itself => quote! {
       let __guard = crate::init_test(&crate::LoggingOptions {
-        level: crate::LogLevel::Trace,
-        silly: true,
         app_name: "test".to_owned(),
         otlp_endpoint: std::env::var("OTLP_ENDPOINT").ok(),
         global:true,
+        levels: crate::LogFilters::with_level(crate::LogLevel::Trace),
         ..Default::default()
       });
     },
@@ -112,11 +111,10 @@ fn expand_logging_init() -> Tokens {
       quote! {
         let __guard =
           #ident::init_test(&#ident::LoggingOptions {
-            level: #ident::LogLevel::Trace,
-            silly: true,
             app_name: "test".to_owned(),
             otlp_endpoint: std::env::var("OTLP_ENDPOINT").ok(),
             global:true,
+            levels: #ident::LogFilters::with_level(#ident::LogLevel::Trace),
             ..Default::default()
           });
 

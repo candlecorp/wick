@@ -241,7 +241,6 @@ impl InstanceHandler {
         port.set_status(new_status);
       }
     }
-    trace!(ports=?changed_statuses,"updated downstream ports");
     changed_statuses
   }
 

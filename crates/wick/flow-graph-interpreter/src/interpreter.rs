@@ -13,7 +13,6 @@ use flow_component::{Component, ComponentError, RuntimeCallback};
 use futures::{FutureExt, TryFutureExt};
 use parking_lot::Mutex;
 use tracing::{info_span, Span};
-use tracing_futures::Instrument;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, Invocation, PacketStream, RuntimeConfig};
 
@@ -249,7 +248,7 @@ impl Component for Interpreter {
               let new_target = Entity::operation(handler.namespace(), invocation.target.operation_id());
               span.in_scope(|| trace!(origin=%invocation.origin,original_target=%invocation.target, %new_target, "invoke::exposed::operation"));
               invocation.target = new_target;
-              return handler.component.handle(invocation, config, cb).instrument(span).await;
+              return handler.component.handle(invocation, config, cb).await;
             }
             span
               .in_scope(|| trace!(origin=%invocation.origin,target=%invocation.target, "invoke::composite::operation"));
@@ -259,11 +258,7 @@ impl Component for Interpreter {
               .await?
           } else if let Some(handler) = self.components.get(ns) {
             span.in_scope(|| trace!(origin=%invocation.origin,target=%invocation.target, "invoke::handler::operation"));
-            handler
-              .component
-              .handle(invocation, config, cb)
-              .instrument(span)
-              .await?
+            handler.component.handle(invocation, config, cb).await?
           } else {
             return Err(ComponentError::new(Error::TargetNotFound(
               invocation.target.clone(),

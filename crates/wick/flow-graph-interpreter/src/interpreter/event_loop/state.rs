@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
 
 use flow_graph::{PortDirection, PortReference};
+use tracing::Span;
 use uuid::Uuid;
 use wick_packet::PacketPayload;
 
@@ -46,30 +47,34 @@ impl State {
           continue;
         }
 
-        if !meta.have_warned() {
-          warn!(%id, ?active_instances, "slow invocation: no packet received in a long time");
-          meta.set_have_warned();
-        }
+        ctx.in_scope(|| {
+          if !meta.have_warned() {
+            warn!(%id, ?active_instances, "slow invocation: no packet received in a long time");
+            meta.set_have_warned();
+          }
+        });
       }
-      if last_update > EventLoop::STALLED_TX_TIMEOUT {
-        match ctx.check_stalled() {
-          Ok(TxState::Finished) => {
-            // execution has completed its output and isn't generating more data, clean it up.
-            cleanup.push(*id);
-          }
-          Ok(TxState::OutputPending) => {
-            error!(%id, "invocation reached timeout while still waiting for output data");
-            cleanup.push(*id);
-          }
-          Ok(TxState::CompleteWithTasksPending) => {
-            error!(%id, "invocation reached timeout while still waiting for tasks to complete");
-            cleanup.push(*id);
-          }
-          Err(error) => {
-            error!(%error, %id, "stalled invocation generated error determining hung state");
+      ctx.in_scope(|| {
+        if last_update > EventLoop::STALLED_TX_TIMEOUT {
+          match ctx.check_stalled() {
+            Ok(TxState::Finished) => {
+              // execution has completed its output and isn't generating more data, clean it up.
+              cleanup.push(*id);
+            }
+            Ok(TxState::OutputPending) => {
+              error!(%id, "invocation reached timeout while still waiting for output data");
+              cleanup.push(*id);
+            }
+            Ok(TxState::CompleteWithTasksPending) => {
+              error!(%id, "invocation reached timeout while still waiting for tasks to complete");
+              cleanup.push(*id);
+            }
+            Err(error) => {
+              error!(%error, %id, "stalled invocation generated error determining hung state");
+            }
           }
         }
-      }
+      });
     }
     for ctx_id in cleanup {
       self.context_map.remove(&ctx_id);
@@ -89,7 +94,6 @@ impl State {
     match ctx.start(options).await {
       Ok(_) => {
         self.context_map.init_tx(ctx.id(), ctx);
-        trace!("execution started");
         Ok(())
       }
       Err(e) => Err(e),
@@ -99,29 +103,33 @@ impl State {
   #[allow(clippy::unused_async)]
   pub(super) async fn handle_exec_done(&mut self, ctx_id: Uuid) -> Result<(), ExecutionError> {
     let is_done = if let Some(ctx) = self.get_mut(&ctx_id) {
-      let statistics = ctx.finish()?;
-      trace!(?statistics);
-      ctx.active_instances().is_empty()
+      let _ = ctx.finish()?;
+
+      ctx.in_scope(|| {
+        if ctx.active_instances().is_empty() {
+          debug!(%ctx_id,"execution:done");
+          true
+        } else {
+          false
+        }
+      })
     } else {
       false
     };
     if is_done {
-      debug!(%ctx_id,"execution done");
       self.context_map.remove(&ctx_id);
     }
     Ok(())
   }
 
   #[allow(clippy::unused_async)]
-  async fn handle_input_data(&mut self, ctx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
+  async fn handle_input_data(&mut self, ctx_id: Uuid, port: PortReference, span: &Span) -> Result<(), ExecutionError> {
     let (ctx, _) = match self.get_ctx(&ctx_id) {
       Some(ctx) => ctx,
       None => {
-        // This is a warning, not an error, because it's possible the transaction completes OK, it's just that a
-        // component is misbehaving.
-        debug!(
+        span.in_scope(||{debug!(
           port = %port, %ctx_id, "still receiving upstream data for invocation that has already been completed, this may be due to a component panic or premature close"
-        );
+        );});
         return Ok(());
       }
     };
@@ -137,45 +145,47 @@ impl State {
     let is_schematic_output = port.node_index() == graph.output().index();
 
     if is_schematic_output {
-      debug!(
-        operation = %instance,
-        port = port_name,
-        "handling schematic output"
-      );
-
-      ctx.handle_schematic_output()?;
-    } else if let Some(packet) = ctx.take_instance_input(&port) {
-      if packet.is_error() {
-        warn!(
-          operation = %instance,
-          port = port_name,
-          payload = ?packet,
-          "handling port input"
-        );
-      } else {
+      span.in_scope(|| {
         debug!(
           operation = %instance,
           port = port_name,
-          payload = ?packet,
-          "handling port input"
+          "handling schematic output"
         );
-      }
+      });
 
+      ctx.handle_schematic_output()?;
+    } else if let Some(packet) = ctx.take_instance_input(&port) {
+      span.in_scope(|| {
+        if packet.is_error() {
+          warn!(
+            operation = %instance,
+            port = port_name,
+            payload = ?packet,
+            "handling port input"
+          );
+        } else {
+          debug!(
+            operation = %instance,
+            port = port_name,
+            payload = ?packet,
+            "handling port input"
+          );
+        }
+      });
       ctx.push_packets(port.node_index(), vec![packet]).await?;
     }
     Ok(())
   }
 
   #[allow(clippy::unused_async)]
-  async fn handle_output_data(&mut self, ctx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
+  async fn handle_output_data(&mut self, ctx_id: Uuid, port: PortReference, span: &Span) -> Result<(), ExecutionError> {
     let (ctx, _) = match self.get_ctx(&ctx_id) {
       Some(ctx) => ctx,
       None => {
-        // This is a warning, not an error, because it's possible the transaction completes OK, it's just that a
-        // component is misbehaving.
-        debug!(
-          port = %port, %ctx_id, "still receiving downstream data for invocation that has already been completed, this may be due to a component panic or premature close"
-        );
+        span.in_scope(||{
+          debug!(
+          port = %port, %ctx_id, "still receiving downstream data for invocation that has already been completed, this may be due to a component panic or premature close")
+        ;});
         return Ok(());
       }
     };
@@ -189,7 +199,11 @@ impl State {
       .stats
       .mark(format!("output:{}:{}:ready", port.node_index(), port.port_index()));
 
-    if let Some(packet) = ctx.take_instance_output(&port) {
+    let Some(packet) = ctx.take_instance_output(&port) else {
+      panic!("got port_data message with no payload to act on, port: {:?}", port);
+    };
+
+    let connections = span.in_scope(|| {
       if packet.is_error() {
         warn!(
           operation = %instance,
@@ -205,8 +219,10 @@ impl State {
           "handling port output"
         );
       }
-      let connections = graph.get_port(&port).connections();
-      for index in connections {
+      graph.get_port(&port).connections()
+    });
+    for index in connections {
+      span.in_scope(|| {
         let connection = &graph.connections()[*index];
         let downport = *connection.to();
         let name = graph.get_port_name(&downport);
@@ -217,18 +233,21 @@ impl State {
         trace!(%connection, "delivering packet to downstream",);
         downstream_instance.buffer_in(&downport, message);
         channel.dispatch_data(ctx_id, downport);
-      }
-    } else {
-      panic!("got port_data message with no payload to act on, port: {:?}", port);
+      });
     }
 
     Ok(())
   }
 
-  pub(super) async fn handle_port_data(&mut self, ctx_id: Uuid, port: PortReference) -> Result<(), ExecutionError> {
+  pub(super) async fn handle_port_data(
+    &mut self,
+    ctx_id: Uuid,
+    port: PortReference,
+    span: &Span,
+  ) -> Result<(), ExecutionError> {
     match port.direction() {
-      PortDirection::Out => self.handle_output_data(ctx_id, port).await,
-      PortDirection::In => self.handle_input_data(ctx_id, port).await,
+      PortDirection::Out => self.handle_output_data(ctx_id, port, span).await,
+      PortDirection::In => self.handle_input_data(ctx_id, port, span).await,
     }
   }
 

@@ -126,7 +126,9 @@ impl Stream for PacketStream {
                   .decode_value()
                   .map_or_else(|_| format!("{:?}", packet.payload()), |j| j.to_string());
                 let until = std::cmp::min(debug_packet.len(), 2048);
-                tracing::trace!(flags=packet.flags(), port=packet.port(), packet=%&debug_packet[..until], "packet");
+                self.span.in_scope(|| {
+                  tracing::trace!(flags=packet.flags(), port=packet.port(), packet=%&debug_packet[..until], "packet");
+                });
               }
             });
           }
@@ -147,7 +149,9 @@ impl Stream for PacketStream {
                 .decode_value()
                 .map_or_else(|_| format!("{:?}", packet.payload()), |j| j.to_string());
               let until = std::cmp::min(debug_packet.len(), 2048);
-              tracing::trace!(flags=packet.flags(), port=packet.port(), packet=%&debug_packet[..until], "packet");
+              self.span.in_scope(|| {
+                tracing::trace!(flags=packet.flags(), port=packet.port(), packet=%&debug_packet[..until], "packet");
+              });
             }
           });
         }
