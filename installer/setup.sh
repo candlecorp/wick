@@ -212,6 +212,19 @@
 
   }
 
+  createConfigFile() {
+    local config_dir="${HOME}/.wick/config"
+    local config_file="${config_dir}/config.yaml"
+
+    if [[ ! -f "$config_file" ]]; then
+        echo "Creating $config_file..."
+        mkdir -p "$config_dir"
+        touch "$config_file"
+    else
+        echo "$config_file already exists."
+    fi
+  }
+
   cleanup() {
     if [[ -d "${TMP_ROOT:-}" ]]; then
       rm -rf "$TMP_ROOT"
@@ -246,6 +259,7 @@
 
   separate_output
   addPath
+  createConfigFile
   installCompleted
 
 }

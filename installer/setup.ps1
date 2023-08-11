@@ -59,13 +59,13 @@ function Install-File {
             Write-Host "Failed to unpack $filePath."
             exit 3
         }
-    
+
         if (-not (Test-Path $InstallDir)) {
             New-Item -ItemType Directory -Path $InstallDir | Out-Null
         }
-    
+
         Copy-Item -Path $filePath -Destination $destPath
-    
+
         if (Test-Path $destPath) {
             Write-Host "Installed $file into $InstallDir successfully"
         } else {
@@ -99,6 +99,21 @@ function Add-Path {
     }
 }
 
+function Create-ConfigFile {
+    $configDir = "$env:USERPROFILE\.wick\config"
+    $configFile = Join-Path $configDir "config.yaml"
+
+    if (-not (Test-Path $configFile)) {
+        Write-Host "Creating $configFile..."
+        if (-not (Test-Path $configDir)) {
+            New-Item -ItemType Directory -Path $configDir | Out-Null
+        }
+        New-Item -ItemType File -Path $configFile | Out-Null
+    } else {
+        Write-Host "$configFile already exists."
+    }
+}
+
 function Install-Completed {
     Write-Host "**** Congratulations, $ProjectName installed successfully! ****"
 }
@@ -110,4 +125,5 @@ Download-File -ReleaseTag $ReleaseVersion
 Install-File
 Remove-Item -Path $TmpRoot -Recurse -Force
 Add-Path
+Create-ConfigFile
 Install-Completed
