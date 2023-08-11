@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::Args;
-use wick_oci_utils::OciOptions;
+use wick_oci_utils::{OciOptions, OnExisting};
 use wick_settings::Credential;
 
 #[derive(Args, Debug, Default, Clone)]
@@ -147,7 +147,11 @@ pub(crate) fn reconcile_fetch_options(
     .set_allow_latest(true)
     .set_username(username)
     .set_password(password)
-    .set_overwrite(force);
+    .set_on_existing(if force {
+      OnExisting::Overwrite
+    } else {
+      OnExisting::Error
+    });
   if let Some(output) = output {
     oci_opts.set_cache_dir(output);
   }

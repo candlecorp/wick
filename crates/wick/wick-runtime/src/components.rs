@@ -121,7 +121,7 @@ pub(crate) async fn init_manifest_component(
     .set_allow_latest(opts.allow_latest)
     .set_allow_insecure(opts.allowed_insecure.clone());
 
-  let mut builder = WickConfiguration::fetch(kind.reference().path()?.to_string_lossy(), options)
+  let mut builder = WickConfiguration::fetch(kind.reference().clone(), options)
     .instrument(span.clone())
     .await?;
   builder.set_root_config(opts.root_config.clone());

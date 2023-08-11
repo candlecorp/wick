@@ -8,7 +8,7 @@ use tar::Archive;
 
 use super::{annotations, media_types};
 use crate::utils::{create_directory_structure, get_cache_directory};
-use crate::{AssetManifest, Error, OciOptions};
+use crate::{AssetManifest, Error, OciOptions, OnExisting};
 
 /// Result of a pull operation.
 #[derive(Debug, Clone)]
@@ -82,7 +82,7 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
 
   let image_data = match result {
     Ok(pull_response) => {
-      debug!("Image successfully pulled from the registry.");
+      debug!(reference = %image_ref.whole(), "image successfully pulled from the registry");
       pull_response
     }
     Err(e) => {
@@ -120,7 +120,7 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
     }
   }
 
-  if !would_overwrite.is_empty() && !options.overwrite {
+  if !would_overwrite.is_empty() && matches!(options.on_existing, OnExisting::Error) {
     return Err(Error::WouldOverwrite(would_overwrite));
   }
 
@@ -150,9 +150,25 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
         .await
         .map_err(|e| Error::CreateDir(parent_dir.to_path_buf(), e))?;
 
-      tokio::fs::write(&layer_path, &layer.data)
-        .await
-        .map_err(|e| Error::WriteFile(layer_path, e))?;
+      if layer_path.exists() {
+        match options.on_existing {
+          OnExisting::Ignore => {
+            debug!(file = %layer_path.display(), bytes = layer.data.len(), "cache:not_overwriting");
+          }
+          OnExisting::Overwrite => {
+            debug!(file = %layer_path.display(), bytes = layer.data.len(), "cache:overwrite");
+            tokio::fs::write(&layer_path, &layer.data)
+              .await
+              .map_err(|e| Error::WriteFile(layer_path, e))?;
+          }
+          _ => unreachable!("on_existing should have been checked earlier"),
+        }
+      } else {
+        trace!(file = %layer_path.display(), bytes = layer.data.len(), "cache:write");
+        tokio::fs::write(&layer_path, &layer.data)
+          .await
+          .map_err(|e| Error::WriteFile(layer_path, e))?;
+      }
     }
 
     // This is only for backwards compatibility for very old packages that don't include root files.

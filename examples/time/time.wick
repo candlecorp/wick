@@ -14,7 +14,9 @@ import:
   - name: comp
     component:
       kind: wick/component/manifest@v1
-      ref: ../../integration/test-baseline-component/component.yaml
+      ref: ../../crates/integration/test-baseline-component/component.yaml
+      with:
+        default_err: 'Error from time trigger'
 triggers:
   - kind: wick/trigger/time@v1
     schedule:

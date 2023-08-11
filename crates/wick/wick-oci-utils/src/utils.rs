@@ -79,7 +79,7 @@ pub fn parse_reference_and_protocol(
   ))
 }
 
-pub(crate) fn get_cache_directory(input: &str, basedir: impl AsRef<Path>) -> Result<PathBuf, Error> {
+pub fn get_cache_directory(input: &str, basedir: impl AsRef<Path>) -> Result<PathBuf, Error> {
   let image_ref = parse_reference(input)?;
 
   let registry = image_ref

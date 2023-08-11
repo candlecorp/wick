@@ -51,7 +51,7 @@ fn process_assets(
 
       match relative_path.extension().and_then(|os_str| os_str.to_str()) {
         Some("yaml" | "yml" | "wick") => {
-          let config = WickConfiguration::fetch(asset_path.to_string_lossy(), options.clone())
+          let config = WickConfiguration::fetch((*asset).clone(), options.clone())
             .await
             .map(|b| b.into_inner());
           match config {
@@ -95,7 +95,7 @@ fn process_assets(
         }
       }
 
-      if asset.exists_locally() {
+      if asset.exists_outside_cache() {
         let file_bytes = asset.bytes(&options).await?;
         let hash = format!("sha256:{}", digest(file_bytes.as_ref()));
         let wick_file = PackageFile::new(relative_path.to_path_buf(), hash, media_type.to_owned(), file_bytes);
@@ -134,9 +134,7 @@ impl WickPackage {
     }
 
     let options = wick_config::FetchOptions::default();
-    let config = WickConfiguration::fetch(path.to_string_lossy(), options)
-      .await?
-      .into_inner();
+    let config = WickConfiguration::fetch(path, options).await?.into_inner();
     if !matches!(
       config,
       WickConfiguration::App(_) | WickConfiguration::Component(_) | WickConfiguration::Types(_)

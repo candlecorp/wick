@@ -2,6 +2,13 @@ use std::path::PathBuf;
 
 use oci_distribution::secrets::RegistryAuth;
 
+#[derive(Clone, Debug, Copy, serde::Serialize)]
+pub enum OnExisting {
+  Ignore,
+  Overwrite,
+  Error,
+}
+
 #[derive(getset::Getters, getset::Setters, Clone, serde::Serialize)]
 #[must_use]
 pub struct OciOptions {
@@ -16,7 +23,7 @@ pub struct OciOptions {
   #[getset(get = "pub", set = "pub")]
   pub(crate) cache_dir: PathBuf,
   #[getset(get = "pub", set = "pub")]
-  pub(crate) overwrite: bool,
+  pub(crate) on_existing: OnExisting,
 }
 
 impl Default for OciOptions {
@@ -28,7 +35,7 @@ impl Default for OciOptions {
       username: None,
       password: None,
       cache_dir: xdg.global().cache().clone(),
-      overwrite: false,
+      on_existing: OnExisting::Ignore,
     }
   }
 }

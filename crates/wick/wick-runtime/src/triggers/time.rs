@@ -173,7 +173,10 @@ impl Trigger for Time {
   }
 
   async fn wait_for_done(&self) {
-    let handler = self.handler.lock().take().unwrap();
+    let Some(handler) = self.handler.lock().take() else {
+      return;
+    };
+
     match handler.await {
       Ok(_) => {
         info!("cron done");
@@ -205,7 +208,7 @@ mod test {
     let manifest_dir = crate_dir.join("../../../examples/time/");
 
     let yaml = manifest_dir.join("time.wick");
-    let app_config = config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default())
+    let app_config = config::WickConfiguration::fetch(&yaml, Default::default())
       .await?
       .finish()?
       .try_app_config()?;
