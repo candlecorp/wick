@@ -105,7 +105,13 @@ pub use options::*;
 pub use pull::*;
 pub use push::*;
 use serde::{Deserialize, Serialize};
-pub use utils::{is_oci_reference, is_wick_package_reference, parse_reference, parse_reference_and_protocol};
+pub use utils::{
+  get_cache_directory,
+  is_oci_reference,
+  is_wick_package_reference,
+  parse_reference,
+  parse_reference_and_protocol,
+};
 
 use crate::error::OciError;
 

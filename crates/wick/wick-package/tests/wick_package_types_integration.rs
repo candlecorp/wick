@@ -21,7 +21,7 @@ mod integration_test {
     println!("Using tempdir: {:?}", tempdir);
     let mut options = OciOptions::default();
     options
-      .set_overwrite(true)
+      .set_on_existing(wick_oci_utils::OnExisting::Overwrite)
       .set_cache_dir(tempdir.clone())
       .set_allow_insecure(vec![host.to_owned()]);
 

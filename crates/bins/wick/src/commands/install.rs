@@ -45,9 +45,7 @@ pub(crate) async fn handle(
   };
 
   let path = package.path();
-  let config = WickConfiguration::fetch(path.to_string_lossy(), Default::default())
-    .await?
-    .into_inner();
+  let config = WickConfiguration::fetch(path, Default::default()).await?.into_inner();
 
   let config = match config {
     WickConfiguration::App(config) => config,

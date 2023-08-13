@@ -49,7 +49,9 @@ pub(crate) async fn instantiate_import(
   binding: &config::ImportBinding,
   opts: ChildInit,
 ) -> Result<Option<NamespaceHandler>, EngineError> {
-  opts.span.in_scope(|| debug!(?binding, ?opts, "instantiating import"));
+  opts
+    .span
+    .in_scope(|| debug!(id = binding.id(), ?opts, "instantiating import"));
   let id = binding.id().to_owned();
   match binding.kind() {
     config::ImportDefinition::Component(c) => instantiate_imported_component(id, c, opts).await,

@@ -49,21 +49,17 @@ async fn create_schedule(
   schedule: Schedule,
   app_config: AppConfiguration,
   config: TimeTriggerConfig,
-) -> tokio::task::JoinHandle<()> {
+) -> Result<tokio::task::JoinHandle<()>, RuntimeError> {
+  let span = info_span!("trigger:schedule", schedule = ?schedule);
+  let schedule_component = resolve_ref(&app_config, config.operation().component())?;
+  let mut runtime = build_trigger_runtime(&app_config, span.clone())?;
+  let schedule_binding = config::ImportBinding::component("0", schedule_component);
+  runtime.add_import(schedule_binding);
+  // needed for invoke command
+  let runtime = runtime.build(None).await?;
+
   // Create a scheduler loop
-  tokio::spawn(async move {
-    let span = info_span!("trigger:schedule", schedule = ?schedule);
-    let schedule_component = match resolve_ref(&app_config, config.operation().component()) {
-      Ok(component) => component,
-      Err(err) => panic!("Unable to resolve component: {}", err),
-    };
-
-    let mut runtime = build_trigger_runtime(&app_config, span.clone()).unwrap();
-    let schedule_binding = config::ImportBinding::component("0", schedule_component);
-    runtime.add_import(schedule_binding);
-    // needed for invoke command
-    let runtime = runtime.build(None).await.unwrap();
-
+  let handle = tokio::spawn(async move {
     let runtime = Arc::new(runtime);
     let operation = Arc::new(config.operation().name().to_owned());
     let payload = Arc::new(config.payload().to_vec());
@@ -100,7 +96,8 @@ async fn create_schedule(
         }
       });
     }
-  })
+  });
+  Ok(handle)
 }
 
 #[derive(Debug)]
@@ -141,7 +138,7 @@ impl Time {
       }
     };
 
-    let scheduler_task = create_schedule(schedule, app_config, config).await;
+    let scheduler_task = create_schedule(schedule, app_config, config).await?;
 
     self.handler.lock().replace(scheduler_task);
 
@@ -176,7 +173,10 @@ impl Trigger for Time {
   }
 
   async fn wait_for_done(&self) {
-    let handler = self.handler.lock().take().unwrap();
+    let Some(handler) = self.handler.lock().take() else {
+      return;
+    };
+
     match handler.await {
       Ok(_) => {
         info!("cron done");
@@ -208,7 +208,7 @@ mod test {
     let manifest_dir = crate_dir.join("../../../examples/time/");
 
     let yaml = manifest_dir.join("time.wick");
-    let app_config = config::WickConfiguration::fetch(yaml.to_string_lossy(), Default::default())
+    let app_config = config::WickConfiguration::fetch(&yaml, Default::default())
       .await?
       .finish()?
       .try_app_config()?;

@@ -112,7 +112,7 @@ impl WickConfiguration {
   /// # });
   /// ```
   pub async fn fetch_all(
-    path: impl Into<String> + Send,
+    path: impl Into<AssetReference> + Send,
     options: FetchOptions,
   ) -> Result<UninitializedConfiguration, Error> {
     let config = Self::fetch(path, options.clone()).await?;
@@ -137,16 +137,13 @@ impl WickConfiguration {
   /// ```
   ///
   pub async fn fetch(
-    path: impl Into<String> + Send,
+    asset: impl Into<AssetReference> + Send,
     options: FetchOptions,
   ) -> Result<UninitializedConfiguration, Error> {
-    let path = path.into();
-    let location = AssetReference::new(&path);
+    let asset: AssetReference = asset.into();
 
-    let bytes = location.fetch(options.clone()).await?;
-    let source = location
-      .path()
-      .unwrap_or_else(|e| PathBuf::from(format!("<ERROR:{}>", e)));
+    let bytes = asset.fetch(options.clone()).await?;
+    let source = asset.path().unwrap_or_else(|e| PathBuf::from(format!("<ERROR:{}>", e)));
     let config = WickConfiguration::load_from_bytes(&bytes, &Some(source))?;
     config.manifest.update_baseurls();
     match &config.manifest {

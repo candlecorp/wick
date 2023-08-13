@@ -9,6 +9,7 @@ use bytes::Bytes;
 use normpath::PathExt;
 use parking_lot::RwLock;
 use tokio::io::AsyncReadExt;
+use tokio::sync::Mutex;
 use tokio_stream::Stream;
 use tracing::debug;
 use wick_oci_utils::OciOptions;
@@ -40,6 +41,15 @@ pub struct AssetReference {
   pub(crate) cache_location: Arc<RwLock<Option<PathBuf>>>,
   #[serde(skip)]
   pub(crate) baseurl: Arc<RwLock<Option<PathBuf>>>,
+  #[serde(skip)]
+  #[allow(unused)]
+  pub(crate) fetch_lock: Arc<Mutex<()>>,
+}
+
+impl<'a> From<assets::AssetRef<'a, AssetReference>> for AssetReference {
+  fn from(asset_ref: assets::AssetRef<'a, AssetReference>) -> Self {
+    std::ops::Deref::deref(&asset_ref).clone()
+  }
 }
 
 impl FromStr for AssetReference {
@@ -53,6 +63,24 @@ impl FromStr for AssetReference {
 impl From<&str> for AssetReference {
   fn from(s: &str) -> Self {
     Self::new(s)
+  }
+}
+
+impl From<&String> for AssetReference {
+  fn from(s: &String) -> Self {
+    Self::new(s)
+  }
+}
+
+impl From<&Path> for AssetReference {
+  fn from(s: &Path) -> Self {
+    Self::new(s.to_string_lossy())
+  }
+}
+
+impl From<&PathBuf> for AssetReference {
+  fn from(s: &PathBuf) -> Self {
+    Self::new(s.to_string_lossy())
   }
 }
 
@@ -75,6 +103,7 @@ impl AssetReference {
       location: location.as_ref().to_owned(),
       cache_location: Default::default(),
       baseurl: Default::default(),
+      fetch_lock: Default::default(),
     }
   }
 
@@ -111,19 +140,19 @@ impl AssetReference {
   }
 
   #[allow(clippy::option_if_let_else)]
+  // Pass true to resolve path from cache, false to resolve from location irrespective of cache.
   fn resolve_path(&self, use_cache: bool) -> Result<PathBuf, Error> {
     if let Some(cache_loc) = self.cache_location.read().as_ref() {
       if use_cache {
         return Ok(cache_loc.clone());
       }
     }
-    if let Ok(url) = normalize_path(self.location.as_ref(), self.baseurl()) {
-      Ok(url)
-    } else if wick_oci_utils::is_oci_reference(self.location.as_str()) {
-      Ok(PathBuf::from(&self.location))
-    } else {
-      Err(Error::Unresolvable(self.location.clone()))
+    if let Ok(path) = normalize_path(self.location.as_ref(), self.baseurl()) {
+      if path.exists() {
+        return Ok(path);
+      }
     }
+    Err(Error::Unresolvable(self.location.clone()))
   }
 
   #[must_use]
@@ -143,9 +172,9 @@ impl AssetReference {
     }
   }
 
-  /// Check if the asset exists on disk.
+  /// Check if the asset exists on disk and isn't in the cache.
   #[must_use]
-  pub fn exists_locally(&self) -> bool {
+  pub fn exists_outside_cache(&self) -> bool {
     let path = self.resolve_path(false);
     path.is_ok() && path.unwrap().exists()
   }
@@ -176,13 +205,16 @@ impl Asset for AssetReference {
     &self,
     options: OciOptions,
   ) -> std::pin::Pin<Box<dyn Future<Output = Result<Vec<u8>, assets::Error>> + Send + Sync>> {
-    let path = self.path();
-    let location = self.location().to_owned();
+    let asset = self.clone();
 
-    let cache_location = self.cache_location.clone();
-    let exists = self.exists_locally();
     Box::pin(async move {
+      let lock = asset.fetch_lock.lock().await;
+      let path = asset.path();
+
+      let exists = path.as_ref().map_or(false, |p| p.exists());
       if exists {
+        // Drop the lock immediately. We can fetch from disk all day.
+        drop(lock);
         let path = path.unwrap();
         if path.is_dir() {
           return Err(assets::Error::IsDirectory(path.clone()));
@@ -197,12 +229,13 @@ impl Asset for AssetReference {
         file.read_to_end(&mut bytes).await?;
         Ok(bytes)
       } else {
-        let path = location;
+        let path = asset.location();
         debug!(%path, "fetching remote asset");
-        let (cache_loc, bytes) = retrieve_remote(&path, options)
+        let (cache_loc, bytes) = retrieve_remote(path, options)
           .await
-          .map_err(|err| assets::Error::RemoteFetch(path, err.to_string()))?;
-        *cache_location.write() = Some(cache_loc);
+          .map_err(|err| assets::Error::RemoteFetch(path.to_owned(), err.to_string()))?;
+
+        *asset.cache_location.write() = Some(cache_loc);
         Ok(bytes)
       }
     })
@@ -251,6 +284,7 @@ mod test {
   use anyhow::Result;
 
   use super::*;
+  use crate::Error;
 
   #[test_logger::test]
   fn test_no_baseurl() -> Result<()> {
@@ -320,7 +354,7 @@ mod test {
   #[case("./files/assets/test.fake.wasm", Ok("files/assets/test.fake.wasm"))]
   #[case("./files/./assets/test.fake.wasm", Ok("files/assets/test.fake.wasm"))]
   #[case("./files/../files/assets/test.fake.wasm", Ok("files/assets/test.fake.wasm"))]
-  fn test_path_normalization(#[case] path: &str, #[case] expected: Result<&str, Error>) -> Result<()> {
+  fn test_relativity(#[case] path: &str, #[case] expected: Result<&str, Error>) -> Result<()> {
     let crate_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     let testdata_dir = crate_dir.join("../../../tests/testdata");
 
@@ -332,6 +366,18 @@ mod test {
     let result = asset.get_relative_part();
     let expected = expected.map(|s| PathBuf::from(s.to_owned()));
     assert_eq!(result, expected);
+
+    Ok(())
+  }
+
+  #[rstest::rstest]
+  #[case("org/repo:0.6.0")]
+  #[case("registry.candle.dev/org/repo:0.6.0")]
+  fn test_unresolvable_paths(#[case] path: &str) -> Result<()> {
+    println!("asset location: {}", path);
+    let asset = AssetReference::new(path);
+
+    assert_eq!(asset.path(), Err(Error::Unresolvable(path.to_owned())));
 
     Ok(())
   }
