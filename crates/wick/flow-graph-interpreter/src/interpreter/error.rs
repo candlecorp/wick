@@ -21,6 +21,9 @@ pub enum Error {
   #[error("Could not find component '{}' ({0}). Namespaces handled by this resource are: {}", .0.component_id(), .1.join(", "))]
   TargetNotFound(Entity, Vec<String>),
 
+  #[error("Can not invoke non-operation entity: {0}")]
+  InvalidEntity(Entity),
+
   #[error("Error shutting down component: {0}")]
   ComponentShutdown(String),
 

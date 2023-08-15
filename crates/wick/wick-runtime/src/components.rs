@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use flow_component::{Component, RuntimeCallback};
+use flow_component::RuntimeCallback;
 use flow_graph_interpreter::NamespaceHandler;
 use seeded_random::{Random, Seed};
 use tracing::Instrument;
@@ -128,8 +128,8 @@ pub(crate) async fn init_manifest_component(
   let manifest = builder.finish()?.try_component_config()?;
 
   let requires = manifest.requires();
-  let provided =
-    generate_provides(requires, kind.provide()).map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
+  let provided = generate_provides_entities(requires, kind.provide())
+    .map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
   init_component_implementation(&manifest, id, opts, provided).await
 }
 
@@ -147,7 +147,6 @@ pub(crate) async fn init_component_implementation(
 
   let rng = Random::from_seed(opts.rng_seed);
   opts.rng_seed = rng.seed();
-  let uuid = rng.uuid();
   let metadata = manifest.metadata();
   match manifest.component() {
     config::ComponentImplementation::Wasm(wasmimpl) => {
@@ -177,6 +176,7 @@ pub(crate) async fn init_component_implementation(
       Ok(comp)
     }
     config::ComponentImplementation::Composite(_) => {
+      let uuid = rng.uuid();
       let _engine = init_child(uuid, manifest.clone(), Some(id.clone()), opts).await?;
 
       let component = Arc::new(engine_component::EngineComponent::new(uuid));
@@ -206,18 +206,17 @@ pub(crate) async fn init_component_implementation(
   }
 }
 
-fn generate_provides(
-  requires: &HashMap<String, BoundInterface>,
+pub(crate) fn generate_provides_entities(
+  requires: &[BoundInterface],
   provides: &HashMap<String, String>,
 ) -> Result<HashMap<String, String>> {
   let mut provide = HashMap::new();
-  #[allow(clippy::for_kv_map)] // silencing clippy to keep context for the TODO below.
-  for (id, _interface) in requires {
-    if let Some(provided) = provides.get(id) {
-      provide.insert(id.clone(), Entity::component(provided).url());
+  for req in requires {
+    if let Some(provided) = provides.get(req.id()) {
+      provide.insert(req.id().to_owned(), Entity::component(provided).url());
       // TODO: validate interfaces against what was provided.
     } else {
-      return Err(ComponentError::UnsatisfiedRequirement(id.clone()));
+      return Err(ComponentError::UnsatisfiedRequirement(req.id().to_owned()));
     }
   }
   Ok(provide)
@@ -237,7 +236,7 @@ pub(crate) async fn init_hlc_component(
   component: wick_config::config::HighLevelComponent,
   resolver: Box<Resolver>,
 ) -> ComponentInitResult {
-  let mut comp: Box<dyn Component + Send + Sync> = match component {
+  let comp: Box<dyn Component + Send + Sync> = match component {
     config::HighLevelComponent::Sql(comp) => {
       Box::new(wick_sql::SqlComponent::new(comp, root_config, metadata, &resolver).await?)
     }
@@ -248,6 +247,5 @@ pub(crate) async fn init_hlc_component(
       &resolver,
     )?),
   };
-  comp.init().await.map_err(EngineError::NativeComponent)?;
   Ok(NamespaceHandler::new(id, comp))
 }

@@ -130,6 +130,14 @@ impl NamespaceHandler {
     }
   }
 
+  pub fn new_from_shared<T: AsRef<str>>(namespace: T, component: Arc<Box<dyn Component + Send + Sync>>) -> Self {
+    Self {
+      namespace: namespace.as_ref().to_owned(),
+      component,
+      exposed: Arc::new(AtomicBool::new(false)),
+    }
+  }
+
   #[must_use]
   pub fn namespace(&self) -> &str {
     &self.namespace

@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use futures::{Stream, StreamExt, TryStreamExt};
-use parking_lot::Mutex;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::{ClientBuilder, Method, Request, RequestBuilder};
 use serde_json::{Map, Value};
@@ -23,28 +22,15 @@ use wick_packet::{Base64Bytes, FluxChannel, Invocation, Observer, Packet, Packet
 use crate::error::Error;
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
 
-#[derive()]
-pub(crate) struct Context {
-  path_templates: HashMap<String, Arc<(String, String)>>,
-  client: reqwest::Client,
-}
-
-impl Context {}
-
-impl std::fmt::Debug for Context {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("Context").finish()
-  }
-}
-
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct HttpClientComponent {
   base: Url,
   signature: ComponentSignature,
-  ctx: Arc<Mutex<Option<Context>>>,
   config: HttpClientComponentConfig,
   root_config: Option<RuntimeConfig>,
+  path_templates: HashMap<String, Arc<(String, String)>>,
+  client: reqwest::Client,
 }
 
 impl HttpClientComponent {
@@ -72,10 +58,23 @@ impl HttpClientComponent {
       .cloned()
       .ok_or_else(|| ComponentError::message("Internal Error - Invalid resource"))?;
 
+    let mut path_templates = HashMap::new();
+    for ops in config.operations() {
+      path_templates.insert(
+        ops.name().to_owned(),
+        Arc::new((ops.path().to_owned(), ops.path().to_owned())),
+      );
+    }
+
     Ok(Self {
       signature: sig,
       base: url,
-      ctx: Default::default(),
+      path_templates,
+      client: ClientBuilder::new()
+        .connect_timeout(std::time::Duration::from_secs(5))
+        .user_agent(APP_USER_AGENT)
+        .build()
+        .unwrap(),
       root_config,
       config,
     })
@@ -89,20 +88,16 @@ impl Component for HttpClientComponent {
     op_config: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let ctx = self.ctx.clone();
     let config = self.config.clone();
     let baseurl = self.base.clone();
     let codec = config.codec().copied();
+    let opdef = get_op_by_name(&config, invocation.target.operation_id());
+    let path_template = opdef
+      .as_ref()
+      .and_then(|op| self.path_templates.get(op.name()).cloned());
+    let client = self.client.clone();
 
     Box::pin(async move {
-      let (opdef, path_template, client) = match ctx.lock().as_ref() {
-        Some(ctx) => {
-          let opdef = get_op_by_name(&config, invocation.target.operation_id());
-          let template = opdef.as_ref().and_then(|op| ctx.path_templates.get(op.name()).cloned());
-          (opdef, template, ctx.client.clone())
-        }
-        None => return Err(ComponentError::message("Http client component not initialized")),
-      };
       let (tx, rx) = invocation.make_response();
       let span = invocation.span.clone();
       let fut = handle(
@@ -128,32 +123,6 @@ impl Component for HttpClientComponent {
 
   fn signature(&self) -> &ComponentSignature {
     &self.signature
-  }
-
-  fn init(&mut self) -> std::pin::Pin<Box<dyn futures::Future<Output = Result<(), ComponentError>> + Send + 'static>> {
-    let container = self.ctx.clone();
-    let config = self.config.clone();
-
-    Box::pin(async move {
-      let mut path_templates = HashMap::new();
-      for ops in config.operations() {
-        path_templates.insert(
-          ops.name().to_owned(),
-          Arc::new((ops.path().to_owned(), ops.path().to_owned())),
-        );
-      }
-      let ctx = Context {
-        path_templates,
-        client: ClientBuilder::new()
-          .connect_timeout(std::time::Duration::from_secs(5))
-          .user_agent(APP_USER_AGENT)
-          .build()
-          .unwrap(),
-      };
-      container.lock().replace(ctx);
-
-      Ok(())
-    })
   }
 }
 
@@ -515,14 +484,9 @@ mod test {
     (app_config, config)
   }
 
-  async fn get_component(
-    app_config: AppConfiguration,
-    component_config: HttpClientComponentConfig,
-  ) -> HttpClientComponent {
+  fn get_component(app_config: &AppConfiguration, component_config: HttpClientComponentConfig) -> HttpClientComponent {
     let resolver = app_config.resolver();
-    let mut component = HttpClientComponent::new(component_config, None, None, &resolver).unwrap();
-    component.init().await.unwrap();
-    component
+    HttpClientComponent::new(component_config, None, None, &resolver).unwrap()
   }
 
   #[test_logger::test(test)]
@@ -543,7 +507,7 @@ mod test {
     #[test_logger::test(tokio::test)]
     async fn test_get_request() -> Result<()> {
       let (app_config, component_config) = get_config();
-      let comp = get_component(app_config, component_config).await;
+      let comp = get_component(&app_config, component_config);
       let packets = packet_stream!(("input", "SENTINEL"));
       let invocation = Invocation::test("test_get_request", Entity::local(GET_OP), packets, Default::default())?;
       let config = json!({"secret":"0xDEADBEEF"});
@@ -572,7 +536,7 @@ mod test {
     #[test_logger::test(tokio::test)]
     async fn test_post_request() -> Result<()> {
       let (app_config, component_config) = get_config();
-      let comp = get_component(app_config, component_config).await;
+      let comp = get_component(&app_config, component_config);
       let packets = packet_stream!(("input", "SENTINEL"), ("number", [123, 345, 678]));
       let invocation = Invocation::test("test_post_request", Entity::local(POST_OP), packets, Default::default())?;
       let stream = comp
@@ -614,7 +578,7 @@ mod test {
     #[test_logger::test(tokio::test)]
     async fn test_text_post_request() -> Result<()> {
       let (app_config, component_config) = get_config();
-      let comp = get_component(app_config, component_config).await;
+      let comp = get_component(&app_config, component_config);
       let packets = packet_stream!(("input", "SENTINEL"), ("payload", "<xml>FOOBAR</xml>"));
       let invocation = Invocation::test(
         "test_text_post_request",

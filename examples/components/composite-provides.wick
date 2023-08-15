@@ -1,0 +1,30 @@
+kind: wick/component@v1
+import:
+  - name: PROVIDED_COMPONENT
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./echo.wick
+  - name: IMPORTED_COMPONENT
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./composite-requires.wick
+      provide:
+        required_component: PROVIDED_COMPONENT
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: echo_provided
+      flow:
+        - <>.input -> IMPORTED_COMPONENT::inner_operation[a].input
+        - a.output -> <>.output
+tests:
+  - name: basic
+    cases:
+      - name: default
+        operation: echo_provided
+        inputs:
+          - name: input
+            value: 'Hello, world!'
+        outputs:
+          - name: output
+            value: 'Hello, world!'

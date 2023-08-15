@@ -27,10 +27,10 @@ fn build_trigger_runtime(config: &AppConfiguration, span: Span) -> Result<Runtim
     rt = rt.allow_latest(*fetch_opts.allow_latest());
     rt = rt.allowed_insecure(fetch_opts.allow_insecure().clone());
   }
-  for import in config.imports().values() {
+  for import in config.imports() {
     rt.add_import(import.clone());
   }
-  for resource in config.resources().values() {
+  for resource in config.resources() {
     rt.add_resource(resource.clone());
   }
   rt = rt.span(span);

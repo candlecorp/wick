@@ -128,21 +128,9 @@ impl TryFrom<v1::ComponentConfiguration> for ComponentConfiguration {
       tests: def.tests.try_map_into()?,
       component: def.component.try_into()?,
       types: def.types.try_map_into()?,
-      requires: def
-        .requires
-        .into_iter()
-        .map(|v| Ok((v.name.clone(), v.try_into()?)))
-        .collect::<Result<_>>()?,
-      import: def
-        .import
-        .into_iter()
-        .map(|v| Ok((v.name.clone(), v.try_into()?)))
-        .collect::<Result<_>>()?,
-      resources: def
-        .resources
-        .into_iter()
-        .map(|v| Ok((v.name.clone(), v.try_into()?)))
-        .collect::<Result<_>>()?,
+      requires: def.requires.try_map_into()?,
+      import: def.import.try_map_into()?,
+      resources: def.resources.try_map_into()?,
       cached_types: Default::default(),
       type_cache: Default::default(),
       package: def.package.try_map_into()?,
@@ -159,18 +147,10 @@ impl TryFrom<ComponentConfiguration> for v1::ComponentConfiguration {
       metadata: def.metadata.try_map_into()?,
       host: def.host.try_map_into()?,
       name: def.name,
-      requires: def
-        .requires
-        .into_values()
-        .map(|v| v.try_into())
-        .collect::<Result<_>>()?,
-      import: def.import.into_values().map(|v| v.try_into()).collect::<Result<_>>()?,
+      requires: def.requires.try_map_into()?,
+      import: def.import.try_map_into()?,
       types: def.types.try_map_into()?,
-      resources: def
-        .resources
-        .into_values()
-        .map(|v| v.try_into())
-        .collect::<Result<_>>()?,
+      resources: def.resources.try_map_into()?,
       tests: def.tests.try_map_into()?,
       component: def.component.try_into()?,
       package: def.package.try_map_into()?,
@@ -381,16 +361,8 @@ impl TryFrom<v1::AppConfiguration> for AppConfiguration {
       metadata: def.metadata.try_map_into()?,
       name: def.name,
       options: None,
-      import: def
-        .import
-        .into_iter()
-        .map(|v| Ok((v.name.clone(), v.try_into()?)))
-        .collect::<Result<_>>()?,
-      resources: def
-        .resources
-        .into_iter()
-        .map(|v| Ok((v.name.clone(), v.try_into()?)))
-        .collect::<Result<_>>()?,
+      import: def.import.try_map_into()?,
+      resources: def.resources.try_map_into()?,
       triggers: def.triggers.into_iter().map(|v| v.try_into()).collect::<Result<_>>()?,
       cached_types: Default::default(),
       type_cache: Default::default(),
@@ -408,16 +380,8 @@ impl TryFrom<AppConfiguration> for v1::AppConfiguration {
     Ok(Self {
       metadata: value.metadata.try_map_into()?,
       name: value.name,
-      import: value
-        .import
-        .into_values()
-        .map(|v| v.try_into())
-        .collect::<Result<_>>()?,
-      resources: value
-        .resources
-        .into_values()
-        .map(|v| v.try_into())
-        .collect::<Result<_>>()?,
+      import: value.import.try_map_into()?,
+      resources: value.resources.try_map_into()?,
       triggers: value.triggers.try_map_into()?,
       package: value.package.try_map_into()?,
     })

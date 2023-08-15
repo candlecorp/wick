@@ -18,9 +18,9 @@ async fn load_app_yaml(path: &str) -> anyhow::Result<AppConfiguration> {
 
 fn init_resources(config: &AppConfiguration) -> Result<HashMap<String, Resource>> {
   let mut resources = HashMap::new();
-  for (id, def) in config.resources() {
-    let resource = Resource::new(def.kind().clone())?;
-    resources.insert(id.clone(), resource);
+  for res in config.resources() {
+    let resource = Resource::new(res.kind().clone())?;
+    resources.insert(res.id().to_owned(), resource);
   }
   Ok(resources)
 }

@@ -293,7 +293,7 @@ mod test {
         .try_app_config()?;
 
       let trigger = Http::default();
-      let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
+      let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
       let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
       let trigger_config = app_config.triggers()[0].clone();
       trigger

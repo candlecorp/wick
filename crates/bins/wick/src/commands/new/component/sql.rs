@@ -32,15 +32,12 @@ pub(crate) async fn handle(
     let mut config = ComponentConfiguration::default();
     config.set_name(name.clone());
     let resource_name = "DB_URL";
-    config.resources_mut().insert(
-      resource_name.to_owned(),
-      config::ResourceBinding::new(
-        resource_name,
-        config::ResourceDefinition::Url(config::UrlResource::new(
-          "postgres://postgres:postgres@localhost:5432/db_name".parse().unwrap(),
-        )),
-      ),
-    );
+    config.resources_mut().push(config::ResourceBinding::new(
+      resource_name,
+      config::ResourceDefinition::Url(config::UrlResource::new(
+        "postgres://postgres:postgres@localhost:5432/db_name".parse().unwrap(),
+      )),
+    ));
 
     config.set_metadata(crate::commands::new::generic_metadata("New SQL wick component"));
 

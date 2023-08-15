@@ -157,13 +157,13 @@ impl HttpInstance {
     debug!("shutting down http server");
     self.shutdown_tx.send(()).map_err(|_| {
       RuntimeError::ShutdownFailed(
-        TriggerKind::Http,
+        TriggerKind::Http.into(),
         "could not send shutdown signal; server may have already died".to_owned(),
       )
     })?;
     self.handle.await.map_err(|_| {
       RuntimeError::ShutdownFailed(
-        TriggerKind::Http,
+        TriggerKind::Http.into(),
         "waiting for server process to stop after sending shutdown signal failed".to_owned(),
       )
     })?;
@@ -372,7 +372,7 @@ fn register_static_router(
   let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
   let volume = resources.get(router_config.volume()).ok_or_else(|| {
     RuntimeError::ResourceNotFound(
-      TriggerKind::Http,
+      TriggerKind::Http.into(),
       format!("volume {} not found", router_config.volume()),
     )
   })?;
@@ -380,7 +380,7 @@ fn register_static_router(
     Resource::Volume(s) => s.clone(),
     _ => {
       return Err(RuntimeError::InvalidResourceType(
-        TriggerKind::Http,
+        TriggerKind::Http.into(),
         ResourceKind::Volume,
         volume.kind(),
       ))
@@ -457,7 +457,7 @@ fn register_proxy_router(
   let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
   let url = resources.get(router_config.url()).ok_or_else(|| {
     RuntimeError::ResourceNotFound(
-      TriggerKind::Http,
+      TriggerKind::Http.into(),
       format!("url resource {} not found", router_config.url()),
     )
   })?;
@@ -465,7 +465,7 @@ fn register_proxy_router(
     Resource::Url(s) => s.clone(),
     _ => {
       return Err(RuntimeError::InvalidResourceType(
-        TriggerKind::Http,
+        TriggerKind::Http.into(),
         ResourceKind::Url,
         url.kind(),
       ))
@@ -505,17 +505,17 @@ impl Trigger for Http {
     let config = if let config::TriggerDefinition::Http(config) = config {
       config
     } else {
-      return Err(RuntimeError::InvalidTriggerConfig(TriggerKind::Http));
+      return Err(RuntimeError::InvalidConfig(Context::Trigger, TriggerKind::Http));
     };
     let resource_name = config.resource();
     let resource = resources
       .get(resource_name)
-      .ok_or_else(|| RuntimeError::ResourceNotFound(TriggerKind::Http, resource_name.to_owned()))?;
+      .ok_or_else(|| RuntimeError::ResourceNotFound(TriggerKind::Http.into(), resource_name.to_owned()))?;
     let socket = match resource {
       Resource::TcpPort(s) => *s,
       _ => {
         return Err(RuntimeError::InvalidResourceType(
-          TriggerKind::Http,
+          TriggerKind::Http.into(),
           ResourceKind::TcpPort,
           resource.kind(),
         ))
@@ -610,7 +610,7 @@ mod test {
         .try_app_config()?;
 
       let trigger = Http::default();
-      let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
+      let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
       let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
       let trigger_config = app_config.triggers()[0].clone();
       trigger
@@ -644,7 +644,7 @@ mod test {
       let app_config = load_example("http/middleware.wick").await?.try_app_config()?;
 
       let trigger = Http::default();
-      let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
+      let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
       let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
       let trigger_config = app_config.triggers()[0].clone();
       trigger
@@ -702,7 +702,7 @@ mod test {
       let app_config = load_example("http/rest-router.wick").await?.try_app_config()?;
 
       let trigger = Http::default();
-      let resource = Resource::new(app_config.resources().get("http").as_ref().unwrap().kind().clone())?;
+      let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
       let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
       let trigger_config = app_config.triggers()[0].clone();
       trigger

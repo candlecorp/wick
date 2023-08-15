@@ -27,7 +27,6 @@ serde = { workspace = true, features = ["derive"] }
 #
 futures = { workspace = true }
 thiserror = { workspace = true }
-parking_lot = { workspace = true }
 serde_json = { workspace = true }
 
 #

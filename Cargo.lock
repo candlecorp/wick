@@ -6563,7 +6563,6 @@ dependencies = [
  "flow-component",
  "futures 0.3.28",
  "liquid-json",
- "parking_lot",
  "pretty_assertions",
  "reqwest",
  "serde",

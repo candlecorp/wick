@@ -546,9 +546,7 @@ mod integration_test {
       ),
     );
 
-    let mut component = SqlComponent::new(config, None, None, &app_config.resolver()).await?;
-
-    component.init().await?;
+    let component = SqlComponent::new(config, None, None, &app_config.resolver()).await?;
 
     Ok(component)
   }
@@ -604,9 +602,7 @@ mod integration_test {
       ),
     );
 
-    let mut component = SqlComponent::new(config, None, None, &app_config.resolver()).await?;
-
-    component.init().await.unwrap();
+    let component = SqlComponent::new(config, None, None, &app_config.resolver()).await?;
 
     Ok(component)
   }
@@ -653,9 +649,7 @@ mod integration_test {
       ResourceDefinition::Url(format!("sqlite://{}", db).try_into().unwrap()),
     );
 
-    let mut component = SqlComponent::new(config, None, None, &app_config.resolver()).await?;
-
-    component.init().await.unwrap();
+    let component = SqlComponent::new(config, None, None, &app_config.resolver()).await?;
 
     Ok(component)
   }

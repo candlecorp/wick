@@ -40,7 +40,7 @@ pub struct RuntimeInit {
   pub(crate) span: Span,
 
   #[builder(setter(custom = true))]
-  pub(crate) native_components: ComponentRegistry,
+  pub(crate) initial_components: ComponentRegistry,
 }
 
 impl Runtime {
@@ -100,7 +100,7 @@ impl std::fmt::Debug for RuntimeBuilder {
       .field("allowed_insecure", &self.allowed_insecure)
       .field("manifest", &self.manifest)
       .field("namespace", &self.namespace)
-      .field("native_components", &self.native_components)
+      .field("initial_components", &self.initial_components)
       .finish()
   }
 }
@@ -163,9 +163,9 @@ impl RuntimeBuilder {
   }
 
   pub fn add_native_component(&mut self, factory: Box<ComponentFactory>) -> &mut Self {
-    let mut val = self.native_components.take().unwrap_or_default();
+    let mut val = self.initial_components.take().unwrap_or_default();
     val.add(factory);
-    self.native_components.replace(val);
+    self.initial_components.replace(val);
     self
   }
 
@@ -180,7 +180,7 @@ impl RuntimeBuilder {
         manifest: definition,
         allow_latest: self.allow_latest.unwrap_or_default(),
         allowed_insecure: self.allowed_insecure.unwrap_or_default(),
-        native_components: self.native_components.unwrap_or_default(),
+        initial_components: self.initial_components.unwrap_or_default(),
         namespace: self.namespace.unwrap_or_default(),
         constraints: self.constraints.unwrap_or_default(),
         span,

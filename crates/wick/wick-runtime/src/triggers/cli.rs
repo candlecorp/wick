@@ -115,7 +115,7 @@ impl Trigger for Cli {
     let config = if let TriggerDefinition::Cli(config) = config {
       config
     } else {
-      return Err(RuntimeError::InvalidTriggerConfig(TriggerKind::Cli));
+      return Err(RuntimeError::InvalidConfig(Context::Trigger, TriggerKind::Cli));
     };
 
     let mut args: Vec<String> = env::args().collect();

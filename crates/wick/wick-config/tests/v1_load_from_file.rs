@@ -116,7 +116,7 @@ async fn test_component_extended() -> Result<(), ManifestError> {
 async fn regression_issue_42() -> Result<(), ManifestError> {
   let component = load_app("./tests/manifests/v1/template-expansion.yaml").await?;
   println!("{:?}", component);
-  let coll = component.imports().get("test").unwrap();
+  let coll = component.imports().get(0).unwrap();
   let value: String = coll.kind().config().unwrap().coerce_key("pwd").unwrap();
   let expected = std::env::var("CARGO_MANIFEST_DIR").unwrap();
 

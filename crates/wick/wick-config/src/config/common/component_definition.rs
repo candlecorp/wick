@@ -148,6 +148,20 @@ impl ComponentDefinition {
     }
   }
 
+  /// Returns any components this configuration provides to the implementation.
+  #[must_use]
+  pub fn provide(&self) -> Option<&HashMap<String, String>> {
+    match self {
+      #[allow(deprecated)]
+      ComponentDefinition::Wasm(c) => Some(c.provide()),
+      ComponentDefinition::GrpcUrl(_) => None,
+      ComponentDefinition::Manifest(c) => Some(c.provide()),
+      ComponentDefinition::Native(_) => None,
+      ComponentDefinition::Reference(_) => None,
+      ComponentDefinition::HighLevelComponent(_) => None,
+    }
+  }
+
   /// Returns the component config, if it exists
   #[must_use]
   pub fn config_mut(&mut self) -> Option<&mut LiquidJsonConfig> {

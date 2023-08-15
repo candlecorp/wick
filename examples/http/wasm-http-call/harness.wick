@@ -6,18 +6,18 @@ metadata:
   licenses:
     - Apache-2.0
 import:
-  - name: wasm
-    component:
-      kind: wick/component/manifest@v1
-      ref: ./wasm-component/component.wick
-      provide:
-        client: client
   - name: client
     component:
       kind: wick/component/manifest@v1
       ref: ./client.wick
       with:
         url: '{{ ctx.root_config.url}}'
+  - name: wasm
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./wasm-component/component.wick
+      provide:
+        client: client
 component:
   kind: wick/component/composite@v1
   with:

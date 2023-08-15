@@ -113,3 +113,25 @@ async fn test_context_passthrough_base(
 
   Ok(())
 }
+
+#[test_logger::test(tokio::test)]
+async fn composite_requires() -> Result<()> {
+  common_test(
+    example("components/composite-provides.wick"),
+    packet_stream!(("input", "hello world")),
+    "echo_provided",
+    vec![Packet::encode("output", "hello world"), Packet::done("output")],
+  )
+  .await
+}
+
+#[test_logger::test(tokio::test)]
+async fn composite_imports() -> Result<()> {
+  common_test(
+    example("components/composite-imports.wick"),
+    packet_stream!(("input", "hello world")),
+    "echo_outer",
+    vec![Packet::encode("output", "hello world"), Packet::done("output")],
+  )
+  .await
+}
