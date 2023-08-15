@@ -48,9 +48,9 @@ impl AppHost {
 
   fn init_resources(&mut self) -> Result<HashMap<String, Resource>> {
     let mut resources = HashMap::new();
-    for (id, def) in self.manifest.resources() {
+    for def in self.manifest.resources() {
       let resource = Resource::new(def.kind().clone())?;
-      resources.insert(id.clone(), resource);
+      resources.insert(def.id().to_owned(), resource);
     }
     Ok(resources)
   }

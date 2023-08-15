@@ -1,5 +1,7 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 
+use std::collections::HashMap;
+
 use wick_packet::RuntimeConfig;
 
 use super::{ComponentDefinition, HighLevelComponent, ImportDefinition, InterfaceDefinition};
@@ -33,6 +35,15 @@ impl ImportBinding {
   pub fn config(&self) -> Option<&RuntimeConfig> {
     match &self.kind {
       ImportDefinition::Component(c) => c.config().and_then(|v| v.value()),
+      ImportDefinition::Types(_) => None,
+    }
+  }
+
+  /// Get the configuration object for the collection.
+  #[must_use]
+  pub fn provide(&self) -> Option<&HashMap<String, String>> {
+    match &self.kind {
+      ImportDefinition::Component(c) => c.provide(),
       ImportDefinition::Types(_) => None,
     }
   }

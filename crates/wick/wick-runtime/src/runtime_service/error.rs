@@ -18,6 +18,9 @@ pub enum EngineError {
   #[error("Could not generate graph from '{}': {1}", display_path(.0))]
   Graph(Option<PathBuf>, Box<flow_graph_interpreter::graph::GraphError>),
 
+  #[error("{0} configuration referenced import '{1}' which could not be found")]
+  NotFound(Context, String),
+
   #[error("Could not start runtime from '{}': {1}", display_path(.0))]
   RuntimeInit(Option<PathBuf>, String),
 
@@ -38,6 +41,9 @@ pub enum EngineError {
 
   #[error(transparent)]
   Asset(#[from] wick_config::AssetError),
+
+  #[error("entity {0} not found")]
+  RequirementUnsatisfied(Entity),
 
   #[error(transparent)]
   NativeComponent(#[from] flow_component::ComponentError),

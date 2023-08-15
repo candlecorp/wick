@@ -54,18 +54,15 @@ pub(crate) async fn handle(
       match trigger {
         TriggerType::Time => {
           let comp_name = "COMPONENT";
-          config.import_mut().insert(
-            comp_name.to_owned(),
-            ImportBinding::component(
-              comp_name,
-              config::ComponentDefinition::Manifest(
-                ManifestComponentBuilder::default()
-                  .reference("path/to/component.wick")
-                  .build()
-                  .unwrap(),
-              ),
+          config.import_mut().push(ImportBinding::component(
+            comp_name,
+            config::ComponentDefinition::Manifest(
+              ManifestComponentBuilder::default()
+                .reference("path/to/component.wick")
+                .build()
+                .unwrap(),
             ),
-          );
+          ));
 
           config.triggers_mut().push(config::TriggerDefinition::Time(
             config::TimeTriggerConfigBuilder::default()
@@ -87,8 +84,7 @@ pub(crate) async fn handle(
         }
         TriggerType::Http => {
           let port_name = "HTTP_PORT";
-          config.resources_mut().insert(
-            port_name.to_owned(),
+          config.resources_mut().push(
             ResourceBindingBuilder::default()
               .id(port_name)
               .kind(config::ResourceDefinition::TcpPort(TcpPort::new("0.0.0.0", 8080)))
@@ -104,18 +100,15 @@ pub(crate) async fn handle(
         }
         TriggerType::Cli => {
           let comp_name = "MAIN_COMPONENT";
-          config.import_mut().insert(
-            comp_name.to_owned(),
-            ImportBinding::component(
-              comp_name,
-              config::ComponentDefinition::Manifest(
-                ManifestComponentBuilder::default()
-                  .reference("path/to/component.wick")
-                  .build()
-                  .unwrap(),
-              ),
+          config.import_mut().push(ImportBinding::component(
+            comp_name,
+            config::ComponentDefinition::Manifest(
+              ManifestComponentBuilder::default()
+                .reference("path/to/component.wick")
+                .build()
+                .unwrap(),
             ),
-          );
+          ));
 
           config.triggers_mut().push(config::TriggerDefinition::Cli(
             config::CliConfigBuilder::default()

@@ -120,9 +120,11 @@ impl Interpreter {
     let event_loop = EventLoop::new(channel, &span);
     let mut handled_opts = program.operations().iter().map(|s| s.name()).collect::<Vec<_>>();
     handled_opts.extend(exposed_ops.keys().map(|s: &String| s.as_str()));
+
     debug!(
       operations = ?handled_opts,
-      "operations handled by this interpreter"
+      components = ?components.inner().keys().cloned().collect::<Vec<_>>(),
+      "interpreter:scope"
     );
     drop(_guard);
 
@@ -236,7 +238,7 @@ impl Component for Interpreter {
     };
     let span = invocation.span.clone();
 
-    span.in_scope(|| trace!(?invocation, "invoking"));
+    span.in_scope(|| trace!(target=%invocation.target_url(),tx_id=%invocation.tx_id,id=%invocation.id, "invoking"));
     let from_exposed = self.exposed_ops.get(invocation.target.operation_id());
 
     Box::pin(async move {
@@ -245,40 +247,31 @@ impl Component for Interpreter {
           if ns == SelfComponent::ID || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
             if let Some(handler) = from_exposed {
               let new_target = Entity::operation(handler.namespace(), invocation.target.operation_id());
-              span.in_scope(|| trace!(original_target=%invocation.target, %new_target, "invoke::exposed::operation"));
+              span.in_scope(|| trace!(origin=%invocation.origin,original_target=%invocation.target, %new_target, "invoke::exposed::operation"));
               invocation.target = new_target;
-              return handler
-                .component
-                .handle(invocation, config, cb)
-                .instrument(span)
-                .await
-                .map_err(ComponentError::new);
+              return handler.component.handle(invocation, config, cb).instrument(span).await;
             }
-            span.in_scope(|| trace!(entity=%invocation.target, "invoke::composite::operation"));
+            span
+              .in_scope(|| trace!(origin=%invocation.origin,target=%invocation.target, "invoke::composite::operation"));
             self
               .self_component
               .handle(invocation, config, self.get_callback())
               .await?
-          } else {
-            span.in_scope(|| trace!(entity=%invocation.target, "invoke::instance::operation"));
-            self
-              .components
-              .get(ns)
-              .ok_or_else(|| Error::TargetNotFound(invocation.target.clone(), known_targets()))
-              .map_err(ComponentError::new)?
+          } else if let Some(handler) = self.components.get(ns) {
+            span.in_scope(|| trace!(origin=%invocation.origin,target=%invocation.target, "invoke::handler::operation"));
+            handler
               .component
               .handle(invocation, config, cb)
               .instrument(span)
-              .await
-              .map_err(ComponentError::new)?
+              .await?
+          } else {
+            return Err(ComponentError::new(Error::TargetNotFound(
+              invocation.target.clone(),
+              known_targets(),
+            )));
           }
         }
-        _ => {
-          return Err(ComponentError::new(Error::TargetNotFound(
-            invocation.target,
-            known_targets(),
-          )))
-        }
+        _ => return Err(ComponentError::new(Error::InvalidEntity(invocation.target))),
       };
 
       Ok::<_, ComponentError>(stream)

@@ -97,7 +97,7 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
         .sorted_by(|a, b| a.name().cmp(b.name()))
         .collect();
       let root_config = comp.config().to_owned();
-      let requires = comp.requires().values().cloned().collect_vec();
+      let requires = comp.requires().clone().to_vec();
       let ops = match comp.component() {
         wick_config::config::ComponentImplementation::Wasm(c) => c.operation_signatures(),
         wick_config::config::ComponentImplementation::Composite(c) => c.operation_signatures(),

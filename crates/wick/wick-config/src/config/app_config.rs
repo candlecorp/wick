@@ -59,13 +59,13 @@ pub struct AppConfiguration {
 
   #[builder(default)]
   /// The components that make up the application.
-  #[serde(skip_serializing_if = "HashMap::is_empty")]
-  pub(crate) import: HashMap<String, ImportBinding>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) import: Vec<ImportBinding>,
 
   #[builder(default)]
   /// Any resources this application defines.
-  #[serde(skip_serializing_if = "HashMap::is_empty")]
-  pub(crate) resources: HashMap<String, ResourceBinding>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) resources: Vec<ResourceBinding>,
 
   #[builder(default)]
   /// The triggers that initialize upon a `run` and make up the application.
@@ -110,7 +110,7 @@ impl AppConfiguration {
   pub(crate) async fn setup_cache(&self, options: FetchOptions) -> Result<()> {
     setup_cache(
       &self.type_cache,
-      self.import.values(),
+      self.import.iter(),
       &self.cached_types,
       vec![],
       options,
@@ -185,24 +185,19 @@ impl AppConfiguration {
     self.metadata.as_ref().map(|m| m.version.as_str())
   }
 
-  #[must_use]
   /// Get the application's imports.
-  pub fn imports(&self) -> &HashMap<String, ImportBinding> {
+  pub fn imports(&self) -> &[ImportBinding] {
     &self.import
   }
 
   /// Add a resource to the application configuration.
   pub fn add_resource(&mut self, name: impl AsRef<str>, resource: ResourceDefinition) {
-    self
-      .resources
-      .insert(name.as_ref().to_owned(), ResourceBinding::new(name.as_ref(), resource));
+    self.resources.push(ResourceBinding::new(name.as_ref(), resource));
   }
 
   /// Add a component to the application configuration.
   pub fn add_import(&mut self, name: impl AsRef<str>, import: ImportDefinition) {
-    self
-      .import
-      .insert(name.as_ref().to_owned(), ImportBinding::new(name.as_ref(), import));
+    self.import.push(ImportBinding::new(name.as_ref(), import));
   }
 
   /// Generate V1 configuration yaml from this configuration.
@@ -223,10 +218,10 @@ impl AppConfiguration {
       "initializing app resources"
     );
     let env = self.env.clone();
-    for resource in self.resources.values_mut() {
+    for resource in self.resources.iter_mut() {
       resource.kind.render_config(root_config.as_ref(), env.as_ref())?;
     }
-    for import in self.import.values_mut() {
+    for import in self.import.iter_mut() {
       import.kind.render_config(root_config.as_ref(), env.as_ref())?;
     }
     Ok(self)

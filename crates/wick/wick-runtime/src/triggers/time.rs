@@ -162,7 +162,7 @@ impl Trigger for Time {
     let config = if let TriggerDefinition::Time(config) = config {
       config
     } else {
-      return Err(RuntimeError::InvalidTriggerConfig(TriggerKind::Time));
+      return Err(RuntimeError::InvalidConfig(Context::Trigger, TriggerKind::Time));
     };
 
     self.handle(app_config, config).await

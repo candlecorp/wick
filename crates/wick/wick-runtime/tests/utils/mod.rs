@@ -1,11 +1,23 @@
+use std::path::{Path, PathBuf};
+
 use futures::stream::StreamExt;
 use tracing::debug;
 use wick_config::WickConfiguration;
 use wick_packet::{Entity, InherentData, Invocation, Packet, PacketStream, RuntimeConfig};
 use wick_runtime::{Runtime, RuntimeBuilder};
 
-pub async fn init_engine_from_yaml(path: &str, config: Option<RuntimeConfig>) -> anyhow::Result<(Runtime, uuid::Uuid)> {
-  let mut host_def = WickConfiguration::load_from_file(path).await?;
+#[allow(unused)]
+pub fn example(file: &str) -> PathBuf {
+  let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+  let workspace_dir = path.join("..").join("..").join("..").join("examples");
+  workspace_dir.join(file)
+}
+
+pub async fn init_engine_from_yaml(
+  path: impl AsRef<Path>,
+  config: Option<RuntimeConfig>,
+) -> anyhow::Result<(Runtime, uuid::Uuid)> {
+  let mut host_def = WickConfiguration::load_from_file(path.as_ref()).await?;
   host_def.set_root_config(config);
   let host_def = host_def.finish()?.try_component_config()?;
   debug!("Manifest loaded");
@@ -20,7 +32,7 @@ pub async fn init_engine_from_yaml(path: &str, config: Option<RuntimeConfig>) ->
 
 #[allow(unused)]
 pub async fn common_test(
-  path: &str,
+  path: impl AsRef<Path>,
   stream: PacketStream,
   target: &str,
   mut expected: Vec<Packet>,
@@ -30,7 +42,7 @@ pub async fn common_test(
 
 #[allow(unused)]
 pub async fn test_with_config(
-  path: &str,
+  path: impl AsRef<Path>,
   stream: PacketStream,
   target: &str,
   mut expected: Vec<Packet>,
@@ -42,7 +54,7 @@ pub async fn test_with_config(
 
 #[allow(unused)]
 pub async fn base_test(
-  path: &str,
+  path: impl AsRef<Path>,
   stream: PacketStream,
   target: Entity,
   mut expected: Vec<Packet>,

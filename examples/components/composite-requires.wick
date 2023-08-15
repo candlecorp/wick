@@ -1,0 +1,18 @@
+kind: wick/component@v1
+requires:
+  - name: required_component
+    interface:
+      operations:
+        - name: echo
+          inputs:
+            - name: input
+              type: string
+          outputs:
+            - name: output
+              type: string
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: inner_operation
+      flow:
+        - <>.input -> required_component::echo -> <>.output

@@ -1,3 +1,5 @@
+use flow_graph_interpreter::HandlerMap;
+
 use super::{ChildInit, ComponentRegistry};
 use crate::dev::prelude::*;
 use crate::runtime::{RuntimeConstraint, RuntimeInit};
@@ -11,7 +13,7 @@ pub(crate) struct ServiceInit {
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) namespace: Option<String>,
   pub(crate) constraints: Vec<RuntimeConstraint>,
-  pub(crate) native_components: ComponentRegistry,
+  pub(crate) initial_components: ComponentRegistry,
   pub(crate) span: Span,
 }
 
@@ -26,7 +28,7 @@ impl ServiceInit {
       allowed_insecure: config.allowed_insecure,
       namespace: config.namespace,
       constraints: config.constraints,
-      native_components: config.native_components,
+      initial_components: config.initial_components,
       span: config.span,
     }
   }
@@ -41,12 +43,12 @@ impl ServiceInit {
       allowed_insecure: config.allowed_insecure,
       namespace: config.namespace,
       constraints: config.constraints,
-      native_components: config.native_components,
+      initial_components: config.initial_components,
       span: config.span,
     }
   }
 
-  pub(super) fn child_init(&self, root_config: Option<RuntimeConfig>) -> ChildInit {
+  pub(super) fn child_init(&self, root_config: Option<RuntimeConfig>, provided: Option<HandlerMap>) -> ChildInit {
     ChildInit {
       rng_seed: self.rng.seed(),
       runtime_id: self.id,
@@ -54,6 +56,7 @@ impl ServiceInit {
       allow_latest: self.allow_latest,
       allowed_insecure: self.allowed_insecure.clone(),
       resolver: self.manifest.resolver(),
+      provided,
       span: self.span.clone(),
     }
   }

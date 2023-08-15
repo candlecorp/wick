@@ -1,4 +1,5 @@
 use uuid::Uuid;
+use wick_packet::Entity;
 
 use crate::dev::prelude::*;
 
@@ -25,7 +26,7 @@ impl EngineComponent {
 impl Component for EngineComponent {
   fn handle(
     &self,
-    invocation: Invocation,
+    mut invocation: Invocation,
     config: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
@@ -42,6 +43,16 @@ impl Component for EngineComponent {
     Box::pin(async move {
       let engine = RuntimeService::for_id(&self.engine_id)
         .ok_or_else(|| flow_component::ComponentError::message(&format!("Engine '{}' not found", target_url)))?;
+
+      let target_component = invocation.target.component_id().to_owned();
+      if target_component != engine.namespace {
+        debug!(
+          orig_target = target_component,
+          runtime = engine.namespace,
+          "translating invocation target to runtime namespace"
+        );
+        invocation.target = Entity::operation(&engine.namespace, invocation.target.operation_id());
+      }
 
       invocation.trace(|| trace!(target = %target_url, "invoking"));
 

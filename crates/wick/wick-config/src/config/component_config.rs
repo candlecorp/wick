@@ -1,7 +1,6 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 mod composite;
 mod wasm;
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use asset_container::{AssetManager, Assets};
@@ -62,19 +61,19 @@ pub struct ComponentConfiguration {
 
   #[builder(default)]
   /// Any imports this component makes available to its implementation.
-  #[serde(skip_serializing_if = "HashMap::is_empty")]
-  pub(crate) import: HashMap<String, ImportBinding>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) import: Vec<ImportBinding>,
 
   #[asset(skip)]
   #[builder(default)]
   /// Any components or resources that must be provided to this component upon instantiation.
-  #[serde(skip_serializing_if = "HashMap::is_empty")]
-  pub(crate) requires: HashMap<String, BoundInterface>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) requires: Vec<BoundInterface>,
 
   #[builder(default)]
   /// Any resources this component defines.
-  #[serde(skip_serializing_if = "HashMap::is_empty")]
-  pub(crate) resources: HashMap<String, ResourceBinding>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) resources: Vec<ResourceBinding>,
 
   #[asset(skip)]
   #[builder(default)]
@@ -231,7 +230,7 @@ impl ComponentConfiguration {
   pub(crate) async fn setup_cache(&self, options: FetchOptions) -> Result<()> {
     setup_cache(
       &self.type_cache,
-      self.import.values(),
+      self.import.iter(),
       &self.cached_types,
       self.types.clone(),
       options,
@@ -282,10 +281,10 @@ impl ComponentConfiguration {
       ?root_config,
       "initializing component"
     );
-    for resource in self.resources.values_mut() {
+    for resource in self.resources.iter_mut() {
       resource.kind.render_config(root_config.as_ref(), None)?;
     }
-    for import in self.import.values_mut() {
+    for import in self.import.iter_mut() {
       import.kind.render_config(root_config.as_ref(), None)?;
     }
 
@@ -329,22 +328,18 @@ impl ComponentConfigurationBuilder {
   /// Add an imported component to the builder.
   pub fn add_import(&mut self, import: ImportBinding) {
     if let Some(imports) = &mut self.import {
-      imports.insert(import.id.clone(), import);
+      imports.push(import);
     } else {
-      let mut imports = HashMap::new();
-      imports.insert(import.id.clone(), import);
-      self.import = Some(imports);
+      self.import = Some(vec![import]);
     }
   }
 
   /// Add an imported resource to the builder.
   pub fn add_resource(&mut self, resource: ResourceBinding) {
     if let Some(r) = &mut self.resources {
-      r.insert(resource.id.clone(), resource);
+      r.push(resource);
     } else {
-      let mut r = HashMap::new();
-      r.insert(resource.id.clone(), resource);
-      self.resources = Some(r);
+      self.resources = Some(vec![resource]);
     }
   }
 

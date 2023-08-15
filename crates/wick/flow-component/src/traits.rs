@@ -24,12 +24,6 @@ pub trait Component {
   /// The `signature` method returns the [ComponentSignature] for the component.
   fn signature(&self) -> &ComponentSignature;
 
-  /// The `init` method is called when the component is initialized.
-  fn init(&mut self) -> BoxFuture<Result<(), ComponentError>> {
-    // Override if you need a more explicit init.
-    Box::pin(async move { Ok(()) })
-  }
-
   /// The `shutdown` method is called when the component is shutdown.
   fn shutdown(&self) -> BoxFuture<Result<(), ComponentError>> {
     // Override if you need a more explicit shutdown.

@@ -103,7 +103,7 @@ impl std::fmt::Debug for InstanceHandler {
 
 impl std::fmt::Display for InstanceHandler {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}::{}", self.namespace(), self.id())
+    write!(f, "{} ({})", self.entity(), self.id())
   }
 }
 

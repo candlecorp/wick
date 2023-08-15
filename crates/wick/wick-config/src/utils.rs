@@ -125,8 +125,8 @@ pub(crate) fn resolve_configuration(src: &str, source: &Option<PathBuf>) -> Resu
 }
 
 pub(crate) fn make_resolver(
-  imports: HashMap<String, ImportBinding>,
-  resources: HashMap<String, ResourceBinding>,
+  imports: Vec<ImportBinding>,
+  resources: Vec<ResourceBinding>,
   runtime_config: Option<RuntimeConfig>,
   env: Option<HashMap<String, String>>,
 ) -> Box<Resolver> {
@@ -135,12 +135,12 @@ pub(crate) fn make_resolver(
 
 pub(crate) fn resolve(
   name: &str,
-  imports: &HashMap<String, ImportBinding>,
-  resources: &HashMap<String, ResourceBinding>,
+  imports: &[ImportBinding],
+  resources: &[ResourceBinding],
   runtime_config: Option<&RuntimeConfig>,
   env: Option<&HashMap<String, String>>,
 ) -> Result<OwnedConfigurationItem> {
-  if let Some(import) = imports.get(name) {
+  if let Some(import) = imports.iter().find(|i| i.id == name) {
     match &import.kind {
       ImportDefinition::Component(component) => {
         let mut component = component.clone();
@@ -152,7 +152,7 @@ pub(crate) fn resolve(
       ImportDefinition::Types(_) => todo!(),
     }
   }
-  if let Some(resource) = resources.get(name) {
+  if let Some(resource) = resources.iter().find(|i| i.id == name) {
     let mut resource = resource.kind.clone();
     return match resource.render_config(runtime_config, env) {
       Ok(_) => Ok(OwnedConfigurationItem::Resource(resource)),

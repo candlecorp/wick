@@ -34,13 +34,10 @@ pub(crate) async fn handle(
     let mut config = ComponentConfiguration::default();
     config.set_name(name.clone());
 
-    config.resources_mut().insert(
-      resource_name.to_owned(),
-      ResourceBinding::new(
-        resource_name,
-        ResourceDefinition::Url(UrlResource::new("http://localhost:8080".parse().unwrap())),
-      ),
-    );
+    config.resources_mut().push(ResourceBinding::new(
+      resource_name,
+      ResourceDefinition::Url(UrlResource::new("http://localhost:8080".parse().unwrap())),
+    ));
 
     config.set_metadata(crate::commands::new::generic_metadata("New HTTP Client wick component"));
 

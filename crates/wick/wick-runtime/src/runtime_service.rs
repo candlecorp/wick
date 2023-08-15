@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 pub(crate) use child_init::{init_child, ChildInit};
 pub(crate) use component_registry::{ComponentFactory, ComponentRegistry};
-use flow_graph_interpreter::{HandlerMap, InterpreterOptions};
+use flow_graph_interpreter::{HandlerMap, InterpreterOptions, NamespaceHandler};
 pub(crate) use init::ServiceInit;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -41,21 +41,22 @@ impl RuntimeService {
     let span = init.span.clone();
     let manifest_source: Option<PathBuf> = init.manifest.source().map(Into::into);
     let ns = init.namespace.clone().unwrap_or_else(|| init.id.to_string());
+
     let mut components = HandlerMap::default();
 
     let extends = if let ComponentImplementation::Composite(config) = init.manifest.component() {
-      // Initialize any native components for composite components.
-      for native_comp in init.native_components.inner() {
+      // Initialize a starting set of components to make available for composite components.
+      for factory in init.initial_components.inner() {
         components
-          .add(native_comp(init.seed())?)
+          .add(factory(init.seed())?)
           .map_err(|e| EngineError::InterpreterInit(manifest_source.clone(), Box::new(e)))?;
       }
 
       config.extends()
     } else {
-      // Instantiate the non-composite component as an exposed, standalone component.
+      // Instantiate non-composite component as an exposed, standalone component.
 
-      let component_init = init.child_init(init.manifest.root_config().cloned());
+      let component_init = init.child_init(init.manifest.root_config().cloned(), None);
 
       span.in_scope(|| debug!(%ns,options=?component_init,"instantiating component"));
 
@@ -80,7 +81,7 @@ impl RuntimeService {
     };
 
     for id in extends {
-      if !init.manifest.import().keys().any(|k| k == id) {
+      if !init.manifest.import().iter().any(|i| i.id() == id) {
         return Err(EngineError::RuntimeInit(
           manifest_source.clone(),
           format!("Inherited component '{}' not found", id),
@@ -88,8 +89,9 @@ impl RuntimeService {
       }
     }
 
-    for binding in init.manifest.import().values() {
-      let component_init = init.child_init(binding.config().cloned());
+    for binding in init.manifest.import() {
+      let provided = generate_provides_handlers(binding.provide(), &components)?;
+      let component_init = init.child_init(binding.config().cloned(), Some(provided));
       if let Some(component) = instantiate_import(binding, component_init).await? {
         if extends.iter().any(|n| n == component.namespace()) {
           component.expose();
@@ -189,4 +191,23 @@ impl InvocationHandler for RuntimeService {
     };
     Ok(Box::pin(task))
   }
+}
+
+fn generate_provides_handlers(
+  provides: Option<&HashMap<String, String>>,
+  available: &HandlerMap,
+) -> Result<HandlerMap> {
+  let mut provide = HandlerMap::default();
+  if let Some(provides) = provides {
+    for (to, from) in provides {
+      if let Some(handler) = available.get(from) {
+        let ns_handler = NamespaceHandler::new_from_shared(to, handler.component().clone());
+        let _ = provide.add(ns_handler); // Can't fail, we just created the map and are iterating over unique keys.
+      } else {
+        return Err(EngineError::NotFound(Context::Component, from.clone()));
+      }
+    }
+  }
+
+  Ok(provide)
 }
