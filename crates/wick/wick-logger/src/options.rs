@@ -113,7 +113,7 @@ where
 }
 
 /// The log level for specific targets.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub struct TargetLevel {
   /// The target (module name).
   pub target: String,
