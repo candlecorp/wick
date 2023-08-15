@@ -6348,6 +6348,7 @@ dependencies = [
  "jaq-core",
  "markup-converter",
  "nkeys",
+ "once_cell",
  "openssl",
  "option-utils",
  "regex",

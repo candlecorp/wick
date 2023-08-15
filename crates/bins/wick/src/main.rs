@@ -201,9 +201,6 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
   let mut cli = Cli::parse_from(args);
   let options = cli.output.clone();
 
-  // Do a preliminary logger init to catch any logs from the local settings.
-  // let log_options: wick_logger::LoggingOptions = cli.logging.name(BIN_NAME).into();
-  // let settings = wick_logger::with_default(&log_options, Box::new(wick_settings::Settings::new));
   let settings = wick_settings::Settings::new();
   apply_log_settings(&settings, &mut cli.logging);
 

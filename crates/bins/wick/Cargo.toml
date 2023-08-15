@@ -54,6 +54,7 @@ option-utils = { workspace = true }
 structured-output = { workspace = true }
 regex = { workspace = true }
 dhat = { workspace = true, optional = true }
+once_cell = { workspace = true }
 
 [dev-dependencies]
 test_bin = { workspace = true }

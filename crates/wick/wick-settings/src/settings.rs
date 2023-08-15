@@ -49,10 +49,8 @@ pub struct TraceSettings {
 #[serde(deny_unknown_fields)]
 /// Log filter settings
 pub struct LogSettings {
-  /// Inclusion filter.
-  pub include: Option<String>,
-  /// Exclusion filter.
-  pub exclude: Option<String>,
+  /// Log event filter.
+  pub filter: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
