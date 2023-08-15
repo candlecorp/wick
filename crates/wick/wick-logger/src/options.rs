@@ -106,9 +106,11 @@ where
   S: tracing::Subscriber + for<'lookup> tracing_subscriber::registry::LookupSpan<'lookup>,
 {
   fn enabled(&self, metadata: &Metadata<'_>, _cx: &Context<'_, S>) -> bool {
-    metadata.target().starts_with("wick")
+    let enabled = metadata.target().starts_with("wick")
       || metadata.target().starts_with("flow")
-      || metadata.target().starts_with("wasmrs")
+      || metadata.target().starts_with("wasmrs");
+
+    metadata.is_span() || enabled
   }
 
   fn event_enabled(&self, event: &tracing::Event<'_>, _cx: &Context<'_, S>) -> bool {
