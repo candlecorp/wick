@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use clap::Args;
 use once_cell::sync::Lazy;
-use wick_logger::{FilterOptions, LogLevel, TargetLevel};
+use regex::Regex;
+use wick_logger::{FilterOptions, LogLevel, LogModifier, TargetLevel};
 use wick_oci_utils::{OciOptions, OnExisting};
 use wick_settings::Credential;
 
@@ -58,42 +59,36 @@ impl LoggingOptions {
   }
 }
 
-static DEFAULT_EXCLUSION_FILTER: Lazy<Vec<TargetLevel>> = Lazy::new(|| {
+static DEFAULT_FILTER: Lazy<Vec<TargetLevel>> = Lazy::new(|| {
   vec![
-    TargetLevel::new("wasmrs", wick_logger::LogLevel::Error),
-    TargetLevel::new("wasmrs_runtime", wick_logger::LogLevel::Error),
-    TargetLevel::new("wasmrs_wasmtime", wick_logger::LogLevel::Error),
+    TargetLevel::lte("flow", wick_logger::LogLevel::Warn),
+    TargetLevel::lte("wasmrs", wick_logger::LogLevel::Error),
+    TargetLevel::lte("wasmrs_runtime", wick_logger::LogLevel::Error),
+    TargetLevel::lte("wasmrs_wasmtime", wick_logger::LogLevel::Error),
   ]
 });
 
-static DEFAULT_INCLUSION_FILTER: Lazy<Vec<TargetLevel>> =
-  Lazy::new(|| vec![TargetLevel::new("flow", wick_logger::LogLevel::Warn)]);
+static RULE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new("(\\w+)\\s*(<|<=|>|>=|!=|==|=)\\s*(\\w+)").unwrap());
 
-fn parse_logstr(
-  default_level: LogLevel,
-  default_inc: &[TargetLevel],
-  default_exc: &[TargetLevel],
-  value: &str,
-) -> FilterOptions {
-  let parts: Vec<(bool, Option<&str>, LogLevel)> = value
+fn parse_logstr(default_level: LogLevel, default_filter: &[TargetLevel], logstr: &str) -> FilterOptions {
+  let parts: Vec<(LogModifier, Option<&str>, LogLevel)> = logstr
     .split(',')
     .filter_map(|s| {
       let s = s.trim();
       if s.is_empty() {
         return None;
       }
-      if !s.contains('=') {
-        return Some((false, None, s.parse().ok()?));
+
+      if !s.contains(['<', '>', '=', '!']) {
+        return Some((LogModifier::LessThanOrEqualTo, None, s.parse().ok()?));
       }
-      let mut parts = s.split('=');
-      let target = parts.next()?.trim();
-      let (negated, target) = if target.starts_with('!') {
-        (true, target.trim_start_matches('!').trim())
-      } else {
-        (false, target)
-      };
-      let level = parts.next().unwrap_or("info").trim();
-      Some((negated, Some(target), level.parse().ok()?))
+      let parts = RULE_REGEX.captures(s)?;
+
+      let target = parts.get(1)?.as_str();
+      let modifier: LogModifier = parts.get(2)?.as_str().parse().ok()?;
+      let level: LogLevel = parts.get(3)?.as_str().parse().ok()?;
+
+      Some((modifier, Some(target), level))
     })
     .collect();
 
@@ -102,31 +97,15 @@ fn parse_logstr(
     .find(|(_, target, _)| target.is_none())
     .map_or_else(|| default_level, |(_, _, level)| *level);
 
-  let exclude = parts
+  let filter = parts
     .iter()
-    .filter_map(|(negated, target, level)| match negated {
-      true => target.map(|target| TargetLevel::new(target, *level)),
-      false => None,
-    })
-    .collect::<Vec<_>>();
-  let include = parts
-    .iter()
-    .filter_map(|(negated, target, level)| match negated {
-      true => None,
-      false => target.map(|target| TargetLevel::new(target, *level)),
-    })
+    .filter_map(|(modifier, target, level)| target.map(|target| TargetLevel::new(target, *level, *modifier)))
     .collect::<Vec<_>>();
 
   FilterOptions {
     level: global_level,
     // If the filter had inclusion rules, use those. Otherwise, use the default.
-    include: if include.is_empty() {
-      default_inc.to_vec()
-    } else {
-      include
-    },
-    // If the filter had exclusion rules, add them to our defaults.
-    exclude: [default_exc.to_vec(), exclude].concat(),
+    filter: [filter, default_filter.to_vec()].concat(),
   }
 }
 
@@ -144,15 +123,13 @@ impl From<&LoggingOptions> for wick_logger::LoggingOptions {
 
     let stderr_opts = parse_logstr(
       global_level,
-      &DEFAULT_INCLUSION_FILTER,
-      &DEFAULT_EXCLUSION_FILTER,
+      &DEFAULT_FILTER,
       value.stderr_filter.as_deref().unwrap_or_default(),
     );
 
     let otel_opts = parse_logstr(
       global_level,
-      &DEFAULT_INCLUSION_FILTER,
-      &DEFAULT_EXCLUSION_FILTER,
+      &DEFAULT_FILTER,
       value.tel_filter.as_deref().unwrap_or_default(),
     );
 
@@ -266,35 +243,29 @@ mod test {
 
   use super::*;
 
-  type ExpectedLogRule = (LogLevel, Vec<TargetLevel>, Vec<TargetLevel>);
+  type ExpectedLogRule = (LogLevel, Vec<TargetLevel>);
 
   #[rstest::rstest]
-  #[case(LogLevel::Info, "trace", (LogLevel::Trace, DEFAULT_INCLUSION_FILTER.to_vec(),vec![]))]
-  #[case(LogLevel::Info, "wick=trace", (LogLevel::Info, vec![TargetLevel::new("wick", LogLevel::Trace)],vec![]))]
-  #[case(LogLevel::Info, "debug,wick=trace", (LogLevel::Debug, vec![TargetLevel::new("wick", LogLevel::Trace)],vec![]))]
-  #[case(LogLevel::Info, "wick=trace,debug", (LogLevel::Debug, vec![TargetLevel::new("wick", LogLevel::Trace)],vec![]))]
-  #[case(LogLevel::Info, " wick=trace , debug ,,, ,", (LogLevel::Debug, vec![TargetLevel::new("wick", LogLevel::Trace)],vec![]))]
-  #[case(LogLevel::Info, "wick=trace,!flow=info", (LogLevel::Info, vec![TargetLevel::new("wick", LogLevel::Trace)],vec![TargetLevel::new("flow", LogLevel::Info)]))]
-  #[case(LogLevel::Info, "wick=trace,!flow=info,wasmrs=info", (LogLevel::Info, vec![TargetLevel::new("wick", LogLevel::Trace),TargetLevel::new("wasmrs", LogLevel::Info)],vec![TargetLevel::new("flow", LogLevel::Info)]))]
-  #[case(LogLevel::Info, "wick = trace, ! flow = info, wasmrs = info", (LogLevel::Info, vec![TargetLevel::new("wick", LogLevel::Trace),TargetLevel::new("wasmrs", LogLevel::Info)],vec![TargetLevel::new("flow", LogLevel::Info)]))]
+  #[case(LogLevel::Info, "trace", (LogLevel::Trace,vec![]))]
+  #[case(LogLevel::Info, "wick<=trace", (LogLevel::Info, vec![TargetLevel::lte("wick", LogLevel::Trace)]))]
+  #[case(LogLevel::Info, "debug,wick<=trace", (LogLevel::Debug, vec![TargetLevel::lte("wick", LogLevel::Trace)]))]
+  #[case(LogLevel::Info, "wick<=trace,debug", (LogLevel::Debug, vec![TargetLevel::lte("wick", LogLevel::Trace)]))]
+  #[case(LogLevel::Info, " wick<=trace , debug ,,, ,", (LogLevel::Debug, vec![TargetLevel::lte("wick", LogLevel::Trace)]))]
+  #[case(LogLevel::Info, "wick<=trace,flow!=info", (LogLevel::Info, vec![TargetLevel::lte("wick", LogLevel::Trace),TargetLevel::not("flow", LogLevel::Info)]))]
+  #[case(LogLevel::Info, "wick<=trace,flow!=info,wasmrs<=info", (LogLevel::Info, vec![TargetLevel::lte("wick", LogLevel::Trace),TargetLevel::not("flow", LogLevel::Info),TargetLevel::lte("wasmrs", LogLevel::Info)]))]
+  #[case(LogLevel::Info, "wick <= trace, flow != info, wasmrs <= info",(LogLevel::Info, vec![TargetLevel::lte("wick", LogLevel::Trace),TargetLevel::not("flow", LogLevel::Info),TargetLevel::lte("wasmrs", LogLevel::Info)]))]
   fn test_log_rules(
     #[case] default_loglevel: LogLevel,
     #[case] filter: &str,
     #[case] expected: ExpectedLogRule,
   ) -> Result<()> {
-    let filter = parse_logstr(
-      default_loglevel,
-      &DEFAULT_INCLUSION_FILTER,
-      &DEFAULT_EXCLUSION_FILTER,
-      filter,
-    );
+    let filter = parse_logstr(default_loglevel, &DEFAULT_FILTER, filter);
     assert_eq!(filter.level, expected.0);
-    assert_eq!(filter.include, expected.1);
 
-    // prepend the default exclusion filter so we don't need to include it in test cases above.
-    let expected_exclude = [DEFAULT_EXCLUSION_FILTER.to_vec(), expected.2].concat();
+    // append the default exclusion filter so we don't need to include it in test cases above.
+    let expected_filter = [expected.1, DEFAULT_FILTER.to_vec()].concat();
 
-    assert_eq!(filter.exclude, expected_exclude);
+    assert_eq!(filter.filter, expected_filter);
 
     Ok(())
   }

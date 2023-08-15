@@ -1,5 +1,6 @@
 use std::cmp;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use tracing::{Level, Metadata};
 use tracing_subscriber::layer::Context;
@@ -60,19 +61,43 @@ impl LogFilters {
 pub struct FilterOptions {
   /// The default log level for anything that does not match an include or exclude filter.
   pub level: LogLevel,
-  /// The targets and their log levels to include.
-  pub include: Vec<TargetLevel>,
-  /// The targets and their log levels to exclude.
-  pub exclude: Vec<TargetLevel>,
+  /// The targets and their log levels.
+  pub filter: Vec<TargetLevel>,
 }
 
 impl Default for FilterOptions {
   fn default() -> Self {
     Self {
       level: LogLevel::Info,
-      include: vec![],
-      exclude: vec![],
+      filter: vec![],
     }
+  }
+}
+
+impl FilterOptions {
+  fn test_enabled(&self, module: &str, level: Level) -> bool {
+    let matches = self.filter.iter().filter(|config| module.starts_with(&config.target));
+    let match_hit = matches.fold(None, |acc, next| {
+      let enabled = next.modifier.compare(filter_as_usize(level), next.level as usize);
+      let next_len = next.target.len();
+      acc.map_or(Some((next_len, enabled)), |(last_len, last_enabled)| {
+        match next_len.cmp(&last_len) {
+          cmp::Ordering::Greater => {
+            // if we're more specific, use the most recent match result.
+            Some((next_len, enabled))
+          }
+          cmp::Ordering::Equal => {
+            // if we're the same specifity, keep testing
+            Some((last_len, enabled && last_enabled))
+          }
+          cmp::Ordering::Less => {
+            // otherwise, keep the last match result
+            Some((last_len, last_enabled))
+          }
+        }
+      })
+    });
+    match_hit.map_or(self.level >= level, |(_, enabled)| enabled)
   }
 }
 
@@ -89,26 +114,7 @@ where
   fn event_enabled(&self, event: &tracing::Event<'_>, _cx: &Context<'_, S>) -> bool {
     let module = event.metadata().target().split("::").next().unwrap_or_default();
     let level = event.metadata().level();
-
-    let excluded = self
-      .exclude
-      .iter()
-      .find(|config| module.starts_with(&config.target) || config.target == "*")
-      .map(|excluded| excluded.level < *level);
-
-    let included = self
-      .include
-      .iter()
-      .find(|config| module.starts_with(&config.target) || config.target == "*")
-      .map(|included| included.level >= (*level));
-
-    if included == Some(true) {
-      true
-    } else if excluded == Some(true) {
-      return false;
-    } else {
-      self.level >= *level
-    }
+    self.test_enabled(module, *level)
   }
 }
 
@@ -119,16 +125,54 @@ pub struct TargetLevel {
   pub target: String,
   /// The level to log at.
   pub level: LogLevel,
+  /// The modifier that controls how to use this log level.
+  pub modifier: LogModifier,
 }
 
 impl TargetLevel {
-  /// Create a new instance for the given target and log level.
-  #[must_use]
-  pub fn new(target: impl AsRef<str>, level: LogLevel) -> Self {
+  /// Create a new instance for the given target, log level, and modifier.
+  pub fn new(target: impl AsRef<str>, level: LogLevel, modifier: LogModifier) -> Self {
     Self {
       target: target.as_ref().to_owned(),
       level,
+      modifier,
     }
+  }
+
+  /// Create a new negated instance for the given target and log level.
+  #[must_use]
+  pub fn not(target: impl AsRef<str>, level: LogLevel) -> Self {
+    Self::new(target, level, LogModifier::Not)
+  }
+
+  /// Create a new instance that matches the given target and any log level greater than the one specified.
+  #[must_use]
+  pub fn gt(target: impl AsRef<str>, level: LogLevel) -> Self {
+    Self::new(target, level, LogModifier::GreaterThan)
+  }
+
+  /// Create a new instance that matches the given target and any log level greater than or equal to the one specified.
+  #[must_use]
+  pub fn gte(target: impl AsRef<str>, level: LogLevel) -> Self {
+    Self::new(target, level, LogModifier::GreaterThanOrEqualTo)
+  }
+
+  /// Create a new instance that matches the given target and any log level less than or equal to the one specified.
+  #[must_use]
+  pub fn lt(target: impl AsRef<str>, level: LogLevel) -> Self {
+    Self::new(target, level, LogModifier::LessThan)
+  }
+
+  /// Create a new instance that matches the given target and any log level less than or equal to the one specified.
+  #[must_use]
+  pub fn lte(target: impl AsRef<str>, level: LogLevel) -> Self {
+    Self::new(target, level, LogModifier::LessThanOrEqualTo)
+  }
+
+  /// Create a new instance that matches the given target and any log level equal to the one specified.
+  #[must_use]
+  pub fn is(target: impl AsRef<str>, level: LogLevel) -> Self {
+    Self::new(target, level, LogModifier::Equal)
   }
 }
 
@@ -138,6 +182,72 @@ impl LoggingOptions {
     Self {
       app_name: name.as_ref().to_owned(),
       ..self.clone()
+    }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Copy)]
+/// Whether to include logs higher, lower, equal, or to not include them at all.
+pub enum LogModifier {
+  /// Do not log the associated level.
+  Not,
+  /// Only log events greater than the associated level.
+  GreaterThan,
+  /// Only log events greater than or equal to the associated level.
+  GreaterThanOrEqualTo,
+  /// Only log events less than the associated level.
+  LessThan,
+  /// Only log events less than or equal to the associated level.
+  LessThanOrEqualTo,
+  /// Only log events equal to the associated level.
+  Equal,
+}
+
+impl Default for LogModifier {
+  fn default() -> Self {
+    Self::LessThanOrEqualTo
+  }
+}
+
+impl std::fmt::Display for LogModifier {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      LogModifier::Not => write!(f, "!="),
+      LogModifier::GreaterThan => write!(f, ">"),
+      LogModifier::GreaterThanOrEqualTo => write!(f, ">="),
+      LogModifier::LessThan => write!(f, "<"),
+      LogModifier::LessThanOrEqualTo => write!(f, "<="),
+      LogModifier::Equal => write!(f, "="),
+    }
+  }
+}
+
+impl LogModifier {
+  fn compare(self, a: usize, b: usize) -> bool {
+    match self {
+      LogModifier::Not => a != b,
+      LogModifier::GreaterThan => a > b,
+      LogModifier::GreaterThanOrEqualTo => a >= b,
+      LogModifier::LessThan => a < b,
+      LogModifier::LessThanOrEqualTo => a <= b,
+      LogModifier::Equal => a == b,
+    }
+  }
+}
+
+impl FromStr for LogModifier {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "!=" => Ok(LogModifier::Not),
+      ">" => Ok(LogModifier::GreaterThan),
+      ">=" => Ok(LogModifier::GreaterThanOrEqualTo),
+      "<" => Ok(LogModifier::LessThan),
+      "<=" => Ok(LogModifier::LessThanOrEqualTo),
+      "=" | "==" => Ok(LogModifier::Equal),
+
+      _ => Err(()),
     }
   }
 }
@@ -166,8 +276,8 @@ impl Default for LogLevel {
   }
 }
 
-impl std::str::FromStr for LogLevel {
-  type Err = String;
+impl FromStr for LogLevel {
+  type Err = ();
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     match s.to_lowercase().as_str() {
@@ -177,7 +287,7 @@ impl std::str::FromStr for LogLevel {
       "info" => Ok(LogLevel::Info),
       "debug" => Ok(LogLevel::Debug),
       "trace" => Ok(LogLevel::Trace),
-      _ => Err(format!("Unknown log level: {}", s)),
+      _ => Err(()),
     }
   }
 }
@@ -212,37 +322,215 @@ impl PartialEq<Level> for LogLevel {
 impl PartialOrd<Level> for LogLevel {
   #[inline(always)]
   fn partial_cmp(&self, other: &Level) -> Option<cmp::Ordering> {
-    Some((*self as usize).cmp(&filter_as_usize(other)))
+    Some((*self as usize).cmp(&filter_as_usize(*other)))
   }
 
   #[inline(always)]
   fn lt(&self, other: &Level) -> bool {
-    (*self as usize) < filter_as_usize(other)
+    (*self as usize) < filter_as_usize(*other)
   }
 
   #[inline(always)]
   fn le(&self, other: &Level) -> bool {
-    (*self as usize) <= filter_as_usize(other)
+    (*self as usize) <= filter_as_usize(*other)
   }
 
   #[inline(always)]
   fn gt(&self, other: &Level) -> bool {
-    (*self as usize) > filter_as_usize(other)
+    (*self as usize) > filter_as_usize(*other)
   }
 
   #[inline(always)]
   fn ge(&self, other: &Level) -> bool {
-    (*self as usize) >= filter_as_usize(other)
+    (*self as usize) >= filter_as_usize(*other)
   }
 }
 
 #[inline(always)]
-fn filter_as_usize(x: &Level) -> usize {
-  (match *x {
+fn filter_as_usize(x: Level) -> usize {
+  (match x {
     Level::ERROR => 0,
     Level::WARN => 1,
     Level::INFO => 2,
     Level::DEBUG => 3,
     Level::TRACE => 4,
   } + 1)
+}
+
+#[cfg(test)]
+mod test {
+
+  use super::*;
+
+  #[test]
+  fn test_modifier_compare() {
+    assert!(LogModifier::Equal.compare(2, 2));
+    assert!(LogModifier::GreaterThan.compare(4, 2));
+    assert!(LogModifier::GreaterThanOrEqualTo.compare(4, 2));
+    assert!(LogModifier::GreaterThanOrEqualTo.compare(2, 2));
+    assert!(LogModifier::Not.compare(4, 3));
+    assert!(LogModifier::LessThan.compare(1, 2));
+    assert!(LogModifier::LessThanOrEqualTo.compare(1, 2));
+    assert!(LogModifier::LessThanOrEqualTo.compare(2, 2));
+  }
+
+  #[test]
+  fn test_modifier_compare_level() {
+    assert!(LogModifier::Equal.compare(filter_as_usize(Level::TRACE), LogLevel::Trace as usize));
+    assert!(LogModifier::GreaterThan.compare(filter_as_usize(Level::TRACE), LogLevel::Warn as usize));
+    assert!(LogModifier::GreaterThanOrEqualTo.compare(filter_as_usize(Level::INFO), LogLevel::Info as usize));
+    assert!(LogModifier::GreaterThanOrEqualTo.compare(filter_as_usize(Level::TRACE), LogLevel::Debug as usize));
+    assert!(LogModifier::Not.compare(filter_as_usize(Level::ERROR), LogLevel::Trace as usize));
+    assert!(LogModifier::LessThan.compare(filter_as_usize(Level::INFO), LogLevel::Debug as usize));
+    assert!(LogModifier::LessThanOrEqualTo.compare(filter_as_usize(Level::TRACE), LogLevel::Trace as usize));
+    assert!(LogModifier::LessThanOrEqualTo.compare(filter_as_usize(Level::INFO), LogLevel::Trace as usize));
+  }
+
+  #[allow(clippy::needless_pass_by_value)]
+  fn opts<const K: usize>(default: LogLevel, targets: [TargetLevel; K]) -> FilterOptions {
+    FilterOptions {
+      level: default,
+      filter: targets.to_vec(),
+    }
+  }
+
+  #[test]
+  fn test_default_level() {
+    assert!(opts(LogLevel::Info, []).test_enabled("wick", Level::INFO));
+    assert!(!opts(LogLevel::Info, []).test_enabled("wick", Level::TRACE));
+  }
+
+  #[rstest::rstest]
+  #[case(LogLevel::Info, [TargetLevel::lte("wick",LogLevel::Trace)], "wick", Level::TRACE, true)]
+  #[case(LogLevel::Info, [TargetLevel::lte("wick",LogLevel::Info),TargetLevel::lte("wick_packet",LogLevel::Trace)], "wick_packet", Level::TRACE, true)]
+  #[case(LogLevel::Info, [
+    TargetLevel::lte("a",LogLevel::Info),
+    TargetLevel::not("ab",LogLevel::Trace),
+    TargetLevel::lte("abc",LogLevel::Trace)
+  ], "abcdef", Level::TRACE, true)]
+  #[case(LogLevel::Info, [
+    TargetLevel::lte("a",LogLevel::Info),
+    TargetLevel::lte("abc",LogLevel::Trace),
+    TargetLevel::not("ab",LogLevel::Trace),
+  ], "abcdef", Level::TRACE, true)]
+  fn test_specificity<const K: usize>(
+    #[case] default: LogLevel,
+    #[case] filter: [TargetLevel; K],
+    #[case] span_target: &str,
+    #[case] span_level: Level,
+    #[case] expect_enabled: bool,
+  ) {
+    assert_eq!(
+      opts(default, filter).test_enabled(span_target, span_level),
+      expect_enabled
+    );
+  }
+
+  #[rstest::rstest]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::TRACE, false)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::DEBUG, true)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::INFO, true)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::WARN, true)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::ERROR, true)]
+  fn test_not(
+    #[case] default: LogLevel,
+    #[case] target_level: LogLevel,
+    #[case] span_level: Level,
+    #[case] expect_enabled: bool,
+  ) {
+    assert_eq!(
+      opts(default, [TargetLevel::not("wick", target_level)]).test_enabled("wick", span_level),
+      expect_enabled
+    );
+  }
+
+  #[rstest::rstest]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::TRACE, false)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::DEBUG, true)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::INFO, true)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::WARN, true)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::ERROR, true)]
+  fn test_lt(
+    #[case] default: LogLevel,
+    #[case] target_level: LogLevel,
+    #[case] span_level: Level,
+    #[case] expect_enabled: bool,
+  ) {
+    assert_eq!(
+      opts(default, [TargetLevel::lt("wick", target_level)]).test_enabled("wick", span_level),
+      expect_enabled
+    );
+  }
+
+  #[rstest::rstest]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::TRACE, true)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::DEBUG, true)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::INFO, true)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::WARN, true)]
+  #[case(LogLevel::Info, LogLevel::Trace, Level::ERROR, true)]
+  fn test_lte(
+    #[case] default: LogLevel,
+    #[case] target_level: LogLevel,
+    #[case] span_level: Level,
+    #[case] expect_enabled: bool,
+  ) {
+    assert_eq!(
+      opts(default, [TargetLevel::lte("wick", target_level)]).test_enabled("wick", span_level),
+      expect_enabled
+    );
+  }
+
+  #[rstest::rstest]
+  #[case(LogLevel::Info, LogLevel::Info, Level::TRACE, true)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::DEBUG, true)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::INFO, true)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::WARN, false)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::ERROR, false)]
+  fn test_gte(
+    #[case] default: LogLevel,
+    #[case] target_level: LogLevel,
+    #[case] span_level: Level,
+    #[case] expect_enabled: bool,
+  ) {
+    assert_eq!(
+      opts(default, [TargetLevel::gte("wick", target_level)]).test_enabled("wick", span_level),
+      expect_enabled
+    );
+  }
+
+  #[rstest::rstest]
+  #[case(LogLevel::Info, LogLevel::Info, Level::TRACE, true)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::DEBUG, true)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::INFO, false)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::WARN, false)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::ERROR, false)]
+  fn test_gt(
+    #[case] default: LogLevel,
+    #[case] target_level: LogLevel,
+    #[case] span_level: Level,
+    #[case] expect_enabled: bool,
+  ) {
+    assert_eq!(
+      opts(default, [TargetLevel::gt("wick", target_level)]).test_enabled("wick", span_level),
+      expect_enabled
+    );
+  }
+
+  #[rstest::rstest]
+  #[case(LogLevel::Info, LogLevel::Info, Level::TRACE, false)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::DEBUG, false)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::INFO, true)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::WARN, false)]
+  #[case(LogLevel::Info, LogLevel::Info, Level::ERROR, false)]
+  fn test_eq(
+    #[case] default: LogLevel,
+    #[case] target_level: LogLevel,
+    #[case] span_level: Level,
+    #[case] expect_enabled: bool,
+  ) {
+    assert_eq!(
+      opts(default, [TargetLevel::is("wick", target_level)]).test_enabled("wick", span_level),
+      expect_enabled
+    );
+  }
 }

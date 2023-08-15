@@ -6648,6 +6648,7 @@ dependencies = [
  "console-subscriber",
  "opentelemetry",
  "opentelemetry-otlp",
+ "rstest",
  "thiserror",
  "time 0.3.25",
  "tokio",

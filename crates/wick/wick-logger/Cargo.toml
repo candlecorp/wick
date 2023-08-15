@@ -34,3 +34,7 @@ opentelemetry-otlp = { workspace = true, features = [
   "grpc-tonic",
   "trace",
 ] }
+
+
+[dev-dependencies]
+rstest = { workspace = true }
