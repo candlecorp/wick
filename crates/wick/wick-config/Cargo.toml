@@ -14,6 +14,7 @@ flow-expression-parser = { workspace = true }
 wick-packet = { workspace = true, default-features = false, features = [
   "validation",
   "std",
+  "rng",
 ] }
 wick-interface-types = { workspace = true, features = [
   "yaml",
@@ -35,12 +36,15 @@ asset-container = { workspace = true }
 derive-asset-container = { workspace = true }
 derive_builder = { workspace = true }
 tokio = { workspace = true, features = ["fs"] }
-url = { workspace = true }
+url = { workspace = true, features = ["serde"] }
 glob = { workspace = true }
 parking_lot = { workspace = true }
 liquid-json = { workspace = true, features = ["serde"] }
 option-utils = { workspace = true }
 property = { workspace = true }
+normpath = { workspace = true }
+async-recursion = { workspace = true }
+wildmatch = { workspace = true }
 
 [dev-dependencies]
 wick-xdg = { workspace = true }

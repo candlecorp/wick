@@ -21,8 +21,12 @@ pub enum Error {
     from: InstanceTarget,
     known_ports: Vec<String>,
   },
-  #[error("Could not find signature for operation '{operation}' on component '{component}'")]
-  MissingOperation { component: String, operation: String },
+  #[error("Could not find signature for operation '{operation}' on component '{component}', available operations are: {}", .available.join(", "))]
+  MissingOperation {
+    component: String,
+    operation: String,
+    available: Vec<String>,
+  },
   #[error("Could not render operation config for '{0}': {1}")]
   Config(String, String),
   #[error("Invalid config for core operation '{0}': {1}")]
@@ -60,12 +64,15 @@ impl Error {
       known_ports: known_ports.iter().map(|p| p.name().to_owned()).collect(),
     }
   }
-  pub(crate) fn missing_operation(component: impl AsRef<str>, operation: impl AsRef<str>) -> Self {
+
+  pub(crate) fn missing_operation(component: impl AsRef<str>, operation: impl AsRef<str>, available: &[&str]) -> Self {
     Error::MissingOperation {
       component: component.as_ref().to_owned(),
       operation: operation.as_ref().to_owned(),
+      available: available.iter().map(|s| (*s).to_owned()).collect(),
     }
   }
+
   pub(crate) fn config(id: impl AsRef<str>, err: impl AsRef<str>) -> Self {
     Error::Config(id.as_ref().to_owned(), err.as_ref().to_owned())
   }

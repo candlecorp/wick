@@ -114,7 +114,7 @@ pub(super) fn decorate(
   }
   let opsig = handlers
     .get_op_signature(component, operation)
-    .ok_or(GraphError::missing_operation(component, operation))?;
+    .ok_or_else(|| GraphError::missing_operation(component, operation, &handlers.get_op_list(component)))?;
 
   for input in opsig.inputs() {
     debug!(

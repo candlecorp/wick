@@ -4,6 +4,11 @@ static DIR: &str = "run";
 #[case("anonymous-component.toml")]
 #[case("imported-component.toml")]
 #[case("stdin.toml")]
+#[case("file-reader.toml")]
+#[case("file-reader-lockdown-fail.toml")]
+#[case("file-reader-lockdown-pass.toml")]
+#[case("file-reader-lockdown-pass-wildcard-dir.toml")]
+#[case("file-reader-lockdown-pass-wildcard-components.toml")]
 fn wick_run(#[case] file: &'static str) {
   let kind = "unit";
   let file = format!("tests/{}/{}/{}", DIR, kind, file);

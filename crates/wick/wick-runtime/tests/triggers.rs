@@ -10,7 +10,7 @@ use wick_config::WickConfiguration;
 use wick_runtime::resources::Resource;
 
 async fn load_app_yaml(path: &str) -> anyhow::Result<AppConfiguration> {
-  let mut config = WickConfiguration::load_from_file(path).await?;
+  let mut config = WickConfiguration::fetch(path, Default::default()).await?;
   config.set_env(Some(std::env::vars().collect()));
 
   Ok(config.finish()?.try_app_config()?)

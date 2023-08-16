@@ -1,12 +1,12 @@
 bin.name = "wick"
 args = [
   "run",
-  "tests/run/unit/imported-component.args.yaml",
+  "tests/run/unit/imported-component.args.wick",
   "--",
   "arg1",
   "22",
   "arg2",
-  "33"
+  "33",
 ]
 stdin = "Hello\nworld"
 stdout = "args: [\"mycli\", \"arg1\", \"22\", \"arg2\", \"33\"], interactive: { stdin: false, stdout: false, stderr: false }\nGot result for provided component: 8\n<STDIN>HelloNLworld</STDIN>\n"

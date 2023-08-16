@@ -63,6 +63,10 @@ pub enum ManifestError {
   #[error("Invalid IP Address: {0}")]
   BadIpAddress(String),
 
+  /// Invalid regular expression.
+  #[error("Invalid regular expression: {0}")]
+  InvalidRegex(String),
+
   /// Invalid format of passed data. Check the error message for details.
   #[error("Invalid format: {0}")]
   Invalid(serde_json::Error),
@@ -88,8 +92,13 @@ pub enum ManifestError {
   InvalidUrl(String),
 
   /// Identifier not found.
-  #[error("Could not find definition for id '{0}'")]
-  IdNotFound(String),
+  #[error("id '{id}' undefined, IDs in scope are: {}", .ids.join(", "))]
+  IdNotFound {
+    /// The lookup id.
+    id: String,
+    /// The ids that exist in the lookup scope
+    ids: Vec<String>,
+  },
 
   /// Attempted to use configuration before it was renderable.
   #[error("Could not render configuration template: {0}")]

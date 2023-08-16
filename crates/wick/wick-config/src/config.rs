@@ -1,10 +1,13 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 
+/// Specific component-level configuration and types.
+pub mod components;
+
 pub(crate) mod app_config;
 pub(crate) mod common;
 pub(crate) mod component_config;
-/// Specific component-level configuration and types.
-pub mod components;
+pub(crate) mod configuration_tree;
+pub(crate) mod lockdown_config;
 pub(crate) mod permissions;
 pub(crate) mod test_config;
 pub(crate) mod types_config;
@@ -16,10 +19,11 @@ pub use app_config::*;
 use asset_container::Asset;
 pub use common::*;
 pub use component_config::*;
+pub use configuration_tree::*;
+pub use lockdown_config::*;
 pub use permissions::{Permissions, PermissionsBuilder};
 use serde_json::Value;
 pub use test_config::*;
-use tokio::fs::read_to_string;
 use tracing::debug;
 pub use types_config::*;
 use wick_asset_reference::{AssetReference, FetchOptions};
@@ -27,7 +31,8 @@ use wick_interface_types::Field;
 use wick_packet::validation::expect_configuration_matches;
 use wick_packet::RuntimeConfig;
 
-use crate::utils::{fetch_all, resolve_configuration};
+use crate::lockdown::Lockdown;
+use crate::utils::{_fetch_all, resolve_configuration};
 use crate::{v1, Error};
 
 #[derive(Debug, Clone, property::Property)]
@@ -40,6 +45,8 @@ pub struct UninitializedConfiguration {
   pub(crate) root_config: Option<RuntimeConfig>,
   /// The environment this configuration can use when rendering internal configuration templates.
   pub(crate) env: Option<HashMap<String, String>>,
+  /// The lockdown configuration that will validate a configuration is safe to run.
+  pub(crate) lockdown_config: Option<LockdownConfiguration>,
 }
 
 impl UninitializedConfiguration {
@@ -50,6 +57,7 @@ impl UninitializedConfiguration {
       manifest,
       root_config: None,
       env: None,
+      lockdown_config: None,
     }
   }
 
@@ -80,6 +88,13 @@ impl UninitializedConfiguration {
   }
 }
 
+impl Lockdown for UninitializedConfiguration {
+  fn lockdown(&self, id: Option<&str>, lockdown: &LockdownConfiguration) -> Result<(), crate::lockdown::LockdownError> {
+    self.manifest.lockdown(id, lockdown)?;
+    Ok(())
+  }
+}
+
 /// A catch-all enum for root-level Wick configurations.
 #[derive(Debug, Clone, derive_asset_container::AssetManager, serde::Serialize)]
 #[asset(asset(AssetReference))]
@@ -93,6 +108,8 @@ pub enum WickConfiguration {
   Types(TypesConfiguration),
   /// A [test_config::TestConfiguration] configuration.
   Tests(TestConfiguration),
+  /// A [lockdown_config::LockdownConfiguration] configuration.
+  Lockdown(LockdownConfiguration),
 }
 
 impl WickConfiguration {
@@ -111,13 +128,25 @@ impl WickConfiguration {
   /// # Ok::<_,anyhow::Error>(())
   /// # });
   /// ```
-  pub async fn fetch_all(
+  pub async fn fetch_tree(
     path: impl Into<AssetReference> + Send,
+    root_config: Option<RuntimeConfig>,
+    root_env: HashMap<String, String>,
     options: FetchOptions,
-  ) -> Result<UninitializedConfiguration, Error> {
-    let config = Self::fetch(path, options.clone()).await?;
-    config.manifest.fetch_assets(options).await?;
-    Ok(config)
+  ) -> Result<ConfigurationTreeNode, Error> {
+    let mut config = Self::fetch(path, options.clone()).await?;
+    match config.manifest.kind() {
+      ConfigurationKind::App | ConfigurationKind::Tests | ConfigurationKind::Lockdown => {
+        config.set_env(root_env);
+      }
+      _ => {}
+    }
+    config.set_root_config(root_config);
+    let config = config.finish()?;
+    let mut node = ConfigurationTreeNode::new(AppConfiguration::GENERIC_IDENTIFIER.into(), config);
+    node.fetch_children(options).await?;
+
+    Ok(node)
   }
 
   /// Fetch a configuration from a path.
@@ -155,16 +184,18 @@ impl WickConfiguration {
       }
       WickConfiguration::Types(_) => {}
       WickConfiguration::Tests(_) => {}
+      WickConfiguration::Lockdown(_) => {}
     }
     Ok(config)
   }
 
-  async fn fetch_assets(&self, options: FetchOptions) -> Result<(), Error> {
+  async fn _fetch_assets(&self, options: FetchOptions) -> Result<(), Error> {
     match self {
-      WickConfiguration::Component(c) => fetch_all(c, options).await,
-      WickConfiguration::App(c) => fetch_all(c, options).await,
-      WickConfiguration::Types(c) => fetch_all(c, options).await,
-      WickConfiguration::Tests(c) => fetch_all(c, options).await,
+      WickConfiguration::Component(c) => _fetch_all(c, options).await,
+      WickConfiguration::App(c) => _fetch_all(c, options).await,
+      WickConfiguration::Types(c) => _fetch_all(c, options).await,
+      WickConfiguration::Tests(c) => _fetch_all(c, options).await,
+      WickConfiguration::Lockdown(_) => Ok(()),
     }
   }
 
@@ -263,6 +294,7 @@ impl WickConfiguration {
       WickConfiguration::App(c) => Ok(v1::WickConfig::AppConfiguration(c.try_into()?)),
       WickConfiguration::Types(c) => Ok(v1::WickConfig::TypesConfiguration(c.try_into()?)),
       WickConfiguration::Tests(c) => Ok(v1::WickConfig::TestConfiguration(c.try_into()?)),
+      WickConfiguration::Lockdown(c) => Ok(v1::WickConfig::LockdownConfiguration(c.try_into()?)),
     }
   }
 
@@ -274,6 +306,7 @@ impl WickConfiguration {
       WickConfiguration::App(v) => Some(v.name()),
       WickConfiguration::Types(v) => v.name().map(|s| s.as_str()),
       WickConfiguration::Tests(v) => v.name().map(|s| s.as_str()),
+      WickConfiguration::Lockdown(_) => None,
     }
   }
 
@@ -285,6 +318,7 @@ impl WickConfiguration {
       WickConfiguration::App(v) => v.metadata(),
       WickConfiguration::Types(v) => v.metadata(),
       WickConfiguration::Tests(_v) => None,
+      WickConfiguration::Lockdown(_v) => None,
     }
   }
 
@@ -295,6 +329,7 @@ impl WickConfiguration {
       WickConfiguration::App(v) => v.validate(),
       WickConfiguration::Types(v) => v.validate(),
       WickConfiguration::Tests(v) => v.validate(),
+      WickConfiguration::Lockdown(v) => v.validate(),
     }
   }
 
@@ -306,13 +341,14 @@ impl WickConfiguration {
       WickConfiguration::App(_v) => Default::default(),
       WickConfiguration::Types(_v) => Default::default(),
       WickConfiguration::Tests(_v) => Default::default(),
+      WickConfiguration::Lockdown(_v) => Default::default(),
     }
   }
 
   /// Set the root runtime config for a [WickConfiguration].
   fn set_root_config(&mut self, env: Option<RuntimeConfig>) -> &mut Self {
     match self {
-      WickConfiguration::App(ref mut v) => {
+      WickConfiguration::App(v) => {
         v.root_config = env;
       }
       WickConfiguration::Component(v) => {
@@ -320,8 +356,18 @@ impl WickConfiguration {
       }
       WickConfiguration::Types(_) => (),
       WickConfiguration::Tests(_) => (),
+      WickConfiguration::Lockdown(_) => (),
     }
     self
+  }
+
+  /// Get the root runtime config for a [WickConfiguration].
+  fn get_root_config(&self) -> Option<&RuntimeConfig> {
+    match self {
+      WickConfiguration::App(v) => v.root_config.as_ref(),
+      WickConfiguration::Component(v) => v.root_config.as_ref(),
+      _ => None,
+    }
   }
 
   /// Set the environment variables for a [WickConfiguration].
@@ -333,6 +379,7 @@ impl WickConfiguration {
       WickConfiguration::Component(_) => (),
       WickConfiguration::Types(_) => (),
       WickConfiguration::Tests(_) => (),
+      WickConfiguration::Lockdown(v) => v.env = env,
     }
     self
   }
@@ -344,6 +391,29 @@ impl WickConfiguration {
       WickConfiguration::App(_) => ConfigurationKind::App,
       WickConfiguration::Types(_) => ConfigurationKind::Types,
       WickConfiguration::Tests(_) => ConfigurationKind::Tests,
+      WickConfiguration::Lockdown(_) => ConfigurationKind::Lockdown,
+    }
+  }
+
+  /// Get the imports for the configuration, if any
+  pub fn imports(&self) -> &[ImportBinding] {
+    match self {
+      WickConfiguration::Component(c) => c.import(),
+      WickConfiguration::App(c) => c.import(),
+      WickConfiguration::Types(_) => &[],
+      WickConfiguration::Tests(_) => &[],
+      WickConfiguration::Lockdown(_) => &[],
+    }
+  }
+
+  /// Get the resources for the configuration, if any
+  pub fn resources(&self) -> &[ResourceBinding] {
+    match self {
+      WickConfiguration::Component(c) => c.resources(),
+      WickConfiguration::App(c) => c.resources(),
+      WickConfiguration::Types(_) => &[],
+      WickConfiguration::Tests(_) => &[],
+      WickConfiguration::Lockdown(_) => &[],
     }
   }
 
@@ -355,6 +425,7 @@ impl WickConfiguration {
       WickConfiguration::App(v) => v.version(),
       WickConfiguration::Types(v) => v.version(),
       WickConfiguration::Tests(_) => None,
+      WickConfiguration::Lockdown(_) => None,
     }
   }
 
@@ -366,6 +437,7 @@ impl WickConfiguration {
       WickConfiguration::App(v) => v.package(),
       WickConfiguration::Types(v) => v.package(),
       WickConfiguration::Tests(_) => None,
+      WickConfiguration::Lockdown(_) => None,
     }
   }
 
@@ -410,6 +482,17 @@ impl WickConfiguration {
     }
   }
 
+  /// Unwrap the inner [LockdownConfiguration], returning an error if it is anything else.
+  pub fn try_lockdown_config(self) -> Result<LockdownConfiguration, Error> {
+    match self {
+      WickConfiguration::Lockdown(v) => Ok(v),
+      _ => Err(Error::UnexpectedConfigurationKind(
+        ConfigurationKind::Lockdown,
+        self.kind(),
+      )),
+    }
+  }
+
   /// Initialize the configuration.
   fn initialize(&mut self) -> Result<&Self, Error> {
     match self {
@@ -421,37 +504,12 @@ impl WickConfiguration {
       }
       WickConfiguration::Types(_) => (),
       WickConfiguration::Tests(_) => (),
+      WickConfiguration::Lockdown(v) => {
+        v.initialize()?;
+      }
     }
     self.update_baseurls();
     Ok(self)
-  }
-
-  /// Load struct from file by trying all the supported file formats.
-  pub async fn load_from_file(path: impl AsRef<Path> + Send) -> Result<UninitializedConfiguration, Error> {
-    let path = path.as_ref();
-    let pathstr = path.to_string_lossy();
-    if !path.exists() {
-      return Err(Error::FileNotFound(pathstr.to_string()));
-    }
-    debug!("Reading manifest from {}", path.to_string_lossy());
-    let contents = read_to_string(path)
-      .await
-      .map_err(|_| Error::LoadError(path.display().to_string()))?;
-    let manifest = Self::from_yaml(&contents, &Some(path.to_path_buf()))?;
-    Ok(manifest)
-  }
-
-  #[doc(hidden)]
-  pub fn load_from_file_sync(path: impl AsRef<Path>) -> Result<UninitializedConfiguration, Error> {
-    let path = path.as_ref();
-
-    if !path.exists() {
-      return Err(Error::FileNotFound(path.to_string_lossy().into()));
-    }
-    debug!("Reading manifest from {}", path.to_string_lossy());
-    let contents = std::fs::read_to_string(path).map_err(|_| Error::LoadError(path.display().to_string()))?;
-    let manifest = Self::from_yaml(&contents, &Some(path.to_path_buf()))?;
-    Ok(manifest)
   }
 
   /// Set the source of the configuration if it is not already set on load.
@@ -461,6 +519,7 @@ impl WickConfiguration {
       WickConfiguration::App(v) => v.set_source(src),
       WickConfiguration::Types(v) => v.set_source(src),
       WickConfiguration::Tests(v) => v.set_source(src),
+      WickConfiguration::Lockdown(v) => v.set_source(src),
     }
   }
 
@@ -470,6 +529,7 @@ impl WickConfiguration {
       WickConfiguration::App(v) => v.update_baseurls(),
       WickConfiguration::Types(v) => v.update_baseurls(),
       WickConfiguration::Tests(v) => v.update_baseurls(),
+      WickConfiguration::Lockdown(v) => v.update_baseurls(),
     }
   }
 
@@ -481,6 +541,19 @@ impl WickConfiguration {
       WickConfiguration::App(v) => v.source.as_deref(),
       WickConfiguration::Types(v) => v.source.as_deref(),
       WickConfiguration::Tests(v) => v.source.as_deref(),
+      WickConfiguration::Lockdown(v) => v.source.as_deref(),
+    }
+  }
+}
+
+impl Lockdown for WickConfiguration {
+  fn lockdown(&self, id: Option<&str>, lockdown: &LockdownConfiguration) -> Result<(), crate::lockdown::LockdownError> {
+    match self {
+      WickConfiguration::Component(v) => v.lockdown(id, lockdown),
+      WickConfiguration::App(v) => v.lockdown(id, lockdown),
+      WickConfiguration::Types(_) => Ok(()),
+      WickConfiguration::Tests(_) => Ok(()),
+      WickConfiguration::Lockdown(_) => Ok(()),
     }
   }
 }
@@ -497,6 +570,8 @@ pub enum ConfigurationKind {
   Types,
   /// A [test_config::TestConfiguration] configuration.
   Tests,
+  /// A [lockdown_config::LockdownConfiguration] configuration.
+  Lockdown,
 }
 
 impl std::fmt::Display for ConfigurationKind {
@@ -506,6 +581,7 @@ impl std::fmt::Display for ConfigurationKind {
       ConfigurationKind::Component => write!(f, "wick/component"),
       ConfigurationKind::Types => write!(f, "wick/types"),
       ConfigurationKind::Tests => write!(f, "wick/tests"),
+      ConfigurationKind::Lockdown => write!(f, "wick/lockdown"),
     }
   }
 }

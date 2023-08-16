@@ -8,9 +8,8 @@ use wick_config::WickConfiguration;
 use wick_host::{ComponentHost, ComponentHostBuilder};
 use wick_packet::RuntimeConfig;
 
-use crate::oci::Options as WickOciOptions;
-use crate::options::get_auth_for_scope;
-use crate::utils::merge_config;
+use crate::options::oci::OciOptions as WickOciOptions;
+use crate::utils::{get_auth_for_scope, merge_config};
 
 pub(crate) async fn build_component_host(
   path: &str,
@@ -45,7 +44,11 @@ pub(crate) async fn build_component_host(
 
   let manifest = merge_config(&manifest, &oci, server_settings);
 
-  let mut host = ComponentHostBuilder::default().manifest(manifest).span(span).build()?;
+  let mut host = ComponentHostBuilder::default()
+    .id(manifest.name().map_or_else(|| "component".to_owned(), |s| s.clone()))
+    .manifest(manifest)
+    .span(span)
+    .build()?;
 
   host.start_runtime(seed.map(Seed::unsafe_new)).await?;
 

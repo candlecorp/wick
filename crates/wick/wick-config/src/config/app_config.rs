@@ -18,6 +18,7 @@ use crate::config::common::resources::*;
 use crate::config::template_config::Renderable;
 use crate::error::{ManifestError, ReferenceError};
 use crate::import_cache::{setup_cache, ImportCache};
+use crate::lockdown::{validate_resource, FailureKind, Lockdown, LockdownError};
 use crate::utils::{make_resolver, resolve, RwOption};
 use crate::{config, v1, Resolver, Result};
 
@@ -94,6 +95,7 @@ pub struct AppConfiguration {
   pub(crate) type_cache: ImportCache,
 
   #[asset(skip)]
+  #[builder(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) options: Option<FetchOptions>,
 
@@ -106,6 +108,8 @@ pub struct AppConfiguration {
 }
 
 impl AppConfiguration {
+  pub const GENERIC_IDENTIFIER: &'static str = "__root__";
+
   /// Fetch/cache anything critical to the first use of this configuration.
   pub(crate) async fn setup_cache(&self, options: FetchOptions) -> Result<()> {
     setup_cache(
@@ -231,6 +235,28 @@ impl AppConfiguration {
   pub fn validate(&self) -> Result<()> {
     /* placeholder */
     Ok(())
+  }
+}
+
+impl Lockdown for AppConfiguration {
+  fn lockdown(
+    &self,
+    _id: Option<&str>,
+    lockdown: &config::LockdownConfiguration,
+  ) -> std::result::Result<(), LockdownError> {
+    let mut errors = Vec::new();
+    let id = Self::GENERIC_IDENTIFIER;
+
+    for resource in self.resources.iter() {
+      if let Err(e) = validate_resource(id, &(resource.into()), lockdown) {
+        errors.push(FailureKind::Failed(Box::new(e)));
+      }
+    }
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(LockdownError::new(errors))
+    }
   }
 }
 

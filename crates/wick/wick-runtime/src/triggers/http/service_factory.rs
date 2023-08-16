@@ -15,6 +15,7 @@ use wick_packet::Invocation;
 
 use super::component_utils::{handle_request_middleware, handle_response_middleware};
 use super::conversions::{convert_response, convert_to_wick_response, merge_requests, request_to_wick};
+use super::error::InternalError;
 use super::{HttpError, HttpRouter, RawRouterHandler};
 use crate::Runtime;
 
@@ -229,7 +230,7 @@ async fn run_response_middleware(
 
   let response = convert_response(Response::builder(), response)?
     .body(body)
-    .map_err(|_e| HttpError::InternalError(super::InternalError::Builder))?;
+    .map_err(|_e| HttpError::InternalError(InternalError::Builder))?;
 
   Ok(response)
 }

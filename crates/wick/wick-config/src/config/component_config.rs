@@ -13,10 +13,11 @@ use wick_interface_types::{ComponentMetadata, ComponentSignature, Field, Operati
 use wick_packet::RuntimeConfig;
 
 use super::common::package_definition::PackageConfig;
-use super::{ImportBinding, TestConfiguration};
+use super::{AppConfiguration, ImportBinding, TestConfiguration};
 use crate::config::template_config::Renderable;
 use crate::config::{BoundInterface, ResourceBinding};
 use crate::import_cache::{setup_cache, ImportCache};
+use crate::lockdown::{validate_resource, FailureKind, Lockdown, LockdownError};
 use crate::utils::{make_resolver, RwOption};
 use crate::{config, v1, Error, Resolver, Result};
 
@@ -170,6 +171,7 @@ impl ComponentConfiguration {
   /// Returns a function that resolves a binding to a configuration item.
   #[must_use]
   pub fn resolver(&self) -> Box<Resolver> {
+    trace!("creating resolver for component {:?}", self.name());
     make_resolver(
       self.import.clone(),
       self.resources.clone(),
@@ -300,6 +302,40 @@ impl ComponentConfiguration {
     )
     .map_err(Error::ConfigurationInvalid)?;
     Ok(())
+  }
+}
+
+impl Lockdown for ComponentConfiguration {
+  fn lockdown(
+    &self,
+    id: Option<&str>,
+    lockdown: &config::LockdownConfiguration,
+  ) -> std::result::Result<(), LockdownError> {
+    let mut errors = Vec::new();
+    let Some(id) = id else {
+      return Err(LockdownError::new(vec![FailureKind::General(
+        "missing component id".into(),
+      )]));
+    };
+
+    if id == AppConfiguration::GENERIC_IDENTIFIER {
+      return Err(LockdownError::new(vec![FailureKind::General(format!(
+        "invalid component id: {}",
+        AppConfiguration::GENERIC_IDENTIFIER
+      ))]));
+    }
+
+    for resource in self.resources.iter() {
+      if let Err(e) = validate_resource(id, &(resource.into()), lockdown) {
+        errors.push(FailureKind::Failed(Box::new(e)));
+      }
+    }
+
+    if errors.is_empty() {
+      Ok(())
+    } else {
+      Err(LockdownError::new(errors))
+    }
   }
 }
 

@@ -105,12 +105,14 @@ mod options;
 mod panic;
 mod wick_host;
 
-pub(crate) use options::LoggingOptions;
+use std::io::Write;
+
 use structured_output::StructuredOutput;
 use tracing::Span;
 
 use self::commands::*;
-use self::options::{apply_log_settings, GlobalOptions};
+use self::options::logging::apply_log_settings;
+use self::options::GlobalOptions;
 
 static BIN_NAME: &str = "wick";
 static BIN_DESC: &str = "wick runtime executable";
@@ -132,6 +134,8 @@ fn main() {
   let result = runtime.block_on(async_start());
   runtime.shutdown_background();
 
+  let mut out = std::io::stdout();
+
   let code = match result {
     Ok((options, output)) => {
       let (json, code) = if let Some(success) = output.json.as_object().unwrap().get("success") {
@@ -145,11 +149,11 @@ fn main() {
       };
 
       if options.json {
-        println!("{}", serde_json::to_string(&json).unwrap());
+        let _ = writeln!(out, "{}", serde_json::to_string(&json).unwrap());
       } else {
         let output = output.to_string();
         if !output.is_empty() {
-          println!("{}", output);
+          let _ = writeln!(out, "{}", output);
         }
       }
       code
@@ -158,16 +162,16 @@ fn main() {
       let json = serde_json::json!({"error": e.to_string(),"success":false});
 
       if options.json {
-        println!("{}", serde_json::to_string(&json).unwrap());
+        let _ = writeln!(out, "{}", serde_json::to_string(&json).unwrap());
       } else {
         // Separate the error from the rest of the output with a few blank lines.
         for _ in 0..8 {
-          println!();
+          let _ = writeln!(out);
           sleep(std::time::Duration::from_millis(20));
         }
 
-        println!("\n{} exited with error: {}", BIN_NAME, e);
-        println!("Run with --info, --debug, or --trace for more information.");
+        let _ = writeln!(out, "\n{} exited with error: {}", BIN_NAME, e);
+        let _ = writeln!(out, "Run with --info, --debug, or --trace for more information.");
       }
       1
     }
@@ -276,6 +280,7 @@ async fn async_main(span: Span, cli: Cli, settings: wick_settings::Settings) -> 
     CliCommand::Config(cmd) => match cmd {
       config::SubCommands::Dot(cmd) => commands::config::dot::handle(cmd, settings, span).await,
       config::SubCommands::Expand(cmd) => commands::config::expand::handle(cmd, settings, span).await,
+      config::SubCommands::Audit(cmd) => commands::config::audit::handle(cmd, settings, span).await,
     },
   }
 }

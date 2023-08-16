@@ -16,11 +16,10 @@ use crate::utils::merge_config;
 #[group(skip)]
 pub(crate) struct Options {
   #[clap(flatten)]
-  pub(crate) oci: crate::oci::Options,
+  pub(crate) oci: crate::options::oci::OciOptions,
 
-  /// The path or OCI URL to a wick manifest or wasm file.
-  #[clap(action)]
-  pub(crate) location: String,
+  #[clap(flatten)]
+  pub(crate) component: crate::options::component::ComponentOptions,
 }
 
 pub(crate) async fn handle(
@@ -30,7 +29,7 @@ pub(crate) async fn handle(
 ) -> Result<StructuredOutput> {
   let fetch_options: wick_oci_utils::OciOptions = opts.oci.clone().into();
 
-  let manifest = WickConfiguration::fetch(&opts.location, fetch_options)
+  let manifest = WickConfiguration::fetch(&opts.component.path, fetch_options)
     .await?
     .finish()?
     .try_component_config()?;

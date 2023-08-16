@@ -50,6 +50,9 @@ pub(crate) enum WickConfig {
   /// A variant representing a [TestConfiguration] type.
   #[serde(rename = "wick/tests@v1")]
   TestConfiguration(TestConfiguration),
+  /// A variant representing a [LockdownConfiguration] type.
+  #[serde(rename = "wick/lockdown@v1")]
+  LockdownConfiguration(LockdownConfiguration),
 }
 
 /// A liquid template. Liquid-JSON is a way of using Liquid templates in structured JSON-like data. See liquid's [homepage](https://shopify.github.io/liquid/) for more information.
@@ -64,7 +67,7 @@ pub(crate) struct AppConfiguration {
 
   #[serde(default)]
   pub(crate) name: String,
-  /// Associated metadata for this component.
+  /// Associated metadata for this application.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -667,6 +670,97 @@ pub(crate) struct TestConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) cases: Vec<TestDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A lockdown configuration used to secure Wick components and applications
+pub(crate) struct LockdownConfiguration {
+  /// Associated metadata for this configuration.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) metadata: Option<Metadata>,
+  /// Restrictions to apply to resources before an application or component can be run.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) resources: Vec<ResourceRestriction>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[serde(tag = "kind")]
+/// Restrictions to assert against an application or component.
+pub(crate) enum ResourceRestriction {
+  /// A variant representing a [VolumeRestriction] type.
+  #[serde(rename = "wick/resource/volume@v1")]
+  VolumeRestriction(VolumeRestriction),
+  /// A variant representing a [UrlRestriction] type.
+  #[serde(rename = "wick/resource/url@v1")]
+  UrlRestriction(UrlRestriction),
+  /// A variant representing a [TcpPortRestriction] type.
+  #[serde(rename = "wick/resource/tcpport@v1")]
+  TcpPortRestriction(TcpPortRestriction),
+  /// A variant representing a [UdpPortRestriction] type.
+  #[serde(rename = "wick/resource/udpport@v1")]
+  UdpPortRestriction(UdpPortRestriction),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Restrictions to apply against Volume resources
+pub(crate) struct VolumeRestriction {
+  /// The components this restriction applies to
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) components: Vec<String>,
+  /// The volumes to allow
+  pub(crate) allow: LiquidTemplate,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Restrictions to apply against URL resources
+pub(crate) struct UrlRestriction {
+  /// The components this restriction applies to
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) components: Vec<String>,
+  /// The URLs to allow
+  pub(crate) allow: LiquidTemplate,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Restrictions to apply against TCP Port resources
+pub(crate) struct TcpPortRestriction {
+  /// The components this restriction applies to
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) components: Vec<String>,
+  /// The address to allow
+  pub(crate) address: LiquidTemplate,
+  /// The port to allow
+  pub(crate) port: LiquidTemplate,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// Restrictions to apply against UDP Port resources
+pub(crate) struct UdpPortRestriction {
+  /// The components this restriction applies to
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) components: Vec<String>,
+  /// The address to allow
+  pub(crate) address: LiquidTemplate,
+  /// The port to allow
+  pub(crate) port: LiquidTemplate,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

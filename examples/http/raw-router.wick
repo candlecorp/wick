@@ -14,7 +14,7 @@ resources:
   - name: http
     resource:
       kind: wick/resource/tcpport@v1
-      port: 8999
+      port: '8999'
       address: 0.0.0.0
 import:
   - name: test_component
@@ -27,4 +27,5 @@ triggers:
     routers:
       - kind: wick/router/raw@v1
         path: /
+        codec: Json
         operation: test_component::http_handler

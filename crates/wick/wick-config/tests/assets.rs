@@ -1,16 +1,13 @@
+mod utils;
 mod integration_test {
   use std::path::PathBuf;
 
   use anyhow::Result;
   use asset_container::{Asset, AssetFlags, AssetManager, Status};
   use tokio_stream::StreamExt;
-  use wick_config::error::ManifestError;
   use wick_config::{FetchOptions, *};
 
-  async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
-    let path = PathBuf::from(path);
-    WickConfiguration::load_from_file(path).await?.finish()
-  }
+  use crate::utils::load;
 
   #[test_logger::test(tokio::test)]
   #[ignore = "fetch with progress has been removed as unused for now"]

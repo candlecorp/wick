@@ -5,7 +5,7 @@ use std::str::FromStr;
 use tracing::{Level, Metadata};
 use tracing_subscriber::layer::Context;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 /// Logging options.
 pub struct LoggingOptions {
   /// Turns on verbose logging.
@@ -28,6 +28,32 @@ pub struct LoggingOptions {
 
   /// Log filtering options
   pub levels: LogFilters,
+}
+
+impl LoggingOptions {
+  /// Create a new instance with the given log level.
+  #[must_use]
+  pub fn with_level(level: LogLevel) -> Self {
+    Self {
+      levels: LogFilters::with_level(level),
+      global: true,
+      ..Default::default()
+    }
+  }
+}
+
+impl Default for LoggingOptions {
+  fn default() -> Self {
+    Self {
+      verbose: Default::default(),
+      log_json: Default::default(),
+      log_dir: Default::default(),
+      otlp_endpoint: Default::default(),
+      app_name: "app".to_owned(),
+      global: true,
+      levels: Default::default(),
+    }
+  }
 }
 
 #[derive(Debug, Default, Clone)]

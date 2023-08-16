@@ -1,0 +1,7 @@
+#:schema https://raw.githubusercontent.com/assert-rs/trycmd/main/schema.json
+stdin = 'hey'
+bin.name = "wick"
+args = ["run", "tests/run/unit/file-reader.wick", "--", "tests/testfile.md"]
+stdout = """
+# Hello world!
+"""

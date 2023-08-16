@@ -2,12 +2,12 @@
 bin.name = "wick"
 args = [
   "run",
-  "tests/run/unit/anonymous-component.args.yaml",
+  "tests/run/unit/anonymous-component.args.wick",
   "--",
   "arg1",
   "22",
   "arg2",
-  "33"
+  "33",
 ]
 stdout = """args: [\"mycli\", \"arg1\", \"22\", \"arg2\", \"33\"], interactive: { stdin: false, stdout: false, stderr: false }
 Got result for provided component: 8\nSTDIN is non-interactive but had no input.

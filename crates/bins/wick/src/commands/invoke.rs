@@ -17,19 +17,17 @@ use crate::wick_host::build_component_host;
 #[group(skip)]
 pub(crate) struct Options {
   #[clap(flatten)]
-  pub(crate) oci: crate::oci::Options,
+  pub(crate) oci: crate::options::oci::OciOptions,
+
+  #[clap(flatten)]
+  pub(crate) component: crate::options::component::ComponentOptions,
+
+  #[clap(flatten)]
+  pub(crate) operation: crate::options::component::OperationOptions,
 
   /// Turn on info logging.
   #[clap(long = "info", action)]
   pub(crate) info: bool,
-
-  /// Path or OCI url to manifest or wasm file.
-  #[clap(action)]
-  path: String,
-
-  /// Name of the operation to execute.
-  #[clap(default_value = "default", action)]
-  operation: String,
 
   /// Don't read input from STDIN.
   #[clap(long = "no-input", action)]
@@ -47,18 +45,6 @@ pub(crate) struct Options {
   #[clap(long = "values", action)]
   short: bool,
 
-  /// Pass a seed along with the invocation.
-  #[clap(long = "seed", short = 's', env = "WICK_SEED", action)]
-  seed: Option<u64>,
-
-  /// Pass configuration necessary to instantiate the component (JSON).
-  #[clap(long = "with", short = 'w', action)]
-  with: Option<String>,
-
-  /// Pass configuration necessary to invoke the operation (JSON).
-  #[clap(long = "op-with", action)]
-  op_with: Option<String>,
-
   /// Arguments to pass as inputs to a component.
   #[clap(last(true), action)]
   args: Vec<String>,
@@ -69,22 +55,22 @@ pub(crate) async fn handle(
   settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
-  let root_config = parse_config_string(opts.with.as_deref())?;
+  let root_config = parse_config_string(opts.component.with.as_deref())?;
   let server_settings = DefaultCliOptions { ..Default::default() };
   let host = build_component_host(
-    &opts.path,
+    &opts.component.path,
     opts.oci,
     root_config,
     settings,
-    opts.seed,
+    opts.component.seed,
     Some(server_settings),
     span,
   )
   .await?;
-  let operation = opts.operation;
+  let operation = &opts.operation.operation_name;
 
   let signature = host.get_signature()?;
-  let op_signature = signature.get_operation(&operation).ok_or_else(|| {
+  let op_signature = signature.get_operation(operation).ok_or_else(|| {
     anyhow::anyhow!(
       "Could not invoke operation '{}', '{}' not found. Reported operations are [{}]",
       operation,
@@ -97,7 +83,7 @@ pub(crate) async fn handle(
         .join(", ")
     )
   })?;
-  let op_config = parse_config_string(opts.op_with.as_deref())?;
+  let op_config = parse_config_string(opts.operation.op_with.as_deref())?;
 
   let check_stdin = if op_signature.inputs.is_empty() {
     false
@@ -105,7 +91,7 @@ pub(crate) async fn handle(
     !opts.no_input && opts.args.is_empty()
   };
 
-  let inherent_data = opts.seed.map_or_else(InherentData::unsafe_default, |seed| {
+  let inherent_data = opts.component.seed.map_or_else(InherentData::unsafe_default, |seed| {
     InherentData::new(
       seed,
       SystemTime::now()
@@ -152,7 +138,7 @@ pub(crate) async fn handle(
     debug!(cli_packets= ?packets, "wick invoke");
     let stream = PacketStream::new(futures::stream::iter(packets));
 
-    let stream = host.request(&operation, op_config, stream, inherent_data).await?;
+    let stream = host.request(operation, op_config, stream, inherent_data).await?;
 
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }

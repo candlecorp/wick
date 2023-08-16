@@ -3,7 +3,7 @@ namespace "wick::v1"
 """
 Root configuration that can be any one of the possible Wick configuration formats.
 """
-union WickConfig = AppConfiguration | ComponentConfiguration | TypesConfiguration | TestConfiguration
+union WickConfig = AppConfiguration | ComponentConfiguration | TypesConfiguration | TestConfiguration | LockdownConfiguration
 
 "A reference to a location on disk, URL, or registry."
 alias LocationReference = string @skip
@@ -29,7 +29,7 @@ type AppConfiguration @default @tagged("wick/app@v1") {
   "The application's name."
   name: string,
 
-  "Associated metadata for this component."
+  "Associated metadata for this application."
   metadata: Metadata?,
 
   "Details about the package for this application."
@@ -359,6 +359,55 @@ type TestConfiguration @tagged("wick/tests@v1") {
 
   "Unit tests to run against components and operations."
   cases: [TestDefinition]
+}
+
+"A lockdown configuration used to secure Wick components and applications"
+type LockdownConfiguration @tagged("wick/lockdown@v1") {
+  "Associated metadata for this configuration."
+  metadata: Metadata?,
+
+  "Restrictions to apply to resources before an application or component can be run."
+  resources: [ResourceRestriction]
+}
+
+"Restrictions to assert against an application or component."
+union ResourceRestriction = VolumeRestriction | UrlRestriction | TcpPortRestriction | UdpPortRestriction
+
+"Restrictions to apply against Volume resources"
+type VolumeRestriction  @tagged("wick/resource/volume@v1"){
+  "The components this restriction applies to"
+  components: [string]
+  "The volumes to allow"
+  allow: LiquidTemplate @required
+}
+
+"Restrictions to apply against URL resources"
+type UrlRestriction  @tagged("wick/resource/url@v1"){
+  "The components this restriction applies to"
+  components: [string]
+  "The URLs to allow"
+  allow: LiquidTemplate @required
+}
+
+"Restrictions to apply against TCP Port resources"
+type TcpPortRestriction  @tagged("wick/resource/tcpport@v1"){
+  "The components this restriction applies to"
+  components: [string]
+  "The address to allow"
+  address: LiquidTemplate @required
+  "The port to allow"
+  port: LiquidTemplate @required
+}
+
+
+"Restrictions to apply against UDP Port resources"
+type UdpPortRestriction  @tagged("wick/resource/udpport@v1"){
+  "The components this restriction applies to"
+  components: [string]
+  "The address to allow"
+  address: LiquidTemplate @required
+  "The port to allow"
+  port: LiquidTemplate @required
 }
 
 

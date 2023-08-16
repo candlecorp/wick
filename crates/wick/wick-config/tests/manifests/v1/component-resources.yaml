@@ -1,0 +1,26 @@
+---
+kind: wick/component@v1
+name: 'jinja'
+metadata:
+  version: '0.0.2'
+resources:
+  - name: DIR
+    resource:
+      kind: wick/resource/volume@v1
+      path: /etc
+component:
+  kind: wick/component/wasmrs@v1
+  ref: ./build/jinja.signed.wasm
+  volumes:
+    - resource: DIR
+      path: /
+  operations:
+    - name: render
+      inputs:
+        - name: template
+          type: string
+        - name: data
+          type: object
+      outputs:
+        - name: output
+          type: string

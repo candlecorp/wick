@@ -15,15 +15,10 @@ pub(crate) struct Options {
   pub(crate) cli: DefaultCliOptions,
 
   #[clap(flatten)]
-  pub(crate) oci: crate::oci::Options,
+  pub(crate) oci: crate::options::oci::OciOptions,
 
-  /// The path or OCI URL to a wick manifest or wasm file.
-  #[clap(action)]
-  pub(crate) location: String,
-
-  /// Pass configuration necessary to instantiate the component (JSON).
-  #[clap(long = "with", short = 'w', action)]
-  with: Option<String>,
+  #[clap(flatten)]
+  pub(crate) component: crate::options::component::ComponentOptions,
 }
 
 pub(crate) async fn handle(
@@ -33,9 +28,9 @@ pub(crate) async fn handle(
 ) -> Result<StructuredOutput> {
   let fetch_options: wick_oci_utils::OciOptions = opts.oci.clone().into();
 
-  let with_config = parse_config_string(opts.with.as_deref())?;
+  let with_config = parse_config_string(opts.component.with.as_deref())?;
 
-  let mut manifest = WickConfiguration::fetch(&opts.location, fetch_options).await?;
+  let mut manifest = WickConfiguration::fetch(&opts.component.path, fetch_options).await?;
   manifest.set_root_config(with_config);
   let manifest = manifest.finish()?.try_component_config()?;
 

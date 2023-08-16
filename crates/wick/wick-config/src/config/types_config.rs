@@ -21,32 +21,37 @@ use crate::error::ManifestError;
 /// A types configuration is a collection of shareable types and operation signatures used to generated
 /// code for components and other types.
 pub struct TypesConfiguration {
+  /// The name of the types configuration.
   #[asset(skip)]
   #[builder(setter(strip_option), default)]
-  /// The name of the types configuration.
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) name: Option<String>,
+
+  /// The source (i.e. url or file on disk) of the configuration.
   #[asset(skip)]
   #[property(skip)]
-  /// The source (i.e. url or file on disk) of the configuration.
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) source: Option<PathBuf>,
+
+  /// Any metadata associated with the configuration.
   #[asset(skip)]
   #[builder(default)]
-  /// Any metadata associated with the configuration.
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) metadata: Option<config::Metadata>,
-  #[asset(skip)]
+
   /// A list of types defined in this configuration.
+  #[asset(skip)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) types: Vec<TypeDefinition>,
+
+  /// A list of operation signatures defined in this configuration.
   #[asset(skip)]
   #[property(skip)]
-  /// A list of operation signatures defined in this configuration.
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
-  #[builder(default)]
+
   /// The package configuration for this configuration.
+  #[builder(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) package: Option<PackageConfig>,
 }

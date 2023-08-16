@@ -1,15 +1,50 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 
+use anyhow::Result;
 use futures::StreamExt;
 use serde_json::Value;
+use tracing::{Instrument, Span};
 use wick_component_cli::options::DefaultCliOptions;
-use wick_config::config::{ComponentConfiguration, HttpConfigBuilder, LiquidJsonConfig};
-use wick_config::AssetReference;
+use wick_config::config::{ComponentConfiguration, ConfigurationTreeNode, HttpConfigBuilder, LiquidJsonConfig};
+use wick_config::{AssetReference, WickConfiguration};
+use wick_oci_utils::{OciOptions, OnExisting};
 use wick_packet::{Packet, PacketStream, RuntimeConfig};
+use wick_settings::Credential;
+
+pub(crate) async fn fetch_wick_config(
+  path: &str,
+  fetch_opts: OciOptions,
+  runtime_config: Option<RuntimeConfig>,
+  span: Span,
+) -> Result<WickConfiguration> {
+  let mut builder = WickConfiguration::fetch(path, fetch_opts.clone())
+    .instrument(span.clone())
+    .await?;
+
+  builder
+    .set_root_config(runtime_config)
+    .set_env(Some(std::env::vars().collect()));
+  Ok(builder.finish()?)
+}
+
+pub(crate) async fn fetch_wick_tree(
+  path: &str,
+  fetch_opts: OciOptions,
+  runtime_config: Option<RuntimeConfig>,
+  span: Span,
+) -> Result<ConfigurationTreeNode> {
+  let env: HashMap<String, String> = std::env::vars().collect();
+  let config = WickConfiguration::fetch_tree(path, runtime_config, env, fetch_opts.clone())
+    .instrument(span.clone())
+    .await?;
+
+  Ok(config)
+}
 
 pub(crate) fn merge_config(
   def: &ComponentConfiguration,
-  local_cli_opts: &crate::oci::Options,
+  local_cli_opts: &crate::options::oci::OciOptions,
   server_cli_opts: Option<DefaultCliOptions>,
 ) -> ComponentConfiguration {
   let mut merged_manifest = def.clone();
@@ -64,6 +99,75 @@ pub(crate) fn merge_config(
   merged_manifest
 }
 
+pub(crate) fn get_auth_for_scope(
+  configured_creds: Option<&Credential>,
+  override_username: Option<&str>,
+  override_password: Option<&str>,
+) -> (Option<String>, Option<String>) {
+  let mut username = None;
+  let mut password = None;
+
+  if let Some(creds) = configured_creds {
+    match &creds.auth {
+      wick_settings::Auth::Basic(basic) => {
+        debug!("using basic auth from configuration settings.");
+        username = Some(basic.username.clone());
+        password = Some(basic.password.clone());
+      }
+    };
+  }
+
+  if override_username.is_some() {
+    debug!("overriding username from arguments.");
+    username = override_username.map(|v| v.to_owned());
+  }
+
+  if override_password.is_some() {
+    debug!("overriding password from arguments.");
+    password = override_password.map(|v| v.to_owned());
+  }
+
+  (username, password)
+}
+
+pub(crate) fn reconcile_fetch_options(
+  reference: &str,
+  settings: &wick_settings::Settings,
+  opts: crate::options::oci::OciOptions,
+  output: Option<PathBuf>,
+) -> OciOptions {
+  let xdg = wick_xdg::Settings::new();
+  let configured_creds = settings.credentials.iter().find(|c| reference.starts_with(&c.scope));
+
+  let (username, password) = get_auth_for_scope(configured_creds, opts.username.as_deref(), opts.password.as_deref());
+
+  let mut oci_opts = OciOptions::default();
+  oci_opts
+    .set_allow_insecure(opts.insecure_registries)
+    .set_allow_latest(true)
+    .set_username(username)
+    .set_password(password)
+    .set_on_existing(if opts.force {
+      OnExisting::Overwrite
+    } else {
+      OnExisting::Error
+    });
+  let path = PathBuf::from(reference);
+
+  if let Some(output) = output {
+    oci_opts.set_cache_dir(output);
+  } else if path.exists() {
+    // if we're running a local file, use a local cache relative to the file.
+    let mut path_dir = path.clone();
+    path_dir.pop();
+    oci_opts.set_cache_dir(path_dir.join(xdg.local().cache()));
+  } else {
+    // otherwise, use the global cache.
+    oci_opts.set_cache_dir(xdg.global().cache().clone());
+  };
+  oci_opts
+}
+
 fn log_override<T: std::fmt::Debug>(field: &str, from: &mut T, to: T) {
   debug!(%field, ?from, ?to, "overriding manifest value");
   *from = to;
@@ -75,7 +179,7 @@ pub(crate) async fn print_stream_json(
   filter: &[String],
   _terse: bool,
   raw: bool,
-) -> crate::Result<()> {
+) -> Result<()> {
   if !filter.is_empty() {
     trace!(?filter, "cli:output:filter");
   }
@@ -103,7 +207,7 @@ pub(crate) async fn print_stream_json(
   Ok(())
 }
 
-pub(crate) fn parse_config_string(source: Option<&str>) -> anyhow::Result<Option<RuntimeConfig>> {
+pub(crate) fn parse_config_string(source: Option<&str>) -> Result<Option<RuntimeConfig>> {
   let component_config = match source {
     Some(c) => {
       let config = serde_json::from_str::<HashMap<String, Value>>(c)
@@ -120,7 +224,7 @@ pub(crate) fn parse_config_string(source: Option<&str>) -> anyhow::Result<Option
   Ok(component_config)
 }
 
-pub(crate) fn packet_from_kv_json(values: &[String]) -> anyhow::Result<Vec<Packet>> {
+pub(crate) fn packet_from_kv_json(values: &[String]) -> Result<Vec<Packet>> {
   let mut packets = Vec::new();
 
   for input in values {

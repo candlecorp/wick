@@ -2,116 +2,44 @@
 
 mod component_utils;
 mod conversions;
-mod proxy_router;
-mod raw_router;
-mod rest_router;
+mod error;
+mod middleware;
+mod routers;
 mod service_factory;
 
-mod static_router;
 use std::collections::HashMap;
 use std::fmt;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
+pub(crate) use error::HttpError;
 use futures::future::BoxFuture;
 use hyper::{Body, Request, Response, Server};
 use parking_lot::Mutex;
+use routers::{HttpRouter, RawRouterHandler, RouterOperation};
 use serde_json::json;
 use structured_output::StructuredOutput;
 use tokio::task::JoinHandle;
 use tracing::Span;
-use wick_config::config::{
-  AppConfiguration,
-  Codec,
-  ImportBinding,
-  ImportDefinition,
-  ProxyRouterConfig,
-  RawRouterConfig,
-  RestRouterConfig,
-  StaticRouterConfig,
-  WickRouter,
-};
-use wick_packet::{Entity, RuntimeConfig};
+use wick_config::config::AppConfiguration;
 
-use self::static_router::StaticRouter;
-use super::{resolve_ref, Trigger, TriggerKind};
+use super::{Trigger, TriggerKind};
 use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
-use crate::runtime::RuntimeConstraint;
-use crate::triggers::http::proxy_router::ProxyRouter;
-use crate::triggers::http::raw_router::RawComponentRouter;
-use crate::triggers::http::rest_router::{RestRoute, RestRouter};
+use crate::triggers::build_trigger_runtime;
 use crate::triggers::http::service_factory::ServiceFactory;
-use crate::triggers::{build_trigger_runtime, ResolvedComponent};
 use crate::Runtime;
 
-#[derive(Debug, thiserror::Error)]
-enum HttpError {
-  #[error("Internal error: {:?}",.0)]
-  InternalError(InternalError),
-
-  #[error("Operation error: {0}")]
-  OperationError(String),
-
-  #[error("Error in stream for '{0}': {1}")]
-  OutputStream(String, String),
-
-  #[error("Unsupported HTTP method: {0}")]
-  UnsupportedMethod(String),
-
-  #[error("Unsupported HTTP version: {0}")]
-  UnsupportedVersion(String),
-
-  #[error("Missing query parameters: {}", .0.join(", "))]
-  MissingQueryParameters(Vec<String>),
-
-  #[error("Could not decode body as JSON: {0}")]
-  InvalidBody(serde_json::Error),
-
-  #[error("Invalid status code: {0}")]
-  InvalidStatusCode(String),
-
-  #[error("Invalid parameter value: {0}")]
-  InvalidParameter(String),
-
-  #[error("Could not serialize output into '{0}' codec: {1}")]
-  Codec(Codec, String),
-
-  #[error("Could not read output as base64 bytes: {0}")]
-  Bytes(String),
-
-  #[error("Invalid header name: {0}")]
-  InvalidHeaderName(String),
-
-  #[error("Invalid header value: {0}")]
-  InvalidHeaderValue(String),
-
-  #[error("Invalid path or query parameters: {0}")]
-  InvalidUri(String),
-
-  #[error("Invalid pre-request middleware response: {0}")]
-  InvalidPreRequestResponse(String),
-
-  #[error("Pre-request middleware '{0}' did not provide a request or response")]
-  PreRequestResponseNoData(Entity),
-
-  #[error("Post-request middleware '{0}' did not provide a response")]
-  PostRequestResponseNoData(Entity),
-
-  #[error("Invalid post-request middleware response: {0}")]
-  InvalidPostRequestResponse(String),
-
-  #[error("Error deserializing response on port {0}: {1}")]
-  Deserialize(String, String),
-
-  #[error("URI {0} could not be parsed: {1}")]
-  RouteSyntax(String, String),
-}
-
-#[derive(Debug)]
-enum InternalError {
-  Builder,
+trait RawRouter {
+  fn handle(
+    &self,
+    tx_id: Uuid,
+    remote_addr: SocketAddr,
+    runtime: Arc<Runtime>,
+    request: Request<Body>,
+    span: &Span,
+  ) -> BoxFuture<Result<Response<Body>, HttpError>>;
 }
 
 #[derive()]
@@ -172,56 +100,6 @@ impl HttpInstance {
   }
 }
 
-#[derive(Debug, Clone)]
-enum HttpRouter {
-  Raw(RawRouterHandler),
-}
-
-impl HttpRouter {
-  fn path(&self) -> &str {
-    match self {
-      HttpRouter::Raw(r) => &r.path,
-    }
-  }
-}
-
-#[derive(Clone)]
-struct RawRouterHandler {
-  path: String,
-  component: Arc<dyn RawRouter + Send + Sync>,
-  middleware: RouterMiddleware,
-}
-impl std::fmt::Debug for RawRouterHandler {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.debug_struct("RawRouterHandler").field("path", &self.path).finish()
-  }
-}
-
-#[derive(Debug, Clone)]
-struct RouterOperation {
-  operation: String,
-  component: String,
-  codec: Codec,
-  config: Option<RuntimeConfig>,
-  path: String,
-}
-
-#[derive(Debug, Clone)]
-struct RouterMiddleware {
-  request: Vec<(Entity, Option<RuntimeConfig>)>,
-  #[allow(unused)]
-  response: Vec<(Entity, Option<RuntimeConfig>)>,
-}
-
-impl RouterMiddleware {
-  pub(crate) fn new(
-    request: Vec<(Entity, Option<RuntimeConfig>)>,
-    response: Vec<(Entity, Option<RuntimeConfig>)>,
-  ) -> Self {
-    Self { request, response }
-  }
-}
-
 #[derive(Default)]
 pub(crate) struct Http {
   instance: Arc<Mutex<Option<HttpInstance>>>,
@@ -232,295 +110,10 @@ impl Http {
   pub(crate) fn load() -> Result<Arc<dyn Trigger + Send + Sync>, RuntimeError> {
     Ok(Arc::new(Self::default()))
   }
-
-  async fn handle(
-    &self,
-    app_config: AppConfiguration,
-    config: config::HttpTriggerConfig,
-    resources: Arc<HashMap<String, Resource>>,
-    span: Span,
-    socket: &SocketAddr,
-  ) -> Result<HttpInstance, RuntimeError> {
-    let mut rt = build_trigger_runtime(&app_config, span.clone())?;
-
-    let span = info_span!(parent: &span,"trigger:http:routers");
-
-    let routers = span.in_scope(|| {
-      let mut routers = Vec::new();
-      for (i, router) in config.routers().iter().enumerate() {
-        info!(path = router.path(), kind = %router.kind(), "registering http router");
-
-        let (router_bindings, router, constraints) = match router {
-          config::HttpRouterConfig::RawRouter(r) => register_raw_router(i, &app_config, r)?,
-          config::HttpRouterConfig::StaticRouter(r) => register_static_router(i, resources.clone(), &app_config, r)?,
-          config::HttpRouterConfig::ProxyRouter(r) => register_proxy_router(i, resources.clone(), &app_config, r)?,
-          config::HttpRouterConfig::RestRouter(r) => register_rest_router(i, resources.clone(), &app_config, r)?,
-        };
-        for constraint in constraints {
-          rt.add_constraint(constraint);
-        }
-        for binding in router_bindings {
-          rt.add_import(binding);
-        }
-
-        routers.push(router);
-      }
-      debug!(?routers, "http routers");
-      Ok::<_, RuntimeError>(routers)
-    })?;
-
-    let engine = rt.build(None).await?;
-
-    let instance = HttpInstance::new(engine, routers, &span, socket).await;
-
-    Ok(instance)
-  }
 }
 
 fn index_to_router_id(index: usize) -> String {
   format!("router_{}", index)
-}
-
-fn resolve_middleware_components(
-  router_index: usize,
-  app_config: &AppConfiguration,
-  router: &impl WickRouter,
-) -> Result<(RouterMiddleware, Vec<ImportBinding>), RuntimeError> {
-  let mut request_operations = Vec::new();
-  let mut response_operations = Vec::new();
-  let mut bindings = Vec::new();
-  if let Some(middleware) = router.middleware() {
-    for (i, operation) in middleware.request().iter().enumerate() {
-      let component_id = match resolve_ref(app_config, operation.component())? {
-        ResolvedComponent::Ref(id, _) => id.to_owned(),
-        ResolvedComponent::Inline(def) => {
-          let id = format!("{}_request_middleware_{}", router_index, i);
-          let binding = ImportBinding::component(&id, def.clone());
-          bindings.push(binding);
-          id
-        }
-      };
-      request_operations.push((
-        Entity::operation(component_id, operation.name()),
-        operation.config().and_then(|v| v.value().cloned()),
-      ));
-    }
-    for (i, operation) in middleware.response().iter().enumerate() {
-      let component_id = match resolve_ref(app_config, operation.component())? {
-        ResolvedComponent::Ref(id, _) => id.to_owned(),
-        ResolvedComponent::Inline(def) => {
-          let id = format!("{}_response_middleware_{}", router_index, i);
-          let binding = ImportBinding::component(&id, def.clone());
-          bindings.push(binding);
-          id
-        }
-      };
-      response_operations.push((
-        Entity::operation(component_id, operation.name()),
-        operation.config().and_then(|v| v.value().cloned()),
-      ));
-    }
-  }
-  let middleware = RouterMiddleware::new(request_operations, response_operations);
-  Ok((middleware, bindings))
-}
-
-fn register_raw_router(
-  index: usize,
-  app_config: &AppConfiguration,
-  router_config: &RawRouterConfig,
-) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
-  trace!(index, "registering raw router");
-  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
-
-  let component_id = match resolve_ref(app_config, router_config.operation().component())? {
-    ResolvedComponent::Ref(id, _) => id.to_owned(),
-    ResolvedComponent::Inline(def) => {
-      let component_id = index_to_router_id(index);
-      let router_binding = config::ImportBinding::component(&component_id, def.clone());
-      bindings.push(router_binding);
-      component_id
-    }
-  };
-
-  let router = RouterOperation {
-    operation: router_config.operation().name().to_owned(),
-    component: component_id,
-    codec: router_config.codec().copied().unwrap_or_default(),
-    config: router_config.operation().config().and_then(|v| v.value().cloned()),
-    path: router_config.path().to_owned(),
-  };
-
-  let constraint = RuntimeConstraint::Operation {
-    entity: Entity::operation(&router.component, &router.operation),
-    signature: operation! { "..." => {
-        inputs : {
-          "request" => "object",
-          "body" => "object",
-        },
-        outputs : {
-          "response" => "object",
-          "body" => "object",
-        },
-      }
-    },
-  };
-  let router = RawComponentRouter::new(router);
-
-  Ok((
-    bindings,
-    HttpRouter::Raw(RawRouterHandler {
-      path: router_config.path().to_owned(),
-      component: Arc::new(router),
-      middleware,
-    }),
-    vec![constraint],
-  ))
-}
-
-fn register_static_router(
-  index: usize,
-  resources: Arc<HashMap<String, Resource>>,
-  app_config: &AppConfiguration,
-  router_config: &StaticRouterConfig,
-) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
-  trace!(index, "registering static router");
-  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
-  let volume = resources.get(router_config.volume()).ok_or_else(|| {
-    RuntimeError::ResourceNotFound(
-      TriggerKind::Http.into(),
-      format!("volume {} not found", router_config.volume()),
-    )
-  })?;
-  let volume = match volume {
-    Resource::Volume(s) => s.clone(),
-    _ => {
-      return Err(RuntimeError::InvalidResourceType(
-        TriggerKind::Http.into(),
-        ResourceKind::Volume,
-        volume.kind(),
-      ))
-    }
-  };
-
-  let fallback = router_config.fallback().cloned();
-
-  let router = StaticRouter::new(volume, Some(router_config.path().to_owned()), fallback);
-  let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
-  let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
-  bindings.push(router_binding);
-  Ok((
-    bindings,
-    HttpRouter::Raw(RawRouterHandler {
-      path: router_config.path().to_owned(),
-      component: Arc::new(router),
-      middleware,
-    }),
-    vec![],
-  ))
-}
-
-fn register_rest_router(
-  index: usize,
-  _resources: Arc<HashMap<String, Resource>>,
-  app_config: &AppConfiguration,
-  router_config: &RestRouterConfig,
-) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
-  trace!(index, "registering rest router");
-  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
-  let mut routes = Vec::new();
-
-  for (i, route) in router_config.routes().iter().enumerate() {
-    info!(sub_path = route.sub_path(), "registering rest route");
-
-    let component_id = match resolve_ref(app_config, route.operation().component())? {
-      ResolvedComponent::Ref(id, _) => id.to_owned(),
-      ResolvedComponent::Inline(def) => {
-        #[allow(clippy::option_if_let_else)]
-        if let Some(existing_import) = bindings.iter().find(|i| {
-          if let ImportDefinition::Component(c) = i.kind() {
-            c == def
-          } else {
-            false
-          }
-        }) {
-          existing_import.id().to_owned()
-        } else {
-          let component_id = format!("{}_{}", index_to_router_id(index), i);
-          let route_binding = config::ImportBinding::component(&component_id, def.clone());
-          bindings.push(route_binding);
-          component_id
-        }
-      }
-    };
-    let route = RestRoute::new(route.clone(), component_id).map_err(|e| {
-      RuntimeError::InitializationFailed(format!(
-        "could not intitialize rest router for route {}: {}",
-        route.sub_path(),
-        e
-      ))
-    })?;
-    routes.push(route);
-  }
-
-  let router = RestRouter::new(app_config, router_config.clone(), routes)
-    .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
-  let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
-  let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
-  bindings.push(router_binding);
-  Ok((
-    bindings,
-    HttpRouter::Raw(RawRouterHandler {
-      path: router_config.path().to_owned(),
-      component: Arc::new(router),
-      middleware,
-    }),
-    vec![],
-  ))
-}
-
-fn register_proxy_router(
-  index: usize,
-  resources: Arc<HashMap<String, Resource>>,
-  app_config: &AppConfiguration,
-  router_config: &ProxyRouterConfig,
-) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
-  trace!(index, "registering proxy router");
-  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
-  let url = resources.get(router_config.url()).ok_or_else(|| {
-    RuntimeError::ResourceNotFound(
-      TriggerKind::Http.into(),
-      format!("url resource {} not found", router_config.url()),
-    )
-  })?;
-  let url = match url {
-    Resource::Url(s) => s.clone(),
-    _ => {
-      return Err(RuntimeError::InvalidResourceType(
-        TriggerKind::Http.into(),
-        ResourceKind::Url,
-        url.kind(),
-      ))
-    }
-  };
-  let strip_path = if router_config.strip_path() {
-    Some(router_config.path().to_owned())
-  } else {
-    None
-  };
-  let router = ProxyRouter::new(url, strip_path);
-  let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
-  let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
-  bindings.push(router_binding);
-  Ok((
-    bindings,
-    HttpRouter::Raw(RawRouterHandler {
-      path: router_config.path().to_owned(),
-      component: Arc::new(router),
-      middleware,
-    }),
-    vec![],
-  ))
 }
 
 #[async_trait]
@@ -554,9 +147,43 @@ impl Trigger for Http {
       }
     };
 
-    let instance = self
-      .handle(app_config, config, resources, span.clone(), &socket)
-      .await?;
+    let mut rt = build_trigger_runtime(&app_config, span.clone())?;
+
+    let span = info_span!(parent: &span,"trigger:http:routers");
+
+    let routers = span.in_scope(|| {
+      let mut routers = Vec::new();
+      for (i, router) in config.routers().iter().enumerate() {
+        info!(path = router.path(), kind = %router.kind(), "registering http router");
+
+        let (router_bindings, router, constraints) = match router {
+          config::HttpRouterConfig::RawRouter(r) => routers::raw::register_raw_router(i, &app_config, r)?,
+          config::HttpRouterConfig::StaticRouter(r) => {
+            routers::static_::register_static_router(i, resources.clone(), &app_config, r)?
+          }
+          config::HttpRouterConfig::ProxyRouter(r) => {
+            routers::proxy::register_proxy_router(i, resources.clone(), &app_config, r)?
+          }
+          config::HttpRouterConfig::RestRouter(r) => {
+            routers::rest::register_rest_router(i, resources.clone(), &app_config, r)?
+          }
+        };
+        for constraint in constraints {
+          rt.add_constraint(constraint);
+        }
+        for binding in router_bindings {
+          rt.add_import(binding);
+        }
+
+        routers.push(router);
+      }
+      debug!(?routers, "http routers");
+      Ok::<_, RuntimeError>(routers)
+    })?;
+
+    let engine = rt.build(None).await?;
+
+    let instance = HttpInstance::new(engine, routers, &span, &socket).await;
 
     let output = StructuredOutput::new(
       format!("HTTP Server started on {}", instance.addr),
@@ -602,17 +229,6 @@ impl fmt::Display for Http {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     write!(f, "Cli Trigger",)
   }
-}
-
-trait RawRouter {
-  fn handle(
-    &self,
-    tx_id: Uuid,
-    remote_addr: SocketAddr,
-    runtime: Arc<Runtime>,
-    request: Request<Body>,
-    span: &Span,
-  ) -> BoxFuture<Result<Response<Body>, HttpError>>;
 }
 
 #[cfg(test)]

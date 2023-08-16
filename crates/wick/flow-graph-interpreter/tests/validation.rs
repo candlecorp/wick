@@ -12,9 +12,11 @@ type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send
 use tracing::Span;
 use wick_interface_types::{ComponentMetadata, ComponentSignature, OperationSignature, Type};
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
-fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentConfiguration> {
+
+async fn load<T: AsRef<Path>>(path: T) -> Result<wick_config::config::ComponentConfiguration> {
   Ok(
-    wick_config::WickConfiguration::load_from_file_sync(path.as_ref())?
+    wick_config::WickConfiguration::fetch(path.as_ref(), Default::default())
+      .await?
       .finish()?
       .try_component_config()?,
   )
@@ -44,41 +46,17 @@ fn collections(sig: ComponentSignature) -> HandlerMap {
   .unwrap()
 }
 
-fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interpreter, InterpreterError> {
+async fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Interpreter, InterpreterError> {
   let components = collections(sig);
-  let network = from_def(&mut load(path).unwrap(), &components).unwrap();
+  let network = from_def(&mut load(path).await.unwrap(), &components).unwrap();
 
-  Interpreter::new(
-    network,
-    None,
-    None,
-    Some(components),
-    panic_callback(),
-    &Span::current(),
-  )
-}
-
-#[test_logger::test(tokio::test)]
-async fn test_missing_collections() -> Result<()> {
-  let mut manifest = load("./tests/manifests/v0/external.yaml")?;
-  let result = from_def(&mut manifest, &Default::default());
-
-  let err = result.unwrap_err();
-
-  assert_eq!(
-    GraphError::MissingOperation {
-      component: "test".to_owned(),
-      operation: "echo".to_owned(),
-    },
-    err
-  );
-  Ok(())
+  Interpreter::new(network, None, Some(components), panic_callback(), &Span::current())
 }
 
 #[test_logger::test(tokio::test)]
 async fn test_missing_component() -> Result<()> {
   let result = from_def(
-    &mut load("./tests/manifests/v0/external.yaml").unwrap(),
+    &mut load("./tests/manifests/v0/external.yaml").await?,
     &Default::default(),
   );
 
@@ -87,7 +65,8 @@ async fn test_missing_component() -> Result<()> {
     e,
     GraphError::MissingOperation {
       component: "test".to_owned(),
-      operation: "echo".to_owned()
+      operation: "echo".to_owned(),
+      available: vec![]
     }
   );
 
@@ -101,7 +80,7 @@ async fn test_invalid_port() -> Result<()> {
     .metadata(ComponentMetadata::default())
     .add_operation(OperationSignature::new("echo"));
 
-  let result = interp("./tests/manifests/v0/external.yaml", signature);
+  let result = interp("./tests/manifests/v0/external.yaml", signature).await;
 
   if let Err(InterpreterError::EarlyError(e)) = result {
     assert_eq!(
@@ -134,7 +113,7 @@ async fn test_missing_port() -> Result<()> {
         .add_output("OTHER_OUT", Type::String),
     );
 
-  let result = interp("./tests/manifests/v0/external.yaml", signature);
+  let result = interp("./tests/manifests/v0/external.yaml", signature).await;
 
   let errors = vec![ValidationError::MissingConnection {
     port: "OTHER_IN".to_owned(),

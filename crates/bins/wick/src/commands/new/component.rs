@@ -11,7 +11,7 @@ pub(crate) enum SubCommands {
   #[clap(name = "http")]
   Http(http::Options),
 
-  /// Create a new wick composite component
+  /// Create a new composite component
   #[clap(name = "composite")]
   Composite(composite::Options),
 
@@ -19,7 +19,7 @@ pub(crate) enum SubCommands {
   #[clap(name = "sql")]
   Sql(sql::Options),
 
-  /// Create a new wick wasmrs component
+  /// Create a new wasmrs component
   #[clap(name = "wasmrs")]
   WasmRS(wasmrs::Options),
 }

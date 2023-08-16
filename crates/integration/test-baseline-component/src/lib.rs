@@ -118,7 +118,8 @@ impl validate::Operation for Component {
     mut outputs: Self::Outputs,
     _ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
-    while let Some(Ok(password)) = input.next().await {
+    while let Some(password) = input.next().await {
+      let password = propagate_if_error!(password, outputs, continue);
       println!("Checking password {}", password);
 
       if password.len() < MINIMUM_LENGTH {

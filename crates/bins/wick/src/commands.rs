@@ -15,8 +15,8 @@ pub(crate) mod wasm;
 
 use clap::{Parser, Subcommand};
 
+use crate::options::logging::LoggingOptions;
 use crate::options::GlobalOptions;
-use crate::LoggingOptions;
 
 #[derive(Parser, Debug, Clone)]
 #[clap(
@@ -35,20 +35,23 @@ pub(crate) struct Cli {
 
 #[derive(Debug, Clone, Subcommand)]
 pub(crate) enum CliCommand {
-  // Core commands
   /// Start a persistent host from a manifest.
   #[clap(name = "serve")]
   Serve(serve::Options),
-  /// Load a manifest and execute an entrypoint component (temporarily disabled).
+
+  /// Run a wick application.
   #[clap(name = "run")]
   Run(run::Options),
-  /// Invoke a component from a manifest or wasm module.
+
+  /// Invoke an operation.
   #[clap(name = "invoke")]
   Invoke(invoke::Options),
-  /// Print the components in a manifest or wasm module.
+
+  /// Print the signature of a component.
   #[clap(name = "list")]
   List(list::Options),
-  /// Execute a component with test data and assert its output.
+
+  /// Run test cases against a component.
   #[clap(name = "test")]
   Test(test::Options),
 

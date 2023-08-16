@@ -199,7 +199,7 @@ mod test {
   #[tokio::test]
   async fn test_build() -> Result<()> {
     let mut config = ConfigBuilder::new().spec("./tests/testdata/component.yaml").build()?;
-    let wick_config = WickConfiguration::load_from_file(&config.spec)
+    let wick_config = WickConfiguration::fetch(&config.spec, Default::default())
       .await
       .unwrap()
       .finish()?;

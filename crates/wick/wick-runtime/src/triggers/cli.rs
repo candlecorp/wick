@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::{env, fmt};
 
 use async_trait::async_trait;
-use config::{AppConfiguration, CliConfig, ImportBinding, TriggerDefinition};
+use config::{AppConfiguration, ImportBinding, TriggerDefinition};
 // use futures::StreamExt;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,7 @@ use wick_packet::{packet_stream, Entity, InherentData, Invocation};
 use super::{build_trigger_runtime, resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::*;
 use crate::resources::Resource;
+use crate::Runtime;
 
 #[derive(Debug)]
 pub(crate) struct Cli {
@@ -45,21 +46,10 @@ impl Cli {
 
   async fn handle(
     &self,
-    app_config: AppConfiguration,
-    config: CliConfig,
+    runtime: Runtime,
+    operation: Entity,
     args: Vec<String>,
   ) -> Result<StructuredOutput, RuntimeError> {
-    let mut runtime = build_trigger_runtime(&app_config, Span::current())?;
-    let component_id = match resolve_ref(&app_config, config.operation().component())? {
-      super::ResolvedComponent::Ref(id, _) => id.to_owned(),
-      super::ResolvedComponent::Inline(def) => {
-        let cli_binding = ImportBinding::component("cli", def.clone());
-        runtime.add_import(cli_binding);
-        "cli".to_owned()
-      }
-    };
-    let runtime = runtime.build(None).await?;
-
     let is_interactive = Interactive {
       stdin: atty::is(atty::Stream::Stdin),
       stdout: atty::is(atty::Stream::Stdout),
@@ -69,7 +59,7 @@ impl Cli {
     let packet_stream = packet_stream!(("args", args), ("interactive", is_interactive));
     let invocation = Invocation::new(
       Entity::server("cli_channel"),
-      Entity::operation(component_id, config.operation().name()),
+      operation,
       packet_stream,
       InherentData::unsafe_default(),
       &Span::current(),
@@ -135,7 +125,20 @@ impl Trigger for Cli {
     // Insert app name as the first argument.
     args.insert(0, name);
 
-    self.handle(app_config, config, args).instrument(span).await?;
+    let mut runtime = build_trigger_runtime(&app_config, Span::current())?;
+    let component_id = match resolve_ref(&app_config, config.operation().component())? {
+      super::ResolvedComponent::Ref(id, _) => id.to_owned(),
+      super::ResolvedComponent::Inline(def) => {
+        let cli_binding = ImportBinding::component("cli", def.clone());
+        runtime.add_import(cli_binding);
+        "cli".to_owned()
+      }
+    };
+    let runtime = runtime.build(None).await?;
+
+    let target = Entity::operation(component_id, config.operation().name());
+
+    self.handle(runtime, target, args).instrument(span).await?;
 
     Ok(StructuredOutput::default())
   }
