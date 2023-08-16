@@ -6,7 +6,7 @@ use structured_output::StructuredOutput;
 use tracing::Instrument;
 
 use crate::oci::pull;
-use crate::options::reconcile_fetch_options;
+use crate::utils::reconcile_fetch_options;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 #[group(skip)]
@@ -19,12 +19,8 @@ pub(crate) struct Options {
   #[clap(action, default_value = ".")]
   pub(crate) output: PathBuf,
 
-  /// Force overwriting of files.
-  #[clap(short = 'f', long = "force", action)]
-  pub(crate) force: bool,
-
   #[clap(flatten)]
-  pub(crate) oci_opts: crate::oci::Options,
+  pub(crate) oci_opts: crate::options::oci::OciOptions,
 }
 
 #[allow(clippy::unused_async)]
@@ -33,7 +29,7 @@ pub(crate) async fn handle(
   settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
-  let oci_opts = reconcile_fetch_options(&opts.reference, &settings, opts.oci_opts, opts.force, Some(opts.output));
+  let oci_opts = reconcile_fetch_options(&opts.reference, &settings, opts.oci_opts, Some(opts.output));
 
   span.in_scope(|| debug!(options=?oci_opts, reference= opts.reference, "pulling reference"));
 

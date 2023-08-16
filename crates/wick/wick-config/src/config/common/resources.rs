@@ -50,7 +50,7 @@ impl ResourceBinding {
 }
 
 /// A resource type.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ResourceKind {
   TcpPort,
   UdpPort,
@@ -69,7 +69,7 @@ impl std::fmt::Display for ResourceKind {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, serde::Serialize)]
+#[derive(Debug, Clone, derive_asset_container::AssetManager, serde::Serialize, PartialEq, Hash, Eq)]
 #[asset(asset(AssetReference))]
 /// Normalized representation of a resource definition.
 #[serde(rename_all = "kebab-case")]
@@ -167,7 +167,7 @@ impl TryFrom<String> for UrlResource {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Builder, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Builder, serde::Serialize)]
 /// A filesystem or network volume.
 #[must_use]
 pub struct Volume {
@@ -242,7 +242,7 @@ impl asset_container::AssetManager for Volume {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, property::Property, serde::Serialize)]
 /// A URL resource.
 #[must_use]
 #[property(get(public), set(private), mut(disable))]
@@ -283,7 +283,7 @@ impl Renderable for UrlResource {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, property::Property, serde::Serialize)]
 /// Normalized representation of a TCP port configuration.
 #[property(get(public), set(private), mut(disable))]
 pub struct TcpPort {
@@ -321,7 +321,7 @@ impl Renderable for TcpPort {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, property::Property, serde::Serialize)]
 /// Normalized representation of a UDP port configuration.
 #[property(get(public), set(private), mut(disable))]
 pub struct UdpPort {

@@ -6,7 +6,7 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use wick_oci_utils::OciDescriptor;
 
-use crate::options::get_auth_for_scope;
+use crate::utils::get_auth_for_scope;
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 #[group(skip)]
@@ -20,7 +20,7 @@ pub(crate) struct Options {
   pub(crate) registry: Option<String>,
 
   #[clap(flatten)]
-  pub(crate) oci_opts: crate::oci::Options,
+  pub(crate) oci_opts: crate::options::oci::OciOptions,
 }
 
 #[allow(clippy::unused_async)]

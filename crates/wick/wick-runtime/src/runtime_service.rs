@@ -4,20 +4,14 @@ pub(crate) mod error;
 mod init;
 mod utils;
 
-use std::path::PathBuf;
-
 pub(crate) use child_init::{init_child, ChildInit};
 pub(crate) use component_registry::{ComponentFactory, ComponentRegistry};
-use flow_graph_interpreter::{HandlerMap, InterpreterOptions, NamespaceHandler};
+use flow_graph_interpreter::{HandlerMap, NamespaceHandler};
 pub(crate) use init::ServiceInit;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use utils::{assert_constraints, instantiate_import};
 use uuid::Uuid;
-use wick_config::config::ComponentImplementation;
 
-use crate::components::validation::expect_signature_match;
-use crate::components::{init_component_implementation, make_link_callback};
 use crate::dev::prelude::*;
 
 type ServiceMap = HashMap<Uuid, Arc<RuntimeService>>;
@@ -38,100 +32,15 @@ pub(crate) struct RuntimeService {
 
 impl RuntimeService {
   pub(crate) async fn start(mut init: ServiceInit) -> Result<Arc<Self>> {
-    let span = init.span.clone();
-    let manifest_source: Option<PathBuf> = init.manifest.source().map(Into::into);
-    let ns = init.namespace.clone().unwrap_or_else(|| init.id.to_string());
-
-    let mut components = HandlerMap::default();
-
-    let extends = if let ComponentImplementation::Composite(config) = init.manifest.component() {
-      // Initialize a starting set of components to make available for composite components.
-      for factory in init.initial_components.inner() {
-        components
-          .add(factory(init.seed())?)
-          .map_err(|e| EngineError::InterpreterInit(manifest_source.clone(), Box::new(e)))?;
-      }
-
-      config.extends()
-    } else {
-      // Instantiate non-composite component as an exposed, standalone component.
-
-      let component_init = init.child_init(init.manifest.root_config().cloned(), None);
-
-      span.in_scope(|| debug!(%ns,options=?component_init,"instantiating component"));
-
-      let main_component =
-        init_component_implementation(&init.manifest, ns.clone(), component_init, None, Default::default()).await?;
-      let reported_sig = main_component.component().signature();
-      let manifest_sig = init.manifest.signature()?;
-
-      expect_signature_match(
-        init.manifest.source(),
-        reported_sig,
-        init.manifest.source(),
-        &manifest_sig,
-      )?;
-      main_component.expose();
-
-      components
-        .add(main_component)
-        .map_err(|e| EngineError::InterpreterInit(manifest_source.clone(), Box::new(e)))?;
-
-      &[]
-    };
-
-    for id in extends {
-      if !init.manifest.import().iter().any(|i| i.id() == id) {
-        return Err(EngineError::RuntimeInit(
-          manifest_source.clone(),
-          format!("Inherited component '{}' not found", id),
-        ));
-      }
-    }
-
-    for binding in init.manifest.import() {
-      let provided = generate_provides_handlers(binding.provide(), &components)?;
-      let component_init = init.child_init(binding.config().cloned(), Some(provided));
-      if let Some(component) = instantiate_import(binding, component_init).await? {
-        if extends.iter().any(|n| n == component.namespace()) {
-          component.expose();
-          span.in_scope(|| {
-            debug!(component = component.namespace(), "extending imported component");
-          });
-        }
-        components
-          .add(component)
-          .map_err(|e| EngineError::InterpreterInit(manifest_source.clone(), Box::new(e)))?;
-      }
-    }
-
-    let callback = make_link_callback(init.id);
-    assert_constraints(&init.constraints, &components)?;
-
-    let graph = init.span.in_scope(|| {
-      debug!("generating graph");
-
-      flow_graph_interpreter::graph::from_def(&mut init.manifest, &components)
-        .map_err(|e| EngineError::Graph(manifest_source.clone(), Box::new(e)))
-    })?;
-
-    let mut interpreter = flow_graph_interpreter::Interpreter::new(
-      graph,
-      Some(ns.clone()),
-      None, /* TODO: FIX passing config */
-      Some(components),
-      callback,
-      &span,
-    )
-    .map_err(|e| EngineError::InterpreterInit(manifest_source.clone(), Box::new(e)))?;
-
-    let options = InterpreterOptions { ..Default::default() };
-    interpreter.start(Some(options), None).await;
+    let started_time = std::time::Instant::now();
+    let (extends, components) = init.instantiate_main().await?;
+    let components = init.instantiate_imports(extends, components).await?;
+    let interpreter = init.init_interpreter(components).await?;
 
     let engine = Arc::new(RuntimeService {
-      started_time: std::time::Instant::now(),
+      started_time,
       id: init.id,
-      namespace: ns,
+      namespace: init.namespace(),
       active_config: init.manifest,
       interpreter: Arc::new(interpreter),
     });

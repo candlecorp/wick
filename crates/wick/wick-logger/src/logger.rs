@@ -102,7 +102,7 @@ impl LoggingGuard {
       // Otherwise, issue a warning because opentelemetry will complain
       // and we want to add context to the warning.
       if !handle.is_finished() {
-        warn!("open telemetry tracer provider did not shut down in time, forcing shutdown");
+        debug!("open telemetry tracer provider did not shut down in time, forcing shutdown");
       }
     }
   }

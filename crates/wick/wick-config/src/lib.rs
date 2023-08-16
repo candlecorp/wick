@@ -90,19 +90,23 @@
 #[macro_use]
 extern crate derive_builder;
 
-/// Module for processing JSON templates used for default values.
+/// Structures and functions for auditing Wick Manifests.
+pub mod audit;
 mod default;
 mod helpers;
 mod import_cache;
+/// Data structures, traits, and errors associated with Lockdown configuration.
+pub mod lockdown;
 
 pub use default::{parse_default, process_default, ERROR_STR};
+
 /// The main configuration module.
 pub mod config;
 /// Wick Manifest error.
 pub mod error;
 mod utils;
-pub(crate) mod v0;
-pub(crate) mod v1;
+mod v0;
+mod v1;
 
 /// The crate's error type.
 pub type Error = crate::error::ManifestError;

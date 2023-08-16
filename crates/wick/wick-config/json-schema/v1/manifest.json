@@ -5,7 +5,8 @@
         { "$ref": "#/$defs/v1/AppConfiguration" },
         { "$ref": "#/$defs/v1/ComponentConfiguration" },
         { "$ref": "#/$defs/v1/TypesConfiguration" },
-        { "$ref": "#/$defs/v1/TestConfiguration" }
+        { "$ref": "#/$defs/v1/TestConfiguration" },
+        { "$ref": "#/$defs/v1/LockdownConfiguration" }
       ]
     },
 
@@ -47,7 +48,7 @@
           "type": "string"
         },
         "metadata": {
-          "description": "Associated metadata for this component.",
+          "description": "Associated metadata for this application.",
           "required": false,
 
           "$ref": "#/$defs/v1/Metadata"
@@ -953,6 +954,161 @@
         }
       },
       "required": []
+    },
+
+    "LockdownConfiguration": {
+      "$anchor": "#v1/LockdownConfiguration",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/lockdown@v1"]
+        },
+        "metadata": {
+          "description": "Associated metadata for this configuration.",
+          "required": false,
+
+          "$ref": "#/$defs/v1/Metadata"
+        },
+        "resources": {
+          "description": "Restrictions to apply to resources before an application or component can be run.",
+
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1/ResourceRestriction"
+          }
+        }
+      },
+      "required": []
+    },
+
+    "ResourceRestriction": {
+      "oneOf": [
+        { "$ref": "#/$defs/v1/VolumeRestriction" },
+        { "$ref": "#/$defs/v1/UrlRestriction" },
+        { "$ref": "#/$defs/v1/TcpPortRestriction" },
+        { "$ref": "#/$defs/v1/UdpPortRestriction" }
+      ]
+    },
+
+    "VolumeRestriction": {
+      "$anchor": "#v1/VolumeRestriction",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/resource/volume@v1"]
+        },
+        "components": {
+          "description": "The components this restriction applies to",
+
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allow": {
+          "description": "The volumes to allow",
+
+          "$ref": "#/$defs/v1/LiquidTemplate"
+        }
+      },
+      "required": ["allow"]
+    },
+
+    "UrlRestriction": {
+      "$anchor": "#v1/UrlRestriction",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/resource/url@v1"]
+        },
+        "components": {
+          "description": "The components this restriction applies to",
+
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allow": {
+          "description": "The URLs to allow",
+
+          "$ref": "#/$defs/v1/LiquidTemplate"
+        }
+      },
+      "required": ["allow"]
+    },
+
+    "TcpPortRestriction": {
+      "$anchor": "#v1/TcpPortRestriction",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/resource/tcpport@v1"]
+        },
+        "components": {
+          "description": "The components this restriction applies to",
+
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "address": {
+          "description": "The address to allow",
+
+          "$ref": "#/$defs/v1/LiquidTemplate"
+        },
+        "port": {
+          "description": "The port to allow",
+
+          "$ref": "#/$defs/v1/LiquidTemplate"
+        }
+      },
+      "required": ["address", "port"]
+    },
+
+    "UdpPortRestriction": {
+      "$anchor": "#v1/UdpPortRestriction",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": ["wick/resource/udpport@v1"]
+        },
+        "components": {
+          "description": "The components this restriction applies to",
+
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "address": {
+          "description": "The address to allow",
+
+          "$ref": "#/$defs/v1/LiquidTemplate"
+        },
+        "port": {
+          "description": "The port to allow",
+
+          "$ref": "#/$defs/v1/LiquidTemplate"
+        }
+      },
+      "required": ["address", "port"]
     },
 
     "ComponentConfiguration": {

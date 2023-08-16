@@ -1,5 +1,4 @@
 use std::env;
-use std::path::PathBuf;
 
 use flow_expression_parser::ast::{
   ConnectionExpression,
@@ -10,22 +9,15 @@ use flow_expression_parser::ast::{
 };
 use tracing::debug;
 use wick_config::config::components::OperationConfig;
-use wick_config::config::CompositeComponentImplementation;
 use wick_config::error::ManifestError;
 use wick_config::*;
 
-async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
-  let path = PathBuf::from(path);
-  WickConfiguration::load_from_file(path).await?.finish()
-}
-
-async fn load_component(path: &str) -> Result<CompositeComponentImplementation, ManifestError> {
-  Ok(load(path).await?.try_component_config()?.try_composite()?.clone())
-}
+use crate::utils::{load, load_composite};
+mod utils;
 
 #[test_logger::test(tokio::test)]
 async fn test_basics() -> Result<(), ManifestError> {
-  let manifest = load_component("./tests/manifests/v0/logger.yaml").await?;
+  let manifest = load_composite("./tests/manifests/v0/logger.yaml").await?;
 
   assert_eq!(manifest.flow("logger").map(|s| s.instances().len()), Some(2));
 
@@ -75,7 +67,7 @@ async fn load_collections_yaml() -> Result<(), ManifestError> {
 
 #[test_logger::test(tokio::test)]
 async fn load_shortform_yaml() -> Result<(), ManifestError> {
-  let manifest = load_component("./tests/manifests/v0/logger-shortform.yaml").await?;
+  let manifest = load_composite("./tests/manifests/v0/logger-shortform.yaml").await?;
 
   let expr = &manifest.flow("logger").unwrap().expressions()[0];
 
@@ -94,7 +86,7 @@ async fn load_shortform_yaml() -> Result<(), ManifestError> {
 #[ignore = "env expansion in v0 configuration has been removed"]
 async fn load_env() -> Result<(), ManifestError> {
   env::set_var("TEST_ENV_VAR", "load_manifest_yaml_with_env");
-  let manifest = load_component("./tests/manifests/v0/env.yaml").await?;
+  let manifest = load_composite("./tests/manifests/v0/env.yaml").await?;
 
   assert_eq!(
     manifest.flow("name_load_manifest_yaml_with_env").unwrap().name(),
@@ -106,7 +98,7 @@ async fn load_env() -> Result<(), ManifestError> {
 
 #[test_logger::test(tokio::test)]
 async fn load_ns_link() -> Result<(), ManifestError> {
-  let manifest = load_component("./tests/manifests/v0/ns.yaml").await?;
+  let manifest = load_composite("./tests/manifests/v0/ns.yaml").await?;
 
   let schematic = &manifest.flow("logger").unwrap();
   let from = &schematic.expressions()[0].as_connection().unwrap().from();

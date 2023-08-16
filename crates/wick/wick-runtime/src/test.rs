@@ -14,7 +14,7 @@ use crate::{Runtime, RuntimeBuilder};
 pub(crate) async fn init_engine_from_yaml(path: &str) -> Result<(Runtime, uuid::Uuid)> {
   let crate_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-  let def = WickConfiguration::load_from_file(crate_dir.join("tests").join(path))
+  let def = WickConfiguration::fetch(&crate_dir.join("tests").join(path), Default::default())
     .await?
     .finish()?
     .try_component_config()?;

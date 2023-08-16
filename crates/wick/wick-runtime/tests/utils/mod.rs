@@ -17,7 +17,7 @@ pub async fn init_engine_from_yaml(
   path: impl AsRef<Path>,
   config: Option<RuntimeConfig>,
 ) -> anyhow::Result<(Runtime, uuid::Uuid)> {
-  let mut host_def = WickConfiguration::load_from_file(path.as_ref()).await?;
+  let mut host_def = WickConfiguration::fetch(path.as_ref(), Default::default()).await?;
   host_def.set_root_config(config);
   let host_def = host_def.finish()?.try_component_config()?;
   debug!("Manifest loaded");

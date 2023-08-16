@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::collections::HashMap;
 
 use anyhow::Result;
 use clap::Args;
@@ -8,27 +8,25 @@ use tracing::Instrument;
 use wick_config::WickConfiguration;
 use wick_host::AppHostBuilder;
 
-use crate::options::get_auth_for_scope;
-use crate::utils::parse_config_string;
+use crate::utils::{fetch_wick_config, parse_config_string, reconcile_fetch_options};
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 #[group(skip)]
 pub(crate) struct Options {
   #[clap(flatten)]
-  pub(crate) oci: crate::oci::Options,
+  pub(crate) oci: crate::options::oci::OciOptions,
 
-  /// The path or OCI URL to a wick manifest or wasm file.
-  #[clap(action)]
-  path: String,
+  #[clap(flatten)]
+  pub(crate) component: crate::options::component::ComponentOptions,
 
-  /// Pass a seed along with the invocation.
-  #[clap(long = "seed", short = 's', env = "WICK_SEED", action)]
-  seed: Option<u64>,
+  /// Use the given lockdown configuration to restrict the app's behavior.
+  #[clap(long = "lockdown", short = 'l', action)]
+  lockdown: Option<String>,
 
-  /// Pass configuration necessary to instantiate the application or its resources (JSON).
-  #[clap(long = "with", short = 'w', action)]
-  with: Option<String>,
+  /// Don't run the application, just fetch and validate the configuration.
+  #[clap(long = "dryrun", action)]
+  dryrun: bool,
 
   /// Arguments to pass as inputs to a CLI trigger in the application.
   #[clap(last(true), action)]
@@ -40,52 +38,45 @@ pub(crate) async fn handle(
   settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
-  let xdg = wick_xdg::Settings::new();
   span.in_scope(|| trace!(args = ?opts.args, "rest args"));
+  let runtime_config = parse_config_string(opts.component.with.as_deref())?;
+  let options = reconcile_fetch_options(&opts.component.path, &settings, opts.oci, None);
 
-  let configured_creds = settings.credentials.iter().find(|c| opts.path.starts_with(&c.scope));
+  let config = if let Some(lockdown) = opts.lockdown {
+    let env: HashMap<String, String> = std::env::vars().collect();
 
-  let (username, password) = get_auth_for_scope(
-    configured_creds,
-    opts.oci.username.as_deref(),
-    opts.oci.password.as_deref(),
-  );
+    let mut lockdown_config = WickConfiguration::fetch(&lockdown, options.clone())
+      .instrument(span.clone())
+      .await?;
+    lockdown_config.set_env(env.clone());
+    let lockdown_config = lockdown_config.finish()?.try_lockdown_config()?;
 
-  let mut fetch_opts: wick_oci_utils::OciOptions = opts.oci.clone().into();
-  fetch_opts.set_username(username).set_password(password);
+    let tree = WickConfiguration::fetch_tree(&opts.component.path, runtime_config, env, options.clone()).await?;
+    let mut flattened = tree.flatten();
+    wick_config::lockdown::assert_restrictions(&flattened, &lockdown_config)?;
 
-  let path = PathBuf::from(&opts.path);
-
-  if !path.exists() {
-    fetch_opts.set_cache_dir(xdg.global().cache().clone());
+    flattened.remove(0).as_config().unwrap()
   } else {
-    let mut path_dir = path.clone();
-    path_dir.pop();
-    fetch_opts.set_cache_dir(path_dir.join(xdg.local().cache()));
+    fetch_wick_config(&opts.component.path, options.clone(), runtime_config, span.clone()).await?
   };
 
-  let mut builder = WickConfiguration::fetch(&opts.path, fetch_opts.clone())
-    .instrument(span.clone())
-    .await?;
+  let mut app_config = config.try_app_config()?;
 
-  let with_config = parse_config_string(opts.with.as_deref())?;
-
-  builder
-    .set_root_config(with_config)
-    .set_env(Some(std::env::vars().collect()));
-  let mut app_config = builder.finish()?.try_app_config()?;
-
-  app_config.set_options(fetch_opts);
+  app_config.set_options(options);
 
   let mut host = AppHostBuilder::default()
     .manifest(app_config.clone())
     .span(span.clone())
     .build()?;
 
-  host.start(opts.seed)?;
-  span.in_scope(|| debug!("Waiting on triggers to finish..."));
+  if !opts.dryrun {
+    host.start(opts.component.seed)?;
+    span.in_scope(|| debug!("Waiting on triggers to finish..."));
 
-  host.wait_for_done().instrument(span.clone()).await?;
+    host.wait_for_done().instrument(span.clone()).await?;
+  } else {
+    info!("application valid but not started because --dryrun set");
+  }
 
   Ok(StructuredOutput::new("", json!({})))
 }

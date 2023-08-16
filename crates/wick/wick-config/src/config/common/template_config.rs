@@ -26,6 +26,18 @@ where
   pub(crate) root_config: Option<RuntimeConfig>,
 }
 
+impl<T> std::hash::Hash for TemplateConfig<T>
+where
+  T: Clone + std::fmt::Debug + std::fmt::Display + PartialEq + FromStr,
+  T: std::hash::Hash,
+{
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    self.value.hash(state);
+  }
+}
+
+impl<T> Eq for TemplateConfig<T> where T: Clone + std::fmt::Debug + std::fmt::Display + PartialEq + FromStr + Eq {}
+
 impl<T> Default for TemplateConfig<T>
 where
   T: Clone + std::fmt::Debug + std::fmt::Display + PartialEq + FromStr + Default,

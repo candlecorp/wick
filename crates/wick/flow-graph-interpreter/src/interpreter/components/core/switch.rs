@@ -723,12 +723,26 @@ impl RenderConfiguration for Op {
       ComponentError::message("Switch component requires configuration, please specify configuration.")
     })?;
     Ok(Self::Config {
-      inputs: config
-        .coerce_key("context")
-        .or_else(|_| config.coerce_key("inputs"))
-        .map_err(ComponentError::new)?,
-      outputs: config.coerce_key("outputs").map_err(ComponentError::new)?,
-      cases: config.coerce_key("cases").map_err(ComponentError::new)?,
+      inputs: if config.has("context") {
+        config.coerce_key("context")
+      } else if config.has("inputs") {
+        config.coerce_key("inputs")
+      } else {
+        Ok(Vec::new())
+      }
+      .map_err(ComponentError::new)?,
+      outputs: if config.has("outputs") {
+        config.coerce_key("outputs")
+      } else {
+        Ok(Vec::new())
+      }
+      .map_err(ComponentError::new)?,
+      cases: if config.has("cases") {
+        config.coerce_key("cases")
+      } else {
+        Ok(Vec::new())
+      }
+      .map_err(ComponentError::new)?,
       default: config.coerce_key("default").map_err(ComponentError::new)?,
     })
   }

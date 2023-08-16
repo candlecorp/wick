@@ -21,14 +21,12 @@ pub(crate) struct InnerSelf {
   signature: ComponentSignature,
   schematics: Arc<Vec<SchematicExecutor>>,
   components: Arc<HandlerMap>,
-  config: Option<RuntimeConfig>,
 }
 
 impl InnerSelf {
   pub(crate) fn new(
     components: Arc<HandlerMap>,
     state: &ProgramState,
-    config: Option<RuntimeConfig>,
     dispatcher: &InterpreterDispatchChannel,
   ) -> Self {
     let schematics: Arc<Vec<SchematicExecutor>> = Arc::new(
@@ -44,7 +42,6 @@ impl InnerSelf {
       signature,
       schematics,
       components,
-      config,
     }
   }
 }
@@ -60,10 +57,9 @@ impl SelfComponent {
   pub(crate) fn new(
     components: Arc<HandlerMap>,
     state: &ProgramState,
-    config: Option<RuntimeConfig>,
     dispatcher: &InterpreterDispatchChannel,
   ) -> Self {
-    let inner_self = InnerSelf::new(components, state, config, dispatcher);
+    let inner_self = InnerSelf::new(components, state, dispatcher);
     Self {
       inner: Arc::new(inner_self),
     }
@@ -79,8 +75,7 @@ impl Component for SelfComponent {
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| debug!(target = %invocation.target, namespace = Self::ID));
 
-    let mut op_config = LiquidOperationConfig::new_value(config);
-    op_config.set_root(self.inner.config.clone());
+    let op_config = LiquidOperationConfig::new_value(config);
 
     let operation = invocation.target.operation_id().to_owned();
     let fut = self

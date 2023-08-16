@@ -19,9 +19,10 @@ use super::{build_trigger_runtime, Trigger, TriggerKind};
 use crate::dev::prelude::*;
 use crate::resources::Resource;
 use crate::triggers::resolve_ref;
+use crate::Runtime;
 
 async fn invoke_operation(
-  runtime: Arc<crate::Runtime>,
+  runtime: Runtime,
   target: Entity,
   payload: Arc<Vec<config::OperationInputConfig>>,
   span: &Span,
@@ -47,27 +48,14 @@ async fn invoke_operation(
 }
 
 async fn create_schedule(
+  runtime: Runtime,
   schedule: Schedule,
-  app_config: AppConfiguration,
   config: TimeTriggerConfig,
+  component_id: String,
+  span: Span,
 ) -> Result<tokio::task::JoinHandle<()>, RuntimeError> {
-  let span = info_span!("trigger:schedule", schedule = ?schedule);
-  let mut runtime = build_trigger_runtime(&app_config, span.clone())?;
-  let component_id = match resolve_ref(&app_config, config.operation().component())? {
-    super::ResolvedComponent::Ref(id, _) => id.to_owned(),
-    super::ResolvedComponent::Inline(def) => {
-      let id = "0";
-      let schedule_binding = config::ImportBinding::component(id, def.clone());
-      runtime.add_import(schedule_binding);
-      id.to_owned()
-    }
-  };
-
-  let runtime = runtime.build(None).await?;
-
   // Create a scheduler loop
   let handle = tokio::spawn(async move {
-    let runtime = Arc::new(runtime);
     let operation = Arc::new(config.operation().name().to_owned());
     let payload = Arc::new(config.payload().to_vec());
 
@@ -136,35 +124,6 @@ impl Time {
   pub(crate) fn load() -> Result<Arc<dyn Trigger + Send + Sync>, RuntimeError> {
     Ok(Arc::new(Self::new()))
   }
-
-  async fn handle(
-    &self,
-    app_config: AppConfiguration,
-    config: TimeTriggerConfig,
-  ) -> Result<StructuredOutput, RuntimeError> {
-    let cron = config.schedule().cron().to_owned();
-
-    // Create a new cron schedule that runs every minute
-    let schedule = Schedule::from_str(&cron);
-    let schedule = match schedule {
-      Ok(schedule) => schedule,
-      Err(e) => {
-        return Err(RuntimeError::ScheduleStartError(format!(
-          "Unable to create schedule from cron expression: {}",
-          e
-        )))
-      }
-    };
-
-    let scheduler_task = create_schedule(schedule, app_config, config).await?;
-
-    self.handler.lock().replace(scheduler_task);
-
-    Ok(StructuredOutput::new(
-      "Scheduler started",
-      json!({"scheduler": "started"}),
-    ))
-  }
 }
 
 #[async_trait]
@@ -183,7 +142,42 @@ impl Trigger for Time {
       return Err(RuntimeError::InvalidConfig(Context::Trigger, TriggerKind::Time));
     };
 
-    self.handle(app_config, config).await
+    let cron = config.schedule().cron().to_owned();
+
+    // Create a new cron schedule that runs every minute
+    let schedule = Schedule::from_str(&cron);
+    let schedule = match schedule {
+      Ok(schedule) => schedule,
+      Err(e) => {
+        return Err(RuntimeError::ScheduleStartError(format!(
+          "Unable to create schedule from cron expression: {}",
+          e
+        )))
+      }
+    };
+
+    let span = info_span!("trigger:schedule", schedule = ?schedule);
+    let mut runtime = build_trigger_runtime(&app_config, span.clone())?;
+    let component_id = match resolve_ref(&app_config, config.operation().component())? {
+      super::ResolvedComponent::Ref(id, _) => id.to_owned(),
+      super::ResolvedComponent::Inline(def) => {
+        let id = "0".to_owned();
+        let schedule_binding = config::ImportBinding::component(&id, def.clone());
+        runtime.add_import(schedule_binding);
+        id
+      }
+    };
+
+    let runtime = runtime.build(None).await?;
+
+    let scheduler_task = create_schedule(runtime, schedule, config, component_id, span).await?;
+
+    self.handler.lock().replace(scheduler_task);
+
+    Ok(StructuredOutput::new(
+      "Scheduler started",
+      json!({"scheduler": "started"}),
+    ))
   }
 
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError> {

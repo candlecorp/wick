@@ -7,27 +7,20 @@ use structured_output::StructuredOutput;
 use wick_config::WickConfiguration;
 use wick_host::ComponentHostBuilder;
 
-use crate::options::get_auth_for_scope;
-use crate::utils::{merge_config, parse_config_string};
+use crate::utils::{get_auth_for_scope, merge_config, parse_config_string};
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 #[group(skip)]
 pub(crate) struct Options {
-  /// Path to composite component to load.
-  #[clap(action)]
-  pub(crate) path: String,
+  #[clap(flatten)]
+  pub(crate) oci: crate::options::oci::OciOptions,
 
+  #[clap(flatten)]
+  pub(crate) component: crate::options::component::ComponentOptions,
   /// Operation to render.
   #[clap(action)]
   pub(crate) operation: String,
-
-  #[clap(flatten)]
-  pub(crate) oci: crate::oci::Options,
-
-  /// Pass configuration necessary to instantiate the component (JSON).
-  #[clap(long = "with", short = 'w', action)]
-  with: Option<String>,
 
   /// Pass configuration necessary to invoke the operation (JSON).
   #[clap(long = "op-with", action)]
@@ -41,7 +34,10 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   span.in_scope(|| debug!("Generate dotviz graph"));
-  let configured_creds = settings.credentials.iter().find(|c| opts.path.starts_with(&c.scope));
+  let configured_creds = settings
+    .credentials
+    .iter()
+    .find(|c| opts.component.path.starts_with(&c.scope));
 
   let (username, password) = get_auth_for_scope(
     configured_creds,
@@ -53,7 +49,7 @@ pub(crate) async fn handle(
   let mut fetch_opts: wick_oci_utils::OciOptions = opts.oci.clone().into();
   fetch_opts.set_username(username).set_password(password);
 
-  let path = PathBuf::from(&opts.path);
+  let path = PathBuf::from(&opts.component.path);
 
   if !path.exists() {
     fetch_opts.set_cache_dir(env.global().cache().clone());
@@ -63,9 +59,9 @@ pub(crate) async fn handle(
     fetch_opts.set_cache_dir(path_dir.join(env.local().cache()));
   };
 
-  let root_config = parse_config_string(opts.with.as_deref())?;
+  let root_config = parse_config_string(opts.component.with.as_deref())?;
 
-  let mut config = WickConfiguration::fetch(&opts.path, fetch_opts).await?;
+  let mut config = WickConfiguration::fetch(&opts.component.path, fetch_opts).await?;
   config.set_root_config(root_config);
   let manifest = config.finish()?.try_component_config()?;
 

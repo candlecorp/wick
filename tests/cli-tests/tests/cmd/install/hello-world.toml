@@ -1,0 +1,11 @@
+#:schema https://raw.githubusercontent.com/assert-rs/trycmd/main/schema.json
+bin.name = "wick"
+args = [
+  "install",
+  "examples/components/cli-trigger/app.wick",
+  '--path',
+  '.',
+  '--quiet',
+]
+stdout = """installed hello-world to ./hello-world[..]
+"""

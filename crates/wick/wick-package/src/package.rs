@@ -82,7 +82,7 @@ fn process_assets(
             Ok(WickConfiguration::Types(_)) => {
               media_type = media_types::TYPES;
             }
-            Err(_) => {
+            _ => {
               media_type = media_types::OTHER;
             }
           }
@@ -162,6 +162,7 @@ impl WickPackage {
       wick_config::config::ConfigurationKind::Component => media_types::COMPONENT,
       wick_config::config::ConfigurationKind::Types => media_types::TYPES,
       wick_config::config::ConfigurationKind::Tests => unreachable!(),
+      wick_config::config::ConfigurationKind::Lockdown => unreachable!(),
     };
     let registry = config.package().and_then(|package| package.registry().cloned());
 
@@ -294,7 +295,9 @@ impl WickPackage {
         wick_config::config::ConfigurationKind::App => wick_oci_utils::WickPackageKind::APPLICATION,
         wick_config::config::ConfigurationKind::Component => wick_oci_utils::WickPackageKind::COMPONENT,
         wick_config::config::ConfigurationKind::Types => wick_oci_utils::WickPackageKind::TYPES,
-        wick_config::config::ConfigurationKind::Tests => unreachable!(),
+        _ => {
+          return Err(Error::InvalidWickConfig(reference.to_owned()));
+        }
       },
       root: self.root.clone(),
     };

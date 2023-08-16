@@ -162,10 +162,10 @@ pub(crate) async fn init_manifest_component(
   let requires = manifest.requires();
   let provided = generate_provides_entities(requires, kind.provide())
     .map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
-  init_component_implementation(&manifest, id, opts, kind.max_packet_size(), provided).await
+  init_impl(&manifest, id, opts, kind.max_packet_size(), provided).await
 }
 
-pub(crate) async fn init_component_implementation(
+pub(crate) async fn init_impl(
   manifest: &ComponentConfiguration,
   id: String,
   mut opts: ChildInit,
@@ -178,6 +178,8 @@ pub(crate) async fn init_component_implementation(
     expect_configuration_matches(&id, opts.root_config.as_ref(), manifest.config()).map_err(EngineError::Setup)
   })?;
 
+  let resolver = manifest.resolver();
+
   let rng = Random::from_seed(opts.rng_seed);
   opts.rng_seed = rng.seed();
   let metadata = manifest.metadata();
@@ -185,7 +187,7 @@ pub(crate) async fn init_component_implementation(
     config::ComponentImplementation::Wasm(wasmimpl) => {
       let mut dirs = HashMap::new();
       for volume in wasmimpl.volumes() {
-        let resource = (opts.resolver)(volume.resource())?.try_resource()?.try_volume()?;
+        let resource = (resolver)(volume.resource())?.try_resource()?.try_volume()?;
         dirs.insert(volume.path().to_owned(), resource.path()?.to_string_lossy().to_string());
       }
       let perms = if !dirs.is_empty() {

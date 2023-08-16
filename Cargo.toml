@@ -74,14 +74,14 @@ wasmtime = { version = "11.0", default-features = false, features = [
 wasmtime-wasi = { version = "11.0", features = ["sync"] }
 wasi-common = { version = "11.0" }
 # wasmrs
-wasmrs = { version = "0.14.0" }
-wasmrs-codec = { version = "0.14.0" }
-wasmrs-frames = { version = "0.14.0" }
-wasmrs-guest = { version = "0.14.0" }
-wasmrs-host = { version = "0.14.0" }
-wasmrs-runtime = { version = "0.14.0" }
-wasmrs-rx = { version = "0.14.0" }
-wasmrs-wasmtime = { version = "0.14.0" }
+wasmrs = { version = "0.15.0" }
+wasmrs-codec = { version = "0.15.0" }
+wasmrs-frames = { version = "0.15.0" }
+wasmrs-guest = { version = "0.15.0" }
+wasmrs-host = { version = "0.15.0" }
+wasmrs-runtime = { version = "0.15.0" }
+wasmrs-rx = { version = "0.15.0" }
+wasmrs-wasmtime = { version = "0.15.0" }
 #
 # Other
 #
@@ -209,3 +209,4 @@ walkdir = { version = "2.3", default-features = false }
 xdg = { version = "2.4", default-features = false }
 byteorder = { version = "1.4", default-features = false }
 rstest = { version = "0.18", default-features = false }
+wildmatch = { version = "2.1.1", default-features = false }

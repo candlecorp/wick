@@ -7,7 +7,7 @@ use wick::*;
 
 #[wick_component::operation(unary_simple)]
 fn read_string(filename: String, _ctx: Context<read_string::Config>) -> Result<String, std::io::Error> {
-  std::fs::read_to_string(filename)
+  std::fs::read_to_string(&filename)
 }
 
 #[wick_component::operation(unary_simple)]

@@ -1,5 +1,6 @@
 use flow_graph_interpreter::{HandlerMap, NamespaceHandler};
 use wick_config::config::ComponentDefinition;
+use wick_config::Resolver;
 
 use super::error::ConstraintFailure;
 use super::ChildInit;
@@ -48,13 +49,14 @@ pub(super) fn assert_constraints(
 pub(crate) async fn instantiate_import(
   binding: &config::ImportBinding,
   opts: ChildInit,
+  resolver: Box<Resolver>,
 ) -> Result<Option<NamespaceHandler>, EngineError> {
   opts
     .span
     .in_scope(|| debug!(id = binding.id(), ?opts, "instantiating import"));
   let id = binding.id().to_owned();
   match binding.kind() {
-    config::ImportDefinition::Component(c) => instantiate_imported_component(id, c, opts).await,
+    config::ImportDefinition::Component(c) => instantiate_imported_component(id, c, opts, resolver).await,
     config::ImportDefinition::Types(_) => Ok(None),
   }
 }
@@ -63,6 +65,7 @@ pub(crate) async fn instantiate_imported_component(
   id: String,
   kind: &ComponentDefinition,
   opts: ChildInit,
+  resolver: Box<Resolver>,
 ) -> Result<Option<NamespaceHandler>, EngineError> {
   match kind {
     #[allow(deprecated)]
@@ -73,7 +76,7 @@ pub(crate) async fn instantiate_imported_component(
     config::ComponentDefinition::Reference(_) => unreachable!(),
     config::ComponentDefinition::GrpcUrl(_) => todo!(), // CollectionKind::GrpcUrl(v) => initialize_grpc_collection(v, namespace).await,
     config::ComponentDefinition::HighLevelComponent(hlc) => {
-      init_hlc_component(id, opts.root_config.clone(), None, hlc.clone(), opts.resolver)
+      init_hlc_component(id, opts.root_config.clone(), None, hlc.clone(), resolver)
         .await
         .map(Some)
     }

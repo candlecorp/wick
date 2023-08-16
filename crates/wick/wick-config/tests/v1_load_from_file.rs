@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use flow_expression_parser::ast::{
   ConnectionExpression,
   ConnectionTargetExpression,
@@ -8,31 +6,12 @@ use flow_expression_parser::ast::{
   InstanceTarget,
 };
 use wick_config::config::components::ComponentConfig;
-use wick_config::config::{
-  AppConfiguration,
-  ComponentImplementation,
-  CompositeComponentImplementation,
-  FlowOperationBuilder,
-};
+use wick_config::config::{ComponentImplementation, FlowOperationBuilder};
 use wick_config::error::ManifestError;
 use wick_config::*;
-use wick_packet::RuntimeConfig;
 
-async fn load(path: &str) -> Result<WickConfiguration, ManifestError> {
-  let path = PathBuf::from(path);
-  let mut config = WickConfiguration::load_from_file(path).await?;
-  config.set_env(Some(std::env::vars().collect()));
-  config.set_root_config(Some(RuntimeConfig::from([("component_config_name", "test".into())])));
-  config.finish()
-}
-
-async fn load_app(path: &str) -> Result<AppConfiguration, ManifestError> {
-  load(path).await?.try_app_config()
-}
-
-async fn load_composite(path: &str) -> Result<CompositeComponentImplementation, ManifestError> {
-  Ok(load(path).await?.try_component_config()?.try_composite()?.clone())
-}
+use crate::utils::{load, load_app, load_composite};
+mod utils;
 
 #[test_logger::test(tokio::test)]
 async fn test_basics() -> Result<(), ManifestError> {

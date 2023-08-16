@@ -5536,6 +5536,7 @@ dependencies = [
  "form_urlencoded",
  "idna",
  "percent-encoding",
+ "serde",
 ]
 
 [[package]]
@@ -5791,9 +5792,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9e639ca1fefefe446ed77443865dd2298ed5a22e22992944e2b03d931cf11ab"
+checksum = "cd3d0e31f863faa0a345adfbb8a38e9a4d1edefc07a63c86840365ad382f2e87"
 dependencies = [
  "bytes 1.4.0",
  "crossbeam-channel",
@@ -5813,9 +5814,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-codec"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa033a409e0a05d24013fdf15becafaba5e13c3eee1706dd687e63ff6e5aa2e2"
+checksum = "992a2f0fc4961cda54d08253bb146530e271597cba49d4f9472c176dc58fe946"
 dependencies = [
  "heapless",
  "rmp-serde",
@@ -5825,9 +5826,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-frames"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5379743c49fe234b5191beb98c9891ce6f90df2358f442d124bc3b10857ff74c"
+checksum = "df0917cf86e1f0ef19580bf1ff652be42beccc7c672d68b0d467795b7750ced7"
 dependencies = [
  "bytes 1.4.0",
  "serde",
@@ -5835,9 +5836,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-guest"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c80fe87a96b758f19ee3c96bffcbd14549affc32a7811dfccb8f0e2acd119616"
+checksum = "a0edded296d64adcb0c59eac10998f256349a91528ce6c499d1cf213a925804c"
 dependencies = [
  "bytes 1.4.0",
  "cfg-if",
@@ -5855,9 +5856,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-host"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e65e784317f0230060b69f4ed340bb41ec93cd08af4fd074d347da806457b573"
+checksum = "85bd3bab92d73140d2bd382f78d88b2ab515bdd94c353206a55416d7b0dda269"
 dependencies = [
  "bytes 1.4.0",
  "dashmap",
@@ -5876,9 +5877,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-runtime"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be63ea5457fca88c949665f1dcf0752842777baa762af5d6d053aa8a8576cb3d"
+checksum = "6fa0fa1463486637b5f30858233fa6717c112a9c1db22bf95da030b7ee2f7075"
 dependencies = [
  "bytes 1.4.0",
  "crossbeam-channel",
@@ -5895,9 +5896,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-rx"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b2ae214a4ff7272c6d4f718626f9a4a85d239be37c8059e7952ec32b99189d5"
+checksum = "a116605f1ef211ff35e301185af1b7f524bf736d52ffc03a84a26ae3fefe52c7"
 dependencies = [
  "async-trait",
  "bytes 1.4.0",
@@ -5914,9 +5915,9 @@ dependencies = [
 
 [[package]]
 name = "wasmrs-wasmtime"
-version = "0.14.1"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f74d528f056976a080c03556a66163a277c5d2a3ac3a7f830760e8a2a412af5"
+checksum = "619af7457fe610f352a140a76a2ca86ab17c53949fbcf47cbd760c343aa76b2f"
 dependencies = [
  "anyhow",
  "bytes 1.4.0",
@@ -6493,12 +6494,14 @@ version = "0.26.0"
 dependencies = [
  "anyhow",
  "asset-container",
+ "async-recursion",
  "derive-asset-container",
  "derive_builder",
  "flow-component",
  "flow-expression-parser",
  "glob",
  "liquid-json",
+ "normpath",
  "num-traits",
  "option-utils",
  "parking_lot",
@@ -6525,6 +6528,7 @@ dependencies = [
  "wick-oci-utils",
  "wick-packet",
  "wick-xdg",
+ "wildmatch",
 ]
 
 [[package]]
@@ -6977,6 +6981,12 @@ dependencies = [
  "syn 1.0.109",
  "wiggle-generate",
 ]
+
+[[package]]
+name = "wildmatch"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee583bdc5ff1cf9db20e9db5bb3ff4c3089a8f6b8b31aff265c9aba85812db86"
 
 [[package]]
 name = "winapi"

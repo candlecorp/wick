@@ -60,7 +60,6 @@ impl Interpreter {
   pub fn new(
     network: Network,
     namespace: Option<String>,
-    config: Option<RuntimeConfig>,
     components: Option<HandlerMap>,
     callback: Arc<RuntimeCallback>,
     parent_span: &Span,
@@ -108,7 +107,7 @@ impl Interpreter {
 
     // Make the self:: component
     let components = Arc::new(handlers);
-    let self_component = SelfComponent::new(components.clone(), program.state(), config, &dispatcher);
+    let self_component = SelfComponent::new(components.clone(), program.state(), &dispatcher);
 
     // If we expose a component, expose its signature as our own.
     // Otherwise expose our self signature.

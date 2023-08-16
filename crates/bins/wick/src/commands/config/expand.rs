@@ -11,20 +11,11 @@ use crate::wick_host::build_component_host;
 #[clap(rename_all = "kebab-case")]
 #[group(skip)]
 pub(crate) struct Options {
-  /// Path to composite component to load.
-  #[clap(action)]
-  pub(crate) path: String,
+  #[clap(flatten)]
+  pub(crate) oci: crate::options::oci::OciOptions,
 
   #[clap(flatten)]
-  pub(crate) oci: crate::oci::Options,
-
-  /// Pass configuration necessary to instantiate the component (JSON).
-  #[clap(long = "with", short = 'w', action)]
-  with: Option<String>,
-
-  /// Pass configuration necessary to invoke the operation (JSON).
-  #[clap(long = "op-with", action)]
-  op_with: Option<String>,
+  pub(crate) component: crate::options::component::ComponentOptions,
 }
 
 #[allow(clippy::unused_async)]
@@ -34,8 +25,8 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   span.in_scope(|| debug!("Generate dotviz graph"));
-  let root_config = parse_config_string(opts.with.as_deref())?;
-  let host = build_component_host(&opts.path, opts.oci, root_config, settings, None, None, span).await?;
+  let root_config = parse_config_string(opts.component.with.as_deref())?;
+  let host = build_component_host(&opts.component.path, opts.oci, root_config, settings, None, None, span).await?;
 
   let config = host.get_active_config()?;
   let config = WickConfiguration::Component(config.clone());

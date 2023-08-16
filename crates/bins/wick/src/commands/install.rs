@@ -6,14 +6,14 @@ use structured_output::StructuredOutput;
 use wick_config::WickConfiguration;
 use wick_package::WickPackage;
 
-use crate::options::reconcile_fetch_options;
+use crate::utils::reconcile_fetch_options;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
 #[group(skip)]
 pub(crate) struct Options {
   #[clap(flatten)]
-  pub(crate) oci: crate::oci::Options,
+  pub(crate) oci: crate::options::oci::OciOptions,
 
   /// Alternate path to install to.
   #[clap(long = "path", action)]
@@ -36,7 +36,7 @@ pub(crate) async fn handle(
 
   span.in_scope(|| info!(app = opts.application, path = %bin_dir.display(), "installing wick app"));
 
-  let oci_opts = reconcile_fetch_options(&opts.application, &settings, opts.oci, false, None);
+  let oci_opts = reconcile_fetch_options(&opts.application, &settings, opts.oci, None);
   let app_as_path = PathBuf::from(&opts.application);
   let package = if app_as_path.exists() {
     WickPackage::from_path(&app_as_path).await?

@@ -1,0 +1,6 @@
+---
+kind: wick/lockdown@v1
+resources:
+  - kind: 'wick/resource/volume@v1'
+    components: ['*CLI.wasi_fs']
+    allow: '{{ ctx.env.CARGO_MANIFEST_DIR }}/tests'

@@ -1,13 +1,13 @@
+mod utils;
 mod integration_test {
 
   use anyhow::Result;
-  use wick_config::*;
+
+  use crate::utils::load;
 
   #[test_logger::test(tokio::test)]
   async fn test_external_types() -> Result<()> {
-    let config = WickConfiguration::fetch("./tests/manifests/v1/import-types.yaml", Default::default())
-      .await?
-      .finish()?;
+    let config = load("./tests/manifests/v1/import-types.yaml").await?;
     let component = config.try_component_config()?;
     let signature = component.signature()?;
     let type_names = signature.types.iter().map(|t| t.name().to_owned()).collect::<Vec<_>>();

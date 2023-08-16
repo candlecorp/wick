@@ -98,10 +98,7 @@ impl ComponentHost {
   }
 
   pub async fn start_runtime(&mut self, seed: Option<Seed>) -> Result<()> {
-    ensure!(
-      self.runtime.is_none(),
-      crate::Error::InvalidHostState("Host already has a runtime running".into())
-    );
+    ensure!(self.runtime.is_none(), crate::Error::AlreadyRunning);
 
     let mut rt_builder = RuntimeBuilder::from_definition(self.manifest.clone());
     let span = info_span!(parent: &self.span, "component_host");
@@ -166,14 +163,14 @@ impl ComponentHost {
         );
         Ok(runtime.invoke(invocation, config).await?)
       }
-      None => Err(crate::Error::InvalidHostState("No runtime available".into())),
+      None => Err(crate::Error::NoRuntime),
     }
   }
 
   pub async fn invoke(&self, invocation: Invocation, data: Option<RuntimeConfig>) -> Result<PacketStream> {
     match &self.runtime {
       Some(runtime) => Ok(runtime.invoke(invocation, data).await?),
-      None => Err(crate::Error::InvalidHostState("No runtime available".into())),
+      None => Err(crate::Error::NoRuntime),
     }
   }
 
@@ -196,15 +193,15 @@ impl ComponentHost {
   pub fn render_dotviz(&self, op: &str) -> Result<String> {
     match &self.runtime {
       Some(runtime) => Ok(runtime.render_dotviz(op)?),
-      None => Err(crate::Error::InvalidHostState("No runtime available".into())),
+      None => Err(crate::Error::NoRuntime),
     }
   }
 
   pub fn get_active_config(&self) -> Result<&ComponentConfiguration> {
-    self.runtime.as_ref().map_or_else(
-      || Err(crate::Error::InvalidHostState("No runtime available".into())),
-      |runtime| Ok(runtime.active_config()),
-    )
+    self
+      .runtime
+      .as_ref()
+      .map_or_else(|| Err(crate::Error::NoRuntime), |runtime| Ok(runtime.active_config()))
   }
 }
 
@@ -253,7 +250,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn request_direct() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
-    let manifest = WickConfiguration::load_from_file(&file)
+    let manifest = WickConfiguration::fetch(&file, Default::default())
       .await?
       .finish()?
       .try_component_config()?;
@@ -280,7 +277,7 @@ mod test {
   #[test_logger::test(tokio::test)]
   async fn request_rpc_server() -> Result<()> {
     let file = PathBuf::from("manifests/logger.yaml");
-    let mut def = WickConfiguration::load_from_file(&file)
+    let mut def = WickConfiguration::fetch(&file, Default::default())
       .await?
       .finish()?
       .try_component_config()?;

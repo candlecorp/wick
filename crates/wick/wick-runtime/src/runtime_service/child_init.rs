@@ -5,7 +5,6 @@ use seeded_random::Seed;
 use tracing::Span;
 use uuid::Uuid;
 use wick_config::config::ComponentConfiguration;
-use wick_config::Resolver;
 use wick_packet::{Entity, RuntimeConfig};
 
 use super::{ComponentRegistry, RuntimeService, ServiceInit};
@@ -19,7 +18,6 @@ pub(crate) struct ChildInit {
   pub(crate) allow_latest: bool,
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) root_config: Option<RuntimeConfig>,
-  pub(crate) resolver: Box<Resolver>,
   pub(crate) provided: Option<HandlerMap>,
   #[allow(unused)]
   pub(crate) span: Span,

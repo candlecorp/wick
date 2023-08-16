@@ -20,7 +20,7 @@ use crate::utils::merge_config;
 #[group(skip)]
 pub(crate) struct Options {
   #[clap(flatten)]
-  pub(crate) oci: crate::oci::Options,
+  pub(crate) oci: crate::options::oci::OciOptions,
 
   /// Turn on info logging.
   #[clap(long = "info", action)]
@@ -39,7 +39,7 @@ pub(crate) struct Options {
   pub(crate) tests: Vec<String>,
 
   /// Filter which tests to run
-  #[clap(long = "filter", short = 'f', action)]
+  #[clap(long = "filter", short = 'F', action)]
   filter: Vec<String>,
 }
 

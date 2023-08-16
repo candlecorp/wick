@@ -73,7 +73,7 @@ impl<I> VecMapInto<I> for Vec<I> {
   }
 }
 
-pub(super) async fn fetch_all(
+pub(super) async fn _fetch_all(
   asset_manager: &(dyn AssetManager<Asset = AssetReference> + Send + Sync),
   options: FetchOptions,
 ) -> Result<()> {
@@ -140,6 +140,7 @@ pub(crate) fn resolve(
   runtime_config: Option<&RuntimeConfig>,
   env: Option<&HashMap<String, String>>,
 ) -> Result<OwnedConfigurationItem> {
+  tracing::trace!("resolving {}, imports: {:?}, resources: {:?}", name, imports, resources);
   if let Some(import) = imports.iter().find(|i| i.id == name) {
     match &import.kind {
       ImportDefinition::Component(component) => {
@@ -159,5 +160,12 @@ pub(crate) fn resolve(
       Err(e) => Err(e),
     };
   }
-  Err(Error::IdNotFound(name.to_owned()))
+  Err(Error::IdNotFound {
+    id: name.to_owned(),
+    ids: [
+      imports.iter().map(|i| i.id().to_owned()).collect::<Vec<_>>(),
+      resources.iter().map(|i| i.id().to_owned()).collect::<Vec<_>>(),
+    ]
+    .concat(),
+  })
 }

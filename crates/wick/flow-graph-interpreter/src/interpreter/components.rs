@@ -92,12 +92,26 @@ impl HandlerMap {
     self.components.get(namespace).map(|c| c.component.signature())
   }
 
-  #[allow(unused)]
   pub(crate) fn get_op_signature(&self, namespace: &str, name: &str) -> Option<&OperationSignature> {
     self
       .components
       .get(namespace)
       .and_then(|c| c.component.signature().get_operation(name))
+  }
+
+  pub(crate) fn get_op_list(&self, namespace: &str) -> Vec<&str> {
+    self
+      .components
+      .get(namespace)
+      .map(|c| {
+        c.component
+          .signature()
+          .operations
+          .iter()
+          .map(|op| op.name.as_str())
+          .collect::<Vec<_>>()
+      })
+      .unwrap_or_default()
   }
 }
 

@@ -54,7 +54,6 @@ pub async fn base_setup(
   let mut interpreter = Interpreter::new(
     network,
     None,
-    def.root_config().cloned(),
     Some(collections),
     panic_callback(),
     &tracing::Span::current(),

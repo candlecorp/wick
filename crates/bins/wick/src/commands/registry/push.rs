@@ -6,7 +6,7 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use tracing::Instrument;
 
-use crate::options::get_auth_for_scope;
+use crate::utils::get_auth_for_scope;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
@@ -17,7 +17,7 @@ pub(crate) struct Options {
   pub(crate) source: PathBuf,
 
   #[clap(flatten)]
-  pub(crate) oci_opts: crate::oci::Options,
+  pub(crate) oci_opts: crate::options::oci::OciOptions,
 
   /// Registry to use (overriding configured registry)
   #[clap(long = "registry", action)]
