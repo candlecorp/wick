@@ -96,6 +96,15 @@ impl PartialEq for AssetReference {
   }
 }
 
+impl Eq for AssetReference {}
+
+impl std::hash::Hash for AssetReference {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    self.location.hash(state);
+    self.baseurl.read().hash(state);
+  }
+}
+
 impl AssetReference {
   /// Create a new location reference.
   pub fn new(location: impl AsRef<str>) -> Self {
