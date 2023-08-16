@@ -95,7 +95,7 @@ pub(crate) async fn init_wasm_impl_component(
     kind.reference(),
     namespace,
     opts,
-    buffer_size.or(kind.buffer_size()),
+    buffer_size.or(kind.max_packet_size()),
     permissions,
     provided,
   )
@@ -162,7 +162,7 @@ pub(crate) async fn init_manifest_component(
   let requires = manifest.requires();
   let provided = generate_provides_entities(requires, kind.provide())
     .map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
-  init_component_implementation(&manifest, id, opts, kind.buffer_size(), provided).await
+  init_component_implementation(&manifest, id, opts, kind.max_packet_size(), provided).await
 }
 
 pub(crate) async fn init_component_implementation(

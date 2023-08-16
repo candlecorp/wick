@@ -49,8 +49,16 @@ impl Cli {
     config: CliConfig,
     args: Vec<String>,
   ) -> Result<StructuredOutput, RuntimeError> {
-    let cli_component = resolve_ref(&app_config, config.operation().component())?;
-    let cli_binding = ImportBinding::component("cli", cli_component);
+    let mut runtime = build_trigger_runtime(&app_config, Span::current())?;
+    let component_id = match resolve_ref(&app_config, config.operation().component())? {
+      super::ResolvedComponent::Ref(id, _) => id.to_owned(),
+      super::ResolvedComponent::Inline(def) => {
+        let cli_binding = ImportBinding::component("cli", def.clone());
+        runtime.add_import(cli_binding);
+        "cli".to_owned()
+      }
+    };
+    let runtime = runtime.build(None).await?;
 
     let is_interactive = Interactive {
       stdin: atty::is(atty::Stream::Stdin),
@@ -61,14 +69,11 @@ impl Cli {
     let packet_stream = packet_stream!(("args", args), ("interactive", is_interactive));
     let invocation = Invocation::new(
       Entity::server("cli_channel"),
-      Entity::operation(cli_binding.id(), config.operation().name()),
+      Entity::operation(component_id, config.operation().name()),
       packet_stream,
       InherentData::unsafe_default(),
       &Span::current(),
     );
-    let mut runtime = build_trigger_runtime(&app_config, Span::current())?;
-    runtime.add_import(cli_binding);
-    let runtime = runtime.build(None).await?;
 
     let mut response = runtime.invoke(invocation, Default::default()).await?;
     let output = loop {

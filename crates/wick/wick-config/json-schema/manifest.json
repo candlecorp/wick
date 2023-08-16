@@ -1556,7 +1556,7 @@
               "$ref": "#/$defs/v1/ExposedVolume"
             }
           },
-          "buffer_size": {
+          "max_packet_size": {
             "description": "The default size to allocate to the component&#x27;s send/receive buffer.",
             "required": false,
             "oneOf": [
@@ -1840,7 +1840,7 @@
               }
             }
           },
-          "buffer_size": {
+          "max_packet_size": {
             "description": "If applicable, the default size to allocate to the component&#x27;s send/receive buffer.",
             "required": false,
             "oneOf": [

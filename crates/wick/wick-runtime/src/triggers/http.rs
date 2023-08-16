@@ -25,6 +25,7 @@ use wick_config::config::{
   AppConfiguration,
   Codec,
   ImportBinding,
+  ImportDefinition,
   ProxyRouterConfig,
   RawRouterConfig,
   RestRouterConfig,
@@ -34,15 +35,15 @@ use wick_config::config::{
 use wick_packet::{Entity, RuntimeConfig};
 
 use self::static_router::StaticRouter;
-use super::{resolve_or_import_component, resolve_ref, Trigger, TriggerKind};
+use super::{resolve_ref, Trigger, TriggerKind};
 use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
 use crate::runtime::RuntimeConstraint;
-use crate::triggers::build_trigger_runtime;
 use crate::triggers::http::proxy_router::ProxyRouter;
 use crate::triggers::http::raw_router::RawComponentRouter;
 use crate::triggers::http::rest_router::{RestRoute, RestRouter};
 use crate::triggers::http::service_factory::ServiceFactory;
+use crate::triggers::{build_trigger_runtime, ResolvedComponent};
 use crate::Runtime;
 
 #[derive(Debug, thiserror::Error)]
@@ -290,26 +291,34 @@ fn resolve_middleware_components(
   let mut bindings = Vec::new();
   if let Some(middleware) = router.middleware() {
     for (i, operation) in middleware.request().iter().enumerate() {
-      let (name, binding) = resolve_or_import_component(
-        app_config,
-        format!("{}_request_middleware_{}", router_index, i),
-        operation,
-      )?;
-      if let Some(binding) = binding {
-        bindings.push(binding);
-      }
-      request_operations.push((name, operation.config().and_then(|v| v.value().cloned())));
+      let component_id = match resolve_ref(app_config, operation.component())? {
+        ResolvedComponent::Ref(id, _) => id.to_owned(),
+        ResolvedComponent::Inline(def) => {
+          let id = format!("{}_request_middleware_{}", router_index, i);
+          let binding = ImportBinding::component(&id, def.clone());
+          bindings.push(binding);
+          id
+        }
+      };
+      request_operations.push((
+        Entity::operation(component_id, operation.name()),
+        operation.config().and_then(|v| v.value().cloned()),
+      ));
     }
     for (i, operation) in middleware.response().iter().enumerate() {
-      let (name, binding) = resolve_or_import_component(
-        app_config,
-        format!("{}_request_middleware_{}", router_index, i),
-        operation,
-      )?;
-      if let Some(binding) = binding {
-        bindings.push(binding);
-      }
-      response_operations.push((name, operation.config().and_then(|v| v.value().cloned())));
+      let component_id = match resolve_ref(app_config, operation.component())? {
+        ResolvedComponent::Ref(id, _) => id.to_owned(),
+        ResolvedComponent::Inline(def) => {
+          let id = format!("{}_response_middleware_{}", router_index, i);
+          let binding = ImportBinding::component(&id, def.clone());
+          bindings.push(binding);
+          id
+        }
+      };
+      response_operations.push((
+        Entity::operation(component_id, operation.name()),
+        operation.config().and_then(|v| v.value().cloned()),
+      ));
     }
   }
   let middleware = RouterMiddleware::new(request_operations, response_operations);
@@ -324,11 +333,19 @@ fn register_raw_router(
   trace!(index, "registering raw router");
   let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
 
-  let router_component = resolve_ref(app_config, router_config.operation().component())?;
-  let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
+  let component_id = match resolve_ref(app_config, router_config.operation().component())? {
+    ResolvedComponent::Ref(id, _) => id.to_owned(),
+    ResolvedComponent::Inline(def) => {
+      let component_id = index_to_router_id(index);
+      let router_binding = config::ImportBinding::component(&component_id, def.clone());
+      bindings.push(router_binding);
+      component_id
+    }
+  };
+
   let router = RouterOperation {
     operation: router_config.operation().name().to_owned(),
-    component: index_to_router_id(index),
+    component: component_id,
     codec: router_config.codec().copied().unwrap_or_default(),
     config: router_config.operation().config().and_then(|v| v.value().cloned()),
     path: router_config.path().to_owned(),
@@ -350,7 +367,6 @@ fn register_raw_router(
   };
   let router = RawComponentRouter::new(router);
 
-  bindings.push(router_binding);
   Ok((
     bindings,
     HttpRouter::Raw(RawRouterHandler {
@@ -413,21 +429,37 @@ fn register_rest_router(
   trace!(index, "registering rest router");
   let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
   let mut routes = Vec::new();
+
   for (i, route) in router_config.routes().iter().enumerate() {
     info!(sub_path = route.sub_path(), "registering rest route");
 
-    let route_component = resolve_ref(app_config, route.operation().component())?;
-    let route_binding =
-      config::ImportBinding::component(format!("{}_{}", index_to_router_id(index), i), route_component);
-    let config = route_binding.config().cloned();
-    let route = RestRoute::new(route.clone(), route_binding.clone(), config).map_err(|e| {
+    let component_id = match resolve_ref(app_config, route.operation().component())? {
+      ResolvedComponent::Ref(id, _) => id.to_owned(),
+      ResolvedComponent::Inline(def) => {
+        #[allow(clippy::option_if_let_else)]
+        if let Some(existing_import) = bindings.iter().find(|i| {
+          if let ImportDefinition::Component(c) = i.kind() {
+            c == def
+          } else {
+            false
+          }
+        }) {
+          existing_import.id().to_owned()
+        } else {
+          let component_id = format!("{}_{}", index_to_router_id(index), i);
+          let route_binding = config::ImportBinding::component(&component_id, def.clone());
+          bindings.push(route_binding);
+          component_id
+        }
+      }
+    };
+    let route = RestRoute::new(route.clone(), component_id).map_err(|e| {
       RuntimeError::InitializationFailed(format!(
         "could not intitialize rest router for route {}: {}",
         route.sub_path(),
         e
       ))
     })?;
-    bindings.push(route_binding);
     routes.push(route);
   }
 

@@ -39,7 +39,7 @@ pub struct WasmComponentImplementation {
   #[asset(skip)]
   #[builder(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) buffer_size: Option<u32>,
+  pub(crate) max_packet_size: Option<u32>,
 }
 
 impl OperationSignatures for WasmComponentImplementation {
