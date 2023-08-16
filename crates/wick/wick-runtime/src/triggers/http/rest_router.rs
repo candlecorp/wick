@@ -8,15 +8,8 @@ use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
 use tracing::{Instrument, Span};
 use uuid::Uuid;
-use wick_config::config::{
-  AppConfiguration,
-  ComponentOperationExpression,
-  HttpMethod,
-  ImportBinding,
-  RestRouterConfig,
-  WickRouter,
-};
-use wick_packet::{Entity, InherentData, Invocation, Packet, RuntimeConfig};
+use wick_config::config::{AppConfiguration, ComponentOperationExpression, HttpMethod, RestRouterConfig, WickRouter};
+use wick_packet::{Entity, InherentData, Invocation, Packet};
 mod error;
 mod openapi;
 mod route;
@@ -119,7 +112,7 @@ impl RestHandler {
   }
 
   /// Serve a request.
-  #[allow(clippy::unused_async)]
+  #[allow(clippy::too_many_lines)]
   async fn serve(self, request: Request<Body>) -> Result<Response<Body>, HttpError> {
     let Self {
       context,
@@ -200,14 +193,24 @@ impl RestHandler {
       let invocation = Invocation::new_with_id(
         tx_id,
         Entity::server("http"),
-        Entity::operation(route.component.id(), route.operation.name()),
+        Entity::operation(&route.component, route.operation.name()),
         packets,
         InherentData::unsafe_default(),
         &span,
       );
+      let runtime_config = if let Some(config) = route.operation.config() {
+        // TODO:FIX These operations are being rendered without access to the root config.
+        Some(
+          config
+            .render(None, None, None, Some(&invocation.inherent))
+            .map_err(|e| HttpError::OperationError(e.to_string()))?,
+        )
+      } else {
+        None
+      };
 
       let stream = runtime
-        .invoke(invocation, route.runtime_config.clone())
+        .invoke(invocation, runtime_config)
         .instrument(span)
         .await
         .map_err(|e| HttpError::OperationError(e.to_string()))?;
@@ -244,17 +247,12 @@ impl Service<Request<Body>> for RestHandler {
 pub(crate) struct RestRoute {
   config: wick_config::config::RestRoute,
   route: route::Route,
-  component: ImportBinding,
+  component: String,
   operation: ComponentOperationExpression,
-  runtime_config: Option<RuntimeConfig>,
 }
 
 impl RestRoute {
-  pub(super) fn new(
-    config: wick_config::config::RestRoute,
-    component: ImportBinding,
-    runtime_config: Option<RuntimeConfig>,
-  ) -> Result<Self, HttpError> {
+  pub(super) fn new(config: wick_config::config::RestRoute, component_id: String) -> Result<Self, HttpError> {
     let route = route::Route::parse(config.sub_path())
       .map_err(|e| HttpError::RouteSyntax(e.to_string(), config.sub_path().to_owned()))?;
     let operation = config.operation().clone();
@@ -262,9 +260,8 @@ impl RestRoute {
     Ok(Self {
       config,
       route,
-      component,
+      component: component_id,
       operation,
-      runtime_config,
     })
   }
 }

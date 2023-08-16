@@ -786,7 +786,7 @@ pub(crate) struct WasmComponentConfiguration {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) buffer_size: Option<u32>,
+  pub(crate) max_packet_size: Option<u32>,
   /// Configuration necessary to provide when instantiating the component.
 
   #[serde(default)]
@@ -983,7 +983,7 @@ pub(crate) struct ManifestComponent {
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) buffer_size: Option<u32>,
+  pub(crate) max_packet_size: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

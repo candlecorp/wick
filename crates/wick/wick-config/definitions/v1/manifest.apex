@@ -434,7 +434,7 @@ type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
   volumes: [ExposedVolume]
 
   "The default size to allocate to the component's send/receive buffer."
-  buffer_size: u32?,
+  max_packet_size: u32?,
 
   "Configuration necessary to provide when instantiating the component."
   with: [Field]
@@ -531,7 +531,7 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
   provide: {string:string}
 
   "If applicable, the default size to allocate to the component's send/receive buffer."
-  buffer_size: u32?
+  max_packet_size: u32?
 }
 
 "Composite operations are operations whose implementations come from connecting other operations into a flow or series of pipelines."

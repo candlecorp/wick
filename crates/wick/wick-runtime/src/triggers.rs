@@ -8,14 +8,7 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use structured_output::StructuredOutput;
 use tracing::Span;
-use wick_config::config::{
-  ComponentDefinition,
-  ComponentOperationExpression,
-  ImportBinding,
-  TriggerDefinition,
-  TriggerKind,
-};
-use wick_packet::Entity;
+use wick_config::config::{ComponentDefinition, TriggerDefinition, TriggerKind};
 
 use crate::dev::prelude::*;
 use crate::resources::Resource;
@@ -66,42 +59,28 @@ pub fn get_trigger_loader(name: &TriggerKind) -> Option<TriggerLoader> {
   TRIGGER_LOADER_REGISTRY.lock().get(name).cloned()
 }
 
-pub(crate) fn resolve_or_import_component(
-  app_config: &AppConfiguration,
-  optional_name: impl AsRef<str>,
-  operation: &ComponentOperationExpression,
-) -> Result<(Entity, Option<ImportBinding>), RuntimeError> {
-  if let ComponentDefinition::Reference(cref) = operation.component() {
-    let _assert = app_config
-      .resolve_binding(cref.id())
-      .map_err(|e| {
-        RuntimeError::InitializationFailed(format!("Error initializing component {}: error was {}", cref.id(), e))
-      })?
-      .try_component()
-      .map_err(|e| RuntimeError::ReferenceError(cref.id().to_owned(), e))?;
-    Ok((Entity::operation(cref.id(), operation.name()), None))
-  } else {
-    Ok((
-      Entity::operation(&optional_name, operation.name()),
-      Some(ImportBinding::component(optional_name, operation.component().clone())),
-    ))
-  }
+pub(crate) enum ResolvedComponent<'a> {
+  Ref(&'a str, ComponentDefinition),
+  Inline(&'a ComponentDefinition),
 }
 
-pub(crate) fn resolve_ref(
+pub(crate) fn resolve_ref<'a>(
   app_config: &AppConfiguration,
-  component: &ComponentDefinition,
-) -> Result<ComponentDefinition, RuntimeError> {
+  component: &'a ComponentDefinition,
+) -> Result<ResolvedComponent<'a>, RuntimeError> {
   let def = if let ComponentDefinition::Reference(cref) = component {
-    app_config
-      .resolve_binding(cref.id())
-      .map_err(|e| {
-        RuntimeError::InitializationFailed(format!("Error initializing component {}: error was {}", cref.id(), e))
-      })?
-      .try_component()
-      .map_err(|e| RuntimeError::ReferenceError(cref.id().to_owned(), e))?
+    ResolvedComponent::Ref(
+      cref.id(),
+      app_config
+        .resolve_binding(cref.id())
+        .map_err(|e| {
+          RuntimeError::InitializationFailed(format!("Error initializing component {}: error was {}", cref.id(), e))
+        })?
+        .try_component()
+        .map_err(|e| RuntimeError::ReferenceError(cref.id().to_owned(), e))?,
+    )
   } else {
-    component.clone()
+    ResolvedComponent::Inline(component)
   };
   Ok(def)
 }

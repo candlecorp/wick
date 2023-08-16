@@ -51,11 +51,15 @@ async fn create_schedule(
   config: TimeTriggerConfig,
 ) -> Result<tokio::task::JoinHandle<()>, RuntimeError> {
   let span = info_span!("trigger:schedule", schedule = ?schedule);
-  let schedule_component = resolve_ref(&app_config, config.operation().component())?;
   let mut runtime = build_trigger_runtime(&app_config, span.clone())?;
-  let schedule_binding = config::ImportBinding::component("0", schedule_component);
-  runtime.add_import(schedule_binding);
-  // needed for invoke command
+  match resolve_ref(&app_config, config.operation().component())? {
+    super::ResolvedComponent::Ref(_, _) => {}
+    super::ResolvedComponent::Inline(def) => {
+      let schedule_binding = config::ImportBinding::component("0", def.clone());
+      runtime.add_import(schedule_binding);
+    }
+  };
+
   let runtime = runtime.build(None).await?;
 
   // Create a scheduler loop
