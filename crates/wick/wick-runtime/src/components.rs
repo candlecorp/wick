@@ -9,13 +9,22 @@ use std::sync::Arc;
 
 use flow_component::RuntimeCallback;
 use flow_graph_interpreter::NamespaceHandler;
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use tracing::Instrument;
 use uuid::Uuid;
 use wick_component_wasm::component::{ComponentSetupBuilder, WasmComponent};
 use wick_component_wasm::error::LinkError;
 use wick_config::config::components::ManifestComponent;
-use wick_config::config::{BoundInterface, Metadata, Permissions, PermissionsBuilder, WasmComponentImplementation};
+use wick_config::config::{
+  BoundInterface,
+  Metadata,
+  Permissions,
+  PermissionsBuilder,
+  UninitializedConfiguration,
+  WasmComponentImplementation,
+};
 use wick_config::{AssetReference, FetchOptions, Resolver, WickConfiguration};
 use wick_packet::validation::expect_configuration_matches;
 use wick_packet::{Entity, Invocation, RuntimeConfig};
@@ -118,6 +127,9 @@ pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
   })
 }
 
+static CONFIG_CACHE: Lazy<Mutex<HashMap<AssetReference, UninitializedConfiguration>>> =
+  Lazy::new(|| Mutex::new(HashMap::new()));
+
 pub(crate) async fn init_manifest_component(
   kind: &ManifestComponent,
   id: String,
@@ -126,15 +138,24 @@ pub(crate) async fn init_manifest_component(
   let span = opts.span.clone();
   span.in_scope(|| trace!(namespace = %id, ?opts, "registering wick component"));
 
-  let mut options = FetchOptions::default();
+  let cache_result = CONFIG_CACHE.lock().get(kind.reference()).cloned();
 
-  options
-    .set_allow_latest(opts.allow_latest)
-    .set_allow_insecure(opts.allowed_insecure.clone());
+  let mut builder = if let Some(config) = cache_result {
+    config
+  } else {
+    let mut options = FetchOptions::default();
 
-  let mut builder = WickConfiguration::fetch(kind.reference().clone(), options)
-    .instrument(span.clone())
-    .await?;
+    options
+      .set_allow_latest(opts.allow_latest)
+      .set_allow_insecure(opts.allowed_insecure.clone());
+    let builder = WickConfiguration::fetch(kind.reference().clone(), options)
+      .instrument(span.clone())
+      .await?;
+
+    CONFIG_CACHE.lock().insert(kind.reference().clone(), builder.clone());
+    builder
+  };
+
   builder.set_root_config(opts.root_config.clone());
   let manifest = builder.finish()?.try_component_config()?;
 
