@@ -41,6 +41,7 @@ pub(crate) async fn init_wasm_component(
   reference: &AssetReference,
   namespace: String,
   opts: ChildInit,
+  buffer_size: Option<u32>,
   permissions: Option<Permissions>,
   provided: HashMap<String, String>,
 ) -> ComponentInitResult {
@@ -56,6 +57,7 @@ pub(crate) async fn init_wasm_component(
 
   let setup = ComponentSetupBuilder::default()
     .engine(WASMTIME_ENGINE.clone())
+    .buffer_size(buffer_size)
     .permissions(permissions)
     .config(opts.root_config)
     .callback(Some(make_link_callback(opts.runtime_id)))
@@ -76,10 +78,19 @@ pub(crate) async fn init_wasm_impl_component(
   kind: &WasmComponentImplementation,
   namespace: String,
   opts: ChildInit,
+  buffer_size: Option<u32>,
   permissions: Option<Permissions>,
   provided: HashMap<String, String>,
 ) -> ComponentInitResult {
-  init_wasm_component(kind.reference(), namespace, opts, permissions, provided).await
+  init_wasm_component(
+    kind.reference(),
+    namespace,
+    opts,
+    buffer_size.or(kind.buffer_size()),
+    permissions,
+    provided,
+  )
+  .await
 }
 
 pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
@@ -130,13 +141,14 @@ pub(crate) async fn init_manifest_component(
   let requires = manifest.requires();
   let provided = generate_provides_entities(requires, kind.provide())
     .map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
-  init_component_implementation(&manifest, id, opts, provided).await
+  init_component_implementation(&manifest, id, opts, kind.buffer_size(), provided).await
 }
 
 pub(crate) async fn init_component_implementation(
   manifest: &ComponentConfiguration,
   id: String,
   mut opts: ChildInit,
+  buffer_size: Option<u32>,
   provided: HashMap<String, String>,
 ) -> ComponentInitResult {
   let span = opts.span.clone();
@@ -162,7 +174,7 @@ pub(crate) async fn init_component_implementation(
       } else {
         None
       };
-      let comp = init_wasm_impl_component(wasmimpl, id.clone(), opts, perms, provided).await?;
+      let comp = init_wasm_impl_component(wasmimpl, id.clone(), opts, buffer_size, perms, provided).await?;
       let signed_sig = comp.component().signature();
       let manifest_sig = manifest.signature()?;
       span.in_scope(|| {

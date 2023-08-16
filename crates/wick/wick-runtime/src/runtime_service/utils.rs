@@ -67,7 +67,7 @@ pub(crate) async fn instantiate_imported_component(
   match kind {
     #[allow(deprecated)]
     config::ComponentDefinition::Wasm(def) => Ok(Some(
-      init_wasm_component(def.reference(), id, opts, None, Default::default()).await?,
+      init_wasm_component(def.reference(), id, opts, None, None, Default::default()).await?,
     )),
     config::ComponentDefinition::Manifest(def) => Ok(Some(init_manifest_component(def, id, opts).await?)),
     config::ComponentDefinition::Reference(_) => unreachable!(),

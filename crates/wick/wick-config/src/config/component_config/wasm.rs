@@ -34,6 +34,12 @@ pub struct WasmComponentImplementation {
   #[property(skip)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) operations: Vec<OperationDefinition>,
+
+  /// The default buffer size to use for the component.
+  #[asset(skip)]
+  #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) buffer_size: Option<u32>,
 }
 
 impl OperationSignatures for WasmComponentImplementation {

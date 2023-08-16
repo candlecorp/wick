@@ -73,6 +73,7 @@ impl TryFrom<crate::v0::CollectionDefinition> for config::ComponentDefinition {
           reference: def.reference.clone().try_into()?,
           config: def.data.map(Into::into),
           provide: Default::default(),
+          buffer_size: None,
         })
       }
     };

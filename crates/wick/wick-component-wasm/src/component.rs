@@ -19,6 +19,8 @@ pub struct ComponentSetup {
   #[builder(setter(), default)]
   pub config: Option<RuntimeConfig>,
   #[builder(setter(), default)]
+  pub buffer_size: Option<u32>,
+  #[builder(setter(), default)]
   pub callback: Option<Arc<RuntimeCallback>>,
   #[builder(default, setter(into))]
   pub provided: HashMap<String, String>,
@@ -79,8 +81,13 @@ impl WasmComponent {
     if let Some(callback) = options.callback {
       builder = builder.link_callback(callback);
     }
+
     if let Some(engine) = options.engine {
       builder = builder.engine(engine);
+    }
+
+    if let Some(value) = options.buffer_size {
+      builder = builder.buffer_size(value);
     }
 
     let host = builder.build(&asset).await?;

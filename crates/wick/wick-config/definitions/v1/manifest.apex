@@ -433,6 +433,9 @@ type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
   "Volumes to expose to the component."
   volumes: [ExposedVolume]
 
+  "The default size to allocate to the component's send/receive buffer."
+  buffer_size: u32?,
+
   "Configuration necessary to provide when instantiating the component."
   with: [Field]
 
@@ -516,7 +519,7 @@ type GrpcUrlComponent @tagged("wick/component/grpc@v1") {
   with: {string: LiquidJsonValue}?,
 }
 
-"A native component that can be extracted and run as a microservice."
+"A configuration defined in a Wick component manifest."
 type ManifestComponent @tagged("wick/component/manifest@v1") {
   "The URL (and optional tag) or local file path to find the manifest."
   ref: LocationReference @rename("reference")  @required
@@ -526,6 +529,9 @@ type ManifestComponent @tagged("wick/component/manifest@v1") {
 
   "External components to provide to the referenced component."
   provide: {string:string}
+
+  "If applicable, the default size to allocate to the component's send/receive buffer."
+  buffer_size: u32?
 }
 
 "Composite operations are operations whose implementations come from connecting other operations into a flow or series of pipelines."

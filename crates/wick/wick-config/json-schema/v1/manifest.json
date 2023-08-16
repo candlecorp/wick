@@ -1143,6 +1143,12 @@
             "$ref": "#/$defs/v1/ExposedVolume"
           }
         },
+        "buffer_size": {
+          "description": "The default size to allocate to the component&#x27;s send/receive buffer.",
+          "required": false,
+
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
+        },
         "with": {
           "description": "Configuration necessary to provide when instantiating the component.",
 
@@ -1393,6 +1399,12 @@
               "type": "string"
             }
           }
+        },
+        "buffer_size": {
+          "description": "If applicable, the default size to allocate to the component&#x27;s send/receive buffer.",
+          "required": false,
+
+          "oneOf": [{ "type": "number" }, { "type": "string" }]
         }
       },
       "required": ["ref"]
