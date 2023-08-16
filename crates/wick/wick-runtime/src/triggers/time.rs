@@ -22,8 +22,9 @@ use crate::triggers::resolve_ref;
 
 async fn invoke_operation(
   runtime: Arc<crate::Runtime>,
-  operation: Arc<String>,
+  target: Entity,
   payload: Arc<Vec<config::OperationInputConfig>>,
+  span: &Span,
 ) -> Result<(), RuntimeError> {
   let packets: Vec<_> = payload
     .iter()
@@ -32,10 +33,10 @@ async fn invoke_operation(
 
   let invocation = Invocation::new(
     Entity::server("schedule_client"),
-    Entity::operation("0", operation.as_str()),
+    target,
     packets,
     InherentData::unsafe_default(),
-    &Span::current(),
+    span,
   );
 
   let mut response = runtime.invoke(invocation, Default::default()).await?;
@@ -52,11 +53,13 @@ async fn create_schedule(
 ) -> Result<tokio::task::JoinHandle<()>, RuntimeError> {
   let span = info_span!("trigger:schedule", schedule = ?schedule);
   let mut runtime = build_trigger_runtime(&app_config, span.clone())?;
-  match resolve_ref(&app_config, config.operation().component())? {
-    super::ResolvedComponent::Ref(_, _) => {}
+  let component_id = match resolve_ref(&app_config, config.operation().component())? {
+    super::ResolvedComponent::Ref(id, _) => id.to_owned(),
     super::ResolvedComponent::Inline(def) => {
-      let schedule_binding = config::ImportBinding::component("0", def.clone());
+      let id = "0";
+      let schedule_binding = config::ImportBinding::component(id, def.clone());
       runtime.add_import(schedule_binding);
+      id.to_owned()
     }
   };
 
@@ -70,8 +73,15 @@ async fn create_schedule(
 
     let mut current_count: u16 = 0;
 
+    let (failure_tx, mut failure_rx) = tokio::sync::mpsc::channel::<()>(1);
+
     loop {
       if config.schedule().repeat() > 0 && current_count >= config.schedule().repeat() {
+        break;
+      }
+
+      if failure_rx.try_recv().is_ok() {
+        span.in_scope(|| error!("scheduler task failed to execute"));
         break;
       }
 
@@ -88,15 +98,19 @@ async fn create_schedule(
 
       span.in_scope(|| debug!("done sleeping"));
 
-      let rt_clone = runtime.clone();
-      let operation_clone = operation.clone();
-      let payload_clone = payload.clone();
+      let target = Entity::operation(&component_id, &*operation);
+      let job_span = info_span!("trigger:schedule:job", target = ?target);
+      job_span.follows_from(&span);
+      let rt = runtime.clone();
+      let payload = payload.clone();
 
-      let fut = invoke_operation(rt_clone, operation_clone, payload_clone);
-      let span = span.clone();
+      let fail_tx = failure_tx.clone();
+
       tokio::spawn(async move {
+        let fut = invoke_operation(rt, target, payload, &job_span);
         if let Err(e) = fut.await {
-          span.in_scope(|| error!("Error invoking operation: {}", e));
+          job_span.in_scope(|| error!("Error invoking operation: {}", e));
+          let _ = fail_tx.send(()).await;
         }
       });
     }
@@ -200,25 +214,21 @@ impl fmt::Display for Time {
 
 #[cfg(test)]
 mod test {
-  use std::path::PathBuf;
+
+  use std::time::SystemTime;
 
   use anyhow::Result;
 
   use super::*;
+  use crate::test::load_example;
 
   #[test_logger::test(tokio::test)]
-  async fn test_basic() -> Result<()> {
-    let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let manifest_dir = crate_dir.join("../../../examples/time/");
-
-    let yaml = manifest_dir.join("time.wick");
-    let app_config = config::WickConfiguration::fetch(&yaml, Default::default())
-      .await?
-      .finish()?
-      .try_app_config()?;
+  async fn test_time_example() -> Result<()> {
+    let app_config = load_example("time/time.wick").await?.try_app_config()?;
 
     let trigger = Time::load()?;
     let trigger_config = app_config.triggers()[0].clone();
+    let start = SystemTime::now();
     trigger
       .run(
         "test".to_owned(),
@@ -230,6 +240,9 @@ mod test {
       .await?;
     debug!("scheduler is running");
     trigger.wait_for_done().await;
+    let end = SystemTime::now();
+    let duration = end.duration_since(start)?;
+    assert!(duration.as_secs() >= 5);
 
     Ok(())
   }
