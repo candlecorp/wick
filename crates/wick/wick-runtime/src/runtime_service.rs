@@ -61,7 +61,7 @@ impl RuntimeService {
       span.in_scope(|| debug!(%ns,options=?component_init,"instantiating component"));
 
       let main_component =
-        init_component_implementation(&init.manifest, ns.clone(), component_init, Default::default()).await?;
+        init_component_implementation(&init.manifest, ns.clone(), component_init, None, Default::default()).await?;
       let reported_sig = main_component.component().signature();
       let manifest_sig = init.manifest.signature()?;
 

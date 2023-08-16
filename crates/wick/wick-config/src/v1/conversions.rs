@@ -236,6 +236,7 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentImplementation {
       config: value.with.try_map_into()?,
       operations: value.operations.try_map_into()?,
       volumes: value.volumes.try_map_into()?,
+      buffer_size: value.buffer_size,
     })
   }
 }
@@ -292,6 +293,7 @@ impl TryFrom<WasmComponentImplementation> for v1::WasmComponentConfiguration {
       reference: value.reference.try_into()?,
       with: value.config.try_map_into()?,
       volumes: value.volumes.try_map_into()?,
+      buffer_size: value.buffer_size,
     })
   }
 }
@@ -942,6 +944,7 @@ impl TryFrom<ManifestComponent> for v1::ManifestComponent {
       reference: def.reference.try_into()?,
       with: def.config.map_into(),
       provide: def.provide,
+      buffer_size: def.buffer_size,
     })
   }
 }
@@ -1090,6 +1093,7 @@ impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
         reference: v.reference.try_into()?,
         config: v.with.map_into(),
         provide: v.provide,
+        buffer_size: v.buffer_size,
       }),
       v1::ComponentDefinition::ComponentReference(v) => ComponentDefinition::Reference(ComponentReference { id: v.id }),
       v1::ComponentDefinition::SqlComponent(v) => {

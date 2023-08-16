@@ -24,4 +24,8 @@ pub struct ManifestComponent {
   #[builder(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub(crate) provide: HashMap<String, String>,
+  /// If applicable, the size of the send/receive buffer to allocate to the component.
+  #[asset(skip)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) buffer_size: Option<u32>,
 }

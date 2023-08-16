@@ -34,6 +34,7 @@ use crate::wasm_module::WickWasmModule;
 use crate::{Error, Result};
 
 static CLAIMS_CACHE: Lazy<RwLock<HashMap<String, Claims<WickComponent>>>> = Lazy::new(|| RwLock::new(HashMap::new()));
+const DEFAULT_BUFFER_SIZE: u32 = 1024 * 512;
 
 #[must_use]
 pub struct WasmHostBuilder {
@@ -41,6 +42,7 @@ pub struct WasmHostBuilder {
   callback: Option<Arc<RuntimeCallback>>,
   engine: Option<wasmtime::Engine>,
   span: Span,
+  buffer_size: Option<u32>,
 }
 
 impl std::fmt::Debug for WasmHostBuilder {
@@ -57,6 +59,7 @@ impl WasmHostBuilder {
       wasi_params: None,
       callback: None,
       engine: None,
+      buffer_size: None,
       span,
     }
   }
@@ -76,6 +79,11 @@ impl WasmHostBuilder {
     self
   }
 
+  pub fn buffer_size(mut self, buffer_size: u32) -> Self {
+    self.buffer_size = Some(buffer_size);
+    self
+  }
+
   pub fn preopened_dirs(mut self, dirs: Vec<String>) -> Self {
     let mut params = self.wasi_params.take().unwrap_or_default();
     params.preopened_dirs = dirs;
@@ -84,7 +92,15 @@ impl WasmHostBuilder {
   }
 
   pub async fn build(self, reference: &FetchableAssetReference<'_>) -> Result<WasmHost> {
-    WasmHost::try_load(reference, self.engine, self.wasi_params, &self.callback, self.span).await
+    WasmHost::try_load(
+      reference,
+      self.engine,
+      self.wasi_params,
+      self.buffer_size.unwrap_or(DEFAULT_BUFFER_SIZE),
+      &self.callback,
+      self.span,
+    )
+    .await
   }
 }
 
@@ -107,6 +123,7 @@ impl WasmHost {
     asset: &FetchableAssetReference<'_>,
     engine: Option<wasmtime::Engine>,
     wasi_options: Option<WasiParams>,
+    buffer_size: u32,
     callback: &Option<Arc<RuntimeCallback>>,
     span: Span,
   ) -> Result<Self> {
@@ -148,7 +165,7 @@ impl WasmHost {
       (engine, module.token.claims)
     };
 
-    trace!(duration_μs = %time.elapsed().as_micros(), "wasmtime instance loaded");
+    trace!(duration_μs = %time.elapsed().as_micros(), %buffer_size, "wasmtime instance loaded");
 
     let host = Host::new(engine).map_err(|e| WasmComponentError::EngineFailure(e.to_string()))?;
 
@@ -160,7 +177,7 @@ impl WasmHost {
       host.register_fire_and_forget("wick", "__event", make_event_callback(cb_span));
       trace!(index, "wasmrs callback index");
     }
-    let buffer_size: u32 = 5 * 1024 * 1024;
+
     let ctx = match host.new_context(buffer_size, buffer_size) {
       Ok(ctx) => ctx,
       Err(e) => {

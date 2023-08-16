@@ -782,6 +782,11 @@ pub(crate) struct WasmComponentConfiguration {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) volumes: Vec<ExposedVolume>,
+  /// The default size to allocate to the component&#x27;s send/receive buffer.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) buffer_size: Option<u32>,
   /// Configuration necessary to provide when instantiating the component.
 
   #[serde(default)]
@@ -957,7 +962,7 @@ pub(crate) struct GrpcUrlComponent {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A native component that can be extracted and run as a microservice.
+/// A configuration defined in a Wick component manifest.
 pub(crate) struct ManifestComponent {
   /// The URL (and optional tag) or local file path to find the manifest.
 
@@ -974,6 +979,11 @@ pub(crate) struct ManifestComponent {
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   #[serde(deserialize_with = "crate::helpers::kv_deserializer")]
   pub(crate) provide: HashMap<String, String>,
+  /// If applicable, the default size to allocate to the component&#x27;s send/receive buffer.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) buffer_size: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
