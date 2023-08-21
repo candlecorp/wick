@@ -150,17 +150,11 @@ pub(crate) fn reconcile_fetch_options(
     .set_on_existing(if opts.force {
       OnExisting::Overwrite
     } else {
-      OnExisting::Error
+      OnExisting::Ignore
     });
-  let path = PathBuf::from(reference);
 
   if let Some(output) = output {
     oci_opts.set_cache_dir(output);
-  } else if path.exists() {
-    // if we're running a local file, use a local cache relative to the file.
-    let mut path_dir = path.clone();
-    path_dir.pop();
-    oci_opts.set_cache_dir(path_dir.join(xdg.local().cache()));
   } else {
     // otherwise, use the global cache.
     oci_opts.set_cache_dir(xdg.global().cache().clone());
