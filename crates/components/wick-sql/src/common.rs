@@ -8,7 +8,8 @@ use wick_config::Resolver;
 use wick_interface_types::{component, ComponentSignature, Field, OperationSignature, Type};
 use wick_packet::{Packet, TypeWrapper};
 
-use self::sql_wrapper::SqlWrapper;
+use self::sql_wrapper::ConvertedType;
+use crate::error::ConversionError;
 use crate::Error;
 type Result<T> = std::result::Result<T, Error>;
 
@@ -41,8 +42,8 @@ pub(crate) fn convert_url_resource(resolver: &Resolver, id: &str) -> Result<Url>
   resource.url().value().cloned().ok_or(Error::InvalidResourceConfig)
 }
 
-pub(crate) fn bind_args(positional_args: &[String], values: &[(Type, Packet)]) -> Result<Vec<SqlWrapper>> {
-  let mut bound_args: Vec<SqlWrapper> = Vec::new();
+pub(crate) fn bind_args(positional_args: &[String], values: &[(Type, Packet)]) -> Result<Vec<ConvertedType>> {
+  let mut bound_args: Vec<ConvertedType> = Vec::new();
   for arg in positional_args {
     let (arg, spread) = if arg.ends_with("...") {
       let arg = arg.trim_end_matches("...");
@@ -69,13 +70,15 @@ pub(crate) fn bind_args(positional_args: &[String], values: &[(Type, Packet)]) -
         bound_args.extend(
           arr
             .into_iter()
-            .map(|v| SqlWrapper::from(TypeWrapper::new(*ty.clone(), v))),
+            .map(|v| sql_wrapper::convert(&TypeWrapper::new(*ty.clone(), v)))
+            .collect::<std::result::Result<Vec<_>, ConversionError>>()
+            .map_err(|e| Error::Prepare(e.to_string()))?,
         );
       } else {
         return Err(Error::Prepare(format!("value for '{}...' is not an array ", arg)));
       }
     } else {
-      bound_args.push(SqlWrapper::from(type_wrapper));
+      bound_args.push(sql_wrapper::convert(&type_wrapper).map_err(|e| Error::Prepare(e.to_string()))?);
     }
   }
 
@@ -98,9 +101,9 @@ mod test {
     ];
     let bound_args = bind_args(&bound_args, &values)?;
     assert_eq!(bound_args.len(), 3);
-    assert_eq!(bound_args[0].clone().decode::<String>().unwrap(), "value1");
-    assert_eq!(bound_args[1].clone().decode::<String>().unwrap(), "value2");
-    assert_eq!(bound_args[2].clone().decode::<String>().unwrap(), "value3");
+    assert_eq!(bound_args[0], ConvertedType::String(Some("value1".to_owned())));
+    assert_eq!(bound_args[1], ConvertedType::String(Some("value2".to_owned())));
+    assert_eq!(bound_args[2], ConvertedType::String(Some("value3".to_owned())));
 
     Ok(())
   }
@@ -120,14 +123,10 @@ mod test {
     ];
     let bound_args = bind_args(&bound_args, &values)?;
     assert_eq!(bound_args.len(), 4);
-    assert_eq!(bound_args[0].clone().decode::<String>().unwrap(), "value1");
-    assert_eq!(*bound_args[0].0.type_signature(), Type::String);
-    assert_eq!(bound_args[1].clone().decode::<String>().unwrap(), "value2.1");
-    assert_eq!(*bound_args[1].0.type_signature(), Type::String);
-    assert_eq!(bound_args[2].clone().decode::<String>().unwrap(), "value2.2");
-    assert_eq!(*bound_args[2].0.type_signature(), Type::String);
-    assert_eq!(bound_args[3].clone().decode::<String>().unwrap(), "value3");
-    assert_eq!(*bound_args[3].0.type_signature(), Type::String);
+    assert_eq!(bound_args[0], ConvertedType::String(Some("value1".to_owned())));
+    assert_eq!(bound_args[1], ConvertedType::String(Some("value2.1".to_owned())));
+    assert_eq!(bound_args[2], ConvertedType::String(Some("value2.2".to_owned())));
+    assert_eq!(bound_args[3], ConvertedType::String(Some("value3".to_owned())));
 
     Ok(())
   }
@@ -146,12 +145,12 @@ pub(crate) trait ClientConnection: Send + Sync {
   async fn query<'a, 'b>(
     &'a mut self,
     stmt: &'a str,
-    bound_args: Vec<SqlWrapper>,
+    bound_args: Vec<ConvertedType>,
   ) -> Result<BoxStream<'b, Result<Value>>>
   where
     'a: 'b;
 
-  async fn exec(&mut self, stmt: String, bound_args: Vec<SqlWrapper>) -> Result<u64>;
+  async fn exec(&mut self, stmt: String, bound_args: Vec<ConvertedType>) -> Result<u64>;
   async fn finish(&mut self, behavior: ErrorBehavior) -> Result<()>;
   async fn handle_error(&mut self, e: Error, behavior: ErrorBehavior) -> Result<()>;
   async fn start(&mut self, behavior: ErrorBehavior) -> Result<()>;
@@ -168,7 +167,7 @@ impl<'conn> Connection<'conn> {
   pub(crate) async fn query<'a, 'b>(
     &'a mut self,
     stmt: &'a str,
-    bound_args: Vec<SqlWrapper>,
+    bound_args: Vec<ConvertedType>,
   ) -> Result<BoxStream<'b, Result<Value>>>
   where
     'a: 'b,
@@ -177,7 +176,7 @@ impl<'conn> Connection<'conn> {
 
     Ok(stream)
   }
-  pub(crate) async fn exec(&mut self, stmt: String, bound_args: Vec<SqlWrapper>) -> Result<u64> {
+  pub(crate) async fn exec(&mut self, stmt: String, bound_args: Vec<ConvertedType>) -> Result<u64> {
     self.0.exec(stmt, bound_args).await
   }
 

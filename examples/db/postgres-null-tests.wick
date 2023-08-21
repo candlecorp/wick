@@ -1,0 +1,50 @@
+name: my_component
+kind: wick/component@v1
+resources:
+  - name: DBADDR
+    resource:
+      kind: wick/resource/url@v1
+      url: postgres://postgres:{{ ctx.root_config.password }}@{{ ctx.root_config.host }}:{{ ctx.root_config.port }}/wick_test
+component:
+  kind: wick/component/sql@v1
+  with:
+    - name: password
+      type: string
+    - name: host
+      type: string
+    - name: port
+      type: string
+  resource: DBADDR
+  tls: false
+  operations:
+    - name: get_null
+      inputs: []
+      outputs:
+        - name: output
+          type: object
+      query: |
+        select col_name
+        from (
+            values ('this'), (null), ('that')
+        ) s(col_name)
+tests:
+  - with:
+      host: '{{ctx.env.TEST_HOST}}'
+      port: '{{ctx.env.POSTGRES_PORT}}'
+      password: '{{ctx.env.TEST_PASSWORD}}'
+    cases:
+      - operation: get_null
+        inputs: []
+        outputs:
+          - name: output
+            value:
+              col_name: 'this'
+          - name: output
+            value:
+              col_name: null
+          - name: output
+            value:
+              col_name: 'that'
+          - name: output
+            flags:
+              done: true

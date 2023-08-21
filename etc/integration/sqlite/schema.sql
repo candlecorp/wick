@@ -19,3 +19,10 @@ CREATE TABLE num_types (
   f64 REAL
 );
 
+CREATE TABLE date_types (
+  not_null_timestamp TIMESTAMP not null,
+  null_timestamp TIMESTAMP,
+  not_null_timestamptz TIMESTAMPTZ not null,
+  null_timestamptz TIMESTAMPTZ
+);
+

@@ -9,6 +9,10 @@ pub(crate) fn serialize_valueref<S>(value: &PgValueRef, s: S) -> Result<S::Ok, S
 where
   S: Serializer,
 {
+  if value.is_null() {
+    return s.serialize_none();
+  }
+
   let value = value.clone();
   let info = value.type_info();
   let name = info.name();

@@ -11,7 +11,7 @@ use wick_config::config::ErrorBehavior;
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{Field, Type};
 
-use crate::common::sql_wrapper::SqlWrapper;
+use crate::common::sql_wrapper::ConvertedType;
 use crate::common::{ClientConnection, Connection, DatabaseProvider};
 use crate::sqlx::{postgres, sqlite};
 use crate::{common, Error};
@@ -23,31 +23,13 @@ enum CtxPool {
 }
 
 impl CtxPool {
-  fn make_query<'a, DB, ARG>(
-    sql: &'a str,
-    args: Vec<ARG>,
-  ) -> sqlx::query::Query<'a, DB, <DB as sqlx::database::HasArguments<'_>>::Arguments>
-  where
-    DB: sqlx::Database,
-    ARG: sqlx::Encode<'a, DB> + Send + Sync + 'static,
-    ARG: std::fmt::Debug,
-    ARG: sqlx::Type<DB>,
-  {
-    let mut query = sqlx::query(sql);
-    for arg in args {
-      trace!(?arg, "binding arg");
-      query = query.bind(arg);
-    }
-    query
-  }
-
-  fn run_query<'a, 'b>(&'a self, querystr: &'b str, args: Vec<SqlWrapper>) -> BoxStream<'a, Result<Value, Error>>
+  fn run_query<'a, 'b>(&'a self, querystr: &'b str, args: Vec<ConvertedType>) -> BoxStream<'a, Result<Value, Error>>
   where
     'b: 'a,
   {
     match self {
       CtxPool::Postgres(c) => {
-        let query = Self::make_query(querystr, args);
+        let query = postgres::make_query(querystr, args);
         let stream = query.fetch(c).map(|res| res.map(postgres::SerMapRow::from)).map(|res| {
           res
             .map(|el| serde_json::to_value(el).unwrap_or(Value::Null))
@@ -57,7 +39,7 @@ impl CtxPool {
         stream.boxed()
       }
       CtxPool::SqlLite(c) => {
-        let query = Self::make_query(querystr, args);
+        let query = sqlite::make_query(querystr, args);
         let stream = query.fetch(c).map(|res| res.map(sqlite::SerMapRow::from)).map(|res| {
           res
             .map(|el| serde_json::to_value(el).unwrap_or(Value::Null))
@@ -69,17 +51,17 @@ impl CtxPool {
     }
   }
 
-  async fn run_exec<'a, 'q>(&'a self, query: &'q str, args: Vec<SqlWrapper>) -> Result<u64, Error>
+  async fn run_exec<'a, 'q>(&'a self, query: &'q str, args: Vec<ConvertedType>) -> Result<u64, Error>
   where
     'q: 'a,
   {
     let result = match self {
       CtxPool::Postgres(c) => {
-        let query = Self::make_query(query, args);
+        let query = postgres::make_query(query, args);
         query.execute(c).await.map(|r| r.rows_affected())
       }
       CtxPool::SqlLite(c) => {
-        let query = Self::make_query(query, args);
+        let query = sqlite::make_query(query, args);
         query.execute(c).await.map(|r| r.rows_affected())
       }
     };
@@ -157,14 +139,14 @@ impl ClientConnection for CtxPool {
     Ok(())
   }
 
-  async fn exec(&mut self, stmt: String, bound_args: Vec<SqlWrapper>) -> Result<u64, Error> {
+  async fn exec(&mut self, stmt: String, bound_args: Vec<ConvertedType>) -> Result<u64, Error> {
     self.run_exec(&stmt, bound_args).await
   }
 
   async fn query<'a, 'b>(
     &'a mut self,
     stmt: &'a str,
-    bound_args: Vec<SqlWrapper>,
+    bound_args: Vec<ConvertedType>,
   ) -> Result<BoxStream<'b, Result<Value, Error>>, Error>
   where
     'a: 'b,
