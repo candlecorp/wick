@@ -2,8 +2,6 @@ use flow_component::ComponentError;
 use wick_config::error::ManifestError;
 use wick_packet::TypeWrapper;
 
-use crate::mssql_tiberius::sql_wrapper::MsSqlConversionError;
-
 #[derive(thiserror::Error, Debug)]
 #[allow(missing_docs)]
 pub enum Error {
@@ -71,7 +69,7 @@ pub enum Error {
   MissingPacket(String),
 
   #[error("Could not encode wick type {} with value '{}' into the DB's type for {1}. Try a different value, type, or coersion within the SQL query.",.0.type_signature(),.0.inner())]
-  SqlServerEncodingFault(TypeWrapper, MsSqlConversionError),
+  SqlServerEncodingFault(TypeWrapper, ConversionError),
 
   #[error(transparent)]
   ComponentError(wick_packet::Error),
@@ -93,4 +91,50 @@ impl From<Error> for ComponentError {
   fn from(value: Error) -> Self {
     ComponentError::new(value)
   }
+}
+
+#[derive(thiserror::Error, Debug, Copy, Clone)]
+pub enum ConversionError {
+  #[error("i8")]
+  I8,
+  #[error("i16")]
+  I16,
+  #[error("i32")]
+  I32,
+  #[error("i64")]
+  I64,
+  #[error("u8")]
+  U8,
+  #[error("u16")]
+  U16,
+  #[error("u32")]
+  U32,
+  #[error("u64")]
+  U64,
+  #[error("f32")]
+  F32,
+  #[error("f64")]
+  F64,
+  #[error("bool")]
+  Bool,
+  #[error("string")]
+  String,
+  #[error("datetime")]
+  Datetime,
+  #[error("bytes")]
+  Bytes,
+  #[error("named")]
+  Named,
+  #[error("list")]
+  List,
+  #[error("optional")]
+  Optional,
+  #[error("map")]
+  Map,
+  #[error("link")]
+  Link,
+  #[error("object")]
+  Object,
+  #[error("anonymous struct")]
+  AnonymousStruct,
 }

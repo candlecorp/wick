@@ -8,6 +8,10 @@ pub(crate) fn serialize_value_ref<S>(value: &SqliteValueRef, s: S) -> Result<S::
 where
   S: Serializer,
 {
+  if value.is_null() {
+    return s.serialize_none();
+  }
+
   let info = value.type_info();
   let value = value.to_owned();
   let value = value.as_ref();

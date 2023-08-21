@@ -13,8 +13,8 @@ use wick_config::config::ErrorBehavior;
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{Field, Type};
 
-use super::sql_wrapper::{FromSqlWrapper, MsSqlWrapper};
-use crate::common::sql_wrapper::SqlWrapper;
+use super::sql_wrapper::FromSqlWrapper;
+use crate::common::sql_wrapper::ConvertedType;
 use crate::common::{ClientConnection, Connection, DatabaseProvider};
 use crate::{common, Error};
 
@@ -71,11 +71,11 @@ impl<'a> ClientConnection for PooledConnection<'a, ConnectionManager> {
     Ok(())
   }
 
-  async fn exec(&mut self, stmt: String, bound_args: Vec<SqlWrapper>) -> Result<u64, Error> {
+  async fn exec(&mut self, stmt: String, bound_args: Vec<ConvertedType>) -> Result<u64, Error> {
     let mut query = Query::new(stmt);
 
     for param in bound_args {
-      query.bind(MsSqlWrapper::try_from(&param).map_err(|e| Error::SqlServerEncodingFault(param.0, e))?);
+      query.bind(param);
     }
 
     query
@@ -88,7 +88,7 @@ impl<'a> ClientConnection for PooledConnection<'a, ConnectionManager> {
   async fn query<'b, 'c>(
     &'b mut self,
     stmt: &'b str,
-    bound_args: Vec<SqlWrapper>,
+    bound_args: Vec<ConvertedType>,
   ) -> Result<BoxStream<'c, Result<Value, Error>>, Error>
   where
     'b: 'c,
@@ -96,7 +96,7 @@ impl<'a> ClientConnection for PooledConnection<'a, ConnectionManager> {
     let mut query = Query::new(stmt);
 
     for param in bound_args {
-      query.bind(MsSqlWrapper::try_from(&param).map_err(|e| Error::SqlServerEncodingFault(param.0, e))?);
+      query.bind(param);
     }
 
     let result = query.query(self).await.map_err(|e| Error::Failed(e.to_string()))?;

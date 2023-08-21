@@ -222,6 +222,8 @@ _run-wasm-task task:
 # Run `wick` tests for db components
 _wick-db-tests:
   {{wick}} test ./examples/db/postgres-numeric-tests.wick
+  {{wick}} test ./examples/db/postgres-null-tests.wick
+  {{wick}} test ./examples/db/postgres-date-tests.wick
   {{wick}} test ./tests/cli-tests/tests/cmd/db/azuresql-tx-test.wick
 
 # Run `wick` tests for http components
