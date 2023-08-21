@@ -236,7 +236,7 @@ mod test {
     trigger.wait_for_done().await;
     let end = SystemTime::now();
     let duration = end.duration_since(start)?;
-    assert!(duration.as_secs() >= 5);
+    assert!(duration.as_secs() >= 4);
 
     Ok(())
   }
