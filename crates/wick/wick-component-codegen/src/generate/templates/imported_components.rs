@@ -140,10 +140,20 @@ fn encoded_inputs(fields: &[Field]) -> Vec<TokenStream> {
 fn merged_inputs(fields: &[Field]) -> TokenStream {
   let start = id("stream");
 
-  fields.iter().fold(quote! {#start}, |acc: TokenStream, next| {
+  let tokens = fields.iter().fold(quote! {#start}, |acc: TokenStream, next| {
     let name = id(&snake(next.name()));
     quote! {
       #acc.merge(#name)
     }
-  })
+  });
+  let done_packets = fields.iter().map(|next| {
+    let name = next.name();
+    quote! {
+      Ok(Packet::done(#name))
+    }
+  });
+
+  quote! {
+    #tokens.chain(wick_component::iter_raw(vec![#(#done_packets),*]))
+  }
 }
