@@ -780,7 +780,7 @@ type TestDefinition {
   inputs: [PacketData] @alias("input")
 
   "The expected outputs of the operation."
-  outputs: [PacketData] @alias("output")
+  outputs: [TestPacketData] @alias("output")
 }
 
 "Data inherent to all invocations."
@@ -795,6 +795,9 @@ type InherentData {
 "Either a success packet or an error packet."
 union PacketData @untagged = SuccessPacket | ErrorPacket
 
+"Packet assertions."
+union TestPacketData @untagged = SuccessPacket | PacketAssertionDef | ErrorPacket
+
 "A simplified representation of a Wick data packet & payload, used when writing tests."
 type SuccessPacket {
   "The name of the input or output this packet is going to or coming from."
@@ -806,8 +809,39 @@ type SuccessPacket {
   "The flag set on the packet."
   flag: PacketFlag?
 
-  "The data to send."
+  "The packet payload."
   value: LiquidJsonValue? @alias("data")
+}
+
+"A test case for a component's operation that uses loose equality for comparing data."
+type PacketAssertionDef {
+  "The name of the input or output this packet is going to or coming from."
+  name: string @required
+
+  "An assertion to test against the packet."
+  assertions: [PacketAssertion]
+}
+
+
+"A packet assertion."
+type PacketAssertion {
+  "The optional path to a value in the packet to assert against."
+  path: string?
+
+  "The operation to use when asserting against a packet."
+  operator: AssertionOperator @required
+
+  "A value or object combine with the operator to assert against a packet value."
+  value: LiquidJsonValue @required
+}
+
+"An operation that drives the logic in a packet assertion."
+enum AssertionOperator {
+  Equals = 0 as "equals",
+  LessThan = 1 as "less than",
+  GreaterThan = 2 as "greater than",
+  Regex = 3 as "regex match",
+  Contains = 4 as "contains",
 }
 
 type ErrorPacket {

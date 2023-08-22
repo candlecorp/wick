@@ -6,7 +6,8 @@ use tokio_stream::StreamExt;
 use wick_interface_types::{Field, OperationSignature};
 use wick_packet::{Entity, Invocation, RuntimeConfig};
 
-use crate::utils::{gen_packet, render_config};
+use crate::assertion_packet::ToAssertionPacket;
+use crate::utils::render_config;
 use crate::{get_payload, TestError, UnitTest};
 
 #[must_use]
@@ -113,8 +114,8 @@ async fn run_unit<'a>(
       break true;
     }
     let expected = def.test.outputs().get(index).unwrap();
-    let expected = gen_packet(expected, root_config.as_ref(), op_config.as_ref())?;
-    if let Err(e) = def.check_next(expected) {
+    let expected = expected.to_assertion_packet(root_config.as_ref(), op_config.as_ref())?;
+    if let Err(e) = def.check_next(&expected) {
       match e {
         TestError::Assertion(_ex, _act, assertion) => match assertion {
           crate::error::AssertionFailure::Payload(exv, acv) => {
@@ -134,10 +135,13 @@ async fn run_unit<'a>(
             test_block.fail(prefix("port name mismatch"), diag_compare(&acf, &exn));
           }
           e @ crate::error::AssertionFailure::ActualNoData => {
-            test_block.fail(prefix("port name mismatch"), Some(vec![e.to_string()]));
+            test_block.fail(prefix("actual packet had no data"), Some(vec![e.to_string()]));
           }
           e @ crate::error::AssertionFailure::ExpectedNoData => {
-            test_block.fail(prefix("port name mismatch"), Some(vec![e.to_string()]));
+            test_block.fail(prefix("expected packet had no data"), Some(vec![e.to_string()]));
+          }
+          e @ crate::error::AssertionFailure::Contains(_) => {
+            test_block.fail(prefix("loose equality failure"), Some(vec![e.to_string()]));
           }
         },
         e => {

@@ -5,7 +5,7 @@ use anyhow::Result;
 use flow_component::{Component, RuntimeCallback, SharedComponent};
 use serde_json::json;
 use tokio_stream::StreamExt;
-use wick_config::config::test_case::{TestCaseBuilder, TestPacket};
+use wick_config::config::test_case::{PacketData, TestCaseBuilder, TestPacketData};
 use wick_config::config::TestConfigurationBuilder;
 use wick_interface_types::{component, ComponentSignature};
 use wick_packet::{Invocation, Packet, PacketStream, RuntimeConfig};
@@ -77,81 +77,87 @@ async fn test_done_tolerance() -> Result<()> {
     .cases(vec![
       TestCaseBuilder::default()
         .operation("echo")
-        .inputs(vec![TestPacket::success("a1", None), TestPacket::success("a2", None)])
-        .outputs(vec![TestPacket::success("a1", None), TestPacket::success("a2", None)])
-        .build()?,
-      TestCaseBuilder::default()
-        .operation("echo")
-        .inputs(vec![TestPacket::success("b1", None), TestPacket::success("b2", None)])
+        .inputs(vec![PacketData::success("a1", None), PacketData::success("a2", None)])
         .outputs(vec![
-          TestPacket::success("b1", None),
-          TestPacket::success("b2", None),
-          TestPacket::done("b1"),
-          TestPacket::done("b2"),
+          TestPacketData::success("a1", None),
+          TestPacketData::success("a2", None),
         ])
         .build()?,
       TestCaseBuilder::default()
         .operation("echo")
-        .inputs(vec![TestPacket::success("c1", None), TestPacket::success("c2", None)])
+        .inputs(vec![PacketData::success("b1", None), PacketData::success("b2", None)])
         .outputs(vec![
-          TestPacket::success("c1", None),
-          TestPacket::success("c2", None),
-          TestPacket::done("c2"),
-          TestPacket::done("c1"),
+          TestPacketData::success("b1", None),
+          TestPacketData::success("b2", None),
+          TestPacketData::done("b1"),
+          TestPacketData::done("b2"),
+        ])
+        .build()?,
+      TestCaseBuilder::default()
+        .operation("echo")
+        .inputs(vec![PacketData::success("c1", None), PacketData::success("c2", None)])
+        .outputs(vec![
+          TestPacketData::success("c1", None),
+          TestPacketData::success("c2", None),
+          TestPacketData::done("c2"),
+          TestPacketData::done("c1"),
         ])
         .build()?,
       TestCaseBuilder::default()
         .operation("echo")
         .inputs(vec![
-          TestPacket::success("d1", None),
-          TestPacket::done("d1"),
-          TestPacket::success("d2", None),
+          PacketData::success("d1", None),
+          PacketData::done("d1"),
+          PacketData::success("d2", None),
         ])
         .outputs(vec![
-          TestPacket::success("d1", None),
-          TestPacket::success("d2", None),
-          TestPacket::done("d1"),
+          TestPacketData::success("d1", None),
+          TestPacketData::success("d2", None),
+          TestPacketData::done("d1"),
         ])
         .build()?,
       TestCaseBuilder::default()
         .operation("echo")
         .inputs(vec![
-          TestPacket::success("e1", None),
-          TestPacket::done("e1"),
-          TestPacket::success("e2", None),
+          PacketData::success("e1", None),
+          PacketData::done("e1"),
+          PacketData::success("e2", None),
         ])
         .outputs(vec![
-          TestPacket::success("e1", None),
-          TestPacket::success("e2", None),
-          TestPacket::done("e1"),
+          TestPacketData::success("e1", None),
+          TestPacketData::success("e2", None),
+          TestPacketData::done("e1"),
         ])
         .build()?,
       TestCaseBuilder::default()
         .operation("echo")
         .inputs(vec![
-          TestPacket::success("f1", None),
-          TestPacket::done("f1"),
-          TestPacket::success("f2", None),
+          PacketData::success("f1", None),
+          PacketData::done("f1"),
+          PacketData::success("f2", None),
         ])
-        .outputs(vec![TestPacket::success("f1", None), TestPacket::success("f2", None)])
+        .outputs(vec![
+          TestPacketData::success("f1", None),
+          TestPacketData::success("f2", None),
+        ])
         .build()?,
       TestCaseBuilder::default()
         .operation("echo")
         .inputs(vec![
-          TestPacket::success("e1", Some(json!({ "a": 1 }).into())),
-          TestPacket::success("e1", Some(json!({ "a": 2 }).into())),
-          TestPacket::success("e1", Some(json!({ "a": 3 }).into())),
-          TestPacket::success("e2", Some(json!({ "b": 1 }).into())),
-          TestPacket::success("e2", Some(json!({ "b": 2 }).into())),
-          TestPacket::success("e2", Some(json!({ "b": 3 }).into())),
+          PacketData::success("e1", Some(json!({ "a": 1 }).into())),
+          PacketData::success("e1", Some(json!({ "a": 2 }).into())),
+          PacketData::success("e1", Some(json!({ "a": 3 }).into())),
+          PacketData::success("e2", Some(json!({ "b": 1 }).into())),
+          PacketData::success("e2", Some(json!({ "b": 2 }).into())),
+          PacketData::success("e2", Some(json!({ "b": 3 }).into())),
         ])
         .outputs(vec![
-          TestPacket::success("e1", Some(json!({ "a": 1 }).into())),
-          TestPacket::success("e2", Some(json!({ "b": 1 }).into())),
-          TestPacket::success("e2", Some(json!({ "b": 2 }).into())),
-          TestPacket::success("e2", Some(json!({ "b": 3 }).into())),
-          TestPacket::success("e1", Some(json!({ "a": 2 }).into())),
-          TestPacket::success("e1", Some(json!({ "a": 3 }).into())),
+          TestPacketData::success("e1", Some(json!({ "a": 1 }).into())),
+          TestPacketData::success("e2", Some(json!({ "b": 1 }).into())),
+          TestPacketData::success("e2", Some(json!({ "b": 2 }).into())),
+          TestPacketData::success("e2", Some(json!({ "b": 3 }).into())),
+          TestPacketData::success("e1", Some(json!({ "a": 2 }).into())),
+          TestPacketData::success("e1", Some(json!({ "a": 3 }).into())),
         ])
         .build()?,
     ])

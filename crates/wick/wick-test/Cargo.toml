@@ -19,8 +19,9 @@ tap-harness = { workspace = true }
 # WasmRS
 wasmrs-codec = { workspace = true }
 # Common dependencies
+either = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-serde-value = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["io-std", "macros", "rt-multi-thread"] }
 tokio-stream = { workspace = true }
@@ -28,9 +29,8 @@ tracing = { workspace = true }
 assert-json-diff = { workspace = true }
 
 [dev-dependencies]
-
 wick-logger = { workspace = true }
 test-logger = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 anyhow = { workspace = true }
-serde_json = { workspace = true }
+rstest = { workspace = true }

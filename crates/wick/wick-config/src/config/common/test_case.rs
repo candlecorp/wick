@@ -25,11 +25,11 @@ pub struct TestCase {
   /// The inputs to the test.
   #[builder(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) inputs: Vec<TestPacket>,
+  pub(crate) inputs: Vec<PacketData>,
   /// The expected outputs of the operation.
   #[builder(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) outputs: Vec<TestPacket>,
+  pub(crate) outputs: Vec<TestPacketData>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Copy, property::Property, serde::Serialize, Builder)]
@@ -49,7 +49,7 @@ pub struct InherentConfig {
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 /// Either a success packet or an error packet.
 #[serde(rename_all = "kebab-case")]
-pub enum TestPacket {
+pub enum PacketData {
   /// A variant representing a [SuccessPayload] type.
   #[serde(rename = "success")]
   SuccessPacket(SuccessPayload),
@@ -58,7 +58,22 @@ pub enum TestPacket {
   ErrorPacket(ErrorPayload),
 }
 
-impl TestPacket {
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+/// Either a success packet or an error packet.
+#[serde(rename_all = "kebab-case")]
+pub enum TestPacketData {
+  /// A variant representing a [SuccessPayload] type.
+  #[serde(rename = "success")]
+  SuccessPacket(SuccessPayload),
+  /// A variant representing a [PacketAssertion] type.
+  #[serde(rename = "contains")]
+  PacketAssertion(PacketAssertionDef),
+  /// A variant representing a [ErrorPayload] type.
+  #[serde(rename = "error")]
+  ErrorPacket(ErrorPayload),
+}
+
+impl PacketData {
   /// Create a new success packet.
   #[must_use]
   pub fn success(port: impl Into<String>, data: Option<LiquidJsonValue>) -> Self {
@@ -113,8 +128,8 @@ impl TestPacket {
   #[must_use]
   pub fn port(&self) -> &str {
     match self {
-      TestPacket::SuccessPacket(data) => &data.port,
-      TestPacket::ErrorPacket(data) => &data.port,
+      PacketData::SuccessPacket(data) => &data.port,
+      PacketData::ErrorPacket(data) => &data.port,
     }
   }
 
@@ -122,8 +137,8 @@ impl TestPacket {
   #[must_use]
   pub fn flag(&self) -> MaybePacketFlag {
     MaybePacketFlag(match self {
-      TestPacket::SuccessPacket(data) => data.flag,
-      TestPacket::ErrorPacket(data) => data.flag,
+      PacketData::SuccessPacket(data) => data.flag,
+      PacketData::ErrorPacket(data) => data.flag,
     })
   }
 
@@ -131,8 +146,80 @@ impl TestPacket {
   #[must_use]
   pub fn data(&self) -> Option<&LiquidJsonValue> {
     match self {
-      TestPacket::SuccessPacket(data) => data.data.as_ref(),
-      TestPacket::ErrorPacket(_) => None,
+      PacketData::SuccessPacket(data) => data.data.as_ref(),
+      PacketData::ErrorPacket(_) => None,
+    }
+  }
+}
+
+impl TestPacketData {
+  /// Create a new success packet.
+  #[must_use]
+  pub fn success(port: impl Into<String>, data: Option<LiquidJsonValue>) -> Self {
+    Self::SuccessPacket(SuccessPayload {
+      port: port.into(),
+      flag: None,
+      data,
+    })
+  }
+
+  /// Create a new error packet.
+  #[must_use]
+  pub fn error(port: impl Into<String>, error: impl Into<String>) -> Self {
+    Self::ErrorPacket(ErrorPayload {
+      port: port.into(),
+      flag: None,
+      error: TemplateConfig::new_template(error.into()),
+    })
+  }
+
+  /// Create a new done packet.
+  #[must_use]
+  pub fn done(port: impl Into<String>) -> Self {
+    Self::SuccessPacket(SuccessPayload {
+      port: port.into(),
+      flag: Some(PacketFlag::Done),
+      data: None,
+    })
+  }
+
+  /// Create a new open packet.
+  #[must_use]
+  pub fn open(port: impl Into<String>) -> Self {
+    Self::SuccessPacket(SuccessPayload {
+      port: port.into(),
+      flag: Some(PacketFlag::Open),
+      data: None,
+    })
+  }
+
+  /// Create a new close packet.
+  #[must_use]
+  pub fn close(port: impl Into<String>) -> Self {
+    Self::SuccessPacket(SuccessPayload {
+      port: port.into(),
+      flag: Some(PacketFlag::Close),
+      data: None,
+    })
+  }
+
+  /// Get the port name for the packet.
+  #[must_use]
+  pub fn port(&self) -> &str {
+    match self {
+      Self::SuccessPacket(data) => &data.port,
+      Self::ErrorPacket(data) => &data.port,
+      Self::PacketAssertion(data) => &data.port,
+    }
+  }
+
+  /// Get the data for the packet.
+  #[must_use]
+  pub fn data(&self) -> Option<&LiquidJsonValue> {
+    match self {
+      Self::SuccessPacket(data) => data.data.as_ref(),
+      Self::ErrorPacket(_) => None,
+      Self::PacketAssertion(_) => None,
     }
   }
 }
@@ -175,12 +262,52 @@ impl MaybePacketFlag {
 pub struct SuccessPayload {
   /// The name of the port to send the data to.
   pub(crate) port: String,
+
   /// The flag set on the packet.
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) flag: Option<PacketFlag>,
+
   /// The data to send.
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) data: Option<LiquidJsonValue>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
+/// A test case for a component's operation that uses loose equality for comparing data.
+pub struct PacketAssertionDef {
+  /// The name of the input or output this packet is going to or coming from.
+  pub(crate) port: String,
+
+  /// An assertion to test against the packet.
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) assertions: Vec<PacketAssertion>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, PartialEq, property::Property)]
+#[property(get(public), set(private), mut(disable))]
+/// A packet assertion.
+pub struct PacketAssertion {
+  /// The optional path to a value in the packet to assert against.
+
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) path: Option<String>,
+
+  /// The operation to use when asserting against a packet.
+  pub(crate) operator: AssertionOperator,
+
+  /// A value or object combine with the operator to assert against a packet value.
+  pub(crate) value: LiquidJsonValue,
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize, PartialEq)]
+/// An operation that drives the logic in a packet assertion.
+pub enum AssertionOperator {
+  Equals = 0,
+  LessThan = 1,
+  GreaterThan = 2,
+  Regex = 3,
+  Contains = 4,
 }
 
 #[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize)]

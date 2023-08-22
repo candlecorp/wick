@@ -1,6 +1,9 @@
-use serde_value::Value;
+use flow_component::Value;
 use thiserror::Error;
 use wick_packet::Packet;
+
+use crate::assertion_packet::TestKind;
+use crate::ContainsError;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum TestError {
@@ -29,11 +32,13 @@ pub enum TestError {
   #[error("Got an output packet for a port '{0}' we've never seen")]
   InvalidPort(String),
   #[error("Assertion failed")]
-  Assertion(Packet, Packet, AssertionFailure),
+  Assertion(TestKind, Packet, AssertionFailure),
 }
 
 #[derive(Error, Debug, PartialEq)]
 pub enum AssertionFailure {
+  #[error("Packet does not loosley match expected data {0}")]
+  Contains(ContainsError),
   #[error("Payload mismatch")]
   Payload(Value, Value),
   #[error("Expected data in packet but got none")]

@@ -1525,7 +1525,7 @@ pub(crate) struct TestDefinition {
   #[serde(default)]
   #[serde(alias = "output")]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) outputs: Vec<PacketData>,
+  pub(crate) outputs: Vec<TestPacketData>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1559,6 +1559,22 @@ pub(crate) enum PacketData {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
+#[serde(untagged)]
+/// Packet assertions.
+pub(crate) enum TestPacketData {
+  /// A variant representing a [SuccessPacket] type.
+  #[serde(rename = "SuccessPacket")]
+  SuccessPacket(SuccessPacket),
+  /// A variant representing a [PacketAssertionDef] type.
+  #[serde(rename = "PacketAssertionDef")]
+  PacketAssertionDef(PacketAssertionDef),
+  /// A variant representing a [ErrorPacket] type.
+  #[serde(rename = "ErrorPacket")]
+  ErrorPacket(ErrorPacket),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 /// A simplified representation of a Wick data packet & payload, used when writing tests.
 pub(crate) struct SuccessPacket {
   /// The name of the input or output this packet is going to or coming from.
@@ -1574,12 +1590,85 @@ pub(crate) struct SuccessPacket {
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) flag: Option<PacketFlag>,
-  /// The data to send.
+  /// The packet payload.
 
   #[serde(default)]
   #[serde(alias = "data")]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) value: Option<liquid_json::LiquidJsonValue>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A test case for a component's operation that uses loose equality for comparing data.
+pub(crate) struct PacketAssertionDef {
+  /// The name of the input or output this packet is going to or coming from.
+  pub(crate) name: String,
+  /// An assertion to test against the packet.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) assertions: Vec<PacketAssertion>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A packet assertion.
+pub(crate) struct PacketAssertion {
+  /// The optional path to a value in the packet to assert against.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) path: Option<String>,
+  /// The operation to use when asserting against a packet.
+  pub(crate) operator: AssertionOperator,
+  /// A value or object combine with the operator to assert against a packet value.
+  pub(crate) value: liquid_json::LiquidJsonValue,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// An operation that drives the logic in a packet assertion.
+pub(crate) enum AssertionOperator {
+  Equals = 0,
+  LessThan = 1,
+  GreaterThan = 2,
+  Regex = 3,
+  Contains = 4,
+}
+
+impl Default for AssertionOperator {
+  fn default() -> Self {
+    Self::from_u16(0).unwrap()
+  }
+}
+
+impl FromPrimitive for AssertionOperator {
+  fn from_i64(n: i64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Equals,
+      1 => Self::LessThan,
+      2 => Self::GreaterThan,
+      3 => Self::Regex,
+      4 => Self::Contains,
+      _ => {
+        return None;
+      }
+    })
+  }
+
+  fn from_u64(n: u64) -> Option<Self> {
+    Some(match n {
+      0 => Self::Equals,
+      1 => Self::LessThan,
+      2 => Self::GreaterThan,
+      3 => Self::Regex,
+      4 => Self::Contains,
+      _ => {
+        return None;
+      }
+    })
+  }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

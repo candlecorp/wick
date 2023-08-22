@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
+use either::Either;
 use wasmrs_codec::messagepack;
-use wick_config::config::test_case::{PacketFlag, TestPacket};
+use wick_config::config::test_case::{ErrorPayload, PacketFlag, SuccessPayload};
 use wick_config::config::LiquidJsonConfig;
 use wick_packet::{
   InherentData,
@@ -20,25 +21,30 @@ fn env() -> Option<HashMap<String, String>> {
   Some(std::env::vars().collect())
 }
 
-#[allow(clippy::needless_pass_by_value)]
-fn config_error(e: impl std::fmt::Display) -> TestError {
-  TestError::Configuration(e.to_string())
+pub(crate) trait ConfigError<OK> {
+  fn config_error(self) -> Result<OK, TestError>;
+}
+
+impl<OK, E: std::fmt::Display> ConfigError<OK> for Result<OK, E> {
+  fn config_error(self) -> Result<OK, TestError> {
+    self.map_err(|e| TestError::Configuration(e.to_string()))
+  }
 }
 
 /// Convert the [TestPacket] into a real [Packet].
 pub(crate) fn gen_packet(
-  p: &TestPacket,
+  p: Either<&SuccessPayload, &ErrorPayload>,
   root_config: Option<&RuntimeConfig>,
   op_config: Option<&RuntimeConfig>,
 ) -> Result<Packet, TestError> {
   let packet = match p {
-    TestPacket::SuccessPacket(data) => Packet::new_for_port(
-      data.port(),
-      PacketPayload::Ok(match data.data() {
+    Either::Left(success) => Packet::new_for_port(
+      success.port(),
+      PacketPayload::Ok(match success.data() {
         Some(data) => {
           let ctx =
-            LiquidJsonConfig::make_context(None, root_config, op_config, env().as_ref(), None).map_err(config_error)?;
-          let data = data.render(&ctx).map_err(config_error)?;
+            LiquidJsonConfig::make_context(None, root_config, op_config, env().as_ref(), None).config_error()?;
+          let data = data.render(&ctx).config_error()?;
           Some(
             messagepack::serialize(&data)
               .map_err(|e| TestError::Serialization(e.to_string()))?
@@ -47,17 +53,17 @@ pub(crate) fn gen_packet(
         }
         None => None,
       }),
-      convert_flags(data.flag()),
+      convert_flags(success.flag()),
     ),
-    TestPacket::ErrorPacket(data) => Packet::new_for_port(
-      data.port(),
+    Either::Right(error) => Packet::new_for_port(
+      error.port(),
       PacketPayload::Err(PacketError::new(
-        data
+        error
           .error()
           .render(None, Some(&std::env::vars().collect()))
-          .map_err(config_error)?,
+          .config_error()?,
       )),
-      convert_flags(data.flag()),
+      convert_flags(error.flag()),
     ),
   };
   Ok(packet)
@@ -81,9 +87,7 @@ pub(crate) fn render_config(
 ) -> Result<Option<RuntimeConfig>, TestError> {
   if let Some(config) = config {
     let env = std::env::vars().collect();
-    Ok(Some(
-      config.render(None, None, Some(&env), inherent).map_err(config_error)?,
-    ))
+    Ok(Some(config.render(None, None, Some(&env), inherent).config_error()?))
   } else {
     Ok(None)
   }

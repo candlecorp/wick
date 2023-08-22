@@ -1,8 +1,8 @@
 use option_utils::OptionUtils;
 mod lockdown;
+mod tests;
 
 use crate::config::{self, test_config, types_config, ComponentConfiguration};
-// use flow_expression_parser::parse_id;
 use crate::error::ManifestError;
 use crate::utils::VecTryMapInto;
 use crate::{v1, Result, WickConfiguration};

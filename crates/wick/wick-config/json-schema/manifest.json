@@ -2623,7 +2623,7 @@
             "description": "The expected outputs of the operation.",
             "type": "array",
             "items": {
-              "$ref": "#/$defs/v1/PacketData"
+              "$ref": "#/$defs/v1/TestPacketData"
             }
           }
         },
@@ -2673,6 +2673,19 @@
           }
         ]
       },
+      "TestPacketData": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/v1/SuccessPacket"
+          },
+          {
+            "$ref": "#/$defs/v1/PacketAssertionDef"
+          },
+          {
+            "$ref": "#/$defs/v1/ErrorPacket"
+          }
+        ]
+      },
       "SuccessPacket": {
         "$anchor": "#v1/SuccessPacket",
         "additionalProperties": false,
@@ -2693,13 +2706,68 @@
             "$ref": "#/$defs/v1/PacketFlag"
           },
           "value": {
-            "description": "The data to send.",
+            "description": "The packet payload.",
             "required": false,
             "$ref": "#/$defs/v1/LiquidJsonValue"
           }
         },
         "required": [
           "name"
+        ]
+      },
+      "PacketAssertionDef": {
+        "$anchor": "#v1/PacketAssertionDef",
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "The name of the input or output this packet is going to or coming from.",
+            "type": "string"
+          },
+          "assertions": {
+            "description": "An assertion to test against the packet.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/PacketAssertion"
+            }
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "PacketAssertion": {
+        "$anchor": "#v1/PacketAssertion",
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "path": {
+            "description": "The optional path to a value in the packet to assert against.",
+            "required": false,
+            "type": "string"
+          },
+          "operator": {
+            "description": "The operation to use when asserting against a packet.",
+            "$ref": "#/$defs/v1/AssertionOperator"
+          },
+          "value": {
+            "description": "A value or object combine with the operator to assert against a packet value.",
+            "$ref": "#/$defs/v1/LiquidJsonValue"
+          }
+        },
+        "required": [
+          "operator",
+          "value"
+        ]
+      },
+      "AssertionOperator": {
+        "$anchor": "#v1/AssertionOperator",
+        "enum": [
+          "Equals",
+          "LessThan",
+          "GreaterThan",
+          "Regex",
+          "Contains"
         ]
       },
       "ErrorPacket": {
