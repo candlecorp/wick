@@ -156,7 +156,7 @@ impl Trigger for Time {
       }
     };
 
-    let span = info_span!("trigger:schedule", schedule = ?schedule);
+    let span = info_span!("trigger:schedule", schedule = cron);
     let mut runtime = build_trigger_runtime(&app_config, span.clone())?;
     let component_id = match resolve_ref(&app_config, config.operation().component())? {
       super::ResolvedComponent::Ref(id, _) => id.to_owned(),
