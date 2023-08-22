@@ -6896,9 +6896,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "assert-json-diff",
+ "either",
  "flow-component",
+ "rstest",
  "serde",
- "serde-value",
  "serde_json",
  "tap-harness",
  "test-logger",

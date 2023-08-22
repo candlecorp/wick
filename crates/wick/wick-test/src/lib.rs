@@ -85,6 +85,7 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
+mod assertion_packet;
 mod error;
 mod runner;
 mod test_group;
