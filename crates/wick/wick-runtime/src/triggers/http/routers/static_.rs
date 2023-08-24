@@ -10,13 +10,12 @@ use hyper::{Body, Method, Request, Response};
 use hyper_staticfile::{resolve_path, ResolveResult, ResponseBuilder};
 use tracing::{Instrument, Span};
 use uuid::Uuid;
-use wick_config::config::{self, AppConfiguration, ImportBinding, StaticRouterConfig, TriggerKind, WickRouter};
+use wick_config::config::{StaticRouterConfig, TriggerKind, WickRouter};
 
 use crate::dev::prelude::RuntimeError;
 use crate::resources::{Resource, ResourceKind};
-use crate::runtime::RuntimeConstraint;
 use crate::triggers::http::middleware::resolve_middleware_components;
-use crate::triggers::http::{index_to_router_id, HttpError, HttpRouter, RawRouter, RawRouterHandler};
+use crate::triggers::http::{HttpError, HttpRouter, RawRouter, RawRouterHandler};
 use crate::Runtime;
 
 #[derive()]
@@ -38,7 +37,7 @@ impl RawRouter for StaticRouter {
     &self,
     _tx_id: Uuid,
     _remote_addr: SocketAddr,
-    _runtime: Arc<Runtime>,
+    _runtime: Runtime,
     request: Request<Body>,
     span: &Span,
   ) -> BoxFuture<Result<Response<Body>, HttpError>> {
@@ -140,11 +139,10 @@ impl<B: Send + Sync + 'static> Service<Request<B>> for Static {
 pub(crate) fn register_static_router(
   index: usize,
   resources: Arc<HashMap<String, Resource>>,
-  app_config: &AppConfiguration,
   router_config: &StaticRouterConfig,
-) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
+) -> Result<HttpRouter, RuntimeError> {
   trace!(index, "registering static router");
-  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
+  let middleware = resolve_middleware_components(router_config)?;
   let volume = resources.get(router_config.volume()).ok_or_else(|| {
     RuntimeError::ResourceNotFound(
       TriggerKind::Http.into(),
@@ -165,16 +163,10 @@ pub(crate) fn register_static_router(
   let fallback = router_config.fallback().cloned();
 
   let router = StaticRouter::new(volume, Some(router_config.path().to_owned()), fallback);
-  let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
-  let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
-  bindings.push(router_binding);
-  Ok((
-    bindings,
-    HttpRouter::Raw(RawRouterHandler {
-      path: router_config.path().to_owned(),
-      component: Arc::new(router),
-      middleware,
-    }),
-    vec![],
-  ))
+
+  Ok(HttpRouter::Raw(RawRouterHandler {
+    path: router_config.path().to_owned(),
+    component: Arc::new(router),
+    middleware,
+  }))
 }

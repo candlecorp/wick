@@ -20,15 +20,15 @@ use super::{HttpError, HttpRouter, RawRouterHandler};
 use crate::Runtime;
 
 pub(super) struct ServiceFactory {
-  engine: Arc<Runtime>,
+  runtime: Runtime,
   routers: Arc<Vec<HttpRouter>>,
   span: Option<Id>,
 }
 
 impl ServiceFactory {
-  pub(super) fn new(engine: Runtime, routers: Vec<HttpRouter>, span: Option<Id>) -> Self {
+  pub(super) fn new(runtime: Runtime, routers: Vec<HttpRouter>, span: Option<Id>) -> Self {
     Self {
-      engine: Arc::new(engine),
+      runtime,
       routers: Arc::new(routers),
       span,
     }
@@ -45,29 +45,29 @@ impl Service<&AddrStream> for ServiceFactory {
   }
 
   fn call(&mut self, conn: &AddrStream) -> Self::Future {
-    let engine = self.engine.clone();
+    let rt = self.runtime.clone();
     let routers = self.routers.clone();
 
     let remote_addr = conn.remote_addr();
     let span = self.span.clone();
 
-    let fut = async move { Ok(ResponseService::new(remote_addr, engine, routers, span)) };
+    let fut = async move { Ok(ResponseService::new(remote_addr, rt, routers, span)) };
     Box::pin(fut)
   }
 }
 
 pub(super) struct ResponseService {
   remote_addr: SocketAddr,
-  engine: Arc<Runtime>,
+  runtime: Runtime,
   routers: Arc<Vec<HttpRouter>>,
   span: Option<Id>,
 }
 
 impl ResponseService {
-  fn new(remote_addr: SocketAddr, engine: Arc<Runtime>, routers: Arc<Vec<HttpRouter>>, span: Option<Id>) -> Self {
+  fn new(remote_addr: SocketAddr, runtime: Runtime, routers: Arc<Vec<HttpRouter>>, span: Option<Id>) -> Self {
     Self {
       remote_addr,
-      engine,
+      runtime,
       routers,
       span,
     }
@@ -99,7 +99,7 @@ impl Service<Request<Body>> for ResponseService {
         version = ?req.version(),
       );
     });
-    let engine = self.engine.clone();
+    let rt = self.runtime.clone();
     let router = self
       .routers
       .iter()
@@ -110,7 +110,7 @@ impl Service<Request<Body>> for ResponseService {
       let start = chrono::Local::now().format("%d/%b/%Y:%H:%M:%S %z");
       let response = match router {
         Some(h) => match h {
-          HttpRouter::Raw(r) => match handle(tx_id, req, r, engine.clone(), remote_addr, &span).await {
+          HttpRouter::Raw(r) => match handle(tx_id, req, r, rt.clone(), remote_addr, &span).await {
             Ok(v) => v,
             Err(e) => {
               span.in_scope(|| {
@@ -152,13 +152,13 @@ async fn handle(
   tx_id: Uuid,
   req: Request<Body>,
   r: RawRouterHandler,
-  engine: Arc<Runtime>,
+  runtime: Runtime,
   remote_addr: SocketAddr,
   span: &Span,
 ) -> Result<Response<Body>, HttpError> {
   let pre_span = info_span!(parent: span, "pre-request", service.name="pre-request");
   let (wick_request_object, early_response) =
-    run_request_middleware(tx_id, &req, engine.clone(), &r, remote_addr, &pre_span).await?;
+    run_request_middleware(tx_id, &req, runtime.clone(), &r, remote_addr, &pre_span).await?;
   // if we have an early response, skip the main handler.
   let response = if let Some(response) = early_response {
     response
@@ -166,17 +166,17 @@ async fn handle(
     let req = merge_requests(&wick_request_object, req)?;
     let main_span = info_span!(parent: span, "request");
     r.component
-      .handle(tx_id, remote_addr, engine.clone(), req, &main_span)
+      .handle(tx_id, remote_addr, runtime.clone(), req, &main_span)
       .await?
   };
   let post_span = info_span!(parent: span, "post-request");
-  run_response_middleware(tx_id, wick_request_object, response, engine.clone(), &r, &post_span).await
+  run_response_middleware(tx_id, wick_request_object, response, runtime.clone(), &r, &post_span).await
 }
 
 async fn run_request_middleware<B>(
   tx_id: Uuid,
   req: &Request<B>,
-  engine: Arc<Runtime>,
+  runtime: Runtime,
   r: &RawRouterHandler,
   remote_addr: SocketAddr,
   span: &Span,
@@ -187,7 +187,7 @@ where
   let mut wick_req = request_to_wick(req, remote_addr)?;
   for (entity, config) in &r.middleware.request {
     let response =
-      handle_request_middleware(tx_id, entity.clone(), config.clone(), engine.clone(), &wick_req, span).await?;
+      handle_request_middleware(tx_id, entity.clone(), config.clone(), runtime.clone(), &wick_req, span).await?;
     match response {
       Some(RequestMiddlewareResponse::HttpRequest(req)) => wick_req = req,
       Some(RequestMiddlewareResponse::HttpResponse(res)) => {
@@ -207,7 +207,7 @@ async fn run_response_middleware(
   tx_id: Uuid,
   wick_req: wick_interface_http::types::HttpRequest,
   response: Response<Body>,
-  engine: Arc<Runtime>,
+  runtime: Runtime,
   r: &RawRouterHandler,
   span: &Span,
 ) -> Result<Response<Body>, HttpError> {
@@ -217,7 +217,7 @@ async fn run_response_middleware(
       tx_id,
       entity.clone(),
       config.clone(),
-      engine.clone(),
+      runtime.clone(),
       &wick_req,
       &response,
       span,

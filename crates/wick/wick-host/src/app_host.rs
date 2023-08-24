@@ -6,9 +6,12 @@ use futures::pin_mut;
 use tokio::task::{JoinError, JoinHandle};
 use tracing::Span;
 use wick_config::config::AppConfiguration;
+use wick_config::WickConfiguration;
+use wick_interface_types::ComponentSignature;
+use wick_packet::{Entity, InherentData, Invocation, PacketStream, RuntimeConfig};
 use wick_runtime::error::RuntimeError;
 use wick_runtime::resources::Resource;
-use wick_runtime::Trigger;
+use wick_runtime::{build_trigger_runtime, Runtime, Trigger};
 
 use crate::{Error, Result};
 
@@ -20,6 +23,7 @@ pub struct AppHost {
   manifest: AppConfiguration,
   #[builder(setter(skip))]
   triggers: Option<TriggerState>,
+  runtime: Runtime,
   #[builder(default = "tracing::Span::current()")]
   span: Span,
 }
@@ -31,7 +35,7 @@ impl std::fmt::Debug for AppHost {
 }
 
 impl AppHost {
-  pub fn start(&mut self, _seed: Option<u64>) -> Result<()> {
+  pub fn start(&mut self) -> Result<()> {
     self.span.in_scope(|| debug!("host starting"));
 
     let resources = self.init_resources()?;
@@ -55,6 +59,14 @@ impl AppHost {
     Ok(resources)
   }
 
+  pub async fn build_runtime(config: &AppConfiguration, seed: Option<u64>, span: Span) -> Result<Runtime> {
+    let rt = build_trigger_runtime(config, span)
+      .unwrap()
+      .build(seed.map(seeded_random::Seed::unsafe_new))
+      .await?;
+    Ok(rt)
+  }
+
   fn start_triggers(&mut self, resources: HashMap<String, Resource>) -> Result<()> {
     assert!(self.triggers.is_none(), "triggers already started");
 
@@ -74,10 +86,11 @@ impl AppHost {
           let resources = resources.clone();
           let span = info_span!("trigger", kind=%trigger_config.kind());
           span.follows_from(&self.span);
+          let rt = self.runtime.clone();
 
           let task = tokio::spawn(async move {
             span.in_scope(|| trace!("initializing trigger"));
-            match inner.run(name, app_config, config, resources, span.clone()).await {
+            match inner.run(name, rt, app_config, config, resources, span.clone()).await {
               Ok(_output) => {
                 span.in_scope(|| debug!("trigger initialized"));
               }
@@ -102,6 +115,17 @@ impl AppHost {
     self.triggers.replace(triggers);
 
     Ok(())
+  }
+
+  pub async fn request(
+    &self,
+    target: Entity,
+    config: Option<RuntimeConfig>,
+    stream: PacketStream,
+    data: InherentData,
+  ) -> Result<PacketStream> {
+    let invocation = Invocation::new(Entity::server(Entity::LOCAL), target, stream, data, &self.span);
+    Ok(self.runtime.invoke(invocation, config).await?)
   }
 
   #[allow(clippy::unused_async)]
@@ -132,6 +156,34 @@ impl AppHost {
     self.span.in_scope(|| debug!("all triggers finished"));
 
     Ok(())
+  }
+}
+
+#[async_trait::async_trait]
+impl crate::Host for AppHost {
+  fn namespace(&self) -> &str {
+    Entity::LOCAL
+  }
+
+  fn get_signature(&self, path: Option<&[&str]>, entity: Option<&Entity>) -> Result<ComponentSignature> {
+    Ok(self.runtime.deep_signature(path, entity)?)
+  }
+
+  async fn invoke(&self, invocation: Invocation, data: Option<RuntimeConfig>) -> Result<PacketStream> {
+    Ok(self.runtime.invoke_deep(None, invocation, data).await?)
+  }
+
+  async fn invoke_deep(
+    &self,
+    path: Option<&[&str]>,
+    invocation: Invocation,
+    data: Option<RuntimeConfig>,
+  ) -> Result<PacketStream> {
+    Ok(self.runtime.invoke_deep(path, invocation, data).await?)
+  }
+
+  fn get_active_config(&self) -> WickConfiguration {
+    WickConfiguration::App(self.manifest.clone())
   }
 }
 

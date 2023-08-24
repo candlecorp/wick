@@ -11,12 +11,13 @@ use crate::components::{init_impl, make_link_callback};
 use crate::dev::prelude::*;
 use crate::runtime::{RuntimeConstraint, RuntimeInit};
 
-fn init_err(source: Option<&Path>) -> impl FnOnce(InterpreterError) -> EngineError + '_ {
-  move |e| EngineError::InterpreterInit(source.map(Into::into), Box::new(e))
+fn init_err(source: Option<&Path>) -> impl FnOnce(InterpreterError) -> ScopeError + '_ {
+  move |e| ScopeError::InterpreterInit(source.map(Into::into), Box::new(e))
 }
 #[derive(Debug)]
-pub(crate) struct ServiceInit {
+pub(crate) struct ScopeInit {
   rng: Random,
+  pub(crate) parent: Option<Uuid>,
   pub(crate) id: Uuid,
   pub(crate) manifest: ComponentConfiguration,
   pub(crate) allow_latest: bool,
@@ -27,10 +28,11 @@ pub(crate) struct ServiceInit {
   pub(crate) span: Span,
 }
 
-impl ServiceInit {
+impl ScopeInit {
   pub(crate) fn new(seed: Seed, config: RuntimeInit) -> Self {
     let rng = Random::from_seed(seed);
     Self {
+      parent: None,
       id: rng.uuid(),
       rng,
       manifest: config.manifest,
@@ -43,9 +45,10 @@ impl ServiceInit {
     }
   }
 
-  pub(crate) fn new_with_id(id: Uuid, seed: Seed, config: RuntimeInit) -> Self {
+  pub(crate) fn new_with_id(parent: Option<Uuid>, id: Uuid, seed: Seed, config: RuntimeInit) -> Self {
     let rng = Random::from_seed(seed);
     Self {
+      parent,
       id,
       rng,
       manifest: config.manifest,
@@ -78,7 +81,7 @@ impl ServiceInit {
     self.namespace.clone().unwrap_or_else(|| self.id.to_string())
   }
 
-  pub(super) async fn instantiate_main(&self) -> Result<(Option<&[String]>, HandlerMap), EngineError> {
+  pub(super) async fn instantiate_main(&self) -> Result<(Option<&[String]>, HandlerMap), ScopeError> {
     let mut components = HandlerMap::default();
     let ns = self.namespace.clone().unwrap_or_else(|| self.id.to_string());
     let extends = if let ComponentImplementation::Composite(config) = self.manifest.component() {
@@ -90,7 +93,7 @@ impl ServiceInit {
       }
       for id in config.extends() {
         if !self.manifest.import().iter().any(|i| i.id() == id) {
-          return Err(EngineError::RuntimeInit(
+          return Err(ScopeError::RuntimeInit(
             self.manifest.source().map(Into::into),
             format!("Inherited component '{}' not found", id),
           ));
@@ -127,7 +130,7 @@ impl ServiceInit {
     &self,
     extends: Option<&[String]>,
     mut components: HandlerMap,
-  ) -> Result<HandlerMap, EngineError> {
+  ) -> Result<HandlerMap, ScopeError> {
     for binding in self.manifest.import() {
       let provided = generate_provides_handlers(binding.provide(), &components)?;
       let component_init = self.child_init(binding.config().cloned(), Some(provided));
@@ -147,11 +150,11 @@ impl ServiceInit {
     Ok(components)
   }
 
-  pub(super) async fn init_interpreter(&mut self, components: HandlerMap) -> Result<Interpreter, EngineError> {
+  pub(super) async fn init_interpreter(&mut self, components: HandlerMap) -> Result<Interpreter, ScopeError> {
     let graph = self.span.in_scope(|| {
       debug!("generating graph");
       flow_graph_interpreter::graph::from_def(&mut self.manifest, &components)
-        .map_err(|e| EngineError::Graph(self.manifest.source().map(Into::into), Box::new(e)))
+        .map_err(|e| ScopeError::Graph(self.manifest.source().map(Into::into), Box::new(e)))
     })?;
 
     let mut interpreter = flow_graph_interpreter::Interpreter::new(

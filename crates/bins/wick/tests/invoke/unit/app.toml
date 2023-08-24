@@ -1,0 +1,13 @@
+bin.name = "wick"
+args = [
+  "invoke",
+  "tests/invoke/unit/app.wick",
+  "CLI::wasi_fs::read_string",
+  "--with",
+  """{"root":"{{ctx.env.CARGO_MANIFEST_DIR}}"}""",
+  "--",
+  "--filename=\"Cargo.toml\"",
+]
+stdout = """
+{"payload":{"value":"[package]/nname = /"wick-cli/"/nversion = /"0.13.0/"/nedition = /"2021/"/ndefault-run = /"wick/"/nlicense = /"Elastic-2.0/"/nrepository = /"https://github.com/candlecorp/wick/"/ndescription = /"The binary executable for the Wick project./"/ninclude = [/"src/**/*/", /"LICENSE/", /"README.md/"]/n/n[features]/ndefault = []/ncross = [/"openssl/vendored/"]/nconsole = [/n  /"wick-logger/console/",/n  /"tokio/full/",/n  /"tokio/tracing/",/n] # Build with RUSTFLAGS=/"--cfg tokio_unstable/"/nmem-profiler = [/"dhat/"]/n/n# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html/n[dependencies]/nwick-xdg = { workspace = true, features = [/"serde/"] }/nwick-settings = { workspace = true }/nwick-packet = { workspace = true }/nwick-interface-types = { workspace = true }/nwick-rpc = { workspace = true, features = [/"client/"] }/nwick-component-cli = { workspace = true, features = [/"cli/", /"grpc/"] }/nwick-host = { workspace = true }/nwick-config = { workspace = true }/nwick-test = { workspace = true }/nwick-wascap = { workspace = true }/nwick-oci-utils = { workspace = true }/nwick-package = { workspace = true }/nwick-logger = { workspace = true }/nflow-expression-parser = { workspace = true }/nseeded-random = { workspace = true }/ntokio = { workspace = true, features = [/"macros/", /"rt/", /"rt-multi-thread/"] }/ntracing = { workspace = true }/nserde_json = { workspace = true }/nserde_yaml = { workspace = true }/nanyhow = { workspace = true }/ndialoguer = { workspace = true, features = [/"password/"] }/nhuman-panic = { workspace = true }/nfutures = { workspace = true }/nthiserror = { workspace = true }/nclap = { workspace = true, default-features = true, features = [/"derive/"] }/nnkeys = { workspace = true }/natty = { workspace = true }/njaq-core = { workspace = true, features = [/"serde_json/"] }/nmarkup-converter = { workspace = true }/nopenssl = { workspace = true, features = [/"vendored/"], optional = true }/noption-utils = { workspace = true }/nstructured-output = { workspace = true }/nregex = { workspace = true }/ndhat = { workspace = true, optional = true }/nonce_cell = { workspace = true }/nasync-trait = { workspace = true }/n/n[dev-dependencies]/ntest_bin = { workspace = true }/ntrycmd = { workspace = true }/ntest-logger = { workspace = true }/ntokio = { workspace = true, features = [/"process/"] }/nrstest = { workspace = true }/n/n[[bin]]/nname = /"wick/"/npath = /"src/main.rs/"/n"},"port":"output"}
+"""

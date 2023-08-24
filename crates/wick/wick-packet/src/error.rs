@@ -98,6 +98,9 @@ pub enum ParseError {
   /// Encountered an invalid scheme when parsing an entity URL.
   #[error("Invalid scheme {0}")]
   Scheme(String),
+  /// No path supplied in the entity URL.
+  #[error("Missing path")]
+  MissingPath,
   /// No authority/host supplied in the entity URL.
   #[error("Missing authority/host")]
   Authority,

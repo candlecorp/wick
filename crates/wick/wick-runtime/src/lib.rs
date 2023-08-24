@@ -99,15 +99,14 @@ mod dispatch;
 pub mod error;
 pub mod resources;
 mod runtime;
-mod runtime_service;
 mod triggers;
 pub(crate) mod utils;
 
-pub use components::engine_component::EngineComponent;
 pub use components::error::ComponentError;
+pub use components::scope_component::ScopeComponent;
+pub use runtime::scope::error::ScopeError;
 pub use runtime::{Runtime, RuntimeBuilder};
-pub use runtime_service::error::EngineError;
-pub use triggers::{get_trigger_loader, Trigger};
+pub use triggers::{build_trigger_runtime, get_trigger_loader, Trigger, TriggerRuntimeConfig};
 
 pub type Error = error::RuntimeError;
 

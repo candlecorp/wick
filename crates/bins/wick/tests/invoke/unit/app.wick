@@ -1,0 +1,12 @@
+name: wasi-test
+kind: wick/app@v1
+import:
+  - name: CLI
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./app-cli.wick
+      with:
+        root: '{{ ctx.env.CARGO_MANIFEST_DIR }}'
+triggers:
+  - kind: wick/trigger/cli@v1
+    operation: CLI::main

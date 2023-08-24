@@ -2,14 +2,14 @@ use std::path::Path;
 
 use wick_interface_types::ComponentSignature;
 
-use crate::EngineError;
+use crate::ScopeError;
 
 pub(crate) fn expect_signature_match(
   _actual_src: Option<&Path>,
   actual: &ComponentSignature,
   _expected_src: Option<&Path>,
   expected: &ComponentSignature,
-) -> Result<(), EngineError> {
+) -> Result<(), ScopeError> {
   if actual != expected {
     // Disabling for now.
     // debug!(

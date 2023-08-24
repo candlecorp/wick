@@ -22,12 +22,11 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use tokio::task::JoinHandle;
 use tracing::Span;
-use wick_config::config::AppConfiguration;
+use wick_config::config::{AppConfiguration, TriggerDefinition};
 
 use super::{Trigger, TriggerKind};
 use crate::dev::prelude::{RuntimeError, *};
 use crate::resources::{Resource, ResourceKind};
-use crate::triggers::build_trigger_runtime;
 use crate::triggers::http::service_factory::ServiceFactory;
 use crate::Runtime;
 
@@ -36,7 +35,7 @@ trait RawRouter {
     &self,
     tx_id: Uuid,
     remote_addr: SocketAddr,
-    runtime: Arc<Runtime>,
+    runtime: Runtime,
     request: Request<Body>,
     span: &Span,
   ) -> BoxFuture<Result<Response<Body>, HttpError>>;
@@ -52,13 +51,13 @@ struct HttpInstance {
 }
 
 impl HttpInstance {
-  async fn new(engine: Runtime, routers: Vec<HttpRouter>, initiating_span: &Span, socket: &SocketAddr) -> Self {
+  async fn new(runtime: Runtime, routers: Vec<HttpRouter>, initiating_span: &Span, socket: &SocketAddr) -> Self {
     let span = info_span!(parent:initiating_span,"http:server", %socket);
 
     span.in_scope(|| trace!(%socket,"http server starting"));
     let (tx, rx) = tokio::sync::oneshot::channel::<()>();
     let (running_tx, running_rx) = tokio::sync::oneshot::channel::<()>();
-    let server = Server::bind(socket).serve(ServiceFactory::new(engine, routers, span.id()));
+    let server = Server::bind(socket).serve(ServiceFactory::new(runtime, routers, span.id()));
     let shutdown_span = span.clone();
     let handle = tokio::spawn(async move {
       let _ = server
@@ -112,17 +111,14 @@ impl Http {
   }
 }
 
-fn index_to_router_id(index: usize) -> String {
-  format!("router_{}", index)
-}
-
 #[async_trait]
 impl Trigger for Http {
   async fn run(
     &self,
     _name: String,
+    runtime: Runtime,
     app_config: AppConfiguration,
-    config: config::TriggerDefinition,
+    config: TriggerDefinition,
     resources: Arc<HashMap<String, Resource>>,
     span: Span,
   ) -> Result<StructuredOutput, RuntimeError> {
@@ -130,7 +126,7 @@ impl Trigger for Http {
     let config = if let config::TriggerDefinition::Http(config) = config {
       config
     } else {
-      return Err(RuntimeError::InvalidConfig(Context::Trigger, TriggerKind::Http));
+      return Err(RuntimeError::TriggerKind(Context::Trigger, TriggerKind::Http));
     };
     let resource_name = config.resource();
     let resource = resources
@@ -147,8 +143,6 @@ impl Trigger for Http {
       }
     };
 
-    let mut rt = build_trigger_runtime(&app_config, span.clone())?;
-
     let span = info_span!(parent: &span,"trigger:http:routers");
 
     let routers = span.in_scope(|| {
@@ -156,24 +150,16 @@ impl Trigger for Http {
       for (i, router) in config.routers().iter().enumerate() {
         info!(path = router.path(), kind = %router.kind(), "registering http router");
 
-        let (router_bindings, router, constraints) = match router {
-          config::HttpRouterConfig::RawRouter(r) => routers::raw::register_raw_router(i, &app_config, r)?,
+        let router = match router {
+          config::HttpRouterConfig::RawRouter(r) => routers::raw::register_raw_router(i, r)?,
           config::HttpRouterConfig::StaticRouter(r) => {
-            routers::static_::register_static_router(i, resources.clone(), &app_config, r)?
+            routers::static_::register_static_router(i, resources.clone(), r)?
           }
-          config::HttpRouterConfig::ProxyRouter(r) => {
-            routers::proxy::register_proxy_router(i, resources.clone(), &app_config, r)?
-          }
+          config::HttpRouterConfig::ProxyRouter(r) => routers::proxy::register_proxy_router(i, resources.clone(), r)?,
           config::HttpRouterConfig::RestRouter(r) => {
             routers::rest::register_rest_router(i, resources.clone(), &app_config, r)?
           }
         };
-        for constraint in constraints {
-          rt.add_constraint(constraint);
-        }
-        for binding in router_bindings {
-          rt.add_import(binding);
-        }
 
         routers.push(router);
       }
@@ -181,9 +167,7 @@ impl Trigger for Http {
       Ok::<_, RuntimeError>(routers)
     })?;
 
-    let engine = rt.build(None).await?;
-
-    let instance = HttpInstance::new(engine, routers, &span, &socket).await;
+    let instance = HttpInstance::new(runtime, routers, &span, &socket).await;
 
     let output = StructuredOutput::new(
       format!("HTTP Server started on {}", instance.addr),
@@ -240,6 +224,7 @@ mod test {
     use anyhow::Result;
 
     use super::super::*;
+    use crate::build_trigger_runtime;
     use crate::test::{load_example, load_test_manifest};
 
     static PORT: &str = "9005";
@@ -256,6 +241,7 @@ mod test {
       let app_config = load_test_manifest("app_config/app-http-server-wasm.wick")
         .await?
         .try_app_config()?;
+      let rt = build_trigger_runtime(&app_config, Span::current())?.build(None).await?;
 
       let trigger = Http::default();
       let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
@@ -264,6 +250,7 @@ mod test {
       trigger
         .run(
           "test".to_owned(),
+          rt,
           app_config,
           trigger_config,
           resources,
@@ -290,6 +277,7 @@ mod test {
     async fn test_middleware() -> Result<()> {
       std::env::set_var("HTTP_PORT", PORT);
       let app_config = load_example("http/middleware.wick").await?.try_app_config()?;
+      let rt = build_trigger_runtime(&app_config, Span::current())?.build(None).await?;
 
       let trigger = Http::default();
       let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
@@ -298,6 +286,7 @@ mod test {
       trigger
         .run(
           "test".to_owned(),
+          rt,
           app_config,
           trigger_config,
           resources,
@@ -348,6 +337,7 @@ mod test {
     async fn test_rest_router() -> Result<()> {
       std::env::set_var("HTTP_PORT", PORT);
       let app_config = load_example("http/rest-router.wick").await?.try_app_config()?;
+      let rt = build_trigger_runtime(&app_config, Span::current())?.build(None).await?;
 
       let trigger = Http::default();
       let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
@@ -356,6 +346,7 @@ mod test {
       trigger
         .run(
           "test".to_owned(),
+          rt,
           app_config,
           trigger_config,
           resources,

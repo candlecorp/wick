@@ -1,6 +1,8 @@
 use serde_json::Value;
 
 use crate::config::*;
+use crate::error::ManifestError;
+use crate::ExpandImports;
 mod cli;
 mod http;
 mod time;
@@ -30,6 +32,17 @@ impl TriggerDefinition {
       TriggerDefinition::Cli(_) => TriggerKind::Cli,
       TriggerDefinition::Http(_) => TriggerKind::Http,
       TriggerDefinition::Time(_) => TriggerKind::Time,
+    }
+  }
+}
+
+impl ExpandImports for TriggerDefinition {
+  type Error = ManifestError;
+  fn expand_imports(&mut self, bindings: &mut Vec<ImportBinding>, index: usize) -> Result<(), Self::Error> {
+    match self {
+      TriggerDefinition::Cli(c) => c.expand_imports(bindings, index),
+      TriggerDefinition::Http(c) => c.expand_imports(bindings, index),
+      TriggerDefinition::Time(c) => c.expand_imports(bindings, index),
     }
   }
 }

@@ -15,10 +15,9 @@ use tokio_stream::StreamExt;
 use tracing::Span;
 use wick_packet::{Entity, InherentData, Packet};
 
-use super::{build_trigger_runtime, Trigger, TriggerKind};
+use super::{ComponentId, Trigger, TriggerKind};
 use crate::dev::prelude::*;
 use crate::resources::Resource;
-use crate::triggers::resolve_ref;
 use crate::Runtime;
 
 async fn invoke_operation(
@@ -131,7 +130,8 @@ impl Trigger for Time {
   async fn run(
     &self,
     _name: String,
-    app_config: AppConfiguration,
+    runtime: Runtime,
+    _app_config: AppConfiguration,
     config: TriggerDefinition,
     _resources: Arc<HashMap<String, Resource>>,
     _span: Span,
@@ -139,7 +139,7 @@ impl Trigger for Time {
     let config = if let TriggerDefinition::Time(config) = config {
       config
     } else {
-      return Err(RuntimeError::InvalidConfig(Context::Trigger, TriggerKind::Time));
+      return Err(RuntimeError::TriggerKind(Context::Trigger, TriggerKind::Time));
     };
 
     let cron = config.schedule().cron().to_owned();
@@ -157,18 +157,7 @@ impl Trigger for Time {
     };
 
     let span = info_span!("trigger:schedule", schedule = cron);
-    let mut runtime = build_trigger_runtime(&app_config, span.clone())?;
-    let component_id = match resolve_ref(&app_config, config.operation().component())? {
-      super::ResolvedComponent::Ref(id, _) => id.to_owned(),
-      super::ResolvedComponent::Inline(def) => {
-        let id = "0".to_owned();
-        let schedule_binding = config::ImportBinding::component(&id, def.clone());
-        runtime.add_import(schedule_binding);
-        id
-      }
-    };
-
-    let runtime = runtime.build(None).await?;
+    let component_id = config.operation().component_id()?.to_owned();
 
     let scheduler_task = create_schedule(runtime, schedule, config, component_id, span).await?;
 
@@ -214,11 +203,13 @@ mod test {
   use anyhow::Result;
 
   use super::*;
+  use crate::build_trigger_runtime;
   use crate::test::load_example;
 
   #[test_logger::test(tokio::test)]
   async fn test_time_example() -> Result<()> {
     let app_config = load_example("time/time.wick").await?.try_app_config()?;
+    let rt = build_trigger_runtime(&app_config, Span::current())?.build(None).await?;
 
     let trigger = Time::load()?;
     let trigger_config = app_config.triggers()[0].clone();
@@ -226,6 +217,7 @@ mod test {
     trigger
       .run(
         "test".to_owned(),
+        rt,
         app_config,
         trigger_config,
         Default::default(),

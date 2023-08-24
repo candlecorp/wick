@@ -6339,6 +6339,7 @@ name = "wick-cli"
 version = "0.13.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "atty",
  "clap",
  "dhat",
@@ -6536,6 +6537,7 @@ name = "wick-host"
 version = "0.4.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "derive_builder",
  "flow-component",
  "futures 0.3.28",
@@ -6793,6 +6795,7 @@ dependencies = [
  "hyper",
  "hyper-reverse-proxy",
  "hyper-staticfile",
+ "itertools 0.11.0",
  "lazy_static",
  "once_cell",
  "openapiv3",

@@ -1,5 +1,4 @@
 #:schema https://raw.githubusercontent.com/assert-rs/trycmd/main/schema.json
-stdin = 'hey'
 bin.name = "wick"
 args = [
   "run",
@@ -19,8 +18,7 @@ stdout = """
 
 
 
-wick exited with error: lockdown configuration resulted in 1 failures: component __root__.CLI.wasi_fs is not allowed to access [CWD]
+wick exited with error: lockdown configuration resulted in 1 failures: component __local__::CLI::wasi_fs is not allowed to access [CWD]
 Run with --info, --debug, or --trace for more information.
 """
-stderr = """[..]"""
 status.code = 1

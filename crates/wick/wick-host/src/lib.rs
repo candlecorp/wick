@@ -92,13 +92,15 @@ extern crate tracing;
 pub(crate) mod macros;
 
 mod app_host;
-pub use app_host::{AppHost, AppHostBuilder, TriggerState};
 pub mod collection;
 mod component_host;
 mod error;
-
+mod traits;
+pub use app_host::{AppHost, AppHostBuilder, TriggerState};
 pub use collection::HostComponent;
 pub use component_host::{ComponentHost, ComponentHostBuilder};
+pub use traits::{Host, RuntimeError, WickHost};
+
+pub type Error = error::HostError;
 
 pub(crate) type Result<T> = std::result::Result<T, error::HostError>;
-pub type Error = error::HostError;

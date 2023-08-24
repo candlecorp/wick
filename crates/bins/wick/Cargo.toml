@@ -55,6 +55,7 @@ structured-output = { workspace = true }
 regex = { workspace = true }
 dhat = { workspace = true, optional = true }
 once_cell = { workspace = true }
+async-trait = { workspace = true }
 
 [dev-dependencies]
 test_bin = { workspace = true }

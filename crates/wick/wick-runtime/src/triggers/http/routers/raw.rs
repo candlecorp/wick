@@ -10,16 +10,15 @@ use serde_json::Value;
 use tokio_stream::StreamExt;
 use tracing::{Instrument, Span};
 use uuid::Uuid;
-use wick_config::config::{AppConfiguration, Codec, ImportBinding, RawRouterConfig, WickRouter};
+use wick_config::config::{Codec, RawRouterConfig, WickRouter};
 use wick_packet::{packets, Base64Bytes, Entity, InherentData, Invocation, Observer, Packet, PacketStream};
 
-use crate::dev::prelude::{RuntimeError, *};
-use crate::runtime::RuntimeConstraint;
+use crate::dev::prelude::RuntimeError;
 use crate::triggers::http::component_utils::respond;
 use crate::triggers::http::conversions::request_and_body_to_wick;
 use crate::triggers::http::middleware::resolve_middleware_components;
-use crate::triggers::http::{index_to_router_id, HttpError, HttpRouter, RawRouter, RawRouterHandler, RouterOperation};
-use crate::triggers::{resolve_ref, ResolvedComponent};
+use crate::triggers::http::{HttpError, HttpRouter, RawRouter, RawRouterHandler, RouterOperation};
+use crate::triggers::ComponentId;
 use crate::Runtime;
 
 #[derive()]
@@ -41,7 +40,7 @@ impl RawRouter for RawComponentRouter {
     &self,
     tx_id: Uuid,
     remote_addr: SocketAddr,
-    runtime: Arc<Runtime>,
+    runtime: Runtime,
     request: Request<Body>,
     span: &Span,
   ) -> BoxFuture<Result<Response<Body>, HttpError>> {
@@ -64,16 +63,16 @@ impl RawRouter for RawComponentRouter {
 struct RawHandler {
   tx_id: Uuid,
   config: Arc<RouterOperation>,
-  engine: Arc<Runtime>,
+  runtime: Runtime,
   remote_addr: SocketAddr,
 }
 
 impl RawHandler {
-  fn new(tx_id: Uuid, config: Arc<RouterOperation>, engine: Arc<Runtime>, remote_addr: SocketAddr) -> Self {
+  fn new(tx_id: Uuid, config: Arc<RouterOperation>, runtime: Runtime, remote_addr: SocketAddr) -> Self {
     RawHandler {
       tx_id,
       config,
-      engine,
+      runtime,
       remote_addr,
     }
   }
@@ -91,7 +90,7 @@ impl RawHandler {
       tx_id,
       remote_addr,
       config,
-      engine,
+      runtime,
     } = self;
 
     let (tx, rx) = PacketStream::new_channels();
@@ -105,7 +104,7 @@ impl RawHandler {
       &Span::current(),
     );
 
-    let stream = engine
+    let stream = runtime
       .invoke(invocation, config.config.clone())
       .await
       .map_err(|e| HttpError::OperationError(e.to_string()));
@@ -170,55 +169,25 @@ impl Service<Request<Body>> for RawHandler {
   }
 }
 
-pub(crate) fn register_raw_router(
-  index: usize,
-  app_config: &AppConfiguration,
-  router_config: &RawRouterConfig,
-) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
+pub(crate) fn register_raw_router(index: usize, router_config: &RawRouterConfig) -> Result<HttpRouter, RuntimeError> {
   trace!(index, "registering raw router");
-  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
+  let middleware = resolve_middleware_components(router_config)?;
 
-  let component_id = match resolve_ref(app_config, router_config.operation().component())? {
-    ResolvedComponent::Ref(id, _) => id.to_owned(),
-    ResolvedComponent::Inline(def) => {
-      let component_id = index_to_router_id(index);
-      let router_binding = config::ImportBinding::component(&component_id, def.clone());
-      bindings.push(router_binding);
-      component_id
-    }
-  };
+  let component_id = router_config.operation().component_id()?;
 
   let router = RouterOperation {
     operation: router_config.operation().name().to_owned(),
-    component: component_id,
+    component: component_id.to_owned(),
     codec: router_config.codec().copied().unwrap_or_default(),
     config: router_config.operation().config().and_then(|v| v.value().cloned()),
     path: router_config.path().to_owned(),
   };
 
-  let constraint = RuntimeConstraint::Operation {
-    entity: Entity::operation(&router.component, &router.operation),
-    signature: operation! { "..." => {
-        inputs : {
-          "request" => "object",
-          "body" => "object",
-        },
-        outputs : {
-          "response" => "object",
-          "body" => "object",
-        },
-      }
-    },
-  };
   let router = RawComponentRouter::new(router);
 
-  Ok((
-    bindings,
-    HttpRouter::Raw(RawRouterHandler {
-      path: router_config.path().to_owned(),
-      component: Arc::new(router),
-      middleware,
-    }),
-    vec![constraint],
-  ))
+  Ok(HttpRouter::Raw(RawRouterHandler {
+    path: router_config.path().to_owned(),
+    component: Arc::new(router),
+    middleware,
+  }))
 }

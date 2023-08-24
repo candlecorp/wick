@@ -7,10 +7,11 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_component_cli::parse_args;
-use wick_packet::{InherentData, Packet, PacketStream};
+use wick_host::Host;
+use wick_packet::{Entity, InherentData, Invocation, Packet, PacketStream};
 
 use crate::utils::{self, parse_config_string};
-use crate::wick_host::build_component_host;
+use crate::wick_host::build_host;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
@@ -57,24 +58,42 @@ pub(crate) async fn handle(
 ) -> Result<StructuredOutput> {
   let root_config = parse_config_string(opts.component.with.as_deref())?;
   let server_settings = DefaultCliOptions { ..Default::default() };
-  let host = build_component_host(
+
+  let host = build_host(
     &opts.component.path,
     opts.oci,
     root_config,
     settings,
     opts.component.seed,
     Some(server_settings),
-    span,
+    span.clone(),
   )
   .await?;
-  let operation = &opts.operation.operation_name;
 
-  let signature = host.get_signature()?;
-  let op_signature = signature.get_operation(operation).ok_or_else(|| {
+  let mut path_parts = opts.operation.operation_name.split("::").collect::<Vec<_>>();
+
+  if path_parts.is_empty() {
+    return Err(anyhow::anyhow!(
+      "Invalid operation name '{}', expected 'operation' or 'component::operation'",
+      opts.operation.operation_name
+    ));
+  }
+
+  let (path_parts, target) = if path_parts.len() == 1 {
+    (None, Entity::local(path_parts[0]))
+  } else {
+    let op = path_parts.pop().unwrap();
+    let component = path_parts.pop().unwrap();
+
+    (Some(path_parts), Entity::operation(component, op))
+  };
+
+  let signature = host.get_signature(path_parts.as_deref(), Some(&target))?;
+
+  let op_signature = signature.get_operation(target.operation_id()).ok_or_else(|| {
     anyhow::anyhow!(
-      "Could not invoke operation '{}', '{}' not found. Reported operations are [{}]",
-      operation,
-      operation,
+      "Operation '{}' not found, reported operations are [{}]",
+      target.operation_id(),
       signature
         .operations
         .iter()
@@ -83,6 +102,7 @@ pub(crate) async fn handle(
         .join(", ")
     )
   })?;
+
   let op_config = parse_config_string(opts.operation.op_with.as_deref())?;
 
   let check_stdin = if op_signature.inputs.is_empty() {
@@ -123,8 +143,13 @@ pub(crate) async fn handle(
     //   utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
     // }
   } else {
-    let args = parse_args(&opts.args, op_signature)
-      .map_err(|e| anyhow!("Failed to parse arguments for operation {}: {}", operation, e))?;
+    let args = parse_args(&opts.args, op_signature).map_err(|e| {
+      anyhow!(
+        "Failed to parse arguments for operation {}: {}",
+        target.operation_id(),
+        e
+      )
+    })?;
     trace!(args= ?args, "parsed CLI arguments");
     let mut packets = Vec::new();
     let mut seen_ports = HashSet::new();
@@ -138,11 +163,17 @@ pub(crate) async fn handle(
     debug!(cli_packets= ?packets, "wick invoke");
     let stream = PacketStream::new(futures::stream::iter(packets));
 
-    let stream = host.request(operation, op_config, stream, inherent_data).await?;
+    let invocation = Invocation::new(Entity::server(host.namespace()), target, stream, inherent_data, &span);
+
+    let stream = host.invoke_deep(path_parts.as_deref(), invocation, op_config).await?;
 
     utils::print_stream_json(stream, &opts.filter, opts.short, opts.raw).await?;
   }
-  host.stop().await;
+
+  match host {
+    wick_host::WickHost::App(_) => {}
+    wick_host::WickHost::Component(host) => host.stop().await,
+  }
 
   Ok(StructuredOutput::new("", json!({})))
 }

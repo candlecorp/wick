@@ -47,7 +47,9 @@ mod imported_components_wasm {
     ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
       let input = input.map(wick_component::wick_packet::into_packet("input"));
       let stream = wick_component::empty();
-      let stream = stream.merge(input);
+      let stream = stream
+        .merge(input)
+        .chain(wick_component::iter_raw(vec![Ok(Packet::done("input"))]));
       let stream = wick_packet::PacketStream::new(Box::pin(stream));
       Ok(
         self

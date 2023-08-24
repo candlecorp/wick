@@ -7,23 +7,23 @@ use crate::dev::prelude::*;
 struct State {}
 
 #[derive(Clone, Debug)]
-pub struct EngineComponent {
-  engine_id: Uuid,
+pub struct ScopeComponent {
+  scope_id: Uuid,
   signature: ComponentSignature,
 }
 
-impl EngineComponent {
+impl ScopeComponent {
   #[must_use]
-  pub fn new(engine_id: Uuid) -> Self {
-    let addr = RuntimeService::for_id(&engine_id).unwrap();
+  pub fn new(scope_id: Uuid) -> Self {
+    let addr = Scope::for_id(&scope_id).unwrap();
 
     let signature = addr.get_signature().unwrap();
 
-    Self { engine_id, signature }
+    Self { scope_id, signature }
   }
 }
 
-impl Component for EngineComponent {
+impl Component for ScopeComponent {
   fn handle(
     &self,
     mut invocation: Invocation,
@@ -34,29 +34,29 @@ impl Component for EngineComponent {
 
     invocation.trace(|| {
       debug!(
-        engine_id = %self.engine_id,
+        scope_id = %self.scope_id,
         target =  %invocation.target,
-        "runtime:invoke",
+        "scope:invoke",
       );
     });
 
     Box::pin(async move {
-      let engine = RuntimeService::for_id(&self.engine_id)
-        .ok_or_else(|| flow_component::ComponentError::message(&format!("Engine '{}' not found", target_url)))?;
+      let scope = Scope::for_id(&self.scope_id)
+        .ok_or_else(|| flow_component::ComponentError::message(&format!("scope '{}' not found", target_url)))?;
 
       let target_component = invocation.target.component_id().to_owned();
-      if target_component != engine.namespace {
+      if target_component != scope.namespace() {
         debug!(
           orig_target = target_component,
-          runtime = engine.namespace,
-          "translating invocation target to runtime namespace"
+          runtime = scope.namespace(),
+          "translating invocation target to scope namespace"
         );
-        invocation.target = Entity::operation(&engine.namespace, invocation.target.operation_id());
+        invocation.target = Entity::operation(scope.namespace(), invocation.target.operation_id());
       }
 
       invocation.trace(|| trace!(target = %target_url, "invoking"));
 
-      let result: InvocationResponse = engine
+      let result: InvocationResponse = scope
         .invoke(invocation, config)
         .map_err(flow_component::ComponentError::new)?
         .await
@@ -85,7 +85,7 @@ mod tests {
   use crate::test::prelude::{assert_eq, *};
   type Result<T> = anyhow::Result<T>;
 
-  async fn request_log(component: &EngineComponent, data: &str) -> Result<String> {
+  async fn request_log(component: &ScopeComponent, data: &str) -> Result<String> {
     let stream = packet_stream!(("MAIN_IN", data));
 
     let invocation = Invocation::test(file!(), Entity::local("simple"), stream, None)?;
@@ -104,9 +104,9 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn test_request_log() -> Result<()> {
-    let (_, engine_id) = init_engine_from_yaml("./manifests/v0/simple.yaml").await?;
+    let (_, scope_id) = init_scope_from_yaml("./manifests/v0/simple.yaml").await?;
 
-    let component = EngineComponent::new(engine_id);
+    let component = ScopeComponent::new(scope_id);
     let user_data = "string to log";
     let result = request_log(&component, user_data).await?;
     print!("Result: {}", result);
@@ -116,10 +116,10 @@ mod tests {
 
   #[test_logger::test(tokio::test)]
   async fn test_list() -> Result<()> {
-    let (_, engine_id) = init_engine_from_yaml("./manifests/v0/simple.yaml").await?;
-    let component = EngineComponent::new(engine_id);
+    let (_, scope_id) = init_scope_from_yaml("./manifests/v0/simple.yaml").await?;
+    let component = ScopeComponent::new(scope_id);
     let sig = component.signature();
-    println!("operations on engine : {:?}", sig);
+    println!("operations in scope : {:?}", sig);
     assert_eq!(sig.operations.len(), 1);
     Ok(())
   }

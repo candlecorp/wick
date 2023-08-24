@@ -28,6 +28,9 @@ fn init_resources(config: &AppConfiguration) -> Result<HashMap<String, Resource>
 #[test_logger::test(tokio::test)]
 async fn basic_cli() -> Result<()> {
   let manifest = load_app_yaml("./tests/manifests/v1/app_config/basic.yaml").await?;
+  let rt = wick_runtime::build_trigger_runtime(&manifest, Span::current())?
+    .build(None)
+    .await?;
   let resources = Arc::new(init_resources(&manifest)?);
 
   let trigger_config = &manifest.triggers()[0];
@@ -42,7 +45,7 @@ async fn basic_cli() -> Result<()> {
       let inner = loader.clone();
       let resources = resources.clone();
       inner
-        .run(name, app_config, config, resources.clone(), Span::current())
+        .run(name, rt, app_config, config, resources.clone(), Span::current())
         .await?;
     }
     _ => {
@@ -59,6 +62,9 @@ mod integration_test {
   #[test_logger::test(tokio::test)]
   async fn cli_with_db() -> Result<()> {
     let manifest = load_app_yaml("../../../examples/cli/wasm-calling-postgres.wick").await?;
+    let rt = wick_runtime::build_trigger_runtime(&manifest, Span::current())?
+      .build(None)
+      .await?;
     let resources = Arc::new(init_resources(&manifest)?);
 
     let trigger_config = &manifest.triggers()[0];
@@ -74,7 +80,7 @@ mod integration_test {
         let resources = resources.clone();
         tokio::spawn(async move {
           let _ = inner
-            .run(name, app_config, config, resources.clone(), Span::current())
+            .run(name, rt, app_config, config, resources.clone(), Span::current())
             .await;
           inner.wait_for_done().await;
         })

@@ -2,9 +2,9 @@ use flow_graph_interpreter::NamespaceHandler;
 use seeded_random::Seed;
 
 use crate::components::initialize_native_component;
-use crate::{EngineError, V0_NAMESPACE};
+use crate::{ScopeError, V0_NAMESPACE};
 
-pub(crate) type ComponentFactory = dyn Fn(Seed) -> Result<NamespaceHandler, EngineError> + Send + Sync;
+pub(crate) type ComponentFactory = dyn Fn(Seed) -> Result<NamespaceHandler, ScopeError> + Send + Sync;
 
 #[derive()]
 pub(crate) struct ComponentRegistry(Vec<Box<ComponentFactory>>);

@@ -2,10 +2,10 @@ use anyhow::Result;
 use clap::Args;
 use serde_json::json;
 use structured_output::StructuredOutput;
-use wick_config::WickConfiguration;
+use wick_host::Host;
 
 use crate::utils::parse_config_string;
-use crate::wick_host::build_component_host;
+use crate::wick_host::build_host;
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
@@ -24,15 +24,15 @@ pub(crate) async fn handle(
   settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
-  span.in_scope(|| debug!("Generate dotviz graph"));
+  span.in_scope(|| debug!("expand config"));
   let root_config = parse_config_string(opts.component.with.as_deref())?;
-  let host = build_component_host(&opts.component.path, opts.oci, root_config, settings, None, None, span).await?;
+  let host = build_host(&opts.component.path, opts.oci, root_config, settings, None, None, span).await?;
 
-  let config = host.get_active_config()?;
-  let config = WickConfiguration::Component(config.clone());
+  let config = host.get_active_config();
+  let signature = host.get_signature(None, None)?;
+
   let config_yaml = config.clone().into_v1_yaml()?;
   let config_json = serde_json::to_value(&config)?;
-  let signature = host.get_signature()?;
 
   let json = json!({"signature": signature, "config": config_json});
   Ok(StructuredOutput::new(config_yaml, json))

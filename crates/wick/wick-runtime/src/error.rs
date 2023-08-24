@@ -2,10 +2,11 @@ use std::convert::Infallible;
 
 use thiserror::Error;
 use wick_config::config::{ComponentKind, TriggerKind};
+use wick_packet::Entity;
 
 pub use crate::components::error::ComponentError;
 use crate::resources::ResourceKind;
-pub use crate::runtime_service::error::EngineError;
+pub use crate::runtime::scope::error::ScopeError;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Context {
@@ -53,7 +54,13 @@ impl From<ComponentKind> for Context {
 #[derive(Error, Debug)]
 pub enum RuntimeError {
   #[error("Invalid {0} configuration, expected configuration for {0}")]
-  InvalidConfig(Context, TriggerKind),
+  TriggerKind(Context, TriggerKind),
+
+  #[error("Invalid {0} configuration: {1}")]
+  InvalidConfig(Context, String),
+
+  #[error("invalid target '{0}'")]
+  InvalidTarget(Entity),
 
   #[error("{0} requested resource '{1}' which could not be found")]
   ResourceNotFound(Context, String),
@@ -69,6 +76,9 @@ pub enum RuntimeError {
 
   #[error("{0}")]
   InitializationFailed(String),
+
+  #[error("Could not find scope '{}' via path {}", .1.as_ref().map_or_else(||Entity::LOCAL,|e|e.component_id()), .0.as_ref().map_or_else(||"".to_owned(),|v|format!("via path {} ",v.join("::"))))]
+  ScopeNotFound(Option<Vec<String>>, Option<Entity>),
 
   #[error("Invocation error: {0}")]
   InvocationError(String),
