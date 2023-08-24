@@ -55,10 +55,10 @@ jobs:
           echo "::set-output name=BUILD_ID::${branch}-${sha}-${ts}"
 
       - name: Publish Wick Package
-        uses: candlecorp/wick-push-action@v0.0.3
+        uses: candlecorp/wick-push-action
         id: push
         with:
-          path: 'docs/docs.wick'
+          path: "docs/docs.wick"
           username: ${{ secrets.CANDLE_REG_USERNAME }}
           password: ${{ secrets.CANDLE_REG_PASSWORD }}
           tags: latest ${{ steps.prep.outputs.BUILD_ID }}
