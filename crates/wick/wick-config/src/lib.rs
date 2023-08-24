@@ -95,6 +95,8 @@ pub mod audit;
 mod default;
 mod helpers;
 mod import_cache;
+mod traits;
+pub use traits::*;
 /// Data structures, traits, and errors associated with Lockdown configuration.
 pub mod lockdown;
 

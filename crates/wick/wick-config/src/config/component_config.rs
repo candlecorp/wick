@@ -10,10 +10,10 @@ use tracing::trace;
 pub use wasm::*;
 use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::{ComponentMetadata, ComponentSignature, Field, OperationSignature, TypeDefinition};
-use wick_packet::RuntimeConfig;
+use wick_packet::{Entity, RuntimeConfig};
 
 use super::common::package_definition::PackageConfig;
-use super::{AppConfiguration, ImportBinding, TestConfiguration};
+use super::{ImportBinding, TestConfiguration};
 use crate::config::template_config::Renderable;
 use crate::config::{BoundInterface, ResourceBinding};
 use crate::import_cache::{setup_cache, ImportCache};
@@ -283,6 +283,7 @@ impl ComponentConfiguration {
       ?root_config,
       "initializing component"
     );
+
     for resource in self.resources.iter_mut() {
       resource.kind.render_config(root_config.as_ref(), None)?;
     }
@@ -318,10 +319,10 @@ impl Lockdown for ComponentConfiguration {
       )]));
     };
 
-    if id == AppConfiguration::GENERIC_IDENTIFIER {
+    if id == Entity::LOCAL {
       return Err(LockdownError::new(vec![FailureKind::General(format!(
         "invalid component id: {}",
-        AppConfiguration::GENERIC_IDENTIFIER
+        Entity::LOCAL
       ))]));
     }
 

@@ -46,14 +46,14 @@ impl From<ComponentError> for DispatchError {
   }
 }
 
-pub(crate) async fn engine_invoke_async(
-  engine_id: Uuid,
+pub(crate) async fn scope_invoke_async(
+  scope_id: Uuid,
   invocation: Invocation,
   config: Option<RuntimeConfig>,
 ) -> Result<PacketStream, DispatchError> {
-  let engine = RuntimeService::for_id(&engine_id).ok_or(DispatchError::EntityNotAvailable(engine_id))?;
+  let scope = Scope::for_id(&scope_id).ok_or(DispatchError::EntityNotAvailable(scope_id))?;
 
-  let response = engine.invoke(invocation, config)?.await?;
+  let response = scope.invoke(invocation, config)?.await?;
   match response {
     InvocationResponse::Stream { rx, .. } => Ok(rx),
     InvocationResponse::Error { msg, .. } => Err(DispatchError::CallFailure(msg)),
@@ -70,13 +70,13 @@ mod tests {
   use crate::test::prelude::{assert_eq, *};
   #[test_logger::test(tokio::test)]
   async fn invoke_async() -> Result<()> {
-    let (_, nuid) = init_engine_from_yaml("./manifests/v0/echo.yaml").await?;
+    let (_, nuid) = init_scope_from_yaml("./manifests/v0/echo.yaml").await?;
 
     let target = Entity::operation("self", "echo");
     let stream = packet_stream![("input", "hello")];
     let invocation = Invocation::test(file!(), target, stream, None)?;
 
-    let packets = engine_invoke_async(nuid, invocation, Default::default()).await?;
+    let packets = scope_invoke_async(nuid, invocation, Default::default()).await?;
     let mut packets: Vec<_> = packets.collect().await;
     debug!("{:?}", packets);
     assert_eq!(packets.len(), 2);

@@ -8,19 +8,16 @@ use crate::components::{init_hlc_component, init_manifest_component, init_wasm_c
 use crate::dev::prelude::*;
 use crate::runtime::RuntimeConstraint;
 
-pub(super) fn assert_constraints(
-  constraints: &[RuntimeConstraint],
-  components: &HandlerMap,
-) -> Result<(), EngineError> {
+pub(super) fn assert_constraints(constraints: &[RuntimeConstraint], components: &HandlerMap) -> Result<(), ScopeError> {
   for constraint in constraints {
     #[allow(irrefutable_let_patterns)]
     if let RuntimeConstraint::Operation { entity, signature } = constraint {
       let handler = components
         .get(entity.component_id())
-        .ok_or_else(|| EngineError::InvalidConstraint(ConstraintFailure::ComponentNotFound(entity.clone())))?;
+        .ok_or_else(|| ScopeError::InvalidConstraint(ConstraintFailure::ComponentNotFound(entity.clone())))?;
       let sig = handler.component().signature();
       let op = sig.get_operation(entity.operation_id()).ok_or_else(|| {
-        EngineError::InvalidConstraint(ConstraintFailure::OperationNotFound(
+        ScopeError::InvalidConstraint(ConstraintFailure::OperationNotFound(
           entity.clone(),
           sig.operations.iter().map(|o| o.name().to_owned()).collect(),
         ))
@@ -30,7 +27,7 @@ pub(super) fn assert_constraints(
           .iter()
           .find(|sig_field| sig_field.name == field.name)
           .ok_or_else(|| {
-            EngineError::InvalidConstraint(ConstraintFailure::InputNotFound(entity.clone(), field.name.clone()))
+            ScopeError::InvalidConstraint(ConstraintFailure::InputNotFound(entity.clone(), field.name.clone()))
           })?;
       }
       for field in &signature.outputs {
@@ -38,7 +35,7 @@ pub(super) fn assert_constraints(
           .iter()
           .find(|sig_field| sig_field.name == field.name)
           .ok_or_else(|| {
-            EngineError::InvalidConstraint(ConstraintFailure::OutputNotFound(entity.clone(), field.name.clone()))
+            ScopeError::InvalidConstraint(ConstraintFailure::OutputNotFound(entity.clone(), field.name.clone()))
           })?;
       }
     }
@@ -50,7 +47,7 @@ pub(crate) async fn instantiate_import(
   binding: &config::ImportBinding,
   opts: ChildInit,
   resolver: Box<Resolver>,
-) -> Result<Option<NamespaceHandler>, EngineError> {
+) -> Result<Option<NamespaceHandler>, ScopeError> {
   opts
     .span
     .in_scope(|| debug!(id = binding.id(), ?opts, "instantiating import"));
@@ -66,7 +63,7 @@ pub(crate) async fn instantiate_imported_component(
   kind: &ComponentDefinition,
   opts: ChildInit,
   resolver: Box<Resolver>,
-) -> Result<Option<NamespaceHandler>, EngineError> {
+) -> Result<Option<NamespaceHandler>, ScopeError> {
   match kind {
     #[allow(deprecated)]
     config::ComponentDefinition::Wasm(def) => Ok(Some(
@@ -86,7 +83,7 @@ pub(crate) async fn instantiate_imported_component(
 
 #[cfg(test)]
 mod test {
-  // You can find many of the engine tests in the integration tests
+  // You can find many of the scope tests in the integration tests
 
   use std::sync::Arc;
 

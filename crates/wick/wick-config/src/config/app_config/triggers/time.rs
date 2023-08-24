@@ -1,13 +1,15 @@
 use wick_asset_reference::AssetReference;
 
 use super::OperationInputConfig;
-use crate::config::ComponentOperationExpression;
+use crate::config::{ComponentOperationExpression, ImportBinding};
+use crate::error::ManifestError;
+use crate::ExpandImports;
 
 #[derive(
   Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize, Builder,
 )]
 #[builder(setter(into))]
-#[property(get(public), set(private), mut(disable))]
+#[property(get(public), set(private), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]
 /// Normalized representation of a Time trigger configuration.
 pub struct TimeTriggerConfig {
@@ -32,4 +34,13 @@ pub struct ScheduleConfig {
   #[asset(skip)]
   #[builder(default)]
   pub(crate) repeat: u16,
+}
+
+impl ExpandImports for TimeTriggerConfig {
+  type Error = ManifestError;
+  fn expand_imports(&mut self, bindings: &mut Vec<ImportBinding>, trigger_index: usize) -> Result<(), Self::Error> {
+    let id = format!("trigger_{}", trigger_index);
+    self.operation_mut().maybe_import(&id, bindings);
+    Ok(())
+  }
 }

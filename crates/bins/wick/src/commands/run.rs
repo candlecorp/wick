@@ -6,9 +6,9 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use tracing::Instrument;
 use wick_config::WickConfiguration;
-use wick_host::AppHostBuilder;
+use wick_host::{AppHost, AppHostBuilder};
 
-use crate::utils::{fetch_wick_config, parse_config_string, reconcile_fetch_options};
+use crate::utils::{fetch_wick_config, fetch_wick_tree, parse_config_string, reconcile_fetch_options};
 
 #[derive(Debug, Clone, Args)]
 #[clap(rename_all = "kebab-case")]
@@ -51,7 +51,7 @@ pub(crate) async fn handle(
     lockdown_config.set_env(env.clone());
     let lockdown_config = lockdown_config.finish()?.try_lockdown_config()?;
 
-    let tree = WickConfiguration::fetch_tree(&opts.component.path, runtime_config, env, options.clone()).await?;
+    let tree = fetch_wick_tree(&opts.component.path, options.clone(), runtime_config, span.clone()).await?;
     let mut flattened = tree.flatten();
     wick_config::lockdown::assert_restrictions(&flattened, &lockdown_config)?;
 
@@ -66,11 +66,12 @@ pub(crate) async fn handle(
 
   let mut host = AppHostBuilder::default()
     .manifest(app_config.clone())
+    .runtime(AppHost::build_runtime(&app_config, opts.component.seed, span.clone()).await?)
     .span(span.clone())
     .build()?;
 
   if !opts.dryrun {
-    host.start(opts.component.seed)?;
+    host.start()?;
     span.in_scope(|| debug!("Waiting on triggers to finish..."));
 
     host.wait_for_done().instrument(span.clone()).await?;

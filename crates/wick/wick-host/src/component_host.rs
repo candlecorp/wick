@@ -11,10 +11,12 @@ use uuid::Uuid;
 use wick_component_cli::options::{Options as HostOptions, ServerOptions};
 use wick_component_cli::ServerState;
 use wick_config::config::ComponentConfiguration;
+use wick_config::WickConfiguration;
 use wick_interface_types::ComponentSignature;
-use wick_packet::{Entity, InherentData, Invocation, PacketStream, RuntimeConfig};
-use wick_runtime::{EngineComponent, Runtime, RuntimeBuilder};
+use wick_packet::{Entity, Invocation, PacketStream, RuntimeConfig};
+use wick_runtime::{Runtime, RuntimeBuilder, ScopeComponent};
 
+use crate::error::HostError;
 use crate::{Error, Result};
 
 type ServiceMap = HashMap<Uuid, SharedComponent>;
@@ -22,7 +24,7 @@ static HOST_REGISTRY: Lazy<Mutex<ServiceMap>> = Lazy::new(|| Mutex::new(HashMap:
 
 fn from_registry(id: Uuid) -> SharedComponent {
   let mut registry = HOST_REGISTRY.lock();
-  let collection = registry.entry(id).or_insert_with(|| Arc::new(EngineComponent::new(id)));
+  let collection = registry.entry(id).or_insert_with(|| Arc::new(ScopeComponent::new(id)));
   collection.clone()
 }
 
@@ -67,13 +69,6 @@ impl ComponentHost {
       .server_metadata
       .as_ref()
       .and_then(|state| state.rpc.as_ref().map(|rpc| rpc.addr))
-  }
-
-  pub fn get_signature(&self) -> Result<ComponentSignature> {
-    match &self.runtime {
-      Some(runtime) => Ok(runtime.get_signature()?),
-      None => Err(Error::NoRuntime),
-    }
   }
 
   #[must_use]
@@ -145,35 +140,6 @@ impl ComponentHost {
     Ok(metadata)
   }
 
-  pub async fn request(
-    &self,
-    operation: &str,
-    config: Option<RuntimeConfig>,
-    stream: PacketStream,
-    data: InherentData,
-  ) -> Result<PacketStream> {
-    match &self.runtime {
-      Some(runtime) => {
-        let invocation = Invocation::new(
-          Entity::server(&self.id),
-          Entity::operation(&self.id, operation),
-          stream,
-          data,
-          &self.span,
-        );
-        Ok(runtime.invoke(invocation, config).await?)
-      }
-      None => Err(crate::Error::NoRuntime),
-    }
-  }
-
-  pub async fn invoke(&self, invocation: Invocation, data: Option<RuntimeConfig>) -> Result<PacketStream> {
-    match &self.runtime {
-      Some(runtime) => Ok(runtime.invoke(invocation, data).await?),
-      None => Err(crate::Error::NoRuntime),
-    }
-  }
-
   pub async fn wait_for_sigint(&self) -> Result<()> {
     tokio::signal::ctrl_c().await.unwrap();
     self.span.in_scope(|| debug!("SIGINT received"));
@@ -196,12 +162,42 @@ impl ComponentHost {
       None => Err(crate::Error::NoRuntime),
     }
   }
+}
 
-  pub fn get_active_config(&self) -> Result<&ComponentConfiguration> {
-    self
-      .runtime
-      .as_ref()
-      .map_or_else(|| Err(crate::Error::NoRuntime), |runtime| Ok(runtime.active_config()))
+#[async_trait::async_trait]
+impl crate::Host for ComponentHost {
+  fn namespace(&self) -> &str {
+    self.get_host_id()
+  }
+
+  fn get_signature(&self, path: Option<&[&str]>, entity: Option<&Entity>) -> Result<ComponentSignature> {
+    Ok(
+      self
+        .runtime
+        .as_ref()
+        .ok_or(HostError::NoRuntime)?
+        .deep_signature(path, entity)?,
+    )
+  }
+
+  async fn invoke(&self, invocation: Invocation, data: Option<RuntimeConfig>) -> Result<PacketStream> {
+    let rt = self.runtime.as_ref().ok_or(HostError::NoRuntime)?;
+    Ok(rt.invoke_deep(None, invocation, data).await?)
+  }
+
+  async fn invoke_deep(
+    &self,
+    path: Option<&[&str]>,
+    invocation: Invocation,
+    data: Option<RuntimeConfig>,
+  ) -> Result<PacketStream> {
+    let rt = self.runtime.as_ref().ok_or(HostError::NoRuntime)?;
+    Ok(rt.invoke_deep(path, invocation, data).await?)
+  }
+
+  fn get_active_config(&self) -> WickConfiguration {
+    #[allow(clippy::expect_used)]
+    WickConfiguration::Component(self.runtime.as_ref().expect("no runtime").active_config().clone())
   }
 }
 
@@ -226,10 +222,10 @@ mod test {
   use wick_config::config::HttpConfigBuilder;
   use wick_config::WickConfiguration;
   use wick_invocation_server::connect_rpc_client;
-  use wick_packet::{packet_stream, packets, Entity, Packet};
+  use wick_packet::{packet_stream, packets, Entity, InherentData, Packet};
 
   use super::*;
-  use crate::ComponentHostBuilder;
+  use crate::{ComponentHostBuilder, Host};
 
   #[test]
   fn builds_default() {
@@ -258,9 +254,14 @@ mod test {
     host.start(None).await?;
     let passed_data = "logging output";
     let stream = packet_stream!(("input", passed_data));
-    let stream = host
-      .request("logger", None, stream, InherentData::unsafe_default())
-      .await?;
+    let invocation = Invocation::new(
+      Entity::test("request_direct"),
+      Entity::local("logger"),
+      stream,
+      InherentData::unsafe_default(),
+      &Span::current(),
+    );
+    let stream = host.invoke(invocation, None).await?;
 
     let mut packets: Vec<_> = stream.collect().await;
     println!("packets: {:#?}", packets);

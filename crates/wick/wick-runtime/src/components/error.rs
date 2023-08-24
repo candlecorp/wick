@@ -10,9 +10,9 @@ pub enum ComponentError {
   UnsatisfiedRequirement(String),
 
   #[error("{0}")]
-  EngineError(String),
+  ScopeError(String),
 
-  #[error("Error initializing inner engine scope '{0}' : {1}")]
+  #[error("Error initializing inner runtime scope '{0}' : {1}")]
   SubScope(AssetReference, String),
 
   #[error("{0}")]

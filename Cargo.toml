@@ -110,6 +110,7 @@ derive_builder = { version = "0.12", default-features = false }
 dhat = { version = "0.3.2", default-features = false }
 dialoguer = { version = "0.10", default-features = false }
 dyn-clone = { version = "1.0", default-features = false }
+either = { version = "1.9.0", default-features = false }
 env_logger = { version = "0.10", default-features = false }
 escargot = { version = "0.5", default-features = false }
 futures = { version = "0.3", default-features = false, features = ["std"] }

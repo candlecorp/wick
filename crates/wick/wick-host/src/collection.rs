@@ -5,7 +5,7 @@ use flow_component::{Component, ComponentError, RuntimeCallback};
 use wick_interface_types::*;
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
-use crate::ComponentHost;
+use crate::{ComponentHost, Host};
 
 #[derive(Debug, Default)]
 pub struct Context {
@@ -23,7 +23,7 @@ pub struct HostComponent {
 
 impl HostComponent {
   pub fn new(host: ComponentHost) -> Self {
-    let signature: ComponentSignature = host.get_signature().unwrap();
+    let signature: ComponentSignature = host.get_signature(None, None).unwrap();
 
     Self {
       id: host.get_host_id().to_owned(),

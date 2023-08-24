@@ -7,14 +7,13 @@ use hyper::{Body, Request, Response, StatusCode};
 use tracing::Span;
 use url::Url;
 use uuid::Uuid;
-use wick_config::config::{AppConfiguration, ImportBinding, ProxyRouterConfig, TriggerKind, WickRouter};
+use wick_config::config::{ProxyRouterConfig, TriggerKind, WickRouter};
 
 use super::super::{HttpError, HttpRouter, RawRouter};
-use crate::dev::prelude::{RuntimeError, *};
+use crate::dev::prelude::RuntimeError;
 use crate::resources::{Resource, ResourceKind};
-use crate::runtime::RuntimeConstraint;
 use crate::triggers::http::middleware::resolve_middleware_components;
-use crate::triggers::http::{index_to_router_id, RawRouterHandler};
+use crate::triggers::http::RawRouterHandler;
 use crate::Runtime;
 
 #[derive()]
@@ -38,7 +37,7 @@ impl RawRouter for ProxyRouter {
     &self,
     _tx_id: Uuid,
     remote_addr: SocketAddr,
-    _runtime: Arc<Runtime>,
+    _runtime: Runtime,
     mut request: Request<Body>,
     span: &Span,
   ) -> BoxFuture<Result<Response<Body>, HttpError>> {
@@ -74,11 +73,10 @@ impl RawRouter for ProxyRouter {
 pub(crate) fn register_proxy_router(
   index: usize,
   resources: Arc<HashMap<String, Resource>>,
-  app_config: &AppConfiguration,
   router_config: &ProxyRouterConfig,
-) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
+) -> Result<HttpRouter, RuntimeError> {
   trace!(index, "registering proxy router");
-  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
+  let middleware = resolve_middleware_components(router_config)?;
   let url = resources.get(router_config.url()).ok_or_else(|| {
     RuntimeError::ResourceNotFound(
       TriggerKind::Http.into(),
@@ -101,16 +99,9 @@ pub(crate) fn register_proxy_router(
     None
   };
   let router = ProxyRouter::new(url, strip_path);
-  let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
-  let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
-  bindings.push(router_binding);
-  Ok((
-    bindings,
-    HttpRouter::Raw(RawRouterHandler {
-      path: router_config.path().to_owned(),
-      component: Arc::new(router),
-      middleware,
-    }),
-    vec![],
-  ))
+  Ok(HttpRouter::Raw(RawRouterHandler {
+    path: router_config.path().to_owned(),
+    component: Arc::new(router),
+    middleware,
+  }))
 }

@@ -11,7 +11,7 @@ fn display_path(pb: &Option<PathBuf>) -> String {
 }
 
 #[derive(Error, Debug)]
-pub enum EngineError {
+pub enum ScopeError {
   #[error("Could not start interpreter from '{}': {1}", display_path(.0))]
   InterpreterInit(Option<PathBuf>, Box<flow_graph_interpreter::error::InterpreterError>),
 
@@ -87,26 +87,26 @@ impl std::fmt::Display for InternalError {
   }
 }
 
-impl From<EngineError> for ComponentError {
-  fn from(e: EngineError) -> Self {
-    ComponentError::EngineError(e.to_string())
+impl From<ScopeError> for ComponentError {
+  fn from(e: ScopeError) -> Self {
+    ComponentError::ScopeError(e.to_string())
   }
 }
 
-impl From<wick_component_wasm::Error> for EngineError {
+impl From<wick_component_wasm::Error> for ScopeError {
   fn from(e: wick_component_wasm::Error) -> Self {
-    EngineError::Wasm(Box::new(e))
+    ScopeError::Wasm(Box::new(e))
   }
 }
 
-impl From<flow_graph::error::Error> for EngineError {
+impl From<flow_graph::error::Error> for ScopeError {
   fn from(e: flow_graph::error::Error) -> Self {
-    EngineError::FlowGraph(Box::new(e))
+    ScopeError::FlowGraph(Box::new(e))
   }
 }
 
-impl From<wick_config::Error> for EngineError {
+impl From<wick_config::Error> for ScopeError {
   fn from(e: wick_config::Error) -> Self {
-    EngineError::Manifest(Box::new(e))
+    ScopeError::Manifest(Box::new(e))
   }
 }

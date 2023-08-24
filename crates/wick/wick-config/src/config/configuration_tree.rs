@@ -92,7 +92,7 @@ pub fn flatten(node: ConfigurationTreeNode, prefix: &str) -> Vec<ConfigOrDefinit
   for child in children {
     match child {
       ConfigOrDefinition::Config(c) => {
-        let id = format!("{}.{}", prefix, c.name);
+        let id = format!("{}::{}", prefix, c.name);
         let new_node = ConfigurationTreeNode {
           name: id.clone(),
           element: c.element,

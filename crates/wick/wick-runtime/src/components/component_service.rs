@@ -54,7 +54,7 @@ impl InvocationHandler for NativeComponentService {
     let task = async move {
       Ok(crate::dispatch::InvocationResponse::Stream {
         tx_id,
-        rx: fut.instrument(span).await.map_err(EngineError::NativeComponent)?,
+        rx: fut.instrument(span).await.map_err(ScopeError::NativeComponent)?,
       })
     };
     Ok(Box::pin(task))

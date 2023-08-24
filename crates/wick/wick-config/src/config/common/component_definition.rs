@@ -4,9 +4,10 @@ use std::collections::HashMap;
 // delete when we move away from the `property` crate.
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
-use wick_packet::RuntimeConfig;
+use wick_packet::{Entity, RuntimeConfig};
 
 use super::template_config::Renderable;
+use super::ImportBinding;
 use crate::config::{self, ExecutionSettings, LiquidJsonConfig};
 use crate::error::ManifestError;
 
@@ -15,7 +16,7 @@ use crate::error::ManifestError;
   Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize, Builder,
 )]
 #[builder(setter(into))]
-#[property(get(public), set(private), mut(disable))]
+#[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 
 pub struct ComponentOperationExpression {
@@ -59,6 +60,34 @@ impl ComponentOperationExpression {
       component,
       config,
       settings,
+    }
+  }
+
+  pub fn maybe_import(&mut self, import_name: &str, bindings: &mut Vec<ImportBinding>) {
+    if self.component.is_reference() {
+      return;
+    }
+
+    tracing::Span::current().in_scope(|| {
+      tracing::debug!("importing inline component as {}", import_name);
+      let def = std::mem::replace(
+        &mut self.component,
+        ComponentDefinition::Reference(config::components::ComponentReference::new(import_name)),
+      );
+      bindings.push(ImportBinding::new(
+        import_name,
+        config::ImportDefinition::Component(def),
+      ));
+    });
+  }
+
+  /// Get the operation as an [Entity] if the component definition is a referencable instance.
+  #[must_use]
+  pub fn as_entity(&self) -> Option<Entity> {
+    if let ComponentDefinition::Reference(r) = &self.component {
+      Some(Entity::operation(&r.id, &self.name))
+    } else {
+      None
     }
   }
 }

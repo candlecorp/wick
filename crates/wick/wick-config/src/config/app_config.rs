@@ -7,7 +7,7 @@ use asset_container::{AssetManager, Assets};
 use tracing::trace;
 use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::TypeDefinition;
-use wick_packet::RuntimeConfig;
+use wick_packet::{Entity, RuntimeConfig};
 
 pub use self::triggers::*;
 use super::common::component_definition::ComponentDefinition;
@@ -20,7 +20,7 @@ use crate::error::{ManifestError, ReferenceError};
 use crate::import_cache::{setup_cache, ImportCache};
 use crate::lockdown::{validate_resource, FailureKind, Lockdown, LockdownError};
 use crate::utils::{make_resolver, resolve, RwOption};
-use crate::{config, v1, Resolver, Result};
+use crate::{config, v1, ExpandImports, Resolver, Result};
 
 #[derive(
   Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
@@ -108,8 +108,6 @@ pub struct AppConfiguration {
 }
 
 impl AppConfiguration {
-  pub const GENERIC_IDENTIFIER: &'static str = "__root__";
-
   /// Fetch/cache anything critical to the first use of this configuration.
   pub(crate) async fn setup_cache(&self, options: FetchOptions) -> Result<()> {
     setup_cache(
@@ -189,11 +187,6 @@ impl AppConfiguration {
     self.metadata.as_ref().map(|m| m.version.as_str())
   }
 
-  /// Get the application's imports.
-  pub fn imports(&self) -> &[ImportBinding] {
-    &self.import
-  }
-
   /// Add a resource to the application configuration.
   pub fn add_resource(&mut self, name: impl AsRef<str>, resource: ResourceDefinition) {
     self.resources.push(ResourceBinding::new(name.as_ref(), resource));
@@ -222,6 +215,13 @@ impl AppConfiguration {
       "initializing app resources"
     );
     let env = self.env.clone();
+
+    let mut bindings = Vec::new();
+    for (i, trigger) in self.triggers.iter_mut().enumerate() {
+      trigger.expand_imports(&mut bindings, i)?;
+    }
+    self.import.extend(bindings);
+
     for resource in self.resources.iter_mut() {
       resource.kind.render_config(root_config.as_ref(), env.as_ref())?;
     }
@@ -245,7 +245,7 @@ impl Lockdown for AppConfiguration {
     lockdown: &config::LockdownConfiguration,
   ) -> std::result::Result<(), LockdownError> {
     let mut errors = Vec::new();
-    let id = Self::GENERIC_IDENTIFIER;
+    let id = Entity::LOCAL;
 
     for resource in self.resources.iter() {
       if let Err(e) = validate_resource(id, &(resource.into()), lockdown) {

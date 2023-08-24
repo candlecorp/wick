@@ -1,6 +1,6 @@
 pub(crate) mod component_service;
-pub(crate) mod engine_component;
 pub(crate) mod error;
+pub(crate) mod scope_component;
 pub(crate) mod validation;
 
 use std::collections::HashMap;
@@ -32,8 +32,8 @@ use wick_packet::{Entity, Invocation, RuntimeConfig};
 use self::component_service::NativeComponentService;
 use self::validation::expect_signature_match;
 use crate::dev::prelude::*;
-use crate::dispatch::engine_invoke_async;
-use crate::runtime_service::{init_child, ChildInit};
+use crate::dispatch::scope_invoke_async;
+use crate::runtime::scope::{init_child, ChildInit};
 use crate::wasmtime::WASMTIME_ENGINE;
 use crate::BoxFuture;
 
@@ -44,7 +44,7 @@ pub(crate) trait InvocationHandler {
 
 type Result<T> = std::result::Result<T, ComponentError>;
 
-type ComponentInitResult = std::result::Result<NamespaceHandler, EngineError>;
+type ComponentInitResult = std::result::Result<NamespaceHandler, ScopeError>;
 
 pub(crate) async fn init_wasm_component(
   reference: &AssetReference,
@@ -102,7 +102,7 @@ pub(crate) async fn init_wasm_impl_component(
   .await
 }
 
-pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
+pub(crate) fn make_link_callback(scope_id: Uuid) -> Arc<RuntimeCallback> {
   Arc::new(move |compref, op, stream, inherent, config, span| {
     let origin_url = compref.get_origin_url();
     let target_id = compref.get_target_id().to_owned();
@@ -111,14 +111,14 @@ pub(crate) fn make_link_callback(engine_id: Uuid) -> Arc<RuntimeCallback> {
       debug!(
         origin = %origin_url,
         target = %target_id,
-        engine_id = %engine_id,
+        scope_id = %scope_id,
         config = ?config,
         "link_call"
       );
     });
     Box::pin(async move {
       {
-        let result = engine_invoke_async(engine_id, invocation, config)
+        let result = scope_invoke_async(scope_id, invocation, config)
           .await
           .map_err(|e| flow_component::ComponentError::new(LinkError::CallFailure(e.to_string())))?;
         Ok(result)
@@ -161,7 +161,7 @@ pub(crate) async fn init_manifest_component(
 
   let requires = manifest.requires();
   let provided = generate_provides_entities(requires, kind.provide())
-    .map_err(|e| EngineError::ComponentInit(id.clone(), e.to_string()))?;
+    .map_err(|e| ScopeError::ComponentInit(id.clone(), e.to_string()))?;
   init_impl(&manifest, id, opts, kind.max_packet_size(), provided).await
 }
 
@@ -175,7 +175,7 @@ pub(crate) async fn init_impl(
   let span = opts.span.clone();
   span.in_scope(|| {
     debug!(%id,"validating configuration for wick component");
-    expect_configuration_matches(&id, opts.root_config.as_ref(), manifest.config()).map_err(EngineError::Setup)
+    expect_configuration_matches(&id, opts.root_config.as_ref(), manifest.config()).map_err(ScopeError::Setup)
   })?;
 
   let resolver = manifest.resolver();
@@ -212,9 +212,9 @@ pub(crate) async fn init_impl(
     }
     config::ComponentImplementation::Composite(_) => {
       let uuid = rng.uuid();
-      let _engine = init_child(uuid, manifest.clone(), Some(id.clone()), opts).await?;
+      let _scope = init_child(uuid, manifest.clone(), Some(id.clone()), opts).await?;
 
-      let component = Arc::new(engine_component::EngineComponent::new(uuid));
+      let component = Arc::new(scope_component::ScopeComponent::new(uuid));
       let service = NativeComponentService::new(component);
       Ok(NamespaceHandler::new(id, Box::new(service)))
     }

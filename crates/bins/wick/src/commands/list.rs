@@ -7,7 +7,7 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
-use wick_host::ComponentHostBuilder;
+use wick_host::{ComponentHostBuilder, Host};
 use wick_interface_types::Field;
 
 use crate::utils::merge_config;
@@ -45,7 +45,7 @@ pub(crate) async fn handle(
   let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 
   host.start_runtime(None).await?;
-  let mut signature = host.get_signature()?;
+  let mut signature = host.get_signature(None, None)?;
 
   // If we have a name from the manifest, override the host id the component host generates.
   if let Some(name) = manifest.name() {

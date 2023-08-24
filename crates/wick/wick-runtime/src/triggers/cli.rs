@@ -3,8 +3,7 @@ use std::sync::Arc;
 use std::{env, fmt};
 
 use async_trait::async_trait;
-use config::{AppConfiguration, ImportBinding, TriggerDefinition};
-// use futures::StreamExt;
+use config::{AppConfiguration, TriggerDefinition};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -13,7 +12,7 @@ use tokio_stream::StreamExt;
 use tracing::{Instrument, Span};
 use wick_packet::{packet_stream, Entity, InherentData, Invocation};
 
-use super::{build_trigger_runtime, resolve_ref, Trigger, TriggerKind};
+use super::{Trigger, TriggerKind};
 use crate::dev::prelude::*;
 use crate::resources::Resource;
 use crate::Runtime;
@@ -102,7 +101,8 @@ impl Trigger for Cli {
   async fn run(
     &self,
     name: String,
-    app_config: AppConfiguration,
+    runtime: Runtime,
+    _app_config: AppConfiguration,
     config: TriggerDefinition,
     _resources: Arc<HashMap<String, Resource>>,
     span: Span,
@@ -110,7 +110,7 @@ impl Trigger for Cli {
     let config = if let TriggerDefinition::Cli(config) = config {
       config
     } else {
-      return Err(RuntimeError::InvalidConfig(Context::Trigger, TriggerKind::Cli));
+      return Err(RuntimeError::TriggerKind(Context::Trigger, TriggerKind::Cli));
     };
 
     let mut args: Vec<String> = env::args().collect();
@@ -125,18 +125,7 @@ impl Trigger for Cli {
     // Insert app name as the first argument.
     args.insert(0, name);
 
-    let mut runtime = build_trigger_runtime(&app_config, Span::current())?;
-    let component_id = match resolve_ref(&app_config, config.operation().component())? {
-      super::ResolvedComponent::Ref(id, _) => id.to_owned(),
-      super::ResolvedComponent::Inline(def) => {
-        let cli_binding = ImportBinding::component("cli", def.clone());
-        runtime.add_import(cli_binding);
-        "cli".to_owned()
-      }
-    };
-    let runtime = runtime.build(None).await?;
-
-    let target = Entity::operation(component_id, config.operation().name());
+    let target = config.operation().as_entity().unwrap();
 
     self.handle(runtime, target, args).instrument(span).await?;
 

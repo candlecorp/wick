@@ -9,16 +9,7 @@ use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
 use tracing::{Instrument, Span};
 use uuid::Uuid;
-use wick_config::config::{
-  self,
-  AppConfiguration,
-  ComponentOperationExpression,
-  HttpMethod,
-  ImportBinding,
-  ImportDefinition,
-  RestRouterConfig,
-  WickRouter,
-};
+use wick_config::config::{AppConfiguration, ComponentOperationExpression, HttpMethod, RestRouterConfig, WickRouter};
 use wick_packet::{Entity, InherentData, Invocation, Packet};
 mod error;
 mod openapi;
@@ -27,11 +18,10 @@ mod route;
 use self::error::RestError;
 use crate::dev::prelude::RuntimeError;
 use crate::resources::Resource;
-use crate::runtime::RuntimeConstraint;
 use crate::triggers::http::component_utils::stream_to_json;
 use crate::triggers::http::middleware::resolve_middleware_components;
-use crate::triggers::http::{index_to_router_id, HttpError, HttpRouter, RawRouter, RawRouterHandler};
-use crate::triggers::{resolve_ref, ResolvedComponent};
+use crate::triggers::http::{HttpError, HttpRouter, RawRouter, RawRouterHandler};
+use crate::triggers::ComponentId;
 use crate::Runtime;
 
 pub(crate) const OPENAPI_PATH: &str = "/openapi.json";
@@ -84,7 +74,7 @@ impl RawRouter for RestRouter {
     &self,
     tx_id: Uuid,
     _remote_addr: SocketAddr,
-    runtime: Arc<Runtime>,
+    runtime: Runtime,
     request: Request<Body>,
     span: &Span,
   ) -> BoxFuture<Result<Response<Body>, HttpError>> {
@@ -111,13 +101,13 @@ struct Context {
 #[derive(Clone)]
 struct RestHandler {
   context: Arc<Context>,
-  runtime: Arc<Runtime>,
+  runtime: Runtime,
   tx_id: Uuid,
   span: Span,
 }
 
 impl RestHandler {
-  fn new(tx_id: Uuid, runtime: Arc<Runtime>, context: Arc<Context>, span: Span) -> Self {
+  fn new(tx_id: Uuid, runtime: Runtime, context: Arc<Context>, span: Span) -> Self {
     RestHandler {
       tx_id,
       context,
@@ -293,7 +283,7 @@ mod test {
     use crate::resources::Resource;
     use crate::test::load_test_manifest;
     use crate::triggers::http::Http;
-    use crate::Trigger;
+    use crate::{build_trigger_runtime, Trigger};
 
     static PORT: &str = "9005";
 
@@ -303,6 +293,7 @@ mod test {
       let app_config = load_test_manifest("app_config/rest-router-errors.wick")
         .await?
         .try_app_config()?;
+      let rt = build_trigger_runtime(&app_config, Span::current())?.build(None).await?;
 
       let trigger = Http::default();
       let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
@@ -311,6 +302,7 @@ mod test {
       trigger
         .run(
           "test".to_owned(),
+          rt,
           app_config,
           trigger_config,
           resources,
@@ -341,35 +333,16 @@ pub(crate) fn register_rest_router(
   _resources: Arc<HashMap<String, Resource>>,
   app_config: &AppConfiguration,
   router_config: &RestRouterConfig,
-) -> Result<(Vec<ImportBinding>, HttpRouter, Vec<RuntimeConstraint>), RuntimeError> {
+) -> Result<HttpRouter, RuntimeError> {
   trace!(index, "registering rest router");
-  let (middleware, mut bindings) = resolve_middleware_components(index, app_config, router_config)?;
+  let middleware = resolve_middleware_components(router_config)?;
   let mut routes = Vec::new();
 
-  for (i, route) in router_config.routes().iter().enumerate() {
+  for route in router_config.routes().iter() {
     info!(sub_path = route.sub_path(), "registering rest route");
 
-    let component_id = match resolve_ref(app_config, route.operation().component())? {
-      ResolvedComponent::Ref(id, _) => id.to_owned(),
-      ResolvedComponent::Inline(def) => {
-        #[allow(clippy::option_if_let_else)]
-        if let Some(existing_import) = bindings.iter().find(|i| {
-          if let ImportDefinition::Component(c) = i.kind() {
-            c == def
-          } else {
-            false
-          }
-        }) {
-          existing_import.id().to_owned()
-        } else {
-          let component_id = format!("{}_{}", index_to_router_id(index), i);
-          let route_binding = config::ImportBinding::component(&component_id, def.clone());
-          bindings.push(route_binding);
-          component_id
-        }
-      }
-    };
-    let route = RestRoute::new(route.clone(), component_id).map_err(|e| {
+    let component_id = route.operation().component_id()?;
+    let route = RestRoute::new(route.clone(), component_id.to_owned()).map_err(|e| {
       RuntimeError::InitializationFailed(format!(
         "could not intitialize rest router for route {}: {}",
         route.sub_path(),
@@ -381,16 +354,9 @@ pub(crate) fn register_rest_router(
 
   let router = RestRouter::new(app_config, router_config.clone(), routes)
     .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
-  let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
-  let router_binding = config::ImportBinding::component(index_to_router_id(index), router_component);
-  bindings.push(router_binding);
-  Ok((
-    bindings,
-    HttpRouter::Raw(RawRouterHandler {
-      path: router_config.path().to_owned(),
-      component: Arc::new(router),
-      middleware,
-    }),
-    vec![],
-  ))
+  Ok(HttpRouter::Raw(RawRouterHandler {
+    path: router_config.path().to_owned(),
+    component: Arc::new(router),
+    middleware,
+  }))
 }

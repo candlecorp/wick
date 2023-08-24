@@ -215,6 +215,10 @@ impl Interpreter {
     shutdown
   }
 
+  pub fn components(&self) -> &HandlerMap {
+    &self.components
+  }
+
   pub fn render_dotviz(&self, op: &str) -> Result<String, Error> {
     self.program.dotviz(op)
   }

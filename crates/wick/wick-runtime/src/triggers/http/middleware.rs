@@ -1,8 +1,8 @@
-use wick_config::config::{AppConfiguration, ImportBinding, WickRouter};
+use wick_config::config::WickRouter;
 use wick_packet::{Entity, RuntimeConfig};
 
 use crate::dev::prelude::RuntimeError;
-use crate::triggers::{resolve_ref, ResolvedComponent};
+use crate::triggers::ComponentId;
 
 #[derive(Debug, Clone)]
 pub(crate) struct RouterMiddleware {
@@ -19,40 +19,19 @@ impl RouterMiddleware {
   }
 }
 
-pub(super) fn resolve_middleware_components(
-  router_index: usize,
-  app_config: &AppConfiguration,
-  router: &impl WickRouter,
-) -> Result<(RouterMiddleware, Vec<ImportBinding>), RuntimeError> {
+pub(super) fn resolve_middleware_components(router: &impl WickRouter) -> Result<RouterMiddleware, RuntimeError> {
   let mut request_operations = Vec::new();
   let mut response_operations = Vec::new();
-  let mut bindings = Vec::new();
   if let Some(middleware) = router.middleware() {
-    for (i, operation) in middleware.request().iter().enumerate() {
-      let component_id = match resolve_ref(app_config, operation.component())? {
-        ResolvedComponent::Ref(id, _) => id.to_owned(),
-        ResolvedComponent::Inline(def) => {
-          let id = format!("{}_request_middleware_{}", router_index, i);
-          let binding = ImportBinding::component(&id, def.clone());
-          bindings.push(binding);
-          id
-        }
-      };
+    for operation in middleware.request() {
+      let component_id = operation.component_id()?;
       request_operations.push((
         Entity::operation(component_id, operation.name()),
         operation.config().and_then(|v| v.value().cloned()),
       ));
     }
-    for (i, operation) in middleware.response().iter().enumerate() {
-      let component_id = match resolve_ref(app_config, operation.component())? {
-        ResolvedComponent::Ref(id, _) => id.to_owned(),
-        ResolvedComponent::Inline(def) => {
-          let id = format!("{}_response_middleware_{}", router_index, i);
-          let binding = ImportBinding::component(&id, def.clone());
-          bindings.push(binding);
-          id
-        }
-      };
+    for operation in middleware.response() {
+      let component_id = operation.component_id()?;
       response_operations.push((
         Entity::operation(component_id, operation.name()),
         operation.config().and_then(|v| v.value().cloned()),
@@ -60,5 +39,5 @@ pub(super) fn resolve_middleware_components(
     }
   }
   let middleware = RouterMiddleware::new(request_operations, response_operations);
-  Ok((middleware, bindings))
+  Ok(middleware)
 }

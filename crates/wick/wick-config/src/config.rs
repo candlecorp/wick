@@ -29,7 +29,7 @@ pub use types_config::*;
 use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::Field;
 use wick_packet::validation::expect_configuration_matches;
-use wick_packet::RuntimeConfig;
+use wick_packet::{Entity, RuntimeConfig};
 
 use crate::lockdown::Lockdown;
 use crate::utils::{_fetch_all, resolve_configuration};
@@ -143,7 +143,7 @@ impl WickConfiguration {
     }
     config.set_root_config(root_config);
     let config = config.finish()?;
-    let mut node = ConfigurationTreeNode::new(AppConfiguration::GENERIC_IDENTIFIER.into(), config);
+    let mut node = ConfigurationTreeNode::new(Entity::LOCAL.into(), config);
     node.fetch_children(options).await?;
 
     Ok(node)

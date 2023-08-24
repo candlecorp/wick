@@ -1,20 +1,20 @@
-use std::sync::Arc;
-
 use seeded_random::Seed;
 use tracing::Span;
 use uuid::Uuid;
 use wick_config::config::{ComponentConfiguration, ComponentConfigurationBuilder};
 use wick_packet::{Entity, RuntimeConfig};
+pub(crate) mod scope;
+
+use scope::{ComponentFactory, ComponentRegistry, ScopeInit};
 
 use crate::dev::prelude::*;
-use crate::runtime_service::{ComponentFactory, ComponentRegistry, ServiceInit};
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct Runtime {
   pub uid: Uuid,
-  inner: Arc<RuntimeService>,
+  root: Scope,
 }
 
 #[derive(Debug, derive_builder::Builder)]
@@ -45,14 +45,14 @@ pub struct RuntimeInit {
 
 impl Runtime {
   pub(crate) async fn new(seed: Seed, config: RuntimeInit) -> Result<Self> {
-    let init = ServiceInit::new(seed, config);
+    let init = ScopeInit::new(seed, config);
 
-    let service = RuntimeService::start(init)
+    let service = Scope::start(init)
       .await
       .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
     Ok(Self {
-      uid: service.id,
-      inner: service,
+      uid: service.id(),
+      root: service,
     })
   }
 
@@ -60,36 +60,95 @@ impl Runtime {
     let time = std::time::SystemTime::now();
     trace!(start_time=%time.duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() ,"invocation start");
 
-    let response = self.inner.invoke(invocation, config)?.await?;
+    let response = self.root.invoke(invocation, config)?.await?;
     trace!(duration_ms=%time.elapsed().unwrap().as_millis(),"invocation complete");
 
     response.ok()
   }
 
+  fn get_scope(&self, path: Option<&[&str]>) -> Option<Scope> {
+    if path.is_none() {
+      return Some(self.root.clone());
+    }
+    let path = path.unwrap();
+    let mut last_scope = self.root.clone();
+    // if our first path hop is Entity::LOCAL, skip it.
+    let path = if Some(&Entity::LOCAL) == path.first() {
+      &path[1..]
+    } else {
+      path
+    };
+    for path in path {
+      if let Some(scope) = Scope::find(Some(last_scope.id()), path) {
+        last_scope = scope.clone();
+      } else {
+        return None;
+      }
+    }
+    Some(last_scope)
+  }
+
+  /// `invoke_deep()` but will traverse the known scopes – starting from this [Runtime]'s root – until it
+  /// finds the target scope and then invokes the operation from there.
+  ///
+  /// `invoke`, conversely, will only invoke operations from the context of the root scope.
+  pub async fn invoke_deep(
+    &self,
+    path: Option<&[&str]>,
+    invocation: Invocation,
+    config: Option<RuntimeConfig>,
+  ) -> Result<PacketStream> {
+    if let Some(scope) = self.get_scope(path) {
+      scope.invoke(invocation, config)?.await?.ok()
+    } else {
+      Err(RuntimeError::ScopeNotFound(
+        path.map(|p| p.iter().copied().map(Into::into).collect()),
+        Some(invocation.target),
+      ))
+    }
+  }
+
+  pub fn deep_signature(&self, path: Option<&[&str]>, entity: Option<&Entity>) -> Result<ComponentSignature> {
+    self
+      .get_scope(path)
+      .and_then(|s| {
+        entity.map_or_else(
+          || s.get_signature().ok(),
+          |entity| s.get_handler_signature(entity.component_id()).cloned(),
+        )
+      })
+      .ok_or_else(|| {
+        RuntimeError::ScopeNotFound(
+          path.map(|p| p.iter().copied().map(Into::into).collect()),
+          entity.cloned(),
+        )
+      })
+  }
+
   pub async fn shutdown(&self) -> Result<()> {
-    trace!("runtime engine shutting down");
-    self.inner.shutdown().await?;
+    trace!("runtime scope shutting down");
+    self.root.shutdown().await?;
 
     Ok(())
   }
 
   pub fn get_signature(&self) -> Result<ComponentSignature> {
-    let signature = self.inner.get_signature()?;
-    trace!(?signature, "runtime engine instance signature");
+    let signature = self.root.get_signature()?;
+    trace!(?signature, "runtime scope instance signature");
     Ok(signature)
   }
 
   #[must_use]
   pub fn namespace(&self) -> &str {
-    &self.inner.namespace
+    self.root.namespace()
   }
 
   pub fn render_dotviz(&self, op: &str) -> Result<String> {
-    self.inner.render_dotviz(op)
+    self.root.render_dotviz(op)
   }
 
   pub fn active_config(&self) -> &ComponentConfiguration {
-    self.inner.active_config()
+    self.root.active_config()
   }
 }
 

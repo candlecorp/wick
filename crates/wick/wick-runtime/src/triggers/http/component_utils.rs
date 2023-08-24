@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use hyper::header::CONTENT_LENGTH;
 use hyper::http::response::Builder;
@@ -31,7 +30,7 @@ pub(super) async fn handle_request_middleware(
   tx_id: Uuid,
   target: Entity,
   operation_config: Option<RuntimeConfig>,
-  engine: Arc<Runtime>,
+  runtime: Runtime,
   req: &wick_http::HttpRequest,
   span: &Span,
 ) -> Result<Option<wick_http::RequestMiddlewareResponse>, HttpError> {
@@ -45,7 +44,7 @@ pub(super) async fn handle_request_middleware(
     span,
   );
 
-  let stream = engine
+  let stream = runtime
     .invoke(invocation, operation_config)
     .await
     .map_err(|e| HttpError::OperationError(e.to_string()))?;
@@ -85,7 +84,7 @@ pub(super) async fn handle_response_middleware(
   tx_id: Uuid,
   target: Entity,
   operation_config: Option<RuntimeConfig>,
-  engine: Arc<Runtime>,
+  runtime: Runtime,
   req: &wick_http::HttpRequest,
   res: &wick_http::HttpResponse,
   span: &Span,
@@ -100,7 +99,7 @@ pub(super) async fn handle_response_middleware(
     span,
   );
 
-  let stream = engine
+  let stream = runtime
     .invoke(invocation, operation_config)
     .await
     .map_err(|e| HttpError::OperationError(e.to_string()))?;
