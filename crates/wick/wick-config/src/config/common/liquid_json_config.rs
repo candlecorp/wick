@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use liquid_json::LiquidJsonValue;
+use serde_json::Value;
 use tracing::trace;
 use wick_packet::{date_from_millis, InherentData, RuntimeConfig};
 
@@ -29,14 +30,14 @@ struct CtxInherent {
 impl LiquidJsonConfig {
   /// Make a template render context from the passed configuration.
   pub fn make_context(
-    base: Option<serde_json::Value>,
+    base: Option<Value>,
     root: Option<&RuntimeConfig>,
     config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
     inherent: Option<&InherentData>,
-  ) -> Result<serde_json::Value, Error> {
+  ) -> Result<Value, Error> {
     trace!(root_config=?root, ?config, env=?env.map(|e|e.len()), inherent=?inherent, "rendering liquid config");
-    let mut base = base.unwrap_or(serde_json::Value::Object(Default::default()));
+    let mut base = base.unwrap_or(Value::Object(Default::default()));
     let map = base.as_object_mut().ok_or(Error::ContextBase)?;
     // The rust liquid template library is picky with the formats it recognizes.
     // This turns the timestamp into something it can use.
@@ -81,7 +82,7 @@ impl LiquidJsonConfig {
   }
 
   /// Render a [LiquidJsonConfig] into a [RuntimeConfig] with the passed context directly.
-  pub fn render_raw(&self, ctx: &serde_json::Value) -> Result<RuntimeConfig, Error> {
+  pub fn render_raw(&self, ctx: &Value) -> Result<RuntimeConfig, Error> {
     let ctx = serde_json::json!({
       "ctx": ctx,
     });
@@ -91,6 +92,15 @@ impl LiquidJsonConfig {
       map.insert(k.clone(), v.render(&ctx)?);
     }
     Ok(RuntimeConfig::from(map))
+  }
+
+  #[must_use]
+  pub fn new_value(value: RuntimeConfig) -> Self {
+    Self {
+      value: Some(value),
+      template: Default::default(),
+      root_config: None,
+    }
   }
 
   #[must_use]
@@ -115,8 +125,8 @@ impl From<HashMap<String, LiquidJsonValue>> for LiquidJsonConfig {
   }
 }
 
-impl From<HashMap<String, serde_json::Value>> for LiquidJsonConfig {
-  fn from(value: HashMap<String, serde_json::Value>) -> Self {
+impl From<HashMap<String, Value>> for LiquidJsonConfig {
+  fn from(value: HashMap<String, Value>) -> Self {
     Self {
       template: value.into_iter().map(|(k, v)| (k, v.into())).collect(),
       value: None,

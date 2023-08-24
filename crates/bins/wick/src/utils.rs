@@ -3,13 +3,14 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use futures::StreamExt;
+use liquid_json::LiquidJsonValue;
 use serde_json::Value;
 use tracing::{Instrument, Span};
 use wick_component_cli::options::DefaultCliOptions;
 use wick_config::config::{ComponentConfiguration, ConfigurationTreeNode, HttpConfigBuilder, LiquidJsonConfig};
 use wick_config::{AssetReference, WickConfiguration};
 use wick_oci_utils::{OciOptions, OnExisting};
-use wick_packet::{Packet, PacketStream, RuntimeConfig};
+use wick_packet::{InherentData, Packet, PacketStream, RuntimeConfig};
 use wick_settings::Credential;
 
 pub(crate) async fn fetch_wick_config(
@@ -204,12 +205,18 @@ pub(crate) async fn print_stream_json(
 pub(crate) fn parse_config_string(source: Option<&str>) -> Result<Option<RuntimeConfig>> {
   let component_config = match source {
     Some(c) => {
-      let config = serde_json::from_str::<HashMap<String, Value>>(c)
+      let config = serde_json::from_str::<LiquidJsonValue>(c)
         .map_err(|e| anyhow::anyhow!("Failed to parse config argument as JSON: {}", e))?;
-      let config: LiquidJsonConfig = config.into();
-      let rendered = config
-        .render(None, None, Some(&std::env::vars().collect::<HashMap<_, _>>()), None)
-        .map_err(|e| anyhow::anyhow!("Failed to parse config: {}", e))?;
+      let ctx = LiquidJsonConfig::make_context(
+        None,
+        None,
+        None,
+        Some(&std::env::vars().collect::<HashMap<_, _>>()),
+        Some(&InherentData::unsafe_default()),
+      )?;
+      let rendered = RuntimeConfig::from_value(config.render(&ctx)?)
+        .map_err(|_| anyhow::anyhow!("configuration could not be parsed as an object"))?;
+
       trace!(config=?rendered, "rendered config");
       Some(rendered)
     }
