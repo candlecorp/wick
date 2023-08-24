@@ -6339,7 +6339,6 @@ name = "wick-cli"
 version = "0.13.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "atty",
  "clap",
  "dhat",
@@ -6348,6 +6347,7 @@ dependencies = [
  "futures 0.3.28",
  "human-panic",
  "jaq-core",
+ "liquid-json",
  "markup-converter",
  "nkeys",
  "once_cell",
