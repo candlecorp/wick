@@ -55,7 +55,7 @@ jobs:
           echo "::set-output name=BUILD_ID::${branch}-${sha}-${ts}"
 
       - name: Publish Wick Package
-        uses: candlecorp/wick-push-action
+        uses: candlecorp/wick-push-action@v0.0.4
         id: push
         with:
           path: "docs/docs.wick"
