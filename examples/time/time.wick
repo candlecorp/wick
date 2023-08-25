@@ -14,17 +14,17 @@ import:
   - name: comp
     component:
       kind: wick/component/manifest@v1
-      ref: ../../crates/integration/test-baseline-component/component.yaml
+      ref: ../components/wasi-fs/component.wick
       with:
-        default_err: 'Error from time trigger'
+        root: '{{ ctx.env.ROOT_DIR }}'
 triggers:
   - kind: wick/trigger/time@v1
     schedule:
       cron: '*/1 * * * * *'
       repeat: 5
     payload:
-      - name: left
-        value: 2
-      - name: right
-        value: 5
-    operation: comp::add
+      - name: filename
+        value: 'time-trigger.txt'
+      - name: contents
+        value: 'Running'
+    operation: comp::write_string
