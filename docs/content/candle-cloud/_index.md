@@ -21,8 +21,8 @@ Candle Cloud is your all-in-one platform for streamlining the development, packa
 If you're new to Candle Cloud, we recommend the following flow:
 
 1. **Start with Wick**: Understand the Wick framework and kickstart your application development process. [Wick Getting Started Guide](../wick/getting-started).
-2. **Push to Registry**: Once your application is ready and packaged, push it to our secure registry. [Pushing Packages Guide](./registry/pushing-packages).
-3. **Deploy to Cloud**: With your app in the registry, deploy it to the Candle Cloud for a scalable, live application. [Deployment Guide](./deploy/deploying-wick-apps.md).
+2. **Push to Registry**: Once your application is ready and packaged, push it to our secure registry. [Registry Guide](./registry/).
+3. **Deploy to Cloud**: With your app in the registry, deploy it to the Candle Cloud for a scalable, live application. [Deployment Guide](./deploy/deployments/).
 
 For any questions, troubleshooting, or additional information, delve deeper into the respective sections or visit our FAQ.
 
