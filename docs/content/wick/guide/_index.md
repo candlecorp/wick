@@ -1,6 +1,6 @@
 ---
 title: Guide
-weight: 0
+weight: 3
 ---
 
 Wick configuration is broken down in two major pieces: applications and components.
@@ -21,7 +21,6 @@ Components all follow the same basic structure, but can be configured in a varie
 Applications translate the rest of the world into the `wick` world. They do this by defining "triggers" which operate on events, translate necessary input into wick streams, then delegate the rest of the execution to wick components.
 
 Wick triggers:
-
 
 ### Application triggers
 

@@ -1,6 +1,8 @@
 ---
 title: Tutorial
+weight: 4
 ---
+
 # Start a new project
 
 In this tutorial we'll be making a template renderer component in Rust.
@@ -40,7 +42,7 @@ operations:
 
 This file powers Wick's code generation and is embedded into your WebAssembly module at build time. Wick uses the configuration and its operations, types, descriptions, and other metadata to automatically configure and validate Wick applications.
 
-Get rid of the example operations and add one called `render`. The `render` operation will take template source and arbitrary data to use as the context. The template will be a `string` type and – since template data can be anything – the data input can be a generic `struct`. The `struct` type represents any JSON-like object. Name our output stream  `output` and give it a type of `string`.
+Get rid of the example operations and add one called `render`. The `render` operation will take template source and arbitrary data to use as the context. The template will be a `string` type and – since template data can be anything – the data input can be a generic `struct`. The `struct` type represents any JSON-like object. Name our output stream `output` and give it a type of `string`.
 
 The `component.yaml` should now look like this:
 
@@ -74,7 +76,7 @@ $ cargo add minijinja
 
 This template's build step will generate a `Component` struct and traits for every operation defined in the manifest. The operation traits take each input as a separate stream argument and one final argument for the output stream(s).
 
-*Note: The generated code can be found in your `target` directory. Have a peek at the generated code by looking in the `target/wasm32-unknown-unknown/debug/build/jinja-*/out/` directory (after running a build at least once). The code generator runs every time the `component.yaml` file changes.*
+_Note: The generated code can be found in your `target` directory. Have a peek at the generated code by looking in the `target/wasm32-unknown-unknown/debug/build/jinja-_/out/`directory (after running a build at least once). The code generator runs every time the`component.yaml` file changes.\*
 
 Replace the contents of `src/lib.rs` with the following:
 
@@ -106,7 +108,7 @@ impl OpRender for Component {
 }
 ```
 
-The body of the implementation is standard rust code that can use any crate you've added to your `Cargo.toml`. Wick uses streams everywhere so – even though we're just taking a single input – we're waiting for pairs of values to come in from both streams. This let's our components be used in  be reused easily in many different cases and let's us build more complex components that can adapt to more.
+The body of the implementation is standard rust code that can use any crate you've added to your `Cargo.toml`. Wick uses streams everywhere so – even though we're just taking a single input – we're waiting for pairs of values to come in from both streams. This let's our components be used in be reused easily in many different cases and let's us build more complex components that can adapt to more.
 
 Inside the loop we follow the [guide for `minijinja`](https://crates.io/crates/minijinja) to compile a template and render it with our data.
 
@@ -128,7 +130,7 @@ Use `wick invoke` to invoke any operation in your signed component `.wasm` file.
 
 `wick invoke` takes the path to your `.wasm` file, the name of the operation to invoke, and any arguments to pass to the operation. The `--` is required to separate the arguments to `wick invoke` from the arguments to the operation.
 
-*Note: The data passed to each argument is treated as JSON. The `data` argument should contain valid JSON that will be processed before sending to your component. The `template` argument is a string and `wick` will automatically wrap unquoted, invalid JSON with a string before processing it.*
+_Note: The data passed to each argument is treated as JSON. The `data` argument should contain valid JSON that will be processed before sending to your component. The `template` argument is a string and `wick` will automatically wrap unquoted, invalid JSON with a string before processing it._
 
 ```
 $ wick invoke ./build/jinja.signed.wasm render -- --template 'Hello {{ name }}!' --data '{"name": "Samuel Clemens"}'

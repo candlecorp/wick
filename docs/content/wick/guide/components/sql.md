@@ -19,6 +19,7 @@ SQL Components are a special type of component that allow you to define operatio
 
 - **Postgres** with connection strings that start with **`postgres://`**
 - **MS SQL Server** with connection strings that start with **`mssql://`**
+- **SQLite** with connection strings that start with **`sqlite://`**
 
 ## Global configuration
 
@@ -42,7 +43,7 @@ The inputs are defined by the {{<v1ref "sqloperationdefinition">}}SQL operation 
 
 ## Example
 
-*{{< metadata field = "description" >}}*
+_{{< metadata field = "description" >}}_
 
 {{% component_config_header %}}
 

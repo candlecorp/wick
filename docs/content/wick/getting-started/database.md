@@ -1,9 +1,9 @@
 ---
 title: Database
+weight: 3
 ---
 
-Connect and Talk to a Database
-===
+# Connect and Talk to a Database
 
 Getting a database connected and making calls to the database is an extremely simple process in Wick. Let's go through it:
 
@@ -66,11 +66,11 @@ component:
 
 For each operation, we name it and provide details such as inputs, outputs, arguments, and the query.
 
-***inputs + outputs:*** We name and declare the type of input and output. The `type: object` serves as the `any` type for the output.
+**_inputs + outputs:_** We name and declare the type of input and output. The `type: object` serves as the `any` type for the output.
 
-***arguments:*** Sets up the sequence of inputs. The order of the arguments here will match the order of the inputs in your query.
+**_arguments:_** Sets up the sequence of inputs. The order of the arguments here will match the order of the inputs in your query.
 
-***query:*** Insert the database query here. (Note: Replace the values with $1, $2, $3, etc. based on the order of your arguments.)
+**_query:_** Insert the database query here. (Note: Replace the values with $1, $2, $3, etc. based on the order of your arguments.)
 
 Connecting to a database and making calls to it is as simple as that in Wick! You can use the same `operations` structure to add as many unique calls to the database as you like, each with their own inputs and outputs.
 

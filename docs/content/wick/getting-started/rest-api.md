@@ -1,11 +1,14 @@
 ---
 title: RestAPI
+weight: 2
 ---
-Set up your own RestAPI
-==
+
+# Set up your own RestAPI
+
 Wick provides an easy solution for RestAPIs as well. To set one up, let's start with a `demo.wick` file. This is a standard {{<v1ref "appconfiguration">}}Wick application config{{</v1ref>}} file.
 
 To start off, like all `.wick` files, we declare the name and kind of our app/component.
+
 ```yaml
 kind: wick/app@v1
 name: rest_demo
@@ -21,8 +24,8 @@ resources:
       port: 8999
       address: 0.0.0.0
 ```
-Now that we have declared our application's needs, we can set up REST {{<v1ref "triggerdefinition">}}triggers{{</v1ref>}}.
 
+Now that we have declared our application's needs, we can set up REST {{<v1ref "triggerdefinition">}}triggers{{</v1ref>}}.
 
 ```yaml
 triggers:
@@ -40,10 +43,10 @@ Our trigger is set up using the HTTP resource we provided to our app above. Unde
 
 ```yaml
 routes:
- - uri: "desired URL endpoint"
-   operation: <component name>::<operation name>
-   methods:
-     - POST
+  - uri: 'desired URL endpoint'
+    operation: <component name>::<operation name>
+    methods:
+      - POST
 ```
 
 With those three fields, we have set a URI destination and assigned an operation to take place when we hit that URI. We can add as many routes as desired following this same structure.
@@ -68,11 +71,10 @@ triggers:
       - kind: wick/router/rest@v1
         path: /api/
         routes:
-         - uri: "desired URL endpoint"
-           operation: <component name>::<operation name>
-           methods:
-             - POST
-
+          - uri: 'desired URL endpoint'
+            operation: <component name>::<operation name>
+            methods:
+              - POST
 ```
 
 This is essentially all you need to create REST API routes in Wick. To see how it all works, check out our HTTP example applications [here](https://github.com/candlecorp/wick/tree/main/examples/http).

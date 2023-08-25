@@ -9,7 +9,7 @@
 | `{{name.value}}` | <code>{{> expand-type type}}</code> |
   {{~#if description.value}}{{{description.value}}}{{else}}{{/if~}} |
    {{~#switch type.kind}}{{#case "MapType"}}{{/case}}{{#case "ListType"}}{{/case}}{{#default}}{{#withAnnotation "required"}}Yes{{/withAnnotation}}{{/default}}{{/switch~}} |
-   {{~#withAnnotation "shortform"}}[Yes](/docs/configuration/v1/shortform#{{lowerCase ../type.name.value}}){{else}}{{#withType type}}{{#withAnnotation "shortform"}}[Yes](/docs/configuration/v1/shortform#{{lowerCase ../type.name.value}}){{/withAnnotation}}{{/withType}}{{/withAnnotation~}} |
+   {{~#withAnnotation "shortform"}}[Yes](/wick/configuration/reference/v1/shortform#{{lowerCase ../type.name.value}}){{else}}{{#withType type}}{{#withAnnotation "shortform"}}[Yes](/wick/configuration/reference/v1/shortform#{{lowerCase ../type.name.value}}){{/withAnnotation}}{{/withType}}{{/withAnnotation~}} |
 {{/each}}
 
 

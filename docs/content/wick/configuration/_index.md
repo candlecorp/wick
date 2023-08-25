@@ -1,4 +1,4 @@
 ---
 title: Configuration
-weight: 1
+weight: 10
 ---
