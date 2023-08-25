@@ -1,12 +1,18 @@
 ---
-title: Candle Documentation
+title: Welcome to Candle Documentation
 weight: 0
 ---
 
-Home to documentation for
+# Overview
 
-# Cloud Documentation
+Welcome to the Candle Documentation hub, your primary resource for understanding and maximizing the potential of our offerings.
 
-# Wick documentation
+## [Candle Cloud Documentation](./candle-cloud/)
 
-Wick is an application runtime that allows you to stitch components together into web services, CLI apps, microservices, workers, anything. Wick was designed from the ground-up with **reusability** and **security** in mind. Wick is built with rust and WebAssembly to keep your code secure and portable.
+Delve deep into our cloud services, discover best practices, and get answers to common queries.
+
+## [Wick Documentation](./wick/)
+
+Wick is not just another application runtime—it's a revolutionary way to craft services, be it web services, CLI apps, microservices, or workers. Designed with an emphasis on **reusability** and **security**, Wick employs rust and WebAssembly to ensure your code remains both safe and portable.
+
+Begin your journey with Wick and unravel the myriad of opportunities it presents.

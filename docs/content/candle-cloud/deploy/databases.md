@@ -19,6 +19,7 @@ For efficient data storage and retrieval, Candle Cloud offers integrated databas
 - **SQLite**:
   - SQLite is a lightweight, file-based relational database management system. It's a great fit for applications that require a simple, efficient database without the overhead of a full-fledged RDBMS.
   - With our default entitlements, SQLite-backed applications can efficiently handle and process thousands of requests per minute, making it a robust choice for many scenarios.
+  - All deployments are mounted with an environment variable `DB_URL` that points to the SQLite database file. This variable can be used in the {{<v1ref "url">}}Url{{</v1ref>}} resource to access the database file from your application.
 
 ## External Databases
 
@@ -27,6 +28,10 @@ While our built-in options cater to a range of applications, we understand the u
 1. **Bring Your Own Database (BYOD)**:
    - If you have specific database preferences or requirements that go beyond our built-in offerings, Candle Cloud fully supports external databases.
    - We will not impose any ingress or egress connection limits on requests to the common database ports, meaning your deployment can seamlessly connect to PostgreSQL or MSSQL databases hosted on external cloud solutions or any other platforms of your choice.
+
+## Example Sqlite Wick Application
+
+[Wick Examples Github](https://github.com/candlecorp/wick-apps/tree/main/sqlite-rest)
 
 ---
 
