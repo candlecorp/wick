@@ -2,7 +2,7 @@
 
 use wick_interface_types::Field;
 
-#[derive(Debug, Builder, Clone, property::Property, serde::Serialize)]
+#[derive(Debug, derive_builder::Builder, Clone, property::Property, serde::Serialize)]
 #[property(get(disable), set(private), mut(disable))]
 #[builder(setter(into))]
 /// The generic definition of an Operation without any implementation details.

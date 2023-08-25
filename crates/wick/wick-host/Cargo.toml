@@ -17,7 +17,7 @@ flow-component = { workspace = true }
 wick-runtime = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
-wick-config = { workspace = true }
+wick-config = { workspace = true, features = ["config"] }
 wick-component-cli = { workspace = true, features = ["grpc"] }
 wick-rpc = { workspace = true }
 wick-invocation-server = { workspace = true }

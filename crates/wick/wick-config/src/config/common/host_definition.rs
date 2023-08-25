@@ -3,7 +3,7 @@ use std::net::Ipv4Addr;
 
 use crate::config;
 
-#[derive(Debug, Clone, Default, Builder, property::Property, serde::Serialize)]
+#[derive(Debug, Clone, Default, derive_builder::Builder, property::Property, serde::Serialize)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[builder(setter(into))]
 #[must_use]
@@ -24,7 +24,7 @@ pub struct HostConfig {
   pub(crate) rpc: Option<HttpConfig>,
 }
 
-#[derive(Debug, Default, Clone, Builder, property::Property, serde::Serialize)]
+#[derive(Debug, Default, Clone, derive_builder::Builder, property::Property, serde::Serialize)]
 #[builder(setter(into))]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
 /// Configuration for HTTP/S servers.

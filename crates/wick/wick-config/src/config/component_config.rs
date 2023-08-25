@@ -13,16 +13,22 @@ use wick_interface_types::{ComponentMetadata, ComponentSignature, Field, Operati
 use wick_packet::{Entity, RuntimeConfig};
 
 use super::common::package_definition::PackageConfig;
+use super::import_cache::{setup_cache, ImportCache};
 use super::{ImportBinding, TestConfiguration};
 use crate::config::template_config::Renderable;
 use crate::config::{BoundInterface, ResourceBinding};
-use crate::import_cache::{setup_cache, ImportCache};
 use crate::lockdown::{validate_resource, FailureKind, Lockdown, LockdownError};
 use crate::utils::{make_resolver, RwOption};
-use crate::{config, v1, Error, Resolver, Result};
+use crate::{config, Error, Resolver, Result};
 
 #[derive(
-  Debug, Default, Clone, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+  Debug,
+  Default,
+  Clone,
+  derive_builder::Builder,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
 )]
 #[builder(
   derive(Debug),
@@ -268,8 +274,9 @@ impl ComponentConfiguration {
   }
 
   /// Return the V1 yaml representation of this configuration.
+  #[cfg(feature = "v1")]
   pub fn into_v1_yaml(self) -> Result<String> {
-    let v1_manifest: v1::ComponentConfiguration = self.try_into()?;
+    let v1_manifest: crate::v1::ComponentConfiguration = self.try_into()?;
     Ok(serde_yaml::to_string(&v1_manifest).unwrap())
   }
 

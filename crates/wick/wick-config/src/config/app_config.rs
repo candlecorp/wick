@@ -13,17 +13,23 @@ pub use self::triggers::*;
 use super::common::component_definition::ComponentDefinition;
 use super::common::package_definition::PackageConfig;
 use super::components::TypesComponent;
+use super::import_cache::{setup_cache, ImportCache};
 use super::{ImportBinding, ImportDefinition};
 use crate::config::common::resources::*;
 use crate::config::template_config::Renderable;
 use crate::error::{ManifestError, ReferenceError};
-use crate::import_cache::{setup_cache, ImportCache};
 use crate::lockdown::{validate_resource, FailureKind, Lockdown, LockdownError};
 use crate::utils::{make_resolver, resolve, RwOption};
-use crate::{config, v1, ExpandImports, Resolver, Result};
+use crate::{config, ExpandImports, Resolver, Result};
 
 #[derive(
-  Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+  Debug,
+  Clone,
+  Default,
+  derive_builder::Builder,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
 )]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]
@@ -198,8 +204,9 @@ impl AppConfiguration {
   }
 
   /// Generate V1 configuration yaml from this configuration.
+  #[cfg(feature = "v1")]
   pub fn into_v1_yaml(self) -> Result<String> {
-    let v1_manifest: v1::AppConfiguration = self.try_into()?;
+    let v1_manifest: crate::v1::AppConfiguration = self.try_into()?;
     Ok(serde_yaml::to_string(&v1_manifest).unwrap())
   }
 

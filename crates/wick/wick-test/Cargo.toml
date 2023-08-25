@@ -12,7 +12,7 @@ include = ["src/**/*", "LICENSE", "!**/*_test.*"]
 # Wick
 flow-component = { workspace = true, features = ["invocation"] }
 wick-packet = { workspace = true }
-wick-config = { workspace = true }
+wick-config = { workspace = true, features = ["config"] }
 wick-interface-types = { workspace = true }
 # TAP interface
 tap-harness = { workspace = true }

@@ -15,7 +15,7 @@ wasmrs-codec = { workspace = true }
 wick-packet = { workspace = true, features = ["invocation", "rt-tokio"] }
 flow-graph = { workspace = true }
 flow-component = { workspace = true, features = ["invocation"] }
-wick-config = { workspace = true }
+wick-config = { workspace = true, features = ["config"] }
 flow-expression-parser = { workspace = true }
 wick-interface-types = { workspace = true }
 seeded-random = { workspace = true, features = ["uuid", "rng", "std"] }

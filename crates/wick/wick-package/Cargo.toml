@@ -9,7 +9,7 @@ include = ["src/**/*", "LICENSE"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-wick-config = { workspace = true }
+wick-config = { workspace = true, features = ["config"] }
 wick-oci-utils = { workspace = true }
 asset-container = { workspace = true }
 thiserror = { workspace = true }

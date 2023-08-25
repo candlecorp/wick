@@ -16,11 +16,12 @@
     deprecated,
     clashing_extern_declarations,
     clippy::expect_used,
-    clippy::explicit_deref_methods,
-    missing_docs
+    clippy::explicit_deref_methods
 )]
 #![warn(clippy::cognitive_complexity)]
+#![allow(missing_docs)]
 
+#[cfg(feature="config")]
 pub(crate) mod conversions;
 pub(crate) mod parse;
 

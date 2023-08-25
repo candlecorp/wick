@@ -1,3 +1,9 @@
+features:
+  - cargo build --features=config --no-default-features
+  - cargo build --features=v1 --no-default-features
+  - cargo build --features=v0 --no-default-features
+  - cargo build --features=v0 --features=config --no-default-features
+
 
 clean:
   rm -f docs/*
@@ -26,8 +32,6 @@ codegen:
   just version v1
   just json-schema
   cargo +nightly fmt
-
-
 
 json-schema:
   ts-node definitions/json-schema.ts definitions/json-schema.json.tpl json-schema/v0/manifest.json json-schema/v1/manifest.json > json-schema/manifest.json

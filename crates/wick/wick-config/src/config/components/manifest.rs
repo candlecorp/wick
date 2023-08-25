@@ -5,7 +5,13 @@ use crate::config::{self, LiquidJsonConfig};
 
 /// A separate Wick manifest to use as a collection.
 #[derive(
-  Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize, Builder,
+  Debug,
+  Clone,
+  PartialEq,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
+  derive_builder::Builder,
 )]
 #[builder(setter(into))]
 #[property(get(public), set(private), mut(disable))]

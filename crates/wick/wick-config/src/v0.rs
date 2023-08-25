@@ -16,11 +16,12 @@
   deprecated,
   clashing_extern_declarations,
   clippy::expect_used,
-  clippy::explicit_deref_methods,
-  missing_docs
+  clippy::explicit_deref_methods
 )]
 #![warn(clippy::cognitive_complexity)]
+#![allow(missing_docs)]
 
+#[cfg(feature = "config")]
 pub(crate) mod conversions;
 pub(crate) mod parse;
 
@@ -35,162 +36,162 @@ use serde_with_expand_env::with_expand_envs;
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A manifest defines the starting state of a Wick host and network.
-pub(crate) struct HostManifest {
+pub struct HostManifest {
   /// The configuration manifest format.
 
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) format: u32,
+  pub format: u32,
   /// The version of the configuration.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) version: String,
+  pub version: String,
   /// Additional host configuration.
   #[serde(default)]
-  pub(crate) host: Option<HostConfig>,
+  pub host: Option<HostConfig>,
   /// The configuration for a Wick network.
   #[serde(default)]
-  pub(crate) network: NetworkManifest,
+  pub network: NetworkManifest,
   /// The default schematic to execute if none is provided.
   #[serde(default)]
-  pub(crate) default_schematic: Option<String>,
+  pub default_schematic: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Host configuration options.
-pub(crate) struct HostConfig {
+pub struct HostConfig {
   /// Whether or not to allow the :latest tag on remote artifacts.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) allow_latest: bool,
+  pub allow_latest: bool,
   /// A list of registries to connect to insecurely (over HTTP vs HTTPS).
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) insecure_registries: Vec<String>,
+  pub insecure_registries: Vec<String>,
   /// The ID for this host, used to identify the host over the mesh.
   #[serde(default)]
-  pub(crate) id: Option<String>,
+  pub id: Option<String>,
   /// The schematics to expose via RPC or the mesh, if any.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) expose: Vec<String>,
+  pub expose: Vec<String>,
   /// The mesh configuration.
   #[serde(default)]
-  pub(crate) mesh: Option<MeshConfig>,
+  pub mesh: Option<MeshConfig>,
   /// Configuration for the GRPC server.
   #[serde(default)]
-  pub(crate) rpc: Option<HttpConfig>,
+  pub rpc: Option<HttpConfig>,
   /// Configuration for the HTTP 1 server (development only).
   #[serde(default)]
-  pub(crate) http: Option<HttpConfig>,
+  pub http: Option<HttpConfig>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Configuration for HTTP/S servers.
-pub(crate) struct HttpConfig {
+pub struct HttpConfig {
   /// Enable/disable the server.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) enabled: bool,
+  pub enabled: bool,
   /// The port to bind to.
   #[serde(default)]
-  pub(crate) port: Option<u16>,
+  pub port: Option<u16>,
   /// The address to bind to.
   #[serde(default)]
-  pub(crate) address: Option<String>,
+  pub address: Option<String>,
   /// Path to pem file for TLS.
   #[serde(default)]
-  pub(crate) pem: Option<String>,
+  pub pem: Option<String>,
   /// Path to key file for TLS.
   #[serde(default)]
-  pub(crate) key: Option<String>,
+  pub key: Option<String>,
   /// Path to CA file.
   #[serde(default)]
-  pub(crate) ca: Option<String>,
+  pub ca: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Configuration used to connect to the mesh.
-pub(crate) struct MeshConfig {
+pub struct MeshConfig {
   /// Enable/disable the mesh connection.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) enabled: bool,
+  pub enabled: bool,
   /// The address of the NATS server.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) address: String,
+  pub address: String,
   /// The path to the NATS credsfile.
   #[serde(default)]
-  pub(crate) creds_path: Option<String>,
+  pub creds_path: Option<String>,
   /// The NATS token.
   #[serde(default)]
-  pub(crate) token: Option<String>,
+  pub token: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A Wick network definition.
-pub(crate) struct NetworkManifest {
+pub struct NetworkManifest {
   /// The unique identifier for this Network.
   #[serde(default)]
-  pub(crate) name: Option<String>,
+  pub name: Option<String>,
   /// The collection to use as the entrypoint when running as a standalone process.
   #[serde(default)]
-  pub(crate) triggers: Option<EntrypointDefinition>,
+  pub triggers: Option<EntrypointDefinition>,
   /// The links between capabilities and components.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) schematics: Vec<SchematicManifest>,
+  pub schematics: Vec<SchematicManifest>,
   /// A list of component collections.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) collections: Vec<CollectionDefinition>,
+  pub collections: Vec<CollectionDefinition>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A collection definition for the main entrypoint.
-pub(crate) struct EntrypointDefinition {
+pub struct EntrypointDefinition {
   /// The reference/location of the collection.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) reference: String,
+  pub reference: String,
   /// The component to use as the entrypoint.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) component: String,
+  pub component: String,
   /// Data or configuration used to initialize the collection.
   #[serde(default)]
-  pub(crate) data: Option<HashMap<String, Value>>,
+  pub data: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A collection definition.
-pub(crate) struct CollectionDefinition {
+pub struct CollectionDefinition {
   /// The local namespace for the collection.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) namespace: String,
+  pub namespace: String,
   /// The kind/type of the collection.
   #[serde(default)]
-  pub(crate) kind: CollectionKind,
+  pub kind: CollectionKind,
   /// The reference/location of the collection.
   #[serde(default)]
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) reference: String,
+  pub reference: String,
   /// Data or configuration used to initialize the collection.
   #[serde(default)]
-  pub(crate) data: Option<HashMap<String, Value>>,
+  pub data: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// Kind of collection.
-pub(crate) enum CollectionKind {
+pub enum CollectionKind {
   /// Native collections included at compile-time in a Wick host.
   Native = 0,
   /// The URL for a separately managed GRPC endpoint.
@@ -236,65 +237,65 @@ impl FromPrimitive for CollectionKind {
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A definition for an individual Wick schematic.
-pub(crate) struct SchematicManifest {
+pub struct SchematicManifest {
   /// Schematic name.
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) name: String,
+  pub name: String,
   /// A map from component reference to its target.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
   #[serde(deserialize_with = "map_component_def")]
-  pub(crate) instances: HashMap<String, ComponentDefinition>,
+  pub instances: HashMap<String, ComponentDefinition>,
   /// A list of connections from component to component.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   #[serde(deserialize_with = "vec_connection")]
-  pub(crate) connections: Vec<ConnectionDefinition>,
+  pub connections: Vec<ConnectionDefinition>,
   /// A map of constraints and values that limit where this schematic can run.
   #[serde(default)]
   #[serde(skip_serializing_if = "HashMap::is_empty")]
-  pub(crate) constraints: HashMap<String, String>,
+  pub constraints: HashMap<String, String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A single component definition.
-pub(crate) struct ComponentDefinition {
+pub struct ComponentDefinition {
   /// The ID of the component (i.e. the alias, key, or namespace).
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) id: String,
+  pub id: String,
   /// Data to associate with the reference.
   #[serde(default)]
-  pub(crate) data: Option<HashMap<String, Value>>,
+  pub data: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A connection between components. This can be specified in short-form syntax (where applicable).
-pub(crate) struct ConnectionDefinition {
+pub struct ConnectionDefinition {
   /// The originating component from upstream.
   #[serde(default)]
   #[serde(deserialize_with = "connection_target_shortform")]
-  pub(crate) from: ConnectionTargetDefinition,
+  pub from: ConnectionTargetDefinition,
   /// The destination component (downstream).
   #[serde(default)]
   #[serde(deserialize_with = "connection_target_shortform")]
-  pub(crate) to: ConnectionTargetDefinition,
+  pub to: ConnectionTargetDefinition,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 /// A connection target e.g. a port on a reference. This can be specified in short-form syntax (where applicable).
-pub(crate) struct ConnectionTargetDefinition {
+pub struct ConnectionTargetDefinition {
   /// The instance name of the referenced component.
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) instance: String,
+  pub instance: String,
   /// The component&#x27;s port.
   #[serde(deserialize_with = "with_expand_envs")]
-  pub(crate) port: String,
+  pub port: String,
   /// Data to associate with a connection.
   #[serde(default)]
-  pub(crate) data: Option<HashMap<String, Value>>,
+  pub data: Option<HashMap<String, Value>>,
 }
 
 impl FromStr for ComponentDefinition {

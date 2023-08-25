@@ -3,7 +3,7 @@ use liquid_json::LiquidJsonValue;
 
 use crate::config::{LiquidJsonConfig, TemplateConfig};
 
-#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize, Builder)]
+#[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize, derive_builder::Builder)]
 #[property(get(public), set(private), mut(disable))]
 /// A test case for a component.
 pub struct TestCase {
@@ -32,7 +32,7 @@ pub struct TestCase {
   pub(crate) outputs: Vec<TestPacketData>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Copy, property::Property, serde::Serialize, Builder)]
+#[derive(Debug, Default, Clone, PartialEq, Copy, property::Property, serde::Serialize, derive_builder::Builder)]
 #[property(get(public), set(private), mut(disable))]
 /// Data inherent to transactions.
 pub struct InherentConfig {

@@ -1,4 +1,4 @@
-use super::ComponentDefinition;
+use crate::v1::ComponentDefinition;
 
 impl ComponentDefinition {
   pub(crate) fn component_id(&self) -> Option<&str> {

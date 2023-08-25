@@ -20,7 +20,7 @@
 {{#if description}}
 /// {{{description.value}}}
 {{/if}}
-pub(crate) enum {{name.value}} {
+pub enum {{name.value}} {
   {{#each types}}
     /// A variant representing a [{{{name.value}}}] type.
     {{#withType .}}

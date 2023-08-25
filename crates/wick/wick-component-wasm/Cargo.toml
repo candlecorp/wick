@@ -19,7 +19,7 @@ wick-packet = { workspace = true, features = ["validation"] }
 wick-interface-types = { workspace = true }
 wick-rpc = { workspace = true }
 wick-wascap = { workspace = true }
-wick-config = { workspace = true }
+wick-config = { workspace = true, features = ["config"] }
 flow-component = { workspace = true, features = ["invocation"] }
 seeded-random = { workspace = true, features = ["rng", "std"] }
 tokio = { workspace = true, features = ["fs"] }

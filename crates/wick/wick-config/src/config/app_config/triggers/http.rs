@@ -18,7 +18,9 @@ mod static_router;
 fn index_to_router_id(trigger_index: usize, index: usize) -> String {
   format!("trigger_{}_router_{}", trigger_index, index)
 }
-#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property, serde::Serialize, Builder)]
+#[derive(
+  Debug, Clone, derive_asset_container::AssetManager, property::Property, serde::Serialize, derive_builder::Builder,
+)]
 #[builder(setter(into))]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]

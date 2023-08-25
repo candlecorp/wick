@@ -6,7 +6,9 @@ use crate::config::components::{ComponentConfig, OperationConfig};
 use crate::config::{self, ExposedVolume, OperationDefinition};
 use crate::utils::VecMapInto;
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager, Builder, property::Property, serde::Serialize)]
+#[derive(
+  Debug, Clone, derive_asset_container::AssetManager, derive_builder::Builder, property::Property, serde::Serialize,
+)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[builder(setter(into))]
 #[asset(asset(config::AssetReference))]

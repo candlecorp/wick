@@ -13,7 +13,13 @@ use crate::error::ManifestError;
 
 /// A reference to an operation.
 #[derive(
-  Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize, Builder,
+  Debug,
+  Clone,
+  PartialEq,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
+  derive_builder::Builder,
 )]
 #[builder(setter(into))]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]

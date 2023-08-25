@@ -8,7 +8,13 @@ use super::{ComponentConfig, OperationConfig};
 use crate::config::{self, ErrorBehavior};
 
 #[derive(
-  Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+  Debug,
+  Clone,
+  derive_builder::Builder,
+  PartialEq,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
 )]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
@@ -180,7 +186,13 @@ impl From<SqlExecOperationDefinition> for wick_interface_types::OperationSignatu
   }
 }
 #[derive(
-  Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+  Debug,
+  Clone,
+  derive_builder::Builder,
+  PartialEq,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
 )]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
@@ -229,7 +241,13 @@ pub struct SqlOperationDefinition {
 }
 
 #[derive(
-  Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+  Debug,
+  Clone,
+  derive_builder::Builder,
+  PartialEq,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
 )]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]

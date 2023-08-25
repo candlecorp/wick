@@ -25,7 +25,9 @@ macro_rules! try_kind {
   };
 }
 
-#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
+#[derive(
+  Debug, Clone, derive_builder::Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[asset(asset(AssetReference))]
 #[builder(derive(Debug), setter(into))]
 #[property(get(public), set(private), mut(disable))]
@@ -167,7 +169,7 @@ impl TryFrom<String> for UrlResource {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, Builder, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, derive_builder::Builder, serde::Serialize)]
 /// A filesystem or network volume.
 #[must_use]
 pub struct Volume {
@@ -180,6 +182,7 @@ impl Volume {
     Self { path: template }
   }
 
+  #[cfg(feature = "v1")]
   pub(crate) fn unrender(&self) -> Result<String, ManifestError> {
     self.path.unrender()
   }
