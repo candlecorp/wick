@@ -198,7 +198,7 @@ impl fmt::Display for Time {
 #[cfg(test)]
 mod test {
 
-  use std::time::SystemTime;
+  use std::path::Path;
 
   use anyhow::Result;
 
@@ -206,14 +206,32 @@ mod test {
   use crate::build_trigger_runtime;
   use crate::test::load_example;
 
+  fn remove_test_file(test_file: &Path) {
+    match std::fs::remove_file(test_file) {
+      Ok(_) => {
+        println!("removed file {}", test_file.to_string_lossy());
+      }
+      Err(_) => {
+        println!("no test file {}", test_file.to_string_lossy());
+      }
+    }
+  }
+
   #[test_logger::test(tokio::test)]
   async fn test_time_example() -> Result<()> {
+    let pwd = std::env::current_dir()?;
+    std::env::set_var("ROOT_DIR", pwd.to_string_lossy().to_string());
+
     let app_config = load_example("time/time.wick").await?.try_app_config()?;
     let rt = build_trigger_runtime(&app_config, Span::current())?.build(None).await?;
 
+    let pwd = std::env::current_dir()?;
+    println!("pwd: {}", pwd.to_string_lossy());
+    let test_file = pwd.join("time-trigger.txt");
+    remove_test_file(&test_file);
+
     let trigger = Time::load()?;
     let trigger_config = app_config.triggers()[0].clone();
-    let start = SystemTime::now();
     trigger
       .run(
         "test".to_owned(),
@@ -226,9 +244,9 @@ mod test {
       .await?;
     debug!("scheduler is running");
     trigger.wait_for_done().await;
-    let end = SystemTime::now();
-    let duration = end.duration_since(start)?;
-    assert!(duration.as_secs() >= 4);
+    let contents = std::fs::read_to_string(&test_file)?;
+    assert_eq!(contents, "Running");
+    remove_test_file(&test_file);
 
     Ok(())
   }
