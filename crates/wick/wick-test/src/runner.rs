@@ -143,6 +143,12 @@ async fn run_unit<'a>(
           e @ crate::error::AssertionFailure::Contains(_) => {
             test_block.fail(prefix("loose equality failure"), Some(vec![e.to_string()]));
           }
+          e @ crate::error::AssertionFailure::Ordering(_) => {
+            test_block.fail(prefix("comparison failure"), Some(vec![e.to_string()]));
+          }
+          e @ crate::error::AssertionFailure::Regex(_) => {
+            test_block.fail(prefix("regex match failed"), Some(vec![e.to_string()]));
+          }
         },
         e => {
           test_block.fail(prefix("other error"), Some(vec![e.to_string()]));
