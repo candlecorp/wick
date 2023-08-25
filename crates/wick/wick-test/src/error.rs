@@ -3,7 +3,7 @@ use thiserror::Error;
 use wick_packet::Packet;
 
 use crate::assertion_packet::TestKind;
-use crate::ContainsError;
+use crate::operators::{ContainsError, OrderingError, RegexError};
 
 #[derive(Error, Debug, PartialEq)]
 pub enum TestError {
@@ -33,12 +33,18 @@ pub enum TestError {
   InvalidPort(String),
   #[error("Assertion failed")]
   Assertion(TestKind, Packet, AssertionFailure),
+  #[error("Could not get path from packet data: {0}")]
+  DotPath(String),
 }
 
 #[derive(Error, Debug, PartialEq)]
 pub enum AssertionFailure {
   #[error("Packet does not loosley match expected data {0}")]
   Contains(ContainsError),
+  #[error("Packet does not match expected data {0}")]
+  Ordering(OrderingError),
+  #[error("Packet does not match expected data {0}")]
+  Regex(RegexError),
   #[error("Payload mismatch")]
   Payload(Value, Value),
   #[error("Expected data in packet but got none")]

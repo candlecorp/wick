@@ -87,6 +87,7 @@
 
 mod assertion_packet;
 mod error;
+mod operators;
 mod runner;
 mod test_group;
 mod test_suite;

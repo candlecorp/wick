@@ -1,12 +1,11 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use serde_json::Value;
 use wick_config::config::test_case::TestCase;
 use wick_packet::{InherentData, Packet, PacketStream, RuntimeConfig};
 
 use crate::assertion_packet::{TestKind, ToPacket};
-use crate::error::AssertionFailure;
+use crate::operators::assert_packet;
 use crate::TestError;
 
 #[derive(Debug, Clone)]
@@ -65,139 +64,6 @@ impl<'a> UnitTest<'a> {
       Ok(())
     } else {
       Err(with_data)
-    }
-  }
-}
-
-fn assert_packet(expected: &TestKind, actual: Packet) -> Result<(), TestError> {
-  if actual.port() != expected.port() {
-    let a = AssertionFailure::Name(expected.port().to_owned(), actual.port().to_owned());
-    return Err(TestError::Assertion(expected.clone(), actual, a));
-  }
-
-  if actual.flags() != expected.flags() {
-    let a = AssertionFailure::Flags(expected.flags(), actual.flags());
-    return Err(TestError::Assertion(expected.clone(), actual, a));
-  }
-
-  match (actual.has_data(), expected.has_data()) {
-    (true, false) => {
-      return Err(TestError::Assertion(
-        expected.clone(),
-        actual,
-        AssertionFailure::ExpectedNoData,
-      ))
-    }
-    (false, true) => {
-      return Err(TestError::Assertion(
-        expected.clone(),
-        actual,
-        AssertionFailure::ActualNoData,
-      ))
-    }
-    (false, false) => return Ok(()),
-    _ => {}
-  }
-
-  let actual_value: Value = actual
-    .clone()
-    .decode()
-    .map_err(|e| TestError::Deserialization(e.to_string()))?;
-
-  match expected {
-    TestKind::Exact(expected_packet) => {
-      let expected_value: Value = expected_packet
-        .clone()
-        .decode()
-        .map_err(|e| TestError::Deserialization(e.to_string()))?;
-
-      debug!(actual=?actual_value, expected=?expected_value, "test:packet");
-      if actual_value != expected_value {
-        let a = AssertionFailure::Payload(expected_value, actual_value);
-        return Err(TestError::Assertion(expected.clone(), actual, a));
-      }
-    }
-    TestKind::Assertion(assertion_def) => {
-      for assertion in &assertion_def.assertions {
-        match assertion.operator {
-          wick_config::config::test_case::AssertionOperator::Equals => todo!(),
-          wick_config::config::test_case::AssertionOperator::LessThan => todo!(),
-          wick_config::config::test_case::AssertionOperator::GreaterThan => todo!(),
-          wick_config::config::test_case::AssertionOperator::Regex => todo!(),
-          wick_config::config::test_case::AssertionOperator::Contains => {
-            debug!(actual=?actual_value, expected=?assertion.value, "test:packet");
-
-            if let Err(e) = assert_contains(&assertion.value, &actual_value) {
-              let a = AssertionFailure::Contains(e);
-              return Err(TestError::Assertion(expected.clone(), actual, a));
-            }
-          }
-        }
-      }
-    }
-  };
-
-  Ok(())
-}
-
-#[derive(Debug, PartialEq)]
-pub enum ContainsError {
-  NotAnArray(Value),
-  NotAnObject(Value),
-  MissingKey(Value, String),
-  MissingIndex(Value, usize),
-  Mismatch(Value, Value),
-}
-
-impl std::fmt::Display for ContainsError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      ContainsError::NotAnArray(v) => write!(f, "expected an array, got {:?}", v),
-      ContainsError::NotAnObject(v) => write!(f, "expected an object, got {:?}", v),
-      ContainsError::MissingKey(v, k) => write!(f, "expected key {:?} in object {:?}", k, v),
-      ContainsError::MissingIndex(v, i) => write!(f, "expected index {:?} in array {:?}", i, v),
-      ContainsError::Mismatch(expected, actual) => write!(f, "expected {:?} to equal {:?}", expected, actual),
-    }
-  }
-}
-
-fn assert_contains(expected: &Value, actual: &Value) -> Result<(), ContainsError> {
-  match expected {
-    Value::Array(v) => {
-      if let Value::Array(v2) = actual {
-        for (i, v) in v.iter().enumerate() {
-          assert_contains(
-            v,
-            v2.get(i)
-              .ok_or_else(|| ContainsError::MissingIndex(actual.clone(), i))?,
-          )?;
-        }
-      } else {
-        return Err(ContainsError::NotAnArray(actual.clone()));
-      }
-
-      Ok(())
-    }
-    Value::Object(v) => {
-      if let Value::Object(v2) = actual {
-        for (k, v) in v.iter() {
-          assert_contains(
-            v,
-            v2.get(k)
-              .ok_or_else(|| ContainsError::MissingKey(actual.clone(), k.clone()))?,
-          )?;
-        }
-      } else {
-        return Err(ContainsError::NotAnObject(actual.clone()));
-      }
-      Ok(())
-    }
-    _ => {
-      if expected == actual {
-        Ok(())
-      } else {
-        Err(ContainsError::Mismatch(expected.clone(), actual.clone()))
-      }
     }
   }
 }
@@ -276,74 +142,4 @@ pub(crate) fn get_payload(
   );
 
   Ok((packets.into(), InherentData::new(seed, timestamp), explicit_done))
-}
-
-#[cfg(test)]
-mod test {
-  use anyhow::Result;
-  use serde_json::json;
-  use wick_config::config::test_case::AssertionOperator;
-
-  use super::*;
-  use crate::assertion_packet::{Assertion, AssertionDef};
-
-  #[rstest::rstest]
-  #[case(
-    json!({
-    "a": 1,
-    "b": 2,
-    "c": 3,
-    }),
-    json!({
-      "a": 1,
-      "b": 2,
-      "c": 3,
-    })
-  )]
-  fn test_contains_equals(#[case] expected_value: Value, #[case] actual: Value) -> Result<()> {
-    let actual = Packet::encode("...", actual);
-    let expected = TestKind::Assertion(AssertionDef {
-      port: actual.port().to_owned(),
-      assertions: vec![Assertion {
-        path: None,
-        operator: AssertionOperator::Equals,
-        value: expected_value.clone(),
-      }],
-    });
-
-    assert_eq!(assert_packet(&expected, actual.clone(),), Ok(()));
-
-    Ok(())
-  }
-
-  #[rstest::rstest]
-  #[case(json!({"a": 1, "b": 2, }), json!({ "a": 1, "c": 3, }), ContainsError::MissingKey(json!({ "a": 1, "c": 3, }), "b".into()))]
-  #[case(json!({"a": 1, "b": 2, }), json!({ "a": 1, "b": 100, }), ContainsError::Mismatch(json!(2), json!(100)))]
-  #[case(json!({"a": 1, "b": {"c":2}, }), json!({ "a": 1, "b": 100, }), ContainsError::NotAnObject(json!(100)))]
-  fn test_contains_not_ok(
-    #[case] expected_value: Value,
-    #[case] actual: Value,
-    #[case] error: ContainsError,
-  ) -> Result<()> {
-    let actual = Packet::encode("...", actual);
-    let expected = TestKind::Assertion(AssertionDef {
-      port: actual.port().to_owned(),
-      assertions: vec![Assertion {
-        path: None,
-        operator: AssertionOperator::Equals,
-        value: expected_value.clone(),
-      }],
-    });
-
-    assert_eq!(
-      assert_packet(&expected, actual.clone(),),
-      Err(TestError::Assertion(
-        expected,
-        actual,
-        AssertionFailure::Contains(error)
-      ))
-    );
-
-    Ok(())
-  }
 }

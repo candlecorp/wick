@@ -1,0 +1,54 @@
+kind: wick/component@v1
+name: echo
+metadata:
+  version: 0.0.1
+  description: Simple composite component that echos input back as output
+  licenses:
+    - Apache-2.0
+component:
+  kind: wick/component/composite@v1
+  operations:
+    - name: echo
+      uses:
+        - name: SENDER
+          operation: core::sender
+          with:
+            output:
+              num: 42
+              string: 'Hello, world!'
+      flow:
+        - SENDER -> <>
+tests:
+  - name: basic
+    cases:
+      - name: strict_equal
+        operation: echo
+        inputs: []
+        outputs:
+          - name: output
+            value:
+              string: 'Hello, world!'
+              num: 42
+      - name: assertions
+        operation: echo
+        inputs: []
+        outputs:
+          - name: output
+            assertions:
+              - operator: Equals
+                path: num
+                value: 42
+              - operator: Equals
+                path: string
+                value: 'Hello, world!'
+              - operator: Contains
+                value: { num: 42, string: 'Hello, world!' }
+              - operator: LessThan
+                path: num
+                value: 43
+              - operator: GreaterThan
+                path: num
+                value: 41
+              - operator: Regex
+                path: string
+                value: '\w+, \w+!'

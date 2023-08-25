@@ -238,6 +238,7 @@ _wick-component-tests:
   {{wick}} test ./examples/components/wasi-fs/component.wick
   {{wick}} test ./examples/components/composite-imports.wick
   {{wick}} test ./examples/components/composite-provides.wick
+  {{wick}} test ./examples/components/tests.wick
 
 # Run component-codegen unit tests
 _codegen-tests:
