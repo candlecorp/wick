@@ -13,7 +13,7 @@ fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}() -> {{> exp
 {{#if description}}
 /// {{{description.value}}}
 {{/if}}
-pub(crate) enum {{name.value}} {
+pub enum {{name.value}} {
   {{#each values}}
     {{#if description}}
     /// {{description.value}}

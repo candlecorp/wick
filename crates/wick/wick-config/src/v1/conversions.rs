@@ -1,9 +1,7 @@
 use std::collections::HashMap;
-use std::str::FromStr;
+mod impls;
 mod root_configs;
-mod types;
 
-use flow_expression_parser::ast::{self, InstancePort, InstanceTarget};
 use option_utils::OptionUtils;
 use wick_asset_reference::AssetReference;
 
@@ -661,7 +659,8 @@ impl TryFrom<crate::v1::CompositeOperationDefinition> for config::FlowOperation 
       .into_iter()
       .map(|v| Ok((v.name.clone(), v.try_into()?)))
       .collect();
-    let expressions: Result<Vec<ast::FlowExpression>> = op.flow.into_iter().map(TryInto::try_into).collect();
+    let expressions: Result<Vec<flow_expression_parser::ast::FlowExpression>> =
+      op.flow.into_iter().map(TryInto::try_into).collect();
     Ok(Self {
       name: op.name,
       inputs: op.inputs.try_map_into()?,
@@ -671,33 +670,6 @@ impl TryFrom<crate::v1::CompositeOperationDefinition> for config::FlowOperation 
       config: op.with.try_map_into()?,
       flows: op.operations.try_map_into()?,
     })
-  }
-}
-
-impl TryFrom<v1::FlowExpression> for ast::FlowExpression {
-  type Error = ManifestError;
-
-  fn try_from(expr: v1::FlowExpression) -> Result<Self> {
-    Ok(match expr {
-      v1::FlowExpression::ConnectionDefinition(v) => ast::FlowExpression::connection(v.try_into()?),
-      v1::FlowExpression::BlockExpression(v) => ast::FlowExpression::block(v.try_into()?),
-    })
-  }
-}
-
-impl TryFrom<v1::ConnectionDefinition> for ast::ConnectionExpression {
-  type Error = ManifestError;
-
-  fn try_from(expr: v1::ConnectionDefinition) -> Result<Self> {
-    Ok(Self::new(expr.from.try_into()?, expr.to.try_into()?))
-  }
-}
-
-impl TryFrom<v1::BlockExpression> for ast::BlockExpression {
-  type Error = ManifestError;
-
-  fn try_from(value: v1::BlockExpression) -> std::result::Result<Self, Self::Error> {
-    Ok(Self::new(value.expressions.try_map_into()?))
   }
 }
 
@@ -906,53 +878,6 @@ impl TryFrom<config::FlowOperation> for v1::CompositeOperationDefinition {
   }
 }
 
-impl TryFrom<ast::FlowExpression> for v1::FlowExpression {
-  type Error = ManifestError;
-
-  fn try_from(value: ast::FlowExpression) -> std::result::Result<Self, Self::Error> {
-    match value {
-      ast::FlowExpression::ConnectionExpression(c) => Ok(Self::ConnectionDefinition((*c).try_into()?)),
-      ast::FlowExpression::BlockExpression(c) => Ok(Self::BlockExpression(c.try_into()?)),
-    }
-  }
-}
-
-impl TryFrom<ast::BlockExpression> for v1::BlockExpression {
-  type Error = ManifestError;
-
-  fn try_from(value: ast::BlockExpression) -> std::result::Result<Self, Self::Error> {
-    let expressions = value.into_parts();
-    Ok(Self {
-      expressions: expressions.try_map_into()?,
-    })
-  }
-}
-
-impl TryFrom<ast::ConnectionExpression> for v1::ConnectionDefinition {
-  type Error = ManifestError;
-
-  fn try_from(value: ast::ConnectionExpression) -> std::result::Result<Self, Self::Error> {
-    let (from, to) = value.into_parts();
-    Ok(Self {
-      from: from.try_into()?,
-      to: to.try_into()?,
-    })
-  }
-}
-
-impl TryFrom<ast::ConnectionTargetExpression> for v1::ConnectionTargetDefinition {
-  type Error = ManifestError;
-
-  fn try_from(value: ast::ConnectionTargetExpression) -> std::result::Result<Self, Self::Error> {
-    let (instance, port, data) = value.into_parts();
-    Ok(Self {
-      data,
-      instance: instance.to_string(),
-      port: port.to_option_string(),
-    })
-  }
-}
-
 fn new_operation_instance(id: String, value: config::InstanceReference) -> v1::OperationInstance {
   v1::OperationInstance {
     name: id,
@@ -1004,16 +929,6 @@ impl TryFrom<crate::v1::OperationInstance> for config::InstanceReference {
       data: def.with.map_into(),
       settings: def.timeout.map(ExecutionSettings::from_timeout_millis),
     })
-  }
-}
-
-impl TryFrom<&crate::v1::ConnectionDefinition> for ast::ConnectionExpression {
-  type Error = ManifestError;
-
-  fn try_from(def: &crate::v1::ConnectionDefinition) -> Result<Self> {
-    let from: ast::ConnectionTargetExpression = def.from.clone().try_into()?;
-    let to: ast::ConnectionTargetExpression = def.to.clone().try_into()?;
-    Ok(ast::ConnectionExpression::new(from, to))
   }
 }
 
@@ -1073,20 +988,6 @@ impl TryFrom<config::HttpConfig> for crate::v1::HttpConfig {
       key: def.key.try_map_into()?,
       ca: def.ca.try_map_into()?,
     })
-  }
-}
-
-impl TryFrom<crate::v1::ConnectionTargetDefinition> for ast::ConnectionTargetExpression {
-  type Error = ManifestError;
-
-  fn try_from(def: crate::v1::ConnectionTargetDefinition) -> Result<Self> {
-    Ok(ast::ConnectionTargetExpression::new_data(
-      InstanceTarget::from_str(&def.instance)?,
-      def
-        .port
-        .map_or(Ok(InstancePort::None), |p| InstancePort::from_str(&p))?,
-      def.data,
-    ))
   }
 }
 

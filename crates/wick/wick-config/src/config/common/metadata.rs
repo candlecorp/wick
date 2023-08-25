@@ -2,7 +2,14 @@
 use crate::config::AssetReference;
 
 #[derive(
-  Debug, Default, Builder, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+  Debug,
+  Default,
+  derive_builder::Builder,
+  Clone,
+  PartialEq,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
 )]
 #[property(get(public), set(private), mut(disable))]
 #[builder(setter(into))]

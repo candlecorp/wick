@@ -7,6 +7,7 @@ pub(crate) mod app_config;
 pub(crate) mod common;
 pub(crate) mod component_config;
 pub(crate) mod configuration_tree;
+pub(crate) mod import_cache;
 pub(crate) mod lockdown_config;
 pub(crate) mod permissions;
 pub(crate) mod test_config;
@@ -22,7 +23,6 @@ pub use component_config::*;
 pub use configuration_tree::*;
 pub use lockdown_config::*;
 pub use permissions::{Permissions, PermissionsBuilder};
-use serde_json::Value;
 pub use test_config::*;
 use tracing::debug;
 pub use types_config::*;
@@ -31,9 +31,9 @@ use wick_interface_types::Field;
 use wick_packet::validation::expect_configuration_matches;
 use wick_packet::{Entity, RuntimeConfig};
 
+use crate::load::resolve_configuration;
 use crate::lockdown::Lockdown;
-use crate::utils::{_fetch_all, resolve_configuration};
-use crate::{v1, Error};
+use crate::Error;
 
 #[derive(Debug, Clone, property::Property)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
@@ -189,16 +189,6 @@ impl WickConfiguration {
     Ok(config)
   }
 
-  async fn _fetch_assets(&self, options: FetchOptions) -> Result<(), Error> {
-    match self {
-      WickConfiguration::Component(c) => _fetch_all(c, options).await,
-      WickConfiguration::App(c) => _fetch_all(c, options).await,
-      WickConfiguration::Types(c) => _fetch_all(c, options).await,
-      WickConfiguration::Tests(c) => _fetch_all(c, options).await,
-      WickConfiguration::Lockdown(_) => Ok(()),
-    }
-  }
-
   /// Load a configuration from raw bytes. Pass in an optional source to track where the bytes came from.
   ///
   /// # Example
@@ -262,6 +252,7 @@ impl WickConfiguration {
   /// # Ok::<_,anyhow::Error>(())
   /// # });
   /// ```
+  #[cfg(feature = "v1")]
   pub fn into_v1_yaml(self) -> Result<String, Error> {
     Ok(serde_yaml::to_string(&self.into_v1()?).unwrap())
   }
@@ -284,17 +275,19 @@ impl WickConfiguration {
   /// # Ok::<_,anyhow::Error>(())
   /// # });
   /// ```
-  pub fn into_v1_json(self) -> Result<Value, Error> {
+  #[cfg(feature = "v1")]
+  pub fn into_v1_json(self) -> Result<serde_json::Value, Error> {
     Ok(serde_json::to_value(&self.into_v1()?).unwrap())
   }
 
-  fn into_v1(self) -> Result<v1::WickConfig, Error> {
+  #[cfg(feature = "v1")]
+  fn into_v1(self) -> Result<crate::v1::WickConfig, Error> {
     match self {
-      WickConfiguration::Component(c) => Ok(v1::WickConfig::ComponentConfiguration(c.try_into()?)),
-      WickConfiguration::App(c) => Ok(v1::WickConfig::AppConfiguration(c.try_into()?)),
-      WickConfiguration::Types(c) => Ok(v1::WickConfig::TypesConfiguration(c.try_into()?)),
-      WickConfiguration::Tests(c) => Ok(v1::WickConfig::TestConfiguration(c.try_into()?)),
-      WickConfiguration::Lockdown(c) => Ok(v1::WickConfig::LockdownConfiguration(c.try_into()?)),
+      WickConfiguration::Component(c) => Ok(crate::v1::WickConfig::ComponentConfiguration(c.try_into()?)),
+      WickConfiguration::App(c) => Ok(crate::v1::WickConfig::AppConfiguration(c.try_into()?)),
+      WickConfiguration::Types(c) => Ok(crate::v1::WickConfig::TypesConfiguration(c.try_into()?)),
+      WickConfiguration::Tests(c) => Ok(crate::v1::WickConfig::TestConfiguration(c.try_into()?)),
+      WickConfiguration::Lockdown(c) => Ok(crate::v1::WickConfig::LockdownConfiguration(c.try_into()?)),
     }
   }
 

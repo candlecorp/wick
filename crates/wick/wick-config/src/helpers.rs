@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use serde::Deserializer;
 
+#[allow(unused)]
 pub(crate) fn kv_deserializer<'de, D>(deserializer: D) -> Result<HashMap<String, String>, D::Error>
 where
   D: Deserializer<'de>,

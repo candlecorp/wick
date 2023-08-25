@@ -8,6 +8,12 @@ description = "Wick manifest configuration format."
 version = "0.26.0"
 include = ["src/**/*", "README.md"]
 
+[features]
+default = ["v1", "v0", "config"]
+config = []
+v1 = []
+v0 = []
+
 [dependencies]
 flow-component = { workspace = true }
 flow-expression-parser = { workspace = true }

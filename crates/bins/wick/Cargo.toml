@@ -27,7 +27,7 @@ wick-interface-types = { workspace = true }
 wick-rpc = { workspace = true, features = ["client"] }
 wick-component-cli = { workspace = true, features = ["cli", "grpc"] }
 wick-host = { workspace = true }
-wick-config = { workspace = true }
+wick-config = { workspace = true, features = ["v1", "v0", "config"] }
 wick-test = { workspace = true }
 wick-wascap = { workspace = true }
 wick-oci-utils = { workspace = true }

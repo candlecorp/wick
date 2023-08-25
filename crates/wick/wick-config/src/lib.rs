@@ -87,45 +87,59 @@
 // Add exceptions here
 #![allow()]
 
-#[macro_use]
-extern crate derive_builder;
-
 /// Structures and functions for auditing Wick Manifests.
+#[cfg(feature = "config")]
 pub mod audit;
 mod default;
 mod helpers;
-mod import_cache;
 mod traits;
-pub use traits::*;
+
 /// Data structures, traits, and errors associated with Lockdown configuration.
+#[cfg(feature = "config")]
 pub mod lockdown;
 
-pub use default::{parse_default, process_default, ERROR_STR};
-
 /// The main configuration module.
+#[cfg(feature = "config")]
 pub mod config;
 /// Wick Manifest error.
 pub mod error;
 mod utils;
-mod v0;
-mod v1;
+
+/// Wick Manifest v0 implementation.
+#[cfg(feature = "v0")]
+pub mod v0;
+
+/// Wick Manifest v1 implementation.
+#[cfg(feature = "v1")]
+pub mod v1;
+
+/// Methods to read and load raw configurations.
+pub mod load;
+
+pub use default::{parse_default, process_default, ERROR_STR};
 
 /// The crate's error type.
 pub type Error = crate::error::ManifestError;
 
-pub use config::WickConfiguration;
+#[cfg(feature = "config")]
+mod feature_config {
+  pub use crate::config::WickConfiguration;
+  use crate::error::ManifestError;
+  /// The type associated with a resolver function.
+  pub type Resolver = dyn Fn(&str) -> Result<crate::config::OwnedConfigurationItem, ManifestError> + Send + Sync;
+  pub use crate::traits::*;
+
+  // Todo: flesh out per-component validation of configuration.
+  #[doc(hidden)]
+  pub trait ConfigValidation {
+    type Config;
+    fn validate(config: &Self::Config, resolver: &Resolver) -> Result<(), flow_component::ComponentError>;
+  }
+}
+#[cfg(feature = "config")]
+pub use feature_config::*;
 pub use wick_asset_reference::Error as AssetError;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 pub use wick_asset_reference::{normalize_path, AssetReference, FetchOptions, FetchableAssetReference};
-
-/// The type associated with a resolver function.
-pub type Resolver = dyn Fn(&str) -> Result<config::OwnedConfigurationItem> + Send + Sync;
-
-// Todo: flesh out per-component validation of configuration.
-#[doc(hidden)]
-pub trait ConfigValidation {
-  type Config;
-  fn validate(config: &Self::Config, resolver: &Resolver) -> std::result::Result<(), flow_component::ComponentError>;
-}

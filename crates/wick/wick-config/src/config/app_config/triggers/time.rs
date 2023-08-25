@@ -6,7 +6,13 @@ use crate::error::ManifestError;
 use crate::ExpandImports;
 
 #[derive(
-  Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize, Builder,
+  Debug,
+  Clone,
+  PartialEq,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
+  derive_builder::Builder,
 )]
 #[builder(setter(into))]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
@@ -22,7 +28,13 @@ pub struct TimeTriggerConfig {
 }
 
 #[derive(
-  Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize, Builder,
+  Debug,
+  Clone,
+  PartialEq,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
+  derive_builder::Builder,
 )]
 #[builder(setter(into))]
 #[property(get(public), set(private), mut(disable))]

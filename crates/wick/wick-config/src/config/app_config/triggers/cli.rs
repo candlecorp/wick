@@ -5,7 +5,13 @@ use crate::error::ManifestError;
 use crate::ExpandImports;
 
 #[derive(
-  Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize, Builder,
+  Debug,
+  Clone,
+  PartialEq,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
+  derive_builder::Builder,
 )]
 #[builder(setter(into))]
 #[asset(asset(AssetReference))]

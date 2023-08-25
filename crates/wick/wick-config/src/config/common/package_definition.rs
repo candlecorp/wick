@@ -5,7 +5,13 @@ use wick_asset_reference::AssetReference;
 use super::Glob;
 
 #[derive(
-  Debug, Clone, Default, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+  Debug,
+  Clone,
+  Default,
+  derive_builder::Builder,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
 )]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference), lazy)]
@@ -23,7 +29,7 @@ pub struct PackageConfig {
   pub(crate) registry: Option<RegistryConfig>,
 }
 
-#[derive(Debug, Default, Builder, Clone, PartialEq, property::Property, serde::Serialize)]
+#[derive(Debug, Default, derive_builder::Builder, Clone, PartialEq, property::Property, serde::Serialize)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 /// Configuration for publishing the package to a registry.
 pub struct RegistryConfig {

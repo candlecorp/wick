@@ -8,7 +8,13 @@ use super::{ComponentConfig, OperationConfig};
 use crate::config::{self, Codec, HttpMethod};
 
 #[derive(
-  Debug, Clone, Builder, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+  Debug,
+  Clone,
+  derive_builder::Builder,
+  PartialEq,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
 )]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
@@ -121,7 +127,7 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
   }
 }
 
-#[derive(Debug, Clone, Builder, PartialEq, property::Property, serde::Serialize)]
+#[derive(Debug, Clone, derive_builder::Builder, PartialEq, property::Property, serde::Serialize)]
 #[property(get(public), set(private), mut(disable))]
 #[builder(setter(into))]
 #[must_use]

@@ -3,9 +3,6 @@ use std::path::PathBuf;
 use derive_builder::UninitializedFieldError;
 use thiserror::Error;
 
-use crate::config::resources::ResourceKind;
-use crate::config::{self};
-
 // type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
 
 /// Wick Manifest's Errors.
@@ -48,12 +45,17 @@ pub enum ManifestError {
   LoadError(String),
 
   /// Thrown when a specific type of configuration was expected but a different type was found.
-  #[error("Expected a {0} configuration but got a {1} configuration")]
-  UnexpectedConfigurationKind(config::ConfigurationKind, config::ConfigurationKind),
+  #[cfg(feature = "config")]
+  #[cfg_attr(
+    feature = "config",
+    error("Expected a {0} configuration but got a {1} configuration")
+  )]
+  UnexpectedConfigurationKind(crate::config::ConfigurationKind, crate::config::ConfigurationKind),
 
   /// Thrown when a specific type of component was expected but a different type was found.
-  #[error("Expected a {0} component but got a {1} component")]
-  UnexpectedComponentType(config::ComponentKind, config::ComponentKind),
+  #[cfg(feature = "config")]
+  #[cfg_attr(feature = "config", error("Expected a {0} component but got a {1} component"))]
+  UnexpectedComponentType(crate::config::ComponentKind, crate::config::ComponentKind),
 
   /// Error deserializing YAML manifest.
   #[error("Could not parse manifest {} as YAML: {1} at line {}, column {}", .0.as_ref().map_or("<raw>".to_owned(), |v|v.display().to_string()), .2.as_ref().map_or("unknown".to_owned(),|l|l.line().to_string()), .2.as_ref().map_or("unknown".to_owned(),|l|l.column().to_string()))]
@@ -121,7 +123,8 @@ pub enum ManifestError {
   UnrenderedConfiguration(String),
 
   /// Error resolving reference.
-  #[error(transparent)]
+  #[cfg(feature = "config")]
+  #[cfg_attr(feature = "config", error(transparent))]
   Reference(#[from] ReferenceError),
 
   /// Error building a configuration
@@ -133,6 +136,7 @@ pub enum ManifestError {
   InvalidPacketFlags,
 }
 
+#[cfg(feature = "config")]
 #[derive(Error, Debug, Clone, Copy)]
 /// Errors that can occur when trying to dereference a configuration name or id.
 pub enum ReferenceError {
@@ -152,9 +156,9 @@ pub enum ReferenceError {
   #[error("Expected a resource of type {expected}, found type {actual}")]
   ResourceType {
     /// The expected resource type.
-    expected: ResourceKind,
+    expected: crate::config::resources::ResourceKind,
     /// The actual resource type.
-    actual: ResourceKind,
+    actual: crate::config::resources::ResourceKind,
   },
 }
 /// Errors generated when building a configuration.

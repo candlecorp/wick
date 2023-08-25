@@ -8,7 +8,13 @@ use crate::config::components::{ComponentConfig, OperationConfig};
 use crate::config::{self, ExecutionSettings, LiquidJsonConfig};
 
 #[derive(
-  Debug, Default, Clone, derive_asset_container::AssetManager, Builder, property::Property, serde::Serialize,
+  Debug,
+  Default,
+  Clone,
+  derive_asset_container::AssetManager,
+  derive_builder::Builder,
+  property::Property,
+  serde::Serialize,
 )]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[builder(setter(into))]
@@ -87,7 +93,7 @@ impl From<FlowOperation> for wick_interface_types::OperationSignature {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Builder, Default, property::Property, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, derive_builder::Builder, Default, property::Property, serde::Serialize)]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
 #[builder(setter(into))]
 /// A FlowOperation is an operation definition whose implementation is defined by

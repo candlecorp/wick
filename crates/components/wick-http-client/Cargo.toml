@@ -13,7 +13,7 @@ description = "SQL Database component for the wick project."
 wick-packet = { workspace = true, features = ["rt-tokio", "invocation"] }
 wick-interface-http = { workspace = true }
 flow-component = { workspace = true, features = ["invocation"] }
-wick-config = { workspace = true }
+wick-config = { workspace = true, features = ["config"] }
 wick-interface-types = { workspace = true }
 #
 url = { workspace = true }

@@ -12,7 +12,9 @@ use super::OperationDefinition;
 use crate::config;
 use crate::error::ManifestError;
 
-#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
+#[derive(
+  Debug, Clone, derive_builder::Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(AssetReference))]
 #[must_use]

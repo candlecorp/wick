@@ -8,7 +8,9 @@ use super::LiquidJsonConfig;
 use crate::config::test_case;
 use crate::error::ManifestError;
 
-#[derive(Debug, Clone, Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
+#[derive(
+  Debug, Clone, derive_builder::Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[asset(asset(crate::config::AssetReference))]
 #[must_use]

@@ -14,7 +14,7 @@ publish = false
 
 [dev-dependencies]
 wick-packet = { workspace = true, features = ["rt-tokio", "test"] }
-wick-config = { workspace = true, features = [] }
+wick-config = { workspace = true, features = ["config"] }
 wick-host = { workspace = true, features = [] }
 wick-component = { workspace = true }
 wick-interface-types = { workspace = true, features = ["parser"] }

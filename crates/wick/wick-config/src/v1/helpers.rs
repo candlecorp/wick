@@ -1,12 +1,17 @@
+use std::str::FromStr;
+
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
 
+mod flow_ast;
+mod interface_types;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub(crate) struct LocationReference(pub(super) String);
+pub struct LocationReference(pub(super) String);
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 
-pub(crate) struct Glob(pub(super) String);
+pub struct Glob(pub(super) String);
 
 #[allow(clippy::from_over_into)]
 impl Into<String> for super::TypeSignature {

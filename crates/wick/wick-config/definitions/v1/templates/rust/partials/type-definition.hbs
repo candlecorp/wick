@@ -25,9 +25,9 @@ pub(crate) fn {{upperCase (snakeCase ../name.value)}}_{{upperCase name.value}}()
 /// {{{description.value}}}
 {{/if}}
 {{#withAnnotation "nameonly"}}
-pub(crate) struct {{../name.value}};
+pub struct {{../name.value}};
 {{else}}
-pub(crate) struct {{name.value}} {
+pub struct {{name.value}} {
   {{#each fields}}
     {{#if description}}
     /// {{description.value}}
@@ -99,10 +99,10 @@ pub(crate) struct {{name.value}} {
     {{#withAnnotation "rename"}}
     {{#ifCond name.value '===' 'rename'}}
     #[serde(rename="{{../name.value}}")]
-    pub(crate) {{arguments.0.value.value}}:
+    pub {{arguments.0.value.value}}:
     {{/ifCond}}
     {{else}}
-    pub(crate) {{name.value}}:
+    pub {{name.value}}:
     {{/withAnnotation}}
 
     {{#ifCond ../name.value '==' 'MapType'}}

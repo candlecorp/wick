@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Builder, property::Property, serde::Serialize)]
+#[derive(Debug, Clone, derive_builder::Builder, property::Property, serde::Serialize)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
 #[builder(setter(into))]
 
