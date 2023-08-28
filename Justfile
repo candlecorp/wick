@@ -224,6 +224,10 @@ _wick-db-tests:
   {{wick}} test ./examples/db/tests/postgres-numeric-tests.wick
   {{wick}} test ./examples/db/tests/postgres-null-tests.wick
   {{wick}} test ./examples/db/tests/postgres-date-tests.wick
+  {{wick}} test ./examples/db/postgres-component.wick
+  {{wick}} test ./examples/db/azuresql-component.wick
+  {{wick}} test ./examples/db/sqlite-component.wick
+  {{wick}} test ./examples/db/sqlite-inmemory-component.wick
   {{wick}} test ./tests/cli-tests/tests/cmd/db/azuresql-tx-test.wick
 
 # Run `wick` tests for http components

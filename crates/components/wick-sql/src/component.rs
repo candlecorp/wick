@@ -46,15 +46,11 @@ impl Client {
         normalize_operations(config.operations_mut(), DbKind::Postgres);
         Arc::new(crate::sqlx::SqlXComponent::new(config.clone(), resolver).await?)
       }
-      "sqlite" => {
+      "file" | "sqlite" => {
         normalize_operations(config.operations_mut(), DbKind::Sqlite);
-
         Arc::new(crate::sqlx::SqlXComponent::new(config.clone(), resolver).await?)
       }
-
-      _ => {
-        return Err(Error::InvalidScheme(url.scheme().to_owned()));
-      }
+      _ => return Err(Error::InvalidScheme(url.scheme().to_owned())),
     };
 
     Ok(Self { inner: client })
@@ -440,7 +436,7 @@ fn normalize_inline_ids(orig_query: &str, mut orig_args: Vec<String>) -> (Cow<st
       let id = id_map.get(id).unwrap();
       format!("${}", id)
     });
-    debug!(%orig_query,%normalized, "sql:mssql:normalized query");
+    debug!(%orig_query,%normalized, "sql:inline-replacement");
     (normalized, orig_args)
   } else {
     (Cow::Borrowed(orig_query), orig_args)
@@ -646,7 +642,7 @@ mod integration_test {
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource(
       "db",
-      ResourceDefinition::Url(format!("sqlite://{}", db).try_into().unwrap()),
+      ResourceDefinition::Url(format!("file://{}", db).try_into().unwrap()),
     );
 
     let component = SqlComponent::new(config, None, None, &app_config.resolver()).await?;
@@ -658,7 +654,7 @@ mod integration_test {
   async fn test_sqlite_basic() -> Result<()> {
     let pg = init_sqlite_component().await?;
     let input = packet_stream!(("input", 1_i32));
-    let inv = Invocation::test("postgres", "wick://__local__/test", input, None)?;
+    let inv = Invocation::test("sqlite", "wick://__local__/test", input, None)?;
     let response = pg.handle(inv, Default::default(), panic_callback()).await.unwrap();
     let packets: Vec<_> = response.collect().await;
 

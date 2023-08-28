@@ -183,8 +183,26 @@ fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Err
 
 async fn init_client(config: &SqlComponentConfig, addr: &Url) -> Result<CtxPool, Error> {
   let pool = match addr.scheme() {
-    "sqlite" => CtxPool::SqlLite(sqlite::connect(config, addr).await?),
+    "file" => CtxPool::SqlLite(
+      sqlite::connect(
+        config,
+        Some(
+          addr
+            .to_file_path()
+            .map_err(|_e| Error::SqliteConnect(format!("could not convert url {} to filepath", addr)))?
+            .to_str()
+            .unwrap(),
+        ),
+      )
+      .await?,
+    ),
     "postgres" => CtxPool::Postgres(postgres::connect(config, addr).await?),
+    "sqlite" => {
+      if addr.host() != Some(url::Host::Domain("memory")) {
+        return Err(Error::SqliteScheme);
+      }
+      CtxPool::SqlLite(sqlite::connect(config, None).await?)
+    }
     "mysql" => unimplemented!("MySql is not supported yet"),
     "mssql" => unreachable!(),
     s => return Err(Error::InvalidScheme(s.to_owned())),
