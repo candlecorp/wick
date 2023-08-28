@@ -18,7 +18,7 @@ jobs:
       - name: Checkout submodules
         run: |
           git submodule update --init --recursive
-          cd ./docs/candle-cloud
+          cd ./docs/content/candle-cloud
           git checkout main
           git pull origin main
 
