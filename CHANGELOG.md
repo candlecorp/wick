@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.14.0 (2023-08-28)
 
+<csr-id-33b83d42f7a83e6ea81805f0ec0745654d12683f/>
+<csr-id-a576880fa97834d9f89cfd7db4a42598b24fc02c/>
+
 ### Refactor
 
  - <csr-id-33b83d42f7a83e6ea81805f0ec0745654d12683f/> moved wick bin files to root
+
+### Refactor
+
+ - <csr-id-a576880fa97834d9f89cfd7db4a42598b24fc02c/> moved wick bin files to root
 
 ### Commit Statistics
 
@@ -26,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
-    - Moved wick bin files to root ([`33b83d4`](https://github.com/candlecorp/wick/commit/33b83d42f7a83e6ea81805f0ec0745654d12683f))
+    - Moved wick bin files to root ([`a576880`](https://github.com/candlecorp/wick/commit/a576880fa97834d9f89cfd7db4a42598b24fc02c))
 </details>
 
 ## v0.13.0 (2023-08-23)

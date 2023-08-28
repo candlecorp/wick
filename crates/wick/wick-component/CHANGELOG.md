@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.16.0 (2023-08-28)
 
+<csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-599514816356f7fab3b2122156092166f7815427/>
+<csr-id-e561fd668afb1e1af3639c472a893b7fcfe2bf54/>
+<csr-id-3158048ad1d0c33518cb647d08f927606afcecd0/>
+<csr-id-f18a77df361bfceac2ca0ed00c0d39db45b624ee/>
+
 ### Chore
 
  - <csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/> removed unused deps, consolidated versions at root workspace
@@ -17,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
  - <csr-id-0d37e8af72f6578595deb2138b57711a2ff6ceca/> added example docs, updated generated docs
+ - <csr-id-37905206a10ff16406b77ad296d467ebf76fc8fb/> added changelog
 
 ### New Features
 
@@ -73,9 +81,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 33 commits contributed to the release over the course of 124 calendar days.
+ - 34 commits contributed to the release over the course of 124 calendar days.
  - 131 days passed between releases.
- - 32 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 33 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#278](https://github.com/candlecorp/wick/issues/278), [#341](https://github.com/candlecorp/wick/issues/341), [#375](https://github.com/candlecorp/wick/issues/375), [#388](https://github.com/candlecorp/wick/issues/388)
 
 ### Commit Details
@@ -93,6 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#388](https://github.com/candlecorp/wick/issues/388)**
     - Added `wick install` ([`3158048`](https://github.com/candlecorp/wick/commit/3158048ad1d0c33518cb647d08f927606afcecd0))
  * **Uncategorized**
+    - Added changelog ([`3790520`](https://github.com/candlecorp/wick/commit/37905206a10ff16406b77ad296d467ebf76fc8fb))
     - Updated template to avoid footguns ([`0489b15`](https://github.com/candlecorp/wick/commit/0489b158b2441fb5971383a77e2f3fb5589bdd56))
     - Converted all level spans to info_spans ([`d64a355`](https://github.com/candlecorp/wick/commit/d64a3550825b67e0cc59e3c44e3eca42b24c9cab))
     - Converted all level spans to info_spans ([`3208691`](https://github.com/candlecorp/wick/commit/3208691ffb824e9f83d9845ae274c9b60bb8d4fa))
@@ -125,6 +134,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.15.0 (2023-04-18)
+
+<csr-id-7361b149ca108904341364426e1509105913f31f/>
+<csr-id-82fd51f5f813ea6887f40a0df031f33e13b0fd99/>
 
 ### Chore
 
@@ -159,6 +171,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.14.0 (2023-03-23)
 
+<csr-id-501d6056a5ff2d06290f88f73885c6c12afd77e9/>
+
 ### Chore
 
  - <csr-id-501d6056a5ff2d06290f88f73885c6c12afd77e9/> Release
@@ -182,6 +196,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.13.0 (2023-03-23)
+
+<csr-id-f229d8ee9dbb1c051d18b911bb4ef868b968ea14/>
+<csr-id-406c10999648ca923fc8994b5835d11c823c19ce/>
 
 ### Chore
 

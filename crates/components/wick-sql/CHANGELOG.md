@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.1.0 (2023-08-28)
 
+<csr-id-1b09917bf75ad3d954d4864bc3bf552137c3cd0f/>
+<csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/>
+<csr-id-316111ac52d22365d060f573a456975de33b9115/>
+
 ### Chore
 
  - <csr-id-1b09917bf75ad3d954d4864bc3bf552137c3cd0f/> updated rustfmt and fixed formatting errors
+
+### Documentation
+
+ - <csr-id-37905206a10ff16406b77ad296d467ebf76fc8fb/> added changelog
 
 ### New Features
 
@@ -41,8 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 19 commits contributed to the release over the course of 63 calendar days.
- - 18 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 20 commits contributed to the release over the course of 63 calendar days.
+ - 19 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#328](https://github.com/candlecorp/wick/issues/328), [#341](https://github.com/candlecorp/wick/issues/341), [#345](https://github.com/candlecorp/wick/issues/345)
 
 ### Commit Details
@@ -58,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#345](https://github.com/candlecorp/wick/issues/345)**
     - Added `exec`-style SQL operation ([`1162c1d`](https://github.com/candlecorp/wick/commit/1162c1d4bef87d585d76be7bb4b55811aa946796))
  * **Uncategorized**
+    - Added changelog ([`3790520`](https://github.com/candlecorp/wick/commit/37905206a10ff16406b77ad296d467ebf76fc8fb))
     - Support volume restrictions on file:// urls, in-mem SQLite DBs ([`4516bb7`](https://github.com/candlecorp/wick/commit/4516bb7034d4dbe0ffbe6625df32302d40e63570))
     - Made v0, v1, and normalized config conditional features ([`f28522f`](https://github.com/candlecorp/wick/commit/f28522fa663f121f5da90df9dd8461d85c6222ed))
     - Brought pg and sqlx type support in line with ms sql ([`a7ef87f`](https://github.com/candlecorp/wick/commit/a7ef87f3b06fc760a3ffe7d60da76fb343b529d2))
