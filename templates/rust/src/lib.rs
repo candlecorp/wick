@@ -3,26 +3,15 @@ mod wick {
 }
 use wick::*;
 
-#[async_trait::async_trait(?Send)]
-impl add::Operation for Component {
-  type Error = anyhow::Error;
-  type Outputs = add::Outputs;
-  type Config = add::Config;
-
-  async fn add(
-    mut left: WickStream<u64>,
-    mut right: WickStream<u64>,
-    mut outputs: Self::Outputs,
-    ctx: Context<Self::Config>,
-  ) -> Result<(), Self::Error> {
-    while let (Some(Ok(left)), Some(Ok(right))) = (left.next().await, right.next().await) {
-      outputs.output.send(&(left + right));
-    }
-    outputs.output.done();
-    Ok(())
-  }
+// Operations that follow common patterns can have their boilerplate generated
+// via the #[wick_component::operation] attribute like so:
+#[wick_component::operation(binary_interleaved_pairs)]
+fn add(left: i64, right: i64, _ctx: Context<add::Config>) -> Result<i64, anyhow::Error> {
+  Ok(left + right)
 }
 
+// Operations where you need more control over the incoming and outgoing streams
+// can be defined manually like so:
 #[async_trait::async_trait(?Send)]
 impl greet::Operation for Component {
   type Error = anyhow::Error;
@@ -30,11 +19,22 @@ impl greet::Operation for Component {
   type Config = greet::Config;
 
   async fn greet(
-    mut name: WickStream<String>,
+    mut name: WickStream<Packet>,
     mut outputs: Self::Outputs,
-    ctx: Context<Self::Config>,
+    _ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
-    while let (Some(Ok(name))) = (name.next().await) {
+    while let Some(name) = name.next().await {
+      let name = propagate_if_error!(name, outputs, continue);
+      // "Signals" are special packets that are used to indicate that a stream
+      // has ended, has opened a substream, or has closed a substream.
+      if name.is_signal() {
+        // This example propagates all signals to the output stream, resetting
+        // the port name to our output port.
+        outputs.output.send_packet(name.set_port("output"));
+        continue;
+      }
+      let name: String = name.decode()?;
+
       outputs.output.send(&format!("Hello, {}", name));
     }
     outputs.output.done();
