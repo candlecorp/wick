@@ -30,10 +30,7 @@ component:
           type: string
         - name: email
           type: string
-      query: INSERT INTO users(name, email) OUTPUT INSERTED.* VALUES ($1, $2)
-      arguments:
-        - name
-        - email
+      query: INSERT INTO users(name, email) OUTPUT INSERTED.* VALUES (${name}, ${email})
     - name: set_user_with_id
       inputs:
         - name: id
@@ -42,10 +39,7 @@ component:
           type: string
         - name: email
           type: string
-      query: INSERT INTO users(id, name, email) OUTPUT INSERTED.* VALUES ($1, $2, $3)
-      arguments:
-        - name
-        - email
+      query: INSERT INTO users(id, name, email) OUTPUT INSERTED.* VALUES (${id}, ${name}, ${email})
     - name: set_user_with_columns
       inputs:
         - name: input
@@ -53,3 +47,22 @@ component:
       query: INSERT INTO users(name, email) OUTPUT INSERTED.* VALUES ($1, $2)
       arguments:
         - input... # This special `spread` syntax expands the input array into individual positional arguments
+tests:
+  - with:
+      password: '{{ctx.env.TEST_PASSWORD}}'
+      host: '{{ctx.env.TEST_HOST}}'
+      port: '{{ctx.env.MSSQL_PORT}}'
+    cases:
+      - operation: set_user
+        inputs:
+          - name: name
+            value: TEST_NAME
+          - name: email
+            value: TEST_EMAIL@example.com
+        outputs:
+          - name: output
+            assertions:
+              - operator: Contains
+                value:
+                  email: TEST_EMAIL@example.com
+                  name: TEST_NAME

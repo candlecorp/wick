@@ -17,6 +17,11 @@ pub enum Error {
   #[error("Unknown database scheme '{0}'")]
   InvalidScheme(String),
 
+  #[error(
+    "To use in-memory SQLite databases, use the URL 'sqlite://memory'; to use a SQLite DB file, use a 'file://' URL"
+  )]
+  SqliteScheme,
+
   #[error("Failed to prepare arguments: {0}")]
   Prepare(String),
 

@@ -58,6 +58,10 @@ pub enum FailureKind {
   Address(String, String),
   /// A component is not allowed to access given url.
   Url(String, String),
+  /// A file:// URL could not be turned into a filepath.
+  FileUrlInvalid(url::Url),
+  /// A file:// URL does not point to a concrete file.
+  FileUrlNotFound(url::Url),
 }
 
 impl std::fmt::Display for FailureKind {
@@ -80,6 +84,8 @@ impl std::fmt::Display for FailureKind {
         FailureKind::Port(id, port) =>  write!(f, "component {} is not allowed to access {}", id, port),
         FailureKind::Address(id,address) =>  write!(f, "component {} is not allowed to access {}", id, address),
         FailureKind::Url(id, url) =>  write!(f, "component {} is not allowed to access {}", id, url),
+        FailureKind::FileUrlInvalid(url) =>  write!(f, "could not create a file path out of {}", url),
+        FailureKind::FileUrlNotFound(url) =>  write!(f, "file URL '{}' does not point to a valid file", url),
     }
   }
 }

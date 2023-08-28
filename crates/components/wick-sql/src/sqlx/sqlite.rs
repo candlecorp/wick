@@ -1,19 +1,19 @@
 mod serialize;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::{Sqlite, SqlitePool};
-use url::Url;
 use wick_config::config::components::SqlComponentConfig;
 
 pub(crate) use self::serialize::*;
 use crate::common::sql_wrapper::ConvertedType;
 use crate::Error;
 
-pub(crate) async fn connect(_config: &SqlComponentConfig, addr: &Url) -> Result<SqlitePool, Error> {
+pub(crate) async fn connect(_config: &SqlComponentConfig, addr: Option<&str>) -> Result<SqlitePool, Error> {
+  let addr = addr.unwrap_or(":memory:");
   debug!(%addr, "connecting to sqlite");
 
   let pool = SqlitePoolOptions::new()
     .max_connections(5)
-    .connect(addr.as_ref())
+    .connect(addr)
     .await
     .map_err(|e| Error::SqliteConnect(e.to_string()))?;
   Ok(pool)

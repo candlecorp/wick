@@ -138,7 +138,7 @@ mod integration_test {
 
   async fn connect() -> SqliteConnection {
     let db = std::env::var("SQLITE_DB").unwrap();
-    let conn_string = format!("sqlite://{}", db);
+    let conn_string = format!("file://{}", db);
 
     SqliteConnection::connect(&conn_string).await.unwrap()
   }

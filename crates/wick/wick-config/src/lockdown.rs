@@ -5,7 +5,7 @@ mod volume;
 
 pub use error::*;
 
-use crate::audit::{Audit, AuditedResource, AuditedResourceBinding};
+use crate::audit::{Audit, AuditedResource, AuditedResourceBinding, AuditedVolume};
 use crate::config::{ConfigOrDefinition, LockdownConfiguration, ResourceRestriction};
 
 pub(crate) fn validate_resource(
@@ -33,15 +33,40 @@ pub(crate) fn validate_resource(
         _ => None,
       }),
     ),
-    AuditedResource::Url(v) => self::url::validate(
-      component_id,
-      &resource.name,
-      v,
-      resource_restrictions.iter().filter_map(|r| match r {
-        ResourceRestriction::Url(v) => Some(v),
-        _ => None,
-      }),
-    ),
+    AuditedResource::Url(v) => {
+      if v.url.scheme() == "file" {
+        let Ok(path) = v.url.to_file_path() else {
+          return Err(LockdownError::new(vec![FailureKind::FileUrlInvalid(v.url.clone())]));
+        };
+        if !path.exists() {
+          return Err(LockdownError::new(vec![FailureKind::FileUrlNotFound(v.url.clone())]));
+        }
+        let dir = if path.is_file() {
+          path.parent().map(std::path::Path::to_path_buf).unwrap()
+        } else {
+          path
+        };
+        self::volume::validate(
+          component_id,
+          &resource.name,
+          &AuditedVolume { path: dir },
+          resource_restrictions.iter().filter_map(|r| match r {
+            ResourceRestriction::Volume(v) => Some(v),
+            _ => None,
+          }),
+        )
+      } else {
+        self::url::validate(
+          component_id,
+          &resource.name,
+          v,
+          resource_restrictions.iter().filter_map(|r| match r {
+            ResourceRestriction::Url(v) => Some(v),
+            _ => None,
+          }),
+        )
+      }
+    }
     AuditedResource::Volume(v) => self::volume::validate(
       component_id,
       &resource.name,
@@ -78,10 +103,12 @@ pub trait Lockdown {
 mod test {
   use std::path::PathBuf;
 
+  use ::url::Url;
   use anyhow::Result;
   use normpath::PathExt;
 
   use super::*;
+  use crate::audit::AuditedUrl;
   use crate::config::{
     components,
     AppConfigurationBuilder,
@@ -92,6 +119,7 @@ mod test {
     ImportDefinition,
     LockdownConfigurationBuilder,
     ResourceRestriction,
+    UrlRestriction,
     VolumeRestriction,
   };
   use crate::WickConfiguration;
@@ -122,6 +150,90 @@ mod test {
         .finish()?
         .try_component_config()?,
     )
+  }
+
+  fn pwdify(s: impl Into<String>) -> String {
+    s.into().replace("$CRATE", env!("CARGO_MANIFEST_DIR"))
+  }
+
+  fn path(path: impl Into<String>) -> PathBuf {
+    PathBuf::from(pwdify(path))
+  }
+
+  fn url(path: impl Into<String>) -> Url {
+    pwdify(path).parse().unwrap()
+  }
+
+  fn mktmpfile(file: impl Into<String>) -> String {
+    let file = std::env::temp_dir().join(file.into());
+    std::fs::write(&file, "test contents").unwrap();
+    file.to_string_lossy().to_string()
+  }
+
+  #[rstest::rstest]
+  #[case("$CRATE", "file:///$CRATE/DOES_NOT_EXIST")]
+  #[case("$CRATE", "file://$CRATE/DOES_NOT_EXIST")]
+  #[case("$CRATE", "file:///$CRATE/../../../README.md")]
+  #[case("$CRATE", "file://$CRATE/../../../README.md")]
+  #[case("$CRATE", "file:/$CRATE/../../../README.md")]
+  #[case("$CRATE", format!("file:///{}",mktmpfile("TEST.md")))]
+  fn test_file_url_volume_restriction_fails(
+    #[case] allowed_path: impl Into<String>,
+    #[case] resource_url: impl Into<String>,
+  ) -> Result<()> {
+    let allowed_path = path(allowed_path);
+    let resource_url = url(resource_url);
+    let file_url = AuditedResourceBinding {
+      name: "url".to_owned(),
+      resource: AuditedResource::Url(AuditedUrl { url: resource_url }),
+    };
+
+    // Allow all URLs for "test_component" but have a volume restriction that should fail.
+    let lockdown = new_lockdown_config(vec![
+      ResourceRestriction::Url(UrlRestriction::new_from_template(vec!["test_component".into()], "*")),
+      ResourceRestriction::Volume(VolumeRestriction::new_from_template(
+        vec!["test_component".into()],
+        allowed_path.to_string_lossy(),
+      )),
+    ]);
+
+    let result = validate_resource("test_component", &file_url, &lockdown);
+    if let Err(e) = result {
+      println!("{}", e);
+    } else {
+      panic!("Expected an error, got {:?}", result);
+    }
+
+    Ok(())
+  }
+
+  #[rstest::rstest]
+  #[case("$CRATE", "file:///$CRATE/README.md")]
+  #[case("$CRATE", "https://google.com")]
+  #[case("$CRATE", "postgres://pg:pg@127.0.0.1:5432")]
+  fn test_file_url_volume_restriction_passes(
+    #[case] allowed_path: impl Into<String>,
+    #[case] resource_url: impl Into<String>,
+  ) -> Result<()> {
+    let allowed_path = path(allowed_path);
+    let resource_url = url(resource_url);
+    let file_url = AuditedResourceBinding {
+      name: "url".to_owned(),
+      resource: AuditedResource::Url(AuditedUrl { url: resource_url }),
+    };
+
+    // Allow all URLs for "test_component" but have a volume restriction that should fail.
+    let lockdown = new_lockdown_config(vec![
+      ResourceRestriction::Url(UrlRestriction::new_from_template(vec!["test_component".into()], "*")),
+      ResourceRestriction::Volume(VolumeRestriction::new_from_template(
+        vec!["test_component".into()],
+        allowed_path.to_string_lossy(),
+      )),
+    ]);
+
+    validate_resource("test_component", &file_url, &lockdown)?;
+
+    Ok(())
   }
 
   #[test_logger::test(tokio::test)]

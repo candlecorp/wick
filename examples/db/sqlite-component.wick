@@ -4,17 +4,13 @@ resources:
   - name: DBADDR
     resource:
       kind: wick/resource/url@v1
-      url: postgres://postgres:{{ ctx.root_config.password }}@{{ ctx.root_config.host }}:{{ ctx.root_config.port }}/wick_test
+      url: file://{{ ctx.root_config.db_file }}
 component:
   kind: wick/component/sql@v1
   resource: DBADDR
   tls: false
   with:
-    - name: password
-      type: string
-    - name: host
-      type: string
-    - name: port
+    - name: db_file
       type: string
   operations:
     - name: get_user
@@ -38,9 +34,7 @@ component:
         - input... # This is special "spread" syntax that expands the input array into individual positional arguments
 tests:
   - with:
-      password: '{{ctx.env.TEST_PASSWORD}}'
-      host: '{{ctx.env.TEST_HOST}}'
-      port: '{{ctx.env.POSTGRES_PORT}}'
+      db_file: '{{ctx.env.SQLITE_DB}}'
     cases:
       - operation: set_user
         inputs:

@@ -1,0 +1,63 @@
+name: my_component
+kind: wick/component@v1
+resources:
+  - name: DBADDR
+    resource:
+      kind: wick/resource/url@v1
+      url: sqlite://memory
+component:
+  kind: wick/component/sql@v1
+  resource: DBADDR
+  tls: false
+  with:
+    - name: db_file
+      type: string
+  operations:
+    - name: init
+      inputs: []
+      exec: |
+        CREATE TABLE users (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT NOT NULL
+        );
+    - name: set_user
+      inputs:
+        - name: name
+          type: string
+        - name: email
+          type: string
+      query: INSERT INTO users(name, email) VALUES (${name}, ${email}) RETURNING *
+tests:
+  - with:
+      db_file: '{{ctx.env.SQLITE_DB}}'
+    cases:
+      - operation: init
+        inputs: []
+        outputs:
+          - name: output
+            value: 0
+      - operation: set_user
+        inputs:
+          - name: name
+            value: TEST_NAME
+          - name: email
+            value: TEST_EMAIL@example.com
+        outputs:
+          - name: output
+            value:
+              email: TEST_EMAIL@example.com
+              name: TEST_NAME
+              id: 1
+      - operation: set_user
+        inputs:
+          - name: name
+            value: TEST_NAME2
+          - name: email
+            value: TEST_EMAIL2@example.com
+        outputs:
+          - name: output
+            value:
+              email: TEST_EMAIL2@example.com
+              name: TEST_NAME2
+              id: 2

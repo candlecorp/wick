@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use std::collections::HashSet;
 
 use wildmatch::WildMatch;
@@ -15,6 +14,7 @@ pub(crate) fn validate<'a>(
   restrictions: impl Iterator<Item = &'a UrlRestriction>,
 ) -> Result<(), LockdownError> {
   let mut failures = HashSet::new();
+
   for restriction in restrictions {
     match is_allowed(component_id, resource_id, resource, restriction) {
       Ok(_) => return Ok(()),
