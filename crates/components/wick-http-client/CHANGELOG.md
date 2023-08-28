@@ -7,11 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.1.0 (2023-08-28)
 
+<csr-id-1b09917bf75ad3d954d4864bc3bf552137c3cd0f/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-599514816356f7fab3b2122156092166f7815427/>
+<csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/>
+<csr-id-be57f85e388c38265c33d457339c4dbf5f1ae65f/>
+<csr-id-316111ac52d22365d060f573a456975de33b9115/>
+<csr-id-b590d66e24d1e1dd582656b54b896586e9c8f4fb/>
+<csr-id-12a0f6de257cf4b5789474fef448c7828f315bb5/>
+<csr-id-ff8b81dc1be6ff70237aaea1bc501b623f7c14d1/>
+
 ### Chore
 
  - <csr-id-1b09917bf75ad3d954d4864bc3bf552137c3cd0f/> updated rustfmt and fixed formatting errors
  - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
  - <csr-id-599514816356f7fab3b2122156092166f7815427/> expanded tests to cover morme configuration cases
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### New Features
 
@@ -59,8 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 38 commits contributed to the release over the course of 123 calendar days.
- - 36 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 39 commits contributed to the release over the course of 123 calendar days.
+ - 37 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#232](https://github.com/candlecorp/wick/issues/232), [#319](https://github.com/candlecorp/wick/issues/319), [#328](https://github.com/candlecorp/wick/issues/328), [#341](https://github.com/candlecorp/wick/issues/341), [#347](https://github.com/candlecorp/wick/issues/347), [#399](https://github.com/candlecorp/wick/issues/399)
 
 ### Commit Details
@@ -82,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#399](https://github.com/candlecorp/wick/issues/399)**
     - Better http client substream support. ([`744f1ac`](https://github.com/candlecorp/wick/commit/744f1ac3d5fa8c28e8e0a1e80d7f5e49839c0c43))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Made v0, v1, and normalized config conditional features ([`f28522f`](https://github.com/candlecorp/wick/commit/f28522fa663f121f5da90df9dd8461d85c6222ed))
     - Support provides/requires relationship in composite components ([`8ceae1a`](https://github.com/candlecorp/wick/commit/8ceae1a2a357b34d10eafe9295d7b4b6ae8d4b4d))
     - Renamed XML codec to Text ([`be57f85`](https://github.com/candlecorp/wick/commit/be57f85e388c38265c33d457339c4dbf5f1ae65f))

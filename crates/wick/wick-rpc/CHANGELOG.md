@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.1.1 (2023-08-28)
 
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/>
+<csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-599514816356f7fab3b2122156092166f7815427/>
+<csr-id-e561fd668afb1e1af3639c472a893b7fcfe2bf54/>
+<csr-id-4b9d70f04dbc80eff5df9fa50b6a0d065f652af1/>
+<csr-id-12a0f6de257cf4b5789474fef448c7828f315bb5/>
+
 ### Chore
 
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
@@ -15,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
  - <csr-id-599514816356f7fab3b2122156092166f7815427/> expanded tests to cover morme configuration cases
  - <csr-id-e561fd668afb1e1af3639c472a893b7fcfe2bf54/> updated to rust 1.69.0, fixed associated warnings
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### Documentation
 
@@ -45,9 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 19 commits contributed to the release over the course of 126 calendar days.
+ - 20 commits contributed to the release over the course of 126 calendar days.
  - 131 days passed between releases.
- - 19 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 20 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#319](https://github.com/candlecorp/wick/issues/319)
 
 ### Commit Details
@@ -59,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#319](https://github.com/candlecorp/wick/issues/319)**
     - Propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates ([`7ab25d2`](https://github.com/candlecorp/wick/commit/7ab25d2fc1274fbf552b86f59774b1b24ea12b0f))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Explicitly defined all features ([`7968fb0`](https://github.com/candlecorp/wick/commit/7968fb0b6fe519732595ed1e3ed9cc429a45d0c4))
     - Updated include directives in Cargo.toml ([`4090c8f`](https://github.com/candlecorp/wick/commit/4090c8fa7fba8254570cc10024fd8a6b15c076ab))
     - Extracted generated proto code to a separate task and remove build script ([`4b9d70f`](https://github.com/candlecorp/wick/commit/4b9d70f04dbc80eff5df9fa50b6a0d065f652af1))
@@ -80,6 +94,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.1.0 (2023-04-18)
+
+<csr-id-82fd51f5f813ea6887f40a0df031f33e13b0fd99/>
+<csr-id-f7c7615186d900b8f509355b2012dec66c4ad76a/>
+<csr-id-c724b06b8cf7776ba48b5a799d9e04e074d1c99d/>
+<csr-id-fd3bedfb6b847ad5fe19d0838443cc308d75ab2b/>
+<csr-id-406c10999648ca923fc8994b5835d11c823c19ce/>
+<csr-id-c27131154861be5625b82e1e7d99d8228df1fa39/>
+<csr-id-ce7bc3a3ff467aa8834301697daca0398c61222c/>
+<csr-id-ce40e430c0aae30ef85a710f5476d32a87d4dec4/>
 
 ### Chore
 

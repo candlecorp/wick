@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.14.0 (2023-08-28)
 
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/>
+<csr-id-fd1b6d4cdc66e769d304d9168bb5575a6c5f930c/>
+<csr-id-1b09917bf75ad3d954d4864bc3bf552137c3cd0f/>
+<csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-599514816356f7fab3b2122156092166f7815427/>
+<csr-id-e561fd668afb1e1af3639c472a893b7fcfe2bf54/>
+<csr-id-1c225e86ddc243751daf3b4c7d6404f16438919e/>
+<csr-id-82fd51f5f813ea6887f40a0df031f33e13b0fd99/>
+<csr-id-7c4d1b26b7f07491c10d3c992b3142c899b15731/>
+<csr-id-45c7b192ab740c7b1c0f60466e73e3f6cb9d21be/>
+<csr-id-f7c7615186d900b8f509355b2012dec66c4ad76a/>
+<csr-id-c724b06b8cf7776ba48b5a799d9e04e074d1c99d/>
+<csr-id-fd3bedfb6b847ad5fe19d0838443cc308d75ab2b/>
+<csr-id-406c10999648ca923fc8994b5835d11c823c19ce/>
+<csr-id-3a42e6388e3561103412ca3e47db8b5feb5ef3a9/>
+<csr-id-3158048ad1d0c33518cb647d08f927606afcecd0/>
+<csr-id-3ce4d0fa1bb3decfbbc953b8dcab18cd5c6c5601/>
+<csr-id-141e17e389e92155ddc11e81f1bf374a2dd9d6f7/>
+<csr-id-3618a7ae8ac5006eb18fe543e791783120b9cae3/>
+<csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/>
+<csr-id-cf597555a592d7d05b4541395d81e0eed5e35a10/>
+<csr-id-f76ecf1e1bc9ae4ec04c3df66b7fa15d0d2e3498/>
+<csr-id-37030caa9d8930774f6cac2f0b921d6f7d793941/>
+<csr-id-a1b6b196a2b39ab10c126cf442115868a08b0fbf/>
+<csr-id-586ace0978ca8adf58bf4d1fa5ed392015297c21/>
+<csr-id-a988276c7fb02c4be6bd90a5762c76f788086364/>
+<csr-id-316111ac52d22365d060f573a456975de33b9115/>
+<csr-id-888814bb24d3d4dd4b460af2616a72814f2bd7a1/>
+<csr-id-12a0f6de257cf4b5789474fef448c7828f315bb5/>
+<csr-id-ce7bc3a3ff467aa8834301697daca0398c61222c/>
+<csr-id-7e2538202a03999c2b5781d7658b72118dce9446/>
+<csr-id-fd71df4baaa3f856454624396eff9d9ee8c4473f/>
+<csr-id-11241c08c10e8fddb691a7130468c5974cda91f9/>
+<csr-id-5172449837c489f0231d4979ca4a5bb48f412aa2/>
+<csr-id-ce40e430c0aae30ef85a710f5476d32a87d4dec4/>
+<csr-id-3802bf93746725527d5dfa80f3c65d3314d4122c/>
+
 ### Chore
 
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
@@ -26,6 +65,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-fd3bedfb6b847ad5fe19d0838443cc308d75ab2b/> cleaned up comments, errors, et al
  - <csr-id-406c10999648ca923fc8994b5835d11c823c19ce/> more renaming fixes + better error messages
  - <csr-id-3a42e6388e3561103412ca3e47db8b5feb5ef3a9/> renamed existing wafl references
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### Documentation
 
@@ -153,8 +196,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 129 commits contributed to the release over the course of 170 calendar days.
- - 112 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 130 commits contributed to the release over the course of 170 calendar days.
+ - 113 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 12 unique issues were worked on: [#144](https://github.com/candlecorp/wick/issues/144), [#154](https://github.com/candlecorp/wick/issues/154), [#171](https://github.com/candlecorp/wick/issues/171), [#194](https://github.com/candlecorp/wick/issues/194), [#319](https://github.com/candlecorp/wick/issues/319), [#328](https://github.com/candlecorp/wick/issues/328), [#341](https://github.com/candlecorp/wick/issues/341), [#345](https://github.com/candlecorp/wick/issues/345), [#388](https://github.com/candlecorp/wick/issues/388), [#396](https://github.com/candlecorp/wick/issues/396), [#399](https://github.com/candlecorp/wick/issues/399), [#405](https://github.com/candlecorp/wick/issues/405)
 
 ### Commit Details
@@ -188,6 +231,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#405](https://github.com/candlecorp/wick/issues/405)**
     - Fixed "refusing to overwrite ..." errors on application runs. ([`a10242d`](https://github.com/candlecorp/wick/commit/a10242d4786cfa199eaf61289b9da99d09c114a7))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - 0.14.0 release ([`159876e`](https://github.com/candlecorp/wick/commit/159876e237175595e4eb317aa8d4c702b006f5c0))
     - Made v0, v1, and normalized config conditional features ([`f28522f`](https://github.com/candlecorp/wick/commit/f28522fa663f121f5da90df9dd8461d85c6222ed))
     - Made test revolve around a more static file ([`96ca156`](https://github.com/candlecorp/wick/commit/96ca1565d2966456f8b630fcca5333bb19085428))

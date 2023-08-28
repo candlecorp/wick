@@ -7,11 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.1.1 (2023-08-28)
 
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/>
+<csr-id-33527b199a5057e0bf9d51c6e5a4068b9a8dc830/>
+<csr-id-12a0f6de257cf4b5789474fef448c7828f315bb5/>
+<csr-id-5172449837c489f0231d4979ca4a5bb48f412aa2/>
+
 ### Chore
 
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
  - <csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/> updated include directives in Cargo.toml
  - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### Documentation
 
@@ -55,9 +67,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 26 commits contributed to the release over the course of 126 calendar days.
+ - 27 commits contributed to the release over the course of 126 calendar days.
  - 131 days passed between releases.
- - 26 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 27 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#319](https://github.com/candlecorp/wick/issues/319), [#341](https://github.com/candlecorp/wick/issues/341)
 
 ### Commit Details
@@ -71,6 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#341](https://github.com/candlecorp/wick/issues/341)**
     - Added ctx.inherent.timestamp, improved error message output ([`efe6055`](https://github.com/candlecorp/wick/commit/efe605510b846d2556f6060ba710fa154bdca7c4))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Made v0, v1, and normalized config conditional features ([`f28522f`](https://github.com/candlecorp/wick/commit/f28522fa663f121f5da90df9dd8461d85c6222ed))
     - Added lessthan, greaterthan, equals, and regex assertions ([`f52600c`](https://github.com/candlecorp/wick/commit/f52600c28f377b06b723e651daa8a4b8d7268d8a))
     - Added packet assertions to wick test cases ([`72a2fb3`](https://github.com/candlecorp/wick/commit/72a2fb3af224ff0b674c8e75a8c6e94070c181a7))
@@ -98,6 +111,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.1.0 (2023-04-19)
+
+<csr-id-1279be06f6cf8bc91641be7ab48d7941819c98fe/>
+<csr-id-82fd51f5f813ea6887f40a0df031f33e13b0fd99/>
+<csr-id-45c7b192ab740c7b1c0f60466e73e3f6cb9d21be/>
+<csr-id-f7c7615186d900b8f509355b2012dec66c4ad76a/>
+<csr-id-406c10999648ca923fc8994b5835d11c823c19ce/>
+<csr-id-fd71df4baaa3f856454624396eff9d9ee8c4473f/>
+<csr-id-890b9dd879e9d18c8e989989a01e73eb5a987b2f/>
+<csr-id-ce40e430c0aae30ef85a710f5476d32a87d4dec4/>
 
 ### Chore
 

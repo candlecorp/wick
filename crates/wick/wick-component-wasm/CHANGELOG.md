@@ -7,11 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.1 (2023-08-28)
 
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-599514816356f7fab3b2122156092166f7815427/>
+<csr-id-e561fd668afb1e1af3639c472a893b7fcfe2bf54/>
+<csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/>
+<csr-id-586ace0978ca8adf58bf4d1fa5ed392015297c21/>
+<csr-id-806afef0cbc45977d782e8a1b6d79ef6ca8c397d/>
+<csr-id-12a0f6de257cf4b5789474fef448c7828f315bb5/>
+
 ### Chore
 
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
  - <csr-id-599514816356f7fab3b2122156092166f7815427/> expanded tests to cover morme configuration cases
  - <csr-id-e561fd668afb1e1af3639c472a893b7fcfe2bf54/> updated to rust 1.69.0, fixed associated warnings
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### New Features
 
@@ -50,9 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 28 commits contributed to the release over the course of 115 calendar days.
+ - 29 commits contributed to the release over the course of 115 calendar days.
  - 131 days passed between releases.
- - 27 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 28 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#319](https://github.com/candlecorp/wick/issues/319), [#375](https://github.com/candlecorp/wick/issues/375)
 
 ### Commit Details
@@ -66,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#375](https://github.com/candlecorp/wick/issues/375)**
     - Fixed rustdoc, cleaned up buildability of individual crates ([`c3aae56`](https://github.com/candlecorp/wick/commit/c3aae5603084135101a302981dc6e72c9a257e8d))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Made v0, v1, and normalized config conditional features ([`f28522f`](https://github.com/candlecorp/wick/commit/f28522fa663f121f5da90df9dd8461d85c6222ed))
     - Made buffer_size configurable ([`70f0fd0`](https://github.com/candlecorp/wick/commit/70f0fd07ac70ae4fd1bb1734b306266f14f3af3c))
     - Converted all level spans to info_spans ([`3208691`](https://github.com/candlecorp/wick/commit/3208691ffb824e9f83d9845ae274c9b60bb8d4fa))
@@ -95,6 +108,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.2.0 (2023-04-19)
+
+<csr-id-1279be06f6cf8bc91641be7ab48d7941819c98fe/>
+<csr-id-82fd51f5f813ea6887f40a0df031f33e13b0fd99/>
+<csr-id-45c7b192ab740c7b1c0f60466e73e3f6cb9d21be/>
+<csr-id-f7c7615186d900b8f509355b2012dec66c4ad76a/>
+<csr-id-ce7bc3a3ff467aa8834301697daca0398c61222c/>
+<csr-id-7e2538202a03999c2b5781d7658b72118dce9446/>
+<csr-id-fd71df4baaa3f856454624396eff9d9ee8c4473f/>
+<csr-id-ce40e430c0aae30ef85a710f5476d32a87d4dec4/>
 
 ### Chore
 

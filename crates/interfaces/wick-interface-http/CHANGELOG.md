@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.3.0 (2023-08-28)
 
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+
 ### Chore
 
  - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### Documentation
 
@@ -38,9 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 12 commits contributed to the release over the course of 126 calendar days.
+ - 13 commits contributed to the release over the course of 126 calendar days.
  - 131 days passed between releases.
- - 12 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 13 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -50,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Added xml codec for wick-http-component ([`dd57e50`](https://github.com/candlecorp/wick/commit/dd57e5062f3cf5d01e163ad104e56f7debc50aa4))
     - Changed pre-request middleware to one output union vs a request/response race ([`34e1484`](https://github.com/candlecorp/wick/commit/34e1484443de014ebe010063640f937e528df10a))
     - Fixed included cached assets on wick reg push ([`4577461`](https://github.com/candlecorp/wick/commit/4577461e0a767ec99ae6482c2e2efeb3069ca0c8))
@@ -65,6 +72,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.2.0 (2023-04-19)
+
+<csr-id-1279be06f6cf8bc91641be7ab48d7941819c98fe/>
+<csr-id-f7c7615186d900b8f509355b2012dec66c4ad76a/>
+<csr-id-fd3bedfb6b847ad5fe19d0838443cc308d75ab2b/>
+<csr-id-406c10999648ca923fc8994b5835d11c823c19ce/>
+<csr-id-fd71df4baaa3f856454624396eff9d9ee8c4473f/>
 
 ### Chore
 

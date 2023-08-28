@@ -7,10 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.5.1 (2023-08-28)
 
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-ab7d5355945adb592c4e00ccdc8b268e146e6535/>
+<csr-id-3158048ad1d0c33518cb647d08f927606afcecd0/>
+<csr-id-39f6a7d7d8a2079a5961eb2c550cd6e02d77e19f/>
+
 ### Chore
 
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
  - <csr-id-ab7d5355945adb592c4e00ccdc8b268e146e6535/> fixed warnings
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### Documentation
 
@@ -57,9 +66,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 19 commits contributed to the release over the course of 130 calendar days.
+ - 20 commits contributed to the release over the course of 130 calendar days.
  - 131 days passed between releases.
- - 19 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 20 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#232](https://github.com/candlecorp/wick/issues/232), [#319](https://github.com/candlecorp/wick/issues/319), [#388](https://github.com/candlecorp/wick/issues/388)
 
 ### Commit Details
@@ -75,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#388](https://github.com/candlecorp/wick/issues/388)**
     - Added `wick install` ([`3158048`](https://github.com/candlecorp/wick/commit/3158048ad1d0c33518cb647d08f927606afcecd0))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Explicitly defined all features ([`7968fb0`](https://github.com/candlecorp/wick/commit/7968fb0b6fe519732595ed1e3ed9cc429a45d0c4))
     - Added `wick config expand` ([`33ea9cd`](https://github.com/candlecorp/wick/commit/33ea9cd5fff9a85398e7fc15661cb9401a085c18))
     - Added wick config dotviz, made interpreter tolerant of unused ports ([`e5ed323`](https://github.com/candlecorp/wick/commit/e5ed32378e0fd61c8bb1560027d252c0c93059a1))
@@ -94,6 +104,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.5.0 (2023-04-18)
+
+<csr-id-7361b149ca108904341364426e1509105913f31f/>
+<csr-id-45c7b192ab740c7b1c0f60466e73e3f6cb9d21be/>
 
 ### Chore
 
@@ -123,6 +136,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.4.0 (2023-03-23)
 
+<csr-id-501d6056a5ff2d06290f88f73885c6c12afd77e9/>
+
 ### Chore
 
  - <csr-id-501d6056a5ff2d06290f88f73885c6c12afd77e9/> Release
@@ -146,6 +161,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.3.0 (2023-03-23)
+
+<csr-id-f229d8ee9dbb1c051d18b911bb4ef868b968ea14/>
+<csr-id-c7b84daacad21d9ba2c44123a6b0695db3b43528/>
 
 ### Chore
 

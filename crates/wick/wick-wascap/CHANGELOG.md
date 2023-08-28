@@ -7,12 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.1.1 (2023-08-28)
 
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/>
+<csr-id-4f3c0a02502098e8252613dbe3f8ee002da8382b/>
+<csr-id-a0d92a6462f139a598be39decd633ceb7a956113/>
+
 ### Chore
 
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
  - <csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/> updated include directives in Cargo.toml
  - <csr-id-4f3c0a02502098e8252613dbe3f8ee002da8382b/> updated dependencies
  - <csr-id-a0d92a6462f139a598be39decd633ceb7a956113/> disabled some default features on wasmtime
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### New Features
 
@@ -23,9 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release over the course of 47 calendar days.
+ - 8 commits contributed to the release over the course of 47 calendar days.
  - 131 days passed between releases.
- - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#375](https://github.com/candlecorp/wick/issues/375)
 
 ### Commit Details
@@ -37,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#375](https://github.com/candlecorp/wick/issues/375)**
     - Fixed rustdoc, cleaned up buildability of individual crates ([`c3aae56`](https://github.com/candlecorp/wick/commit/c3aae5603084135101a302981dc6e72c9a257e8d))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Explicitly defined all features ([`7968fb0`](https://github.com/candlecorp/wick/commit/7968fb0b6fe519732595ed1e3ed9cc429a45d0c4))
     - Updated include directives in Cargo.toml ([`4090c8f`](https://github.com/candlecorp/wick/commit/4090c8fa7fba8254570cc10024fd8a6b15c076ab))
     - Updated dependencies ([`4f3c0a0`](https://github.com/candlecorp/wick/commit/4f3c0a02502098e8252613dbe3f8ee002da8382b))
@@ -46,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.1.0 (2023-04-19)
+
+<csr-id-f7c7615186d900b8f509355b2012dec66c4ad76a/>
 
 ### Chore
 

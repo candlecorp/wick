@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.1.1 (2023-08-28)
 
+<csr-id-1b09917bf75ad3d954d4864bc3bf552137c3cd0f/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-12a0f6de257cf4b5789474fef448c7828f315bb5/>
+
 ### Chore
 
  - <csr-id-1b09917bf75ad3d954d4864bc3bf552137c3cd0f/> updated rustfmt and fixed formatting errors
  - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### New Features
 
@@ -34,9 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 12 commits contributed to the release over the course of 115 calendar days.
+ - 13 commits contributed to the release over the course of 115 calendar days.
  - 131 days passed between releases.
- - 11 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 12 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#319](https://github.com/candlecorp/wick/issues/319), [#375](https://github.com/candlecorp/wick/issues/375)
 
 ### Commit Details
@@ -50,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#375](https://github.com/candlecorp/wick/issues/375)**
     - Fixed rustdoc, cleaned up buildability of individual crates ([`c3aae56`](https://github.com/candlecorp/wick/commit/c3aae5603084135101a302981dc6e72c9a257e8d))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Fixed check in tests that resulted in duplicate DONE packets being sent ([`978690e`](https://github.com/candlecorp/wick/commit/978690e2d05b2cae05991d273876a28f845abbb5))
     - Updated rustfmt and fixed formatting errors ([`1b09917`](https://github.com/candlecorp/wick/commit/1b09917bf75ad3d954d4864bc3bf552137c3cd0f))
     - Added configurable timeout per-operation ([`d0d58be`](https://github.com/candlecorp/wick/commit/d0d58bed91a911c19a8fcd54d2ec5f9a6fd1d74d))
@@ -63,6 +72,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.1.0 (2023-04-19)
+
+<csr-id-82fd51f5f813ea6887f40a0df031f33e13b0fd99/>
+<csr-id-45c7b192ab740c7b1c0f60466e73e3f6cb9d21be/>
+<csr-id-f7c7615186d900b8f509355b2012dec66c4ad76a/>
+<csr-id-fd3bedfb6b847ad5fe19d0838443cc308d75ab2b/>
+<csr-id-ce7bc3a3ff467aa8834301697daca0398c61222c/>
+<csr-id-ce40e430c0aae30ef85a710f5476d32a87d4dec4/>
+<csr-id-c7b84daacad21d9ba2c44123a6b0695db3b43528/>
 
 ### Chore
 

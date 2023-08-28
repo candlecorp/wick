@@ -7,10 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.3.1 (2023-08-28)
 
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-3158048ad1d0c33518cb647d08f927606afcecd0/>
+<csr-id-586ace0978ca8adf58bf4d1fa5ed392015297c21/>
+<csr-id-732db25382951c1cb5c245af35dd3fcbf2677a71/>
+
 ### Chore
 
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
  - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### New Features
 
@@ -58,9 +68,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 24 commits contributed to the release over the course of 126 calendar days.
+ - 25 commits contributed to the release over the course of 126 calendar days.
  - 131 days passed between releases.
- - 23 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 24 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#319](https://github.com/candlecorp/wick/issues/319), [#388](https://github.com/candlecorp/wick/issues/388), [#405](https://github.com/candlecorp/wick/issues/405)
 
 ### Commit Details
@@ -76,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#405](https://github.com/candlecorp/wick/issues/405)**
     - Fixed "refusing to overwrite ..." errors on application runs. ([`a10242d`](https://github.com/candlecorp/wick/commit/a10242d4786cfa199eaf61289b9da99d09c114a7))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Implemented config cache ([`7b60a70`](https://github.com/candlecorp/wick/commit/7b60a70188be0c9be39138accee9329a810fc1e5))
     - Explicitly defined all features ([`7968fb0`](https://github.com/candlecorp/wick/commit/7968fb0b6fe519732595ed1e3ed9cc429a45d0c4))
     - Added sqlite support, added inline ids for queries, normalized ms sql $1->@p1 syntax ([`b0b9cd2`](https://github.com/candlecorp/wick/commit/b0b9cd20f748ffe1956ad2501fe23991fededf13))
@@ -100,6 +111,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.3.0 (2023-04-18)
+
+<csr-id-7361b149ca108904341364426e1509105913f31f/>
+<csr-id-45c7b192ab740c7b1c0f60466e73e3f6cb9d21be/>
+<csr-id-fd3bedfb6b847ad5fe19d0838443cc308d75ab2b/>
+<csr-id-7e2538202a03999c2b5781d7658b72118dce9446/>
+<csr-id-3802bf93746725527d5dfa80f3c65d3314d4122c/>
 
 ### Chore
 

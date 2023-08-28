@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.23.0 (2023-08-28)
 
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/>
+<csr-id-6cbc8b53e1f68fa5336220261fc80f0256601133/>
+<csr-id-a0d92a6462f139a598be39decd633ceb7a956113/>
+<csr-id-1b09917bf75ad3d954d4864bc3bf552137c3cd0f/>
+<csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-599514816356f7fab3b2122156092166f7815427/>
+<csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/>
+<csr-id-cf597555a592d7d05b4541395d81e0eed5e35a10/>
+<csr-id-37030caa9d8930774f6cac2f0b921d6f7d793941/>
+<csr-id-6aecefa7d7fe4e806b239cf9cadb914837c10dbe/>
+<csr-id-586ace0978ca8adf58bf4d1fa5ed392015297c21/>
+<csr-id-316111ac52d22365d060f573a456975de33b9115/>
+<csr-id-f5c8df4f1ec673b8e8811c8d03e0ad68e85fabd7/>
+<csr-id-888814bb24d3d4dd4b460af2616a72814f2bd7a1/>
+<csr-id-12a0f6de257cf4b5789474fef448c7828f315bb5/>
+<csr-id-6974470aa8a5fa58a0a4de07811a5da9bec6c1cc/>
+
 ### Chore
 
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
@@ -18,11 +37,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
  - <csr-id-599514816356f7fab3b2122156092166f7815427/> expanded tests to cover morme configuration cases
 
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
+
 ### Documentation
 
  - <csr-id-10672c5db34d10e50869b2c14977f9235761cabd/> updated config codegen, refactored config for clarity, fixed template
 
 ### New Features
+
+<csr-id-63858e1bc6673b61d50fa8f66dc4378369850910/>
+<csr-id-ba2015ddf2d24324c311fa681a39c4a65ac886bc/>
+<csr-id-58045d0fe75f519b84ebd45f3b1493e55fd4b282/>
+<csr-id-56959c74e0fa96870d6fdd4197a30606041a0f8a/>
+<csr-id-f575c65c9579db77ae053c37ae2eff02716136ab/>
+<csr-id-1d37fb5a9aebec3653425ddc102c2f2d4f5fcd71/>
+<csr-id-49a53de6cb6631e2dc1f1e633d1c29d0510383cb/>
+<csr-id-27c1fba1d6af314e3b5f317178426331acc4b071/>
+<csr-id-88dbedb624e1e381f253fb6b56d9af81ceeb00c8/>
+<csr-id-3dd4cdb6ff02a5ccdeb32d28522a8a0fe24e3d08/>
+<csr-id-302612d5322fcc211b1ab7a05969c6de4bca7d7e/>
+<csr-id-0f05d770d08d86fc256154739b62ff089e26b503/>
+<csr-id-027392a9514ba4846e068b21476e980ea53bee1d/>
+<csr-id-399c5d518b0a291dba63fb3f69337af2911d1776/>
+<csr-id-dbbd787131fd959c8cf5c8130ca03da6a63221e7/>
+<csr-id-17c9058b98935fa8ed29dbc27b899c9e3244eb67/>
+<csr-id-cbd6515303db5bb5fb9383116f0ee69a90e4c537/>
+<csr-id-16940c8908ef9a463c227d8e8fdd5c1ad6bfc379/>
+<csr-id-4c86477ce3176b546e06dc0e9db969921babe3d6/>
 
  - <csr-id-bff97fe93ab537c2549893a33c8faa147dad0842/> added deep invocation, refactored runtime/engine names
  - <csr-id-ddf1008983c1f4a880a42ac4c29c0f60bc619cf3/> added wick audit & lockdown config
@@ -58,33 +101,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-85abe5adc703a9190b82dd78f58acdfe9920e3fe/> added better packet output in debugging mode
  - <csr-id-103c9d8e67fff895d02c10597faedfe8b72d1eab/> added fallback option for static http
    * feat: added fallback option for static http
-   
-   * fix: fix clippy error
-   
-   * refactor: cleaned up code for style
-   
-   * fix: corrected documentation
-   
-   * fix: remove async from response function
- - <csr-id-63858e1bc6673b61d50fa8f66dc4378369850910/> added settings file, wick reg login, & wick reg push --latest
- - <csr-id-ba2015ddf2d24324c311fa681a39c4a65ac886bc/> added azure-sql support
- - <csr-id-58045d0fe75f519b84ebd45f3b1493e55fd4b282/> added restapi router
- - <csr-id-56959c74e0fa96870d6fdd4197a30606041a0f8a/> normalized accessor api for wick-config
- - <csr-id-f575c65c9579db77ae053c37ae2eff02716136ab/> added http trigger logging
- - <csr-id-1d37fb5a9aebec3653425ddc102c2f2d4f5fcd71/> added codec to HTTP server, added runtime constraints, ability to explicitly drop packets
- - <csr-id-49a53de6cb6631e2dc1f1e633d1c29d0510383cb/> added proper type defs into config, closes #200. Fixed #228, #227
- - <csr-id-27c1fba1d6af314e3b5f317178426331acc4b071/> added context for wasm components
- - <csr-id-88dbedb624e1e381f253fb6b56d9af81ceeb00c8/> added operation context
- - <csr-id-3dd4cdb6ff02a5ccdeb32d28522a8a0fe24e3d08/> added asset flags, fixed relative volumes, fixed manifest locations
- - <csr-id-302612d5322fcc211b1ab7a05969c6de4bca7d7e/> added switch/case operation
- - <csr-id-0f05d770d08d86fc256154739b62ff089e26b503/> added sub-flow operatiions
- - <csr-id-027392a9514ba4846e068b21476e980ea53bee1d/> added pluck & merge
- - <csr-id-399c5d518b0a291dba63fb3f69337af2911d1776/> add Base64Bytes to wick-packet
- - <csr-id-dbbd787131fd959c8cf5c8130ca03da6a63221e7/> added http client component
- - <csr-id-17c9058b98935fa8ed29dbc27b899c9e3244eb67/> added type imports
- - <csr-id-cbd6515303db5bb5fb9383116f0ee69a90e4c537/> added reverse proxy router
- - <csr-id-16940c8908ef9a463c227d8e8fdd5c1ad6bfc379/> added static router
- - <csr-id-4c86477ce3176b546e06dc0e9db969921babe3d6/> added URL resource, migrated sql component to it
+* fix: fix clippy error
+* refactor: cleaned up code for style
+* fix: corrected documentation
+* fix: remove async from response function
 
 ### Bug Fixes
 
@@ -143,9 +163,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 103 commits contributed to the release over the course of 130 calendar days.
+ - 104 commits contributed to the release over the course of 130 calendar days.
  - 131 days passed between releases.
- - 102 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 103 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#232](https://github.com/candlecorp/wick/issues/232), [#254](https://github.com/candlecorp/wick/issues/254), [#319](https://github.com/candlecorp/wick/issues/319), [#328](https://github.com/candlecorp/wick/issues/328), [#405](https://github.com/candlecorp/wick/issues/405), [#416](https://github.com/candlecorp/wick/issues/416)
 
 ### Commit Details
@@ -167,6 +187,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#416](https://github.com/candlecorp/wick/issues/416)**
     - Made cron span less verbose ([`83e49dc`](https://github.com/candlecorp/wick/commit/83e49dcf595a23bf120d62a770c982e81e0b0e99))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Made v0, v1, and normalized config conditional features ([`f28522f`](https://github.com/candlecorp/wick/commit/f28522fa663f121f5da90df9dd8461d85c6222ed))
     - Made time trigger test more reliable ([`6974470`](https://github.com/candlecorp/wick/commit/6974470aa8a5fa58a0a4de07811a5da9bec6c1cc))
     - Added deep invocation, refactored runtime/engine names ([`bff97fe`](https://github.com/candlecorp/wick/commit/bff97fe93ab537c2549893a33c8faa147dad0842))
@@ -266,7 +287,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added URL resource, migrated sql component to it ([`4c86477`](https://github.com/candlecorp/wick/commit/4c86477ce3176b546e06dc0e9db969921babe3d6))
 </details>
 
+<csr-unknown>
+ added settings file, wick reg login, & wick reg push –latest added azure-sql support added restapi router normalized accessor api for wick-config added http trigger logging added codec to HTTP server, added runtime constraints, ability to explicitly drop packets added proper type defs into config, closes #200. Fixed #228, #227 added context for wasm components added operation context added asset flags, fixed relative volumes, fixed manifest locations added switch/case operation added sub-flow operatiions added pluck & merge add Base64Bytes to wick-packet added http client component added type imports added reverse proxy router added static router added URL resource, migrated sql component to it<csr-unknown/>
+
 ## v0.22.0 (2023-04-19)
+
+<csr-id-1279be06f6cf8bc91641be7ab48d7941819c98fe/>
+<csr-id-82fd51f5f813ea6887f40a0df031f33e13b0fd99/>
+<csr-id-45c7b192ab740c7b1c0f60466e73e3f6cb9d21be/>
+<csr-id-f7c7615186d900b8f509355b2012dec66c4ad76a/>
+<csr-id-406c10999648ca923fc8994b5835d11c823c19ce/>
+<csr-id-88c97a7ddca56ace4e7aeacbc2dcc4d47a0b11d0/>
+<csr-id-3a42e6388e3561103412ca3e47db8b5feb5ef3a9/>
+<csr-id-ce7bc3a3ff467aa8834301697daca0398c61222c/>
+<csr-id-42ade875f501b69b80a09ff86a1be33ddee14ec3/>
+<csr-id-7e2538202a03999c2b5781d7658b72118dce9446/>
+<csr-id-fd71df4baaa3f856454624396eff9d9ee8c4473f/>
+<csr-id-890b9dd879e9d18c8e989989a01e73eb5a987b2f/>
+<csr-id-ce40e430c0aae30ef85a710f5476d32a87d4dec4/>
+<csr-id-3802bf93746725527d5dfa80f3c65d3314d4122c/>
+<csr-id-c7b84daacad21d9ba2c44123a6b0695db3b43528/>
 
 ### Chore
 

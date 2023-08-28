@@ -7,10 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.21.1 (2023-08-28)
 
+<csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/>
+<csr-id-3580951b5faa8ef279291e5a6f994d1c9e0785d6/>
+
 ### Chore
 
  - <csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/> updated include directives in Cargo.toml
  - <csr-id-3580951b5faa8ef279291e5a6f994d1c9e0785d6/> cleaned up legacy naming
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### New Features
 
@@ -34,9 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 14 commits contributed to the release over the course of 130 calendar days.
+ - 15 commits contributed to the release over the course of 130 calendar days.
  - 131 days passed between releases.
- - 14 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 15 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#232](https://github.com/candlecorp/wick/issues/232), [#319](https://github.com/candlecorp/wick/issues/319)
 
 ### Commit Details
@@ -50,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#319](https://github.com/candlecorp/wick/issues/319)**
     - Propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates ([`7ab25d2`](https://github.com/candlecorp/wick/commit/7ab25d2fc1274fbf552b86f59774b1b24ea12b0f))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Updated include directives in Cargo.toml ([`4090c8f`](https://github.com/candlecorp/wick/commit/4090c8fa7fba8254570cc10024fd8a6b15c076ab))
     - Added flow sequences, enhanced port inference ([`2a5cf0c`](https://github.com/candlecorp/wick/commit/2a5cf0c1adcd6aacd083967da9e8e7c6c46a9695))
     - Cleaned up legacy naming ([`3580951`](https://github.com/candlecorp/wick/commit/3580951b5faa8ef279291e5a6f994d1c9e0785d6))
@@ -65,6 +73,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.21.0 (2023-04-18)
+
+<csr-id-7361b149ca108904341364426e1509105913f31f/>
+<csr-id-45c7b192ab740c7b1c0f60466e73e3f6cb9d21be/>
+<csr-id-f7c7615186d900b8f509355b2012dec66c4ad76a/>
+<csr-id-406c10999648ca923fc8994b5835d11c823c19ce/>
+<csr-id-3a42e6388e3561103412ca3e47db8b5feb5ef3a9/>
+<csr-id-fd71df4baaa3f856454624396eff9d9ee8c4473f/>
+<csr-id-c7b84daacad21d9ba2c44123a6b0695db3b43528/>
 
 ### Chore
 

@@ -7,10 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.1 (2023-08-28)
 
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/>
+<csr-id-f76ecf1e1bc9ae4ec04c3df66b7fa15d0d2e3498/>
+<csr-id-37030caa9d8930774f6cac2f0b921d6f7d793941/>
+
 ### Chore
 
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
  - <csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/> removed unused deps, consolidated versions at root workspace
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### Documentation
 
@@ -46,9 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 20 commits contributed to the release over the course of 115 calendar days.
+ - 21 commits contributed to the release over the course of 115 calendar days.
  - 131 days passed between releases.
- - 20 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 21 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#319](https://github.com/candlecorp/wick/issues/319)
 
 ### Commit Details
@@ -60,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#319](https://github.com/candlecorp/wick/issues/319)**
     - Propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates ([`7ab25d2`](https://github.com/candlecorp/wick/commit/7ab25d2fc1274fbf552b86f59774b1b24ea12b0f))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Added wick audit & lockdown config ([`ddf1008`](https://github.com/candlecorp/wick/commit/ddf1008983c1f4a880a42ac4c29c0f60bc619cf3))
     - Fixed dropped spans ([`8a49c20`](https://github.com/candlecorp/wick/commit/8a49c20f77257e7e325d83858802efb8982eb719))
     - Added better granularity to log filter rules ([`7ef0b24`](https://github.com/candlecorp/wick/commit/7ef0b24cf6112f3f11cd9309d545d38ab0ea9d28))
@@ -82,6 +92,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.2.0 (2023-04-18)
+
+<csr-id-35047c3a741b00d88c4abc2ed3749af040a83671/>
+<csr-id-82fd51f5f813ea6887f40a0df031f33e13b0fd99/>
+<csr-id-45c7b192ab740c7b1c0f60466e73e3f6cb9d21be/>
 
 ### Chore
 

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.15.1 (2023-08-28)
 
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-599514816356f7fab3b2122156092166f7815427/>
+<csr-id-e561fd668afb1e1af3639c472a893b7fcfe2bf54/>
+<csr-id-37030caa9d8930774f6cac2f0b921d6f7d793941/>
+<csr-id-316111ac52d22365d060f573a456975de33b9115/>
+<csr-id-f5c8df4f1ec673b8e8811c8d03e0ad68e85fabd7/>
+<csr-id-695ae2be47c3da52b1690fe3b16282fb800a28f9/>
+<csr-id-12a0f6de257cf4b5789474fef448c7828f315bb5/>
+<csr-id-ff8b81dc1be6ff70237aaea1bc501b623f7c14d1/>
+
 ### Chore
 
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
@@ -14,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
  - <csr-id-599514816356f7fab3b2122156092166f7815427/> expanded tests to cover morme configuration cases
  - <csr-id-e561fd668afb1e1af3639c472a893b7fcfe2bf54/> updated to rust 1.69.0, fixed associated warnings
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### Documentation
 
@@ -81,9 +97,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 57 commits contributed to the release over the course of 128 calendar days.
+ - 58 commits contributed to the release over the course of 128 calendar days.
  - 131 days passed between releases.
- - 55 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 56 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 7 unique issues were worked on: [#232](https://github.com/candlecorp/wick/issues/232), [#278](https://github.com/candlecorp/wick/issues/278), [#319](https://github.com/candlecorp/wick/issues/319), [#328](https://github.com/candlecorp/wick/issues/328), [#341](https://github.com/candlecorp/wick/issues/341), [#375](https://github.com/candlecorp/wick/issues/375), [#399](https://github.com/candlecorp/wick/issues/399)
 
 ### Commit Details
@@ -107,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#399](https://github.com/candlecorp/wick/issues/399)**
     - Better http client substream support. ([`744f1ac`](https://github.com/candlecorp/wick/commit/744f1ac3d5fa8c28e8e0a1e80d7f5e49839c0c43))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Added packet assertions to wick test cases ([`72a2fb3`](https://github.com/candlecorp/wick/commit/72a2fb3af224ff0b674c8e75a8c6e94070c181a7))
     - Added deep invocation, refactored runtime/engine names ([`bff97fe`](https://github.com/candlecorp/wick/commit/bff97fe93ab537c2549893a33c8faa147dad0842))
     - Decoupled telemetry from log output ([`517b96d`](https://github.com/candlecorp/wick/commit/517b96da7ba93357229b7c1725ecb3331120c636))
@@ -161,6 +178,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.15.0 (2023-04-18)
 
+<csr-id-35047c3a741b00d88c4abc2ed3749af040a83671/>
+<csr-id-ce7bc3a3ff467aa8834301697daca0398c61222c/>
+<csr-id-ce40e430c0aae30ef85a710f5476d32a87d4dec4/>
+
 ### Chore
 
  - <csr-id-35047c3a741b00d88c4abc2ed3749af040a83671/> release wick-xdg, wick-logger, asset-container, derive-asset-container, performance-mark, tap-harness, wick-interface-types, wick-packet
@@ -203,6 +224,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.14.0 (2023-03-23)
 
+<csr-id-501d6056a5ff2d06290f88f73885c6c12afd77e9/>
+
 ### Chore
 
  - <csr-id-501d6056a5ff2d06290f88f73885c6c12afd77e9/> Release
@@ -231,6 +254,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.13.0 (2023-03-23)
+
+<csr-id-f229d8ee9dbb1c051d18b911bb4ef868b968ea14/>
+<csr-id-406c10999648ca923fc8994b5835d11c823c19ce/>
 
 ### Chore
 
@@ -273,6 +299,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.12.0 (2023-03-15)
+
+<csr-id-3a42e6388e3561103412ca3e47db8b5feb5ef3a9/>
 
 ### Chore
 

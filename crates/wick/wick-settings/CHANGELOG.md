@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.1.0 (2023-08-28)
 
+<csr-id-f76ecf1e1bc9ae4ec04c3df66b7fa15d0d2e3498/>
+
 ### New Features
 
  - <csr-id-517b96da7ba93357229b7c1725ecb3331120c636/> decoupled telemetry from log output
@@ -23,12 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-f76ecf1e1bc9ae4ec04c3df66b7fa15d0d2e3498/> consolidated include/exclude to one filter string
 
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
+
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release over the course of 104 calendar days.
- - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 8 commits contributed to the release over the course of 104 calendar days.
+ - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -38,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Consolidated include/exclude to one filter string ([`f76ecf1`](https://github.com/candlecorp/wick/commit/f76ecf1e1bc9ae4ec04c3df66b7fa15d0d2e3498))
     - Decoupled telemetry from log output ([`517b96d`](https://github.com/candlecorp/wick/commit/517b96da7ba93357229b7c1725ecb3331120c636))
     - Converted all level spans to info_spans ([`3208691`](https://github.com/candlecorp/wick/commit/3208691ffb824e9f83d9845ae274c9b60bb8d4fa))

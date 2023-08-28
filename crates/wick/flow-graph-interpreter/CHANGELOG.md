@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.20.1 (2023-08-28)
 
+<csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/>
+<csr-id-1b09917bf75ad3d954d4864bc3bf552137c3cd0f/>
+<csr-id-820e9ee4d0b4f0126183f071d56a422322e7a257/>
+<csr-id-d807f943bc550df8a2cda4c246bbf765f1674065/>
+<csr-id-3580951b5faa8ef279291e5a6f994d1c9e0785d6/>
+<csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-599514816356f7fab3b2122156092166f7815427/>
+<csr-id-e561fd668afb1e1af3639c472a893b7fcfe2bf54/>
+<csr-id-180746ab27766c9df21b334482bead0da8f0bfba/>
+<csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/>
+<csr-id-37030caa9d8930774f6cac2f0b921d6f7d793941/>
+<csr-id-18a767a9d2e45c9efd1d3cbabe87b4450b78b255/>
+<csr-id-316111ac52d22365d060f573a456975de33b9115/>
+<csr-id-39f6a7d7d8a2079a5961eb2c550cd6e02d77e19f/>
+<csr-id-f5c8df4f1ec673b8e8811c8d03e0ad68e85fabd7/>
+<csr-id-888814bb24d3d4dd4b460af2616a72814f2bd7a1/>
+<csr-id-12a0f6de257cf4b5789474fef448c7828f315bb5/>
+<csr-id-ff8b81dc1be6ff70237aaea1bc501b623f7c14d1/>
+
 ### Chore
 
  - <csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/> updated include directives in Cargo.toml
@@ -19,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-599514816356f7fab3b2122156092166f7815427/> expanded tests to cover morme configuration cases
  - <csr-id-e561fd668afb1e1af3639c472a893b7fcfe2bf54/> updated to rust 1.69.0, fixed associated warnings
  - <csr-id-180746ab27766c9df21b334482bead0da8f0bfba/> disabled mono-workflow on pull requests
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### New Features
 
@@ -96,9 +120,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 75 commits contributed to the release over the course of 130 calendar days.
+ - 76 commits contributed to the release over the course of 130 calendar days.
  - 131 days passed between releases.
- - 73 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 74 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 7 unique issues were worked on: [#232](https://github.com/candlecorp/wick/issues/232), [#319](https://github.com/candlecorp/wick/issues/319), [#328](https://github.com/candlecorp/wick/issues/328), [#341](https://github.com/candlecorp/wick/issues/341), [#347](https://github.com/candlecorp/wick/issues/347), [#396](https://github.com/candlecorp/wick/issues/396), [#400](https://github.com/candlecorp/wick/issues/400)
 
 ### Commit Details
@@ -122,6 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#400](https://github.com/candlecorp/wick/issues/400)**
     - Silencing warnings that do not give helpful info anyway ([`daccbc3`](https://github.com/candlecorp/wick/commit/daccbc3a2d42219d1004b0e6d9bbf134bd0a1142))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Made v0, v1, and normalized config conditional features ([`f28522f`](https://github.com/candlecorp/wick/commit/f28522fa663f121f5da90df9dd8461d85c6222ed))
     - Added deep invocation, refactored runtime/engine names ([`bff97fe`](https://github.com/candlecorp/wick/commit/bff97fe93ab537c2549893a33c8faa147dad0842))
     - Added wick audit & lockdown config ([`ddf1008`](https://github.com/candlecorp/wick/commit/ddf1008983c1f4a880a42ac4c29c0f60bc619cf3))
@@ -193,6 +218,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.20.0 (2023-04-19)
+
+<csr-id-82fd51f5f813ea6887f40a0df031f33e13b0fd99/>
+<csr-id-45c7b192ab740c7b1c0f60466e73e3f6cb9d21be/>
+<csr-id-f7c7615186d900b8f509355b2012dec66c4ad76a/>
+<csr-id-c724b06b8cf7776ba48b5a799d9e04e074d1c99d/>
+<csr-id-fd3bedfb6b847ad5fe19d0838443cc308d75ab2b/>
+<csr-id-406c10999648ca923fc8994b5835d11c823c19ce/>
+<csr-id-3a42e6388e3561103412ca3e47db8b5feb5ef3a9/>
+<csr-id-ce7bc3a3ff467aa8834301697daca0398c61222c/>
+<csr-id-fd71df4baaa3f856454624396eff9d9ee8c4473f/>
+<csr-id-ce40e430c0aae30ef85a710f5476d32a87d4dec4/>
+<csr-id-3802bf93746725527d5dfa80f3c65d3314d4122c/>
+<csr-id-c7b84daacad21d9ba2c44123a6b0695db3b43528/>
 
 ### Chore
 

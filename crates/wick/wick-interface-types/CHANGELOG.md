@@ -7,10 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.15.1 (2023-08-28)
 
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+
 ### Chore
 
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
  - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
+
+### Chore
+
+ - <csr-id-e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa/> generated changelogs
 
 ### Documentation
 
@@ -45,9 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 23 commits contributed to the release over the course of 130 calendar days.
+ - 24 commits contributed to the release over the course of 130 calendar days.
  - 131 days passed between releases.
- - 22 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 23 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#319](https://github.com/candlecorp/wick/issues/319), [#328](https://github.com/candlecorp/wick/issues/328), [#375](https://github.com/candlecorp/wick/issues/375)
 
 ### Commit Details
@@ -63,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#375](https://github.com/candlecorp/wick/issues/375)**
     - Fixed rustdoc, cleaned up buildability of individual crates ([`c3aae56`](https://github.com/candlecorp/wick/commit/c3aae5603084135101a302981dc6e72c9a257e8d))
  * **Uncategorized**
+    - Generated changelogs ([`e1d6c05`](https://github.com/candlecorp/wick/commit/e1d6c0542a79afd4b67fb1cf1d9ba87421302dfa))
     - Explicitly defined all features ([`7968fb0`](https://github.com/candlecorp/wick/commit/7968fb0b6fe519732595ed1e3ed9cc429a45d0c4))
     - Added more tests for #378, fixed fields being requide by default from config ([`ae1400c`](https://github.com/candlecorp/wick/commit/ae1400caa092433bec0f66c04bd6e0efea30d173))
     - Ensured missing values for optional fields do not throw an error ([`b5fbe25`](https://github.com/candlecorp/wick/commit/b5fbe25d31673d4e8676883cdeee7166a5538da5))
@@ -86,6 +94,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.15.0 (2023-04-18)
+
+<csr-id-35047c3a741b00d88c4abc2ed3749af040a83671/>
+<csr-id-ce7bc3a3ff467aa8834301697daca0398c61222c/>
+<csr-id-ce40e430c0aae30ef85a710f5476d32a87d4dec4/>
 
 ### Chore
 
@@ -134,6 +146,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.14.0 (2023-03-23)
 
+<csr-id-501d6056a5ff2d06290f88f73885c6c12afd77e9/>
+
 ### Chore
 
  - <csr-id-501d6056a5ff2d06290f88f73885c6c12afd77e9/> Release
@@ -162,6 +176,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.13.0 (2023-03-23)
+
+<csr-id-f229d8ee9dbb1c051d18b911bb4ef868b968ea14/>
 
 ### Chore
 
@@ -192,6 +208,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 </details>
 
 ## v0.12.0 (2023-03-15)
+
+<csr-id-c27131154861be5625b82e1e7d99d8228df1fa39/>
 
 ### New Features
 
