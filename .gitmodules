@@ -1,0 +1,3 @@
+[submodule "docs/content/candle-cloud"]
+	path = docs/content/candle-cloud
+	url = git@github.com:candlecorp/candle-cloud-docs.git

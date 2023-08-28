@@ -15,6 +15,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Checkout submodules
+        run: |
+          git submodule update --init --recursive
+          cd ./docs/candle-cloud
+          git checkout main
+          git pull origin main
+
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
 
@@ -58,7 +65,7 @@ jobs:
         uses: candlecorp/wick-push-action@v0.0.4
         id: push
         with:
-          path: "docs/docs.wick"
+          path: 'docs/docs.wick'
           username: ${{ secrets.CANDLE_REG_USERNAME }}
           password: ${{ secrets.CANDLE_REG_PASSWORD }}
           tags: latest ${{ steps.prep.outputs.BUILD_ID }}
