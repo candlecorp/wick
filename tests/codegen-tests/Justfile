@@ -3,4 +3,4 @@ codegen:
 
 test:
   cargo test
-  cargo run --manifest-path ../../crates/bins/wick/Cargo.toml -- test tests/testdata/import-types.wick --trace
+  cargo run --manifest-path ../../Cargo.toml -- test tests/testdata/import-types.wick --trace

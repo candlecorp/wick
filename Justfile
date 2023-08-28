@@ -29,15 +29,15 @@ default:
 install:
   @echo "Building release version of wick..."
   @echo "Use 'just install-debug' to build debug version."
-  cargo install --path crates/bins/wick
+  cargo install --path .
 
 # Build an optimized wick binary with debug symbols
 install-debug:
-  cargo install --profile=release-with-debug --path crates/bins/wick
+  cargo install --profile=release-with-debug --path .
 
 # Build wick binary with debug symbols and additional output
 install-dev:
-  cargo install --path crates/bins/wick --debug
+  cargo install --path . --debug
 
 # Build wasm binaries that wick tests depend on
 wasm:
@@ -64,11 +64,11 @@ test: codegen early-errors wasm unit-tests
 
 # Run unit tests
 unit-tests: _check_nextest _codegen-tests
-  cargo nextest run -E 'not (test(slow_test) | test(integration_test))'
+  cargo nextest run --workspace -E 'not (test(slow_test) | test(integration_test))'
 
 # Run integration tests
 integration-tests: _check_nextest _codegen-tests
-  cargo nextest run -E 'not (test(slow_test))'
+  cargo nextest run --workspace -E 'not (test(slow_test))'
   just wick-tests
   cargo test --manifest-path tests/template/Cargo.toml
 
@@ -84,7 +84,7 @@ ci-tests: install-dev wasm
 
 # Run unit, integration, and slow tests
 all-tests: _check_nextest
-  cargo nextest run
+  cargo nextest run --workspace
   cargo test --manifest-path tests/template/Cargo.toml
 
 # Run integration setup, tests, and teardown in one task
