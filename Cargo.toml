@@ -6,11 +6,7 @@ default-run = "wick"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
 description = "The binary executable for the Wick project."
-include = [
-  "crates/bins/wick/src/**/*",
-  "crates/bins/wick/LICENSE",
-  "crates/bins/wick/README.md",
-]
+include = ["src/**/*", "LICENSE", "README.md"]
 
 [features]
 default = []
@@ -69,7 +65,7 @@ rstest = { workspace = true }
 
 [[bin]]
 name = "wick"
-path = "crates/bins/wick/src/main.rs"
+path = "src/main.rs"
 
 
 [workspace]
@@ -80,9 +76,13 @@ members = [
   "crates/misc/*",
   "crates/components/*",
   "crates/wick/*",
-  "tests/*",
+  "integration-tests/*",
 ]
-exclude = ["crates/wick/wick-rpc/codegen", "tests/template", "tests/testdata"]
+exclude = [
+  "crates/wick/wick-rpc/codegen",
+  "integration-tests/template",
+  "integration-tests/testdata",
+]
 
 [profile.release-with-debug]
 inherits = "release"

@@ -365,7 +365,7 @@ mod test {
   #[case("./files/../files/assets/test.fake.wasm", Ok("files/assets/test.fake.wasm"))]
   fn test_relativity(#[case] path: &str, #[case] expected: Result<&str, Error>) -> Result<()> {
     let crate_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-    let testdata_dir = crate_dir.join("../../../tests/testdata");
+    let testdata_dir = crate_dir.join("../../../integration-tests/testdata");
 
     println!("base dir: {}", testdata_dir.display());
     println!("asset location: {}", path);
@@ -393,21 +393,21 @@ mod test {
 
   #[rstest::rstest]
   #[case(
-    "./tests/testdata/files/assets/test.fake.wasm",
-    Ok("tests/testdata/files/assets/test.fake.wasm")
+    "./integration-tests/testdata/files/assets/test.fake.wasm",
+    Ok("integration-tests/testdata/files/assets/test.fake.wasm")
   )]
   #[case(
-    "./tests/../tests/testdata/files/./assets/test.fake.wasm",
-    Ok("tests/testdata/files/assets/test.fake.wasm")
+    "./integration-tests/../integration-tests/testdata/files/./assets/test.fake.wasm",
+    Ok("integration-tests/testdata/files/assets/test.fake.wasm")
   )]
   #[case(
-    "./tests/./testdata/./files/../files/assets/test.fake.wasm",
-    Ok("tests/testdata/files/assets/test.fake.wasm")
+    "./integration-tests/./testdata/./files/../files/assets/test.fake.wasm",
+    Ok("integration-tests/testdata/files/assets/test.fake.wasm")
   )]
   fn test_baseurl_normalization(#[case] path: &str, #[case] expected: Result<&str, Error>) -> Result<()> {
     let crate_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     let ws_dir = crate_dir.join("../../../");
-    let base_dir = ws_dir.join("tests/./testdata/../../tests/./testdata/../..");
+    let base_dir = ws_dir.join("integration-tests/./testdata/../../integration-tests/./testdata/../..");
 
     println!("base dir: {}", base_dir.display());
     println!("asset location: {}", path);
@@ -422,19 +422,19 @@ mod test {
   }
 
   #[rstest::rstest]
-  #[case("/tests/testdata/files/assets/test.fake.wasm", Ok("files/assets/test.fake.wasm"))]
+  #[case("/integration-tests/testdata/files/assets/test.fake.wasm", Ok("files/assets/test.fake.wasm"))]
   #[case(
-    "/tests/../tests/testdata/files/./assets/test.fake.wasm",
+    "/integration-tests/../integration-tests/testdata/files/./assets/test.fake.wasm",
     Ok("files/assets/test.fake.wasm")
   )]
   #[case(
-    "/tests/./testdata/./files/../files/assets/test.fake.wasm",
+    "/integration-tests/./testdata/./files/../files/assets/test.fake.wasm",
     Ok("files/assets/test.fake.wasm")
   )]
   fn test_path_normalization_absolute(#[case] path: &str, #[case] expected: Result<&str, Error>) -> Result<()> {
     let crate_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
     let ws_dir = crate_dir.join("../../../");
-    let testdata_dir = ws_dir.join("tests/./testdata/../../tests/./testdata");
+    let testdata_dir = ws_dir.join("integration-tests/./testdata/../../integration-tests/./testdata");
     let path = format!("{}/{}", ws_dir.display(), path);
 
     println!("base dir: {}", testdata_dir.display());

@@ -13,7 +13,7 @@ async fn test_wick_serve() -> utils::TestResult<()> {
     "component rpc server",
     &[
       "serve",
-      "../../integration/test-baseline-component/component.yaml",
+      "crates/integration/test-baseline-component/component.yaml",
       "--with",
       "{\"default_err\":\"error from wick-cli integration test\"}",
       "--trace",

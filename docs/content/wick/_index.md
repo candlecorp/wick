@@ -48,7 +48,7 @@ curl https://ps.wick.run -UseBasicParsing | Invoke-Expression
 ```sh
 git clone https://github.com/candlecorp/wick.git && cd wick
 just deps # install necessary dependencies
-just install # or cargo install --path crates/bins/wick
+just install # or cargo install --path .
 ```
 
 <p align="right">(<a href="#wick-documentation">back to top</a>)</p>

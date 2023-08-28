@@ -2,7 +2,7 @@ bin.name = "wick"
 args = [
   "invoke",
   "--trace",
-  "../../integration/test-baseline-component/component.yaml",
+  "crates/integration/test-baseline-component/component.yaml",
   "add",
   "--with",
   '{"default_err":"err from cli"}',

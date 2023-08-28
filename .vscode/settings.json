@@ -15,7 +15,7 @@
   "yaml.schemas": {
     "crates/wick/wick-config/json-schema/manifest.json": [
       "crates/**/manifests/**/*.yaml",
-      "crates/bins/wick/tests/**/*.yaml",
+      "tests/**/*.yaml",
       "*.wick",
       "component.yaml",
       "app.yaml"

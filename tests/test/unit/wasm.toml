@@ -1,5 +1,5 @@
 bin.name = "wick"
-args = ["test", "../../integration/test-baseline-component/component.yaml"]
+args = ["test", "crates/integration/test-baseline-component/component.yaml"]
 stdout = """
 1..6 # Test
 # (test name='add 1 and 2', operation='add')

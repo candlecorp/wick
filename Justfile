@@ -70,7 +70,7 @@ unit-tests: _check_nextest _codegen-tests
 integration-tests: _check_nextest _codegen-tests
   cargo nextest run --workspace -E 'not (test(slow_test))'
   just wick-tests
-  cargo test --manifest-path tests/template/Cargo.toml
+  cargo test --manifest-path integration-tests/template/Cargo.toml
 
 # Tests run via `wick test`
 wick-tests:
@@ -85,7 +85,7 @@ ci-tests: install-dev wasm
 # Run unit, integration, and slow tests
 all-tests: _check_nextest
   cargo nextest run --workspace
-  cargo test --manifest-path tests/template/Cargo.toml
+  cargo test --manifest-path integration-tests/template/Cargo.toml
 
 # Run integration setup, tests, and teardown in one task
 integration: integration-setup && integration-teardown
@@ -132,7 +132,6 @@ update-lints:
 
 # Run a basic test for unused dependencies in rust crates.
 check-unused:
-  for crate in crates/bins/*; do ./etc/udeps.sh $crate; done
   for crate in crates/wick/*; do ./etc/udeps.sh $crate; done
   for crate in crates/misc/*; do ./etc/udeps.sh $crate; done
 
@@ -228,7 +227,7 @@ _wick-db-tests:
   {{wick}} test ./examples/db/azuresql-component.wick
   {{wick}} test ./examples/db/sqlite-component.wick
   {{wick}} test ./examples/db/sqlite-inmemory-component.wick
-  {{wick}} test ./tests/cli-tests/tests/cmd/db/azuresql-tx-test.wick
+  {{wick}} test ./integration-tests/cli-tests/tests/cmd/db/azuresql-tx-test.wick
 
 # Run `wick` tests for http components
 _wick-http-tests:
@@ -246,5 +245,5 @@ _wick-component-tests:
 
 # Run component-codegen unit tests
 _codegen-tests:
-  just tests/codegen-tests/codegen
-  just tests/codegen-tests/test
+  just integration-tests/codegen-tests/codegen
+  just integration-tests/codegen-tests/test

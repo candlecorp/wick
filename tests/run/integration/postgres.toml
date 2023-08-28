@@ -1,6 +1,6 @@
 #:schema https://raw.githubusercontent.com/assert-rs/trycmd/main/schema.json
 bin.name = "wick"
-args = ["run", "../../../examples/cli/wasm-calling-postgres.wick"]
+args = ["run", "examples/cli/wasm-calling-postgres.wick"]
 stdout = """
 
 cli:db: in WebAssembly CLI component

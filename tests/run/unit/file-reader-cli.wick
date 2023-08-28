@@ -4,7 +4,7 @@ import:
   - name: wasi_fs
     component:
       kind: wick/component/manifest@v1
-      ref: ../../../../../../examples/components/wasi-fs/component.wick
+      ref: ../../../examples/components/wasi-fs/component.wick
       with:
         root: '{{ ctx.root_config.root }}'
   - name: log

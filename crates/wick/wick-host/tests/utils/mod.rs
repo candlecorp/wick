@@ -7,7 +7,7 @@ use wick_packet::RuntimeConfig;
 
 pub async fn load_config(path: &str) -> Result<UninitializedConfiguration> {
   let cargo_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-  let path = cargo_dir.join("../../bins/wick/tests").join(path);
+  let path = cargo_dir.join("../../../tests").join(path);
   let config = WickConfiguration::fetch(&path, Default::default()).await?;
   Ok(config)
 }
