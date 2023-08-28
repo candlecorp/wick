@@ -18,9 +18,9 @@ component:
     - name: add
       inputs:
         - name: left
-          type: u64
+          type: int
         - name: right
-          type: u64
+          type: int
       outputs:
         - name: output
-          type: u64
+          type: int

@@ -171,6 +171,17 @@ macro_rules! payload_fan_out {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! propagate_if_error_then {
+  (($($id:ident),*), $outputs:ident, $bail:expr) => {
+    ($(
+      match $id {
+        Ok(value) => value,
+        Err(err) => {
+          $outputs.broadcast_err(err.to_string());
+          $bail;
+        }
+      },
+    )*)
+  };
   ($result:expr, $outputs:ident, $bail:expr) => {
     match $result {
       Ok(value) => value,
@@ -205,6 +216,9 @@ macro_rules! propagate_if_error_then {
 ///
 #[macro_export]
 macro_rules! propagate_if_error {
+  (($($id:ident),*), $outputs:ident, continue) => {
+    $crate::propagate_if_error_then!(($($id),*), $outputs, continue)
+  };
   ($result:expr, $outputs:ident, continue) => {
     $crate::propagate_if_error_then!($result, $outputs, continue)
   };
