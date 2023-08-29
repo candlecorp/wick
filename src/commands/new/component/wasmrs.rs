@@ -56,7 +56,7 @@ pub(crate) async fn handle(
       .reference(AssetReference::new(format!("./build/{}", &name)))
       .operations([
         OperationDefinitionBuilder::default()
-          .name("operation_name".to_owned())
+          .name("my_operation".to_owned())
           .inputs([Field::new("id", Type::String)])
           .outputs([Field::new("output", Type::Named("user_object".to_owned()))])
           .build()

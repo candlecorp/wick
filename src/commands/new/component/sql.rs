@@ -45,7 +45,7 @@ pub(crate) async fn handle(
       .resource(resource_name)
       .operations([SqlOperationKind::Query(
         SqlOperationDefinitionBuilder::default()
-          .name("operation_name".to_owned())
+          .name("example_query".to_owned())
           .inputs([Field::new("id", Type::String)])
           .query("SELECT * FROM users WHERE id = $1".to_owned())
           .arguments(["id".to_owned()])
