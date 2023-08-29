@@ -1,4 +1,4 @@
-use chrono::DateTime as ChronoDateTime;
+use chrono::{DateTime as ChronoDateTime, TimeZone};
 
 pub type DateTime = chrono::DateTime<chrono::Utc>;
 
@@ -11,11 +11,9 @@ pub fn parse_date(v: &str) -> Result<DateTime, crate::Error> {
 
 /// Parse a UTC date from milliseconds since UNIX_EPOCH.
 pub fn date_from_millis(millis: u64) -> Result<DateTime, crate::Error> {
-  Ok(ChronoDateTime::from_utc(
-    chrono::NaiveDateTime::from_timestamp_opt(millis as i64 / 1000, (millis % 1000 * 1_000_000) as u32)
-      .ok_or(crate::Error::ParseDateMillis(millis))?,
-    chrono::Utc,
-  ))
+  let dt = chrono::NaiveDateTime::from_timestamp_opt(millis as i64 / 1000, (millis % 1000 * 1_000_000) as u32)
+    .ok_or(crate::Error::ParseDateMillis(millis))?;
+  Ok(chrono::Utc.from_utc_datetime(&dt))
 }
 
 pub mod serde {
