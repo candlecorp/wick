@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
+use chrono::{DateTime, NaiveDate, NaiveTime, TimeZone, Utc};
 use serde_json::{Number, Value};
 use tiberius::{ColumnData, FromSql, IntoSql};
 
@@ -48,7 +48,7 @@ impl<'a> FromSql<'a> for FromSqlWrapper {
       ColumnData::Xml(_) => unimplemented!(),
       ColumnData::DateTime(_) | ColumnData::SmallDateTime(_) | ColumnData::DateTime2(_) => {
         tiberius::time::chrono::NaiveDateTime::from_sql(col)?
-          .map(|d| Value::String(DateTime::<Utc>::from_utc(d, Utc).to_rfc3339()))
+          .map(|d| Value::String(Utc.from_utc_datetime(&d).to_rfc3339()))
       }
       ColumnData::DateTimeOffset(_) => DateTime::<Utc>::from_sql(col)?.map(|d| Value::String(d.to_rfc3339())),
       ColumnData::Time(_) => NaiveTime::from_sql(col)?.map(|d| Value::String(d.to_string())),
