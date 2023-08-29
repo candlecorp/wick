@@ -2,15 +2,10 @@ use std::fmt::Write;
 
 use anyhow::Result;
 use clap::Args;
-use option_utils::OptionUtils;
 use serde_json::json;
 use structured_output::StructuredOutput;
-use wick_component_cli::options::DefaultCliOptions;
 use wick_config::WickConfiguration;
-use wick_host::{ComponentHostBuilder, Host};
-use wick_interface_types::Field;
-
-use crate::utils::merge_config;
+use wick_interface_types::{Field, OperationSignature};
 
 #[derive(Debug, Clone, Args)]
 #[group(skip)]
@@ -25,37 +20,34 @@ pub(crate) struct Options {
 pub(crate) async fn handle(
   opts: Options,
   _settings: wick_settings::Settings,
-  span: tracing::Span,
+  _span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let fetch_options: wick_oci_utils::OciOptions = opts.oci.clone().into();
 
-  let manifest = WickConfiguration::fetch(&opts.component.path, fetch_options)
-    .await?
-    .finish()?
-    .try_component_config()?;
+  let manifest = WickConfiguration::fetch(&opts.component.path, fetch_options).await?;
 
-  let server_options = DefaultCliOptions { ..Default::default() };
-
-  let mut config = merge_config(&manifest, &opts.oci, Some(server_options));
-  // Disable everything but the mesh
-  config.host_mut().inner_mut(|h| {
-    h.set_rpc(None);
-  });
-
-  let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
-
-  host.start_runtime(None).await?;
-  let mut signature = host.get_signature(None, None)?;
-
-  // If we have a name from the manifest, override the host id the component host generates.
-  if let Some(name) = manifest.name() {
-    signature.name = Some(name.clone());
-  }
+  let signature = match manifest.manifest() {
+    WickConfiguration::Component(c) => c.signature()?,
+    _ => {
+      anyhow::bail!("`wick list` only works on component configurations at this time.");
+    }
+  };
 
   let mut output = String::new();
-  for op in &signature.operations {
-    write!(&mut output, "Component: ")?;
-    write_line(&mut output, &op.name, "", &op.inputs, &op.outputs)?;
+  writeln!(&mut output, "Components:")?;
+  writeln!(
+    &mut output,
+    "  └─ {} {}",
+    signature.name.as_deref().unwrap_or("<unnamed>"),
+    config(&signature.config)
+  )?;
+  for (i, op) in signature.operations.iter().enumerate() {
+    if i < signature.operations.len() - 1 {
+      write!(&mut output, "     ├─ ")?;
+    } else {
+      write!(&mut output, "     └─ ")?;
+    }
+    write_line(&mut output, op)?;
   }
 
   Ok(StructuredOutput::new(
@@ -66,14 +58,30 @@ pub(crate) async fn handle(
   ))
 }
 
-fn write_line(
-  mut buff: impl Write,
-  label: &str,
-  indent: &str,
-  inputs: &[Field],
-  outputs: &[Field],
-) -> std::fmt::Result {
-  let inputs = inputs.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", ");
-  let outputs = outputs.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", ");
-  write!(buff, "{}{}({}) -> ({})", indent, label, inputs, outputs)
+fn write_line(mut buff: impl Write, op: &OperationSignature) -> std::fmt::Result {
+  write!(
+    buff,
+    "{} ({}): ({}) {}",
+    op.name,
+    fields(op.inputs()),
+    fields(op.outputs()),
+    config(op.config())
+  )?;
+
+  Ok(())
+}
+
+fn config(config: &[Field]) -> String {
+  if config.is_empty() {
+    return String::new();
+  } else {
+    format!(
+      "with: {{ {} }}",
+      config.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", ")
+    )
+  }
+}
+
+fn fields(fields: &[Field]) -> String {
+  fields.iter().map(|f| f.to_string()).collect::<Vec<_>>().join(", ")
 }

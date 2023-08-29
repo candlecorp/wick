@@ -3,6 +3,7 @@ use clap::Args;
 use structured_output::StructuredOutput;
 use wick_config::config::components::ComponentConfig;
 use wick_config::config::{self, ComponentConfiguration, CompositeComponentImplementation, FlowOperationBuilder};
+use wick_interface_types::{Field, Type};
 
 use crate::io::File;
 
@@ -37,6 +38,8 @@ pub(crate) async fn handle(
       FlowOperationBuilder::default()
         .name("operation_name")
         .expressions(vec!["<>.input -> <>.output".parse().unwrap()])
+        .inputs(vec![Field::new("input", Type::Object)])
+        .outputs(vec![Field::new("output", Type::Object)])
         .build()
         .unwrap(),
     );
