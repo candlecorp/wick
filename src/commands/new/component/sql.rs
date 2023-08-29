@@ -27,7 +27,7 @@ pub(crate) async fn handle(
   let _span = span.enter();
   let name = crate::commands::new::sanitize_name(&opts.name);
   let files: Result<Vec<File>> = span.in_scope(|| {
-    info!("Initializing wick sql db component: {}", name);
+    info!("initializing wick sql component: {}", name);
 
     let mut config = ComponentConfiguration::default();
     config.set_name(name.clone());

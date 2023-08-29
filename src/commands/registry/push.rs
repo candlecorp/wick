@@ -33,14 +33,14 @@ pub(crate) async fn handle(
   settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
-  span.in_scope(|| debug!("Push artifact"));
+  span.in_scope(|| debug!("push artifact"));
 
   let mut package = wick_package::WickPackage::from_path(&opts.source)
     .instrument(span.clone())
     .await?;
 
   let Some(registry) = package.registry_mut() else {
-    span.in_scope(|| error!("No registry provided in package"));
+    span.in_scope(|| error!("no registry provided in package"));
     return Err(anyhow!("No registry provided in package"));
   };
 

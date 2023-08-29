@@ -33,7 +33,7 @@ pub(crate) async fn handle(
   settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
-  span.in_scope(|| debug!("Generate dotviz graph"));
+  span.in_scope(|| debug!("generate dotviz graph"));
   let configured_creds = settings
     .credentials
     .iter()

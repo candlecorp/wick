@@ -72,7 +72,7 @@ pub(crate) async fn handle(
 
   if !opts.dryrun {
     host.start()?;
-    span.in_scope(|| debug!("Waiting on triggers to finish..."));
+    span.in_scope(|| debug!("waiting on triggers to finish..."));
 
     host.wait_for_done().instrument(span.clone()).await?;
   } else {

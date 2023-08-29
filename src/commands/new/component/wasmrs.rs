@@ -33,8 +33,8 @@ pub(crate) async fn handle(
   let name = crate::commands::new::sanitize_name(&opts.name);
 
   let files: Result<Vec<File>> = span.in_scope(|| {
-    info!("Initializing wick http component: {}", name);
-    info!("Note: WebAssembly components are often better suited by cloning a boilerplate project. See https://github.com/candlecorp/wick for directions.");
+    info!("initializing wick wasmrs component: {}", name);
+    info!("note: WebAssembly components are often better suited by cloning a boilerplate project. See https://github.com/candlecorp/wick for directions.");
 
     let mut config = ComponentConfiguration::default();
     config.set_name(name.clone());

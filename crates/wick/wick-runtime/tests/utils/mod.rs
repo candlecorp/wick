@@ -20,7 +20,7 @@ pub async fn init_engine_from_yaml(
   let mut host_def = WickConfiguration::fetch(path.as_ref(), Default::default()).await?;
   host_def.set_root_config(config);
   let host_def = host_def.finish()?.try_component_config()?;
-  debug!("Manifest loaded");
+  debug!("manifest loaded");
 
   let builder = RuntimeBuilder::from_definition(host_def).namespace("__TEST__");
 

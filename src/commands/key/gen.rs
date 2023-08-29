@@ -25,7 +25,7 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let _enter = span.enter();
-  debug!("Generating {} key", crate::keys::keypair_type_to_string(&opts.keytype));
+  debug!("generating {} key", crate::keys::keypair_type_to_string(&opts.keytype));
 
   let kp = KeyPair::new(opts.keytype);
 

@@ -90,7 +90,7 @@ pub(crate) async fn handle(
 
   if !errors.is_empty() {
     for error in errors {
-      error!("Error parsing query: {}", error);
+      error!("error parsing query: {}", error);
     }
     return Err(anyhow!("Errors parsing queries"));
   }
@@ -127,11 +127,11 @@ pub(crate) async fn handle(
 
           json.push(result);
         }
-        Err(e) => error!("Error: {}", e),
+        Err(e) => error!("error: {}", e),
       };
     }
   } else {
-    debug!("No queries successfully parsed");
+    debug!("no queries successfully parsed");
   }
 
   Ok(StructuredOutput::new(lines.join("\n"), json!({"results":json})))

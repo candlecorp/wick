@@ -148,7 +148,7 @@ impl InterpreterDispatchChannel {
 
     tokio::task::spawn(async move {
       if tx.send(event).await.is_err() {
-        warn!("Interpreter channel closed unexpectedly. This is likely due to an intentional shutdown while there are still events processing.");
+        warn!("interpreter channel closed unexpectedly. This is likely due to an intentional shutdown while there are still events processing.");
       }
     });
   }
