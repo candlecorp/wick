@@ -23,9 +23,9 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let _enter = span.enter();
-  debug!("Listing keys");
+  debug!("listing keys");
   let (dir, keys) = get_key_files(opts.directory)?;
-  info!("Listing keys in {}", dir.to_string_lossy());
+  info!("listing keys in {}", dir.to_string_lossy());
 
   let json = json!({"keys":keys});
 

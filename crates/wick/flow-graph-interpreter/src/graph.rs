@@ -123,7 +123,7 @@ fn process_connection_expression(
     .map(|component| component.add_input(to.port().name().unwrap()));
 
   if to_port.is_none() {
-    error!("Missing downstream: instance {:?}", to);
+    error!("missing downstream: instance {:?}", to);
     return Err(GraphError::missing_downstream(to.instance().id().unwrap()));
   }
   let to_port = to_port.unwrap();

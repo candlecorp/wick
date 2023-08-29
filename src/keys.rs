@@ -111,7 +111,7 @@ pub(crate) async fn get_or_create(
   let seed = match read_to_string(&path).await {
     Ok(seed) => seed,
     Err(_e) => {
-      info!("No keypair found at \"{}\". Generating new keypair.", path);
+      info!("no keypair found at \"{}\". Generating new keypair.", path);
 
       let kp = KeyPair::new(kp_type);
       let seed = kp.seed()?;

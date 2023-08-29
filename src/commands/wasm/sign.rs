@@ -42,8 +42,8 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   span.in_scope(|| {
-    debug!("Signing module");
-    debug!("Reading from {}", opts.interface);
+    debug!("signing module");
+    debug!("reading from {}", opts.interface);
   });
 
   let interface = WickConfiguration::fetch(&opts.interface, wick_config::FetchOptions::default())
@@ -99,13 +99,13 @@ pub(crate) async fn handle(
       }
     }
   };
-  span.in_scope(|| debug!("Destination : {}", destination));
+  span.in_scope(|| debug!("destination : {}", destination));
 
   let mut outfile = File::create(&destination).unwrap();
 
   span.in_scope(|| match outfile.write(&signed) {
     Ok(_) => {
-      info!("Successfully signed {}", destination,);
+      info!("successfully signed {}", destination,);
       Ok(StructuredOutput::new(
         format!("Successfully signed: {}", destination),
         json!({

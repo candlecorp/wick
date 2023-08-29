@@ -76,11 +76,11 @@ pub(crate) async fn init_files(files: &[File], dry_run: bool) -> Result<Structur
   }
 
   for file in files {
-    info!("Writing file: {}", file.path.display());
+    info!(file = %file.path.display(), "writing file");
 
     if dry_run {
       info!(
-        "Dry run: not writing {} bytes to {}",
+        "dry run: not writing {} bytes to {}",
         file.contents.len(),
         file.path.display()
       );

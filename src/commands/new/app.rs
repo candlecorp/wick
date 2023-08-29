@@ -45,7 +45,7 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let files: Result<Vec<File>> = span.in_scope(|| {
-    info!("Initializing wick application: {}", opts.name);
+    info!("initializing wick application: {}", opts.name);
     let mut config = AppConfiguration::default();
     config.set_name(opts.name);
     config.set_metadata(crate::commands::new::generic_metadata("New wick application"));

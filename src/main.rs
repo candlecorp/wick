@@ -220,11 +220,11 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
 
   let res = span.in_scope(|| match res {
     Ok(output) => {
-      debug!("Done");
+      debug!("done");
       Ok((options, output))
     }
     Err(e) => {
-      error!("Error: {}", e);
+      error!("error: {}", e);
       Err((options, anyhow!("{}", e)))
     }
   });

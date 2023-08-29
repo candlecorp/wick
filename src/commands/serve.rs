@@ -39,19 +39,19 @@ pub(crate) async fn handle(
   let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 
   host.start(None).await?;
-  info!("Host started");
+  info!("host started");
   #[allow(clippy::option_if_let_else)]
   match host.get_server_info() {
     Some(info) => {
       wick_component_cli::print_info(info);
     }
     None => {
-      warn!("No server information available, did you intend to start a host without GRPC or a mesh connection?");
+      warn!("no server information available, did you intend to start a host without GRPC or a mesh connection?");
     }
   };
-  info!("Waiting for Ctrl-C");
+  info!("waiting for Ctrl-C");
   let _ = tokio::signal::ctrl_c().await;
-  info!("Ctrl-C received, shutting down");
+  info!("ctrl-C received, shutting down");
   host.stop().await;
   Ok(StructuredOutput::new("", json!({})))
 }

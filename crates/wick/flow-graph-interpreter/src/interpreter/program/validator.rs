@@ -27,7 +27,7 @@ impl Validator {
           let component = components.get(reference.component_id());
 
           if component.is_none() {
-            error!("Missing component: {}", reference.component_id());
+            error!("missing component: {}", reference.component_id());
             validation_errors.push(ValidationError::MissingComponent(reference.component_id().to_owned()));
             continue;
           }

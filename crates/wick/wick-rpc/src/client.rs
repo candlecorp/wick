@@ -34,7 +34,7 @@ pub async fn make_rpc_client<T: TryInto<Uri> + Send>(
     let mut tls = ClientTlsConfig::new().identity(identity);
 
     if let Some(ca) = ca {
-      debug!("Using CA from {}", ca.to_string_lossy());
+      debug!("using CA from {}", ca.to_string_lossy());
       let ca_pem = tokio::fs::read(ca).await?;
       let ca = Certificate::from_pem(ca_pem);
       tls = tls.ca_certificate(ca);
@@ -45,7 +45,7 @@ pub async fn make_rpc_client<T: TryInto<Uri> + Send>(
 
     builder = builder.tls_config(tls).map_err(RpcClientError::TlsError)?;
   } else if let Some(ca) = ca {
-    debug!("Using CA from {}", ca.to_string_lossy());
+    debug!("using CA from {}", ca.to_string_lossy());
 
     let ca_pem = tokio::fs::read(ca).await?;
     let ca = Certificate::from_pem(ca_pem);
@@ -96,22 +96,22 @@ impl RpcClient {
 
   /// Make a request to the stats RPC method
   pub async fn stats(&mut self, request: StatsRequest) -> Result<StatsResponse, RpcClientError> {
-    debug!("Making stats request");
+    debug!("making stats request");
     let result = self
       .inner
       .stats(request)
       .await
       .map_err(RpcClientError::StatsCallFailed)?;
-    debug!("Stats result: {:?}", result);
+    debug!("stats result: {:?}", result);
     Ok(result.into_inner())
   }
 
   /// Make a request to the list RPC method
   pub async fn list(&mut self) -> Result<Vec<wick_interface_types::ComponentSignature>, RpcClientError> {
     let request = ListRequest {};
-    debug!("Making list request");
+    debug!("making list request");
     let result = self.inner.list(request).await.map_err(RpcClientError::ListCallFailed)?;
-    debug!("List result: {:?}", result);
+    debug!("list result: {:?}", result);
     let response = result.into_inner();
 
     response
@@ -127,13 +127,13 @@ impl RpcClient {
     &mut self,
     request: impl Stream<Item = InvocationRequest> + Send + Sync + 'static,
   ) -> Result<PacketStream, RpcClientError> {
-    debug!("Making invocation ");
+    debug!("making invocation ");
     let result = self
       .inner
       .invoke(request)
       .await
       .map_err(RpcClientError::InvocationFailed)?;
-    debug!("Invocation result: {:?}", result);
+    debug!("invocation result: {:?}", result);
 
     // Need to do this because tonic::decode::Decoder is not Sync and can't be turned into a PacketStream.
     let stream = convert_tonic_streaming(result.into_inner());
