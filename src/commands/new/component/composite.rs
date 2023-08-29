@@ -36,7 +36,7 @@ pub(crate) async fn handle(
     let mut component = CompositeComponentImplementation::default();
     component.operations_mut().push(
       FlowOperationBuilder::default()
-        .name("operation_name")
+        .name("echo")
         .expressions(vec!["<>.input -> <>.output".parse().unwrap()])
         .inputs(vec![Field::new("input", Type::Object)])
         .outputs(vec![Field::new("output", Type::Object)])

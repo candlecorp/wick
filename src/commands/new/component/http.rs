@@ -45,7 +45,7 @@ pub(crate) async fn handle(
       .codec(Codec::Json)
       .resource(resource_name)
       .operations([HttpClientOperationDefinitionBuilder::default()
-        .name("operation_name".to_owned())
+        .name("example_request".to_owned())
         .method(config::HttpMethod::Get)
         .path("/user/{id:string}".to_owned())
         .inputs([Field::new("id", Type::String)])
