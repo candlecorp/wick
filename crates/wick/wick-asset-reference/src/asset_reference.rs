@@ -422,7 +422,10 @@ mod test {
   }
 
   #[rstest::rstest]
-  #[case("/integration-tests/testdata/files/assets/test.fake.wasm", Ok("files/assets/test.fake.wasm"))]
+  #[case(
+    "/integration-tests/testdata/files/assets/test.fake.wasm",
+    Ok("files/assets/test.fake.wasm")
+  )]
   #[case(
     "/integration-tests/../integration-tests/testdata/files/./assets/test.fake.wasm",
     Ok("files/assets/test.fake.wasm")
