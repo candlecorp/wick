@@ -73,7 +73,7 @@ fn write_line(mut buff: impl Write, op: &OperationSignature) -> std::fmt::Result
 
 fn config(config: &[Field]) -> String {
   if config.is_empty() {
-    return String::new();
+    String::new()
   } else {
     format!(
       "with: {{ {} }}",
