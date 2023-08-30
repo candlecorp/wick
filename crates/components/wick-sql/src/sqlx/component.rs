@@ -221,7 +221,11 @@ async fn init_context(config: &SqlComponentConfig, addr: &Url) -> Result<Context
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use wick_config::config::components::{SqlComponentConfigBuilder, SqlOperationDefinitionBuilder, SqlOperationKind};
+  use wick_config::config::components::{
+    SqlComponentConfigBuilder,
+    SqlOperationDefinition,
+    SqlQueryOperationDefinitionBuilder,
+  };
   use wick_config::config::{ResourceDefinition, TcpPort};
   use wick_interface_types::{Field, Type};
 
@@ -240,7 +244,7 @@ mod test {
       .tls(false)
       .build()
       .unwrap();
-    let op = SqlOperationDefinitionBuilder::default()
+    let op = SqlQueryOperationDefinitionBuilder::default()
       .name("test")
       .query("select * from users where user_id = $1;")
       .inputs([Field::new("input", Type::I32)])
@@ -249,7 +253,7 @@ mod test {
       .build()
       .unwrap();
 
-    config.operations_mut().push(SqlOperationKind::Query(op));
+    config.operations_mut().push(SqlOperationDefinition::Query(op));
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource("db", ResourceDefinition::TcpPort(TcpPort::new("0.0.0.0", 11111)));
 

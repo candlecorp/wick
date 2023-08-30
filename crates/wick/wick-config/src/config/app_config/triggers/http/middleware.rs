@@ -1,8 +1,21 @@
+use std::collections::HashMap;
+
+use wick_packet::RuntimeConfig;
+
 use super::WickRouter;
+use crate::config::template_config::Renderable;
 use crate::config::{self, ComponentOperationExpression, ImportBinding};
 use crate::error::ManifestError;
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
+#[derive(
+  Debug,
+  Clone,
+  derive_builder::Builder,
+  PartialEq,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
+)]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
 #[asset(asset(config::AssetReference))]
 /// Request and response operations that run before and after the main operation.
@@ -13,6 +26,17 @@ pub struct Middleware {
   /// The middleware to apply to responses.
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) response: Vec<ComponentOperationExpression>,
+}
+
+impl Renderable for Middleware {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    self.request.render_config(root_config, env)?;
+    self.response.render_config(root_config, env)
+  }
 }
 
 pub(super) fn expand_for_middleware_components(

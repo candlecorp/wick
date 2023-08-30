@@ -166,3 +166,35 @@ pub(crate) trait Renderable {
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError>;
 }
+
+impl<T> Renderable for Option<T>
+where
+  T: Renderable,
+{
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    if let Some(v) = self {
+      v.render_config(root_config, env)?;
+    }
+    Ok(())
+  }
+}
+
+impl<T> Renderable for Vec<T>
+where
+  T: Renderable,
+{
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    for el in self.iter_mut() {
+      el.render_config(root_config, env)?;
+    }
+    Ok(())
+  }
+}

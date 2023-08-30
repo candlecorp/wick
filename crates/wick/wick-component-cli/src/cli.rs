@@ -69,14 +69,14 @@ pub fn print_info(info: &ServerState) {
   }
 
   if !something_started {
-    warn!("No server information available, did you intend to start a host without GRPC or a mesh connection?");
-    warn!("If not, try passing the flag --rpc or --mesh to explicitly enable those features.");
+    warn!("no server information available, did you intend to start a host without GRPC or a mesh connection?");
+    warn!("if not, try passing the flag --rpc or --mesh to explicitly enable those features.");
   }
 }
 
 /// Starts an RPC server for the passed [SharedComponent].
 pub async fn start_server(collection: SharedComponent, opts: Option<Options>) -> Result<ServerState> {
-  debug!("Starting server with options: {:?}", opts);
+  debug!("starting server with options: {:?}", opts);
 
   let opts = opts.unwrap_or_default();
 
@@ -118,7 +118,7 @@ pub async fn init_cli(collection: SharedComponent, opts: Option<Options>) -> Res
   let state = start_server(collection, opts).await?;
   print_info(&state);
 
-  info!("Waiting for ctrl-C");
+  info!("waiting for ctrl-C");
   signal::ctrl_c().await?;
   println!(); // start on a new line.
   state.stop_rpc_server().await;

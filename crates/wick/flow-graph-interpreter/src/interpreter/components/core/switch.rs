@@ -183,7 +183,7 @@ fn gen_signature(
     output_names.sort();
     output_names == default_op_names
   }) {
-    error!("The default operation and all case conditions must have the same output signature.");
+    error!("the default operation and all case conditions must have the same output signature.");
     panic!();
   }
 

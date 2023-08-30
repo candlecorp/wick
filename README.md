@@ -20,7 +20,7 @@
   <p align="center">
     A flow-based runtime for WebAssembly components.
     <br />
-    <a href="https://github.com/candlecorp/wick"><strong>Explore the docs »</strong></a>
+    <a href="https://candle.dev/docs/"><strong>Explore the docs »</strong></a>
     <br />
     <br />
     <a href="#installation">Install</a>
@@ -68,6 +68,25 @@ Wick is a low-code, flow-like runtime for stitching together WebAssembly compone
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
+## What can you do with Wick?
+
+Wick revolves around components. Components are essentially libraries that export operations, or functions.
+
+<img src="docs/static/images/gifs/wick-new-component.gif"/>
+
+Every wick component acts on streams. You can invoke components directly from the command line or combine them to build CLI tools, web applications, or even other components.
+
+<img src="docs/static/images/gifs/wick-invoke.gif"/>
+
+We built wick to reduce all the wasted effort in building software. When all pieces of software connect the same way, we can build single tools that work for *everything*.
+
+Like a test runner that can test anything via configuration alone:
+
+<img src="docs/static/images/gifs/wick-test.gif"/>
+
+Or the ability to audit every resource your application uses *and* validate it in one fell swoop.
+
+<img src="docs/static/images/gifs/wick-config-lockdown.gif"/>
 
 <!-- GETTING STARTED -->
 ## Getting Started
@@ -120,7 +139,7 @@ curl https://ps.wick.run -UseBasicParsing | Invoke-Expression
 ```sh
 git clone https://github.com/candlecorp/wick.git && cd wick
 just deps # install necessary dependencies
-just install # or cargo install --path crates/bins/wick
+just install # or cargo install --path .
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -128,9 +147,9 @@ just install # or cargo install --path crates/bins/wick
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-We're constantly adding examples to the [./examples](https://github.com/candlecorp/wick/tree/main/examples) directory which we also use as a base for our integration tests.
+We're constantly adding examples to the [./examples](https://github.com/candlecorp/wick/tree/main/examples) directory, which we also use as a base for our integration tests.
 
-_For more information, please refer to the [Documentation](https://github.com/candlecorp/wick/wiki)_
+_For more information, please refer to the [Documentation](https://candle.dev/docs/)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -142,8 +161,9 @@ _For more information, please refer to the [Documentation](https://github.com/ca
 - [X] HTTP Trigger
 - [X] Cron Trigger
 - [X] CLI Trigger
+- [X] Expand automatic API generation
+- [X] audit/lockdown support
 - [ ] WebAssembly Component-model support
-- [ ] Expand automatic API generation
 - [ ] WebSocket support
     - [ ] WebTransport as support improves
 
@@ -178,12 +198,10 @@ Wick is distributed under the Elastic License 2.0 and Apache-2.0 licenses. See `
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@candle_corp](https://twitter.com/@candle_corp) - jarrod@candle.dev
+[@candle_corp](https://twitter.com/@candle_corp) - jarrod@candle.dev
 
 Project Link: [https://github.com/candlecorp/wick](https://github.com/candlecorp/wick)
 

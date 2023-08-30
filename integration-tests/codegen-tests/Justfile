@@ -1,0 +1,6 @@
+codegen:
+  cargo run --manifest-path ../codegen-bin/Cargo.toml -- tests/testdata/import-types.wick src/import_types
+
+test:
+  cargo test
+  cargo run --manifest-path ../../Cargo.toml -- test tests/testdata/import-types.wick --trace

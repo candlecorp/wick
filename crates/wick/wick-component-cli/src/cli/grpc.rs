@@ -15,7 +15,7 @@ pub(super) async fn start_rpc_server(
   options: &ServerOptions,
   svc: InvocationServiceServer<InvocationServer>,
 ) -> Result<(SocketAddr, Sender<ServerMessage>)> {
-  debug!("Initializing RPC server");
+  debug!("initializing RPC server");
   let port = options.port.unwrap_or(0);
   let address = options.address.unwrap_or(Ipv4Addr::from_str("127.0.0.1")?);
 
@@ -76,13 +76,13 @@ pub(super) async fn start_rpc_server(
   let (tx, mut rx) = tokio::sync::mpsc::channel::<ServerMessage>(1);
   let server = builder.serve_with_incoming_shutdown(stream, async move {
     rx.recv().await;
-    info!("Received RPC shutdown message.");
+    info!("received RPC shutdown message.");
   });
 
   tokio::spawn(async move {
-    info!("Starting RPC server");
+    info!("starting RPC server");
     if let Err(e) = server.await {
-      error!("Error running RPC server: {}", e);
+      error!("error running RPC server: {}", e);
     };
     info!("RPC server shut down");
   });

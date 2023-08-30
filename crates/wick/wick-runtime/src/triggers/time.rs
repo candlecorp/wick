@@ -96,7 +96,7 @@ async fn create_schedule(
       tokio::spawn(async move {
         let fut = invoke_operation(rt, target, payload, &job_span);
         if let Err(e) = fut.await {
-          job_span.in_scope(|| error!("Error invoking operation: {}", e));
+          job_span.in_scope(|| error!("error invoking operation: {}", e));
           let _ = fail_tx.send(()).await;
         }
       });

@@ -85,6 +85,10 @@ pub enum ManifestError {
   #[error(transparent)]
   TypeParser(#[from] wick_interface_types::ParserError),
 
+  /// Error converting an enum to a specific variant.
+  #[error("could not convert a {0} into a {1}")]
+  VariantError(String, String),
+
   /// Error parsing YAML as a string.
   #[error("Error parsing YAML as a string")]
   Utf8,

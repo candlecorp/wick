@@ -283,7 +283,7 @@ impl ComponentConfiguration {
   /// Initialize the configuration.
   pub(super) fn initialize(&mut self) -> Result<&Self> {
     // This pre-renders the component config's resources without access to the environment.
-    let root_config = self.root_config.clone();
+    let root_config = self.root_config.as_ref();
     trace!(
       num_resources = self.resources.len(),
       num_imports = self.import.len(),
@@ -291,12 +291,8 @@ impl ComponentConfiguration {
       "initializing component"
     );
 
-    for resource in self.resources.iter_mut() {
-      resource.kind.render_config(root_config.as_ref(), None)?;
-    }
-    for import in self.import.iter_mut() {
-      import.kind.render_config(root_config.as_ref(), None)?;
-    }
+    self.resources.render_config(root_config, None)?;
+    self.import.render_config(root_config, None)?;
 
     Ok(self)
   }

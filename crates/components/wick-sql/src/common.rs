@@ -38,7 +38,7 @@ pub(crate) fn gen_signature(
 pub(crate) fn convert_url_resource(resolver: &Resolver, id: &str) -> Result<Url> {
   let addr = resolver(id).and_then(|r| r.try_resource())?;
 
-  let resource: UrlResource = addr.into();
+  let resource: UrlResource = addr.try_into()?;
   resource.url().value().cloned().ok_or(Error::InvalidResourceConfig)
 }
 

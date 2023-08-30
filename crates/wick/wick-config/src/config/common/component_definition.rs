@@ -98,6 +98,19 @@ impl ComponentOperationExpression {
   }
 }
 
+impl Renderable for ComponentOperationExpression {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    if let Some(config) = self.config.as_mut() {
+      config.set_value(Some(config.render(root_config, None, env, None)?));
+    }
+    Ok(())
+  }
+}
+
 impl std::str::FromStr for ComponentOperationExpression {
   type Err = crate::Error;
 

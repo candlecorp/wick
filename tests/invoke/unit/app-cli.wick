@@ -1,0 +1,59 @@
+kind: wick/component@v1
+name: file-reader-cli-adapter
+import:
+  - name: wasi_fs
+    component:
+      kind: wick/component/manifest@v1
+      ref: ../../../examples/components/wasi-fs/component.wick
+      with:
+        root: '{{ ctx.root_config.root }}'
+  - name: log
+    component:
+      kind: wick/component/manifest@v1
+      ref: registry.candle.dev/common/log:0.2.0
+component:
+  kind: wick/component/composite@v1
+  with:
+    - name: root
+      type: string
+  operations:
+    - name: main
+      inputs:
+        - name: args
+          type: 'string[]'
+        - name: interactive
+          type: cli::Interactive
+      outputs:
+        - name: code
+          type: u32
+      uses:
+        - name: GATE
+          operation: core::switch
+          with:
+            outputs:
+              - name: code
+                type: u32
+            cases:
+              - case: true
+                do: self::main::exit_ok
+            default: self::main::exit_err
+      flow:
+        - <>.args.1 -> wasi_fs::read_string -> log::string -> GATE.match
+        - GATE -> <>.code
+      operations:
+        - name: exit_ok
+          uses:
+            - name: SENDER
+              operation: core::sender
+              with:
+                output: 0
+          flow:
+            - SENDER.output -> <>.code
+        - name: exit_err
+          uses:
+            - name: SENDER
+              operation: core::sender
+              with:
+                output: 1
+          flow:
+            - SENDER.output -> <>.code

@@ -1,0 +1,18 @@
+name: mycli
+kind: wick/app@v1
+import:
+  - name: BASELINE
+    component:
+      kind: wick/component/manifest@v1
+      ref: ../../../crates/integration/test-baseline-component/component.yaml
+      with:
+        default_err: 'error from anonymous-component.args.yaml'
+triggers:
+  - kind: wick/trigger/cli@v1
+    operation:
+      name: main
+      component:
+        kind: wick/component/manifest@v1
+        ref: ../../../crates/integration/test-cli-trigger-component/component.yaml
+        provide:
+          baseline: BASELINE

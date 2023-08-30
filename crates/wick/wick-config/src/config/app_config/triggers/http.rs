@@ -1,10 +1,24 @@
-pub use middleware::Middleware;
-use wick_asset_reference::AssetReference;
+use std::collections::HashMap;
 
-pub use self::proxy_router::ProxyRouterConfig;
-pub use self::raw_router::RawRouterConfig;
-pub use self::rest_router::{Contact, Documentation, Info, License, RestRoute, RestRouterConfig, Tools};
-pub use self::static_router::StaticRouterConfig;
+pub use middleware::{Middleware, MiddlewareBuilder, MiddlewareBuilderError};
+use wick_asset_reference::AssetReference;
+use wick_packet::RuntimeConfig;
+
+pub use self::proxy_router::{ProxyRouterConfig, ProxyRouterConfigBuilder, ProxyRouterConfigBuilderError};
+pub use self::raw_router::{RawRouterConfig, RawRouterConfigBuilder, RawRouterConfigBuilderError};
+pub use self::rest_router::{
+  Contact,
+  Documentation,
+  Info,
+  License,
+  RestRoute,
+  RestRouterConfig,
+  RestRouterConfigBuilder,
+  RestRouterConfigBuilderError,
+  Tools,
+};
+pub use self::static_router::{StaticRouterConfig, StaticRouterConfigBuilder, StaticRouterConfigBuilderError};
+use crate::config::common::template_config::Renderable;
 use crate::config::ImportBinding;
 use crate::error::ManifestError;
 use crate::ExpandImports;
@@ -42,6 +56,31 @@ pub enum HttpRouterConfig {
   RestRouter(RestRouterConfig),
   StaticRouter(StaticRouterConfig),
   ProxyRouter(ProxyRouterConfig),
+}
+
+impl Renderable for HttpRouterConfig {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    match self {
+      HttpRouterConfig::RawRouter(v) => v.render_config(root_config, env),
+      HttpRouterConfig::RestRouter(v) => v.render_config(root_config, env),
+      HttpRouterConfig::StaticRouter(v) => v.render_config(root_config, env),
+      HttpRouterConfig::ProxyRouter(v) => v.render_config(root_config, env),
+    }
+  }
+}
+
+impl Renderable for HttpTriggerConfig {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    self.routers.render_config(root_config, env)
+  }
 }
 
 impl ExpandImports for HttpTriggerConfig {

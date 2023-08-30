@@ -105,7 +105,7 @@ where
           outputs.broadcast_open();
           continue;
         }
-        tracing::debug!("Received open bracket while already started");
+        tracing::debug!("received open bracket while already started");
         let _ = tx.send_result(Err(Box::new(wick_packet::Error::Component(
           "Received open bracket while already started".to_owned(),
         ))));

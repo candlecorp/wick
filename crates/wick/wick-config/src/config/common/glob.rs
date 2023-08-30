@@ -48,7 +48,7 @@ impl AssetManager for Glob {
     let entries = match glob::glob(pattern.to_str().unwrap()) {
       Ok(entries) => entries,
       Err(e) => {
-        error!("Failed to glob: {}", e);
+        error!("failed to glob: {}", e);
         panic!();
       }
     };

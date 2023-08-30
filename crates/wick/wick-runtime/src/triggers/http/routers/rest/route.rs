@@ -108,7 +108,7 @@ impl Route {
         PathPart::Param(field) => {
           if let Some(part) = path_parts.next() {
             let Ok(value) = field.ty.coerce_str(part) else {
-              warn!("Failed to coerce {:?} to {:?}", part, field.ty);
+              warn!("failed to coerce {:?} to {:?}", part, field.ty);
               return Err(HttpError::InvalidParameter(field.name.clone()));
             };
             path_params.push(field.clone().with_value(value));
@@ -142,7 +142,7 @@ impl Route {
 
           if let Type::List { ty } = &param.ty {
             let Ok(value) = ty.coerce_str(value) else {
-              warn!("Failed to coerce {} to {} for query param {}", value, param.ty, name);
+              warn!("failed to coerce {} to {} for query param {}", value, param.ty, name);
               return Err(HttpError::InvalidParameter(param.name.clone()));
             };
 
@@ -162,7 +162,7 @@ impl Route {
           }
 
           let Ok(value) = param.ty.coerce_str(value) else {
-            warn!("Failed to coerce query param {} to {}", name, param.ty);
+            warn!("failed to coerce query param {} to {}", name, param.ty);
             return Err(HttpError::InvalidParameter(param.name.clone()));
           };
 

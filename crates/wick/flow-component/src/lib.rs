@@ -109,6 +109,7 @@ pub use serde_json::Value;
 pub struct ComponentError {
   source: Box<dyn std::error::Error + Send + Sync>,
 }
+
 impl std::error::Error for ComponentError {}
 impl std::fmt::Display for ComponentError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -139,6 +140,24 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for ComponentError {
 impl From<anyhow::Error> for ComponentError {
   fn from(source: anyhow::Error) -> Self {
     Self::message(&source.to_string())
+  }
+}
+
+/// Trait that allows for conversion of a result into a component error.
+pub trait IntoComponentResult<T, E>
+where
+  E: std::error::Error + Send + Sync + 'static,
+{
+  /// Convert a Result<T,E> into a Result<T, ComponentError>.
+  fn into_component_error(self) -> Result<T, ComponentError>;
+}
+
+impl<T, E> IntoComponentResult<T, E> for Result<T, E>
+where
+  E: std::error::Error + Send + Sync + 'static,
+{
+  fn into_component_error(self) -> Result<T, ComponentError> {
+    self.map_err(ComponentError::new)
   }
 }
 

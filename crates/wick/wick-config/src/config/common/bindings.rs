@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use wick_packet::RuntimeConfig;
 
+use super::template_config::Renderable;
 use super::{ComponentDefinition, HighLevelComponent, ImportDefinition, InterfaceDefinition};
 use crate::config::components::WasmComponent;
 use crate::config::{self};
@@ -19,6 +20,16 @@ pub struct ImportBinding {
   pub(crate) id: String,
   /// The kind/type of the collection.
   pub(crate) kind: ImportDefinition,
+}
+
+impl Renderable for ImportBinding {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), crate::error::ManifestError> {
+    self.kind.render_config(root_config, env)
+  }
 }
 
 impl ImportBinding {

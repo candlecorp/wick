@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
+use flow_component::{BoxFuture, Component, ComponentError, IntoComponentResult, RuntimeCallback};
 use futures::{Stream, StreamExt, TryStreamExt};
 use reqwest::header::CONTENT_TYPE;
 use reqwest::{ClientBuilder, Method, Request, RequestBuilder};
@@ -44,8 +44,8 @@ impl HttpClientComponent {
     validate(&config, resolver)?;
     let addr: UrlResource = resolver(config.resource())
       .and_then(|r| r.try_resource())
-      .map_err(ComponentError::new)?
-      .into();
+      .and_then(|r| r.try_url())
+      .into_component_error()?;
 
     let mut sig = ComponentSignature::new("wick/component/http");
     sig.metadata.version = metadata.map(|v| v.version().to_owned());

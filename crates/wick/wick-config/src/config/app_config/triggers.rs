@@ -1,15 +1,57 @@
-use serde_json::Value;
+use std::collections::HashMap;
 
-use crate::config::*;
+use serde_json::Value;
+use wick_asset_reference::AssetReference;
+use wick_packet::RuntimeConfig;
+
 use crate::error::ManifestError;
 use crate::ExpandImports;
 mod cli;
 mod http;
 mod time;
 
-pub use cli::*;
-pub use http::*;
-pub use time::*;
+pub use cli::{CliConfig, CliConfigBuilder, CliConfigBuilderError};
+pub use http::{
+  Contact,
+  Documentation,
+  HttpRouterConfig,
+  HttpRouterKind,
+  HttpTriggerConfig,
+  HttpTriggerConfigBuilder,
+  HttpTriggerConfigBuilderError,
+  Info,
+  License,
+  Middleware,
+  MiddlewareBuilder,
+  MiddlewareBuilderError,
+  ProxyRouterConfig,
+  ProxyRouterConfigBuilder,
+  ProxyRouterConfigBuilderError,
+  RawRouterConfig,
+  RawRouterConfigBuilder,
+  RawRouterConfigBuilderError,
+  RestRoute,
+  RestRouterConfig,
+  RestRouterConfigBuilder,
+  RestRouterConfigBuilderError,
+  StaticRouterConfig,
+  StaticRouterConfigBuilder,
+  StaticRouterConfigBuilderError,
+  Tools,
+  WickRouter,
+};
+pub use time::{
+  ScheduleConfig,
+  ScheduleConfigBuilder,
+  ScheduleConfigBuilderError,
+  TimeTriggerConfig,
+  TimeTriggerConfigBuilder,
+  TimeTriggerConfigBuilderError,
+};
+
+use self::common::template_config::Renderable;
+use self::common::ImportBinding;
+use crate::config::common;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager, serde::Serialize)]
 #[asset(asset(AssetReference))]
@@ -32,6 +74,20 @@ impl TriggerDefinition {
       TriggerDefinition::Cli(_) => TriggerKind::Cli,
       TriggerDefinition::Http(_) => TriggerKind::Http,
       TriggerDefinition::Time(_) => TriggerKind::Time,
+    }
+  }
+}
+
+impl Renderable for TriggerDefinition {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    match self {
+      TriggerDefinition::Cli(v) => v.render_config(root_config, env),
+      TriggerDefinition::Http(v) => v.render_config(root_config, env),
+      TriggerDefinition::Time(v) => v.render_config(root_config, env),
     }
   }
 }

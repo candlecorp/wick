@@ -164,9 +164,9 @@ mod tests {
     let outputs = component
       .handle(invocation, Some(config.try_into()?), panic_callback())
       .await?;
-    debug!("Got stream");
+    debug!("got stream");
     let mut packets: Vec<_> = outputs.collect().await;
-    debug!("Output packets: {:?}", packets);
+    debug!("output packets: {:?}", packets);
 
     let output = packets.pop().unwrap().unwrap();
 
@@ -185,9 +185,9 @@ mod tests {
     let outputs = component
       .handle(invocation, Some(config.try_into()?), panic_callback())
       .await?;
-    debug!("Got stream");
+    debug!("got stream");
     let mut packets: Vec<_> = outputs.collect().await;
-    debug!("Output packets: {:?}", packets);
+    debug!("output packets: {:?}", packets);
 
     let _ = packets.pop();
     let output = packets.pop().unwrap().unwrap();
@@ -210,7 +210,7 @@ mod tests {
       .handle(invocation, Some(config.try_into()?), panic_callback())
       .await?;
     let mut packets: Vec<_> = outputs.collect().await;
-    debug!("Output packets: {:?}", packets);
+    debug!("output packets: {:?}", packets);
 
     let _ = packets.pop();
     let output = packets.pop().unwrap().unwrap();

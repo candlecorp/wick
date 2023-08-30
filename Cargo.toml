@@ -1,3 +1,73 @@
+[package]
+name = "wick-cli"
+version = "0.14.0"
+edition = "2021"
+default-run = "wick"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "The binary executable for the Wick project."
+include = ["src/**/*", "LICENSE", "README.md"]
+
+[features]
+default = []
+cross = ["openssl/vendored"]
+console = [
+  "wick-logger/console",
+  "tokio/full",
+  "tokio/tracing",
+] # Build with RUSTFLAGS="--cfg tokio_unstable"
+mem-profiler = ["dhat"]
+
+[dependencies]
+wick-xdg = { workspace = true, features = ["serde"] }
+wick-settings = { workspace = true }
+wick-packet = { workspace = true }
+wick-interface-types = { workspace = true }
+wick-rpc = { workspace = true, features = ["client"] }
+wick-component-cli = { workspace = true, features = ["cli", "grpc"] }
+wick-host = { workspace = true }
+wick-config = { workspace = true, features = ["v1", "v0", "config"] }
+wick-test = { workspace = true }
+wick-wascap = { workspace = true }
+wick-oci-utils = { workspace = true }
+wick-package = { workspace = true }
+wick-logger = { workspace = true }
+flow-expression-parser = { workspace = true }
+seeded-random = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+tracing = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+anyhow = { workspace = true }
+dialoguer = { workspace = true, features = ["password"] }
+human-panic = { workspace = true }
+futures = { workspace = true }
+thiserror = { workspace = true }
+clap = { workspace = true, default-features = true, features = ["derive"] }
+nkeys = { workspace = true }
+atty = { workspace = true }
+jaq-core = { workspace = true, features = ["serde_json"] }
+markup-converter = { workspace = true }
+openssl = { workspace = true, features = ["vendored"], optional = true }
+option-utils = { workspace = true }
+structured-output = { workspace = true }
+regex = { workspace = true }
+dhat = { workspace = true, optional = true }
+once_cell = { workspace = true }
+liquid-json = { workspace = true, features = ["serde"] }
+
+[dev-dependencies]
+test_bin = { workspace = true }
+trycmd = { workspace = true }
+test-logger = { workspace = true }
+tokio = { workspace = true, features = ["process"] }
+rstest = { workspace = true }
+
+[[bin]]
+name = "wick"
+path = "src/main.rs"
+
+
 [workspace]
 resolver = "2"
 members = [
@@ -5,11 +75,14 @@ members = [
   "crates/integration/test-bdd",
   "crates/misc/*",
   "crates/components/*",
-  "crates/bins/*",
   "crates/wick/*",
-  "tests/*",
+  "integration-tests/*",
 ]
-exclude = ["crates/wick/wick-rpc/codegen", "tests/template", "tests/testdata"]
+exclude = [
+  "crates/wick/wick-rpc/codegen",
+  "integration-tests/template",
+  "integration-tests/testdata",
+]
 
 [profile.release-with-debug]
 inherits = "release"

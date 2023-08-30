@@ -105,6 +105,8 @@ pub mod config;
 pub mod error;
 mod utils;
 
+pub(crate) use utils::impl_from_for;
+
 /// Wick Manifest v0 implementation.
 #[cfg(feature = "v0")]
 pub mod v0;

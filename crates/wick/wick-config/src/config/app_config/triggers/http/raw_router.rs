@@ -1,11 +1,17 @@
+use std::collections::HashMap;
+
 use wick_asset_reference::AssetReference;
+use wick_packet::RuntimeConfig;
 
 use super::index_to_router_id;
 use super::middleware::expand_for_middleware_components;
+use crate::config::template_config::Renderable;
 use crate::config::{self, ComponentOperationExpression, ImportBinding};
 use crate::error::ManifestError;
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
+#[derive(
+  Debug, Clone, derive_builder::Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[asset(asset(AssetReference))]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
 #[must_use]
@@ -34,6 +40,17 @@ impl super::WickRouter for RawRouterConfig {
 
   fn path(&self) -> &str {
     &self.path
+  }
+}
+
+impl Renderable for RawRouterConfig {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    self.operation.render_config(root_config, env)?;
+    self.middleware.render_config(root_config, env)
   }
 }
 
