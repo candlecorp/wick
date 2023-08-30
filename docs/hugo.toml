@@ -9,6 +9,7 @@ enableInlineShortcodes = true
 menu_style = "open-menu"
 wick_repo = "https://github.com/candlecorp/wick"
 logo = "/images/candle-icon.png"
+google_analytics_id = "G-JFXL3ZRFNY"
 
 [markup]
 defaultMarkdownHandler = 'goldmark'
