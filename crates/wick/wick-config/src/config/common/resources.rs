@@ -8,22 +8,12 @@ use wick_packet::RuntimeConfig;
 
 use super::template_config::Renderable;
 use crate::config::TemplateConfig;
-use crate::error::{ManifestError, ReferenceError};
+use crate::error::ManifestError;
 
-macro_rules! try_kind {
-  ($self:ident, $kind:ident) => {
-    match $self {
-      ResourceDefinition::$kind(v) => Ok(v),
-      _ => Err(
-        ReferenceError::ResourceType {
-          expected: ResourceKind::$kind,
-          actual: $self.kind(),
-        }
-        .into(),
-      ),
-    }
-  };
-}
+crate::impl_from_for!(ResourceDefinition, TcpPort);
+crate::impl_from_for!(ResourceDefinition, UdpPort);
+crate::impl_from_for!(ResourceDefinition, Volume);
+crate::impl_from_for!(ResourceDefinition, Url, UrlResource);
 
 #[derive(
   Debug, Clone, derive_builder::Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
@@ -41,12 +31,22 @@ pub struct ResourceBinding {
   pub(crate) kind: ResourceDefinition,
 }
 
+impl Renderable for ResourceBinding {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    self.kind.render_config(root_config, env)
+  }
+}
+
 impl ResourceBinding {
   /// Create a new [ResourceBinding] with specified name and [ResourceDefinition].
-  pub fn new(name: impl AsRef<str>, kind: ResourceDefinition) -> Self {
+  pub fn new(name: impl AsRef<str>, kind: impl Into<ResourceDefinition>) -> Self {
     Self {
       id: name.as_ref().to_owned(),
-      kind,
+      kind: kind.into(),
     }
   }
 }
@@ -116,46 +116,19 @@ impl ResourceDefinition {
   }
 
   pub fn try_tcpport(self) -> Result<TcpPort, ManifestError> {
-    try_kind!(self, TcpPort)
+    self.try_into()
   }
 
   pub fn try_udpport(self) -> Result<UdpPort, ManifestError> {
-    try_kind!(self, UdpPort)
+    self.try_into()
   }
 
   pub fn try_url(self) -> Result<UrlResource, ManifestError> {
-    try_kind!(self, Url)
+    self.try_into()
   }
 
   pub fn try_volume(self) -> Result<Volume, ManifestError> {
-    try_kind!(self, Volume)
-  }
-}
-
-impl From<ResourceDefinition> for TcpPort {
-  fn from(value: ResourceDefinition) -> Self {
-    match value {
-      ResourceDefinition::TcpPort(v) => v,
-      _ => panic!("Cannot convert non-tcp port to tcp port"),
-    }
-  }
-}
-
-impl From<ResourceDefinition> for UdpPort {
-  fn from(value: ResourceDefinition) -> Self {
-    match value {
-      ResourceDefinition::UdpPort(v) => v,
-      _ => panic!("Cannot convert non-udp port to udp port"),
-    }
-  }
-}
-
-impl From<ResourceDefinition> for UrlResource {
-  fn from(value: ResourceDefinition) -> Self {
-    match value {
-      ResourceDefinition::Url(v) => v,
-      _ => panic!("Cannot convert non-URL resource to URL"),
-    }
+    self.try_into()
   }
 }
 

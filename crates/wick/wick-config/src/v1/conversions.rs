@@ -1200,7 +1200,7 @@ impl TryFrom<v1::SqlComponent> for components::SqlComponentConfig {
   }
 }
 
-impl TryFrom<v1::SqlQueryKind> for components::SqlOperationKind {
+impl TryFrom<v1::SqlQueryKind> for components::SqlOperationDefinition {
   type Error = crate::Error;
   fn try_from(value: v1::SqlQueryKind) -> Result<Self> {
     Ok(match value {
@@ -1210,7 +1210,7 @@ impl TryFrom<v1::SqlQueryKind> for components::SqlOperationKind {
   }
 }
 
-impl TryFrom<v1::SqlQueryOperationDefinition> for components::SqlOperationDefinition {
+impl TryFrom<v1::SqlQueryOperationDefinition> for components::SqlQueryOperationDefinition {
   type Error = crate::Error;
   fn try_from(value: v1::SqlQueryOperationDefinition) -> Result<Self> {
     Ok(Self {
@@ -1302,20 +1302,20 @@ impl TryFrom<components::SqlComponentConfig> for v1::SqlComponent {
   }
 }
 
-impl TryFrom<components::SqlOperationKind> for v1::SqlQueryKind {
+impl TryFrom<components::SqlOperationDefinition> for v1::SqlQueryKind {
   type Error = crate::Error;
 
-  fn try_from(value: components::SqlOperationKind) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: components::SqlOperationDefinition) -> std::result::Result<Self, Self::Error> {
     Ok(match value {
-      components::SqlOperationKind::Query(v) => Self::SqlQueryOperationDefinition(v.try_into()?),
-      components::SqlOperationKind::Exec(v) => Self::SqlExecOperationDefinition(v.try_into()?),
+      components::SqlOperationDefinition::Query(v) => Self::SqlQueryOperationDefinition(v.try_into()?),
+      components::SqlOperationDefinition::Exec(v) => Self::SqlExecOperationDefinition(v.try_into()?),
     })
   }
 }
 
-impl TryFrom<components::SqlOperationDefinition> for v1::SqlQueryOperationDefinition {
+impl TryFrom<components::SqlQueryOperationDefinition> for v1::SqlQueryOperationDefinition {
   type Error = crate::Error;
-  fn try_from(value: components::SqlOperationDefinition) -> Result<Self> {
+  fn try_from(value: components::SqlQueryOperationDefinition) -> Result<Self> {
     Ok(Self {
       name: value.name,
       inputs: value.inputs.try_map_into()?,

@@ -104,6 +104,15 @@ impl LiquidJsonConfig {
   }
 
   #[must_use]
+  pub fn new_template(template: HashMap<String, LiquidJsonValue>) -> Self {
+    Self {
+      value: None,
+      template,
+      root_config: None,
+    }
+  }
+
+  #[must_use]
   /// Retrieve the runtime configuration
   pub fn value(&self) -> Option<&RuntimeConfig> {
     self.value.as_ref()
@@ -138,5 +147,27 @@ impl From<HashMap<String, Value>> for LiquidJsonConfig {
 impl From<LiquidJsonConfig> for HashMap<String, LiquidJsonValue> {
   fn from(value: LiquidJsonConfig) -> Self {
     value.template
+  }
+}
+
+impl TryFrom<Value> for LiquidJsonConfig {
+  type Error = Error;
+
+  fn try_from(value: Value) -> Result<Self, Self::Error> {
+    let value = match value {
+      Value::Object(map) => map,
+      _ => return Err(Error::ConfigurationTemplate("expected object".to_owned())),
+    };
+
+    let mut template = HashMap::new();
+    for (k, v) in value {
+      template.insert(k, v.into());
+    }
+
+    Ok(Self {
+      value: None,
+      template,
+      root_config: None,
+    })
   }
 }

@@ -1,11 +1,17 @@
+use std::collections::HashMap;
+
 use wick_asset_reference::AssetReference;
+use wick_packet::RuntimeConfig;
 
 use super::index_to_router_id;
 use super::middleware::expand_for_middleware_components;
+use crate::config::template_config::Renderable;
 use crate::config::{self, ImportBinding};
 use crate::error::ManifestError;
 
-#[derive(Debug, Clone, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
+#[derive(
+  Debug, Clone, derive_builder::Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
+)]
 #[asset(asset(AssetReference))]
 #[property(get(public), set(private), mut(disable))]
 
@@ -24,6 +30,16 @@ pub struct ProxyRouterConfig {
   /// Whether or not to strip the router's path from the proxied request.
   #[asset(skip)]
   pub(crate) strip_path: bool,
+}
+
+impl Renderable for ProxyRouterConfig {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    self.middleware.render_config(root_config, env)
+  }
 }
 
 impl super::WickRouter for ProxyRouterConfig {

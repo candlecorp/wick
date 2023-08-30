@@ -17,6 +17,35 @@ pub(crate) fn opt_str_to_ipv4addr(v: &Option<String>) -> Result<Option<Ipv4Addr>
   })
 }
 
+/// Utility macro for implementing `From` for a type.
+macro_rules! impl_from_for {
+  ($root:ident, $variant: ident, $type:ty) => {
+    impl From<$type> for $root {
+      fn from(value: $type) -> Self {
+        Self::$variant(value)
+      }
+    }
+    #[allow(unused_qualifications)]
+    impl TryFrom<$root> for $type {
+      type Error = crate::error::ManifestError;
+      fn try_from(value: $root) -> std::result::Result<Self, Self::Error> {
+        match value {
+          $root::$variant(value) => Ok(value),
+          _ => Err(Self::Error::VariantError(
+            value.kind().to_string(),
+            stringify!($type).to_owned(),
+          )),
+        }
+      }
+    }
+  };
+  ($root:ident, $variant: ident) => {
+    crate::impl_from_for!($root, $variant, $variant);
+  };
+}
+// has to be specified after the macro;
+pub(crate) use impl_from_for;
+
 pub(crate) trait VecTryMapInto<I> {
   fn try_map_into<R>(self) -> Result<Vec<R>>
   where
