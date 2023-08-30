@@ -6,6 +6,7 @@ use wick_interface_types::{Field, OperationSignatures};
 
 use super::{ComponentConfig, OperationConfig};
 use crate::config::{self, ErrorBehavior};
+use crate::utils::impl_from_for;
 
 #[derive(
   Debug,
@@ -41,7 +42,7 @@ pub struct SqlComponentConfig {
   #[builder(default)]
   #[property(skip)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) operations: Vec<SqlOperationKind>,
+  pub(crate) operations: Vec<SqlOperationDefinition>,
 }
 
 impl SqlComponentConfig {}
@@ -52,17 +53,20 @@ impl OperationSignatures for SqlComponentConfig {
   }
 }
 
-impl From<SqlOperationKind> for wick_interface_types::OperationSignature {
-  fn from(value: SqlOperationKind) -> Self {
+impl_from_for!(SqlOperationDefinition, Query, SqlQueryOperationDefinition);
+impl_from_for!(SqlOperationDefinition, Exec, SqlExecOperationDefinition);
+
+impl From<SqlOperationDefinition> for wick_interface_types::OperationSignature {
+  fn from(value: SqlOperationDefinition) -> Self {
     match value {
-      SqlOperationKind::Query(v) => v.into(),
-      SqlOperationKind::Exec(v) => v.into(),
+      SqlOperationDefinition::Query(v) => v.into(),
+      SqlOperationDefinition::Exec(v) => v.into(),
     }
   }
 }
 
 impl ComponentConfig for SqlComponentConfig {
-  type Operation = SqlOperationKind;
+  type Operation = SqlOperationDefinition;
 
   fn operations(&self) -> &[Self::Operation] {
     &self.operations
@@ -75,61 +79,84 @@ impl ComponentConfig for SqlComponentConfig {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum SqlOperationKind {
-  Query(SqlOperationDefinition),
+pub enum SqlOperationDefinition {
+  Query(SqlQueryOperationDefinition),
   Exec(SqlExecOperationDefinition),
 }
 
-impl SqlOperationKind {
+#[derive(Debug, Clone, Copy)]
+pub enum SqlOperationKind {
+  Query,
+  Exec,
+}
+
+impl std::fmt::Display for SqlOperationKind {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      SqlOperationKind::Query => write!(f, "sql query operation"),
+      SqlOperationKind::Exec => write!(f, "sql exec operation"),
+    }
+  }
+}
+
+impl SqlOperationDefinition {
   #[must_use]
   pub fn on_error(&self) -> ErrorBehavior {
     match self {
-      SqlOperationKind::Query(v) => v.on_error,
-      SqlOperationKind::Exec(v) => v.on_error,
+      SqlOperationDefinition::Query(v) => v.on_error,
+      SqlOperationDefinition::Exec(v) => v.on_error,
     }
   }
 
   #[must_use]
   pub fn arguments(&self) -> &[String] {
     match self {
-      SqlOperationKind::Query(v) => &v.arguments,
-      SqlOperationKind::Exec(v) => &v.arguments,
+      SqlOperationDefinition::Query(v) => &v.arguments,
+      SqlOperationDefinition::Exec(v) => &v.arguments,
     }
   }
 
   #[must_use]
   pub fn query(&self) -> &str {
     match self {
-      SqlOperationKind::Query(v) => &v.query,
-      SqlOperationKind::Exec(v) => &v.exec,
-    }
-  }
-}
-
-impl OperationConfig for SqlOperationKind {
-  fn name(&self) -> &str {
-    match self {
-      SqlOperationKind::Query(v) => &v.name,
-      SqlOperationKind::Exec(v) => &v.name,
+      SqlOperationDefinition::Query(v) => &v.query,
+      SqlOperationDefinition::Exec(v) => &v.exec,
     }
   }
 
-  fn inputs(&self) -> Cow<Vec<Field>> {
+  #[must_use]
+  pub fn kind(&self) -> SqlOperationKind {
     match self {
-      SqlOperationKind::Query(v) => v.inputs(),
-      SqlOperationKind::Exec(v) => v.inputs(),
-    }
-  }
-
-  fn outputs(&self) -> Cow<Vec<Field>> {
-    match self {
-      SqlOperationKind::Query(v) => v.outputs(),
-      SqlOperationKind::Exec(v) => v.outputs(),
+      SqlOperationDefinition::Query(_) => SqlOperationKind::Query,
+      SqlOperationDefinition::Exec(_) => SqlOperationKind::Exec,
     }
   }
 }
 
 impl OperationConfig for SqlOperationDefinition {
+  fn name(&self) -> &str {
+    match self {
+      SqlOperationDefinition::Query(v) => &v.name,
+      SqlOperationDefinition::Exec(v) => &v.name,
+    }
+  }
+
+  fn inputs(&self) -> Cow<Vec<Field>> {
+    match self {
+      SqlOperationDefinition::Query(v) => v.inputs(),
+      SqlOperationDefinition::Exec(v) => v.inputs(),
+    }
+  }
+
+  fn outputs(&self) -> Cow<Vec<Field>> {
+    match self {
+      SqlOperationDefinition::Query(v) => v.outputs(),
+      SqlOperationDefinition::Exec(v) => v.outputs(),
+    }
+  }
+}
+
+impl OperationConfig for SqlQueryOperationDefinition {
   fn name(&self) -> &str {
     &self.name
   }
@@ -157,8 +184,8 @@ impl OperationConfig for SqlExecOperationDefinition {
   }
 }
 
-impl From<SqlOperationDefinition> for wick_interface_types::OperationSignature {
-  fn from(operation: SqlOperationDefinition) -> Self {
+impl From<SqlQueryOperationDefinition> for wick_interface_types::OperationSignature {
+  fn from(operation: SqlQueryOperationDefinition) -> Self {
     // TODO: Properly use configured outputs here.
     // Forcing SQL components to have a single object output called "output" is a temporary
     // limitation
@@ -198,7 +225,7 @@ impl From<SqlExecOperationDefinition> for wick_interface_types::OperationSignatu
 #[asset(asset(config::AssetReference))]
 #[builder(setter(into))]
 /// An operation whose implementation is a SQL query to execute on a database.
-pub struct SqlOperationDefinition {
+pub struct SqlQueryOperationDefinition {
   /// The name of the operation.
   #[asset(skip)]
   #[property(skip)]

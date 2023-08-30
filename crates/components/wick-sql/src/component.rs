@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use tracing::Span;
 use url::Url;
-use wick_config::config::components::{ComponentConfig, OperationConfig, SqlComponentConfig, SqlOperationKind};
+use wick_config::config::components::{ComponentConfig, OperationConfig, SqlComponentConfig, SqlOperationDefinition};
 use wick_config::config::{ErrorBehavior, Metadata};
 use wick_config::Resolver;
 use wick_interface_types::{ComponentSignature, Field, OperationSignatures, Type};
@@ -228,7 +228,7 @@ fn validate(config: &SqlComponentConfig, _resolver: &Resolver) -> Result<(), Err
 
 async fn handle_call<'a, 'b, 'c>(
   connection: &'a mut Connection<'c>,
-  opdef: SqlOperationKind,
+  opdef: SqlOperationDefinition,
   input_streams: Vec<PacketStream>,
   tx: PacketSender,
   stmt: &'b str,
@@ -255,7 +255,7 @@ where
 
 async fn handle_stream<'a, 'b, 'c>(
   connection: &'a mut Connection<'c>,
-  opdef: SqlOperationKind,
+  opdef: SqlOperationDefinition,
   mut input_streams: Vec<PacketStream>,
   tx: PacketSender,
   stmt: &'b str,
@@ -304,10 +304,12 @@ where
 
     let start = SystemTime::now();
     let result = match &opdef {
-      SqlOperationKind::Query(_) => {
+      SqlOperationDefinition::Query(_) => {
         query(connection, tx.clone(), opdef.clone(), type_wrappers, stmt, span.clone()).await
       }
-      SqlOperationKind::Exec(_) => exec(connection, tx.clone(), opdef.clone(), type_wrappers, stmt, span.clone()).await,
+      SqlOperationDefinition::Exec(_) => {
+        exec(connection, tx.clone(), opdef.clone(), type_wrappers, stmt, span.clone()).await
+      }
     };
     let duration = SystemTime::now().duration_since(start).unwrap();
 
@@ -331,7 +333,7 @@ where
 async fn query<'a, 'b, 'c>(
   client: &'a mut Connection<'c>,
   tx: PacketSender,
-  def: SqlOperationKind,
+  def: SqlOperationDefinition,
   args: Vec<(Type, Packet)>,
   stmt: &'b str,
   _span: Span,
@@ -360,7 +362,7 @@ where
 async fn exec<'a, 'b, 'c>(
   connection: &'a mut Connection<'c>,
   tx: PacketSender,
-  def: SqlOperationKind,
+  def: SqlOperationDefinition,
   args: Vec<(Type, Packet)>,
   stmt: &'b str,
   _span: Span,
@@ -386,10 +388,10 @@ where
 static POSITIONAL_ARGS: Lazy<Regex> = Lazy::new(|| Regex::new(r"\$(?<id>\d+)\b").unwrap());
 static WICK_ID_ARGS: Lazy<Regex> = Lazy::new(|| Regex::new(r"\$\{(?<id>\w+)\}").unwrap());
 
-fn normalize_operations(ops: &mut Vec<SqlOperationKind>, db: DbKind) {
+fn normalize_operations(ops: &mut Vec<SqlOperationDefinition>, db: DbKind) {
   for operations in ops {
     match operations {
-      wick_config::config::components::SqlOperationKind::Query(ref mut op) => {
+      wick_config::config::components::SqlOperationDefinition::Query(ref mut op) => {
         let (mut query, args) = normalize_inline_ids(op.query(), op.arguments().to_vec());
         if db == DbKind::Mssql {
           query = normalize_mssql_query(query);
@@ -398,7 +400,7 @@ fn normalize_operations(ops: &mut Vec<SqlOperationKind>, db: DbKind) {
         op.set_query(query);
         op.set_arguments(args);
       }
-      wick_config::config::components::SqlOperationKind::Exec(ref mut op) => {
+      wick_config::config::components::SqlOperationDefinition::Exec(ref mut op) => {
         let (mut query, args) = normalize_inline_ids(op.exec(), op.arguments().to_vec());
         if db == DbKind::Mssql {
           query = normalize_mssql_query(query);
@@ -500,8 +502,8 @@ mod integration_test {
   use wick_config::config::components::{
     ComponentConfig,
     SqlComponentConfigBuilder,
-    SqlOperationDefinitionBuilder,
-    SqlOperationKind,
+    SqlOperationDefinition,
+    SqlQueryOperationDefinitionBuilder,
   };
   use wick_config::config::ResourceDefinition;
   use wick_interface_types::{Field, Type};
@@ -522,7 +524,7 @@ mod integration_test {
       .tls(false)
       .build()
       .unwrap();
-    let op = SqlOperationDefinitionBuilder::default()
+    let op = SqlQueryOperationDefinitionBuilder::default()
       .name("test")
       .query("select id,name from users where id=$1;")
       .inputs([Field::new("input", Type::I32)])
@@ -531,7 +533,7 @@ mod integration_test {
       .build()
       .unwrap();
 
-    config.operations_mut().push(SqlOperationKind::Query(op));
+    config.operations_mut().push(SqlOperationDefinition::Query(op));
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource(
       "db",
@@ -578,7 +580,7 @@ mod integration_test {
       .tls(false)
       .build()
       .unwrap();
-    let op = SqlOperationDefinitionBuilder::default()
+    let op = SqlQueryOperationDefinitionBuilder::default()
       .name("test")
       .query("select id,name from users where id=$1;")
       .inputs([Field::new("input", Type::I32)])
@@ -587,7 +589,7 @@ mod integration_test {
       .build()
       .unwrap();
 
-    config.operations_mut().push(SqlOperationKind::Query(op));
+    config.operations_mut().push(SqlOperationDefinition::Query(op));
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource(
       "db",
@@ -629,7 +631,7 @@ mod integration_test {
       .tls(false)
       .build()
       .unwrap();
-    let op = SqlOperationDefinitionBuilder::default()
+    let op = SqlQueryOperationDefinitionBuilder::default()
       .name("test")
       .query("select id,name from users where id=$1;")
       .inputs([Field::new("input", Type::I32)])
@@ -638,7 +640,7 @@ mod integration_test {
       .build()
       .unwrap();
 
-    config.operations_mut().push(SqlOperationKind::Query(op));
+    config.operations_mut().push(SqlOperationDefinition::Query(op));
     let mut app_config = wick_config::config::AppConfiguration::default();
     app_config.add_resource(
       "db",

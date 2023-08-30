@@ -214,14 +214,14 @@ impl AppConfiguration {
   pub(super) fn initialize(&mut self) -> Result<&Self> {
     // This pre-renders the application config's resources with access to the environment
     // so they're resulting value is intuitively based on where it was initially defined.
-    let root_config = self.root_config.clone();
+    let root_config = self.root_config.as_ref();
     trace!(
       num_resources = self.resources.len(),
       num_imports = self.import.len(),
       ?root_config,
       "initializing app resources"
     );
-    let env = self.env.clone();
+    let env = self.env.as_ref();
 
     let mut bindings = Vec::new();
     for (i, trigger) in self.triggers.iter_mut().enumerate() {
@@ -229,12 +229,10 @@ impl AppConfiguration {
     }
     self.import.extend(bindings);
 
-    for resource in self.resources.iter_mut() {
-      resource.kind.render_config(root_config.as_ref(), env.as_ref())?;
-    }
-    for import in self.import.iter_mut() {
-      import.kind.render_config(root_config.as_ref(), env.as_ref())?;
-    }
+    self.resources.render_config(root_config, env)?;
+    self.import.render_config(root_config, env)?;
+    self.triggers.render_config(root_config, env)?;
+
     Ok(self)
   }
 
@@ -334,9 +332,82 @@ impl OwnedConfigurationItem {
 
 impl AppConfigurationBuilder {
   /// Build the configuration.
-  pub fn build(self) -> Result<AppConfiguration> {
-    let config = self.build_internal()?;
+  pub fn build(&self) -> Result<AppConfiguration> {
+    let config = self.clone();
+    let config = config.build_internal()?;
     config.validate()?;
     Ok(config)
+  }
+}
+
+#[cfg(test)]
+mod test {
+  use anyhow::Result;
+  use serde_json::json;
+
+  use super::*;
+  use crate::config::components::ManifestComponentBuilder;
+  use crate::config::{Codec, ComponentOperationExpressionBuilder, LiquidJsonConfig, MiddlewareBuilder};
+
+  #[test]
+  fn test_trigger_render() -> Result<()> {
+    let op = ComponentOperationExpressionBuilder::default()
+      .component(ComponentDefinition::Manifest(
+        ManifestComponentBuilder::default()
+          .reference("this/that:0.0.1")
+          .build()?,
+      ))
+      .config(LiquidJsonConfig::try_from(
+        json!({"op_config_field": "{{ctx.env.CARGO_MANIFEST_DIR}}"}),
+      )?)
+      .name("test")
+      .build()?;
+    let trigger = HttpTriggerConfigBuilder::default()
+      .resource("URL")
+      .routers(vec![HttpRouterConfig::RawRouter(RawRouterConfig {
+        path: "/".to_owned(),
+        middleware: Some(
+          MiddlewareBuilder::default()
+            .request(vec![op.clone()])
+            .response(vec![op.clone()])
+            .build()?,
+        ),
+        codec: Some(Codec::Json),
+        operation: op,
+      })])
+      .build()?;
+    let mut config = AppConfigurationBuilder::default()
+      .name("test")
+      .resources(vec![ResourceBinding::new("PORT", TcpPort::new("0.0.0.0", 90))])
+      .triggers(vec![TriggerDefinition::Http(trigger)])
+      .build()?;
+
+    config.env = Some(std::env::vars().collect());
+    config.root_config = Some(json!({"config_val": "from_config"}).try_into()?);
+
+    config.initialize()?;
+
+    let TriggerDefinition::Http(mut trigger) = config.triggers.pop().unwrap() else {
+      unreachable!();
+    };
+
+    let HttpRouterConfig::RawRouter(mut router) = trigger.routers.pop().unwrap() else {
+      unreachable!();
+    };
+
+    let cargo_manifest_dir = json!(env!("CARGO_MANIFEST_DIR"));
+
+    let config = router.operation.config.take().unwrap().value.unwrap();
+    assert_eq!(config.get("op_config_field"), Some(&cargo_manifest_dir));
+
+    let mut mw = router.middleware.take().unwrap();
+
+    let mw_req_config = mw.request[0].config.take().unwrap().value.unwrap();
+    assert_eq!(mw_req_config.get("op_config_field"), Some(&cargo_manifest_dir));
+
+    let mw_res_config = mw.response[0].config.take().unwrap().value.unwrap();
+    assert_eq!(mw_res_config.get("op_config_field"), Some(&cargo_manifest_dir));
+
+    Ok(())
   }
 }

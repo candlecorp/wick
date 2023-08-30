@@ -1,6 +1,10 @@
+use std::collections::HashMap;
+
 use wick_asset_reference::AssetReference;
+use wick_packet::RuntimeConfig;
 
 use super::OperationInputConfig;
+use crate::config::template_config::Renderable;
 use crate::config::{ComponentOperationExpression, ImportBinding};
 use crate::error::ManifestError;
 use crate::ExpandImports;
@@ -25,6 +29,16 @@ pub struct TimeTriggerConfig {
   #[builder(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) payload: Vec<OperationInputConfig>,
+}
+
+impl Renderable for TimeTriggerConfig {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    self.operation.render_config(root_config, env)
+  }
 }
 
 #[derive(

@@ -1,5 +1,9 @@
-use wick_asset_reference::AssetReference;
+use std::collections::HashMap;
 
+use wick_asset_reference::AssetReference;
+use wick_packet::RuntimeConfig;
+
+use crate::config::template_config::Renderable;
 use crate::config::{ComponentOperationExpression, ImportBinding};
 use crate::error::ManifestError;
 use crate::ExpandImports;
@@ -28,5 +32,15 @@ impl ExpandImports for CliConfig {
     let id = format!("trigger_{}", trigger_index);
     self.operation_mut().maybe_import(&id, bindings);
     Ok(())
+  }
+}
+
+impl Renderable for CliConfig {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    self.operation.render_config(root_config, env)
   }
 }

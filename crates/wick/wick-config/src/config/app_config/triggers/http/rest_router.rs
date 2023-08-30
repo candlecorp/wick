@@ -1,12 +1,24 @@
+use std::collections::HashMap;
+
 use wick_asset_reference::AssetReference;
+use wick_packet::RuntimeConfig;
 
 use super::index_to_router_id;
 use super::middleware::expand_for_middleware_components;
 use crate::config::common::HttpMethod;
+use crate::config::template_config::Renderable;
 use crate::config::{self, ComponentOperationExpression, ImportBinding};
 use crate::error::ManifestError;
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
+#[derive(
+  Debug,
+  Clone,
+  PartialEq,
+  derive_builder::Builder,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
+)]
 #[asset(asset(AssetReference))]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
 pub struct RestRouterConfig {
@@ -29,6 +41,27 @@ pub struct RestRouterConfig {
   #[asset(skip)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) info: Option<Info>,
+}
+
+impl Renderable for RestRouterConfig {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    self.middleware.render_config(root_config, env)?;
+    self.routes.render_config(root_config, env)
+  }
+}
+
+impl Renderable for RestRoute {
+  fn render_config(
+    &mut self,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    self.operation.render_config(root_config, env)
+  }
 }
 
 impl super::WickRouter for RestRouterConfig {
@@ -116,7 +149,15 @@ pub struct Contact {
   pub(crate) email: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
+#[derive(
+  Debug,
+  Clone,
+  PartialEq,
+  derive_builder::Builder,
+  derive_asset_container::AssetManager,
+  property::Property,
+  serde::Serialize,
+)]
 #[asset(asset(AssetReference))]
 #[property(get(public), set(private), mut(public, suffix = "_mut"))]
 /// A route to serve and the operation that handles it.
