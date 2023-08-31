@@ -48,14 +48,22 @@ pub(crate) async fn instantiate_import(
   opts: ChildInit,
   resolver: Box<Resolver>,
 ) -> Result<Option<NamespaceHandler>, ScopeError> {
-  opts
-    .span
-    .in_scope(|| debug!(id = binding.id(), ?opts, "instantiating import"));
+  opts.span.in_scope(|| {
+    debug!(id = binding.id(), ?opts, "init options");
+  });
   let id = binding.id().to_owned();
-  match binding.kind() {
+  let start = std::time::Instant::now();
+  let span = opts.span.clone();
+  let result = match binding.kind() {
     config::ImportDefinition::Component(c) => instantiate_imported_component(id, c, opts, resolver).await,
     config::ImportDefinition::Types(_) => Ok(None),
-  }
+  };
+  let end = std::time::Instant::now();
+  span.in_scope(|| {
+    info!(id = binding.id(), duration_ms = %end.duration_since(start).as_millis(), "initialized");
+  });
+
+  result
 }
 
 pub(crate) async fn instantiate_imported_component(
