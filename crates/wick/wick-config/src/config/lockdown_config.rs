@@ -61,9 +61,9 @@ impl LockdownConfiguration {
       resource_restrictions = ?self.resources,
       "initializing lockdown configuration"
     );
-    for resource in self.resources.iter_mut() {
-      resource.render_config(None, self.env.as_ref())?;
-    }
+    self
+      .resources
+      .render_config(self.source.as_deref(), None, self.env.as_ref())?;
 
     Ok(self)
   }

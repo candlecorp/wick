@@ -1,6 +1,5 @@
 #![allow(missing_docs)]
 use wick_asset_reference::FetchOptions;
-use wick_packet::{InherentData, RuntimeConfig};
 
 use crate::config::{ComponentDefinition, ImportBinding};
 use crate::error::ManifestError;
@@ -57,14 +56,13 @@ impl ConfigurationTreeNode {
 
   #[async_recursion::async_recursion]
   pub async fn fetch_children(&mut self, options: FetchOptions) -> Result<(), ManifestError> {
-    let root_config = self.element.get_root_config();
     let imports = match &self.element {
       WickConfiguration::Component(c) => c.import.clone(),
       WickConfiguration::App(c) => c.import.clone(),
       _ => Vec::new(),
     };
 
-    let mut children = fetch_imports(imports, options.clone(), root_config).await?;
+    let mut children = fetch_imports(imports, options.clone()).await?;
     for child in children.iter_mut() {
       match child {
         ConfigOrDefinition::Config(c) => {
@@ -110,10 +108,8 @@ pub fn flatten(node: ConfigurationTreeNode, prefix: &str) -> Vec<ConfigOrDefinit
 async fn fetch_imports(
   imports: Vec<ImportBinding>,
   options: FetchOptions,
-  root_config: Option<&RuntimeConfig>,
 ) -> Result<Vec<ConfigOrDefinition>, ManifestError> {
   let mut children: Vec<ConfigOrDefinition> = Vec::new();
-  let inherent = InherentData::unsafe_default();
   for import in imports {
     let id = import.id().to_owned();
 
@@ -122,15 +118,7 @@ async fn fetch_imports(
         super::ComponentDefinition::Manifest(c) => {
           let mut config = WickConfiguration::fetch(c.reference.clone(), options.clone()).await?;
 
-          let runtime_config = if let Some(c) = c.config() {
-            if let Some(value) = &c.value {
-              Some(value.clone())
-            } else {
-              Some(c.render(root_config, None, None, Some(&inherent))?)
-            }
-          } else {
-            None
-          };
+          let runtime_config = c.config().and_then(|c| c.value.clone());
 
           config.set_root_config(runtime_config);
           let config = config.finish()?;

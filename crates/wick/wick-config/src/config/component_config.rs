@@ -107,7 +107,6 @@ pub struct ComponentConfiguration {
 
   #[asset(skip)]
   #[doc(hidden)]
-  #[property(skip)]
   #[builder(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) root_config: Option<RuntimeConfig>,
@@ -178,12 +177,7 @@ impl ComponentConfiguration {
   #[must_use]
   pub fn resolver(&self) -> Box<Resolver> {
     trace!("creating resolver for component {:?}", self.name());
-    make_resolver(
-      self.import.clone(),
-      self.resources.clone(),
-      self.root_config.clone(),
-      None,
-    )
+    make_resolver(self.import.clone(), self.resources.clone())
   }
 
   /// Get the kind of this component implementation.
@@ -256,11 +250,6 @@ impl ComponentConfiguration {
     }
   }
 
-  #[must_use]
-  pub fn root_config(&self) -> Option<&RuntimeConfig> {
-    self.root_config.as_ref()
-  }
-
   /// Get the component signature for this configuration.
   pub fn signature(&self) -> Result<ComponentSignature> {
     let mut sig = wick_interface_types::component! {
@@ -281,18 +270,19 @@ impl ComponentConfiguration {
   }
 
   /// Initialize the configuration.
-  pub(super) fn initialize(&mut self) -> Result<&Self> {
-    // This pre-renders the component config's resources without access to the environment.
+  pub fn initialize(&mut self) -> Result<&Self> {
     let root_config = self.root_config.as_ref();
+    let source = self.source().map(std::path::Path::to_path_buf);
     trace!(
+      source = ?source,
       num_resources = self.resources.len(),
       num_imports = self.import.len(),
       ?root_config,
       "initializing component"
     );
 
-    self.resources.render_config(root_config, None)?;
-    self.import.render_config(root_config, None)?;
+    self.resources.render_config(source.as_deref(), root_config, None)?;
+    self.import.render_config(source.as_deref(), root_config, None)?;
 
     Ok(self)
   }

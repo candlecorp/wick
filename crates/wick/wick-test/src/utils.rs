@@ -4,16 +4,7 @@ use either::Either;
 use wasmrs_codec::messagepack;
 use wick_config::config::test_case::{ErrorPayload, PacketFlag, SuccessPayload};
 use wick_config::config::LiquidJsonConfig;
-use wick_packet::{
-  InherentData,
-  Packet,
-  PacketError,
-  PacketPayload,
-  RuntimeConfig,
-  CLOSE_BRACKET,
-  DONE_FLAG,
-  OPEN_BRACKET,
-};
+use wick_packet::{Packet, PacketError, PacketPayload, RuntimeConfig, CLOSE_BRACKET, DONE_FLAG, OPEN_BRACKET};
 
 use crate::error::TestError;
 
@@ -60,7 +51,7 @@ pub(crate) fn gen_packet(
       PacketPayload::Err(PacketError::new(
         error
           .error()
-          .render(None, Some(&std::env::vars().collect()))
+          .render(None, None, Some(&std::env::vars().collect()))
           .config_error()?,
       )),
       convert_flags(error.flag()),
@@ -79,16 +70,4 @@ fn convert_flags(flag: Option<&PacketFlag>) -> u8 {
     }
   }
   byte
-}
-
-pub(crate) fn render_config(
-  config: Option<&LiquidJsonConfig>,
-  inherent: Option<&InherentData>,
-) -> Result<Option<RuntimeConfig>, TestError> {
-  if let Some(config) = config {
-    let env = std::env::vars().collect();
-    Ok(Some(config.render(None, None, Some(&env), inherent).config_error()?))
-  } else {
-    Ok(None)
-  }
 }

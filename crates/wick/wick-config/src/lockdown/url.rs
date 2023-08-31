@@ -86,7 +86,7 @@ mod test {
       restriction.0.into_iter().map(Into::into).collect::<Vec<_>>(),
       restriction.1,
     );
-    restriction.render_config(None, None)?;
+    restriction.render_config(None, None, None)?;
     assert_eq!(
       is_allowed(component_id, "ID", &volume, &restriction),
       Ok(()),
@@ -112,7 +112,7 @@ mod test {
       restriction.0.into_iter().map(Into::into).collect::<Vec<_>>(),
       restriction.1,
     );
-    restriction.render_config(None, None)?;
+    restriction.render_config(None, None, None)?;
     assert_eq!(
       is_allowed(component_id, "ID", &volume, &restriction),
       Err(failure),

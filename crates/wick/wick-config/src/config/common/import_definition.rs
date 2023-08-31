@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::Path;
 
 use wick_packet::RuntimeConfig;
 
@@ -71,11 +72,12 @@ impl std::fmt::Display for ImportKind {
 impl Renderable for ImportDefinition {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     match self {
-      ImportDefinition::Component(v) => v.render_config(root_config, env),
+      ImportDefinition::Component(v) => v.render_config(source, root_config, env),
       ImportDefinition::Types(_) => Ok(()),
     }
   }

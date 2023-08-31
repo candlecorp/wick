@@ -53,7 +53,7 @@ component:
     #       type: int
 tests:
   - with:
-      root: '.'
+      root: '{{__dirname}}'
     cases:
       - operation: read_string
         inputs:

@@ -20,34 +20,25 @@ impl OperationSettings {
 pub(crate) struct LiquidOperationConfig {
   root: Option<RuntimeConfig>,
   template: Option<LiquidJsonConfig>,
-  value: Option<RuntimeConfig>,
+  op_config: Option<RuntimeConfig>,
 }
 
 impl LiquidOperationConfig {
-  #[must_use]
-  pub(crate) fn new_value(value: Option<RuntimeConfig>) -> Self {
-    Self {
-      template: None,
-      value,
-      root: None,
-    }
-  }
-
   pub(crate) fn render(&self, inherent: &InherentData) -> Result<Option<RuntimeConfig>, InterpreterError> {
     if let Some(template) = self.template() {
       Ok(Some(
         template
-          .render(self.root.as_ref(), self.value.as_ref(), None, Some(inherent))
+          .render(None, self.root.as_ref(), self.op_config.as_ref(), None, Some(inherent))
           .map_err(|e| InterpreterError::Configuration(e.to_string()))?,
       ))
     } else {
-      Ok(self.value.clone())
+      Ok(self.op_config.clone())
     }
   }
 
   #[must_use]
-  pub(crate) fn value(&self) -> Option<&RuntimeConfig> {
-    self.value.as_ref()
+  pub(crate) fn op_config(&self) -> Option<&RuntimeConfig> {
+    self.op_config.as_ref()
   }
 
   #[must_use]
@@ -68,8 +59,8 @@ impl LiquidOperationConfig {
     self.template = template;
   }
 
-  pub(crate) fn set_value(&mut self, value: Option<RuntimeConfig>) {
-    self.value = value;
+  pub(crate) fn set_op_config(&mut self, config: Option<RuntimeConfig>) {
+    self.op_config = config;
   }
 }
 
@@ -77,7 +68,7 @@ impl From<Option<LiquidJsonConfig>> for LiquidOperationConfig {
   fn from(value: Option<LiquidJsonConfig>) -> Self {
     LiquidOperationConfig {
       template: value,
-      value: None,
+      op_config: None,
       root: None,
     }
   }
@@ -87,7 +78,7 @@ impl From<Option<RuntimeConfig>> for LiquidOperationConfig {
   fn from(value: Option<RuntimeConfig>) -> Self {
     LiquidOperationConfig {
       template: None,
-      value,
+      op_config: value,
       root: None,
     }
   }

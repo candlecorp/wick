@@ -9,6 +9,9 @@ component:
   kind: wick/component/composite@v1
   operations:
     - name: echo
+      with:
+        - name: op_config_val
+          type: string
       uses:
         - name: SENDER
           operation: core::sender
@@ -16,6 +19,7 @@ component:
             output:
               num: 42
               string: 'Hello, world!'
+              from_context: '{{ctx.config.op_config_val}}'
       flow:
         - SENDER -> <>
 tests:
@@ -23,14 +27,17 @@ tests:
     cases:
       - name: strict_equal
         operation: echo
+        with: { op_config_val: 'strict_equal' }
         inputs: []
         outputs:
           - name: output
             value:
               string: 'Hello, world!'
               num: 42
+              from_context: 'strict_equal'
       - name: assertions
         operation: echo
+        with: { op_config_val: 'assertions' }
         inputs: []
         outputs:
           - name: output

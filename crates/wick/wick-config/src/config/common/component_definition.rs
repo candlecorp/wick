@@ -1,5 +1,6 @@
 #![allow(missing_docs, deprecated)]
 use std::collections::HashMap;
+use std::path::Path;
 
 // delete when we move away from the `property` crate.
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
@@ -101,11 +102,12 @@ impl ComponentOperationExpression {
 impl Renderable for ComponentOperationExpression {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     if let Some(config) = self.config.as_mut() {
-      config.set_value(Some(config.render(root_config, None, env, None)?));
+      config.set_value(Some(config.render(source, root_config, None, env, None)?));
     }
     Ok(())
   }
@@ -241,11 +243,12 @@ impl ComponentDefinition {
 impl Renderable for ComponentDefinition {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     let val = if let Some(config) = self.config() {
-      Some(config.render(root_config, None, env, None)?)
+      Some(config.render(source, root_config, None, env, None)?)
     } else {
       None
     };

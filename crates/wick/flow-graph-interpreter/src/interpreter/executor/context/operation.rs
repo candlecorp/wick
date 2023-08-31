@@ -12,11 +12,21 @@ use tracing::Span;
 use tracing_futures::Instrument;
 use uuid::Uuid;
 use wasmrs_rx::{FluxChannel, Observer};
-use wick_packet::{Entity, InherentData, Invocation, Packet, PacketError, PacketPayload, PacketSender, PacketStream};
+use wick_packet::{
+  Entity,
+  InherentData,
+  Invocation,
+  Packet,
+  PacketError,
+  PacketPayload,
+  PacketSender,
+  PacketStream,
+  RuntimeConfig,
+};
 
 use self::port::{InputPorts, OutputPorts, PortStatus};
 use crate::graph::types::*;
-use crate::graph::{LiquidOperationConfig, Reference};
+use crate::graph::Reference;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::components::self_component::SelfComponent;
 use crate::interpreter::error::StateError;
@@ -261,7 +271,8 @@ impl InstanceHandler {
     channel: InterpreterDispatchChannel,
     options: &InterpreterOptions,
     callback: Arc<RuntimeCallback>,
-    config: LiquidOperationConfig,
+    root_config: Option<RuntimeConfig>,
+    op_config: Option<RuntimeConfig>,
   ) -> Result<()> {
     if self.task.has_started() {
       #[cfg(debug_assertions)]
@@ -284,11 +295,11 @@ impl InstanceHandler {
     let mut associated_data = self.schematic.nodes()[self.index()].data().clone();
 
     if associated_data.config.root().is_none() {
-      associated_data.config.set_root(config.root().cloned());
+      associated_data.config.set_root(root_config);
     }
 
-    if associated_data.config.value().is_none() {
-      associated_data.config.set_value(config.value().cloned());
+    if associated_data.config.op_config().is_none() {
+      associated_data.config.set_op_config(op_config);
     }
 
     let config = associated_data

@@ -36,7 +36,7 @@ pub(crate) async fn build_host(
     WickConfiguration::Component(_) => {
       let manifest = manifest.finish()?.try_component_config()?;
 
-      let manifest = merge_config(&manifest, &oci, server_settings);
+      let manifest = merge_config(manifest, &oci, server_settings);
 
       let mut host = ComponentHostBuilder::default()
         .id(manifest.name().map_or_else(|| "component".to_owned(), |s| s.clone()))

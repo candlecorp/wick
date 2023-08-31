@@ -1,6 +1,7 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 
 use std::collections::HashMap;
+use std::path::Path;
 
 use wick_packet::RuntimeConfig;
 
@@ -20,13 +21,14 @@ pub enum ResourceRestriction {
 impl Renderable for ResourceRestriction {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     match self {
-      Self::Volume(restriction) => restriction.render_config(root_config, env),
-      Self::Url(restriction) => restriction.render_config(root_config, env),
-      Self::TcpPort(restriction) | Self::UdpPort(restriction) => restriction.render_config(root_config, env),
+      Self::Volume(restriction) => restriction.render_config(source, root_config, env),
+      Self::Url(restriction) => restriction.render_config(source, root_config, env),
+      Self::TcpPort(restriction) | Self::UdpPort(restriction) => restriction.render_config(source, root_config, env),
     }
   }
 }
@@ -55,10 +57,11 @@ impl VolumeRestriction {
 impl Renderable for VolumeRestriction {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
-    self.allow.set_value(self.allow.render(root_config, env)?);
+    self.allow.set_value(self.allow.render(source, root_config, env)?);
     Ok(())
   }
 }
@@ -87,10 +90,11 @@ impl UrlRestriction {
 impl Renderable for UrlRestriction {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
-    self.allow.set_value(self.allow.render(root_config, env)?);
+    self.allow.set_value(self.allow.render(source, root_config, env)?);
     Ok(())
   }
 }
@@ -120,11 +124,12 @@ impl PortRestriction {
 impl Renderable for PortRestriction {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
-    self.address.set_value(self.address.render(root_config, env)?);
-    self.port.set_value(self.port.render(root_config, env)?);
+    self.address.set_value(self.address.render(source, root_config, env)?);
+    self.port.set_value(self.port.render(source, root_config, env)?);
     Ok(())
   }
 }

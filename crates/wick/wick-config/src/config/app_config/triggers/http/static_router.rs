@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::Path;
 
 use wick_asset_reference::AssetReference;
 use wick_packet::RuntimeConfig;
@@ -47,10 +48,11 @@ impl super::WickRouter for StaticRouterConfig {
 impl Renderable for StaticRouterConfig {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
-    self.middleware.render_config(root_config, env)
+    self.middleware.render_config(source, root_config, env)
   }
 }
 
