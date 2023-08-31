@@ -180,10 +180,10 @@ impl RestHandler {
       span.in_scope(|| trace!(route = %uri, len=body_bytes.len(), "body"));
 
       if !matches!(method, HttpMethod::Get) {
-        let payload: serde_json::Value = if body.trim().is_empty() {
-          serde_json::Value::Null
+        let payload: Option<serde_json::Value> = if body.trim().is_empty() {
+          None
         } else {
-          serde_json::from_str(&body).map_err(HttpError::InvalidBody)?
+          Some(serde_json::from_str(&body).map_err(HttpError::InvalidBody)?)
         };
 
         packets.push(Packet::encode("input", payload));
