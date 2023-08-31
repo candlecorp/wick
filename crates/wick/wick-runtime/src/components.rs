@@ -212,7 +212,7 @@ pub(crate) async fn init_impl(
     }
     config::ComponentImplementation::Composite(_) => {
       let uuid = rng.uuid();
-      let _scope = init_child(uuid, manifest.clone(), Some(id.clone()), opts).await?;
+      let _scope = init_child(uuid, manifest.clone(), id.clone(), opts).await?;
 
       let component = Arc::new(scope_component::ScopeComponent::new(uuid));
       let service = NativeComponentService::new(component);
