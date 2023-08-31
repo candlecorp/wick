@@ -1,0 +1,38 @@
+[package]
+name = "wick-websocket-client"
+version = "0.1.0"
+authors = ["Fawad Shaikh <fawad@candle.dev>"]
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "SQL Database component for the wick project."
+
+[features]
+
+[dependencies]
+wick-packet = { workspace = true, features = ["rt-tokio", "invocation"] }
+wick-interface-http = { workspace = true }
+flow-component = { workspace = true, features = ["invocation"] }
+wick-config = { workspace = true, features = ["config"] }
+wick-interface-types = { workspace = true }
+#
+url = { workspace = true }
+tokio = { workspace = true }
+tokio-tungstenite = { workspace = true }
+tracing = { workspace = true }
+liquid-json = { workspace = true, features = ["serde"] }
+anyhow = { workspace = true }
+#
+serde = { workspace = true, features = ["derive"] }
+#
+futures = { workspace = true }
+thiserror = { workspace = true }
+serde_json = { workspace = true }
+
+#
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+wick-logger = { workspace = true }
+test-logger = { workspace = true }
+pretty_assertions = { workspace = true }
+wick-packet = { workspace = true, features = ["test"] }

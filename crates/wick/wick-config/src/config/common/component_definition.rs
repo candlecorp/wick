@@ -147,6 +147,9 @@ pub enum HighLevelComponent {
   #[asset(skip)]
   /// An HTTP Client Component.
   HttpClient(config::components::HttpClientComponentConfig),
+  #[asset(skip)]
+  /// A WebSocket Client Component.
+  WebSocketClient(config::components::WebSocketClientComponentConfig),
 }
 
 #[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, serde::Serialize)]

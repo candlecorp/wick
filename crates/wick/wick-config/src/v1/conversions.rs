@@ -681,6 +681,7 @@ impl TryFrom<v1::ComponentKind> for ComponentImplementation {
       v1::ComponentKind::WasmComponentConfiguration(v) => ComponentImplementation::Wasm(v.try_into()?),
       v1::ComponentKind::HttpClientComponent(v) => ComponentImplementation::HttpClient(v.try_into()?),
       v1::ComponentKind::SqlComponent(v) => ComponentImplementation::Sql(v.try_into()?),
+      v1::ComponentKind::WebSocketClientComponent(v) => ComponentImplementation::WebSocketClient(v.try_into()?),
     })
   }
 }
@@ -693,6 +694,7 @@ impl TryFrom<ComponentImplementation> for v1::ComponentKind {
       ComponentImplementation::Wasm(v) => v1::ComponentKind::WasmComponentConfiguration(v.try_into()?),
       ComponentImplementation::Sql(v) => v1::ComponentKind::SqlComponent(v.try_into()?),
       ComponentImplementation::HttpClient(v) => v1::ComponentKind::HttpClientComponent(v.try_into()?),
+      ComponentImplementation::WebSocketClient(v) => v1::ComponentKind::WebSocketClientComponent(v.try_into()?),
     })
   }
 }
@@ -747,6 +749,7 @@ impl TryFrom<config::ImportDefinition> for v1::ImportDefinition {
         ComponentDefinition::HighLevelComponent(c) => match c {
           HighLevelComponent::Sql(c) => v1::ImportDefinition::SqlComponent(c.try_into()?),
           HighLevelComponent::HttpClient(c) => v1::ImportDefinition::HttpClientComponent(c.try_into()?),
+          HighLevelComponent::WebSocketClient(c) => v1::ImportDefinition::WebSocketClientComponent(c.try_into()?),
         },
       },
       crate::config::ImportDefinition::Types(c) => v1::ImportDefinition::TypesComponent(c.try_into()?),
@@ -789,6 +792,7 @@ impl TryFrom<ComponentDefinition> for v1::ComponentDefinition {
       ComponentDefinition::HighLevelComponent(v) => match v {
         config::HighLevelComponent::Sql(v) => Self::SqlComponent(v.try_into()?),
         config::HighLevelComponent::HttpClient(v) => Self::HttpClientComponent(v.try_into()?),
+        config::HighLevelComponent::WebSocketClient(v) => Self::WebSocketClientComponent(v.try_into()?),
       },
     };
     Ok(def)
@@ -912,6 +916,9 @@ impl TryFrom<crate::v1::ComponentDefinition> for ComponentDefinition {
       }
       v1::ComponentDefinition::HttpClientComponent(v) => {
         ComponentDefinition::HighLevelComponent(HighLevelComponent::HttpClient(v.try_into()?))
+      }
+      v1::ComponentDefinition::WebSocketClientComponent(v) => {
+        ComponentDefinition::HighLevelComponent(HighLevelComponent::WebSocketClient(v.try_into()?))
       }
     };
     Ok(res)
@@ -1114,6 +1121,9 @@ impl TryFrom<v1::ImportDefinition> for config::ImportDefinition {
       ),
       v1::ImportDefinition::HttpClientComponent(c) => config::ImportDefinition::Component(
         config::ComponentDefinition::HighLevelComponent(config::HighLevelComponent::HttpClient(c.try_into()?)),
+      ),
+      v1::ImportDefinition::WebSocketClientComponent(c) => config::ImportDefinition::Component(
+        config::ComponentDefinition::HighLevelComponent(config::HighLevelComponent::WebSocketClient(c.try_into()?)),
       ),
     })
   }
@@ -1377,6 +1387,54 @@ impl TryFrom<components::HttpClientOperationDefinition> for v1::HttpClientOperat
       method: value.method.into(),
       with: value.config.try_map_into()?,
       headers: value.headers,
+    })
+  }
+}
+
+impl TryFrom<v1::WebSocketClientOperationDefinition> for components::WebSocketClientOperationDefinition {
+  type Error = crate::Error;
+  fn try_from(value: v1::WebSocketClientOperationDefinition) -> Result<Self> {
+    Ok(Self {
+      name: value.name,
+      inputs: value.inputs.try_map_into()?,
+      path: value.path,
+      message: value.message,
+      config: value.with.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<v1::WebSocketClientComponent> for components::WebSocketClientComponentConfig {
+  type Error = crate::Error;
+  fn try_from(value: v1::WebSocketClientComponent) -> Result<Self> {
+    Ok(Self {
+      resource: value.resource,
+      config: value.with.try_map_into()?,
+      operations: value.operations.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<components::WebSocketClientOperationDefinition> for v1::WebSocketClientOperationDefinition {
+  type Error = crate::Error;
+  fn try_from(value: components::WebSocketClientOperationDefinition) -> Result<Self> {
+    Ok(Self {
+      name: value.name,
+      inputs: value.inputs.try_map_into()?,
+      path: value.path,
+      message: value.message,
+      with: value.config.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<components::WebSocketClientComponentConfig> for v1::WebSocketClientComponent {
+  type Error = crate::Error;
+  fn try_from(value: components::WebSocketClientComponentConfig) -> Result<Self> {
+    Ok(Self {
+      resource: value.resource,
+      with: value.config.try_map_into()?,
+      operations: value.operations.try_map_into()?,
     })
   }
 }

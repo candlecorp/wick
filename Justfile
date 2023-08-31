@@ -105,7 +105,7 @@ integration-teardown:
 codegen:
   just crates/wick/wick-rpc/codegen
   just crates/wick/wick-config/codegen
-  cp crates/wick/wick-config/docs/v*.md docs/content/configuration/reference/
+  cp crates/wick/wick-config/docs/v*.md docs/content/wick/configuration/reference/
 
 # Run lints, license checks, formatting checks, et al.
 early-errors: licenses

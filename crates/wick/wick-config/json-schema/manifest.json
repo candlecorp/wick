@@ -1787,6 +1787,9 @@
           },
           {
             "$ref": "#/$defs/v1/HttpClientComponent"
+          },
+          {
+            "$ref": "#/$defs/v1/WebSocketClientComponent"
           }
         ]
       },
@@ -1803,6 +1806,9 @@
           },
           {
             "$ref": "#/$defs/v1/HttpClientComponent"
+          },
+          {
+            "$ref": "#/$defs/v1/WebSocketClientComponent"
           }
         ]
       },
@@ -1822,6 +1828,9 @@
           },
           {
             "$ref": "#/$defs/v1/HttpClientComponent"
+          },
+          {
+            "$ref": "#/$defs/v1/WebSocketClientComponent"
           }
         ]
       },
@@ -3096,6 +3105,74 @@
           "Put",
           "Delete"
         ]
+      },
+      "WebSocketClientComponent": {
+        "$anchor": "#v1/WebSocketClientComponent",
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "The kind of the collection",
+            "enum": [
+              "wick/component/websocket@v1"
+            ]
+          },
+          "resource": {
+            "description": "The URL of the WebSocket server.",
+            "type": "string"
+          },
+          "with": {
+            "description": "Configuration necessary to provide when instantiating the component.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
+          "operations": {
+            "description": "A list of operations to expose on this component.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/WebSocketClientOperationDefinition"
+            }
+          }
+        },
+        "required": []
+      },
+      "WebSocketClientOperationDefinition": {
+        "$anchor": "#v1/WebSocketClientOperationDefinition",
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "The name of the operation.",
+            "type": "string"
+          },
+          "with": {
+            "description": "Any configuration required by the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
+          "inputs": {
+            "description": "Types of the inputs to the operation.",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/v1/Field"
+            }
+          },
+          "path": {
+            "description": "The path / query string to append to our base URL, processed as a liquid template with each input as part of the template data.",
+            "type": "string"
+          },
+          "message": {
+            "description": "The message to send, processed as a structured JSON liquid template.",
+            "required": false,
+            "$ref": "#/$defs/v1/LiquidJsonValue"
+          }
+        },
+        "required": []
       }
     }
   },

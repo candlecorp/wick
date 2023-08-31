@@ -8,6 +8,7 @@ impl ComponentDefinition {
       ComponentDefinition::ComponentReference(v) => Some(&v.id),
       ComponentDefinition::SqlComponent(_) => todo!(),
       ComponentDefinition::HttpClientComponent(_) => todo!(),
+      ComponentDefinition::WebSocketClientComponent(_) => todo!(),
     }
   }
 }

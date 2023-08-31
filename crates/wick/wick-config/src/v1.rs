@@ -924,6 +924,9 @@ pub enum ComponentKind {
   /// A variant representing a [HttpClientComponent] type.
   #[serde(rename = "wick/component/http@v1")]
   HttpClientComponent(HttpClientComponent),
+  /// A variant representing a [WebSocketClientComponent] type.
+  #[serde(rename = "wick/component/websocket@v1")]
+  WebSocketClientComponent(WebSocketClientComponent),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -943,6 +946,9 @@ pub enum ImportDefinition {
   /// A variant representing a [HttpClientComponent] type.
   #[serde(rename = "wick/component/http@v1")]
   HttpClientComponent(HttpClientComponent),
+  /// A variant representing a [WebSocketClientComponent] type.
+  #[serde(rename = "wick/component/websocket@v1")]
+  WebSocketClientComponent(WebSocketClientComponent),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -965,6 +971,9 @@ pub enum ComponentDefinition {
   /// A variant representing a [HttpClientComponent] type.
   #[serde(rename = "wick/component/http@v1")]
   HttpClientComponent(HttpClientComponent),
+  /// A variant representing a [WebSocketClientComponent] type.
+  #[serde(rename = "wick/component/websocket@v1")]
+  WebSocketClientComponent(WebSocketClientComponent),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -2065,4 +2074,53 @@ impl FromPrimitive for HttpMethod {
       }
     })
   }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A component whose operations are WebSocket connection.
+pub struct WebSocketClientComponent {
+  /// The URL of the WebSocket server.
+
+  #[serde(default)]
+  pub resource: String,
+  /// Configuration necessary to provide when instantiating the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub with: Vec<Field>,
+  /// A list of operations to expose on this component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub operations: Vec<WebSocketClientOperationDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A dynamic operation whose implementation is a WebSocket message. The outputs of WebSocketOperationDefinition are always `message`.
+pub struct WebSocketClientOperationDefinition {
+  /// The name of the operation.
+
+  #[serde(default)]
+  pub name: String,
+  /// Any configuration required by the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub with: Vec<Field>,
+  /// Types of the inputs to the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub inputs: Vec<Field>,
+  /// The path / query string to append to our base URL, processed as a liquid template with each input as part of the template data.
+
+  #[serde(default)]
+  pub path: String,
+  /// The message to send, processed as a structured JSON liquid template.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub message: Option<liquid_json::LiquidJsonValue>,
 }

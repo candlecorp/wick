@@ -503,13 +503,13 @@ type ExposedVolume {
 
 
 "Root component types. These are the components that can be instantiated and run."
-union ComponentKind = WasmComponentConfiguration | CompositeComponentConfiguration | SqlComponent | HttpClientComponent
+union ComponentKind = WasmComponentConfiguration | CompositeComponentConfiguration | SqlComponent | HttpClientComponent | WebSocketClientComponent
 
 "Types of possible imports."
-union ImportDefinition = TypesComponent | ManifestComponent | SqlComponent | HttpClientComponent
+union ImportDefinition = TypesComponent | ManifestComponent | SqlComponent | HttpClientComponent | WebSocketClientComponent
 
 "Component types used when referencing operations or linking components."
-union ComponentDefinition = GrpcUrlComponent | ManifestComponent | ComponentReference | SqlComponent | HttpClientComponent
+union ComponentDefinition = GrpcUrlComponent | ManifestComponent | ComponentReference | SqlComponent | HttpClientComponent | WebSocketClientComponent
 
 "A types configuration to import into this component's scope."
 type TypesComponent @tagged("wick/component/types@v1") {
@@ -1028,4 +1028,34 @@ enum HttpMethod {
 
   "DELETE method"
   Delete = 3 as "delete",
+}
+
+"A component whose operations are WebSocket connection."
+type WebSocketClientComponent @tagged("wick/component/websocket@v1") {
+  "The URL of the WebSocket server."
+  resource: string
+
+  "Configuration necessary to provide when instantiating the component."
+  with: [Field]
+
+  "A list of operations to expose on this component."
+  operations: [WebSocketClientOperationDefinition]
+}
+
+"A dynamic operation whose implementation is a WebSocket message. The outputs of WebSocketOperationDefinition are always `message`."
+type WebSocketClientOperationDefinition {
+  "The name of the operation."
+  name: string
+
+  "Any configuration required by the operation."
+  with: [Field],
+
+  "Types of the inputs to the operation."
+  inputs: [Field],
+
+  "The path / query string to append to our base URL, processed as a liquid template with each input as part of the template data."
+  path: string
+
+  "The message to send, processed as a structured JSON liquid template."
+  message: LiquidJsonValue?
 }

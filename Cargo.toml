@@ -55,6 +55,7 @@ regex = { workspace = true }
 dhat = { workspace = true, optional = true }
 once_cell = { workspace = true }
 liquid-json = { workspace = true, features = ["serde"] }
+tokio-tungstenite = { workspace = true, features = ["native-tls"] }
 
 [dev-dependencies]
 test_bin = { workspace = true }
@@ -136,6 +137,7 @@ wick-interface-cli = { path = "./crates/interfaces/wick-interface-cli", version 
 #
 wick-sql = { path = "./crates/components/wick-sql", version = "0.1.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
+wick-websocket-client = { path = "./crates/components/wick-websocket-client", version = "0.1.0" }
 # wasmtime (must align with version in wasmrs)
 wasmtime = { version = "11.0", default-features = false, features = [
   "cache",
@@ -263,6 +265,7 @@ time = { version = "0.3", default-features = false }
 tokio = { version = "1", default-features = false }
 tokio-postgres = { version = "0.7", default-features = false }
 tokio-stream = { version = "0.1", default-features = false }
+tokio-tungstenite = { version = "0.20", default-features = false }
 tokio-util = { version = "0.7", default-features = false }
 tokio-test = { version = "0.4.2", default-features = false }
 tonic = { version = "0.9", default-features = false }

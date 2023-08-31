@@ -16,6 +16,8 @@ pub enum ComponentImplementation {
   Sql(config::components::SqlComponentConfig),
   /// An http client component.
   HttpClient(config::components::HttpClientComponentConfig),
+  /// A websocket client component.
+  WebSocketClient(config::components::WebSocketClientComponentConfig),
 }
 
 impl ComponentImplementation {
@@ -26,6 +28,7 @@ impl ComponentImplementation {
       ComponentImplementation::Composite(_) => ComponentKind::Composite,
       ComponentImplementation::Sql(_) => ComponentKind::Sql,
       ComponentImplementation::HttpClient(_) => ComponentKind::HttpClient,
+      ComponentImplementation::WebSocketClient(_) => ComponentKind::WebSocketClient,
     }
   }
 
@@ -37,6 +40,7 @@ impl ComponentImplementation {
       ComponentImplementation::Composite(c) => c.operation_signatures(),
       ComponentImplementation::Sql(c) => c.operation_signatures(),
       ComponentImplementation::HttpClient(c) => c.operation_signatures(),
+      ComponentImplementation::WebSocketClient(c) => c.operation_signatures(),
     }
   }
 
@@ -48,6 +52,7 @@ impl ComponentImplementation {
       ComponentImplementation::Composite(_) => panic!("Composite components must be named"),
       ComponentImplementation::Sql(_) => "wick/component/sql",
       ComponentImplementation::HttpClient(_) => "wick/component/http",
+      ComponentImplementation::WebSocketClient(_) => "wick/component/websocket",
     }
   }
 }
@@ -71,6 +76,8 @@ pub enum ComponentKind {
   Sql,
   /// An http client component.
   HttpClient,
+  /// A websocket client component.
+  WebSocketClient,
 }
 
 impl std::fmt::Display for ComponentKind {
@@ -80,6 +87,7 @@ impl std::fmt::Display for ComponentKind {
       ComponentKind::Composite => write!(f, "wick/component/composite"),
       ComponentKind::Sql => write!(f, "wick/component/sql"),
       ComponentKind::HttpClient => write!(f, "wick/component/http"),
+      ComponentKind::WebSocketClient => write!(f, "wick/component/websocket"),
     }
   }
 }

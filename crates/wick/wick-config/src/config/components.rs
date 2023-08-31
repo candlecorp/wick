@@ -6,6 +6,7 @@ mod reference;
 mod sql;
 mod types;
 mod wasm;
+mod websocket_client;
 
 use std::borrow::Cow;
 
@@ -17,6 +18,7 @@ pub use reference::*;
 pub use sql::*;
 pub use types::*;
 pub use wasm::*;
+pub use websocket_client::*;
 use wick_interface_types::{Field, OperationSignatures};
 
 pub trait OperationConfig {

@@ -238,6 +238,16 @@ pub(crate) async fn init_impl(
       )
       .await
     }
+    config::ComponentImplementation::WebSocketClient(c) => {
+      init_hlc_component(
+        id,
+        opts.root_config.clone(),
+        metadata.cloned(),
+        wick_config::config::HighLevelComponent::WebSocketClient(c.clone()),
+        manifest.resolver(),
+      )
+      .await
+    }
   }
 }
 
@@ -281,6 +291,9 @@ pub(crate) async fn init_hlc_component(
       metadata,
       &resolver,
     )?),
+    config::HighLevelComponent::WebSocketClient(comp) => Box::new(
+      wick_websocket_client::WebSocketClientComponent::new(comp, root_config, metadata, &resolver)?,
+    ),
   };
   Ok(NamespaceHandler::new(id, comp))
 }

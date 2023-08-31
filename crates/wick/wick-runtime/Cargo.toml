@@ -29,6 +29,7 @@ wick-interface-http = { workspace = true }
 #
 wick-sql = { workspace = true }
 wick-http-client = { workspace = true }
+wick-websocket-client = { workspace = true }
 #
 # Wasmtime
 #

@@ -253,6 +253,7 @@ impl ComponentConfiguration {
       ComponentImplementation::Wasm(c) => &c.config,
       ComponentImplementation::Sql(c) => &c.config,
       ComponentImplementation::HttpClient(c) => &c.config,
+      ComponentImplementation::WebSocketClient(c) => &c.config,
     }
   }
 
