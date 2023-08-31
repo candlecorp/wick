@@ -50,7 +50,14 @@ async fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Inte
   let components = collections(sig);
   let network = from_def(&mut load(path).await.unwrap(), &components).unwrap();
 
-  Interpreter::new(network, None, Some(components), panic_callback(), &Span::current())
+  Interpreter::new(
+    network,
+    None,
+    Some(components),
+    panic_callback(),
+    None,
+    &Span::current(),
+  )
 }
 
 #[test_logger::test(tokio::test)]

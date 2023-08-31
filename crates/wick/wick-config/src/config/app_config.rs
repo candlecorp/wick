@@ -144,25 +144,13 @@ impl AppConfiguration {
   /// Get the configuration item a binding points to.
 
   pub fn resolve_binding(&self, name: &str) -> Result<OwnedConfigurationItem> {
-    let env = std::env::vars().collect();
-    resolve(
-      name,
-      &self.import,
-      &self.resources,
-      self.root_config.as_ref(),
-      Some(&env),
-    )
+    resolve(name, &self.import, &self.resources)
   }
 
   /// Returns a function that resolves a binding to a configuration item.
   #[must_use]
   pub fn resolver(&self) -> Box<Resolver> {
-    make_resolver(
-      self.import.clone(),
-      self.resources.clone(),
-      self.root_config.clone(),
-      Some(std::env::vars().collect()),
-    )
+    make_resolver(self.import.clone(), self.resources.clone())
   }
 
   /// Return the underlying version of the source manifest.
@@ -212,10 +200,11 @@ impl AppConfiguration {
 
   /// Initialize the configuration with the given environment variables.
   pub(super) fn initialize(&mut self) -> Result<&Self> {
-    // This pre-renders the application config's resources with access to the environment
-    // so they're resulting value is intuitively based on where it was initially defined.
     let root_config = self.root_config.as_ref();
+    let source = self.source().map(std::path::Path::to_path_buf);
+
     trace!(
+      source = ?source,
       num_resources = self.resources.len(),
       num_imports = self.import.len(),
       ?root_config,
@@ -229,9 +218,9 @@ impl AppConfiguration {
     }
     self.import.extend(bindings);
 
-    self.resources.render_config(root_config, env)?;
-    self.import.render_config(root_config, env)?;
-    self.triggers.render_config(root_config, env)?;
+    self.resources.render_config(source.as_deref(), root_config, env)?;
+    self.import.render_config(source.as_deref(), root_config, env)?;
+    self.triggers.render_config(source.as_deref(), root_config, env)?;
 
     Ok(self)
   }

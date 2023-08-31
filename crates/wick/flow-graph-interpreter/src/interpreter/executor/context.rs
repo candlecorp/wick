@@ -9,12 +9,11 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wasmrs_rx::Observer;
-use wick_packet::{Entity, Invocation, Packet, PacketError, PacketSender, PacketStream};
+use wick_packet::{Entity, Invocation, Packet, PacketError, PacketSender, PacketStream, RuntimeConfig};
 
 use self::operation::{FutureInvocation, InstanceHandler};
 use super::error::ExecutionError;
 use crate::graph::types::*;
-use crate::graph::LiquidOperationConfig;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::components::self_component::SelfComponent;
 use crate::interpreter::error::StateError;
@@ -48,7 +47,8 @@ pub struct ExecutionContext {
   finished: AtomicBool,
   span: tracing::Span,
   callback: Arc<RuntimeCallback>,
-  config: LiquidOperationConfig,
+  root_config: Option<RuntimeConfig>,
+  op_config: Option<RuntimeConfig>,
   options: Option<InterpreterOptions>,
   pub(crate) last_access_time: Mutex<SystemTime>,
   pub(crate) stats: ExecutionStatistics,
@@ -69,7 +69,8 @@ impl ExecutionContext {
     components: &Arc<HandlerMap>,
     self_component: &SelfComponent,
     callback: Arc<RuntimeCallback>,
-    config: LiquidOperationConfig,
+    root_config: Option<RuntimeConfig>,
+    op_config: Option<RuntimeConfig>,
     seed: Seed,
   ) -> Self {
     let rng = Random::from_seed(seed);
@@ -105,7 +106,8 @@ impl ExecutionContext {
       options: None,
       invocation,
       schematic,
-      config,
+      root_config,
+      op_config,
       output: (Some(tx), Some(rx)),
       instances,
       start_time: Instant::now(),
@@ -183,7 +185,8 @@ impl ExecutionContext {
             self.channel.clone(),
             options,
             self.callback.clone(),
-            self.config.clone(),
+            self.root_config.clone(),
+            self.op_config.clone(),
           )
           .await?;
       }
@@ -204,7 +207,8 @@ impl ExecutionContext {
         self.channel.clone(),
         self.options.as_ref().unwrap(),
         self.callback.clone(),
-        self.config.clone(),
+        self.root_config.clone(),
+        self.op_config.clone(),
       )
       .await?;
 

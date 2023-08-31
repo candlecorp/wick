@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::Path;
 
 use liquid_json::LiquidJsonValue;
 use serde_json::Value;
@@ -67,12 +68,22 @@ impl LiquidJsonConfig {
   /// Render a [LiquidJsonConfig] into a [RuntimeConfig] creating a context from the passed configuration.
   pub fn render(
     &self,
+    source: Option<&Path>,
     root: Option<&RuntimeConfig>,
     config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
     inherent: Option<&InherentData>,
   ) -> Result<RuntimeConfig, Error> {
-    let ctx = Self::make_context(None, root, config, env, inherent)?;
+    if let Some(value) = self.value.as_ref() {
+      return Ok(value.clone());
+    }
+
+    let base = source.map(|source| {
+      let dirname = source.parent().unwrap_or_else(|| Path::new("<unavailable>"));
+      serde_json::json!({"__dirname": dirname})
+    });
+
+    let ctx = Self::make_context(base, root, config, env, inherent)?;
 
     let mut map = HashMap::new();
     for (k, v) in self.template.iter() {

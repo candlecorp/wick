@@ -56,6 +56,7 @@ pub async fn base_setup(
     None,
     Some(collections),
     panic_callback(),
+    None,
     &tracing::Span::current(),
   )?;
 

@@ -203,16 +203,7 @@ impl RestHandler {
         InherentData::unsafe_default(),
         &span,
       );
-      let runtime_config = if let Some(config) = route.operation.config() {
-        // TODO:FIX These operations are being rendered without access to the root config.
-        Some(
-          config
-            .render(None, None, None, Some(&invocation.inherent))
-            .map_err(|e| HttpError::OperationError(e.to_string()))?,
-        )
-      } else {
-        None
-      };
+      let runtime_config = route.operation.config().and_then(|c| c.value().cloned());
 
       let stream = runtime
         .invoke(invocation, runtime_config)

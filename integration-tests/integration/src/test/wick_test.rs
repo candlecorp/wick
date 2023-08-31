@@ -24,19 +24,26 @@ async fn baseline_component() -> Result<()> {
   )]))));
   let root_manifest = root_manifest.finish()?.try_component_config()?;
 
-  let mut suite = TestSuite::from_configuration(root_manifest.tests())?;
+  let mut tests = root_manifest.tests().to_vec();
+
+  let env: HashMap<_, _> = std::env::vars().collect();
+  for test in tests.iter_mut() {
+    test.set_env(env.clone());
+    test.initialize()?;
+  }
+
+  let mut suite = TestSuite::from_configuration(&tests)?;
   let manifest = root_manifest.clone();
 
   let factory: ComponentFactory = Box::new(move |config| {
-    let mut builder = UninitializedConfiguration::new(WickConfiguration::Component(manifest.clone()));
+    let builder = UninitializedConfiguration::new(WickConfiguration::Component(manifest.clone()));
 
     let task = async move {
-      builder.set_root_config(config);
-      let manifest = builder
-        .finish()
-        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?
-        .try_component_config()
-        .unwrap();
+      let mut manifest = builder.into_inner().try_component_config().unwrap();
+      manifest.set_root_config(config);
+      manifest
+        .initialize()
+        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
       let mut host = ComponentHostBuilder::default()
         .manifest(manifest)
         .span(Span::current())

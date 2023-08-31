@@ -354,15 +354,6 @@ impl WickConfiguration {
     self
   }
 
-  /// Get the root runtime config for a [WickConfiguration].
-  fn get_root_config(&self) -> Option<&RuntimeConfig> {
-    match self {
-      WickConfiguration::App(v) => v.root_config.as_ref(),
-      WickConfiguration::Component(v) => v.root_config.as_ref(),
-      _ => None,
-    }
-  }
-
   /// Set the environment variables for a [WickConfiguration].
   fn set_env(&mut self, env: Option<HashMap<String, String>>) -> &mut Self {
     match self {
@@ -496,7 +487,9 @@ impl WickConfiguration {
         v.initialize()?;
       }
       WickConfiguration::Types(_) => (),
-      WickConfiguration::Tests(_) => (),
+      WickConfiguration::Tests(v) => {
+        v.initialize()?;
+      }
       WickConfiguration::Lockdown(v) => {
         v.initialize()?;
       }

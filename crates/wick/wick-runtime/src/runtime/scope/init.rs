@@ -162,6 +162,7 @@ impl ScopeInit {
       Some(self.namespace()),
       Some(components),
       make_link_callback(self.id),
+      self.manifest.root_config(),
       &self.span,
     )
     .map_err(init_err(self.manifest.source()))?;

@@ -62,6 +62,7 @@ impl Interpreter {
     namespace: Option<String>,
     components: Option<HandlerMap>,
     callback: Arc<RuntimeCallback>,
+    root_config: Option<&RuntimeConfig>,
     parent_span: &Span,
   ) -> Result<Self, Error> {
     let span = info_span!(parent: parent_span, "interpreter");
@@ -107,7 +108,7 @@ impl Interpreter {
 
     // Make the self:: component
     let components = Arc::new(handlers);
-    let self_component = SelfComponent::new(components.clone(), program.state(), &dispatcher);
+    let self_component = SelfComponent::new(components.clone(), program.state(), &dispatcher, root_config);
 
     // If we expose a component, expose its signature as our own.
     // Otherwise expose our self signature.

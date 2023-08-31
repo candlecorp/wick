@@ -1,7 +1,14 @@
-#![allow(missing_docs)] // delete when we move away from the `property` crate.
-use liquid_json::LiquidJsonValue;
+#![allow(missing_docs)]
+use std::collections::HashMap;
+use std::path::Path;
 
+// delete when we move away from the `property` crate.
+use liquid_json::LiquidJsonValue;
+use wick_packet::{InherentData, RuntimeConfig};
+
+use super::template_config::Renderable;
 use crate::config::{LiquidJsonConfig, TemplateConfig};
+use crate::error::ManifestError;
 
 #[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize, derive_builder::Builder)]
 #[property(get(public), set(private), mut(disable))]
@@ -30,6 +37,26 @@ pub struct TestCase {
   #[builder(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) outputs: Vec<TestPacketData>,
+}
+
+impl Renderable for TestCase {
+  fn render_config(
+    &mut self,
+    source: Option<&Path>,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    if let Some(config) = self.config.as_mut() {
+      config.set_value(Some(config.render(
+        source,
+        root_config,
+        None,
+        env,
+        Some(&InherentData::unsafe_default()),
+      )?));
+    }
+    Ok(())
+  }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Copy, property::Property, serde::Serialize, derive_builder::Builder)]

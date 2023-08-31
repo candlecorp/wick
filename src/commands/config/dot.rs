@@ -65,7 +65,7 @@ pub(crate) async fn handle(
   config.set_root_config(root_config);
   let manifest = config.finish()?.try_component_config()?;
 
-  let manifest = merge_config(&manifest, &opts.oci, None);
+  let manifest = merge_config(manifest, &opts.oci, None);
 
   let mut host = ComponentHostBuilder::default().manifest(manifest).span(span).build()?;
 

@@ -96,7 +96,7 @@ mod test {
       restriction.1,
       restriction.2,
     );
-    restriction.render_config(None, None)?;
+    restriction.render_config(None, None, None)?;
     assert_eq!(
       is_allowed(component_id, "ID", &volume, &restriction),
       Ok(()),
@@ -129,7 +129,7 @@ mod test {
       restriction.1,
       restriction.2,
     );
-    restriction.render_config(None, None)?;
+    restriction.render_config(None, None, None)?;
     assert_eq!(
       is_allowed(component_id, "ID", &volume, &restriction),
       Err(failure),
