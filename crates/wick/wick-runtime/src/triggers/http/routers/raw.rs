@@ -122,14 +122,15 @@ impl RawHandler {
           Ok(b) => {
             let bytes = b.join(&0);
             trace!(?bytes, "http:codec:json:bytes");
-            serde_json::from_slice::<Value>(&bytes).map_or_else(
-              |_| {
-                let _ = tx.send(Packet::err("body", "Could not decode body as JSON"));
-              },
-              |value| {
-                let _ = tx.send(Packet::encode("body", value));
-              },
-            );
+            let packet = if bytes.is_empty() {
+              Packet::encode("body", None::<Value>)
+            } else {
+              serde_json::from_slice::<Option<Value>>(&bytes).map_or_else(
+                |e| Packet::err("body", e.to_string()),
+                |value| Packet::encode("body", Some(value)),
+              )
+            };
+            let _ = tx.send(packet);
           }
           Err(e) => {
             let _ = tx.send(Packet::err("body", e.to_string()));
