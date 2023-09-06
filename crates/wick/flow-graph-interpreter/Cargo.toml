@@ -17,7 +17,7 @@ wick-packet = { workspace = true, features = ["invocation", "rt-tokio"] }
 flow-graph = { workspace = true }
 flow-component = { workspace = true, features = ["invocation"] }
 wick-config = { workspace = true, features = ["config"] }
-flow-expression-parser = { workspace = true }
+flow-expression-parser = { workspace = true, features = ["std"] }
 wick-interface-types = { workspace = true }
 seeded-random = { workspace = true, features = ["uuid", "rng", "std"] }
 thiserror = { workspace = true }

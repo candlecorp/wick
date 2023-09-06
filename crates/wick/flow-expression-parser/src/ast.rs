@@ -7,7 +7,11 @@ use parking_lot::Mutex;
 
 use crate::{parse, Error};
 
+#[cfg(feature = "std")]
 pub(crate) static RNG: Lazy<Mutex<seeded_random::Random>> = Lazy::new(|| Mutex::new(seeded_random::Random::new()));
+#[cfg(not(feature = "std"))]
+pub(crate) static RNG: Lazy<Mutex<seeded_random::Random>> =
+  Lazy::new(|| Mutex::new(seeded_random::Random::from_seed(seeded_random::Seed::unsafe_new(0))));
 
 /// Set the seed for the RNG.
 ///

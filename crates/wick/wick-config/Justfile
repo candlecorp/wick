@@ -1,9 +1,9 @@
 features:
   - cargo build --features=config --no-default-features
   - cargo build --features=v1 --no-default-features
+  - cargo build --features=v1 --no-default-features --target=wasm32-unknown-unknown
   - cargo build --features=v0 --no-default-features
   - cargo build --features=v0 --features=config --no-default-features
-
 
 clean:
   rm -f docs/*
