@@ -182,13 +182,13 @@ impl AppConfiguration {
   }
 
   /// Add a resource to the application configuration.
-  pub fn add_resource<T: AsRef<str>>(&mut self, name: T, resource: ResourceDefinition) {
-    self.resources.push(ResourceBinding::new(name.as_ref(), resource));
+  pub fn add_resource<T: Into<String>>(&mut self, name: T, resource: ResourceDefinition) {
+    self.resources.push(ResourceBinding::new(name, resource));
   }
 
   /// Add a component to the application configuration.
-  pub fn add_import<T: AsRef<str>>(&mut self, name: T, import: ImportDefinition) {
-    self.import.push(ImportBinding::new(name.as_ref(), import));
+  pub fn add_import<T: Into<String>>(&mut self, name: T, import: ImportDefinition) {
+    self.import.push(ImportBinding::new(name, import));
   }
 
   /// Generate V1 configuration yaml from this configuration.

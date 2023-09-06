@@ -58,9 +58,9 @@ pub struct EnumVariant {
 
 impl EnumVariant {
   /// Constructor for [EnumVariant]
-  pub fn new<T: AsRef<str>>(name: T, index: Option<u32>, value: Option<String>, description: Option<String>) -> Self {
+  pub fn new<T: Into<String>>(name: T, index: Option<u32>, value: Option<String>, description: Option<String>) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       index,
       value,
       description,

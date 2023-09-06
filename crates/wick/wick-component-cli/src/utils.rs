@@ -97,7 +97,10 @@ mod tests {
   fn sig(fields: &[(&str, Type)]) -> OperationSignature {
     OperationSignature::new(
       "test".to_owned(),
-      fields.iter().map(|(n, t)| Field::new(n, t.clone())).collect(),
+      fields
+        .iter()
+        .map(|(n, t)| Field::new((*n).to_owned(), t.clone()))
+        .collect(),
       Default::default(),
       Default::default(),
     )

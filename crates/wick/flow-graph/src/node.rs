@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use crate::error::Error;
 use crate::port::{PortDirection, PortReference};
 use crate::schematic::{ConnectionIndex, NodeIndex, PortIndex};
-use crate::util::AsStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[must_use]
@@ -46,10 +45,10 @@ pub struct NodeReference {
 }
 
 impl NodeReference {
-  pub fn new<T: AsStr, U: AsStr>(component_id: T, name: U) -> Self {
+  pub fn new<T: Into<String>, U: Into<String>>(component_id: T, name: U) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
-      component_id: component_id.as_ref().to_owned(),
+      name: name.into(),
+      component_id: component_id.into(),
     }
   }
 
@@ -106,9 +105,9 @@ impl<DATA> Node<DATA>
 where
   DATA: Clone,
 {
-  pub(crate) fn new<T: AsStr>(name: T, index: NodeIndex, kind: NodeKind, data: DATA) -> Self {
+  pub(crate) fn new<T: Into<String>>(name: T, index: NodeIndex, kind: NodeKind, data: DATA) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       kind,
       index,
       data,
@@ -159,17 +158,18 @@ where
     self.inputs.get(index)
   }
 
-  pub fn add_input<T: AsStr>(&mut self, port: T) -> PortReference {
+  pub fn add_input<T: Into<String>>(&mut self, port: T) -> PortReference {
     match self.kind {
       NodeKind::Output(_) => {
-        self.outputs.add(&port, self.index);
-        self.inputs.add(&port, self.index)
+        let port = port.into();
+        self.outputs.add(port.clone(), self.index);
+        self.inputs.add(port, self.index)
       }
       NodeKind::Input(_) | NodeKind::Inherent(_) => {
         // Input/Output nodes have the same ports in & out.
         panic!("You can not manually add inputs to {} nodes", self.kind);
       }
-      NodeKind::External(_) => self.inputs.add(&port, self.index),
+      NodeKind::External(_) => self.inputs.add(port, self.index),
     }
   }
 
@@ -204,17 +204,18 @@ where
     self.outputs.get(index)
   }
 
-  pub fn add_output<T: AsStr>(&mut self, port: T) -> PortReference {
+  pub fn add_output<T: Into<String>>(&mut self, port: T) -> PortReference {
     match self.kind {
       NodeKind::Input(_) | NodeKind::Inherent(_) => {
-        self.inputs.add(&port, self.index);
-        self.outputs.add(&port, self.index)
+        let port = port.into();
+        self.inputs.add(port.clone(), self.index);
+        self.outputs.add(port, self.index)
       }
       NodeKind::Output(_) => {
         // Input/Output nodes have the same ports in & out.
         panic!("You can not manually add outputs to {} nodes", self.kind);
       }
-      NodeKind::External(_) => self.outputs.add(&port, self.index),
+      NodeKind::External(_) => self.outputs.add(port, self.index),
     }
   }
 
@@ -258,15 +259,15 @@ impl PortList {
     &self.list
   }
 
-  fn add<T: AsStr>(&mut self, port_name: T, node_index: NodeIndex) -> PortReference {
-    let name = port_name.as_ref();
-    let existing_index = self.map.get(name);
+  fn add<T: Into<String>>(&mut self, port_name: T, node_index: NodeIndex) -> PortReference {
+    let name = port_name.into();
+    let existing_index = self.map.get(&name);
     match existing_index {
       Some(index) => self.list[*index].port,
       None => {
         let index = self.list.len();
         let port_ref = PortReference::new(node_index, index, self.direction);
-        self.map.insert(name.to_owned(), index);
+        self.map.insert(name.clone(), index);
         let port = NodePort::new(name, port_ref);
         self.list.push(port);
         port_ref
@@ -308,9 +309,9 @@ pub struct NodePort {
 }
 
 impl NodePort {
-  pub(crate) fn new<T: AsStr>(name: T, port: PortReference) -> Self {
+  pub(crate) fn new<T: Into<String>>(name: T, port: PortReference) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       port,
       connections: Default::default(),
     }

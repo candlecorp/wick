@@ -105,8 +105,8 @@ fn to_jwt_segment<T: Serialize>(input: &T) -> Result<String> {
   Ok(base64.encode(encoded.as_bytes()))
 }
 
-fn from_jwt_segment<B: AsRef<str>, T: DeserializeOwned>(encoded: B) -> Result<T> {
-  let decoded = base64.decode(encoded.as_ref())?;
+fn from_jwt_segment<T: DeserializeOwned>(encoded: &str) -> Result<T> {
+  let decoded = base64.decode(encoded)?;
   let s = String::from_utf8(decoded).map_err(|_| Error::Utf8("jwt segment".to_owned()))?;
 
   Ok(serde_json::from_str(&s)?)

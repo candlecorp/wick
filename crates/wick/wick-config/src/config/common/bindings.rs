@@ -36,11 +36,8 @@ impl Renderable for ImportBinding {
 
 impl ImportBinding {
   /// Create a new [ImportBinding] with specified name and [ImportDefinition].
-  pub fn new<T: AsRef<str>>(name: T, kind: ImportDefinition) -> Self {
-    Self {
-      id: name.as_ref().to_owned(),
-      kind,
-    }
+  pub fn new<T: Into<String>>(name: T, kind: ImportDefinition) -> Self {
+    Self { id: name.into(), kind }
   }
 
   /// Get the configuration object for the collection.
@@ -62,19 +59,19 @@ impl ImportBinding {
   }
 
   /// Initialize a new import for the specified [ComponentDefinition].
-  pub fn component<T: AsRef<str>>(name: T, component: ComponentDefinition) -> Self {
+  pub fn component<T: Into<String>>(name: T, component: ComponentDefinition) -> Self {
     #[allow(deprecated)]
     Self::new(name, ImportDefinition::Component(component))
   }
 
   /// Create a new Wasm component definition.
-  pub fn wasm<T: AsRef<str>>(name: T, component: WasmComponent) -> Self {
+  pub fn wasm<T: Into<String>>(name: T, component: WasmComponent) -> Self {
     #[allow(deprecated)]
     Self::new(name, ImportDefinition::Component(ComponentDefinition::Wasm(component)))
   }
 
   /// Create a new GrpcUrl component definition.
-  pub fn grpc_url<T: AsRef<str>>(name: T, component: config::components::GrpcUrlComponent) -> Self {
+  pub fn grpc_url<T: Into<String>>(name: T, component: config::components::GrpcUrlComponent) -> Self {
     Self::new(
       name,
       ImportDefinition::Component(ComponentDefinition::GrpcUrl(component)),
@@ -82,7 +79,7 @@ impl ImportBinding {
   }
 
   /// Create a new Manifest component definition.
-  pub fn manifest<T: AsRef<str>>(name: T, component: config::components::ManifestComponent) -> Self {
+  pub fn manifest<T: Into<String>>(name: T, component: config::components::ManifestComponent) -> Self {
     Self::new(
       name,
       ImportDefinition::Component(ComponentDefinition::Manifest(component)),
@@ -90,7 +87,7 @@ impl ImportBinding {
   }
 
   /// Create a new High level component definition.
-  pub fn high_level<T: AsRef<str>>(name: T, component: HighLevelComponent) -> Self {
+  pub fn high_level<T: Into<String>>(name: T, component: HighLevelComponent) -> Self {
     Self::new(
       name,
       ImportDefinition::Component(ComponentDefinition::HighLevelComponent(component)),

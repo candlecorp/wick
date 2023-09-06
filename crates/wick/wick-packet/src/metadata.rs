@@ -33,10 +33,10 @@ impl Default for WickMetadata {
 }
 
 impl WickMetadata {
-  pub fn new<T: AsRef<str>>(port: T, flags: u8) -> Self {
+  pub fn new<T: Into<String>>(port: T, flags: u8) -> Self {
     Self {
       flags,
-      port: port.as_ref().to_owned(),
+      port: port.into(),
       context: None,
     }
   }

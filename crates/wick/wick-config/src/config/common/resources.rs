@@ -44,9 +44,9 @@ impl Renderable for ResourceBinding {
 
 impl ResourceBinding {
   /// Create a new [ResourceBinding] with specified name and [ResourceDefinition].
-  pub fn new<T: AsRef<str>>(name: T, kind: impl Into<ResourceDefinition>) -> Self {
+  pub fn new<T: Into<String>>(name: T, kind: impl Into<ResourceDefinition>) -> Self {
     Self {
-      id: name.as_ref().to_owned(),
+      id: name.into(),
       kind: kind.into(),
     }
   }
@@ -276,10 +276,10 @@ pub struct TcpPort {
 
 impl TcpPort {
   /// Create a new TCP port configuration.
-  pub fn new<T: AsRef<str>>(host: T, port: u16) -> Self {
+  pub fn new<T: Into<String>>(host: T, port: u16) -> Self {
     Self {
       port: TemplateConfig::new_value(port),
-      host: TemplateConfig::new_value(host.as_ref().to_owned()),
+      host: TemplateConfig::new_value(host.into()),
     }
   }
 
@@ -315,10 +315,10 @@ pub struct UdpPort {
 
 impl UdpPort {
   /// Create a new UDP port configuration.
-  pub fn new<T: AsRef<str>>(host: T, port: u16) -> Self {
+  pub fn new<T: Into<String>>(host: T, port: u16) -> Self {
     Self {
       port: TemplateConfig::new_value(port),
-      host: TemplateConfig::new_value(host.as_ref().to_owned()),
+      host: TemplateConfig::new_value(host.into()),
     }
   }
 

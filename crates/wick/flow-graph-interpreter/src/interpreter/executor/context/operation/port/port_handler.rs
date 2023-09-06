@@ -44,10 +44,10 @@ impl std::fmt::Debug for PortHandler {
 }
 
 impl PortHandler {
-  pub(super) fn new<T: AsRef<str>>(operation_instance: T, port: OperationPort) -> Self {
+  pub(super) fn new<T: Into<String>>(operation_instance: T, port: OperationPort) -> Self {
     Self {
       buffer: Default::default(),
-      operation_instance: operation_instance.as_ref().to_owned(),
+      operation_instance: operation_instance.into(),
       port,
       status: Mutex::new(PortStatus::Open),
     }

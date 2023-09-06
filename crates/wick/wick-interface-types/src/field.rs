@@ -32,13 +32,13 @@ pub struct Field {
 }
 
 impl Field {
-  pub fn new<T: AsRef<str>>(name: T, ty: Type) -> Self {
+  pub fn new<T: Into<String>>(name: T, ty: Type) -> Self {
     Self::new_with_description(name, ty, None)
   }
 
-  pub fn new_with_description<T: AsRef<str>>(name: T, ty: Type, desc: Option<String>) -> Self {
+  pub fn new_with_description<T: Into<String>>(name: T, ty: Type, desc: Option<String>) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       description: desc,
       #[cfg(feature = "value")]
       default: None,

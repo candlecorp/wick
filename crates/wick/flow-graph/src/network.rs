@@ -1,4 +1,3 @@
-use crate::util::AsStr;
 use crate::Schematic;
 
 #[derive(Debug)]
@@ -12,9 +11,9 @@ impl<DATA> Network<DATA>
 where
   DATA: Clone,
 {
-  pub fn new<T: AsStr>(name: T, data: DATA) -> Self {
+  pub fn new<T: Into<String>>(name: T, data: DATA) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       schematics: Default::default(),
       data,
     }

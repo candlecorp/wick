@@ -157,9 +157,9 @@ pub struct TargetLevel {
 
 impl TargetLevel {
   /// Create a new instance for the given target, log level, and modifier.
-  pub fn new<T: AsRef<str>>(target: T, level: LogLevel, modifier: LogModifier) -> Self {
+  pub fn new<T: Into<String>>(target: T, level: LogLevel, modifier: LogModifier) -> Self {
     Self {
-      target: target.as_ref().to_owned(),
+      target: target.into(),
       level,
       modifier,
     }
@@ -167,46 +167,46 @@ impl TargetLevel {
 
   /// Create a new negated instance for the given target and log level.
   #[must_use]
-  pub fn not<T: AsRef<str>>(target: T, level: LogLevel) -> Self {
+  pub fn not<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::Not)
   }
 
   /// Create a new instance that matches the given target and any log level greater than the one specified.
   #[must_use]
-  pub fn gt<T: AsRef<str>>(target: T, level: LogLevel) -> Self {
+  pub fn gt<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::GreaterThan)
   }
 
   /// Create a new instance that matches the given target and any log level greater than or equal to the one specified.
   #[must_use]
-  pub fn gte<T: AsRef<str>>(target: T, level: LogLevel) -> Self {
+  pub fn gte<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::GreaterThanOrEqualTo)
   }
 
   /// Create a new instance that matches the given target and any log level less than or equal to the one specified.
   #[must_use]
-  pub fn lt<T: AsRef<str>>(target: T, level: LogLevel) -> Self {
+  pub fn lt<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::LessThan)
   }
 
   /// Create a new instance that matches the given target and any log level less than or equal to the one specified.
   #[must_use]
-  pub fn lte<T: AsRef<str>>(target: T, level: LogLevel) -> Self {
+  pub fn lte<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::LessThanOrEqualTo)
   }
 
   /// Create a new instance that matches the given target and any log level equal to the one specified.
   #[must_use]
-  pub fn is<T: AsRef<str>>(target: T, level: LogLevel) -> Self {
+  pub fn is<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::Equal)
   }
 }
 
 impl LoggingOptions {
   /// Set the name of the application doing the logging.
-  pub fn name<T: AsRef<str>>(&self, name: T) -> Self {
+  pub fn name<T: Into<String>>(&self, name: T) -> Self {
     Self {
-      app_name: name.as_ref().to_owned(),
+      app_name: name.into(),
       ..self.clone()
     }
   }

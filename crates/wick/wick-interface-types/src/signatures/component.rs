@@ -66,9 +66,9 @@ impl ComponentSignature {
   }
 
   /// Create a new [ComponentSignature] with the passed name.
-  pub fn new_named<T: AsRef<str>>(name: T) -> Self {
+  pub fn new_named<T: Into<String>>(name: T) -> Self {
     Self {
-      name: Some(name.as_ref().to_owned()),
+      name: Some(name.into()),
       ..Default::default()
     }
   }
@@ -86,8 +86,8 @@ impl ComponentSignature {
   }
 
   /// Set the version of the [ComponentSignature].
-  pub fn set_version<T: AsRef<str>>(mut self, version: T) -> Self {
-    self.metadata.version = Some(version.as_ref().to_owned());
+  pub fn set_version<T: Into<String>>(mut self, version: T) -> Self {
+    self.metadata.version = Some(version.into());
     self
   }
 

@@ -40,8 +40,8 @@ pub(crate) struct LoggingOptions {
 
 impl LoggingOptions {
   /// Set the name of the application doing the logging.
-  pub(crate) fn name<T: AsRef<str>>(&mut self, name: T) -> &mut Self {
-    self.app_name = name.as_ref().to_owned();
+  pub(crate) fn name<T: Into<String>>(&mut self, name: T) -> &mut Self {
+    self.app_name = name.into();
     self
   }
 }
