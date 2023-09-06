@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 #[derive(thiserror::Error, Debug)]
 #[allow(missing_copy_implementations)]
+#[non_exhaustive]
 /// Crate error.
 pub enum Error {
   /// Failed to get current working directory

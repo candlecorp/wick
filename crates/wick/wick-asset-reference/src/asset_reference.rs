@@ -107,7 +107,7 @@ impl std::hash::Hash for AssetReference {
 
 impl AssetReference {
   /// Create a new location reference.
-  pub fn new(location: impl AsRef<str>) -> Self {
+  pub fn new<T: AsRef<str>>(location: T) -> Self {
     Self {
       location: location.as_ref().to_owned(),
       cache_location: Default::default(),
@@ -118,7 +118,7 @@ impl AssetReference {
 
   /// Embed [OciOptions] with an [AssetReference].
   #[must_use]
-  pub fn with_options(&self, options: OciOptions) -> FetchableAssetReference<'_> {
+  pub const fn with_options(&self, options: OciOptions) -> FetchableAssetReference<'_> {
     FetchableAssetReference(self, options)
   }
 

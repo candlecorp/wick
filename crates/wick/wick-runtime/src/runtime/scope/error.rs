@@ -11,6 +11,7 @@ fn display_path(pb: &Option<PathBuf>) -> String {
 }
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum ScopeError {
   #[error("Could not start interpreter from '{}': {1}", display_path(.0))]
   InterpreterInit(Option<PathBuf>, Box<flow_graph_interpreter::error::InterpreterError>),

@@ -57,13 +57,13 @@ impl FutureInvocation {
   }
 
   pub(crate) fn next(value: &Invocation, target: Entity, seed: u64) -> Self {
-    let inherent = InherentData {
+    let inherent = InherentData::new(
       seed,
-      timestamp: std::time::SystemTime::now()
+      std::time::SystemTime::now()
         .duration_since(std::time::SystemTime::UNIX_EPOCH)
         .unwrap()
         .as_millis() as u64,
-    };
+    );
 
     Self::new(value.tx_id, value.target.clone(), target, inherent, value.span.clone())
   }
@@ -155,7 +155,7 @@ impl InstanceHandler {
     self.reference.namespace()
   }
 
-  pub(crate) fn index(&self) -> NodeIndex {
+  pub(crate) const fn index(&self) -> NodeIndex {
     self.index
   }
 
@@ -197,11 +197,11 @@ impl InstanceHandler {
       .ok_or_else(|| StateError::MissingPortName(name.to_owned()).into())
   }
 
-  pub(crate) fn outputs(&self) -> &OutputPorts {
+  pub(crate) const fn outputs(&self) -> &OutputPorts {
     &self.outputs
   }
 
-  pub(crate) fn inputs(&self) -> &InputPorts {
+  pub(crate) const fn inputs(&self) -> &InputPorts {
     &self.inputs
   }
 
@@ -212,13 +212,7 @@ impl InstanceHandler {
   pub(crate) fn decrement_pending(&self) -> Result<()> {
     self
       .pending
-      .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |v| {
-        if v > 0 {
-          Some(v - 1)
-        } else {
-          None
-        }
-      })
+      .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |v| (v > 0).then_some(v - 1))
       .map_err(|_| StateError::TooManyComplete)?;
     Ok(())
   }

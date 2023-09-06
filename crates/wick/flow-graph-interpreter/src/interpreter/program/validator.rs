@@ -12,7 +12,7 @@ type Result = std::result::Result<(), Vec<OperationInvalid>>;
 pub(crate) struct Validator {}
 
 impl Validator {
-  #[allow(clippy::too_many_lines)]
+  #[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
   fn validate_external_components(&self, program: &Program) -> Result {
     let mut errors = Vec::new();
     let state = &program.state();

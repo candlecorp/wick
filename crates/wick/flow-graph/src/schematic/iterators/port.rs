@@ -14,11 +14,11 @@ impl<'graph, DATA> Port<'graph, DATA>
 where
   DATA: Clone,
 {
-  pub fn new(schematic: &'graph Schematic<DATA>, port: PortReference) -> Self {
+  pub const fn new(schematic: &'graph Schematic<DATA>, port: PortReference) -> Self {
     Self { schematic, port }
   }
 
-  pub fn node(&self) -> NodeHop<DATA> {
+  pub const fn node(&self) -> NodeHop<DATA> {
     NodeHop::new(self.schematic, self.port.node_index)
   }
 
@@ -35,7 +35,7 @@ where
     get_ports_node(self.schematic, &self.port)
   }
 
-  pub fn direction(&self) -> PortDirection {
+  pub const fn direction(&self) -> PortDirection {
     self.port.direction
   }
 }

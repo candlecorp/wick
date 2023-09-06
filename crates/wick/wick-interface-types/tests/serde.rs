@@ -99,15 +99,16 @@ fn test_serde_all() -> Result<()> {
 
 #[test_log::test]
 fn test_serde_rt() -> Result<()> {
-  let mut sig = ComponentSignature::new("test-sig");
+  let mut sig = ComponentSignature::new_named("test-sig");
   sig.types.push(TypeDefinition::Enum(EnumDefinition::new(
     "Unit",
     vec![
-      EnumVariant::new("millis", Some(0), None),
-      EnumVariant::new("micros", Some(1), None),
+      EnumVariant::new("millis", Some(0), None, None),
+      EnumVariant::new("micros", Some(1), None, None),
     ],
+    None,
   )));
-  let mut compsig = OperationSignature::new("my_component");
+  let mut compsig = OperationSignature::new_named("my_component");
   compsig.inputs.push(Field::new("input1", Type::String));
   compsig.inputs.push(Field::new("input2", Type::U64));
   compsig.outputs.push(Field::new("output1", Type::String));
@@ -128,15 +129,16 @@ fn test_serde_rt() -> Result<()> {
 
 #[test_log::test]
 fn test_serde_yaml_rt() -> Result<()> {
-  let mut sig = ComponentSignature::new("test-sig");
+  let mut sig = ComponentSignature::new_named("test-sig");
   sig.types.push(TypeDefinition::Enum(EnumDefinition::new(
     "Unit",
     vec![
-      EnumVariant::new("millis", Some(0), None),
-      EnumVariant::new("micros", Some(1), None),
+      EnumVariant::new("millis", Some(0), None, None),
+      EnumVariant::new("micros", Some(1), None, None),
     ],
+    None,
   )));
-  let mut compsig = OperationSignature::new("my_component");
+  let mut compsig = OperationSignature::new_named("my_component");
   compsig.inputs.push(Field::new("input1", Type::String));
   compsig.inputs.push(Field::new("input2", Type::U64));
   compsig.inputs.push(Field::new(

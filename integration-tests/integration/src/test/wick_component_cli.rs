@@ -7,7 +7,7 @@ use flow_component::SharedComponent;
 use tokio::time::sleep;
 use tonic::transport::Uri;
 use tracing::debug;
-use wick_component_cli::options::{Options, ServerOptions};
+use wick_component_cli::options::{Options, ServerOptionsBuilder};
 use wick_component_cli::start_server;
 use wick_invocation_server::connect_rpc_client;
 use wick_rpc::rpc::ListRequest;
@@ -21,10 +21,7 @@ fn get_component() -> SharedComponent {
 #[test_logger::test(tokio::test)]
 async fn test_starts() -> Result<()> {
   let mut options = Options::default();
-  let rpc_opts = ServerOptions {
-    enabled: true,
-    ..Default::default()
-  };
+  let rpc_opts = ServerOptionsBuilder::default().enabled(true).build().unwrap();
   options.rpc = Some(rpc_opts);
   let config = start_server(get_component(), Some(options)).await?;
   let rpc = config.rpc.unwrap();

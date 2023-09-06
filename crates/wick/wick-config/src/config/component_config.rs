@@ -128,7 +128,7 @@ pub struct ComponentConfiguration {
 
 impl ComponentConfiguration {
   /// Unwrap the inner composite component implementation or return an error.
-  pub fn try_composite(&self) -> Result<&CompositeComponentImplementation> {
+  pub const fn try_composite(&self) -> Result<&CompositeComponentImplementation> {
     match &self.component {
       ComponentImplementation::Composite(c) => Ok(c),
       _ => Err(Error::UnexpectedComponentType(
@@ -139,7 +139,7 @@ impl ComponentConfiguration {
   }
 
   /// Unwrap the inner wasm component implementation or return an error.
-  pub fn try_wasm(&self) -> Result<&WasmComponentImplementation> {
+  pub const fn try_wasm(&self) -> Result<&WasmComponentImplementation> {
     match &self.component {
       ComponentImplementation::Wasm(c) => Ok(c),
       _ => Err(Error::UnexpectedComponentType(
@@ -181,7 +181,7 @@ impl ComponentConfiguration {
   }
 
   /// Get the kind of this component implementation.
-  pub fn kind(&self) -> ComponentKind {
+  pub const fn kind(&self) -> ComponentKind {
     self.component.kind()
   }
 
@@ -319,7 +319,7 @@ impl Lockdown for ComponentConfiguration {
       ))]));
     }
 
-    for resource in self.resources.iter() {
+    for resource in &self.resources {
       if let Err(e) = validate_resource(id, &(resource.into()), lockdown) {
         errors.push(FailureKind::Failed(Box::new(e)));
       }
@@ -336,6 +336,7 @@ impl Lockdown for ComponentConfiguration {
 impl ComponentConfigurationBuilder {
   #[must_use]
   /// Initialize a new component configuration builder from an existing configuration.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn from_base(config: ComponentConfiguration) -> Self {
     Self {
       name: Some(config.name),
@@ -383,19 +384,12 @@ impl ComponentConfigurationBuilder {
 
 impl From<config::Metadata> for ComponentMetadata {
   fn from(value: config::Metadata) -> Self {
-    Self {
-      version: Some(value.version),
-    }
+    Self::new(Some(value.version))
   }
 }
 
 impl From<config::OperationDefinition> for OperationSignature {
   fn from(value: config::OperationDefinition) -> Self {
-    Self {
-      name: value.name,
-      config: value.config,
-      inputs: value.inputs,
-      outputs: value.outputs,
-    }
+    Self::new(value.name, value.inputs, value.outputs, value.config)
   }
 }

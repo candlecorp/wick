@@ -52,7 +52,7 @@ pub struct Metadata {
 
 impl Metadata {
   /// Create a new [Metadata] instance from a version string.
-  pub fn new(version: impl AsRef<str>) -> Self {
+  pub fn new<T: AsRef<str>>(version: T) -> Self {
     Self {
       version: version.as_ref().to_owned(),
       ..Default::default()

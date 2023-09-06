@@ -6,11 +6,22 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
 /// Server configuration options.
+#[non_exhaustive]
 pub struct Options {
   /// RPC server options.
   pub rpc: Option<ServerOptions>,
   /// The ID of the server.
   pub id: String,
+}
+
+impl Options {
+  /// Create a new [Options] with the specified ID.
+  pub fn new<T: Into<String>>(id: T, rpc_options: Option<ServerOptions>) -> Self {
+    Self {
+      id: id.into(),
+      rpc: rpc_options,
+    }
+  }
 }
 
 impl Default for Options {
@@ -24,6 +35,7 @@ impl Default for Options {
 
 #[derive(Debug, Default, Clone)]
 /// Configuration used to connect to the mesh
+#[non_exhaustive]
 pub struct MeshOptions {
   /// Enable/disable the mesh connection.
   pub enabled: bool,
@@ -39,8 +51,10 @@ pub struct MeshOptions {
 }
 
 #[allow(missing_copy_implementations)]
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, derive_builder::Builder)]
+#[builder(default)]
 /// Options to use when starting an RPC or HTTP server.
+#[non_exhaustive]
 pub struct ServerOptions {
   /// Enable/disable the server.
   pub enabled: bool,
@@ -113,6 +127,7 @@ pub mod env {
 
 #[derive(Debug, Clone, Default, Args, Serialize, Deserialize)]
 /// Command line options for s.
+#[non_exhaustive]
 pub struct DefaultCliOptions {
   /// The unique ID of this client.
   #[clap(long = "id", env = env::WICK_COLLECTION_ID, action)]

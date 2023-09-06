@@ -5,6 +5,7 @@ use crate::claims::Named;
 
 /// The metadata that corresponds to a wick component module.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[non_exhaustive]
 pub struct WickComponent {
   /// A hash of the module's bytes as they exist without the embedded signature. This is stored so wascap.
   /// can determine if a WebAssembly module's bytecode has been altered after it was signed.

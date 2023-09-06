@@ -58,6 +58,7 @@ impl From<&serde_json::Number> for Num {
   }
 }
 
+#[allow(clippy::cast_lossless)]
 impl PartialEq for Num {
   fn eq(&self, other: &Self) -> bool {
     match (self, other) {
@@ -74,6 +75,7 @@ impl PartialEq for Num {
   }
 }
 
+#[allow(clippy::cast_lossless)]
 impl PartialOrd for Num {
   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
     match (self, other) {

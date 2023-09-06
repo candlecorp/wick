@@ -11,7 +11,7 @@ impl Seed {
   /// can get you into tough-to-troubleshoot situations.
   ///
   /// It's better to generate new seeds and new RNGs from those seeds.
-  pub fn unsafe_new(seed: u64) -> Self {
+  pub const fn unsafe_new(seed: u64) -> Self {
     Self(seed)
   }
 

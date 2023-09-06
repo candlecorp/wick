@@ -190,13 +190,7 @@ pub(crate) async fn init_impl(
         let resource = (resolver)(volume.resource())?.try_resource()?.try_volume()?;
         dirs.insert(volume.path().to_owned(), resource.path()?.to_string_lossy().to_string());
       }
-      let perms = if !dirs.is_empty() {
-        let mut perms = PermissionsBuilder::default();
-        perms.dirs(dirs);
-        Some(perms.build().unwrap())
-      } else {
-        None
-      };
+      let perms = (!dirs.is_empty()).then(|| PermissionsBuilder::default().dirs(dirs).build().unwrap());
       let comp = init_wasm_impl_component(wasmimpl, id.clone(), opts, buffer_size, perms, provided).await?;
       let signed_sig = comp.component().signature();
       let manifest_sig = manifest.signature()?;

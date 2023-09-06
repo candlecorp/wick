@@ -12,6 +12,7 @@ use crate::{AssetManifest, Error, OciOptions, OnExisting};
 
 /// Result of a pull operation.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct PullResult {
   /// The directory the package was pulled to.
   pub base_dir: PathBuf,

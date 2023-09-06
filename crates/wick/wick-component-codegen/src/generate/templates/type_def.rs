@@ -142,6 +142,7 @@ pub(crate) fn gen_enum<'a>(
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     #description
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum #name {
       #(#variants,)*
     }
@@ -246,6 +247,7 @@ pub(crate) fn gen_struct<'a>(
   let item = quote! {
     #derive
     #description
+    #[allow(clippy::exhaustive_structs)]
     pub struct #name {
       #(#fields,)*
     }

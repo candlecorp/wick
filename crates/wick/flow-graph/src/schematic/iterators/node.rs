@@ -21,7 +21,7 @@ impl<'graph, DATA> NodeHop<'graph, DATA>
 where
   DATA: Clone,
 {
-  pub fn new(schematic: &'graph Schematic<DATA>, index: NodeIndex) -> Self {
+  pub const fn new(schematic: &'graph Schematic<DATA>, index: NodeIndex) -> Self {
     Self { schematic, index }
   }
 
@@ -55,7 +55,7 @@ where
   }
 
   #[must_use]
-  pub fn index(&self) -> NodeIndex {
+  pub const fn index(&self) -> NodeIndex {
     self.index
   }
 

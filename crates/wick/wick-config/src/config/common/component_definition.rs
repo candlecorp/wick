@@ -46,7 +46,7 @@ pub struct ComponentOperationExpression {
 
 impl ComponentOperationExpression {
   /// Create a new [ComponentOperationExpression] with specified operation and component.
-  pub fn new_default(operation: impl AsRef<str>, component: ComponentDefinition) -> Self {
+  pub fn new_default<T: AsRef<str>>(operation: T, component: ComponentDefinition) -> Self {
     Self {
       name: operation.as_ref().to_owned(),
       component,
@@ -56,8 +56,8 @@ impl ComponentOperationExpression {
   }
 
   /// Create a new [ComponentOperationExpression] with specified operation and component.
-  pub fn new(
-    operation: impl AsRef<str>,
+  pub fn new<T: AsRef<str>>(
+    operation: T,
     component: ComponentDefinition,
     config: Option<LiquidJsonConfig>,
     settings: Option<ExecutionSettings>,
@@ -180,13 +180,13 @@ pub enum ComponentDefinition {
 impl ComponentDefinition {
   /// Returns true if the definition is a reference to another component.
   #[must_use]
-  pub fn is_reference(&self) -> bool {
+  pub const fn is_reference(&self) -> bool {
     matches!(self, ComponentDefinition::Reference(_))
   }
 
   /// Returns the component config, if it exists
   #[must_use]
-  pub fn config(&self) -> Option<&LiquidJsonConfig> {
+  pub const fn config(&self) -> Option<&LiquidJsonConfig> {
     match self {
       #[allow(deprecated)]
       ComponentDefinition::Wasm(c) => c.config.as_ref(),

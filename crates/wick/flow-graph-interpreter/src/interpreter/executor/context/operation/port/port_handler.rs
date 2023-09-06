@@ -44,7 +44,7 @@ impl std::fmt::Debug for PortHandler {
 }
 
 impl PortHandler {
-  pub(super) fn new(operation_instance: impl AsRef<str>, port: OperationPort) -> Self {
+  pub(super) fn new<T: AsRef<str>>(operation_instance: T, port: OperationPort) -> Self {
     Self {
       buffer: Default::default(),
       operation_instance: operation_instance.as_ref().to_owned(),
@@ -93,7 +93,7 @@ impl PortHandler {
     }
   }
 
-  pub(crate) fn port_ref(&self) -> PortReference {
+  pub(crate) const fn port_ref(&self) -> PortReference {
     self.port.detached()
   }
 

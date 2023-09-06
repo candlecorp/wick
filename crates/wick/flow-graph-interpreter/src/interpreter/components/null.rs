@@ -26,7 +26,7 @@ impl NullComponent {
 
   pub(crate) fn new() -> Self {
     let mut this = Self {
-      signature: ComponentSignature::new(Self::ID).version("0.0.0"),
+      signature: ComponentSignature::new_named(Self::ID).set_version("0.0.0"),
     };
     this.signature = this
       .signature

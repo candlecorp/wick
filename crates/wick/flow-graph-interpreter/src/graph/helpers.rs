@@ -86,6 +86,7 @@ pub(super) fn ensure_added(
   Ok(())
 }
 
+#[allow(clippy::cognitive_complexity)]
 pub(super) fn decorate(
   component: &str,
   operation: &str,

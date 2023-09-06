@@ -20,10 +20,10 @@ impl ComponentComponent {
   pub(crate) const ID: &str = "__component__";
 
   pub(crate) fn new(list: &HandlerMap) -> Self {
-    let mut signature = ComponentSignature::new("components");
+    let mut signature = ComponentSignature::new_named("components");
     for ns in list.inner().keys() {
       trace!(id = ns, "interpreter:registering component on 'component' ns");
-      let mut comp_sig = OperationSignature::new(ns.clone());
+      let mut comp_sig = OperationSignature::new_named(ns.clone());
       #[allow(deprecated)]
       comp_sig
         .outputs

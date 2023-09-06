@@ -11,17 +11,17 @@ pub struct AssetManifest {
 
 impl AssetManifest {
   pub const FILENAME: &str = ".wick-manifest.json";
-  pub fn new(root: PathBuf, version: String) -> Self {
+  pub const fn new(root: PathBuf, version: String) -> Self {
     Self { root, version }
   }
 
   #[must_use]
-  pub fn root(&self) -> &PathBuf {
+  pub const fn root(&self) -> &PathBuf {
     &self.root
   }
 
   #[must_use]
-  pub fn version(&self) -> &String {
+  pub const fn version(&self) -> &String {
     &self.version
   }
 }

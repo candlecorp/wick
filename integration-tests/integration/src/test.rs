@@ -123,25 +123,26 @@ mod tests {
 
     debug!("signature response : {:?}", sig);
 
-    let expected = ComponentSignature {
-      name: Some("test-native-component".to_owned()),
-      metadata: ComponentMetadata::new(Some("0.1.0")),
-      operations: vec![
-        OperationSignature {
-          name: "error".to_string(),
-          config: Default::default(),
-          inputs: vec![Field::new("input", Type::String)],
-          outputs: vec![Field::new("output", Type::String)],
-        },
-        OperationSignature {
-          name: "test-component".to_string(),
-          config: Default::default(),
-          inputs: vec![Field::new("input", Type::String)],
-          outputs: vec![Field::new("output", Type::String)],
-        },
+    let expected = ComponentSignature::new(
+      "test-native-component",
+      Some("0.1.0".to_owned()),
+      vec![
+        OperationSignature::new(
+          "error",
+          vec![Field::new("input", Type::String)],
+          vec![Field::new("output", Type::String)],
+          Default::default(),
+        ),
+        OperationSignature::new(
+          "test-component",
+          vec![Field::new("input", Type::String)],
+          vec![Field::new("output", Type::String)],
+          Default::default(),
+        ),
       ],
-      ..Default::default()
-    };
+      Default::default(),
+      Default::default(),
+    );
     assert_eq!(sig, &expected);
     Ok(())
   }

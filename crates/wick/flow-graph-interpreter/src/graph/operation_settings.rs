@@ -11,7 +11,7 @@ pub struct OperationSettings {
 
 impl OperationSettings {
   /// Initialize a new OperationSettings with the specified config and settings.
-  pub(crate) fn new(config: LiquidOperationConfig, settings: Option<ExecutionSettings>) -> Self {
+  pub(crate) const fn new(config: LiquidOperationConfig, settings: Option<ExecutionSettings>) -> Self {
     Self { config, settings }
   }
 }
@@ -37,17 +37,17 @@ impl LiquidOperationConfig {
   }
 
   #[must_use]
-  pub(crate) fn op_config(&self) -> Option<&RuntimeConfig> {
+  pub(crate) const fn op_config(&self) -> Option<&RuntimeConfig> {
     self.op_config.as_ref()
   }
 
   #[must_use]
-  pub(crate) fn template(&self) -> Option<&LiquidJsonConfig> {
+  pub(crate) const fn template(&self) -> Option<&LiquidJsonConfig> {
     self.template.as_ref()
   }
 
   #[must_use]
-  pub(crate) fn root(&self) -> Option<&RuntimeConfig> {
+  pub(crate) const fn root(&self) -> Option<&RuntimeConfig> {
     self.root.as_ref()
   }
 

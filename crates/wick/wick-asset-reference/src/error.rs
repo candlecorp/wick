@@ -4,6 +4,7 @@ use thiserror::Error;
 
 /// This crate's primary Error type.
 #[derive(Error, Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
   /// Location reference was not a URL or package reference
   #[error("Could not parse {0} as a URL or reference")]

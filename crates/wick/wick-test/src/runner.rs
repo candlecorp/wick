@@ -19,7 +19,7 @@ pub fn get_description(test: &UnitTest) -> String {
 }
 
 pub async fn run_test<'a, 'b>(
-  name: impl AsRef<str> + Sync + Send,
+  name: String,
   defs: Vec<&'a mut UnitTest<'a>>,
   id: Option<&'b str>,
   component: SharedComponent,

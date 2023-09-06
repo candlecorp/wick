@@ -8,8 +8,8 @@ use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 use crate::{ComponentHost, Host};
 
 #[derive(Debug, Default)]
+#[non_exhaustive]
 pub struct Context {
-  pub documents: HashMap<String, String>,
   pub collections: HashMap<String, Vec<String>>,
 }
 

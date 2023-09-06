@@ -12,6 +12,7 @@ use nom::IResult;
 use crate::{Field, Type};
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum ParserError {
   Fail(String),
   UnexpectedToken,
@@ -152,23 +153,23 @@ macro_rules! operation {
     inputs: {$($ikey:expr => $ivalue:expr),* $(,)?},
     outputs: {$($okey:expr => $ovalue:expr),* $(,)?},
   }) => {
-    $crate::OperationSignature {
-      name: $name.to_owned(),
-      config: $crate::fields! {$($ckey => $cvalue),*},
-      inputs: $crate::fields! {$($ikey => $ivalue),*},
-      outputs: $crate::fields! {$($okey => $ovalue),*},
-    }
+    $crate::OperationSignature::new(
+      $name.to_owned(),
+      $crate::fields! {$($ikey => $ivalue),*},
+      $crate::fields! {$($okey => $ovalue),*},
+      $crate::fields! {$($ckey => $cvalue),*},
+    )
   };
   ($name:expr => {
     inputs: {$($ikey:expr => $ivalue:expr),* $(,)?},
     outputs: {$($okey:expr => $ovalue:expr),* $(,)?},
   }) => {
-    $crate::OperationSignature {
-      name: $name.to_owned(),
-      config: vec![],
-      inputs: $crate::fields! {$($ikey => $ivalue),*},
-      outputs: $crate::fields! {$($okey => $ovalue),*},
-    }
+    $crate::OperationSignature::new(
+      $name.to_owned(),
+      $crate::fields! {$($ikey => $ivalue),*},
+      $crate::fields! {$($okey => $ovalue),*},
+      Vec::new()
+    )
   };
 }
 
@@ -222,12 +223,7 @@ macro_rules! component {
     version: $version:expr,
     operations: $ops:expr,
   ) => {{
-    $crate::ComponentSignature {
-      name: Some($name.to_owned()),
-      metadata: $crate::ComponentMetadata::new($version),
-      operations: $ops,
-      ..Default::default()
-    }
+    $crate::ComponentSignature::new($name.to_owned(),$version.map(|v|v.into()),$ops,Vec::new(),Vec::new())
   }};
 }
 

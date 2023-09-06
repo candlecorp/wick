@@ -47,13 +47,10 @@ pub(crate) async fn handle(
   } else {
     json.as_object_mut().unwrap().insert("added".to_owned(), true.into());
     lines.push("Adding new credentials");
-    settings.credentials.push(wick_settings::Credential {
-      scope: opts.registry,
-      auth: wick_settings::Auth::Basic(wick_settings::BasicAuth {
-        username: opts.username,
-        password,
-      }),
-    });
+    settings.credentials.push(wick_settings::Credential::new(
+      opts.registry,
+      wick_settings::Auth::Basic(wick_settings::BasicAuth::new(opts.username, password)),
+    ));
   }
   settings.save()?;
 

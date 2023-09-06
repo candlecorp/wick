@@ -124,7 +124,7 @@ impl TestKind {
     }
   }
 
-  pub(crate) fn flags(&self) -> u8 {
+  pub(crate) const fn flags(&self) -> u8 {
     match self {
       TestKind::Exact(p) => p.flags(),
       TestKind::Assertion(_) => 0,

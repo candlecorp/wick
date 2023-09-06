@@ -19,6 +19,7 @@ use crate::Field;
 #[must_use]
 /// A valid type definition.
 #[serde(tag = "type")]
+#[allow(clippy::exhaustive_enums)]
 pub enum TypeDefinition {
   /// A struct definition.
   #[serde(rename = "struct")]
@@ -46,6 +47,7 @@ impl TypeDefinition {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 #[must_use]
+#[allow(clippy::exhaustive_enums)]
 /// Enum of valid types.
 pub enum Type {
   /// I8 type.

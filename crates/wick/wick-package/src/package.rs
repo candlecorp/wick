@@ -255,7 +255,7 @@ impl WickPackage {
 
   #[must_use]
   /// Returns a list of the files contained within the WickPackage.
-  pub fn path(&self) -> &PathBuf {
+  pub const fn path(&self) -> &PathBuf {
     &self.absolute_path
   }
 
@@ -279,7 +279,7 @@ impl WickPackage {
 
   #[must_use]
   /// Returns the registry configuration.
-  pub fn registry(&self) -> Option<&RegistryConfig> {
+  pub const fn registry(&self) -> Option<&RegistryConfig> {
     self.registry.as_ref()
   }
 
@@ -293,17 +293,15 @@ impl WickPackage {
   ///
   /// The username and password are optional. If not provided, the function falls back to anonymous authentication.
   pub async fn push(&mut self, reference: &str, options: &OciOptions) -> Result<String, Error> {
-    let config = wick_oci_utils::WickOciConfig {
-      kind: match self.kind {
-        wick_config::config::ConfigurationKind::App => wick_oci_utils::WickPackageKind::APPLICATION,
-        wick_config::config::ConfigurationKind::Component => wick_oci_utils::WickPackageKind::COMPONENT,
-        wick_config::config::ConfigurationKind::Types => wick_oci_utils::WickPackageKind::TYPES,
-        _ => {
-          return Err(Error::InvalidWickConfig(reference.to_owned()));
-        }
-      },
-      root: self.root.clone(),
+    let kind = match self.kind {
+      wick_config::config::ConfigurationKind::App => wick_oci_utils::WickPackageKind::APPLICATION,
+      wick_config::config::ConfigurationKind::Component => wick_oci_utils::WickPackageKind::COMPONENT,
+      wick_config::config::ConfigurationKind::Types => wick_oci_utils::WickPackageKind::TYPES,
+      _ => {
+        return Err(Error::InvalidWickConfig(reference.to_owned()));
+      }
     };
+    let config = wick_oci_utils::WickOciConfig::new(kind, self.root.clone());
     let image_config_contents = serde_json::to_string(&config).unwrap();
     let files = self.files.drain(..).collect();
 

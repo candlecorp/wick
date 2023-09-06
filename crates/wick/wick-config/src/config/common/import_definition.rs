@@ -25,7 +25,7 @@ crate::impl_from_for!(ImportDefinition, Types, config::components::TypesComponen
 impl ImportDefinition {
   /// Returns true if the definition is a reference to another component.
   #[must_use]
-  pub fn is_reference(&self) -> bool {
+  pub const fn is_reference(&self) -> bool {
     if let ImportDefinition::Component(c) = self {
       return c.is_reference();
     }
@@ -43,7 +43,7 @@ impl ImportDefinition {
 
   /// Get the configuration kind for this import.
   #[must_use]
-  pub fn kind(&self) -> ImportKind {
+  pub const fn kind(&self) -> ImportKind {
     match self {
       ImportDefinition::Component(_) => ImportKind::Component,
       ImportDefinition::Types(_) => ImportKind::Types,

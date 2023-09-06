@@ -45,7 +45,7 @@ pub(crate) async fn handle(
         Field::new("id", Type::String),
         Field::new("name", Type::String),
         Field::new("email", Type::String),
-      ],
+      ],None
     ));
 
     config.types_mut().push(example_typedef);

@@ -6,6 +6,7 @@ use crate::assertion_packet::TestKind;
 use crate::operators::{ContainsError, OrderingError, RegexError};
 
 #[derive(Error, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum TestError {
   #[error("Could not read file : {0}")]
   ReadFailed(String),

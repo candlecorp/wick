@@ -22,7 +22,7 @@ pub struct Glob {
 
 impl Glob {
   /// Create a new [Glob] instance from a glob pattern.
-  pub fn new(glob: impl AsRef<str>) -> Self {
+  pub fn new<T: AsRef<str>>(glob: T) -> Self {
     Self {
       glob: glob.as_ref().to_owned(),
       ..Default::default()

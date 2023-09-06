@@ -16,6 +16,7 @@ use crate::config::{
 
 /// An audit report for a component or application.
 #[derive(Debug, Clone, serde::Serialize)]
+#[non_exhaustive]
 pub struct Audit {
   /// The name of the audited element.
   pub name: String,
@@ -113,6 +114,7 @@ impl From<&ResourceBinding> for AuditedResourceBinding {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize)]
 #[serde(tag = "kind")]
+
 /// The possible types of resources. Resources are system-level resources and sensitive configuration.
 pub enum AuditedResource {
   /// A variant representing a [crate::config::TcpPort] type.

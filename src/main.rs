@@ -208,8 +208,7 @@ async fn async_start() -> Result<(GlobalOptions, StructuredOutput), (GlobalOptio
   let settings = wick_settings::Settings::new();
   apply_log_settings(&settings, &mut cli.logging);
 
-  let mut logger_opts: wick_logger::LoggingOptions = cli.logging.name(BIN_NAME).into();
-  logger_opts.global = true;
+  let logger_opts: wick_logger::LoggingOptions = cli.logging.name(BIN_NAME).into();
 
   // Initialize the global logger
   let mut logger = wick_logger::init(&logger_opts);

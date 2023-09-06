@@ -72,7 +72,7 @@ where
 {
   #[must_use]
   /// Create a new [TemplateConfig] from a value.
-  pub fn new_value(value: T) -> Self {
+  pub const fn new_value(value: T) -> Self {
     Self {
       value: Some(value),
       template: None,
@@ -91,7 +91,7 @@ where
   }
 
   /// Retrieve a previously rendered value rendered.
-  pub fn value(&self) -> Option<&T> {
+  pub const fn value(&self) -> Option<&T> {
     self.value.as_ref()
   }
 
@@ -164,7 +164,7 @@ fn value_to_string(value: &Value) -> Result<String, ManifestError> {
   match value {
     serde_json::Value::String(v) => Ok(v.clone()),
     serde_json::Value::Number(v) => Ok(v.to_string()),
-    serde_json::Value::Null => Ok("".to_owned()),
+    serde_json::Value::Null => Ok(String::new()),
     serde_json::Value::Bool(v) => Ok(v.to_string()),
     serde_json::Value::Array(_) => Err(ManifestError::TemplateStructure),
     serde_json::Value::Object(_) => Err(ManifestError::TemplateStructure),

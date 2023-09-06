@@ -26,12 +26,12 @@ pub struct Annotations(HashMap<String, String>);
 
 impl Annotations {
   #[allow(unused)]
-  pub(crate) fn inner(&self) -> &HashMap<String, String> {
+  pub(crate) const fn inner(&self) -> &HashMap<String, String> {
     &self.0
   }
 
   /// Create a new annotation object from a map.
-  pub fn new(map: HashMap<String, String>) -> Self {
+  pub const fn new(map: HashMap<String, String>) -> Self {
     Self(map)
   }
 }

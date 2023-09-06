@@ -44,7 +44,7 @@ impl Renderable for ResourceBinding {
 
 impl ResourceBinding {
   /// Create a new [ResourceBinding] with specified name and [ResourceDefinition].
-  pub fn new(name: impl AsRef<str>, kind: impl Into<ResourceDefinition>) -> Self {
+  pub fn new<T: AsRef<str>>(name: T, kind: impl Into<ResourceDefinition>) -> Self {
     Self {
       id: name.as_ref().to_owned(),
       kind: kind.into(),
@@ -108,7 +108,7 @@ impl Renderable for ResourceDefinition {
 
 impl ResourceDefinition {
   #[must_use]
-  pub fn kind(&self) -> ResourceKind {
+  pub const fn kind(&self) -> ResourceKind {
     match self {
       ResourceDefinition::TcpPort(_) => ResourceKind::TcpPort,
       ResourceDefinition::UdpPort(_) => ResourceKind::UdpPort,
@@ -232,7 +232,7 @@ pub struct UrlResource {
 
 impl UrlResource {
   /// Create a new URL Resource.
-  pub fn new(url: Url) -> Self {
+  pub const fn new(url: Url) -> Self {
     Self {
       url: TemplateConfig::new_value(url),
     }
@@ -240,6 +240,7 @@ impl UrlResource {
 
   /// Get the URL.
   #[must_use]
+  #[allow(clippy::missing_const_for_fn)]
   pub fn into_inner(self) -> TemplateConfig<Url> {
     self.url
   }
@@ -275,7 +276,7 @@ pub struct TcpPort {
 
 impl TcpPort {
   /// Create a new TCP port configuration.
-  pub fn new(host: impl AsRef<str>, port: u16) -> Self {
+  pub fn new<T: AsRef<str>>(host: T, port: u16) -> Self {
     Self {
       port: TemplateConfig::new_value(port),
       host: TemplateConfig::new_value(host.as_ref().to_owned()),
@@ -314,7 +315,7 @@ pub struct UdpPort {
 
 impl UdpPort {
   /// Create a new UDP port configuration.
-  pub fn new(host: impl AsRef<str>, port: u16) -> Self {
+  pub fn new<T: AsRef<str>>(host: T, port: u16) -> Self {
     Self {
       port: TemplateConfig::new_value(port),
       host: TemplateConfig::new_value(host.as_ref().to_owned()),

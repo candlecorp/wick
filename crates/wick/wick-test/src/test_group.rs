@@ -26,6 +26,7 @@ impl<'a> TestGroup<'a> {
     }
   }
 
+  #[allow(clippy::missing_const_for_fn)]
   pub fn name(mut self, name: String) -> Self {
     self.name = name;
     self

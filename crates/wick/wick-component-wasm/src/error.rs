@@ -2,6 +2,8 @@ use thiserror::Error;
 use wick_rpc::error::RpcError;
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
+
 pub enum WasmComponentError {
   #[error("Could not extract claims signature from WASM module : {0}")]
   ClaimsError(String),
@@ -59,6 +61,7 @@ impl From<WasmComponentError> for Box<RpcError> {
 }
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum LinkError {
   #[error("{0}")]
   EntityFailure(String),

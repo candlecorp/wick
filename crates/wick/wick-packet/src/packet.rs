@@ -33,7 +33,7 @@ impl Packet {
   pub const NO_INPUT: &str = "<>";
 
   /// Create a new packet for the given port with a raw [PacketPayload], wasmRS [Metadata], and [WickMetadata].
-  pub fn new_raw(payload: PacketPayload, wasmrs: Metadata, metadata: WickMetadata) -> Self {
+  pub const fn new_raw(payload: PacketPayload, wasmrs: Metadata, metadata: WickMetadata) -> Self {
     Self {
       payload,
       metadata: wasmrs,
@@ -42,7 +42,7 @@ impl Packet {
   }
 
   /// Create a new packet for the given port with a raw [PacketPayload] value and given flags.
-  pub fn new_for_port(port: impl AsRef<str>, payload: PacketPayload, flags: u8) -> Self {
+  pub fn new_for_port<T: AsRef<str>>(port: T, payload: PacketPayload, flags: u8) -> Self {
     let md = Metadata::new(0);
     let wmd = WickMetadata::new(port, flags);
     Self {
@@ -66,37 +66,37 @@ impl Packet {
   }
 
   /// Create a new fatal error packet for the component.
-  pub fn component_error(err: impl AsRef<str>) -> Self {
+  pub fn component_error<T: AsRef<str>>(err: T) -> Self {
     Self::new_for_port(Self::FATAL_ERROR, PacketPayload::fatal_error(err), 0)
   }
 
   /// Create a new success packet for the given port with a raw [RawPayload] value.
-  pub fn ok(port: impl AsRef<str>, payload: RawPayload) -> Self {
+  pub fn ok<T: AsRef<str>>(port: T, payload: RawPayload) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(payload.data.map(Into::into)), 0)
   }
 
   /// Create a new error packet for the given port with a raw [PacketError] value.
-  pub fn raw_err(port: impl AsRef<str>, payload: PacketError) -> Self {
+  pub fn raw_err<T: AsRef<str>>(port: T, payload: PacketError) -> Self {
     Self::new_for_port(port, PacketPayload::Err(payload), 0)
   }
 
   /// Create a new error packet for the given port.
-  pub fn err(port: impl AsRef<str>, msg: impl AsRef<str>) -> Self {
-    Self::new_for_port(port, PacketPayload::Err(PacketError::new(msg)), 0)
+  pub fn err<T: AsRef<str>, E: Into<String>>(port: T, msg: E) -> Self {
+    Self::new_for_port(port, PacketPayload::Err(PacketError::new(msg.into())), 0)
   }
 
   /// Create a new done packet for the given port.
-  pub fn done(port: impl AsRef<str>) -> Self {
+  pub fn done<T: AsRef<str>>(port: T) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(None), DONE_FLAG)
   }
 
   /// Create a new open bracket packet for the given port.
-  pub fn open_bracket(port: impl AsRef<str>) -> Self {
+  pub fn open_bracket<T: AsRef<str>>(port: T) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(None), OPEN_BRACKET)
   }
 
   /// Create a close bracket packet for the given port.
-  pub fn close_bracket(port: impl AsRef<str>) -> Self {
+  pub fn close_bracket<T: AsRef<str>>(port: T) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(None), CLOSE_BRACKET)
   }
 
@@ -111,17 +111,17 @@ impl Packet {
   }
 
   /// Encode a value into a [Packet] for the given port.
-  pub fn encode<T: Serialize>(port: impl AsRef<str>, data: T) -> Self {
+  pub fn encode<P: AsRef<str>, T: Serialize>(port: P, data: T) -> Self {
     Self::new_for_port(port, PacketPayload::encode(data), 0)
   }
 
   /// Get the flags for this packet.
-  pub fn flags(&self) -> u8 {
+  pub const fn flags(&self) -> u8 {
     self.extra.flags
   }
 
   /// Get the operation index associated with this packet.
-  pub fn index(&self) -> u32 {
+  pub const fn index(&self) -> u32 {
     self.metadata.index
   }
 
@@ -141,7 +141,7 @@ impl Packet {
   }
 
   /// Set the port for this packet.
-  pub fn set_port(mut self, port: impl AsRef<str>) -> Self {
+  pub fn set_port<T: AsRef<str>>(mut self, port: T) -> Self {
     self.extra.port = port.as_ref().to_owned();
     self
   }
@@ -162,37 +162,37 @@ impl Packet {
   }
 
   /// Return `true` if this is an error packet.
-  pub fn is_error(&self) -> bool {
+  pub const fn is_error(&self) -> bool {
     matches!(self.payload, PacketPayload::Err(_))
   }
 
   /// Get the inner payload of this packet.
-  pub fn payload(&self) -> &PacketPayload {
+  pub const fn payload(&self) -> &PacketPayload {
     &self.payload
   }
 
   /// Returns true if this packet is a signal packet (i.e. done, open_bracket, close_bracket, etc).
-  pub fn is_signal(&self) -> bool {
+  pub const fn is_signal(&self) -> bool {
     self.extra.flags() > 0
   }
 
   /// Returns true if this packet is a bracket packet (i.e open_bracket, close_bracket, etc).
-  pub fn is_bracket(&self) -> bool {
+  pub const fn is_bracket(&self) -> bool {
     self.extra.flags() & (OPEN_BRACKET | CLOSE_BRACKET) > 0
   }
 
   /// Returns true if this packet is a done packet.
-  pub fn is_done(&self) -> bool {
+  pub const fn is_done(&self) -> bool {
     self.extra.is_done()
   }
 
   /// Returns true if this packet is an open bracket packet.
-  pub fn is_open_bracket(&self) -> bool {
+  pub const fn is_open_bracket(&self) -> bool {
     self.extra.is_open_bracket()
   }
 
   /// Returns true if this packet is a close bracket packet.
-  pub fn is_close_bracket(&self) -> bool {
+  pub const fn is_close_bracket(&self) -> bool {
     self.extra.is_close_bracket()
   }
 
@@ -246,13 +246,14 @@ impl PartialEq for PacketPayload {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::exhaustive_enums)]
 pub enum PacketPayload {
   Ok(Option<Base64Bytes>),
   Err(PacketError),
 }
 
 impl PacketPayload {
-  pub fn fatal_error(err: impl AsRef<str>) -> Self {
+  pub fn fatal_error<T: AsRef<str>>(err: T) -> Self {
     Self::Err(PacketError::new(err))
   }
 
@@ -281,7 +282,7 @@ impl PacketPayload {
     }
   }
 
-  pub fn err(msg: impl AsRef<str>) -> Self {
+  pub fn err<T: AsRef<str>>(msg: T) -> Self {
     Self::Err(PacketError::new(msg))
   }
 
@@ -291,13 +292,14 @@ impl PacketPayload {
     Ok(TypeWrapper::new(sig, val))
   }
 
-  pub fn bytes(&self) -> Option<&Base64Bytes> {
+  pub const fn bytes(&self) -> Option<&Base64Bytes> {
     match self {
       Self::Ok(b) => b.as_ref(),
       _ => None,
     }
   }
 
+  #[allow(clippy::missing_const_for_fn)]
   pub fn into_bytes(self) -> Option<Base64Bytes> {
     match self {
       Self::Ok(b) => b,
@@ -323,7 +325,7 @@ pub struct PacketError {
 }
 
 impl PacketError {
-  pub fn new(msg: impl AsRef<str>) -> Self {
+  pub fn new<T: AsRef<str>>(msg: T) -> Self {
     Self {
       msg: msg.as_ref().to_owned(),
     }

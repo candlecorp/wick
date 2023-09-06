@@ -82,10 +82,10 @@ async fn test_missing_component() -> Result<()> {
 
 #[test_logger::test(tokio::test)]
 async fn test_invalid_port() -> Result<()> {
-  let signature = ComponentSignature::new("instance")
-    .version("0.0.0")
+  let signature = ComponentSignature::new_named("instance")
+    .set_version("0.0.0")
     .metadata(ComponentMetadata::default())
-    .add_operation(OperationSignature::new("echo"));
+    .add_operation(OperationSignature::new_named("echo"));
 
   let result = interp("./tests/manifests/v0/external.yaml", signature).await;
 
@@ -109,11 +109,11 @@ async fn test_invalid_port() -> Result<()> {
 #[test_logger::test(tokio::test)]
 
 async fn test_missing_port() -> Result<()> {
-  let signature = ComponentSignature::new("test")
-    .version("0.0.0")
+  let signature = ComponentSignature::new_named("test")
+    .set_version("0.0.0")
     .metadata(ComponentMetadata::default())
     .add_operation(
-      OperationSignature::new("echo")
+      OperationSignature::new_named("echo")
         .add_input("input", Type::String)
         .add_input("OTHER_IN", Type::String)
         .add_output("output", Type::String)

@@ -107,6 +107,7 @@ impl TryFrom<Value> for RuntimeConfig {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+#[non_exhaustive]
 pub struct ContextTransport<T>
 where
   T: std::fmt::Debug + Serialize,
@@ -120,7 +121,7 @@ impl<T> ContextTransport<T>
 where
   T: std::fmt::Debug + Serialize,
 {
-  pub fn new(config: T, inherent: InherentData) -> Self {
+  pub const fn new(config: T, inherent: InherentData) -> Self {
     Self {
       config,
       inherent,
@@ -130,6 +131,7 @@ where
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 #[must_use]
 pub struct InvocationRequest {
   pub reference: ComponentReference,

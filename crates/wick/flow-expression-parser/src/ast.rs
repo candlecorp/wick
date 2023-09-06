@@ -18,6 +18,7 @@ pub fn set_seed(seed: u64) {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize)]
 #[must_use]
+#[allow(clippy::exhaustive_enums)]
 #[serde(rename_all = "kebab-case")]
 /// A node instance
 pub enum InstanceTarget {
@@ -46,6 +47,7 @@ pub enum InstanceTarget {
 
 impl InstanceTarget {
   /// Returns [self] unless self is [InstanceTarget::Default], in which case it returns `other`.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn or(self, other: InstanceTarget) -> InstanceTarget {
     match self {
       InstanceTarget::Default => other,
@@ -69,12 +71,12 @@ impl InstanceTarget {
   }
 
   /// Create a new [InstanceTarget::Named] from a string.
-  pub fn named(name: impl AsRef<str>) -> Self {
+  pub fn named<T: AsRef<str>>(name: T) -> Self {
     Self::Named(name.as_ref().to_owned())
   }
 
   /// Create a new [InstanceTarget::Path] from a path and id.
-  pub(crate) fn path(path: impl AsRef<str>, id: impl AsRef<str>) -> Self {
+  pub(crate) fn path<T: AsRef<str>, I: AsRef<str>>(path: T, id: I) -> Self {
     Self::Path {
       path: path.as_ref().to_owned(),
       id: TargetId::Named(id.as_ref().to_owned()),
@@ -82,7 +84,7 @@ impl InstanceTarget {
   }
 
   /// Create a new [InstanceTarget::Path] from a path without an id.
-  pub(crate) fn anonymous_path(path: impl AsRef<str>) -> Self {
+  pub(crate) fn anonymous_path<T: AsRef<str>>(path: T) -> Self {
     Self::Path {
       path: path.as_ref().to_owned(),
       id: TargetId::None,
@@ -91,7 +93,7 @@ impl InstanceTarget {
 
   /// Create a new [InstanceTarget::Path] from a path without an id.
   #[cfg(test)]
-  pub(crate) fn generated_path(path: impl AsRef<str>) -> Self {
+  pub(crate) fn generated_path<T: AsRef<str>>(path: T) -> Self {
     Self::Path {
       path: path.as_ref().to_owned(),
       id: TargetId::new_generated(&path.as_ref().replace("::", "_")),
@@ -130,6 +132,7 @@ impl std::fmt::Display for InstanceTarget {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize)]
 /// [TargetId] differentiates between user-provided IDs, generated IDs, and no IDs.
+#[allow(clippy::exhaustive_enums)]
 #[serde(into = "Option<String>")]
 pub enum TargetId {
   /// An automatically generated ID
@@ -170,7 +173,7 @@ impl TargetId {
   pub fn as_inline_id(&self) -> String {
     match self {
       TargetId::Generated(id) => format!("[{}]", id),
-      TargetId::None => "".to_owned(),
+      TargetId::None => String::new(),
       TargetId::Named(name) => format!("[{}]", name),
     }
   }
@@ -182,7 +185,7 @@ impl TargetId {
   }
 
   /// Replace the [TargetId] with a [TargetId::Named] variant.
-  pub fn replace(&mut self, value: impl AsRef<str>) {
+  pub fn replace<T: AsRef<str>>(&mut self, value: T) {
     *self = TargetId::Named(value.as_ref().to_owned());
   }
 }
@@ -218,13 +221,14 @@ impl ConnectionExpression {
 
   /// Get the owned parts of the connection.
   #[must_use]
+  #[allow(clippy::missing_const_for_fn)]
   pub fn into_parts(self) -> (ConnectionTargetExpression, ConnectionTargetExpression) {
     (self.from, self.to)
   }
 
   /// Get the from target.
   #[must_use]
-  pub fn from(&self) -> &ConnectionTargetExpression {
+  pub const fn from(&self) -> &ConnectionTargetExpression {
     &self.from
   }
 
@@ -236,7 +240,7 @@ impl ConnectionExpression {
 
   /// Get the to target.
   #[must_use]
-  pub fn to(&self) -> &ConnectionTargetExpression {
+  pub const fn to(&self) -> &ConnectionTargetExpression {
     &self.to
   }
 
@@ -249,6 +253,7 @@ impl ConnectionExpression {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 /// A flow expression.
+#[allow(clippy::exhaustive_enums)]
 #[serde(untagged)]
 pub enum FlowExpression {
   /// A [ConnectionExpression].
@@ -278,7 +283,7 @@ impl FlowExpression {
 
   /// Get the expression as a [BlockExpression].
   #[must_use]
-  pub fn as_block(&self) -> Option<&BlockExpression> {
+  pub const fn as_block(&self) -> Option<&BlockExpression> {
     match self {
       FlowExpression::BlockExpression(expr) => Some(expr),
       _ => None,
@@ -293,7 +298,7 @@ impl FlowExpression {
 
   #[must_use]
   /// Make a new [FlowExpression::BlockExpression] from a [BlockExpression].
-  pub fn block(expr: BlockExpression) -> Self {
+  pub const fn block(expr: BlockExpression) -> Self {
     FlowExpression::BlockExpression(expr)
   }
 
@@ -319,6 +324,7 @@ impl BlockExpression {
 
   /// Get the owned parts of the block expression.
   #[must_use]
+  #[allow(clippy::missing_const_for_fn)]
   pub fn into_parts(self) -> Vec<FlowExpression> {
     self.expressions
   }
@@ -362,12 +368,14 @@ impl FlowProgram {
 
   /// Get the owned parts of the flow program.
   #[must_use]
+  #[allow(clippy::missing_const_for_fn)]
   pub fn into_parts(self) -> Vec<FlowExpression> {
     self.expressions
   }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[allow(clippy::exhaustive_enums)]
 #[serde(untagged)]
 /// The port associated with an instance in a connection.
 pub enum InstancePort {
@@ -421,13 +429,13 @@ impl std::fmt::Display for InstancePort {
 impl InstancePort {
   /// Quickly create a [InstancePort::Named] variant.
   #[must_use]
-  pub fn named(name: impl AsRef<str>) -> Self {
+  pub fn named<T: AsRef<str>>(name: T) -> Self {
     Self::Named(name.as_ref().to_owned())
   }
 
   /// Quickly create a [InstancePort::Path] variant.
   #[must_use]
-  pub fn path(name: impl AsRef<str>, path: Vec<String>) -> Self {
+  pub fn path<T:AsRef<str>>(name: T, path: Vec<String>) -> Self {
     Self::Path(name.as_ref().to_owned(), path)
   }
 
@@ -497,7 +505,7 @@ impl ConnectionTargetExpression {
   }
 
   /// Get the instance target.
-  pub fn instance(&self) -> &InstanceTarget {
+  pub const fn instance(&self) -> &InstanceTarget {
     &self.instance
   }
 
@@ -508,17 +516,18 @@ impl ConnectionTargetExpression {
 
   /// Get the port.
   #[must_use]
-  pub fn port(&self) -> &InstancePort {
+  pub const fn port(&self) -> &InstancePort {
     &self.port
   }
 
   /// Get the data.
   #[must_use]
-  pub fn data(&self) -> Option<&HashMap<String, LiquidJsonValue>> {
+  pub const fn data(&self) -> Option<&HashMap<String, LiquidJsonValue>> {
     self.data.as_ref()
   }
 
   /// Get the owned parts of the connection target.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn into_parts(self) -> (InstanceTarget, InstancePort, Option<HashMap<String, LiquidJsonValue>>) {
     (self.instance, self.port, self.data)
   }

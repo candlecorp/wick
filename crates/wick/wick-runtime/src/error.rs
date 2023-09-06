@@ -9,6 +9,7 @@ use crate::resources::ResourceKind;
 pub use crate::runtime::scope::error::ScopeError;
 
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum Context {
   Trigger,
   TriggerKind(TriggerKind),
@@ -52,6 +53,7 @@ impl From<ComponentKind> for Context {
 }
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum RuntimeError {
   #[error("Invalid {0} configuration, expected configuration for {0}")]
   TriggerKind(Context, TriggerKind),
@@ -77,7 +79,7 @@ pub enum RuntimeError {
   #[error("{0}")]
   InitializationFailed(String),
 
-  #[error("Could not find scope '{}' via path {}", .1.as_ref().map_or_else(||Entity::LOCAL,|e|e.component_id()), .0.as_ref().map_or_else(||"".to_owned(),|v|format!("via path {} ",v.join("::"))))]
+  #[error("Could not find scope '{}' via path {}", .1.as_ref().map_or_else(||Entity::LOCAL,|e|e.component_id()), .0.as_ref().map_or_else(String::new,|v|format!("via path {} ",v.join("::"))))]
   ScopeNotFound(Option<Vec<String>>, Option<Entity>),
 
   #[error("Invocation error: {0}")]

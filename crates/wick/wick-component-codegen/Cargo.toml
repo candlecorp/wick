@@ -6,6 +6,7 @@ description = "Code generator for wick components"
 repository = "https://github.com/candlecorp/wick"
 license = "Apache-2.0"
 include = ["src/**/*", "LICENSE"]
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]

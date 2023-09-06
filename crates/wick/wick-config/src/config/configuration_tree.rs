@@ -6,6 +6,7 @@ use crate::error::ManifestError;
 use crate::WickConfiguration;
 
 #[derive(Debug)]
+
 pub enum ConfigOrDefinition {
   Config(ConfigurationTreeNode),
   Definition { id: String, element: ComponentDefinition },
@@ -14,6 +15,7 @@ pub enum ConfigOrDefinition {
 impl ConfigOrDefinition {
   /// Returns the held configuration if it is a [ConfigurationTreeNode].
   #[must_use]
+  #[allow(clippy::missing_const_for_fn)]
   pub fn as_config(self) -> Option<WickConfiguration> {
     match self {
       ConfigOrDefinition::Config(c) => Some(c.element),
@@ -22,6 +24,7 @@ impl ConfigOrDefinition {
   }
   /// Returns the held configuration if it is a [ComponentDefinition].
   #[must_use]
+  #[allow(clippy::missing_const_for_fn)]
   pub fn as_component_definition(self) -> Option<(String, ComponentDefinition)> {
     match self {
       ConfigOrDefinition::Config(_) => None,
@@ -31,6 +34,7 @@ impl ConfigOrDefinition {
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct ConfigurationTreeNode {
   pub name: String,
   pub element: WickConfiguration,
@@ -39,7 +43,7 @@ pub struct ConfigurationTreeNode {
 
 impl ConfigurationTreeNode {
   #[must_use]
-  pub fn new(name: String, element: WickConfiguration) -> Self {
+  pub const fn new(name: String, element: WickConfiguration) -> Self {
     Self {
       name,
       element,
@@ -63,7 +67,7 @@ impl ConfigurationTreeNode {
     };
 
     let mut children = fetch_imports(imports, options.clone()).await?;
-    for child in children.iter_mut() {
+    for child in &mut children {
       match child {
         ConfigOrDefinition::Config(c) => {
           c.fetch_children(options.clone()).await?;

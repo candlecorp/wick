@@ -7,6 +7,7 @@ use crate::error::ParseError as Error;
 
 #[derive(Debug, Clone, PartialEq)]
 /// The entity being referenced across systems or services.
+#[non_exhaustive]
 #[must_use]
 pub enum Entity {
   /// An invalid entity. Used only for situations where a default is necessary.
@@ -156,7 +157,7 @@ impl Entity {
     }
   }
 
-  pub fn set_operation(&mut self, id: impl AsRef<str>) {
+  pub fn set_operation<T: AsRef<str>>(&mut self, id: T) {
     match self {
       Entity::Test(_) => {}
       Entity::Operation(_, op_id) => *op_id = id.as_ref().to_owned(),

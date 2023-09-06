@@ -11,7 +11,7 @@ use super::config;
 use crate::generate::ids::{id, snake};
 use crate::generate::{expand_type, Direction};
 
-fn is_defaultable(ty: &Type) -> bool {
+const fn is_defaultable(ty: &Type) -> bool {
   matches!(
     ty,
     Type::List { .. } | Type::Optional { .. } | Type::Map { .. } | Type::Object

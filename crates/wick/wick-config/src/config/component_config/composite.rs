@@ -84,12 +84,7 @@ impl OperationConfig for FlowOperation {
 
 impl From<FlowOperation> for wick_interface_types::OperationSignature {
   fn from(operation: FlowOperation) -> Self {
-    Self {
-      name: operation.name,
-      config: operation.config,
-      inputs: operation.inputs,
-      outputs: operation.outputs,
-    }
+    Self::new(operation.name, operation.inputs, operation.outputs, operation.config)
   }
 }
 

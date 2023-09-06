@@ -2,7 +2,6 @@ use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use std::time::Duration;
 
-use option_utils::OptionUtils;
 use wick_interface_types as wick;
 use wick_packet::{Entity, InherentData, Metadata, Packet, PacketStream, WickMetadata};
 
@@ -15,41 +14,20 @@ impl TryFrom<rpc::ComponentSignature> for wick::ComponentSignature {
   type Error = RpcError;
 
   fn try_from(v: rpc::ComponentSignature) -> Result<Self> {
-    Ok(Self {
-      name: Some(v.name),
-      format: match v.format {
-        0 => wick::ComponentVersion::V0,
-        1 => wick::ComponentVersion::V1,
-        _ => {
-          return Err(RpcError::Component(format!(
-            "Invalid component version ({}) for this runtime",
-            v.format
-          )))
-        }
-      },
-      metadata: v.metadata.try_map_into()?.ok_or(RpcError::MissingFeatures)?,
-      wellknown: v
-        .wellknown
-        .into_iter()
-        .map(|v| {
-          Ok(wick::WellKnownSchema {
-            capabilities: v.capabilities,
-            url: v.url,
-            schema: v.schema.unwrap().try_into()?,
-          })
-        })
-        .collect::<Result<Vec<_>>>()?,
-      operations: convert_list(v.operations)?,
-      types: convert_list(v.types)?,
-      config: convert_list(v.config)?,
-    })
+    Ok(Self::new(
+      v.name,
+      Some(v.format.to_string()),
+      convert_list(v.operations)?,
+      convert_list(v.types)?,
+      convert_list(v.config)?,
+    ))
   }
 }
 
 impl TryFrom<rpc::ComponentMetadata> for wick::ComponentMetadata {
   type Error = RpcError;
   fn try_from(v: rpc::ComponentMetadata) -> Result<Self> {
-    Ok(Self { version: v.version })
+    Ok(Self::new(v.version))
   }
 }
 
@@ -63,12 +41,12 @@ impl TryFrom<wick::ComponentMetadata> for rpc::ComponentMetadata {
 impl TryFrom<rpc::Operation> for wick::OperationSignature {
   type Error = RpcError;
   fn try_from(v: rpc::Operation) -> Result<Self> {
-    Ok(Self {
-      name: v.name,
-      config: convert_list(v.config)?,
-      inputs: convert_list(v.inputs)?,
-      outputs: convert_list(v.outputs)?,
-    })
+    Ok(Self::new(
+      v.name,
+      convert_list(v.inputs)?,
+      convert_list(v.outputs)?,
+      convert_list(v.config)?,
+    ))
   }
 }
 
@@ -203,10 +181,7 @@ impl TryFrom<rpc::Invocation> for wick_packet::Invocation {
 
       id: uuid::Uuid::from_str(&inv.id).map_err(|e| RpcError::UuidParseError(inv.id, e))?,
       tx_id: uuid::Uuid::from_str(&inv.tx_id).map_err(|e| RpcError::UuidParseError(inv.tx_id, e))?,
-      inherent: InherentData {
-        seed: inherent.seed,
-        timestamp: inherent.timestamp,
-      },
+      inherent: InherentData::new(inherent.seed, inherent.timestamp),
       span: tracing::Span::current(),
       packets: PacketStream::empty(),
     })
@@ -365,12 +340,7 @@ impl From<rpc::simple_type::PrimitiveType> for rpc::type_signature::Signature {
 impl TryFrom<rpc::StructSignature> for wick::StructDefinition {
   type Error = RpcError;
   fn try_from(v: rpc::StructSignature) -> Result<Self> {
-    Ok(Self {
-      name: v.name,
-      fields: convert_list(v.fields)?,
-      imported: false,
-      description: Some(v.description),
-    })
+    Ok(Self::new(v.name, convert_list(v.fields)?, Some(v.description)))
   }
 }
 
@@ -411,6 +381,7 @@ impl TryFrom<rpc::UnionSignature> for wick::UnionDefinition {
     Ok(wick::UnionDefinition::new(
       v.name,
       v.types.into_iter().map(|v| v.try_into()).collect::<Result<Vec<_>>>()?,
+      Some(v.description),
     ))
   }
 }
@@ -421,6 +392,7 @@ impl TryFrom<rpc::EnumSignature> for wick::EnumDefinition {
     Ok(wick::EnumDefinition::new(
       v.name,
       v.values.into_iter().map(|v| v.try_into()).collect::<Result<Vec<_>>>()?,
+      Some(v.description),
     ))
   }
 }
@@ -449,7 +421,7 @@ impl TryFrom<wick::Field> for rpc::Field {
 impl TryFrom<rpc::EnumVariant> for wick::EnumVariant {
   type Error = RpcError;
   fn try_from(v: rpc::EnumVariant) -> Result<Self> {
-    Ok(wick::EnumVariant::new(v.name, v.index, v.value))
+    Ok(wick::EnumVariant::new(v.name, v.index, v.value, Some(v.description)))
   }
 }
 

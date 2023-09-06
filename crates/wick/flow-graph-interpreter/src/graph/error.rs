@@ -2,6 +2,7 @@ use flow_expression_parser::ast::InstanceTarget;
 use flow_graph::NodePort;
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
   #[error(transparent)]
   CoreError(#[from] flow_graph::error::Error),
@@ -34,15 +35,15 @@ pub enum Error {
 }
 
 impl Error {
-  pub(crate) fn missing_downstream(port: impl AsRef<str>) -> Self {
+  pub(crate) fn missing_downstream<T: AsRef<str>>(port: T) -> Self {
     Error::MissingDownstream(port.as_ref().to_owned())
   }
   pub(crate) fn node_not_found(node: impl std::fmt::Display) -> Self {
     Error::NodeNotFound(node.to_string())
   }
-  pub(crate) fn port_inference_down(
+  pub(crate) fn port_inference_down<T: AsRef<str>>(
     from: &InstanceTarget,
-    from_port: impl AsRef<str>,
+    from_port: T,
     to: InstanceTarget,
     known_ports: &[NodePort],
   ) -> Self {
@@ -52,9 +53,9 @@ impl Error {
       known_ports: known_ports.iter().map(|p| p.name().to_owned()).collect(),
     }
   }
-  pub(crate) fn port_inference_up(
+  pub(crate) fn port_inference_up<T: AsRef<str>>(
     to: &InstanceTarget,
-    to_port: impl AsRef<str>,
+    to_port: T,
     from: InstanceTarget,
     known_ports: &[NodePort],
   ) -> Self {
@@ -65,7 +66,11 @@ impl Error {
     }
   }
 
-  pub(crate) fn missing_operation(component: impl AsRef<str>, operation: impl AsRef<str>, available: &[&str]) -> Self {
+  pub(crate) fn missing_operation<T: AsRef<str>, J: AsRef<str>>(
+    component: T,
+    operation: J,
+    available: &[&str],
+  ) -> Self {
     Error::MissingOperation {
       component: component.as_ref().to_owned(),
       operation: operation.as_ref().to_owned(),
@@ -73,10 +78,10 @@ impl Error {
     }
   }
 
-  pub(crate) fn config(id: impl AsRef<str>, err: impl AsRef<str>) -> Self {
+  pub(crate) fn config<T: AsRef<str>, J: AsRef<str>>(id: T, err: J) -> Self {
     Error::Config(id.as_ref().to_owned(), err.as_ref().to_owned())
   }
-  pub(crate) fn core_operation(id: impl AsRef<str>, err: impl AsRef<str>) -> Self {
+  pub(crate) fn core_operation<T: AsRef<str>, J: AsRef<str>>(id: T, err: J) -> Self {
     Error::CoreOperation(id.as_ref().to_owned(), err.as_ref().to_owned())
   }
 }

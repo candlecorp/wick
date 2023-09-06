@@ -232,8 +232,8 @@ mod test {
   use super::*;
 
   #[test]
-  fn test_component() {
-    fn is_send_sync<T: Sync>() {}
+  const fn test_component() {
+    const fn is_send_sync<T: Sync>() {}
     is_send_sync::<SqlXComponent>();
   }
 

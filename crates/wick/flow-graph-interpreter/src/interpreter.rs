@@ -288,6 +288,7 @@ impl Component for Interpreter {
 
 #[derive(Debug, Clone)]
 #[allow(missing_copy_implementations)]
+#[non_exhaustive]
 pub struct InterpreterOptions {
   /// Timeout after which a component that has received no output is considered dead.
   pub output_timeout: Duration,
@@ -307,14 +308,14 @@ mod test {
 
   use super::*;
 
-  fn sync_send<T>()
+  const fn sync_send<T>()
   where
     T: Sync + Send,
   {
   }
 
   #[test]
-  fn test_sync_send() -> Result<()> {
+  const fn test_sync_send() -> Result<()> {
     sync_send::<Interpreter>();
     Ok(())
   }

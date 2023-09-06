@@ -73,7 +73,7 @@ fn validate_expiration(exp: Option<u64>) -> Result<()> {
   )
 }
 
-fn validate_issuer(iss: &str) -> Result<()> {
+const fn validate_issuer(iss: &str) -> Result<()> {
   if iss.is_empty() {
     Err(Error::MissingIssuer)
   } else {
@@ -81,7 +81,7 @@ fn validate_issuer(iss: &str) -> Result<()> {
   }
 }
 
-fn validate_subject(sub: &str) -> Result<()> {
+const fn validate_subject(sub: &str) -> Result<()> {
   if sub.is_empty() {
     Err(Error::MissingSubject)
   } else {

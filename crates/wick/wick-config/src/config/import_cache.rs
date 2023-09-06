@@ -22,11 +22,10 @@ impl ImportCache {
   /// Get a type from cache or fetch it as necessary.
   pub(crate) fn fetch_type(
     &self,
-    name: impl AsRef<str>,
+    name: String,
     asset: AssetReference,
     options: FetchOptions,
   ) -> BoxFuture<Result<TypesConfiguration, ManifestError>> {
-    let name = name.as_ref().to_owned();
     let cache_item = self.cached_types.read().get(&name).cloned();
     let cache = self.cached_types.clone();
 
@@ -59,7 +58,7 @@ pub(crate) async fn setup_cache(
     let prefix = &import.id;
     if let ImportDefinition::Types(t) = &import.kind {
       let config = cache
-        .fetch_type(&import.id, t.reference.clone(), options.clone())
+        .fetch_type(import.id.clone(), t.reference.clone(), options.clone())
         .await?;
       // if we didn't specify types to import, import everything.
       if t.types.is_empty() {
