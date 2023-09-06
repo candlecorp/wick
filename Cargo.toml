@@ -93,7 +93,7 @@ debug = true
 # crates/wick
 #
 flow-component = { path = "./crates/wick/flow-component", version = "0.5.0", default-features = false }
-flow-expression-parser = { path = "./crates/wick/flow-expression-parser", version = "0.5.0" }
+flow-expression-parser = { path = "./crates/wick/flow-expression-parser", version = "0.5.0", default-features = false }
 flow-graph = { path = "./crates/wick/flow-graph", version = "0.21.0" }
 flow-graph-interpreter = { path = "./crates/wick/flow-graph-interpreter", version = "0.20.0" }
 wick-logger = { path = "./crates/wick/wick-logger", version = "0.2.0" }

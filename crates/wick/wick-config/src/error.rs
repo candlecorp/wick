@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use derive_builder::UninitializedFieldError;
 use thiserror::Error;
 
 // type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
@@ -14,10 +13,12 @@ pub enum ManifestError {
   VersionError(String),
 
   /// Error related to asset references.
+  #[cfg(feature = "config")]
   #[error(transparent)]
   AssetReference(#[from] wick_asset_reference::Error),
 
   /// Error related to fetching asset references.
+  #[cfg(feature = "config")]
   #[error(transparent)]
   AssetContainer(#[from] asset_container::Error),
 
@@ -112,6 +113,7 @@ pub enum ManifestError {
   ConfigurationTemplate(String),
 
   /// Passed [wick_packet::RuntimeConfig] is invalid for the configuration required by this component.
+  #[cfg(feature = "config")]
   #[error(transparent)]
   ConfigurationInvalid(#[from] wick_packet::Error),
 
@@ -133,6 +135,7 @@ pub enum ManifestError {
   Reference(#[from] ReferenceError),
 
   /// Error building a configuration
+  #[cfg(feature = "config")]
   #[error(transparent)]
   Builder(#[from] BuilderError),
 
@@ -166,6 +169,8 @@ pub enum ReferenceError {
     actual: crate::config::resources::ResourceKind,
   },
 }
+
+#[cfg(feature = "config")]
 /// Errors generated when building a configuration.
 #[derive(Error, Debug)]
 pub enum BuilderError {
@@ -176,13 +181,17 @@ pub enum BuilderError {
   #[error("Invalid builder configuration: {0}")]
   ValidationError(String),
 }
+
+#[cfg(feature = "config")]
 impl From<String> for BuilderError {
   fn from(s: String) -> Self {
     Self::ValidationError(s)
   }
 }
-impl From<UninitializedFieldError> for BuilderError {
-  fn from(value: UninitializedFieldError) -> Self {
+
+#[cfg(feature = "config")]
+impl From<derive_builder::UninitializedFieldError> for BuilderError {
+  fn from(value: derive_builder::UninitializedFieldError) -> Self {
     Self::UninitializedField(value.field_name())
   }
 }

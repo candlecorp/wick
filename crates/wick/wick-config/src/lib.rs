@@ -137,6 +137,7 @@ pub mod config;
 pub mod error;
 mod utils;
 
+#[allow(unused)]
 pub(crate) use utils::impl_from_for;
 
 /// Wick Manifest v0 implementation.
@@ -169,11 +170,15 @@ mod feature_config {
     type Config;
     fn validate(config: &Self::Config, resolver: &Resolver) -> Result<(), flow_component::ComponentError>;
   }
+  pub use wick_asset_reference::{
+    normalize_path,
+    AssetReference,
+    Error as AssetError,
+    FetchOptions,
+    FetchableAssetReference,
+  };
 }
 #[cfg(feature = "config")]
 pub use feature_config::*;
-pub use wick_asset_reference::Error as AssetError;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
-
-pub use wick_asset_reference::{normalize_path, AssetReference, FetchOptions, FetchableAssetReference};
