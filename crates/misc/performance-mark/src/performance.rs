@@ -20,13 +20,13 @@ impl Performance {
   }
 
   /// Create a new [PerformanceMark] indicating a point in time.
-  pub fn mark<T: AsRef<str>>(&mut self, label: T) {
-    self.events.push(PerformanceMark::new(label.as_ref().to_owned()));
+  pub fn mark<T: Into<String>>(&mut self, label: T) {
+    self.events.push(PerformanceMark::new(label.into()));
   }
 
   /// Mark the start of a new [PerformancePeriod].
-  pub fn start<T: AsRef<str>>(&mut self, label: T) {
-    self.periods.insert(label.as_ref().to_owned(), PerformancePeriod::new());
+  pub fn start<T: Into<String>>(&mut self, label: T) {
+    self.periods.insert(label.into(), PerformancePeriod::new());
   }
 
   /// Mark the end of an existing [PerformancePeriod].

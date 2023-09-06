@@ -108,29 +108,29 @@ impl Entity {
   pub const LOCAL: &'static str = "__local__";
 
   /// Constructor for [Entity::Component].
-  pub fn operation<T: AsRef<str>, U: AsRef<str>>(ns: T, name: U) -> Self {
-    Self::Operation(ns.as_ref().to_owned(), name.as_ref().to_owned())
+  pub fn operation<T: Into<String>, U: Into<String>>(ns: T, name: U) -> Self {
+    Self::Operation(ns.into(), name.into())
   }
 
   /// Constructor for [Entity::Component] on the local namespace, used when
   /// the namespace is irrelevant. Caution: this is not portable.
-  pub fn local<T: AsRef<str>>(name: T) -> Self {
-    Self::Operation(Self::LOCAL.to_owned(), name.as_ref().to_owned())
+  pub fn local<T: Into<String>>(name: T) -> Self {
+    Self::Operation(Self::LOCAL.to_owned(), name.into())
   }
 
   /// Constructor for an [Entity::Test].
-  pub fn test<T: AsRef<str>>(msg: T) -> Self {
-    Self::Test(msg.as_ref().to_owned())
+  pub fn test<T: Into<String>>(msg: T) -> Self {
+    Self::Test(msg.into())
   }
 
   /// Constructor for an [Entity::Component].
-  pub fn component<T: AsRef<str>>(id: T) -> Self {
-    Self::Component(id.as_ref().to_owned())
+  pub fn component<T: Into<String>>(id: T) -> Self {
+    Self::Component(id.into())
   }
 
   /// Constructor for [Entity::Server].
-  pub fn server<T: AsRef<str>>(id: T) -> Self {
-    Self::Server(id.as_ref().to_owned())
+  pub fn server<T: Into<String>>(id: T) -> Self {
+    Self::Server(id.into())
   }
 
   /// The URL of the entity.
@@ -157,11 +157,11 @@ impl Entity {
     }
   }
 
-  pub fn set_operation<T: AsRef<str>>(&mut self, id: T) {
+  pub fn set_operation<T: Into<String>>(&mut self, id: T) {
     match self {
       Entity::Test(_) => {}
-      Entity::Operation(_, op_id) => *op_id = id.as_ref().to_owned(),
-      Entity::Component(comp_id) => *self = Entity::operation(comp_id, id.as_ref()),
+      Entity::Operation(_, op_id) => *op_id = id.into(),
+      Entity::Component(comp_id) => *self = Entity::operation(comp_id.clone(), id.into()),
       Entity::Server(_) => {}
       Entity::Invalid => {}
     }

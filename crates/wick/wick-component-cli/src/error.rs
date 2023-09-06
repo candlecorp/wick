@@ -61,10 +61,10 @@ pub enum CliError {
 }
 
 impl CliError {
-  pub(crate) fn encoding<T: AsRef<str>, D: AsRef<str>>(port: T, data: D, ty: Type) -> Self {
+  pub(crate) fn encoding<T: Into<String>, D: Into<String>>(port: T, data: D, ty: Type) -> Self {
     Self::Encoding {
-      data: data.as_ref().to_owned(),
-      port: port.as_ref().to_owned(),
+      data: data.into(),
+      port: port.into(),
       ty,
     }
   }

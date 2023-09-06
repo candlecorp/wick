@@ -126,9 +126,10 @@ pub struct TestRunner {
 
 impl TestRunner {
   /// Create a new [TestRunner]
-  pub fn new<T: AsRef<str>>(desc: Option<T>) -> Self {
+  #[must_use]
+  pub const fn new(desc: Option<String>) -> Self {
     Self {
-      desc: desc.map(|v| v.as_ref().to_owned()),
+      desc,
       blocks: vec![],
       output: vec![],
     }
@@ -206,13 +207,13 @@ impl TestRunner {
   }
 }
 
-fn format_diagnostic_line<T: AsRef<str>>(line: T) -> String {
-  format!("# {}", line.as_ref())
+fn format_diagnostic_line<T: std::fmt::Display>(line: T) -> String {
+  format!("# {}", line)
 }
 
 fn format_diagnostics<T>(lines: &[T]) -> Vec<String>
 where
-  T: AsRef<str>,
+  T: std::fmt::Display,
 {
   lines.iter().map(format_diagnostic_line).collect()
 }
@@ -227,16 +228,17 @@ pub struct TestBlock {
 
 impl TestBlock {
   /// Create a new [TestBlock].
-  pub fn new<T: AsRef<str>>(desc: Option<T>) -> Self {
+  #[must_use]
+  pub const fn new(desc: Option<String>) -> Self {
     Self {
-      desc: desc.map(|v| v.as_ref().to_owned()),
+      desc,
       tests: vec![],
       diagnostics: vec![],
     }
   }
 
   /// Add a new test case.
-  pub fn add_test<T: AsRef<str>>(
+  pub fn add_test<T: Into<String>>(
     &mut self,
     test: impl FnOnce() -> bool + Sync + Send + 'static,
     description: T,
@@ -245,27 +247,27 @@ impl TestBlock {
     self.tests.push(TestCase {
       test: Some(Box::new(test)),
       result: Some(false),
-      description: description.as_ref().to_owned(),
+      description: description.into(),
       diagnostics,
     });
   }
 
   /// Add a test failure.
-  pub fn fail<T: AsRef<str>>(&mut self, description: T, diagnostics: Option<Vec<String>>) {
+  pub fn fail<T: Into<String>>(&mut self, description: T, diagnostics: Option<Vec<String>>) {
     self.tests.push(TestCase {
       test: None,
       result: Some(false),
-      description: description.as_ref().to_owned(),
+      description: description.into(),
       diagnostics,
     });
   }
 
   /// Add a test success.
-  pub fn succeed<T: AsRef<str>>(&mut self, description: T, diagnostics: Option<Vec<String>>) {
+  pub fn succeed<T: Into<String>>(&mut self, description: T, diagnostics: Option<Vec<String>>) {
     self.tests.push(TestCase {
       test: None,
       result: Some(true),
-      description: description.as_ref().to_owned(),
+      description: description.into(),
       diagnostics,
     });
   }

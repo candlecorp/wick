@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
 use crate::schematic::PortIndex;
-use crate::util::AsStr;
 use crate::NodeIndex;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -12,9 +11,9 @@ pub struct PortDefinition {
 }
 
 impl PortDefinition {
-  pub fn new<T: AsStr>(name: T, index: PortIndex) -> Self {
+  pub fn new<T: Into<String>>(name: T, index: PortIndex) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       index,
     }
   }

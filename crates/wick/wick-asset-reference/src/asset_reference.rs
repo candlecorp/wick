@@ -107,9 +107,9 @@ impl std::hash::Hash for AssetReference {
 
 impl AssetReference {
   /// Create a new location reference.
-  pub fn new<T: AsRef<str>>(location: T) -> Self {
+  pub fn new<T: Into<String>>(location: T) -> Self {
     Self {
-      location: location.as_ref().to_owned(),
+      location: location.into(),
       cache_location: Default::default(),
       baseurl: Default::default(),
       fetch_lock: Default::default(),

@@ -75,8 +75,8 @@ pub enum Error {
 }
 
 impl Error {
-  pub fn component_error<T: AsRef<str>>(msg: T) -> Self {
-    Self::Component(msg.as_ref().to_owned())
+  pub fn component_error<T: Into<String>>(msg: T) -> Self {
+    Self::Component(msg.into())
   }
 }
 

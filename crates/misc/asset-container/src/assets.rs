@@ -377,10 +377,10 @@ pub struct Progress {
 }
 
 impl Progress {
-  pub fn new<T: AsRef<str>>(asset: T, status: Status) -> Self {
+  pub fn new<T: Into<String>>(asset: T, status: Status) -> Self {
     Self {
       status,
-      asset: asset.as_ref().to_owned(),
+      asset: asset.into(),
     }
   }
 }

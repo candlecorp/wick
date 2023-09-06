@@ -69,21 +69,21 @@ impl OperationSignature {
   }
 
   /// Create a new [OperationSignature] with the passed name.
-  pub fn new_named<T: AsRef<str>>(name: T) -> Self {
+  pub fn new_named<T: Into<String>>(name: T) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       ..Default::default()
     }
   }
 
   /// Add an input port.
-  pub fn add_input<T: AsRef<str>>(mut self, name: T, ty: Type) -> Self {
+  pub fn add_input<T: Into<String>>(mut self, name: T, ty: Type) -> Self {
     self.inputs.push(Field::new(name, ty));
     self
   }
 
   /// Add an input port.
-  pub fn add_output<T: AsRef<str>>(mut self, name: T, ty: Type) -> Self {
+  pub fn add_output<T: Into<String>>(mut self, name: T, ty: Type) -> Self {
     self.outputs.push(Field::new(name, ty));
     self
   }

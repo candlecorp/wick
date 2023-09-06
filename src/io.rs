@@ -62,7 +62,7 @@ pub(crate) struct File {
 impl File {
   pub(crate) fn new(path: impl AsRef<Path>, contents: Vec<u8>) -> Self {
     Self {
-      path: path.as_ref().to_owned(),
+      path: path.as_ref().to_path_buf(),
       contents,
     }
   }

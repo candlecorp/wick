@@ -42,7 +42,7 @@ impl Packet {
   }
 
   /// Create a new packet for the given port with a raw [PacketPayload] value and given flags.
-  pub fn new_for_port<T: AsRef<str>>(port: T, payload: PacketPayload, flags: u8) -> Self {
+  pub fn new_for_port<T: Into<String>>(port: T, payload: PacketPayload, flags: u8) -> Self {
     let md = Metadata::new(0);
     let wmd = WickMetadata::new(port, flags);
     Self {
@@ -66,37 +66,37 @@ impl Packet {
   }
 
   /// Create a new fatal error packet for the component.
-  pub fn component_error<T: AsRef<str>>(err: T) -> Self {
+  pub fn component_error<T: Into<String>>(err: T) -> Self {
     Self::new_for_port(Self::FATAL_ERROR, PacketPayload::fatal_error(err), 0)
   }
 
   /// Create a new success packet for the given port with a raw [RawPayload] value.
-  pub fn ok<T: AsRef<str>>(port: T, payload: RawPayload) -> Self {
+  pub fn ok<T: Into<String>>(port: T, payload: RawPayload) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(payload.data.map(Into::into)), 0)
   }
 
   /// Create a new error packet for the given port with a raw [PacketError] value.
-  pub fn raw_err<T: AsRef<str>>(port: T, payload: PacketError) -> Self {
+  pub fn raw_err<T: Into<String>>(port: T, payload: PacketError) -> Self {
     Self::new_for_port(port, PacketPayload::Err(payload), 0)
   }
 
   /// Create a new error packet for the given port.
-  pub fn err<T: AsRef<str>, E: Into<String>>(port: T, msg: E) -> Self {
+  pub fn err<T: Into<String>, E: Into<String>>(port: T, msg: E) -> Self {
     Self::new_for_port(port, PacketPayload::Err(PacketError::new(msg.into())), 0)
   }
 
   /// Create a new done packet for the given port.
-  pub fn done<T: AsRef<str>>(port: T) -> Self {
+  pub fn done<T: Into<String>>(port: T) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(None), DONE_FLAG)
   }
 
   /// Create a new open bracket packet for the given port.
-  pub fn open_bracket<T: AsRef<str>>(port: T) -> Self {
+  pub fn open_bracket<T: Into<String>>(port: T) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(None), OPEN_BRACKET)
   }
 
   /// Create a close bracket packet for the given port.
-  pub fn close_bracket<T: AsRef<str>>(port: T) -> Self {
+  pub fn close_bracket<T: Into<String>>(port: T) -> Self {
     Self::new_for_port(port, PacketPayload::Ok(None), CLOSE_BRACKET)
   }
 
@@ -111,7 +111,7 @@ impl Packet {
   }
 
   /// Encode a value into a [Packet] for the given port.
-  pub fn encode<P: AsRef<str>, T: Serialize>(port: P, data: T) -> Self {
+  pub fn encode<P: Into<String>, T: Serialize>(port: P, data: T) -> Self {
     Self::new_for_port(port, PacketPayload::encode(data), 0)
   }
 
@@ -141,8 +141,8 @@ impl Packet {
   }
 
   /// Set the port for this packet.
-  pub fn set_port<T: AsRef<str>>(mut self, port: T) -> Self {
-    self.extra.port = port.as_ref().to_owned();
+  pub fn set_port<T: Into<String>>(mut self, port: T) -> Self {
+    self.extra.port = port.into();
     self
   }
 
@@ -253,7 +253,7 @@ pub enum PacketPayload {
 }
 
 impl PacketPayload {
-  pub fn fatal_error<T: AsRef<str>>(err: T) -> Self {
+  pub fn fatal_error<T: Into<String>>(err: T) -> Self {
     Self::Err(PacketError::new(err))
   }
 
@@ -282,7 +282,7 @@ impl PacketPayload {
     }
   }
 
-  pub fn err<T: AsRef<str>>(msg: T) -> Self {
+  pub fn err<T: Into<String>>(msg: T) -> Self {
     Self::Err(PacketError::new(msg))
   }
 
@@ -325,10 +325,8 @@ pub struct PacketError {
 }
 
 impl PacketError {
-  pub fn new<T: AsRef<str>>(msg: T) -> Self {
-    Self {
-      msg: msg.as_ref().to_owned(),
-    }
+  pub fn new<T: Into<String>>(msg: T) -> Self {
+    Self { msg: msg.into() }
   }
 
   #[must_use]

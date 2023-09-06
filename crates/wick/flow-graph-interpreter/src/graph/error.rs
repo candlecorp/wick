@@ -35,53 +35,53 @@ pub enum Error {
 }
 
 impl Error {
-  pub(crate) fn missing_downstream<T: AsRef<str>>(port: T) -> Self {
-    Error::MissingDownstream(port.as_ref().to_owned())
+  pub(crate) fn missing_downstream<T: Into<String>>(port: T) -> Self {
+    Error::MissingDownstream(port.into())
   }
   pub(crate) fn node_not_found(node: impl std::fmt::Display) -> Self {
     Error::NodeNotFound(node.to_string())
   }
-  pub(crate) fn port_inference_down<T: AsRef<str>>(
+  pub(crate) fn port_inference_down<T: std::fmt::Display>(
     from: &InstanceTarget,
     from_port: T,
     to: InstanceTarget,
     known_ports: &[NodePort],
   ) -> Self {
     Error::PortInferenceDown {
-      from: format!("{}.{}", from, from_port.as_ref()),
+      from: format!("{}.{}", from, from_port),
       to,
       known_ports: known_ports.iter().map(|p| p.name().to_owned()).collect(),
     }
   }
-  pub(crate) fn port_inference_up<T: AsRef<str>>(
+  pub(crate) fn port_inference_up<T: std::fmt::Display>(
     to: &InstanceTarget,
     to_port: T,
     from: InstanceTarget,
     known_ports: &[NodePort],
   ) -> Self {
     Error::PortInferenceUp {
-      to: format!("{}.{}", to, to_port.as_ref()),
+      to: format!("{}.{}", to, to_port),
       from,
       known_ports: known_ports.iter().map(|p| p.name().to_owned()).collect(),
     }
   }
 
-  pub(crate) fn missing_operation<T: AsRef<str>, J: AsRef<str>>(
+  pub(crate) fn missing_operation<T: Into<String>, J: Into<String>>(
     component: T,
     operation: J,
     available: &[&str],
   ) -> Self {
     Error::MissingOperation {
-      component: component.as_ref().to_owned(),
-      operation: operation.as_ref().to_owned(),
+      component: component.into(),
+      operation: operation.into(),
       available: available.iter().map(|s| (*s).to_owned()).collect(),
     }
   }
 
-  pub(crate) fn config<T: AsRef<str>, J: AsRef<str>>(id: T, err: J) -> Self {
-    Error::Config(id.as_ref().to_owned(), err.as_ref().to_owned())
+  pub(crate) fn config<T: Into<String>, J: Into<String>>(id: T, err: J) -> Self {
+    Error::Config(id.into(), err.into())
   }
-  pub(crate) fn core_operation<T: AsRef<str>, J: AsRef<str>>(id: T, err: J) -> Self {
-    Error::CoreOperation(id.as_ref().to_owned(), err.as_ref().to_owned())
+  pub(crate) fn core_operation<T: Into<String>, J: Into<String>>(id: T, err: J) -> Self {
+    Error::CoreOperation(id.into(), err.into())
   }
 }

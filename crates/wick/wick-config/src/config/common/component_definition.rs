@@ -46,9 +46,9 @@ pub struct ComponentOperationExpression {
 
 impl ComponentOperationExpression {
   /// Create a new [ComponentOperationExpression] with specified operation and component.
-  pub fn new_default<T: AsRef<str>>(operation: T, component: ComponentDefinition) -> Self {
+  pub fn new_default<T: Into<String>>(operation: T, component: ComponentDefinition) -> Self {
     Self {
-      name: operation.as_ref().to_owned(),
+      name: operation.into(),
       component,
       config: Default::default(),
       settings: Default::default(),
@@ -56,14 +56,14 @@ impl ComponentOperationExpression {
   }
 
   /// Create a new [ComponentOperationExpression] with specified operation and component.
-  pub fn new<T: AsRef<str>>(
+  pub fn new<T: Into<String>>(
     operation: T,
     component: ComponentDefinition,
     config: Option<LiquidJsonConfig>,
     settings: Option<ExecutionSettings>,
   ) -> Self {
     Self {
-      name: operation.as_ref().to_owned(),
+      name: operation.into(),
       component,
       config,
       settings,

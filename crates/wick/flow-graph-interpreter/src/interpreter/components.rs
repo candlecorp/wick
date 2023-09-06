@@ -136,17 +136,17 @@ pub struct NamespaceHandler {
 }
 
 impl NamespaceHandler {
-  pub fn new<T: AsRef<str>>(namespace: T, component: Box<dyn Component + Send + Sync>) -> Self {
+  pub fn new<T: Into<String>>(namespace: T, component: Box<dyn Component + Send + Sync>) -> Self {
     Self {
-      namespace: namespace.as_ref().to_owned(),
+      namespace: namespace.into(),
       component: Arc::new(component),
       exposed: Arc::new(AtomicBool::new(false)),
     }
   }
 
-  pub fn new_from_shared<T: AsRef<str>>(namespace: T, component: Arc<Box<dyn Component + Send + Sync>>) -> Self {
+  pub fn new_from_shared<T: Into<String>>(namespace: T, component: Arc<Box<dyn Component + Send + Sync>>) -> Self {
     Self {
-      namespace: namespace.as_ref().to_owned(),
+      namespace: namespace.into(),
       component,
       exposed: Arc::new(AtomicBool::new(false)),
     }

@@ -71,32 +71,33 @@ impl InstanceTarget {
   }
 
   /// Create a new [InstanceTarget::Named] from a string.
-  pub fn named<T: AsRef<str>>(name: T) -> Self {
-    Self::Named(name.as_ref().to_owned())
+  pub fn named<T: Into<String>>(name: T) -> Self {
+    Self::Named(name.into())
   }
 
   /// Create a new [InstanceTarget::Path] from a path and id.
-  pub(crate) fn path<T: AsRef<str>, I: AsRef<str>>(path: T, id: I) -> Self {
+  pub(crate) fn path<T: Into<String>, I: Into<String>>(path: T, id: I) -> Self {
     Self::Path {
-      path: path.as_ref().to_owned(),
-      id: TargetId::Named(id.as_ref().to_owned()),
+      path: path.into(),
+      id: TargetId::Named(id.into()),
     }
   }
 
   /// Create a new [InstanceTarget::Path] from a path without an id.
-  pub(crate) fn anonymous_path<T: AsRef<str>>(path: T) -> Self {
+  pub(crate) fn anonymous_path<T: Into<String>>(path: T) -> Self {
     Self::Path {
-      path: path.as_ref().to_owned(),
+      path: path.into(),
       id: TargetId::None,
     }
   }
 
   /// Create a new [InstanceTarget::Path] from a path without an id.
   #[cfg(test)]
-  pub(crate) fn generated_path<T: AsRef<str>>(path: T) -> Self {
+  pub(crate) fn generated_path<T: Into<String>>(path: T) -> Self {
+    let path = path.into();
     Self::Path {
-      path: path.as_ref().to_owned(),
-      id: TargetId::new_generated(&path.as_ref().replace("::", "_")),
+      id: TargetId::new_generated(&path.replace("::", "_")),
+      path,
     }
   }
 
@@ -185,8 +186,8 @@ impl TargetId {
   }
 
   /// Replace the [TargetId] with a [TargetId::Named] variant.
-  pub fn replace<T: AsRef<str>>(&mut self, value: T) {
-    *self = TargetId::Named(value.as_ref().to_owned());
+  pub fn replace<T: Into<String>>(&mut self, value: T) {
+    *self = TargetId::Named(value.into());
   }
 }
 
@@ -429,14 +430,14 @@ impl std::fmt::Display for InstancePort {
 impl InstancePort {
   /// Quickly create a [InstancePort::Named] variant.
   #[must_use]
-  pub fn named<T: AsRef<str>>(name: T) -> Self {
-    Self::Named(name.as_ref().to_owned())
+  pub fn named<T: Into<String>>(name: T) -> Self {
+    Self::Named(name.into())
   }
 
   /// Quickly create a [InstancePort::Path] variant.
   #[must_use]
-  pub fn path<T:AsRef<str>>(name: T, path: Vec<String>) -> Self {
-    Self::Path(name.as_ref().to_owned(), path)
+  pub fn path<T: Into<String>>(name: T, path: Vec<String>) -> Self {
+    Self::Path(name.into(), path)
   }
 
   /// Get the name of the port.

@@ -136,5 +136,3 @@ pub use schematic::{
   SCHEMATIC_OUTPUT,
   SCHEMATIC_OUTPUT_INDEX,
 };
-
-pub(crate) mod util;

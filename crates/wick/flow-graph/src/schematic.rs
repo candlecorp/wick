@@ -8,7 +8,6 @@ use crate::connection::Connection;
 use crate::error::Error;
 use crate::node::{Node, NodeKind, NodePort};
 use crate::port::PortReference;
-use crate::util::AsStr;
 use crate::{NodeReference, PortDirection};
 
 pub type ConnectionIndex = usize;
@@ -43,7 +42,7 @@ impl<DATA> Schematic<DATA>
 where
   DATA: Clone,
 {
-  pub fn new<T: AsStr>(name: T, input_data: DATA, output_data: DATA) -> Self {
+  pub fn new<T: Into<String>>(name: T, input_data: DATA, output_data: DATA) -> Self {
     let nodes = vec![
       Node::new(SCHEMATIC_INPUT, SCHEMATIC_INPUT_INDEX, NodeKind::input(), input_data),
       Node::new(
@@ -59,7 +58,7 @@ where
     ]);
 
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       input: 0,
       output: 1,
       inherent: 2,
@@ -115,15 +114,17 @@ where
     self.get_port(port).name()
   }
 
-  pub fn add_input<T: AsStr>(&mut self, port: T) -> PortReference {
+  pub fn add_input<T: Into<String>>(&mut self, port: T) -> PortReference {
     let input = self.get_mut(self.input).unwrap();
-    input.add_input(&port);
+    let port = port.into();
+    input.add_input(port.clone());
     input.add_output(port)
   }
 
-  pub fn add_output<T: AsStr>(&mut self, port: T) -> PortReference {
+  pub fn add_output<T: Into<String>>(&mut self, port: T) -> PortReference {
     let output = self.get_mut(self.output).unwrap();
-    output.add_output(&port);
+    let port = port.into();
+    output.add_output(port.clone());
     output.add_input(port)
   }
 
@@ -160,15 +161,12 @@ where
   }
 
   #[must_use]
-  pub fn find<T: AsStr>(&self, name: T) -> Option<&Node<DATA>> {
-    self.node_map.get(name.as_ref()).map(|index| &self.nodes[*index])
+  pub fn find(&self, name: &str) -> Option<&Node<DATA>> {
+    self.node_map.get(name).map(|index| &self.nodes[*index])
   }
 
-  pub fn find_mut<T: AsStr>(&mut self, name: T) -> Option<&mut Node<DATA>> {
-    self
-      .node_map
-      .get_mut(name.as_ref())
-      .map(|index| &mut self.nodes[*index])
+  pub fn find_mut(&mut self, name: &str) -> Option<&mut Node<DATA>> {
+    self.node_map.get_mut(name).map(|index| &mut self.nodes[*index])
   }
 
   #[must_use]
@@ -224,19 +222,18 @@ where
       .map(|indices| Connections::new(self, indices.clone()))
   }
 
-  pub fn add_external<T: AsStr>(&mut self, name: T, reference: NodeReference, data: DATA) -> NodeIndex {
-    let name = name.as_ref().to_owned();
+  pub fn add_external<T: Into<String>>(&mut self, name: T, reference: NodeReference, data: DATA) -> NodeIndex {
+    let name = name.into();
     self.add_node(name, NodeKind::External(reference), data)
   }
 
-  pub fn add_and_get_mut<T: AsStr>(&mut self, name: T, reference: NodeReference, data: DATA) -> &mut Node<DATA> {
-    let name = name.as_ref().to_owned();
-    let index = self.add_node(name, NodeKind::External(reference), data);
+  pub fn add_and_get_mut<T: Into<String>>(&mut self, name: T, reference: NodeReference, data: DATA) -> &mut Node<DATA> {
+    let index = self.add_node(name.into(), NodeKind::External(reference), data);
     self.get_mut(index).unwrap()
   }
 
-  pub fn add_inherent<T: AsStr>(&mut self, name: T, reference: NodeReference, data: DATA) -> NodeIndex {
-    let name = name.as_ref().to_owned();
+  pub fn add_inherent<T: Into<String>>(&mut self, name: T, reference: NodeReference, data: DATA) -> NodeIndex {
+    let name = name.into();
     self.add_node(name, NodeKind::Inherent(reference), data)
   }
 

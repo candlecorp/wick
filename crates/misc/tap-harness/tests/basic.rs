@@ -2,8 +2,8 @@ use tap_harness::{TestBlock, TestRunner};
 
 #[test]
 fn basics() -> anyhow::Result<()> {
-  let mut runner = TestRunner::new(Some("My test"));
-  let mut block = TestBlock::new(Some("My block"));
+  let mut runner = TestRunner::new(Some("My test".into()));
+  let mut block = TestBlock::new(Some("My block".into()));
   block.add_test(
     || 3 > 2,
     "three is greater than two",

@@ -60,10 +60,11 @@ pub(crate) struct PortList {
 
 #[allow(unused)]
 impl PortList {
-  pub(super) fn new<T: AsRef<str>>(operation_instance: T, ports: Vec<OperationPort>) -> Self {
+  pub(super) fn new<T: Into<String>>(operation_instance: T, ports: Vec<OperationPort>) -> Self {
+    let instance = operation_instance.into();
     let ports = ports
       .into_iter()
-      .map(|p| PortHandler::new(operation_instance.as_ref(), p))
+      .map(|p| PortHandler::new(instance.clone(), p))
       .collect();
     Self { inner: ports }
   }
@@ -111,7 +112,7 @@ pub(crate) struct OutputPorts {
 
 #[allow(unused)]
 impl OutputPorts {
-  pub(super) fn new<T: AsRef<str>>(operation_instance: T, ports: Vec<OperationPort>) -> Self {
+  pub(super) fn new<T: Into<String>>(operation_instance: T, ports: Vec<OperationPort>) -> Self {
     Self {
       inner: PortList::new(operation_instance, ports),
     }
@@ -154,7 +155,7 @@ pub(crate) struct InputPorts {
 
 #[allow(unused)]
 impl InputPorts {
-  pub(super) fn new<T: AsRef<str>>(operation_instance: T, ports: Vec<OperationPort>) -> Self {
+  pub(super) fn new<T: Into<String>>(operation_instance: T, ports: Vec<OperationPort>) -> Self {
     Self {
       inner: PortList::new(operation_instance, ports),
     }
