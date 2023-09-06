@@ -33,12 +33,7 @@ impl TryFrom<v1::UnionSignature> for wick::UnionDefinition {
   type Error = ManifestError;
 
   fn try_from(value: v1::UnionSignature) -> Result<Self, Self::Error> {
-    Ok(Self {
-      name: value.name,
-      description: value.description,
-      types: value.types.try_map_into()?,
-      imported: false,
-    })
+    Ok(Self::new(value.name, value.types.try_map_into()?, value.description))
   }
 }
 
@@ -58,12 +53,7 @@ impl TryFrom<v1::StructSignature> for wick::StructDefinition {
   type Error = ManifestError;
 
   fn try_from(value: v1::StructSignature) -> Result<Self, Self::Error> {
-    Ok(Self {
-      name: value.name,
-      description: value.description,
-      fields: value.fields.try_map_into()?,
-      imported: false,
-    })
+    Ok(Self::new(value.name, value.fields.try_map_into()?, value.description))
   }
 }
 
@@ -83,12 +73,7 @@ impl TryFrom<v1::EnumSignature> for wick::EnumDefinition {
   type Error = ManifestError;
 
   fn try_from(value: v1::EnumSignature) -> Result<Self, Self::Error> {
-    Ok(Self {
-      name: value.name,
-      description: value.description,
-      variants: value.variants.try_map_into()?,
-      imported: false,
-    })
+    Ok(Self::new(value.name, value.variants.try_map_into()?, value.description))
   }
 }
 
@@ -108,12 +93,7 @@ impl TryFrom<v1::EnumVariant> for wick::EnumVariant {
   type Error = ManifestError;
 
   fn try_from(value: v1::EnumVariant) -> Result<Self, Self::Error> {
-    Ok(Self {
-      name: value.name,
-      description: value.description,
-      index: value.index,
-      value: value.value,
-    })
+    Ok(Self::new(value.name, value.index, value.value, value.description))
   }
 }
 

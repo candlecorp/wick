@@ -40,9 +40,9 @@ pub(crate) struct Config {
 }
 
 fn gen_signature(id: String, config: Config) -> (OperationSignature, StructDefinition) {
-  let mut signature = OperationSignature::new(&id);
+  let mut signature = OperationSignature::new_named(&id);
   let output_type = Vec::new();
-  let mut output_signature = StructDefinition::new(&id, output_type);
+  let mut output_signature = StructDefinition::new(&id, output_type, None);
   for field in config.inputs {
     output_signature.fields.push(field.clone());
     signature = signature.add_input(field.name, field.ty);
@@ -54,7 +54,7 @@ fn gen_signature(id: String, config: Config) -> (OperationSignature, StructDefin
 }
 
 impl Op {
-  pub(crate) fn new() -> Self {
+  pub(crate) const fn new() -> Self {
     Self {}
   }
   pub(crate) fn gen_signature(id: String, config: Config) -> (OperationSignature, StructDefinition) {

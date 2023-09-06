@@ -10,7 +10,7 @@ pub struct ComponentReference {
 
 impl ComponentReference {
   /// Create a new [ComponentReference] with specified id.
-  pub fn new(id: impl AsRef<str>) -> Self {
+  pub fn new<T: AsRef<str>>(id: T) -> Self {
     Self {
       id: id.as_ref().to_owned(),
     }

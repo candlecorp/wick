@@ -107,9 +107,7 @@ impl Trigger for Cli {
     _resources: Arc<HashMap<String, Resource>>,
     span: Span,
   ) -> Result<StructuredOutput, RuntimeError> {
-    let config = if let TriggerDefinition::Cli(config) = config {
-      config
-    } else {
+    let TriggerDefinition::Cli(config) = config else {
       return Err(RuntimeError::TriggerKind(Context::Trigger, TriggerKind::Cli));
     };
 

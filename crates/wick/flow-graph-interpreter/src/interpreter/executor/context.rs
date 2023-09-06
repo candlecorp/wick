@@ -129,7 +129,7 @@ impl ExecutionContext {
     self.span.in_scope(f)
   }
 
-  pub fn id(&self) -> Uuid {
+  pub const fn id(&self) -> Uuid {
     self.id
   }
 
@@ -172,7 +172,7 @@ impl ExecutionContext {
 
     self.start_time = Instant::now();
 
-    for instance in self.instances.iter() {
+    for instance in &self.instances {
       if instance.index() == SCHEMATIC_OUTPUT_INDEX {
         continue;
       }

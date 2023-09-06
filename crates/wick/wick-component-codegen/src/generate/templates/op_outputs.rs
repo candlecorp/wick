@@ -45,19 +45,17 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
     })
     .collect_vec();
 
-  let single_output_impl = if op.outputs().len() == 1 {
+  let single_output_impl = (op.outputs().len() == 1).then(|| {
     let output = op.outputs().first().unwrap();
     let name = id(&snake(output.name()));
-    Some(quote! {
+    quote! {
       impl wick_component::SingleOutput for #outputs_name {
         fn single_output(&mut self) -> &mut dyn wick_packet::Port {
           &mut self.#name
         }
       }
-    })
-  } else {
-    None
-  };
+    }
+  });
 
   let outputs = f::gen_if(
     config.output_structs,

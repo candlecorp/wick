@@ -7,6 +7,7 @@ use thiserror::Error;
 
 /// Wick Manifest's Errors.
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum ManifestError {
   /// Invalid version found in the parsed manifest.
   #[error("Invalid Manifest Version '{0}'")]

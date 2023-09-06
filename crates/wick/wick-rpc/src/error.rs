@@ -2,6 +2,7 @@ use thiserror::Error;
 
 /// The RPC Error type.
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum RpcError {
   /// Error during the parsing of an IP address and port.
   #[error(transparent)]
@@ -111,6 +112,7 @@ impl From<String> for RpcError {
 
 /// The error type that [crate::RpcClient] methods produce.
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
 pub enum RpcClientError {
   /// An error originating from a List RPC call.
   #[error("RPC List call failed: {0}")]
@@ -171,14 +173,14 @@ impl From<std::io::Error> for RpcClientError {
 mod test {
 
   use super::*;
-  fn sync_send<T>()
+  const fn sync_send<T>()
   where
     T: Sync + Send,
   {
   }
 
   #[test]
-  fn test_sync_send() {
+  const fn test_sync_send() {
     sync_send::<RpcError>();
     sync_send::<RpcClientError>();
   }

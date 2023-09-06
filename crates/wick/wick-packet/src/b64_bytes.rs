@@ -6,6 +6,7 @@ use bytes::buf::IntoIter;
 base64_serde_type!(Base64Standard, base64::engine::general_purpose::STANDARD);
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[non_exhaustive]
 pub struct Base64Bytes(#[serde(with = "Base64Standard")] pub bytes::Bytes);
 
 impl Base64Bytes {
@@ -143,7 +144,7 @@ impl PartialEq<Vec<u8>> for Base64Bytes {
 
 impl PartialOrd<Vec<u8>> for Base64Bytes {
   fn partial_cmp(&self, other: &Vec<u8>) -> Option<cmp::Ordering> {
-    self.0.partial_cmp(&other[..])
+    self.0.partial_cmp(&**other)
   }
 }
 

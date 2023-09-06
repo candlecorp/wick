@@ -37,7 +37,7 @@ impl InnerSelf {
         .map(|s| SchematicExecutor::new(s.clone(), dispatcher.clone(), root_config.cloned()))
         .collect(),
     );
-    let signature = state.components.get(SelfComponent::ID).unwrap().clone();
+    let signature = state.components[SelfComponent::ID].clone();
     Self {
       signature,
       schematics,

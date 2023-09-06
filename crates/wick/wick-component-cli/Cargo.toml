@@ -5,6 +5,7 @@ edition = "2021"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
 description = "Simple implementation of a wick CLI interface for Rust components."
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
@@ -38,6 +39,7 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 clap = { workspace = true, features = ["derive", "env", "std"] }
 uuid = { workspace = true, features = ["v4"] }
+derive_builder = { workspace = true }
 
 [dev-dependencies]
 wick-logger = { workspace = true }

@@ -19,7 +19,11 @@
     clippy::explicit_deref_methods
 )]
 #![warn(clippy::cognitive_complexity)]
-#![allow(missing_docs)]
+#![allow(
+  missing_docs,
+  clippy::exhaustive_enums,
+  clippy::exhaustive_structs,
+)]
 
 #[cfg(feature="config")]
 pub(crate) mod conversions;

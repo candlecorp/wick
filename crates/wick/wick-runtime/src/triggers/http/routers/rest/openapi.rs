@@ -58,28 +58,25 @@ pub(crate) fn generate_openapi(
   }];
   let mut named_types = HashSet::new();
 
-  let paths: Vec<(_, _)> = routes
-    .iter()
-    .map(|route| {
-      let path_item = route_to_path_item(route, &mut named_types);
-      let path = route
-        .route
-        .path_parts
-        .iter()
-        .map(|p| match p {
-          super::route::PathPart::Literal(part) => part.clone(),
-          super::route::PathPart::Param(param) => format!("{{{}}}", param.name()),
-        })
-        .collect::<Vec<_>>()
-        .join("/");
-      (format!("/{}", path), ReferenceOr::Item(path_item))
-    })
-    .collect();
+  let paths = routes.iter().map(|route| {
+    let path_item = route_to_path_item(route, &mut named_types);
+    let path = route
+      .route
+      .path_parts
+      .iter()
+      .map(|p| match p {
+        super::route::PathPart::Literal(part) => part.clone(),
+        super::route::PathPart::Param(param) => format!("{{{}}}", param.name()),
+      })
+      .collect::<Vec<_>>()
+      .join("/");
+    (format!("/{}", path), ReferenceOr::Item(path_item))
+  });
   openapi.paths = Paths {
     paths: Default::default(),
     extensions: Default::default(),
   };
-  openapi.paths.paths.extend(paths.into_iter());
+  openapi.paths.paths.extend(paths);
 
   let (mut schemas, mut named_types, mut new_named_types) =
     resolve_named_types(app_config, HashMap::new(), named_types)?;
@@ -141,7 +138,7 @@ fn route_to_path_item(route: &RestRoute, named: &mut HashSet<String>) -> PathIte
       style: openapiv3::PathStyle::Simple,
     }));
   }
-  for field in route.route.query_params.iter() {
+  for field in &route.route.query_params {
     path_item.parameters.push(ReferenceOr::Item(Parameter::Query {
       parameter_data: field_to_parameter_data(field, named),
       style: openapiv3::QueryStyle::DeepObject,

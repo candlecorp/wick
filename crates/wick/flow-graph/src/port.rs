@@ -5,6 +5,7 @@ use crate::util::AsStr;
 use crate::NodeIndex;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct PortDefinition {
   pub name: String,
   pub index: PortIndex,
@@ -34,7 +35,7 @@ pub struct PortReference {
 
 impl PortReference {
   #[must_use]
-  pub fn new(node_index: NodeIndex, port_index: PortIndex, direction: PortDirection) -> Self {
+  pub const fn new(node_index: NodeIndex, port_index: PortIndex, direction: PortDirection) -> Self {
     Self {
       node_index,
       port_index,
@@ -42,17 +43,17 @@ impl PortReference {
     }
   }
 
-  pub fn direction(&self) -> &PortDirection {
+  pub const fn direction(&self) -> &PortDirection {
     &self.direction
   }
 
   #[must_use]
-  pub fn node_index(&self) -> NodeIndex {
+  pub const fn node_index(&self) -> NodeIndex {
     self.node_index
   }
 
   #[must_use]
-  pub fn port_index(&self) -> PortIndex {
+  pub const fn port_index(&self) -> PortIndex {
     self.port_index
   }
 }
@@ -73,6 +74,7 @@ impl Display for PortReference {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[must_use]
+#[allow(clippy::exhaustive_enums)]
 pub enum PortDirection {
   In,
   Out,

@@ -39,7 +39,7 @@ pub async fn base_setup(
   use flow_graph_interpreter::{HandlerMap, InterpreterOptions, NamespaceHandler};
   use tokio_stream::StreamExt;
   use wick_packet::Invocation;
-  let options = Some(InterpreterOptions { ..Default::default() });
+  let options = Some(InterpreterOptions::default());
   let mut def = wick_config::WickConfiguration::fetch(manifest, Default::default()).await?;
   def.set_root_config(component_config);
   let mut def = def.finish()?.try_component_config()?;

@@ -5,6 +5,7 @@ use crate::{contents_equal, is_false, Field};
 /// Signatures of struct-like type definitions.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
 #[must_use]
+#[non_exhaustive]
 pub struct StructDefinition {
   /// The name of the struct.
   pub name: String,
@@ -27,12 +28,12 @@ impl PartialEq for StructDefinition {
 
 impl StructDefinition {
   /// Constructor for [StructDefinition]
-  pub fn new<T: AsRef<str>>(name: T, fields: Vec<Field>) -> Self {
+  pub fn new<T: Into<String>>(name: T, fields: Vec<Field>, description: Option<String>) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       fields,
       imported: false,
-      description: None,
+      description,
     }
   }
 }

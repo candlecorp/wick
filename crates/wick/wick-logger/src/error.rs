@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
+#[non_exhaustive]
 /// The logger's Error enum.
 pub enum LoggerError {
   /// Invalid string passed as the log style.

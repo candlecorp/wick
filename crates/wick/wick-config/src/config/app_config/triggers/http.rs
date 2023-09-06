@@ -52,6 +52,7 @@ pub struct HttpTriggerConfig {
 #[asset(asset(AssetReference))]
 #[must_use]
 #[serde(rename_all = "kebab-case")]
+
 pub enum HttpRouterConfig {
   RawRouter(RawRouterConfig),
   RestRouter(RestRouterConfig),
@@ -110,7 +111,7 @@ impl ExpandImports for HttpTriggerConfig {
 
 impl HttpRouterConfig {
   #[must_use]
-  pub fn kind(&self) -> HttpRouterKind {
+  pub const fn kind(&self) -> HttpRouterKind {
     match self {
       Self::RawRouter(_) => HttpRouterKind::RawRouter,
       Self::RestRouter(_) => HttpRouterKind::RestRouter,

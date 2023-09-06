@@ -9,14 +9,14 @@ mod test {
   use crate::interpreter::error::StateError;
   use crate::interpreter::executor::error::ExecutionError;
 
-  fn sync_send<T>()
+  const fn sync_send<T>()
   where
     T: Sync + Send,
   {
   }
 
   #[test]
-  fn test_sync_send() -> Result<()> {
+  const fn test_sync_send() -> Result<()> {
     sync_send::<InterpreterError>();
     sync_send::<OperationInvalid>();
     sync_send::<ValidationError>();

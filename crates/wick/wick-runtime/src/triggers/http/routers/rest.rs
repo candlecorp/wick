@@ -49,15 +49,15 @@ impl RestRouter {
     }
 
     let oapi = config.tools().map_or(false, |t| t.openapi());
-    let oapi = if oapi {
-      info!(
-        path = format!("{}{}", config.path(), OPENAPI_PATH),
-        "openapi schema enabled"
-      );
-      Some(openapi::generate_openapi(app_config, &config, &routes)?)
-    } else {
-      None
-    };
+    let oapi = oapi
+      .then(|| {
+        info!(
+          path = format!("{}{}", config.path(), OPENAPI_PATH),
+          "openapi schema enabled"
+        );
+        openapi::generate_openapi(app_config, &config, &routes)
+      })
+      .transpose()?;
 
     Ok(Self {
       context: Arc::new(Context {
@@ -155,7 +155,7 @@ impl RestHandler {
       }
     }
 
-    for route in context.routes.iter() {
+    for route in &context.routes {
       if !route.config.methods().is_empty() && !route.config.methods().contains(&method) {
         continue;
       }

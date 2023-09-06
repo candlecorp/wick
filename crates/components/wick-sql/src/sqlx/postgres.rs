@@ -19,6 +19,7 @@ pub(crate) async fn connect(_config: &SqlComponentConfig, addr: &Url) -> Result<
   Ok(pool)
 }
 
+#[allow(clippy::cast_lossless)]
 pub(crate) fn make_query(
   sql: &str,
   args: Vec<ConvertedType>,

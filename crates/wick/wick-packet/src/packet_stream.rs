@@ -161,10 +161,10 @@ impl Stream for PacketStream {
   }
 }
 
-pub fn into_packet<T: serde::Serialize>(
-  name: impl AsRef<str>,
+pub fn into_packet<N: Into<String>, T: serde::Serialize>(
+  name: N,
 ) -> Box<dyn FnMut(std::result::Result<T, BoxError>) -> Result<Packet>> {
-  let name = name.as_ref().to_owned();
+  let name = name.into();
   Box::new(move |x| Ok(x.map_or_else(|e| Packet::err(&name, e.to_string()), |x| Packet::encode(&name, &x))))
 }
 
@@ -174,14 +174,14 @@ mod test {
 
   use super::*;
 
-  fn is_sync_send<T>()
+  const fn is_sync_send<T>()
   where
     T: Send + Sync,
   {
   }
 
   #[test]
-  fn test_sync_send() -> Result<()> {
+  const fn test_sync_send() -> Result<()> {
     is_sync_send::<PacketStream>();
     Ok(())
   }

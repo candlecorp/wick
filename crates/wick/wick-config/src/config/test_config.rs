@@ -71,6 +71,7 @@ impl TestConfiguration {
   }
 
   /// Validate this configuration is good.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn validate(&self) -> Result<(), ManifestError> {
     /* placeholder */
     Ok(())

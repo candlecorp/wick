@@ -57,7 +57,7 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let root_config = parse_config_string(opts.component.with.as_deref())?;
-  let server_settings = DefaultCliOptions { ..Default::default() };
+  let server_settings = DefaultCliOptions::default();
 
   let host = build_host(
     &opts.component.path,

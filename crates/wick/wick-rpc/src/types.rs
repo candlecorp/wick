@@ -10,6 +10,7 @@ use crate::rpc::{self, packet as rpc_packet, Packet as RpcPacket};
 
 /// Important statistics for the hosted components.
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub struct Statistics {
   /// The name of the component.
   pub name: String,
@@ -44,6 +45,7 @@ mod as_micros {
 
 /// Duration related statistics.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[non_exhaustive]
 pub struct DurationStatistics {
   /// The maximum duration.
   #[serde(with = "as_micros")]
@@ -57,6 +59,19 @@ pub struct DurationStatistics {
   /// The total duration.
   #[serde(with = "as_micros")]
   pub total_time: Duration,
+}
+
+impl DurationStatistics {
+  /// Creates a new [DurationStatistics] instance.
+  #[must_use]
+  pub const fn new(min_time: Duration, max_time: Duration, average_time: Duration, total_time: Duration) -> Self {
+    Self {
+      max_time,
+      min_time,
+      average_time,
+      total_time,
+    }
+  }
 }
 
 impl RpcPacket {

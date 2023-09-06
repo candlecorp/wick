@@ -9,21 +9,22 @@ pub struct TypeWrapper(Type, Value);
 
 impl TypeWrapper {
   /// Create a new TypeWrapper.
-  pub fn new(ty: Type, val: Value) -> Self {
+  pub const fn new(ty: Type, val: Value) -> Self {
     Self(ty, val)
   }
 
-  pub fn type_signature(&self) -> &Type {
+  pub const fn type_signature(&self) -> &Type {
     &self.0
   }
 
   #[must_use]
+  #[allow(clippy::missing_const_for_fn)]
   pub fn into_inner(self) -> Value {
     self.1
   }
 
   #[must_use]
-  pub fn inner(&self) -> &Value {
+  pub const fn inner(&self) -> &Value {
     &self.1
   }
 }
@@ -62,7 +63,7 @@ pub(crate) fn coerce(val: Value, ty: &Type) -> Result<Value, Error> {
     },
     Type::String => {
       let string = match val {
-        Value::Null => "".to_owned(),
+        Value::Null => String::new(),
         Value::Bool(v) => v.to_string(),
         Value::Number(v) => v.to_string(),
         Value::String(v) => v,
@@ -82,9 +83,8 @@ pub(crate) fn coerce(val: Value, ty: &Type) -> Result<Value, Error> {
     },
     Type::Named(_) => unimplemented!("named types"),
     Type::List { ty: inner_ty } => {
-      let val = match val {
-        Value::Array(v) => v,
-        _ => coersion_err!(val, ty.clone()),
+      let Value::Array(val) = val else {
+        coersion_err!(val, ty.clone())
       };
 
       let mut out = Vec::with_capacity(val.len());
@@ -104,9 +104,8 @@ pub(crate) fn coerce(val: Value, ty: &Type) -> Result<Value, Error> {
     Type::Map {
       value: inner_value_ty, ..
     } => {
-      let obj = match val {
-        Value::Object(v) => v,
-        _ => coersion_err!(val, ty.clone()),
+      let Value::Object(obj) = val else {
+        coersion_err!(val, ty.clone())
       };
 
       let mut out = serde_json::Map::with_capacity(obj.len());

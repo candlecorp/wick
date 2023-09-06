@@ -2,6 +2,7 @@ use thiserror::Error;
 
 /// The RPC Error type.
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
   /// Error during the parsing of an IP address and port.
   #[error(transparent)]

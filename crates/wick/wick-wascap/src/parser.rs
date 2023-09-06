@@ -8,7 +8,7 @@ use crate::{v1, Error};
 pub(crate) struct CustomSection<'a>(String, Cow<'a, [u8]>);
 
 impl<'a> CustomSection<'a> {
-  pub(crate) fn new(name: String, data: Cow<'a, [u8]>) -> Self {
+  pub(crate) const fn new(name: String, data: Cow<'a, [u8]>) -> Self {
     Self(name, data)
   }
 }

@@ -10,6 +10,7 @@ keywords = ["types", "wick", "wasmflow"]
 categories = []
 exclude = ["tests/*", ".github/*", ".gitignore"]
 homepage = "https://candle.dev"
+readme = "README.md"
 
 [features]
 default = ["yaml", "parser"]
@@ -24,6 +25,7 @@ serde_repr = { workspace = true }
 nom = { workspace = true, optional = true, features = ["alloc"] }
 serde_yaml = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
+derive_builder = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

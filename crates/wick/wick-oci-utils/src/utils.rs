@@ -79,7 +79,7 @@ pub fn parse_reference_and_protocol(
   ))
 }
 
-pub fn get_cache_directory(input: &str, basedir: impl AsRef<Path>) -> Result<PathBuf, Error> {
+pub fn get_cache_directory<T: AsRef<Path>>(input: &str, basedir: T) -> Result<PathBuf, Error> {
   let image_ref = parse_reference(input)?;
 
   let registry = image_ref
@@ -110,7 +110,7 @@ pub(crate) async fn create_directory_structure(dir: &Path) -> Result<(), Error> 
 
 static WICK_REF_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\w+/\w+:(\d+\.\d+\.\d+(-\w+)?|latest)?$").unwrap());
 
-pub fn is_wick_package_reference(loc: impl AsRef<str>) -> bool {
+pub fn is_wick_package_reference<T: AsRef<str>>(loc: T) -> bool {
   WICK_REF_REGEX.is_match(loc.as_ref())
 }
 

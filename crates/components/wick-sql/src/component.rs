@@ -435,7 +435,7 @@ fn normalize_inline_ids(orig_query: &str, mut orig_args: Vec<String>) -> (Cow<st
 
     let normalized = WICK_ID_ARGS.replace_all(orig_query, |cap: &Captures| {
       let id = cap.name("id").unwrap().as_str();
-      let id = id_map.get(id).unwrap();
+      let id = id_map[id];
       format!("${}", id)
     });
     debug!(%orig_query,%normalized, "sql:inline-replacement");

@@ -123,9 +123,7 @@ impl Trigger for Http {
     span: Span,
   ) -> Result<StructuredOutput, RuntimeError> {
     span.in_scope(|| debug!(kind = %TriggerKind::Http, "trigger:run"));
-    let config = if let config::TriggerDefinition::Http(config) = config {
-      config
-    } else {
+    let config::TriggerDefinition::Http(config) = config else {
       return Err(RuntimeError::TriggerKind(Context::Trigger, TriggerKind::Http));
     };
     let resource_name = config.resource();

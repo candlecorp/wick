@@ -31,7 +31,7 @@ pub struct OpInitError {
 }
 
 impl OpInitError {
-  fn new(error: ComponentError, kind: DynamicOperation) -> Self {
+  const fn new(error: ComponentError, kind: DynamicOperation) -> Self {
     Self { error, kind }
   }
 }
@@ -65,9 +65,10 @@ impl std::fmt::Display for DynamicOperation {
 impl CoreComponent {
   pub(crate) const ID: &str = "core";
 
+  #[allow(clippy::cognitive_complexity)]
   pub(crate) fn new(graph: &Network, handlers: &HandlerMap) -> Result<Self, OpInitError> {
     let mut this = Self {
-      signature: ComponentSignature::new(Self::ID).version("0.0.0"),
+      signature: ComponentSignature::new_named(Self::ID).set_version("0.0.0"),
       pluck: pluck::Op::new(),
       sender: sender::Op::new(),
       merge: merge::Op::new(),

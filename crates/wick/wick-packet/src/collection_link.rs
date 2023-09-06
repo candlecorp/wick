@@ -12,7 +12,7 @@ pub struct ComponentReference {
 
 impl ComponentReference {
   /// Constructor for a [ComponentReference]
-  pub fn new(origin: Entity, target: Entity) -> Self {
+  pub const fn new(origin: Entity, target: Entity) -> Self {
     Self { origin, target }
   }
 

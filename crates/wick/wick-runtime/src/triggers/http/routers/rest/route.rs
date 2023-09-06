@@ -10,11 +10,11 @@ pub(crate) enum PathPart {
 }
 
 impl PathPart {
-  pub(crate) fn is_param(&self) -> bool {
+  pub(crate) const fn is_param(&self) -> bool {
     matches!(self, Self::Param(_))
   }
 
-  pub(crate) fn param(&self) -> Option<&Field> {
+  pub(crate) const fn param(&self) -> Option<&Field> {
     match self {
       Self::Param(field) => Some(field),
       _ => None,

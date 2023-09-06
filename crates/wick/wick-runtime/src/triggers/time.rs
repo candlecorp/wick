@@ -136,9 +136,7 @@ impl Trigger for Time {
     _resources: Arc<HashMap<String, Resource>>,
     _span: Span,
   ) -> Result<StructuredOutput, RuntimeError> {
-    let config = if let TriggerDefinition::Time(config) = config {
-      config
-    } else {
+    let TriggerDefinition::Time(config) = config else {
       return Err(RuntimeError::TriggerKind(Context::Trigger, TriggerKind::Time));
     };
 

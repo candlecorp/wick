@@ -2,6 +2,7 @@ use flow_component::ComponentError;
 use url::Url;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
   #[error("Bad configuration: {0}")]
   Validation(String),

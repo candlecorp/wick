@@ -21,18 +21,18 @@ pub(crate) enum PortStatus {
 impl PortStatus {
   #[allow(unused)]
   #[must_use]
-  pub(crate) fn is_open(self) -> bool {
+  pub(crate) const fn is_open(self) -> bool {
     !matches!(self, PortStatus::DoneClosed)
   }
   #[allow(unused)]
   #[must_use]
-  pub(crate) fn is_closed(self) -> bool {
+  pub(crate) const fn is_closed(self) -> bool {
     matches!(self, PortStatus::DoneClosed)
   }
 
   #[allow(unused)]
   #[must_use]
-  pub(crate) fn is_done(self) -> bool {
+  pub(crate) const fn is_done(self) -> bool {
     matches!(self, PortStatus::DoneClosed | PortStatus::DoneClosing)
   }
 }
@@ -60,7 +60,7 @@ pub(crate) struct PortList {
 
 #[allow(unused)]
 impl PortList {
-  pub(super) fn new(operation_instance: impl AsRef<str>, ports: Vec<OperationPort>) -> Self {
+  pub(super) fn new<T: AsRef<str>>(operation_instance: T, ports: Vec<OperationPort>) -> Self {
     let ports = ports
       .into_iter()
       .map(|p| PortHandler::new(operation_instance.as_ref(), p))
@@ -111,7 +111,7 @@ pub(crate) struct OutputPorts {
 
 #[allow(unused)]
 impl OutputPorts {
-  pub(super) fn new(operation_instance: impl AsRef<str>, ports: Vec<OperationPort>) -> Self {
+  pub(super) fn new<T: AsRef<str>>(operation_instance: T, ports: Vec<OperationPort>) -> Self {
     Self {
       inner: PortList::new(operation_instance, ports),
     }
@@ -154,7 +154,7 @@ pub(crate) struct InputPorts {
 
 #[allow(unused)]
 impl InputPorts {
-  pub(super) fn new(operation_instance: impl AsRef<str>, ports: Vec<OperationPort>) -> Self {
+  pub(super) fn new<T: AsRef<str>>(operation_instance: T, ports: Vec<OperationPort>) -> Self {
     Self {
       inner: PortList::new(operation_instance, ports),
     }

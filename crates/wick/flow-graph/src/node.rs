@@ -7,6 +7,7 @@ use crate::util::AsStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[must_use]
+#[allow(clippy::exhaustive_enums)]
 pub enum NodeKind {
   Input(NodeReference),
   Output(NodeReference),
@@ -27,7 +28,7 @@ impl NodeKind {
       component_id: crate::NS_SCHEMATIC.to_owned(),
     })
   }
-  pub fn cref(&self) -> &NodeReference {
+  pub const fn cref(&self) -> &NodeReference {
     match self {
       NodeKind::Input(c) => c,
       NodeKind::Output(c) => c,
@@ -116,16 +117,16 @@ where
     }
   }
 
-  pub fn kind(&self) -> &NodeKind {
+  pub const fn kind(&self) -> &NodeKind {
     &self.kind
   }
 
-  pub fn cref(&self) -> &NodeReference {
+  pub const fn cref(&self) -> &NodeReference {
     self.kind.cref()
   }
 
   #[must_use]
-  pub fn index(&self) -> NodeIndex {
+  pub const fn index(&self) -> NodeIndex {
     self.index
   }
 
@@ -135,7 +136,7 @@ where
   }
 
   #[must_use]
-  pub fn data(&self) -> &DATA {
+  pub const fn data(&self) -> &DATA {
     &self.data
   }
 
@@ -316,12 +317,12 @@ impl NodePort {
   }
 
   #[must_use]
-  pub fn is_graph_output(&self) -> bool {
+  pub const fn is_graph_output(&self) -> bool {
     self.port.node_index == crate::schematic::SCHEMATIC_OUTPUT_INDEX
   }
 
   #[must_use]
-  pub fn is_graph_input(&self) -> bool {
+  pub const fn is_graph_input(&self) -> bool {
     self.port.node_index == crate::schematic::SCHEMATIC_INPUT_INDEX
   }
 
@@ -336,11 +337,11 @@ impl NodePort {
   }
 
   #[must_use]
-  pub fn detached(&self) -> PortReference {
+  pub const fn detached(&self) -> PortReference {
     self.port
   }
 
-  pub fn direction(&self) -> &PortDirection {
+  pub const fn direction(&self) -> &PortDirection {
     self.port.direction()
   }
 }

@@ -8,7 +8,7 @@ use parking_lot::Mutex;
 use seeded_random::Seed;
 use tracing::Span;
 use uuid::Uuid;
-use wick_component_cli::options::{Options as HostOptions, ServerOptions};
+use wick_component_cli::options::{Options as HostOptions, ServerOptionsBuilder};
 use wick_component_cli::ServerState;
 use wick_config::config::ComponentConfiguration;
 use wick_config::WickConfiguration;
@@ -72,7 +72,7 @@ impl ComponentHost {
   }
 
   #[must_use]
-  pub fn get_server_info(&self) -> &Option<ServerState> {
+  pub const fn get_server_info(&self) -> &Option<ServerState> {
     &self.server_metadata
   }
 
@@ -118,17 +118,20 @@ impl ComponentHost {
     let host_config = self.manifest.host().cloned().unwrap_or_default();
 
     #[allow(clippy::manual_map)]
-    let options = HostOptions {
-      rpc: host_config.rpc().map(|config| ServerOptions {
-        port: config.port(),
-        address: config.address().copied(),
-        pem: config.pem().cloned(),
-        key: config.key().cloned(),
-        ca: config.ca().cloned(),
-        enabled: config.enabled(),
+    let options = HostOptions::new(
+      self.get_host_id().to_owned(),
+      host_config.rpc().map(|config| {
+        ServerOptionsBuilder::default()
+          .port(config.port())
+          .address(config.address().copied())
+          .pem(config.pem().cloned())
+          .key(config.key().cloned())
+          .ca(config.ca().cloned())
+          .enabled(config.enabled())
+          .build()
+          .unwrap()
       }),
-      id: self.get_host_id().to_owned(),
-    };
+    );
 
     let collection = from_registry(nuid);
 
@@ -152,7 +155,7 @@ impl ComponentHost {
   }
 
   #[must_use]
-  pub fn is_started(&self) -> bool {
+  pub const fn is_started(&self) -> bool {
     self.runtime.is_some()
   }
 

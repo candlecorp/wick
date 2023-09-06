@@ -105,11 +105,10 @@ impl OperationConfig for HttpClientOperationDefinition {
 
 impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSignature {
   fn from(operation: HttpClientOperationDefinition) -> Self {
-    Self {
-      name: operation.name,
-      config: operation.config,
-      inputs: operation.inputs,
-      outputs: vec![
+    Self::new(
+      operation.name,
+      operation.inputs,
+      vec![
         // TODO: support actual HTTP Response type.
         wick_interface_types::Field::new("response", wick_interface_types::Type::Object),
         wick_interface_types::Field::new(
@@ -123,7 +122,8 @@ impl From<HttpClientOperationDefinition> for wick_interface_types::OperationSign
           },
         ),
       ],
-    }
+      operation.config,
+    )
   }
 }
 
@@ -171,35 +171,37 @@ pub struct HttpClientOperationDefinition {
 
 impl HttpClientOperationDefinition {
   /// Create a new GET operation.
+  #[must_use]
   pub fn new_get(
-    name: impl AsRef<str>,
-    path: impl AsRef<str>,
+    name: &str,
+    path: &str,
     inputs: Vec<wick_interface_types::Field>,
     headers: Option<HashMap<String, Vec<String>>>,
   ) -> HttpClientOperationDefinitionBuilder {
     let mut builder = HttpClientOperationDefinitionBuilder::default();
     builder
-      .name(name.as_ref())
+      .name(name)
+      .path(path)
       .inputs(inputs)
-      .path(path.as_ref())
       .headers(headers)
       .method(HttpMethod::Get);
     builder
   }
 
   /// Create a new POST operation.
+  #[must_use]
   pub fn new_post(
-    name: impl AsRef<str>,
-    path: impl AsRef<str>,
+    name: &str,
+    path: &str,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
     headers: Option<HashMap<String, Vec<String>>>,
   ) -> HttpClientOperationDefinitionBuilder {
     let mut builder = HttpClientOperationDefinitionBuilder::default();
     builder
-      .name(name.as_ref())
+      .name(name)
+      .path(path)
       .inputs(inputs)
-      .path(path.as_ref())
       .body(body)
       .headers(headers)
       .method(HttpMethod::Post);
@@ -207,18 +209,19 @@ impl HttpClientOperationDefinition {
   }
 
   /// Create a new PUT operation.
+  #[must_use]
   pub fn new_put(
-    name: impl AsRef<str>,
-    path: impl AsRef<str>,
+    name: &str,
+    path: &str,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
     headers: Option<HashMap<String, Vec<String>>>,
   ) -> HttpClientOperationDefinitionBuilder {
     let mut builder = HttpClientOperationDefinitionBuilder::default();
     builder
-      .name(name.as_ref())
+      .name(name)
+      .path(path)
       .inputs(inputs)
-      .path(path.as_ref())
       .body(body)
       .headers(headers)
       .method(HttpMethod::Put);
@@ -226,18 +229,19 @@ impl HttpClientOperationDefinition {
   }
 
   /// Create a new DELETE operation.
+  #[must_use]
   pub fn new_delete(
-    name: impl AsRef<str>,
-    path: impl AsRef<str>,
+    name: &str,
+    path: &str,
     inputs: Vec<wick_interface_types::Field>,
     body: Option<liquid_json::LiquidJsonValue>,
     headers: Option<HashMap<String, Vec<String>>>,
   ) -> HttpClientOperationDefinitionBuilder {
     let mut builder = HttpClientOperationDefinitionBuilder::default();
     builder
-      .name(name.as_ref())
+      .name(name)
+      .path(path)
       .inputs(inputs)
-      .path(path.as_ref())
       .body(body)
       .headers(headers)
       .method(HttpMethod::Delete);

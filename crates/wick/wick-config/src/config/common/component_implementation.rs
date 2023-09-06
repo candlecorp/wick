@@ -20,7 +20,7 @@ pub enum ComponentImplementation {
 
 impl ComponentImplementation {
   /// Get the kind of component represented by this configuration.
-  pub fn kind(&self) -> ComponentKind {
+  pub const fn kind(&self) -> ComponentKind {
     match self {
       ComponentImplementation::Wasm(_) => ComponentKind::Wasm,
       ComponentImplementation::Composite(_) => ComponentKind::Composite,

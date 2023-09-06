@@ -101,7 +101,7 @@ impl std::fmt::Display for SqlOperationKind {
 
 impl SqlOperationDefinition {
   #[must_use]
-  pub fn on_error(&self) -> ErrorBehavior {
+  pub const fn on_error(&self) -> ErrorBehavior {
     match self {
       SqlOperationDefinition::Query(v) => v.on_error,
       SqlOperationDefinition::Exec(v) => v.on_error,
@@ -125,7 +125,7 @@ impl SqlOperationDefinition {
   }
 
   #[must_use]
-  pub fn kind(&self) -> SqlOperationKind {
+  pub const fn kind(&self) -> SqlOperationKind {
     match self {
       SqlOperationDefinition::Query(_) => SqlOperationKind::Query,
       SqlOperationDefinition::Exec(_) => SqlOperationKind::Exec,
@@ -191,12 +191,7 @@ impl From<SqlQueryOperationDefinition> for wick_interface_types::OperationSignat
     // limitation
     let outputs = vec![Field::new("output", wick_interface_types::Type::Object)];
 
-    Self {
-      name: operation.name,
-      config: operation.config,
-      inputs: operation.inputs,
-      outputs,
-    }
+    Self::new(operation.name, operation.inputs, outputs, operation.config)
   }
 }
 
@@ -204,12 +199,7 @@ impl From<SqlExecOperationDefinition> for wick_interface_types::OperationSignatu
   fn from(operation: SqlExecOperationDefinition) -> Self {
     let outputs = vec![Field::new("output", wick_interface_types::Type::U32)];
 
-    Self {
-      name: operation.name,
-      config: operation.config,
-      inputs: operation.inputs,
-      outputs,
-    }
+    Self::new(operation.name, operation.inputs, outputs, operation.config)
   }
 }
 #[derive(

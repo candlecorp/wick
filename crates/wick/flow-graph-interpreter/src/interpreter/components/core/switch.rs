@@ -124,7 +124,7 @@ fn get_handler_op_signature(handlers: &HandlerMap, op_name: &str) -> Option<Oper
 fn get_self_op_signature(graph: &Network, schematic_name: &str) -> Option<OperationSignature> {
   let schematic_name = schematic_name.trim_start_matches("self::");
   graph.schematic(schematic_name).map(|schematic| {
-    let mut sig = OperationSignature::new(schematic_name);
+    let mut sig = OperationSignature::new_named(schematic_name);
     for output in schematic.output().outputs() {
       sig = sig.add_output(output.name(), Type::Object); // we don't know the type of the output, so we just use object.
     }
@@ -147,7 +147,7 @@ fn gen_signature(
   handlers: &HandlerMap,
   config: Config,
 ) -> OperationSignature {
-  let mut signature = OperationSignature::new(id);
+  let mut signature = OperationSignature::new_named(id);
   signature = signature.add_input(DISCRIMINANT, Type::Object);
   let Some(default_op_sig) = get_op_signature(&config.default, parent_schematic, graph, handlers) else {
     panic!(
@@ -322,7 +322,7 @@ impl SwitchRouter {
     }
   }
 
-  fn is_frozen(&self) -> bool {
+  const fn is_frozen(&self) -> bool {
     self.num_conditions.is_some()
   }
 
@@ -567,7 +567,7 @@ impl Operation for Op {
         match router.can_handle(incoming_input.curr_index()) {
           CanHandle::No => {
             invocation.trace(|| trace!(input = packet.port(), "switch:stream: routing packet to root stream"));
-            for output in context.config.outputs.iter() {
+            for output in &context.config.outputs {
               let _ = root_tx.send(packet.clone().set_port(output.name()));
             }
             continue;
@@ -596,7 +596,7 @@ impl Operation for Op {
           } else {
             // otherwise, send the packet to the root stream.
             invocation.trace(|| debug!("switch:stream: routing open bracket to root stream"));
-            for output in context.config.outputs.iter() {
+            for output in &context.config.outputs {
               let _ = root_tx.send(Packet::open_bracket(output.name()));
             }
           }
@@ -632,7 +632,7 @@ impl Operation for Op {
             std::cmp::Ordering::Less => {
               // Otherwise, send the packet to the root stream.
               invocation.trace(|| trace!("switch:stream: routing close bracket to root stream"));
-              for output in context.config.outputs.iter() {
+              for output in &context.config.outputs {
                 let _ = root_tx.send(Packet::close_bracket(output.name()));
               }
             }
@@ -651,7 +651,7 @@ impl Operation for Op {
       router.cleanup(&context.config.inputs, &root_tx).await;
 
       // Send done packets for all defined outputs to our root stream.
-      for output in context.config.outputs.iter() {
+      for output in &context.config.outputs {
         invocation.trace(|| trace!(port = output.name(), "switch:stream: sending done to root stream"));
         let _ = root_tx.send(Packet::done(output.name()));
       }

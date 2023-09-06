@@ -9,6 +9,7 @@ pub const OPEN_BRACKET: u8 = /***/ 0b0100_0000;
 pub const CLOSE_BRACKET: u8 = /**/ 0b0010_0000;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[allow(clippy::exhaustive_enums)]
 pub enum Flags {
   Done,
 }
@@ -32,7 +33,7 @@ impl Default for WickMetadata {
 }
 
 impl WickMetadata {
-  pub fn new(port: impl AsRef<str>, flags: u8) -> Self {
+  pub fn new<T: AsRef<str>>(port: T, flags: u8) -> Self {
     Self {
       flags,
       port: port.as_ref().to_owned(),
@@ -41,7 +42,7 @@ impl WickMetadata {
   }
 
   #[must_use]
-  pub fn flags(&self) -> u8 {
+  pub const fn flags(&self) -> u8 {
     self.flags
   }
 
@@ -55,17 +56,17 @@ impl WickMetadata {
   }
 
   #[must_use]
-  pub fn is_done(&self) -> bool {
+  pub const fn is_done(&self) -> bool {
     self.flags & DONE_FLAG == DONE_FLAG
   }
 
   #[must_use]
-  pub fn is_open_bracket(&self) -> bool {
+  pub const fn is_open_bracket(&self) -> bool {
     self.flags & OPEN_BRACKET == OPEN_BRACKET
   }
 
   #[must_use]
-  pub fn is_close_bracket(&self) -> bool {
+  pub const fn is_close_bracket(&self) -> bool {
     self.flags & CLOSE_BRACKET == CLOSE_BRACKET
   }
 

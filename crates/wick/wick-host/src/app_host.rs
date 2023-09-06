@@ -138,7 +138,7 @@ impl AppHost {
       .unzip();
     join_all(start_tasks).await;
     self.span.in_scope(|| debug!("all triggers started"));
-    for trigger in triggers.iter() {
+    for trigger in &triggers {
       let ctrl_c = async {
         let _ = tokio::signal::ctrl_c().await;
       };

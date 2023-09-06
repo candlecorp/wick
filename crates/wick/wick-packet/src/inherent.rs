@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[allow(missing_copy_implementations)]
 /// Data inherent to an invocation. Meant to be supplied by a runtime, not a user.
 #[must_use]
+#[non_exhaustive]
 pub struct InherentData {
   /// The seed to associate with an invocation.
   pub seed: u64,
@@ -13,7 +14,7 @@ pub struct InherentData {
 
 impl InherentData {
   /// Constructor for [InherentData]
-  pub fn new(seed: u64, timestamp: u64) -> Self {
+  pub const fn new(seed: u64, timestamp: u64) -> Self {
     Self { seed, timestamp }
   }
 
@@ -30,7 +31,7 @@ impl InherentData {
     }
   }
 
-  /// Create a new InherentData with the current time and a random seed.
+  /// Create a new [InherentData] with the current time and a random seed.
   ///
   /// This is not "unsafe" in the Rust sense. It is unsafe because it should
   /// only be used if you are sure you know what you're doing. If you don't know why this is unsafe, don't use it.
@@ -47,11 +48,11 @@ impl InherentData {
     }
   }
 
-  /// Clone the InherentData struct.
+  /// Clone the [InherentData] struct.
   ///
   /// This is not "unsafe" in the Rust sense. It is unsafe because it should
   /// only be used if you are sure you know what you're doing. If you don't know why this is unsafe, don't use it.
-  pub fn unsafe_clone(&self) -> Self {
+  pub const fn unsafe_clone(&self) -> Self {
     Self {
       seed: self.seed,
       timestamp: self.timestamp,

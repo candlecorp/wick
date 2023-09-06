@@ -88,7 +88,7 @@ impl<T> Output<T>
 where
   T: serde::Serialize,
 {
-  pub fn new(name: impl AsRef<str>, channel: FluxChannel<RawPayload, PayloadError>) -> Self {
+  pub fn new<K: AsRef<str>>(name: K, channel: FluxChannel<RawPayload, PayloadError>) -> Self {
     Self {
       channel,
       name: name.as_ref().to_owned(),

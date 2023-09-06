@@ -86,7 +86,7 @@ impl LiquidJsonConfig {
     let ctx = Self::make_context(base, root, config, env, inherent)?;
 
     let mut map = HashMap::new();
-    for (k, v) in self.template.iter() {
+    for (k, v) in &self.template {
       map.insert(k.clone(), v.render(&ctx)?);
     }
     Ok(RuntimeConfig::from(map))
@@ -99,7 +99,7 @@ impl LiquidJsonConfig {
     });
 
     let mut map = HashMap::new();
-    for (k, v) in self.template.iter() {
+    for (k, v) in &self.template {
       map.insert(k.clone(), v.render(&ctx)?);
     }
     Ok(RuntimeConfig::from(map))
@@ -115,7 +115,7 @@ impl LiquidJsonConfig {
   }
 
   #[must_use]
-  pub fn new_template(template: HashMap<String, LiquidJsonValue>) -> Self {
+  pub const fn new_template(template: HashMap<String, LiquidJsonValue>) -> Self {
     Self {
       value: None,
       template,
@@ -125,7 +125,7 @@ impl LiquidJsonConfig {
 
   #[must_use]
   /// Retrieve the runtime configuration
-  pub fn value(&self) -> Option<&RuntimeConfig> {
+  pub const fn value(&self) -> Option<&RuntimeConfig> {
     self.value.as_ref()
   }
 
@@ -165,9 +165,8 @@ impl TryFrom<Value> for LiquidJsonConfig {
   type Error = Error;
 
   fn try_from(value: Value) -> Result<Self, Self::Error> {
-    let value = match value {
-      Value::Object(map) => map,
-      _ => return Err(Error::ConfigurationTemplate("expected object".to_owned())),
+    let Value::Object(value) = value else {
+      return Err(Error::ConfigurationTemplate("expected object".to_owned()));
     };
 
     let mut template = HashMap::new();

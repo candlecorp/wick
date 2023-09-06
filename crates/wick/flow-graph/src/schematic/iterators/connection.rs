@@ -86,7 +86,7 @@ impl<'graph, DATA> ConnectionRef<'graph, DATA>
 where
   DATA: Clone,
 {
-  pub(crate) fn new(schematic: &'graph Schematic<DATA>, index: ConnectionIndex) -> Self {
+  pub(crate) const fn new(schematic: &'graph Schematic<DATA>, index: ConnectionIndex) -> Self {
     Self { schematic, index }
   }
 
@@ -105,7 +105,7 @@ where
   }
 
   #[must_use]
-  pub fn index(&self) -> ConnectionIndex {
+  pub const fn index(&self) -> ConnectionIndex {
     self.index
   }
 }

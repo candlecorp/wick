@@ -3,8 +3,10 @@ use serde::{Deserialize, Serialize};
 use crate::{contents_equal, Field, OperationSignature, TypeDefinition};
 
 /// Signature for Collections.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq, derive_builder::Builder)]
+#[builder(default)]
 #[must_use]
+#[non_exhaustive]
 pub struct ComponentSignature {
   /// Name of the collection.
   pub name: Option<String>,
@@ -46,7 +48,25 @@ impl PartialEq for ComponentSignature {
 
 impl ComponentSignature {
   /// Create a new [ComponentSignature] with the passed name.
-  pub fn new<T: AsRef<str>>(name: T) -> Self {
+  pub fn new<T: Into<String>>(
+    name: T,
+    version: Option<String>,
+    operations: Vec<OperationSignature>,
+    types: Vec<TypeDefinition>,
+    config: Vec<Field>,
+  ) -> Self {
+    Self {
+      name: Some(name.into()),
+      metadata: ComponentMetadata::new(version),
+      operations,
+      types,
+      config,
+      ..Default::default()
+    }
+  }
+
+  /// Create a new [ComponentSignature] with the passed name.
+  pub fn new_named<T: AsRef<str>>(name: T) -> Self {
     Self {
       name: Some(name.as_ref().to_owned()),
       ..Default::default()
@@ -66,26 +86,30 @@ impl ComponentSignature {
   }
 
   /// Set the version of the [ComponentSignature].
-  pub fn version(mut self, version: impl AsRef<str>) -> Self {
+  pub fn set_version<T: AsRef<str>>(mut self, version: T) -> Self {
     self.metadata.version = Some(version.as_ref().to_owned());
     self
   }
 
   /// Set the format of the [ComponentSignature].
-  pub fn format(mut self, format: ComponentVersion) -> Self {
+  pub const fn format(mut self, format: ComponentVersion) -> Self {
     self.format = format;
     self
   }
 
   /// Set the features of the [ComponentSignature].
-  pub fn metadata(mut self, features: ComponentMetadata) -> Self {
-    self.metadata = features;
-    self
+  #[allow(clippy::missing_const_for_fn)]
+  pub fn metadata(self, features: ComponentMetadata) -> Self {
+    Self {
+      metadata: features,
+      ..self
+    }
   }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde_repr::Deserialize_repr, serde_repr::Serialize_repr)]
 #[must_use]
+#[non_exhaustive]
 #[repr(u32)]
 /// The umbrella version of the component.
 pub enum ComponentVersion {
@@ -112,6 +136,7 @@ impl From<ComponentVersion> for u32 {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[must_use]
+#[non_exhaustive]
 /// The Wick features this collection supports.
 pub struct ComponentMetadata {
   /// Version of the component.
@@ -120,15 +145,14 @@ pub struct ComponentMetadata {
 }
 
 impl ComponentMetadata {
-  pub fn new(version: Option<impl AsRef<str>>) -> Self {
-    Self {
-      version: version.map(|v| v.as_ref().to_owned()),
-    }
+  pub const fn new(version: Option<String>) -> Self {
+    Self { version }
   }
 }
 
 /// An entry from a well-known schema
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct WellKnownSchema {
   /// The capability the schema provides.
   pub capabilities: Vec<String>,

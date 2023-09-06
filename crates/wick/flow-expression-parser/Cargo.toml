@@ -6,6 +6,7 @@ edition = "2021"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
 description = "Parser for flow expressions in the Wick configuration manifest."
+readme = "README.md"
 
 
 [dependencies]

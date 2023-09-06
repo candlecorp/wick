@@ -3,11 +3,12 @@ use wick_interface_types::Type;
 
 #[derive(Error, Debug)]
 /// The error returned by the collection CLI.
+#[non_exhaustive]
 pub enum CliError {
   #[error(transparent)]
   #[cfg(any(feature = "grpc", feature = "mesh"))]
   /// An upstream error from [wick_rpc].
-  VinoError(#[from] wick_rpc::Error),
+  RpcError(#[from] wick_rpc::Error),
 
   #[error(transparent)]
   /// An error parsing an IP address.
@@ -60,7 +61,7 @@ pub enum CliError {
 }
 
 impl CliError {
-  pub(crate) fn encoding(port: impl AsRef<str>, data: impl AsRef<str>, ty: Type) -> Self {
+  pub(crate) fn encoding<T: AsRef<str>, D: AsRef<str>>(port: T, data: D, ty: Type) -> Self {
     Self::Encoding {
       data: data.as_ref().to_owned(),
       port: port.as_ref().to_owned(),

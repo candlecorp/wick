@@ -59,6 +59,7 @@ use crate::config::common;
 
 /// Normalized representation of a trigger definition.
 #[serde(rename_all = "kebab-case")]
+
 pub enum TriggerDefinition {
   /// A CLI trigger.
   Cli(CliConfig),
@@ -70,7 +71,7 @@ pub enum TriggerDefinition {
 
 impl TriggerDefinition {
   /// Returns the kind of trigger.
-  pub fn kind(&self) -> TriggerKind {
+  pub const fn kind(&self) -> TriggerKind {
     match self {
       TriggerDefinition::Cli(_) => TriggerKind::Cli,
       TriggerDefinition::Http(_) => TriggerKind::Http,
@@ -108,6 +109,7 @@ impl ExpandImports for TriggerDefinition {
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
 #[must_use]
 /// The kind of trigger.
+
 pub enum TriggerKind {
   /// A CLI trigger.
   Cli,
@@ -140,12 +142,12 @@ pub struct OperationInputConfig {
 
 impl OperationInputConfig {
   #[must_use]
-  pub fn name(&self) -> &String {
+  pub const fn name(&self) -> &String {
     &self.name
   }
 
   #[must_use]
-  pub fn value(&self) -> &Value {
+  pub const fn value(&self) -> &Value {
     &self.value
   }
 }

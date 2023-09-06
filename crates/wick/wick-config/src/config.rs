@@ -52,7 +52,7 @@ pub struct UninitializedConfiguration {
 impl UninitializedConfiguration {
   #[must_use]
   /// Create a new builder with the given manifest.
-  pub fn new(manifest: WickConfiguration) -> Self {
+  pub const fn new(manifest: WickConfiguration) -> Self {
     Self {
       manifest,
       root_config: None,
@@ -63,6 +63,7 @@ impl UninitializedConfiguration {
 
   /// Return the inner, uninitialized [WickConfiguration].
   #[must_use]
+  #[allow(clippy::missing_const_for_fn)]
   pub fn into_inner(self) -> WickConfiguration {
     self.manifest
   }
@@ -99,6 +100,7 @@ impl Lockdown for UninitializedConfiguration {
 #[derive(Debug, Clone, derive_asset_container::AssetManager, serde::Serialize)]
 #[asset(asset(AssetReference))]
 #[serde(untagged)]
+
 pub enum WickConfiguration {
   /// A [component_config::ComponentConfiguration] configuration.
   Component(ComponentConfiguration),
@@ -369,7 +371,7 @@ impl WickConfiguration {
   }
 
   /// Get the kind of the inner configuration.
-  pub fn kind(&self) -> ConfigurationKind {
+  pub const fn kind(&self) -> ConfigurationKind {
     match self {
       WickConfiguration::Component(_) => ConfigurationKind::Component,
       WickConfiguration::App(_) => ConfigurationKind::App,
@@ -426,6 +428,7 @@ impl WickConfiguration {
   }
 
   /// Unwrap the inner [ComponentConfiguration], returning an error if it is anything else.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn try_component_config(self) -> Result<ComponentConfiguration, Error> {
     match self {
       WickConfiguration::Component(v) => Ok(v),
@@ -437,6 +440,7 @@ impl WickConfiguration {
   }
 
   /// Unwrap the inner [AppConfiguration], returning an error if it is anything else.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn try_app_config(self) -> Result<AppConfiguration, Error> {
     match self {
       WickConfiguration::App(v) => Ok(v),
@@ -445,6 +449,7 @@ impl WickConfiguration {
   }
 
   /// Unwrap the inner [TestConfiguration], returning an error if it is anything else.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn try_test_config(self) -> Result<TestConfiguration, Error> {
     match self {
       WickConfiguration::Tests(v) => Ok(v),
@@ -456,6 +461,7 @@ impl WickConfiguration {
   }
 
   /// Unwrap the inner [TypesConfiguration], returning an error if it is anything else.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn try_types_config(self) -> Result<TypesConfiguration, Error> {
     match self {
       WickConfiguration::Types(v) => Ok(v),
@@ -467,6 +473,7 @@ impl WickConfiguration {
   }
 
   /// Unwrap the inner [LockdownConfiguration], returning an error if it is anything else.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn try_lockdown_config(self) -> Result<LockdownConfiguration, Error> {
     match self {
       WickConfiguration::Lockdown(v) => Ok(v),
@@ -547,6 +554,7 @@ impl Lockdown for WickConfiguration {
 #[derive(Debug, Clone, Copy)]
 /// The kind of configuration loaded.
 #[must_use]
+
 pub enum ConfigurationKind {
   /// An [app_config::AppConfiguration] configuration.
   App,

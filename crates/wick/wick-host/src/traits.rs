@@ -21,6 +21,7 @@ pub trait Host {
 }
 
 #[derive(Debug)]
+#[allow(clippy::exhaustive_enums)]
 pub enum WickHost {
   App(AppHost),
   Component(ComponentHost),

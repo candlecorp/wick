@@ -57,7 +57,7 @@ impl HandlerMap {
   }
 
   #[must_use]
-  pub fn inner(&self) -> &HashMap<String, NamespaceHandler> {
+  pub const fn inner(&self) -> &HashMap<String, NamespaceHandler> {
     &self.components
   }
 

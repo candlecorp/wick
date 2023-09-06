@@ -14,7 +14,7 @@ pub(crate) struct InternalComponent {
 
 impl Default for InternalComponent {
   fn default() -> Self {
-    let signature = ComponentSignature::new(Self::ID).version("0.0.0");
+    let signature = ComponentSignature::new_named(Self::ID).set_version("0.0.0");
 
     Self { signature }
   }

@@ -10,6 +10,7 @@ categories = ["wasm"]
 exclude = ["tests/*", ".github/*", ".gitignore"]
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 homepage = "https://candle.dev"
+readme = "README.md"
 
 [badges]
 maintenance = { status = "actively-developed" }

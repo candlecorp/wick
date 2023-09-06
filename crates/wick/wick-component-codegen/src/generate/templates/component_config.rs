@@ -21,7 +21,7 @@ pub(crate) fn component_config(config: &mut config::Config, fields: Option<Vec<F
     |fields| {
       let (_, config_def) = super::type_def(
         config,
-        &TypeDefinition::Struct(StructDefinition::new(config_name, fields)),
+        &TypeDefinition::Struct(StructDefinition::new(config_name, fields, None)),
         TypeOptions::Defaults,
       );
       config_def

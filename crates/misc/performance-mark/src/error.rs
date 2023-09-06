@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, Copy)]
 /// This crate's Error object.
+#[non_exhaustive]
 pub enum Error {
   /// `end()` called on a [crate::PerformancePeriod] before `start()`
   EndBeforeStart,

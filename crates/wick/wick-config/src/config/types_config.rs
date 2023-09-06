@@ -96,11 +96,12 @@ impl TypesConfiguration {
 
   /// Return the environment variables for this configuration.
   #[must_use]
-  pub fn env(&self) -> Option<&HashMap<String, String>> {
+  pub const fn env(&self) -> Option<&HashMap<String, String>> {
     None
   }
 
   /// Validate this configuration is good.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn validate(&self) -> Result<(), ManifestError> {
     /* placeholder */
     Ok(())

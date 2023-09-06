@@ -5,6 +5,7 @@ use crate::{is_false, Type};
 /// Signatures of enum type definitions.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
 #[must_use]
+#[non_exhaustive]
 pub struct UnionDefinition {
   /// The name of the enum.
   pub name: String,
@@ -21,12 +22,12 @@ pub struct UnionDefinition {
 
 impl UnionDefinition {
   /// Constructor for [UnionDefinition]
-  pub fn new<T: AsRef<str>>(name: T, types: Vec<Type>) -> Self {
+  pub fn new<T: Into<String>>(name: T, types: Vec<Type>, description: Option<String>) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       types,
       imported: false,
-      description: None,
+      description,
     }
   }
 }

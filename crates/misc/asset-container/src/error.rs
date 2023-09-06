@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 /// Errors that can occur when processing assets.
 #[derive(thiserror::Error, Clone, Debug)]
+#[non_exhaustive]
 pub enum Error {
   /// Asset not found at the specified path.
   #[error("File not found {0}")]

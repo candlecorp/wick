@@ -81,7 +81,7 @@ pub(crate) async fn handle(
     suite.add_configuration(config)?;
   }
 
-  let server_options = DefaultCliOptions { ..Default::default() };
+  let server_options = DefaultCliOptions::default();
 
   let manifest = merge_config(root_manifest, &opts.oci, Some(server_options));
 
@@ -100,7 +100,7 @@ pub(crate) async fn handle(
         .manifest(manifest)
         .span(span)
         .build()
-        .map_err(|e| wick_test::TestError::Factory(format!("could not build host: {}", e.to_string())))?;
+        .map_err(|e| wick_test::TestError::Factory(format!("could not build host: {}", e)))?;
       host
         .start_runtime(opts.seed.map(Seed::unsafe_new))
         .await

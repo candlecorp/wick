@@ -60,6 +60,7 @@ pub(crate) fn gen_packet(
   Ok(packet)
 }
 
+#[allow(clippy::missing_const_for_fn)]
 fn convert_flags(flag: Option<&PacketFlag>) -> u8 {
   let mut byte = 0;
   if let Some(flag) = flag {

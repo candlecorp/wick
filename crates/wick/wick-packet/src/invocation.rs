@@ -7,6 +7,7 @@ use crate::{Entity, InherentData, PacketSender, PacketStream};
 
 /// A complete invocation request.
 #[derive(Debug)]
+#[allow(clippy::exhaustive_structs)]
 #[must_use]
 pub struct Invocation {
   /// The entity that initiated the request.
@@ -136,13 +137,13 @@ impl Invocation {
 
   /// Get the seed associated with an invocation if it exists.
   #[must_use]
-  pub fn seed(&self) -> u64 {
+  pub const fn seed(&self) -> u64 {
     self.inherent.seed
   }
 
   /// Get the timestamp associated with an invocation if it exists.
   #[must_use]
-  pub fn timestamp(&self) -> u64 {
+  pub const fn timestamp(&self) -> u64 {
     self.inherent.timestamp
   }
 

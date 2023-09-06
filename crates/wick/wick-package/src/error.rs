@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 /// This crate's primary Error type.
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
   /// Tried to specify a directory instead of a configuration file.
   #[error(

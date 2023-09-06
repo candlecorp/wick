@@ -6,6 +6,7 @@ license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
 description = "Library for implementing or interacting with a wick runtime via gRPC"
 include = ["src/**/*", "LICENSE", "README.md"]
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]

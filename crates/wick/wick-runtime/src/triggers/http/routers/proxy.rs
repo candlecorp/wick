@@ -93,11 +93,7 @@ pub(crate) fn register_proxy_router(
       ))
     }
   };
-  let strip_path = if router_config.strip_path() {
-    Some(router_config.path().to_owned())
-  } else {
-    None
-  };
+  let strip_path = router_config.strip_path().then(|| router_config.path().to_owned());
   let router = ProxyRouter::new(url, strip_path);
   Ok(HttpRouter::Raw(RawRouterHandler {
     path: router_config.path().to_owned(),

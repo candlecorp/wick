@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use oci_distribution::secrets::RegistryAuth;
 
 #[derive(Clone, Debug, Copy, serde::Serialize)]
+#[non_exhaustive]
 pub enum OnExisting {
   Ignore,
   Overwrite,

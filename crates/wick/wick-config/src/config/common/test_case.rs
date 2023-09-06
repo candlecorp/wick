@@ -162,7 +162,7 @@ impl PacketData {
 
   /// Get the flags for the packet.
   #[must_use]
-  pub fn flag(&self) -> MaybePacketFlag {
+  pub const fn flag(&self) -> MaybePacketFlag {
     MaybePacketFlag(match self {
       PacketData::SuccessPacket(data) => data.flag,
       PacketData::ErrorPacket(data) => data.flag,
@@ -171,7 +171,7 @@ impl PacketData {
 
   /// Get the data for the packet.
   #[must_use]
-  pub fn data(&self) -> Option<&LiquidJsonValue> {
+  pub const fn data(&self) -> Option<&LiquidJsonValue> {
     match self {
       PacketData::SuccessPacket(data) => data.data.as_ref(),
       PacketData::ErrorPacket(_) => None,
@@ -242,7 +242,7 @@ impl TestPacketData {
 
   /// Get the data for the packet.
   #[must_use]
-  pub fn data(&self) -> Option<&LiquidJsonValue> {
+  pub const fn data(&self) -> Option<&LiquidJsonValue> {
     match self {
       Self::SuccessPacket(data) => data.data.as_ref(),
       Self::ErrorPacket(_) => None,
@@ -266,19 +266,19 @@ impl std::ops::Deref for MaybePacketFlag {
 impl MaybePacketFlag {
   /// Check if the flag is set to `Done`.
   #[must_use]
-  pub fn is_done(&self) -> bool {
+  pub const fn is_done(&self) -> bool {
     matches!(self.0, Some(PacketFlag::Done))
   }
 
   /// Check if the flag is set to `Open`.
   #[must_use]
-  pub fn is_open(&self) -> bool {
+  pub const fn is_open(&self) -> bool {
     matches!(self.0, Some(PacketFlag::Open))
   }
 
   /// Check if the flag is set to `Close`.
   #[must_use]
-  pub fn is_close(&self) -> bool {
+  pub const fn is_close(&self) -> bool {
     matches!(self.0, Some(PacketFlag::Close))
   }
 }

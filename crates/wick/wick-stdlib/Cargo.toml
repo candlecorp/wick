@@ -6,6 +6,7 @@ edition = "2021"
 license = "Elastic-2.0"
 repository = "https://github.com/candlecorp/wick"
 description = "The default standard library for the Wick project."
+readme = "README.md"
 
 [features]
 

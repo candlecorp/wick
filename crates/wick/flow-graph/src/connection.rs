@@ -14,27 +14,27 @@ impl<DATA> Connection<DATA>
 where
   DATA: Clone,
 {
-  pub(crate) fn new(from: PortReference, to: PortReference, index: ConnectionIndex, data: DATA) -> Self {
+  pub(crate) const fn new(from: PortReference, to: PortReference, index: ConnectionIndex, data: DATA) -> Self {
     Self { from, to, index, data }
   }
 
   #[must_use]
-  pub fn index(&self) -> &ConnectionIndex {
+  pub const fn index(&self) -> &ConnectionIndex {
     &self.index
   }
 
   #[must_use]
-  pub fn from(&self) -> &PortReference {
+  pub const fn from(&self) -> &PortReference {
     &self.from
   }
 
   #[must_use]
-  pub fn to(&self) -> &PortReference {
+  pub const fn to(&self) -> &PortReference {
     &self.to
   }
 
   #[must_use]
-  pub fn data(&self) -> &DATA {
+  pub const fn data(&self) -> &DATA {
     &self.data
   }
 }
