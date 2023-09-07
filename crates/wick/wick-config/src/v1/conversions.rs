@@ -24,13 +24,12 @@ use crate::config::{
 // use flow_expression_parser::parse_id;
 use crate::config::{
   AppConfiguration,
+  Binding,
   CliConfig,
   HttpRouterConfig,
   HttpTriggerConfig,
   ProxyRouterConfig,
   RawRouterConfig,
-  ResourceBinding,
-  ResourceDefinition,
   RestRouterConfig,
   StaticRouterConfig,
   TcpPort,
@@ -125,7 +124,7 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentImplementation {
   }
 }
 
-impl TryFrom<v1::InterfaceBinding> for config::BoundInterface {
+impl TryFrom<v1::InterfaceBinding> for Binding<config::InterfaceDefinition> {
   type Error = ManifestError;
 
   fn try_from(value: v1::InterfaceBinding) -> std::result::Result<Self, Self::Error> {
@@ -204,10 +203,10 @@ impl TryFrom<config::ExposedVolume> for v1::ExposedVolume {
   }
 }
 
-impl TryFrom<config::BoundInterface> for v1::InterfaceBinding {
+impl TryFrom<Binding<config::InterfaceDefinition>> for v1::InterfaceBinding {
   type Error = ManifestError;
 
-  fn try_from(value: config::BoundInterface) -> std::result::Result<Self, Self::Error> {
+  fn try_from(value: Binding<config::InterfaceDefinition>) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       name: value.id,
       interface: value.kind.try_into()?,
@@ -602,14 +601,14 @@ impl TryFrom<ComponentOperationExpression> for v1::ComponentOperationExpression 
   }
 }
 
-impl TryFrom<ResourceDefinition> for v1::ResourceDefinition {
+impl TryFrom<config::ResourceDefinition> for v1::ResourceDefinition {
   type Error = ManifestError;
-  fn try_from(value: ResourceDefinition) -> Result<Self> {
+  fn try_from(value: config::ResourceDefinition) -> Result<Self> {
     Ok(match value {
-      ResourceDefinition::TcpPort(v) => v1::ResourceDefinition::TcpPort(v.try_into()?),
-      ResourceDefinition::UdpPort(v) => v1::ResourceDefinition::UdpPort(v.try_into()?),
-      ResourceDefinition::Url(v) => v1::ResourceDefinition::Url(v.try_into()?),
-      ResourceDefinition::Volume(v) => v1::ResourceDefinition::Volume(v.try_into()?),
+      config::ResourceDefinition::TcpPort(v) => v1::ResourceDefinition::TcpPort(v.try_into()?),
+      config::ResourceDefinition::UdpPort(v) => v1::ResourceDefinition::UdpPort(v.try_into()?),
+      config::ResourceDefinition::Url(v) => v1::ResourceDefinition::Url(v.try_into()?),
+      config::ResourceDefinition::Volume(v) => v1::ResourceDefinition::Volume(v.try_into()?),
     })
   }
 }
@@ -725,9 +724,9 @@ impl TryFrom<OperationDefinition> for crate::v1::OperationDefinition {
   }
 }
 
-impl TryFrom<config::ImportBinding> for v1::ImportBinding {
+impl TryFrom<Binding<config::ImportDefinition>> for v1::ImportBinding {
   type Error = ManifestError;
-  fn try_from(def: config::ImportBinding) -> Result<Self> {
+  fn try_from(def: Binding<config::ImportDefinition>) -> Result<Self> {
     Ok(Self {
       name: def.id,
       component: def.kind.try_into()?,
@@ -757,9 +756,9 @@ impl TryFrom<config::ImportDefinition> for v1::ImportDefinition {
   }
 }
 
-impl TryFrom<ResourceBinding> for v1::ResourceBinding {
+impl TryFrom<Binding<config::ResourceDefinition>> for v1::ResourceBinding {
   type Error = ManifestError;
-  fn try_from(value: ResourceBinding) -> Result<Self> {
+  fn try_from(value: Binding<config::ResourceDefinition>) -> Result<Self> {
     Ok(Self {
       name: value.id,
       resource: value.kind.try_into()?,
@@ -998,7 +997,7 @@ impl TryFrom<config::HttpConfig> for crate::v1::HttpConfig {
   }
 }
 
-impl TryFrom<v1::ResourceDefinition> for ResourceDefinition {
+impl TryFrom<v1::ResourceDefinition> for config::ResourceDefinition {
   type Error = ManifestError;
   fn try_from(value: v1::ResourceDefinition) -> Result<Self> {
     Ok(match value {
@@ -1097,7 +1096,7 @@ impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
   }
 }
 
-impl TryFrom<v1::ImportBinding> for config::ImportBinding {
+impl TryFrom<v1::ImportBinding> for Binding<config::ImportDefinition> {
   type Error = ManifestError;
   fn try_from(value: v1::ImportBinding) -> Result<Self> {
     Ok(Self {
@@ -1140,7 +1139,7 @@ impl TryFrom<v1::TypesComponent> for config::components::TypesComponent {
   }
 }
 
-impl TryFrom<v1::ResourceBinding> for ResourceBinding {
+impl TryFrom<v1::ResourceBinding> for Binding<config::ResourceDefinition> {
   type Error = ManifestError;
   fn try_from(value: v1::ResourceBinding) -> Result<Self> {
     Ok(Self {

@@ -132,8 +132,8 @@ impl ScopeInit {
     mut components: HandlerMap,
   ) -> Result<HandlerMap, ScopeError> {
     for binding in self.manifest.import() {
-      let provided = generate_provides_handlers(binding.provide(), &components)?;
-      let component_init = self.child_init(binding.config().cloned(), Some(provided));
+      let provided = generate_provides_handlers(binding.kind().provide(), &components)?;
+      let component_init = self.child_init(binding.kind().config().cloned(), Some(provided));
       if let Some(component) = instantiate_import(binding, component_init, self.manifest.resolver()).await? {
         if let Some(extends) = extends {
           if extends.iter().any(|n| n == component.namespace()) {

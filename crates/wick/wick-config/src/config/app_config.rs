@@ -14,7 +14,7 @@ use super::common::component_definition::ComponentDefinition;
 use super::common::package_definition::PackageConfig;
 use super::components::TypesComponent;
 use super::import_cache::{setup_cache, ImportCache};
-use super::{ImportBinding, ImportDefinition};
+use super::{Binding, ImportDefinition};
 use crate::config::common::resources::*;
 use crate::config::template_config::Renderable;
 use crate::error::{ManifestError, ReferenceError};
@@ -67,12 +67,12 @@ pub struct AppConfiguration {
   #[builder(default)]
   /// The components that make up the application.
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) import: Vec<ImportBinding>,
+  pub(crate) import: Vec<Binding<ImportDefinition>>,
 
   #[builder(default)]
   /// Any resources this application defines.
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) resources: Vec<ResourceBinding>,
+  pub(crate) resources: Vec<Binding<ResourceDefinition>>,
 
   #[builder(default)]
   /// The triggers that initialize upon a `run` and make up the application.
@@ -183,12 +183,7 @@ impl AppConfiguration {
 
   /// Add a resource to the application configuration.
   pub fn add_resource<T: Into<String>>(&mut self, name: T, resource: ResourceDefinition) {
-    self.resources.push(ResourceBinding::new(name, resource));
-  }
-
-  /// Add a component to the application configuration.
-  pub fn add_import<T: Into<String>>(&mut self, name: T, import: ImportDefinition) {
-    self.import.push(ImportBinding::new(name, import));
+    self.resources.push(Binding::new(name, resource));
   }
 
   /// Generate V1 configuration yaml from this configuration.
@@ -371,7 +366,7 @@ mod test {
       .build()?;
     let mut config = AppConfigurationBuilder::default()
       .name("test")
-      .resources(vec![ResourceBinding::new("PORT", TcpPort::new("0.0.0.0", 90))])
+      .resources(vec![Binding::new("PORT", TcpPort::new("0.0.0.0", 90))])
       .triggers(vec![TriggerDefinition::Http(trigger)])
       .build()?;
 

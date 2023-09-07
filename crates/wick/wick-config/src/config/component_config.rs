@@ -14,9 +14,8 @@ use wick_packet::{Entity, RuntimeConfig};
 
 use super::common::package_definition::PackageConfig;
 use super::import_cache::{setup_cache, ImportCache};
-use super::{ImportBinding, TestConfiguration};
+use super::{Binding, ImportDefinition, InterfaceDefinition, ResourceDefinition, TestConfiguration};
 use crate::config::template_config::Renderable;
-use crate::config::{BoundInterface, ResourceBinding};
 use crate::lockdown::{validate_resource, FailureKind, Lockdown, LockdownError};
 use crate::utils::{make_resolver, RwOption};
 use crate::{config, Error, Resolver, Result};
@@ -69,18 +68,18 @@ pub struct ComponentConfiguration {
   #[builder(default)]
   /// Any imports this component makes available to its implementation.
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) import: Vec<ImportBinding>,
+  pub(crate) import: Vec<Binding<ImportDefinition>>,
 
   #[asset(skip)]
   #[builder(default)]
   /// Any components or resources that must be provided to this component upon instantiation.
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) requires: Vec<BoundInterface>,
+  pub(crate) requires: Vec<Binding<InterfaceDefinition>>,
 
   #[builder(default)]
   /// Any resources this component defines.
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  pub(crate) resources: Vec<ResourceBinding>,
+  pub(crate) resources: Vec<Binding<ResourceDefinition>>,
 
   #[asset(skip)]
   #[builder(default)]
@@ -358,7 +357,7 @@ impl ComponentConfigurationBuilder {
   }
 
   /// Add an imported component to the builder.
-  pub fn add_import(&mut self, import: ImportBinding) {
+  pub fn add_import(&mut self, import: Binding<ImportDefinition>) {
     if let Some(imports) = &mut self.import {
       imports.push(import);
     } else {
@@ -367,7 +366,7 @@ impl ComponentConfigurationBuilder {
   }
 
   /// Add an imported resource to the builder.
-  pub fn add_resource(&mut self, resource: ResourceBinding) {
+  pub fn add_resource(&mut self, resource: Binding<ResourceDefinition>) {
     if let Some(r) = &mut self.resources {
       r.push(resource);
     } else {

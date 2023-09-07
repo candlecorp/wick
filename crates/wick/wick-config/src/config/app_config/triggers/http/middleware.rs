@@ -5,7 +5,7 @@ use wick_packet::RuntimeConfig;
 
 use super::WickRouter;
 use crate::config::template_config::Renderable;
-use crate::config::{self, ComponentOperationExpression, ImportBinding};
+use crate::config::{self, Binding, ComponentOperationExpression, ImportDefinition};
 use crate::error::ManifestError;
 
 #[derive(
@@ -45,7 +45,7 @@ pub(super) fn expand_for_middleware_components(
   trigger_index: usize,
   router_index: usize,
   router: &mut impl WickRouter,
-  bindings: &mut Vec<ImportBinding>,
+  bindings: &mut Vec<Binding<ImportDefinition>>,
 ) -> Result<(), ManifestError> {
   if let Some(middleware) = router.middleware_mut() {
     for (i, operation) in middleware.request_mut().iter_mut().enumerate() {
