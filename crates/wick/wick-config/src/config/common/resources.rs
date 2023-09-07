@@ -15,43 +15,6 @@ crate::impl_from_for!(ResourceDefinition, UdpPort);
 crate::impl_from_for!(ResourceDefinition, Volume);
 crate::impl_from_for!(ResourceDefinition, Url, UrlResource);
 
-#[derive(
-  Debug, Clone, derive_builder::Builder, derive_asset_container::AssetManager, property::Property, serde::Serialize,
-)]
-#[asset(asset(AssetReference))]
-#[builder(derive(Debug), setter(into))]
-#[property(get(public), set(private), mut(disable))]
-/// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
-#[must_use]
-pub struct ResourceBinding {
-  #[asset(skip)]
-  /// The id to bind the resource to.
-  pub(crate) id: String,
-  /// The bound resource.
-  pub(crate) kind: ResourceDefinition,
-}
-
-impl Renderable for ResourceBinding {
-  fn render_config(
-    &mut self,
-    source: Option<&Path>,
-    root_config: Option<&RuntimeConfig>,
-    env: Option<&HashMap<String, String>>,
-  ) -> Result<(), ManifestError> {
-    self.kind.render_config(source, root_config, env)
-  }
-}
-
-impl ResourceBinding {
-  /// Create a new [ResourceBinding] with specified name and [ResourceDefinition].
-  pub fn new<T: Into<String>>(name: T, kind: impl Into<ResourceDefinition>) -> Self {
-    Self {
-      id: name.into(),
-      kind: kind.into(),
-    }
-  }
-}
-
 /// A resource type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ResourceKind {

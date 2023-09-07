@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Args;
 use structured_output::StructuredOutput;
 use wick_config::config::components::{HttpClientComponentConfigBuilder, HttpClientOperationDefinitionBuilder};
-use wick_config::config::{self, Codec, ComponentConfiguration, ResourceBinding, ResourceDefinition, UrlResource};
+use wick_config::config::{self, Binding, Codec, ComponentConfiguration, ResourceDefinition, UrlResource};
 use wick_interface_types::{Field, Type};
 
 use crate::io::File;
@@ -34,7 +34,7 @@ pub(crate) async fn handle(
     let mut config = ComponentConfiguration::default();
     config.set_name(name.clone());
 
-    config.resources_mut().push(ResourceBinding::new(
+    config.resources_mut().push(Binding::new(
       resource_name,
       ResourceDefinition::Url(UrlResource::new("http://localhost:8080".parse().unwrap())),
     ));

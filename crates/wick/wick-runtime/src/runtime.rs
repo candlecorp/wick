@@ -216,7 +216,7 @@ impl RuntimeBuilder {
     self
   }
 
-  pub fn add_import(&mut self, component: config::ImportBinding) -> &mut Self {
+  pub fn add_import(&mut self, component: config::Binding<config::ImportDefinition>) -> &mut Self {
     let val = self.manifest.take().unwrap_or_default();
     let mut val = ComponentConfigurationBuilder::from_base(val);
     val.add_import(component);
@@ -224,7 +224,7 @@ impl RuntimeBuilder {
     self
   }
 
-  pub fn add_resource(&mut self, resource: config::ResourceBinding) -> &mut Self {
+  pub fn add_resource(&mut self, resource: config::Binding<config::ResourceDefinition>) -> &mut Self {
     let val = self.manifest.take().unwrap_or_default();
     let mut val = ComponentConfigurationBuilder::from_base(val);
     val.add_resource(resource);

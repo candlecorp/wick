@@ -8,8 +8,8 @@ use serde::Deserializer;
 use wick_packet::{Entity, RuntimeConfig};
 
 use super::template_config::Renderable;
-use super::ImportBinding;
-use crate::config::{self, ExecutionSettings, LiquidJsonConfig};
+use super::Binding;
+use crate::config::{self, ExecutionSettings, ImportDefinition, LiquidJsonConfig};
 use crate::error::ManifestError;
 
 /// A reference to an operation.
@@ -70,7 +70,7 @@ impl ComponentOperationExpression {
     }
   }
 
-  pub fn maybe_import(&mut self, import_name: &str, bindings: &mut Vec<ImportBinding>) {
+  pub fn maybe_import(&mut self, import_name: &str, bindings: &mut Vec<Binding<ImportDefinition>>) {
     if self.component.is_reference() {
       return;
     }
@@ -81,10 +81,7 @@ impl ComponentOperationExpression {
         &mut self.component,
         ComponentDefinition::Reference(config::components::ComponentReference::new(import_name)),
       );
-      bindings.push(ImportBinding::new(
-        import_name,
-        config::ImportDefinition::Component(def),
-      ));
+      bindings.push(Binding::new(import_name, config::ImportDefinition::Component(def)));
     });
   }
 

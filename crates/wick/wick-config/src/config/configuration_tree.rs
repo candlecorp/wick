@@ -1,7 +1,8 @@
 #![allow(missing_docs)]
 use wick_asset_reference::FetchOptions;
 
-use crate::config::{ComponentDefinition, ImportBinding};
+use super::ImportDefinition;
+use crate::config::{Binding, ComponentDefinition};
 use crate::error::ManifestError;
 use crate::WickConfiguration;
 
@@ -110,7 +111,7 @@ pub fn flatten(node: ConfigurationTreeNode, prefix: &str) -> Vec<ConfigOrDefinit
 }
 
 async fn fetch_imports(
-  imports: Vec<ImportBinding>,
+  imports: Vec<Binding<ImportDefinition>>,
   options: FetchOptions,
 ) -> Result<Vec<ConfigOrDefinition>, ManifestError> {
   let mut children: Vec<ConfigOrDefinition> = Vec::new();
@@ -146,7 +147,7 @@ mod test {
   use anyhow::Result;
 
   use super::*;
-  use crate::config::{components, AppConfigurationBuilder, ComponentDefinition, ImportBinding, ImportDefinition};
+  use crate::config::{components, AppConfigurationBuilder, Binding, ComponentDefinition, ImportDefinition};
 
   #[test_logger::test(tokio::test)]
   async fn test_tree_walker() -> Result<()> {
@@ -155,7 +156,7 @@ mod test {
     config
       .name("app")
       .options(FetchOptions::default())
-      .import(vec![ImportBinding::new(
+      .import(vec![Binding::new(
         "SUB_COMPONENT",
         ImportDefinition::Component(ComponentDefinition::Manifest(
           components::ManifestComponentBuilder::default()

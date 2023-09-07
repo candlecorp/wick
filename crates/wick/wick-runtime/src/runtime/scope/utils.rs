@@ -44,7 +44,7 @@ pub(super) fn assert_constraints(constraints: &[RuntimeConstraint], components: 
 }
 
 pub(crate) async fn instantiate_import(
-  binding: &config::ImportBinding,
+  binding: &config::Binding<config::ImportDefinition>,
   opts: ChildInit,
   resolver: Box<Resolver>,
 ) -> Result<Option<NamespaceHandler>, ScopeError> {

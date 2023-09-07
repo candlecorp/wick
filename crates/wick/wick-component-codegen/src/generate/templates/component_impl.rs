@@ -1,6 +1,6 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
-use wick_config::config::BoundInterface;
+use wick_config::config::{Binding, InterfaceDefinition};
 use wick_interface_types::OperationSignature;
 
 use crate::generate::dependency::Dependency;
@@ -11,7 +11,7 @@ pub(crate) fn gen_component_impls<'a>(
   gen_config: &mut config::Config,
   component_name: &Ident,
   ops: impl Iterator<Item = &'a OperationSignature>,
-  required: Vec<BoundInterface>,
+  required: Vec<Binding<InterfaceDefinition>>,
 ) -> TokenStream {
   let provided = f::gen_if(
     !required.is_empty(),
@@ -19,6 +19,7 @@ pub(crate) fn gen_component_impls<'a>(
     super::provided_struct(gen_config, &required),
   );
   let imported_components = super::imported_components(gen_config, required);
+  // let imported_components = super::imported_components(gen_config, required);
   let register_operations = register_operations(gen_config, component_name, ops);
   gen_config.add_dep(Dependency::WickPacket);
   gen_config.add_dep(Dependency::WasmRs);
