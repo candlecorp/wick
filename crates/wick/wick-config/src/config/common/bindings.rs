@@ -5,23 +5,26 @@ use std::path::Path;
 
 use asset_container::AssetManager;
 use wick_asset_reference::AssetReference;
-use wick_interface_types::OperationSignatures;
 use wick_packet::RuntimeConfig;
 
 use super::template_config::Renderable;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 /// A binding between an identifier and a target.
-pub struct Binding<T> {
+pub struct Binding<T>
+where
+  T: serde::Serialize,
+{
   /// The namespace to reference the collection's components on.
   pub(crate) id: String,
   /// The kind/type of the collection.
+  pub(crate) kind: T,
   pub(crate) kind: T,
 }
 
 impl<T> Renderable for Binding<T>
 where
-  T: Renderable,
+  T: serde::Serialize + Renderable,
 {
   fn render_config(
     &mut self,
@@ -35,7 +38,7 @@ where
 
 impl<T> AssetManager for Binding<T>
 where
-  T: AssetManager<Asset = AssetReference>,
+  T: serde::Serialize + AssetManager<Asset = AssetReference>,
 {
   type Asset = AssetReference;
 
@@ -47,8 +50,15 @@ where
     self.kind.set_baseurl(baseurl);
   }
 }
+  fn set_baseurl(&self, baseurl: &Path) {
+    self.kind.set_baseurl(baseurl);
+  }
+}
 
-impl<T> Binding<T> {
+impl<T> Binding<T>
+where
+  T: serde::Serialize,
+{
   /// Create a new [Binding<ImportDefinition>] with specified name and [ImportDefinition].
   pub fn new<K: Into<String>, INTO: Into<T>>(name: K, kind: INTO) -> Self {
     Self {
@@ -61,20 +71,15 @@ impl<T> Binding<T> {
   #[must_use]
   pub fn id(&self) -> &str {
     &self.id
+  /// Get the ID for the binding.
+  #[must_use]
+  pub fn id(&self) -> &str {
+    &self.id
   }
 
   /// Get the kind for the binding.
   #[must_use]
   pub const fn kind(&self) -> &T {
     &self.kind
-  }
-}
-
-impl<T> OperationSignatures for Binding<T>
-where
-  T: OperationSignatures,
-{
-  fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
-    self.kind.operation_signatures()
   }
 }

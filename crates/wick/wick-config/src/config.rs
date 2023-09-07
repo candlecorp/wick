@@ -417,7 +417,21 @@ impl WickConfiguration {
     }
   }
 
+  /// Get the imports for the configuration, if any
+  #[must_use]
+  pub fn imports(&self) -> &[Binding<ImportDefinition>] {
+    match self {
+      WickConfiguration::Component(c) => c.import(),
+      WickConfiguration::App(c) => c.import(),
+      WickConfiguration::Types(_) => &[],
+      WickConfiguration::Tests(_) => &[],
+      WickConfiguration::Lockdown(_) => &[],
+    }
+  }
+
   /// Get the resources for the configuration, if any
+  #[must_use]
+  pub fn resources(&self) -> &[Binding<ResourceDefinition>] {
   #[must_use]
   pub fn resources(&self) -> &[Binding<ResourceDefinition>] {
     match self {

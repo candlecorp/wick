@@ -1,7 +1,7 @@
 use itertools::Itertools;
-use proc_macro2::{Ident, Span, TokenStream};
-use quote::{quote, ToTokens};
-use wick_config::config::Binding;
+use proc_macro2::TokenStream;
+use quote::quote;
+use wick_config::config::{Binding, InterfaceDefinition};
 use wick_interface_types::{Field, OperationSignature, OperationSignatures};
 
 use crate::generate::dependency::Dependency;
@@ -11,31 +11,7 @@ use crate::generate::templates::op_config;
 use crate::generate::Direction;
 use crate::*;
 
-struct ComponentCodegen {
-  struct_def: TokenStream,
-  struct_impl: TokenStream,
-  inputs: Vec<Option<TokenStream>>,
-  outputs: Vec<Option<TokenStream>>,
-}
-
-impl ToTokens for ComponentCodegen {
-  fn to_tokens(&self, tokens: &mut TokenStream) {
-    for opt in &self.inputs {
-      tokens.extend(opt.clone());
-    }
-    for opt in &self.outputs {
-      tokens.extend(opt.clone());
-    }
-    tokens.extend(self.struct_def.clone());
-    tokens.extend(self.struct_impl.clone());
-  }
-}
-
-pub(crate) fn imported_components<T: OperationSignatures>(
-  name: &str,
-  config: &mut Config,
-  required: &[Binding<T>],
-) -> TokenStream {
+pub(crate) fn imported_components(config: &mut Config, required: Vec<Binding<InterfaceDefinition>>) -> TokenStream {
   let components = required
     .iter()
     .map(|v| {

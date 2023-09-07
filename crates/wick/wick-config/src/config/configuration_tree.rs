@@ -3,7 +3,7 @@
 use wick_asset_reference::FetchOptions;
 use wick_packet::RuntimeConfig;
 
-use super::{ImportDefinition, UninitializedConfiguration};
+use super::ImportDefinition;
 use crate::config::{Binding, ComponentDefinition};
 use crate::error::ManifestError;
 use crate::{Imports, WickConfiguration};
@@ -119,7 +119,7 @@ pub fn flatten<T>(node: ConfigurationTreeNode<T>, prefix: &str) -> Vec<ConfigOrD
   flattened
 }
 
-async fn fetch_imports<H, T>(
+async fn fetch_imports(
   imports: Vec<Binding<ImportDefinition>>,
   options: FetchOptions,
   processor: &H,
@@ -163,6 +163,7 @@ mod test {
 
   use super::*;
   use crate::config::{components, AppConfigurationBuilder, Binding, ComponentDefinition, ImportDefinition};
+  use crate::config::{components, AppConfigurationBuilder, Binding, ComponentDefinition, ImportDefinition};
 
   #[test_logger::test(tokio::test)]
   async fn test_tree_walker() -> Result<()> {
@@ -171,6 +172,7 @@ mod test {
     config
       .name("app")
       .options(FetchOptions::default())
+      .import(vec![Binding::new(
       .import(vec![Binding::new(
         "SUB_COMPONENT",
         ImportDefinition::Component(ComponentDefinition::Manifest(

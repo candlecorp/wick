@@ -15,7 +15,15 @@ use uuid::Uuid;
 use wick_component_wasm::component::{ComponentSetupBuilder, WasmComponent};
 use wick_component_wasm::error::LinkError;
 use wick_config::config::components::ManifestComponent;
-use wick_config::config::{Metadata, Permissions, PermissionsBuilder, WasmComponentImplementation};
+use wick_config::config::{
+  Binding,
+  InterfaceDefinition,
+  Metadata,
+  Permissions,
+  PermissionsBuilder,
+  UninitializedConfiguration,
+  WasmComponentImplementation,
+};
 use wick_config::{AssetReference, FetchOptions, Resolver, WickConfiguration};
 use wick_packet::validation::expect_configuration_matches;
 use wick_packet::{Entity, Invocation, RuntimeConfig};
@@ -222,15 +230,20 @@ pub(crate) async fn init_impl(
       )
       .await
     }
-    config::ComponentImplementation::WebSocketClient(c) => {
-      init_hlc_component(
-        id,
-        opts.root_config.clone(),
-        metadata.cloned(),
-        wick_config::config::HighLevelComponent::WebSocketClient(c.clone()),
-        manifest.resolver(),
-      )
-      .await
+  }
+}
+
+pub(crate) fn generate_provides_entities(
+  requires: &[Binding<InterfaceDefinition>],
+  provides: &HashMap<String, String>,
+) -> Result<HashMap<String, String>> {
+  let mut provide = HashMap::new();
+  for req in requires {
+    if let Some(provided) = provides.get(req.id()) {
+      provide.insert(req.id().to_owned(), Entity::component(provided).url());
+      // TODO: validate interfaces against what was provided.
+    } else {
+      return Err(ComponentError::UnsatisfiedRequirement(req.id().to_owned()));
     }
   }
 }

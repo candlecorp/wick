@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
-use wick_config::config::Binding;
+use wick_config::config::{Binding, InterfaceDefinition};
 
 use crate::generate::ids::*;
 
@@ -11,9 +11,10 @@ pub(crate) fn imported_component_container<T>(name: &str, required: &[Binding<T>
   let struct_id = id(&pascal(name));
   let trait_id = id(&format!("{}Context", pascal(name)));
 
+pub(crate) fn provided_struct(_config: &Config, required: &[Binding<InterfaceDefinition>]) -> TokenStream {
   let required_names = required
     .iter()
-    .map(|r: &Binding<T>| {
+    .map(|r: &Binding<InterfaceDefinition>| {
       let name = id(&snake(r.id()));
       let orig_name = r.id();
       let response_name = id(&component_id(r));

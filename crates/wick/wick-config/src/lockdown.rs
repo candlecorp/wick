@@ -111,7 +111,13 @@ mod test {
   use super::*;
   use crate::audit::AuditedUrl;
   use crate::config::{
+    components,
+    AppConfigurationBuilder,
+    Binding,
     ComponentConfiguration,
+    ComponentDefinition,
+    ConfigurationTreeNode,
+    ImportDefinition,
     LockdownConfigurationBuilder,
     ResourceRestriction,
     UrlRestriction,
@@ -228,6 +234,25 @@ mod test {
 
     validate_resource("test_component", &file_url, &lockdown)?;
 
+    Ok(())
+  }
+
+  #[test_logger::test(tokio::test)]
+  async fn test_tree_walker() -> Result<()> {
+    let mut config = AppConfigurationBuilder::default();
+
+    config.name("app").import(vec![Binding::new(
+      "SUB_COMPONENT",
+      ImportDefinition::Component(ComponentDefinition::Manifest(
+        components::ManifestComponentBuilder::default()
+          .reference("tests/manifests/v1/component-resources.yaml")
+          .build()?,
+      )),
+    )]);
+    let config = config.build()?;
+    let mut tree = ConfigurationTreeNode::new("ROOT".to_owned(), WickConfiguration::App(config));
+    tree.fetch_children(Default::default()).await?;
+    assert_eq!(tree.children.len(), 1);
     Ok(())
   }
 

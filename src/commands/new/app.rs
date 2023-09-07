@@ -6,9 +6,11 @@ use wick_config::config::{
   self,
   AppConfiguration,
   Binding,
+  Binding,
   ComponentDefinition,
   ComponentOperationExpressionBuilder,
   ImportDefinition,
+  ResourceBindingBuilder,
   ScheduleConfigBuilder,
   TcpPort,
 };
@@ -55,12 +57,15 @@ pub(crate) async fn handle(
         TriggerType::Time => {
           let comp_name = "COMPONENT";
           config.import_mut().push(Binding::new(
+          config.import_mut().push(Binding::new(
             comp_name,
+            config::ImportDefinition::component(config::ComponentDefinition::Manifest(
             config::ImportDefinition::component(config::ComponentDefinition::Manifest(
               ManifestComponentBuilder::default()
                 .reference("path/to/component.wick")
                 .build()
                 .unwrap(),
+            )),
             )),
           ));
 
@@ -98,12 +103,15 @@ pub(crate) async fn handle(
         TriggerType::Cli => {
           let comp_name = "MAIN_COMPONENT";
           config.import_mut().push(Binding::new(
+          config.import_mut().push(Binding::new(
             comp_name,
+            ImportDefinition::component(config::ComponentDefinition::Manifest(
             ImportDefinition::component(config::ComponentDefinition::Manifest(
               ManifestComponentBuilder::default()
                 .reference("path/to/component.wick")
                 .build()
                 .unwrap(),
+            )),
             )),
           ));
 
