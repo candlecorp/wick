@@ -13,6 +13,7 @@ use crate::config::{
   UrlResource,
   Volume,
 };
+use crate::WickConfiguration;
 
 /// An audit report for a component or application.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -30,7 +31,7 @@ pub struct Audit {
 
 impl Audit {
   /// Audit a configuration tree.
-  pub fn new(tree: &ConfigurationTreeNode) -> Self {
+  pub fn new(tree: &ConfigurationTreeNode<WickConfiguration>) -> Self {
     Self {
       name: tree.name.clone(),
       resources: tree
@@ -44,11 +45,11 @@ impl Audit {
   }
 
   /// Audit a flattened list of configuration elements.
-  pub fn new_flattened(elements: &[ConfigOrDefinition]) -> Vec<Audit> {
+  pub fn new_flattened(elements: &[ConfigOrDefinition<WickConfiguration>]) -> Vec<Audit> {
     elements.iter().map(Self::config_or_def).collect::<Vec<_>>()
   }
 
-  pub(crate) fn config_or_def(el: &ConfigOrDefinition) -> Self {
+  pub(crate) fn config_or_def(el: &ConfigOrDefinition<WickConfiguration>) -> Self {
     match el {
       crate::config::ConfigOrDefinition::Config(c) => Audit::new(c),
       crate::config::ConfigOrDefinition::Definition { id, .. } => Audit {

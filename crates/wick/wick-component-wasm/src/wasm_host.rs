@@ -341,13 +341,31 @@ fn make_host_callback(
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[must_use]
 pub struct SetupPayload {
+  #[serde(default)]
   provided: HashMap<String, ComponentReference>,
+  #[serde(default)]
+  imported: HashMap<String, ComponentReference>,
+  #[serde(default)]
   config: RuntimeConfig,
 }
 
 impl SetupPayload {
-  pub fn new(origin: &Entity, provided: HashMap<String, String>, config: Option<RuntimeConfig>) -> Self {
+  pub fn new(
+    origin: &Entity,
+    provided: HashMap<String, String>,
+    imported: HashMap<String, String>,
+    config: Option<RuntimeConfig>,
+  ) -> Self {
     let provided = provided
+      .into_iter()
+      .map(|(k, v)| {
+        (
+          k,
+          ComponentReference::new(origin.clone(), Entity::from_str(&v).unwrap()),
+        )
+      })
+      .collect();
+    let imported = imported
       .into_iter()
       .map(|(k, v)| {
         (
@@ -358,6 +376,7 @@ impl SetupPayload {
       .collect();
     Self {
       provided,
+      imported,
       config: config.unwrap_or_default(),
     }
   }

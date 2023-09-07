@@ -2,7 +2,7 @@ use check_keyword::CheckKeyword;
 use heck::{AsPascalCase, AsSnakeCase};
 use itertools::Itertools;
 use proc_macro2::{Ident, Span};
-use wick_config::config::{Binding, InterfaceDefinition};
+use wick_config::config::Binding;
 use wick_interface_types::{EnumVariant, OperationSignature};
 
 pub(crate) fn id(name: &str) -> Ident {
@@ -13,7 +13,7 @@ pub(crate) fn id(name: &str) -> Ident {
   }
 }
 
-pub(crate) fn component_id(r: &Binding<InterfaceDefinition>) -> String {
+pub(crate) fn component_id<T>(r: &Binding<T>) -> String {
   format!("{}Component", &pascal(r.id()))
 }
 

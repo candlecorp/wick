@@ -34,9 +34,9 @@ pub(crate) async fn fetch_wick_tree(
   fetch_opts: OciOptions,
   runtime_config: Option<RuntimeConfig>,
   span: Span,
-) -> Result<ConfigurationTreeNode> {
+) -> Result<ConfigurationTreeNode<WickConfiguration>> {
   let env: HashMap<String, String> = std::env::vars().collect();
-  let config = WickConfiguration::fetch_tree(path, runtime_config, env, fetch_opts.clone())
+  let config = WickConfiguration::fetch_tree(path, runtime_config, Some(env), fetch_opts.clone())
     .instrument(span.clone())
     .await?;
 

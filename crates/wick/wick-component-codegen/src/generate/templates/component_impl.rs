@@ -1,29 +1,35 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
-use wick_config::config::{Binding, InterfaceDefinition};
+use wick_config::config::{Binding, ComponentDefinition, ImportDefinition, InterfaceDefinition};
 use wick_interface_types::OperationSignature;
 
-use crate::generate::dependency::Dependency;
+use crate::generate::config;
 use crate::generate::ids::*;
-use crate::generate::{config, f};
 
 pub(crate) fn gen_component_impls<'a>(
   gen_config: &mut config::Config,
   component_name: &Ident,
   ops: impl Iterator<Item = &'a OperationSignature>,
-  required: Vec<Binding<InterfaceDefinition>>,
+  required: &[Binding<InterfaceDefinition>],
+  imported: &[Binding<ImportDefinition>],
 ) -> TokenStream {
-  let provided = f::gen_if(
-    !required.is_empty(),
-    || {},
-    super::provided_struct(gen_config, &required),
-  );
-  let imported_components = super::imported_components(gen_config, required);
-  // let imported_components = super::imported_components(gen_config, required);
-  let register_operations = register_operations(gen_config, component_name, ops);
-  gen_config.add_dep(Dependency::WickPacket);
-  gen_config.add_dep(Dependency::WasmRs);
-  gen_config.add_dep(Dependency::WasmRsCodec);
+  let imported_components: Vec<_> = imported
+    .iter()
+    .filter_map(|i| match i.kind() {
+      ImportDefinition::Component(c) => Some(Binding::<&ComponentDefinition>::new(i.id(), c)),
+      ImportDefinition::Types(_) => None,
+    })
+    .collect();
+
+  let provided_impl = (!required.is_empty()).then(|| super::imported_component_container("provided", required));
+
+  let imported_impl =
+    (!imported_components.is_empty()).then(|| super::imported_component_container("imported", imported));
+
+  let required_components = super::imported_components("provided", gen_config, required);
+  let imported_components = super::imported_components("imported", gen_config, &imported_components);
+  let register_operations = register_operations(component_name, ops);
+
   quote! {
     #[no_mangle]
     #[cfg(target_family = "wasm")]
@@ -33,17 +39,14 @@ pub(crate) fn gen_component_impls<'a>(
       #(#register_operations)*
     }
 
+    #required_components
     #imported_components
-    #provided
-
+    #provided_impl
+    #imported_impl
   }
 }
 
-fn register_operations<'a>(
-  _config: &config::Config,
-  component: &Ident,
-  op: impl Iterator<Item = &'a OperationSignature>,
-) -> Vec<TokenStream> {
+fn register_operations<'a>(component: &Ident, op: impl Iterator<Item = &'a OperationSignature>) -> Vec<TokenStream> {
   op.map(|op| {
     let name = id(&op_wrapper_name(op));
     let string = op.name();
