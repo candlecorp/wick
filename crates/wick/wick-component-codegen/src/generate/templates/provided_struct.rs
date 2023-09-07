@@ -1,15 +1,15 @@
 use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
-use wick_config::config::BoundInterface;
+use wick_config::config::{Binding, InterfaceDefinition};
 
 use crate::generate::ids::*;
 use crate::*;
 
-pub(crate) fn provided_struct(_config: &Config, required: &[BoundInterface]) -> TokenStream {
+pub(crate) fn provided_struct(_config: &Config, required: &[Binding<InterfaceDefinition>]) -> TokenStream {
   let required_names = required
     .iter()
-    .map(|r: &BoundInterface| {
+    .map(|r: &Binding<InterfaceDefinition>| {
       let name = id(&snake(r.id()));
       let orig_name = r.id();
       let response_name = id(&component_id(r));

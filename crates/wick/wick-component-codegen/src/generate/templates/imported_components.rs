@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
-use wick_config::config::BoundInterface;
+use wick_config::config::{Binding, InterfaceDefinition};
 use wick_interface_types::{Field, OperationSignature, OperationSignatures};
 
 use crate::generate::dependency::Dependency;
@@ -11,7 +11,7 @@ use crate::generate::templates::op_config;
 use crate::generate::{f, Direction};
 use crate::*;
 
-pub(crate) fn imported_components(config: &mut Config, required: Vec<BoundInterface>) -> TokenStream {
+pub(crate) fn imported_components(config: &mut Config, required: Vec<Binding<InterfaceDefinition>>) -> TokenStream {
   let components = required
     .into_iter()
     .map(|v| {

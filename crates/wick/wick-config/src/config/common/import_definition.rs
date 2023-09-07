@@ -32,11 +32,30 @@ impl ImportDefinition {
     false
   }
 
+  /// Initialize a new [ImportDefinition] for the specified [config::ComponentDefinition].
+  pub const fn component(component: config::ComponentDefinition) -> Self {
+    Self::Component(component)
+  }
+
+  /// Initialize a new [ImportDefinition] for the specified [config::components::TypesComponent].
+  pub const fn types(component: config::components::TypesComponent) -> Self {
+    Self::Types(component)
+  }
+
   /// Get the configuration associated with this import.
   #[must_use]
   pub fn config(&self) -> Option<&RuntimeConfig> {
     match self {
       ImportDefinition::Component(v) => v.config().and_then(|v| v.value()),
+      ImportDefinition::Types(_) => None,
+    }
+  }
+
+  /// Returns any components this configuration provides to the implementation.
+  #[must_use]
+  pub fn provide(&self) -> Option<&HashMap<String, String>> {
+    match self {
+      ImportDefinition::Component(v) => v.provide(),
       ImportDefinition::Types(_) => None,
     }
   }

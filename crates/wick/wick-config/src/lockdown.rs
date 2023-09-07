@@ -112,10 +112,10 @@ mod test {
   use crate::config::{
     components,
     AppConfigurationBuilder,
+    Binding,
     ComponentConfiguration,
     ComponentDefinition,
     ConfigurationTreeNode,
-    ImportBinding,
     ImportDefinition,
     LockdownConfigurationBuilder,
     ResourceRestriction,
@@ -240,7 +240,7 @@ mod test {
   async fn test_tree_walker() -> Result<()> {
     let mut config = AppConfigurationBuilder::default();
 
-    config.name("app").import(vec![ImportBinding::new(
+    config.name("app").import(vec![Binding::new(
       "SUB_COMPONENT",
       ImportDefinition::Component(ComponentDefinition::Manifest(
         components::ManifestComponentBuilder::default()

@@ -4,9 +4,9 @@ use std::str::FromStr;
 use url::Url;
 
 use crate::config::{
+  Binding,
   ConfigOrDefinition,
   ConfigurationTreeNode,
-  ResourceBinding,
   ResourceDefinition,
   TcpPort,
   UdpPort,
@@ -103,8 +103,8 @@ impl std::fmt::Display for AuditedResourceBinding {
   }
 }
 
-impl From<&ResourceBinding> for AuditedResourceBinding {
-  fn from(value: &ResourceBinding) -> Self {
+impl From<&Binding<ResourceDefinition>> for AuditedResourceBinding {
+  fn from(value: &Binding<ResourceDefinition>) -> Self {
     Self {
       name: value.id.clone(),
       resource: AuditedResource::from(&value.kind),

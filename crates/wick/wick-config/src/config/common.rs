@@ -17,7 +17,7 @@ pub(crate) mod settings;
 pub(crate) mod template_config;
 pub mod test_case;
 
-pub use self::bindings::{BoundInterface, ImportBinding};
+pub use self::bindings::Binding;
 pub use self::component_definition::{
   ComponentDefinition,
   ComponentOperationExpression,
@@ -36,14 +36,6 @@ pub use self::liquid_json_config::LiquidJsonConfig;
 pub use self::metadata::{Metadata, MetadataBuilder};
 pub use self::operation_definition::{OperationDefinition, OperationDefinitionBuilder};
 pub use self::package_definition::{PackageConfig, PackageConfigBuilder, RegistryConfig, RegistryConfigBuilder};
-pub use self::resources::{
-  ResourceBinding,
-  ResourceBindingBuilder,
-  ResourceDefinition,
-  TcpPort,
-  UdpPort,
-  UrlResource,
-  Volume,
-};
+pub use self::resources::{ResourceDefinition, TcpPort, UdpPort, UrlResource, Volume};
 pub use self::settings::ExecutionSettings;
 pub use self::template_config::TemplateConfig;

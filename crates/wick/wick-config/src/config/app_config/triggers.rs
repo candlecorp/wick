@@ -51,7 +51,7 @@ pub use time::{
 };
 
 use self::common::template_config::Renderable;
-use self::common::ImportBinding;
+use self::common::{Binding, ImportDefinition};
 use crate::config::common;
 
 #[derive(Debug, Clone, derive_asset_container::AssetManager, serde::Serialize)]
@@ -97,7 +97,7 @@ impl Renderable for TriggerDefinition {
 
 impl ExpandImports for TriggerDefinition {
   type Error = ManifestError;
-  fn expand_imports(&mut self, bindings: &mut Vec<ImportBinding>, index: usize) -> Result<(), Self::Error> {
+  fn expand_imports(&mut self, bindings: &mut Vec<Binding<ImportDefinition>>, index: usize) -> Result<(), Self::Error> {
     match self {
       TriggerDefinition::Cli(c) => c.expand_imports(bindings, index),
       TriggerDefinition::Http(c) => c.expand_imports(bindings, index),

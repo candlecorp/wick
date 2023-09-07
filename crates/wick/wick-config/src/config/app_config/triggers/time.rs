@@ -6,7 +6,7 @@ use wick_packet::RuntimeConfig;
 
 use super::OperationInputConfig;
 use crate::config::template_config::Renderable;
-use crate::config::{ComponentOperationExpression, ImportBinding};
+use crate::config::{Binding, ComponentOperationExpression, ImportDefinition};
 use crate::error::ManifestError;
 use crate::ExpandImports;
 
@@ -66,7 +66,11 @@ pub struct ScheduleConfig {
 
 impl ExpandImports for TimeTriggerConfig {
   type Error = ManifestError;
-  fn expand_imports(&mut self, bindings: &mut Vec<ImportBinding>, trigger_index: usize) -> Result<(), Self::Error> {
+  fn expand_imports(
+    &mut self,
+    bindings: &mut Vec<Binding<ImportDefinition>>,
+    trigger_index: usize,
+  ) -> Result<(), Self::Error> {
     let id = format!("trigger_{}", trigger_index);
     self.operation_mut().maybe_import(&id, bindings);
     Ok(())

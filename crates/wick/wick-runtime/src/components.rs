@@ -18,7 +18,8 @@ use wick_component_wasm::component::{ComponentSetupBuilder, WasmComponent};
 use wick_component_wasm::error::LinkError;
 use wick_config::config::components::ManifestComponent;
 use wick_config::config::{
-  BoundInterface,
+  Binding,
+  InterfaceDefinition,
   Metadata,
   Permissions,
   PermissionsBuilder,
@@ -236,7 +237,7 @@ pub(crate) async fn init_impl(
 }
 
 pub(crate) fn generate_provides_entities(
-  requires: &[BoundInterface],
+  requires: &[Binding<InterfaceDefinition>],
   provides: &HashMap<String, String>,
 ) -> Result<HashMap<String, String>> {
   let mut provide = HashMap::new();

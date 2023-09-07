@@ -3,27 +3,28 @@
 use std::collections::HashMap;
 use std::path::Path;
 
+use asset_container::AssetManager;
+use wick_asset_reference::AssetReference;
 use wick_packet::RuntimeConfig;
 
 use super::template_config::Renderable;
-use super::{ComponentDefinition, HighLevelComponent, ImportDefinition, InterfaceDefinition};
-use crate::config::components::WasmComponent;
-use crate::config::{self};
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
-#[property(get(public), set(public), mut(public, suffix = "_mut"))]
-#[asset(asset(config::AssetReference))]
-/// A definition of a Wick Collection with its namespace, how to retrieve or access it and its configuration.
-#[must_use]
-pub struct ImportBinding {
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+/// A binding between an identifier and a target.
+pub struct Binding<T>
+where
+  T: serde::Serialize,
+{
   /// The namespace to reference the collection's components on.
-  #[asset(skip)]
   pub(crate) id: String,
   /// The kind/type of the collection.
-  pub(crate) kind: ImportDefinition,
+  pub(crate) kind: T,
 }
 
-impl Renderable for ImportBinding {
+impl<T> Renderable for Binding<T>
+where
+  T: serde::Serialize + Renderable,
+{
   fn render_config(
     &mut self,
     source: Option<&Path>,
@@ -34,76 +35,42 @@ impl Renderable for ImportBinding {
   }
 }
 
-impl ImportBinding {
-  /// Create a new [ImportBinding] with specified name and [ImportDefinition].
-  pub fn new<T: Into<String>>(name: T, kind: ImportDefinition) -> Self {
-    Self { id: name.into(), kind }
+impl<T> AssetManager for Binding<T>
+where
+  T: serde::Serialize + AssetManager<Asset = AssetReference>,
+{
+  type Asset = AssetReference;
+
+  fn assets(&self) -> asset_container::Assets<Self::Asset> {
+    self.kind.assets()
   }
 
-  /// Get the configuration object for the collection.
-  #[must_use]
-  pub fn config(&self) -> Option<&RuntimeConfig> {
-    match &self.kind {
-      ImportDefinition::Component(c) => c.config().and_then(|v| v.value()),
-      ImportDefinition::Types(_) => None,
-    }
-  }
-
-  /// Get the configuration object for the collection.
-  #[must_use]
-  pub fn provide(&self) -> Option<&HashMap<String, String>> {
-    match &self.kind {
-      ImportDefinition::Component(c) => c.provide(),
-      ImportDefinition::Types(_) => None,
-    }
-  }
-
-  /// Initialize a new import for the specified [ComponentDefinition].
-  pub fn component<T: Into<String>>(name: T, component: ComponentDefinition) -> Self {
-    #[allow(deprecated)]
-    Self::new(name, ImportDefinition::Component(component))
-  }
-
-  /// Create a new Wasm component definition.
-  pub fn wasm<T: Into<String>>(name: T, component: WasmComponent) -> Self {
-    #[allow(deprecated)]
-    Self::new(name, ImportDefinition::Component(ComponentDefinition::Wasm(component)))
-  }
-
-  /// Create a new GrpcUrl component definition.
-  pub fn grpc_url<T: Into<String>>(name: T, component: config::components::GrpcUrlComponent) -> Self {
-    Self::new(
-      name,
-      ImportDefinition::Component(ComponentDefinition::GrpcUrl(component)),
-    )
-  }
-
-  /// Create a new Manifest component definition.
-  pub fn manifest<T: Into<String>>(name: T, component: config::components::ManifestComponent) -> Self {
-    Self::new(
-      name,
-      ImportDefinition::Component(ComponentDefinition::Manifest(component)),
-    )
-  }
-
-  /// Create a new High level component definition.
-  pub fn high_level<T: Into<String>>(name: T, component: HighLevelComponent) -> Self {
-    Self::new(
-      name,
-      ImportDefinition::Component(ComponentDefinition::HighLevelComponent(component)),
-    )
+  fn set_baseurl(&self, baseurl: &Path) {
+    self.kind.set_baseurl(baseurl);
   }
 }
 
-#[derive(Debug, Default, Clone, derive_asset_container::AssetManager, property::Property, serde::Serialize)]
-#[property(get(public), set(private), mut(disable))]
-#[asset(asset(crate::config::AssetReference))]
-#[must_use]
-/// The internal representation of a Wick manifest.
-pub struct BoundInterface {
-  /// The namespace to reference the collection's components on.
-  #[asset(skip)]
-  pub(crate) id: String,
-  /// The kind/type of the collection.
-  pub(crate) kind: InterfaceDefinition,
+impl<T> Binding<T>
+where
+  T: serde::Serialize,
+{
+  /// Create a new [Binding<ImportDefinition>] with specified name and [ImportDefinition].
+  pub fn new<K: Into<String>, INTO: Into<T>>(name: K, kind: INTO) -> Self {
+    Self {
+      id: name.into(),
+      kind: kind.into(),
+    }
+  }
+
+  /// Get the ID for the binding.
+  #[must_use]
+  pub fn id(&self) -> &str {
+    &self.id
+  }
+
+  /// Get the kind for the binding.
+  #[must_use]
+  pub const fn kind(&self) -> &T {
+    &self.kind
+  }
 }

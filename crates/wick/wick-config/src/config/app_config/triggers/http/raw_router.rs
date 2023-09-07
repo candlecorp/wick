@@ -7,7 +7,7 @@ use wick_packet::RuntimeConfig;
 use super::index_to_router_id;
 use super::middleware::expand_for_middleware_components;
 use crate::config::template_config::Renderable;
-use crate::config::{self, ComponentOperationExpression, ImportBinding};
+use crate::config::{self, Binding, ComponentOperationExpression, ImportDefinition};
 use crate::error::ManifestError;
 
 #[derive(
@@ -60,7 +60,7 @@ pub(crate) fn process_runtime_config(
   trigger_index: usize,
   index: usize,
   router_config: &mut RawRouterConfig,
-  bindings: &mut Vec<ImportBinding>,
+  bindings: &mut Vec<Binding<ImportDefinition>>,
 ) -> Result<(), ManifestError> {
   expand_for_middleware_components(trigger_index, index, router_config, bindings)?;
 
@@ -69,7 +69,10 @@ pub(crate) fn process_runtime_config(
     .maybe_import(&index_to_router_id(trigger_index, index), bindings);
 
   let router_component = config::ComponentDefinition::Native(config::components::NativeComponent {});
-  let router_binding = config::ImportBinding::component(index_to_router_id(trigger_index, index), router_component);
+  let router_binding = config::Binding::new(
+    index_to_router_id(trigger_index, index),
+    ImportDefinition::component(router_component),
+  );
   bindings.push(router_binding);
 
   Ok(())

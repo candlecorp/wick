@@ -2,19 +2,22 @@ use std::sync::Arc;
 
 use parking_lot::RwLock;
 
-use crate::config::{ImportBinding, ImportDefinition, OwnedConfigurationItem, ResourceBinding};
+use crate::config::{Binding, ImportDefinition, OwnedConfigurationItem, ResourceDefinition};
 use crate::{Error, Resolver, Result};
 
 pub(crate) type RwOption<T> = Arc<RwLock<Option<T>>>;
 
-pub(crate) fn make_resolver(imports: Vec<ImportBinding>, resources: Vec<ResourceBinding>) -> Box<Resolver> {
+pub(crate) fn make_resolver(
+  imports: Vec<Binding<ImportDefinition>>,
+  resources: Vec<Binding<ResourceDefinition>>,
+) -> Box<Resolver> {
   Box::new(move |name| resolve(name, &imports, &resources))
 }
 
 pub(crate) fn resolve(
   name: &str,
-  imports: &[ImportBinding],
-  resources: &[ResourceBinding],
+  imports: &[Binding<ImportDefinition>],
+  resources: &[Binding<ResourceDefinition>],
 ) -> Result<OwnedConfigurationItem> {
   tracing::trace!("resolving {}, imports: {:?}, resources: {:?}", name, imports, resources);
   if let Some(import) = imports.iter().find(|i| i.id == name) {
