@@ -146,6 +146,17 @@ macro_rules! payload_fan_out {
               $(
                 $channels.[<$port:snake>].send_result(Err($crate::anyhow::anyhow!(error.clone()))).unwrap();
               )*
+              $crate::wick_packet::Packet::FATAL_ERROR => {
+                let error = packet.unwrap_err();
+                $crate::paste::paste! {
+                  $(
+                    [<$port:snake _tx>].send_result(Err(Box::new($crate::flow_component::ComponentError::message(error.msg())).into())).unwrap();
+                  )*
+                }
+              }
+              _ => {
+                // TODO: add tracing to warn when we're sent packets we aren't expecting
+              }
             }
           }
         }
@@ -198,8 +209,36 @@ macro_rules! payload_fan_out {
           use $crate::StreamExt;
           loop {
             if let Some(Ok(payload)) = $stream.next().await {
-              let packet = $crate::payload_fan_out!(@handle_packet payload, config_tx, $config);
-              $crate::payload_fan_out!(@route_packet packet, channels, raw:$raw, [ $(($port, $($ty)+)),* ]);
+              let mut packet: $crate::wick_packet::Packet = payload.into();
+              if let Some(config_tx) = config_tx.take() {
+                if let Some(context) = packet.context() {
+                  let config: Result<$crate::wick_packet::ContextTransport<$config>, _> = $crate::wasmrs_codec::messagepack::deserialize(&context).map_err(|e|$crate::flow_component::ComponentError::message(&format!("Cound not deserialize context: {}", e)));
+                  let _ = config_tx.send(config.map($crate::flow_component::Context::from));
+                } else {
+                  packet = $crate::wick_packet::Packet::component_error("No context attached to first invocation packet");
+                }
+              }
+
+              match packet.port() {
+                $(
+                  $port=> {
+                    let tx = &$crate::paste::paste! {[<$port:snake _tx>]};
+                    $crate::handle_port!(raw: $raw, packet, tx, $port, $($ty)*)
+                  },
+                )*
+                $crate::wick_packet::Packet::FATAL_ERROR => {
+                  use $crate::wasmrs_rx::Observer;
+                  let error = packet.unwrap_err();
+                  $crate::paste::paste! {
+                    $(
+                      [<$port:snake _tx>].send_result(Err(Box::new($crate::flow_component::ComponentError::message(error.msg())).into())).unwrap();
+                    )*
+                  }
+                }
+                _ => {
+                  // TODO: add tracing to warn when we're sent packets we aren't expecting
+                }
+              }
             } else {
               break;
             }

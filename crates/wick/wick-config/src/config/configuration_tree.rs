@@ -1,24 +1,31 @@
 #![allow(missing_docs)]
 
+
 use wick_asset_reference::FetchOptions;
 use wick_packet::RuntimeConfig;
+use wick_packet::RuntimeConfig;
 
-use super::ImportDefinition;
+use super::{ImportDefinition, UninitializedConfiguration};
 use crate::config::{Binding, ComponentDefinition};
 use crate::error::ManifestError;
+use crate::{Imports, WickConfiguration};
 use crate::{Imports, WickConfiguration};
 
 #[derive(Debug)]
 
 pub enum ConfigOrDefinition<T> {
   Config(ConfigurationTreeNode<T>),
+pub enum ConfigOrDefinition<T> {
+  Config(ConfigurationTreeNode<T>),
   Definition { id: String, element: ComponentDefinition },
 }
 
 impl<T> ConfigOrDefinition<T> {
+impl<T> ConfigOrDefinition<T> {
   /// Returns the held configuration if it is a [ConfigurationTreeNode].
   #[must_use]
   #[allow(clippy::missing_const_for_fn)]
+  pub fn as_config(self) -> Option<T> {
   pub fn as_config(self) -> Option<T> {
     match self {
       ConfigOrDefinition::Config(c) => Some(c.element),
@@ -39,7 +46,10 @@ impl<T> ConfigOrDefinition<T> {
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct ConfigurationTreeNode<T> {
+pub struct ConfigurationTreeNode<T> {
   pub name: String,
+  pub element: T,
+  pub children: Vec<ConfigOrDefinition<T>>,
   pub element: T,
   pub children: Vec<ConfigOrDefinition<T>>,
 }
@@ -48,11 +58,17 @@ impl<T> ConfigurationTreeNode<T>
 where
   T: Imports + Send + Sync,
 {
+impl<T> ConfigurationTreeNode<T>
+where
+  T: Imports + Send + Sync,
+{
   #[must_use]
+  pub const fn new(name: String, element: T, children: Vec<ConfigOrDefinition<T>>) -> Self {
   pub const fn new(name: String, element: T, children: Vec<ConfigOrDefinition<T>>) -> Self {
     Self {
       name,
       element,
+      children,
       children,
     }
   }
@@ -60,11 +76,25 @@ where
   /// Flattens a configuration tree into a list of its namespaces elements.
   #[must_use]
   pub fn flatten(self) -> Vec<ConfigOrDefinition<T>> {
+  pub fn flatten(self) -> Vec<ConfigOrDefinition<T>> {
     let id = self.name.clone();
     flatten(self, &id)
   }
 }
+}
 
+#[async_recursion::async_recursion]
+pub async fn fetch_children<T, H, U>(
+  config: &T,
+  options: FetchOptions,
+  processor: &H,
+) -> Result<Vec<ConfigOrDefinition<U>>, ManifestError>
+where
+  T: Imports + Send + Sync,
+  H: Fn(Option<RuntimeConfig>, UninitializedConfiguration) -> Result<U, ManifestError> + Send + Sync,
+  U: Imports + Send + Sync,
+{
+  let imports = config.imports().to_vec();
 #[async_recursion::async_recursion]
 pub async fn fetch_children<T, H, U>(
   config: &T,
@@ -89,9 +119,21 @@ where
     }
   }
   Ok(children)
+  let mut children = fetch_imports(imports, options.clone(), processor).await?;
+  for child in &mut children {
+    match child {
+      ConfigOrDefinition::Config(ref mut c) => {
+        let children = fetch_children(&c.element, options.clone(), processor).await?;
+        c.children = children;
+      }
+      ConfigOrDefinition::Definition { .. } => {}
+    }
+  }
+  Ok(children)
 }
 
 #[must_use]
+pub fn flatten<T>(node: ConfigurationTreeNode<T>, prefix: &str) -> Vec<ConfigOrDefinition<T>> {
 pub fn flatten<T>(node: ConfigurationTreeNode<T>, prefix: &str) -> Vec<ConfigOrDefinition<T>> {
   let mut flattened = Vec::new();
   let children = node.children;
@@ -119,9 +161,16 @@ pub fn flatten<T>(node: ConfigurationTreeNode<T>, prefix: &str) -> Vec<ConfigOrD
   flattened
 }
 
-async fn fetch_imports(
+async fn fetch_imports<H, T>(
   imports: Vec<Binding<ImportDefinition>>,
   options: FetchOptions,
+  processor: &H,
+) -> Result<Vec<ConfigOrDefinition<T>>, ManifestError>
+where
+  T: Imports + Send + Sync,
+  H: Fn(Option<RuntimeConfig>, UninitializedConfiguration) -> Result<T, ManifestError> + Send + Sync,
+{
+  let mut children: Vec<ConfigOrDefinition<T>> = Vec::new();
   processor: &H,
 ) -> Result<Vec<ConfigOrDefinition<T>>, ManifestError>
 where
@@ -137,7 +186,14 @@ where
         super::ComponentDefinition::Manifest(c) => {
           let config = WickConfiguration::fetch(c.reference.clone(), options.clone()).await?;
           let config = processor(c.config().and_then(|c| c.value.clone()), config)?;
+          let config = WickConfiguration::fetch(c.reference.clone(), options.clone()).await?;
+          let config = processor(c.config().and_then(|c| c.value.clone()), config)?;
 
+          children.push(ConfigOrDefinition::Config(ConfigurationTreeNode::new(
+            id,
+            config,
+            Vec::new(),
+          )));
           children.push(ConfigOrDefinition::Config(ConfigurationTreeNode::new(
             id,
             config,
@@ -182,6 +238,9 @@ mod test {
         )),
       )]);
     let config = config.build()?;
+    let config = UninitializedConfiguration::new(WickConfiguration::App(config));
+    let children = fetch_children(&config, Default::default(), &|_, c| Ok(c)).await?;
+    assert_eq!(children.len(), 1);
     let config = UninitializedConfiguration::new(WickConfiguration::App(config));
     let children = fetch_children(&config, Default::default(), &|_, c| Ok(c)).await?;
     assert_eq!(children.len(), 1);

@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
-use wick_config::config::{Binding, InterfaceDefinition};
+use wick_config::config::Binding;
 
 use crate::generate::ids::*;
 
@@ -11,13 +11,19 @@ pub(crate) fn imported_component_container<T>(name: &str, required: &[Binding<T>
   let struct_id = id(&pascal(name));
   let trait_id = id(&format!("{}Context", pascal(name)));
 
-pub(crate) fn provided_struct(_config: &Config, required: &[Binding<InterfaceDefinition>]) -> TokenStream {
+pub(crate) fn imported_component_container<T>(name: &str, required: &[Binding<T>]) -> TokenStream {
+  let mod_id = id(&format!("{}_wasm", snake(name)));
+  let method_id = id(&snake(name));
+  let struct_id = id(&pascal(name));
+  let trait_id = id(&format!("{}Context", pascal(name)));
+
   let required_names = required
     .iter()
-    .map(|r: &Binding<InterfaceDefinition>| {
+    .map(|r: &Binding<T>| {
       let name = id(&snake(r.id()));
       let orig_name = r.id();
       let response_name = id(&component_id(r));
+      quote! { #name : #response_name::new(config.#method_id.get(#orig_name).cloned().unwrap(), inherent.clone()) }
       quote! { #name : #response_name::new(config.#method_id.get(#orig_name).cloned().unwrap(), inherent.clone()) }
     })
     .collect_vec();
@@ -30,16 +36,21 @@ pub(crate) fn provided_struct(_config: &Config, required: &[Binding<InterfaceDef
     })
     .collect_vec();
 
+
   quote! {
     #[allow(unused)]
     #[cfg(target_family = "wasm")]
     mod #mod_id {
+    mod #mod_id {
       #[allow(unused)]
       use super::*;
+      pub(crate) struct #struct_id {
       pub(crate) struct #struct_id {
         #(#fields),*
       }
 
+      pub(crate) trait #trait_id {
+        fn #method_id(&self) -> #struct_id;
       pub(crate) trait #trait_id {
         fn #method_id(&self) -> #struct_id;
       }
@@ -49,12 +60,13 @@ pub(crate) fn provided_struct(_config: &Config, required: &[Binding<InterfaceDef
           let config = get_config();
           let inherent = self.inherent.clone();
           #struct_id {
-            #(#required_names),*
+            #(#required_names,)*
           }
         }
       }
     }
     #[cfg(target_family = "wasm")]
+    pub(crate) use #mod_id::*;
     pub(crate) use #mod_id::*;
   }
 }

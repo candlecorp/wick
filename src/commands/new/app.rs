@@ -10,7 +10,6 @@ use wick_config::config::{
   ComponentDefinition,
   ComponentOperationExpressionBuilder,
   ImportDefinition,
-  ResourceBindingBuilder,
   ScheduleConfigBuilder,
   TcpPort,
 };
