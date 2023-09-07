@@ -1,3 +1,5 @@
+use crate::config::ImportDefinition;
+
 /// The [ExpandImports] trait is implemented by entities that may or may not need to alter the imported components.
 #[cfg(feature = "config")]
 pub trait ExpandImports {
