@@ -79,6 +79,7 @@ itertools = { workspace = true }
 
 [dev-dependencies]
 wick-invocation-server = { workspace = true }
+wick-config = { workspace = true, features = ["config", "v1", "v0"] }
 wick-logger = { workspace = true }
 test-logger = { workspace = true }
 pretty_assertions = { workspace = true }

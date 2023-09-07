@@ -3,7 +3,7 @@ use seeded_random::Seed;
 use tracing::Span;
 use uuid::Uuid;
 use wick_config::config::ComponentConfiguration;
-use wick_packet::{Entity, RuntimeConfig};
+use wick_packet::RuntimeConfig;
 
 use super::{ComponentRegistry, Scope, ScopeInit};
 use crate::runtime::RuntimeInit;
@@ -29,6 +29,7 @@ impl std::fmt::Debug for ChildInit {
       .field("allow_latest", &self.allow_latest)
       .field("allowed_insecure", &self.allowed_insecure)
       .field("root_config", &self.root_config)
+      .field("provided", &self.provided.as_ref().map(|p| p.inner().keys()))
       .finish()
   }
 }
@@ -48,7 +49,7 @@ pub(crate) fn init_child(
       if let Some(handler) = opts.provided.as_ref().and_then(|p| p.get(ns).cloned()) {
         components.add(Box::new(move |_| Ok(handler.clone())));
       } else {
-        return Err(ScopeError::RequirementUnsatisfied(Entity::component(ns)));
+        return Err(ScopeError::RequirementUnsatisfied(ns.to_owned()));
       }
     }
 
@@ -61,6 +62,7 @@ pub(crate) fn init_child(
       span: child_span,
       initial_components: components,
     };
+
     let init = ScopeInit::new_with_id(Some(opts.runtime_id), uid, opts.rng_seed, config);
 
     Scope::start(init).await

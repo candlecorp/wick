@@ -21,18 +21,14 @@ pub(crate) fn type_def<'a>(
   options: TypeOptions,
 ) -> (Vec<&'a str>, TokenStream) {
   match ty {
-    TypeDefinition::Enum(ty) => gen_enum(config, ty, options),
+    TypeDefinition::Enum(ty) => gen_enum(ty, options),
     TypeDefinition::Struct(ty) => gen_struct(config, ty, options),
     TypeDefinition::Union(ty) => gen_union(config, ty, options),
   }
 }
 
 #[allow(clippy::too_many_lines)]
-pub(crate) fn gen_enum<'a>(
-  _config: &config::Config,
-  ty: &'a EnumDefinition,
-  _options: TypeOptions,
-) -> (Vec<&'a str>, TokenStream) {
+pub(crate) fn gen_enum(ty: &EnumDefinition, _options: TypeOptions) -> (Vec<&str>, TokenStream) {
   let (path_parts, item_part) = get_typename_parts(&ty.name);
   let name = id(item_part);
   let variants = ty

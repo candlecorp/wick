@@ -43,8 +43,8 @@ pub enum ScopeError {
   #[error(transparent)]
   Asset(#[from] wick_config::AssetError),
 
-  #[error("entity {0} not found")]
-  RequirementUnsatisfied(Entity),
+  #[error("requirement {0} not fulfilled")]
+  RequirementUnsatisfied(String),
 
   #[error(transparent)]
   NativeComponent(#[from] flow_component::ComponentError),

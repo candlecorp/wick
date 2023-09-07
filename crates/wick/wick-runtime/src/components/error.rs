@@ -8,9 +8,6 @@ pub enum ComponentError {
   ComponentNotFound(String),
 
   #[error("{0}")]
-  UnsatisfiedRequirement(String),
-
-  #[error("{0}")]
   ScopeError(String),
 
   #[error("Error initializing inner runtime scope '{0}' : {1}")]

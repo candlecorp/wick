@@ -46,6 +46,8 @@ pub(crate) fn component_config(config: &mut config::Config, fields: Option<Vec<F
       #[allow(unused)]
       pub(crate) provided: std::collections::HashMap<String,wick_packet::ComponentReference>,
       #[allow(unused)]
+      pub(crate) imported: std::collections::HashMap<String,wick_packet::ComponentReference>,
+      #[allow(unused)]
       pub(crate) config: #config_id,
     }
 

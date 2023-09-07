@@ -4,6 +4,7 @@
 pub mod components;
 
 pub(crate) mod app_config;
+mod cache;
 pub(crate) mod common;
 pub(crate) mod component_config;
 pub(crate) mod configuration_tree;
@@ -31,9 +32,10 @@ use wick_interface_types::Field;
 use wick_packet::validation::expect_configuration_matches;
 use wick_packet::{Entity, RuntimeConfig};
 
+use self::template_config::Renderable;
 use crate::load::resolve_configuration;
 use crate::lockdown::Lockdown;
-use crate::Error;
+use crate::{Error, Imports, RootConfig};
 
 #[derive(Debug, Clone, property::Property)]
 #[property(get(public), set(public), mut(public, suffix = "_mut"))]
@@ -89,6 +91,12 @@ impl UninitializedConfiguration {
   }
 }
 
+impl Imports for UninitializedConfiguration {
+  fn imports(&self) -> &[Binding<ImportDefinition>] {
+    self.manifest.imports()
+  }
+}
+
 impl Lockdown for UninitializedConfiguration {
   fn lockdown(&self, id: Option<&str>, lockdown: &LockdownConfiguration) -> Result<(), crate::lockdown::LockdownError> {
     self.manifest.lockdown(id, lockdown)?;
@@ -125,30 +133,62 @@ impl WickConfiguration {
   /// use wick_asset_reference::FetchOptions;
   ///
   /// let opts = FetchOptions::default();
+  /// let env : HashMap<String,String> = std::env::vars().collect();
+  /// let root_config = None;
   ///
-  /// let manifest = WickConfiguration::fetch_all("path/to/manifest.yaml", opts).await?;
+  /// let manifest = WickConfiguration::fetch_tree("path/to/manifest.yaml", root_config, env, opts).await?;
   /// # Ok::<_,anyhow::Error>(())
   /// # });
   /// ```
   pub async fn fetch_tree(
     path: impl Into<AssetReference> + Send,
     root_config: Option<RuntimeConfig>,
-    root_env: HashMap<String, String>,
+    root_env: Option<HashMap<String, String>>,
     options: FetchOptions,
-  ) -> Result<ConfigurationTreeNode, Error> {
+  ) -> Result<ConfigurationTreeNode<WickConfiguration>, Error> {
     let mut config = Self::fetch(path, options.clone()).await?;
-    match config.manifest.kind() {
-      ConfigurationKind::App | ConfigurationKind::Tests | ConfigurationKind::Lockdown => {
-        config.set_env(root_env);
-      }
-      _ => {}
-    }
-    config.set_root_config(root_config);
-    let config = config.finish()?;
-    let mut node = ConfigurationTreeNode::new(Entity::LOCAL.into(), config);
-    node.fetch_children(options).await?;
+    let source = config.manifest.source().map(ToOwned::to_owned);
+    config
+      .manifest
+      .render_config(source.as_deref(), root_config.as_ref(), root_env.as_ref())?;
 
-    Ok(node)
+    let renderer = |runtime_config: Option<RuntimeConfig>, mut child: UninitializedConfiguration| {
+      child.set_root_config(runtime_config);
+      child.finish()
+    };
+
+    let children = fetch_children(&config, options, &renderer).await?;
+    Ok(ConfigurationTreeNode::new(
+      Entity::LOCAL.into(),
+      config.finish()?,
+      children,
+    ))
+  }
+
+  /// Fetch a configuration and all referenced assets from a path.
+  ///
+  /// # Example
+  ///
+  /// ```rust
+  /// # tokio_test::block_on(async {
+  /// use wick_config::WickConfiguration;
+  /// use wick_asset_reference::FetchOptions;
+  ///
+  /// let opts = FetchOptions::default();
+  ///
+  /// let manifest = WickConfiguration::fetch_uninitialized_tree("path/to/manifest.yaml", opts).await?;
+  /// # Ok::<_,anyhow::Error>(())
+  /// # });
+  /// ```
+  pub async fn fetch_uninitialized_tree(
+    path: impl Into<AssetReference> + Send,
+    options: FetchOptions,
+  ) -> Result<ConfigurationTreeNode<UninitializedConfiguration>, Error> {
+    let config = Self::fetch(path, options.clone()).await?;
+
+    let children = fetch_children(&config, options, &|_, b| Ok(b)).await?;
+
+    Ok(ConfigurationTreeNode::new(Entity::LOCAL.into(), config, children))
   }
 
   /// Fetch a configuration from a path.
@@ -173,21 +213,33 @@ impl WickConfiguration {
   ) -> Result<UninitializedConfiguration, Error> {
     let asset: AssetReference = asset.into();
 
-    let bytes = asset.fetch(options.clone()).await?;
-    let source = asset.path().unwrap_or_else(|e| PathBuf::from(format!("<ERROR:{}>", e)));
-    let config = WickConfiguration::load_from_bytes(&bytes, &Some(source))?;
-    config.manifest.update_baseurls();
-    match &config.manifest {
-      WickConfiguration::Component(c) => {
-        c.setup_cache(options).await?;
+    let cache_result = cache::CONFIG_CACHE.lock().get(&asset).cloned();
+
+    let config = if let Some(config) = cache_result {
+      tracing::trace!(cache_hit = true, asset=%asset.location(), "config::fetch");
+      config
+    } else {
+      tracing::trace!(cache_hit = false, asset=%asset.location(), "config::fetch");
+      let bytes = asset.fetch(options.clone()).await?;
+      let source = asset.path().unwrap_or_else(|e| PathBuf::from(format!("<ERROR:{}>", e)));
+      let config = WickConfiguration::load_from_bytes(&bytes, &Some(source))?;
+      config.manifest.update_baseurls();
+      match &config.manifest {
+        WickConfiguration::Component(c) => {
+          c.setup_cache(options).await?;
+        }
+        WickConfiguration::App(c) => {
+          c.setup_cache(options).await?;
+        }
+        WickConfiguration::Types(_) => {}
+        WickConfiguration::Tests(_) => {}
+        WickConfiguration::Lockdown(_) => {}
       }
-      WickConfiguration::App(c) => {
-        c.setup_cache(options).await?;
-      }
-      WickConfiguration::Types(_) => {}
-      WickConfiguration::Tests(_) => {}
-      WickConfiguration::Lockdown(_) => {}
-    }
+
+      cache::CONFIG_CACHE.lock().insert(asset.clone(), config.clone());
+      config
+    };
+
     Ok(config)
   }
 
@@ -340,22 +392,6 @@ impl WickConfiguration {
     }
   }
 
-  /// Set the root runtime config for a [WickConfiguration].
-  fn set_root_config(&mut self, env: Option<RuntimeConfig>) -> &mut Self {
-    match self {
-      WickConfiguration::App(v) => {
-        v.root_config = env;
-      }
-      WickConfiguration::Component(v) => {
-        v.root_config = env;
-      }
-      WickConfiguration::Types(_) => (),
-      WickConfiguration::Tests(_) => (),
-      WickConfiguration::Lockdown(_) => (),
-    }
-    self
-  }
-
   /// Set the environment variables for a [WickConfiguration].
   fn set_env(&mut self, env: Option<HashMap<String, String>>) -> &mut Self {
     match self {
@@ -378,18 +414,6 @@ impl WickConfiguration {
       WickConfiguration::Types(_) => ConfigurationKind::Types,
       WickConfiguration::Tests(_) => ConfigurationKind::Tests,
       WickConfiguration::Lockdown(_) => ConfigurationKind::Lockdown,
-    }
-  }
-
-  /// Get the imports for the configuration, if any
-  #[must_use]
-  pub fn imports(&self) -> &[Binding<ImportDefinition>] {
-    match self {
-      WickConfiguration::Component(c) => c.import(),
-      WickConfiguration::App(c) => c.import(),
-      WickConfiguration::Types(_) => &[],
-      WickConfiguration::Tests(_) => &[],
-      WickConfiguration::Lockdown(_) => &[],
     }
   }
 
@@ -541,6 +565,23 @@ impl WickConfiguration {
   }
 }
 
+impl Renderable for WickConfiguration {
+  fn render_config(
+    &mut self,
+    source: Option<&Path>,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), crate::error::ManifestError> {
+    match self {
+      WickConfiguration::Component(c) => c.render_config(source, root_config, env),
+      WickConfiguration::App(c) => c.render_config(source, root_config, env),
+      WickConfiguration::Types(c) => c.render_config(source, root_config, env),
+      WickConfiguration::Tests(c) => c.render_config(source, root_config, env),
+      WickConfiguration::Lockdown(c) => c.render_config(source, root_config, env),
+    }
+  }
+}
+
 impl Lockdown for WickConfiguration {
   fn lockdown(&self, id: Option<&str>, lockdown: &LockdownConfiguration) -> Result<(), crate::lockdown::LockdownError> {
     match self {
@@ -549,6 +590,44 @@ impl Lockdown for WickConfiguration {
       WickConfiguration::Types(_) => Ok(()),
       WickConfiguration::Tests(_) => Ok(()),
       WickConfiguration::Lockdown(_) => Ok(()),
+    }
+  }
+}
+
+impl Imports for WickConfiguration {
+  fn imports(&self) -> &[Binding<ImportDefinition>] {
+    match self {
+      WickConfiguration::Component(c) => c.import(),
+      WickConfiguration::App(c) => c.import(),
+      WickConfiguration::Types(_) => &[],
+      WickConfiguration::Tests(_) => &[],
+      WickConfiguration::Lockdown(_) => &[],
+    }
+  }
+}
+
+impl RootConfig for WickConfiguration {
+  fn root_config(&self) -> Option<&RuntimeConfig> {
+    match self {
+      WickConfiguration::App(v) => v.root_config.as_ref(),
+      WickConfiguration::Component(v) => v.root_config.as_ref(),
+      WickConfiguration::Types(_) => None,
+      WickConfiguration::Tests(_) => None,
+      WickConfiguration::Lockdown(_) => None,
+    }
+  }
+
+  fn set_root_config(&mut self, config: Option<RuntimeConfig>) {
+    match self {
+      WickConfiguration::App(v) => {
+        v.root_config = config;
+      }
+      WickConfiguration::Component(v) => {
+        v.root_config = config;
+      }
+      WickConfiguration::Types(_) => (),
+      WickConfiguration::Tests(_) => (),
+      WickConfiguration::Lockdown(_) => (),
     }
   }
 }

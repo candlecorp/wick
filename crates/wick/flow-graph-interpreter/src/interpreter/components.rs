@@ -75,6 +75,11 @@ impl HandlerMap {
     self.components.get(namespace)
   }
 
+  #[must_use]
+  pub fn has(&self, namespace: &str) -> bool {
+    self.components.contains_key(namespace)
+  }
+
   pub fn add(&mut self, component: NamespaceHandler) -> Result<(), InterpreterError> {
     if self.components.contains_key(&component.namespace) {
       return Err(InterpreterError::DuplicateNamespace(component.namespace));

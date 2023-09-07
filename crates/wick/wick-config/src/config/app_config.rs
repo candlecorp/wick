@@ -227,6 +227,20 @@ impl AppConfiguration {
   }
 }
 
+impl Renderable for AppConfiguration {
+  fn render_config(
+    &mut self,
+    source: Option<&Path>,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<()> {
+    self.resources.render_config(source, root_config, env)?;
+    self.import.render_config(source, root_config, env)?;
+    self.triggers.render_config(source, root_config, env)?;
+    Ok(())
+  }
+}
+
 impl Lockdown for AppConfiguration {
   fn lockdown(
     &self,

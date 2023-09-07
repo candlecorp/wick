@@ -6549,6 +6549,7 @@ dependencies = [
  "liquid-json",
  "normpath",
  "num-traits",
+ "once_cell",
  "option-utils",
  "parking_lot",
  "pretty_assertions",
