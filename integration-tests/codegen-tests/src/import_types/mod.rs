@@ -13,7 +13,7 @@ extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_h
   wick_component::wasmrs_guest::register_request_channel("wick", "testop", Box::new(Component::testop_wrapper));
 }
 #[cfg(target_family = "wasm")]
-mod imported_components_wasm {
+mod provided {
   #[allow(unused)]
   use super::*;
   #[allow(unused)]
@@ -34,33 +34,138 @@ mod imported_components_wasm {
       &self,
       input: impl wick_component::Stream<Item = Result<types::http::HttpRequest, wick_component::BoxError>> + 'static,
     ) -> std::result::Result<WickStream<types::http::HttpRequest>, wick_packet::Error> {
-      let mut stream = self.echo_raw(input)?;
-      Ok(wick_component::payload_fan_out!(
-          stream, raw : false, wick_component::BoxError, [("output",
-          types::http::HttpRequest)]
-      ))
-    }
-    #[allow(unused)]
-    pub fn echo_raw(
-      &self,
-      input: impl wick_component::Stream<Item = Result<types::http::HttpRequest, wick_component::BoxError>> + 'static,
-    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
       let input = input.map(wick_component::wick_packet::into_packet("input"));
       let stream = wick_component::empty();
       let stream = stream
         .merge(input)
         .chain(wick_component::iter_raw(vec![Ok(Packet::done("input"))]));
       let stream = wick_packet::PacketStream::new(Box::pin(stream));
+      let mut stream = self.echo_raw(stream)?;
+      Ok(wick_component::payload_fan_out!(
+          stream, raw : false, wick_component::BoxError, [("output",
+          types::http::HttpRequest)]
+      ))
+    }
+    #[allow(unused)]
+    pub fn echo_raw<T: Into<wick_packet::PacketStream>>(
+      &self,
+      stream: T,
+    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
       Ok(
         self
           .component
-          .call("echo", stream, None, self.inherent.clone().into())?,
+          .call("echo", stream.into(), None, self.inherent.clone().into())?,
       )
     }
   }
 }
 #[cfg(target_family = "wasm")]
-pub use imported_components_wasm::*;
+pub use provided::*;
+#[cfg(target_family = "wasm")]
+mod imported {
+  #[allow(unused)]
+  use super::*;
+  #[allow(unused)]
+  pub struct ImportedComponentComponent {
+    component: wick_packet::ComponentReference,
+    inherent: flow_component::InherentContext,
+  }
+  impl ImportedComponentComponent {
+    pub fn new(component: wick_packet::ComponentReference, inherent: flow_component::InherentContext) -> Self {
+      Self { component, inherent }
+    }
+    #[allow(unused)]
+    pub fn component(&self) -> &wick_packet::ComponentReference {
+      &self.component
+    }
+    #[allow(unused)]
+    pub fn add(
+      &self,
+      left: impl wick_component::Stream<Item = Result<u64, wick_component::BoxError>> + 'static,
+      right: impl wick_component::Stream<Item = Result<u64, wick_component::BoxError>> + 'static,
+    ) -> std::result::Result<WickStream<u64>, wick_packet::Error> {
+      let left = left.map(wick_component::wick_packet::into_packet("left"));
+      let right = right.map(wick_component::wick_packet::into_packet("right"));
+      let stream = wick_component::empty();
+      let stream = stream.merge(left).merge(right).chain(wick_component::iter_raw(vec![
+        Ok(Packet::done("left")),
+        Ok(Packet::done("right")),
+      ]));
+      let stream = wick_packet::PacketStream::new(Box::pin(stream));
+      let mut stream = self.add_raw(stream)?;
+      Ok(wick_component::payload_fan_out!(
+          stream, raw : false, wick_component::BoxError, [("output", u64)]
+      ))
+    }
+    #[allow(unused)]
+    pub fn add_raw<T: Into<wick_packet::PacketStream>>(
+      &self,
+      stream: T,
+    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
+      Ok(
+        self
+          .component
+          .call("add", stream.into(), None, self.inherent.clone().into())?,
+      )
+    }
+    #[allow(unused)]
+    pub fn error(
+      &self,
+      input: impl wick_component::Stream<Item = Result<String, wick_component::BoxError>> + 'static,
+    ) -> std::result::Result<WickStream<String>, wick_packet::Error> {
+      let input = input.map(wick_component::wick_packet::into_packet("input"));
+      let stream = wick_component::empty();
+      let stream = stream
+        .merge(input)
+        .chain(wick_component::iter_raw(vec![Ok(Packet::done("input"))]));
+      let stream = wick_packet::PacketStream::new(Box::pin(stream));
+      let mut stream = self.error_raw(stream)?;
+      Ok(wick_component::payload_fan_out!(
+          stream, raw : false, wick_component::BoxError, [("output", String)]
+      ))
+    }
+    #[allow(unused)]
+    pub fn error_raw<T: Into<wick_packet::PacketStream>>(
+      &self,
+      stream: T,
+    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
+      Ok(
+        self
+          .component
+          .call("error", stream.into(), None, self.inherent.clone().into())?,
+      )
+    }
+    #[allow(unused)]
+    pub fn validate(
+      &self,
+      input: impl wick_component::Stream<Item = Result<String, wick_component::BoxError>> + 'static,
+    ) -> std::result::Result<WickStream<String>, wick_packet::Error> {
+      let input = input.map(wick_component::wick_packet::into_packet("input"));
+      let stream = wick_component::empty();
+      let stream = stream
+        .merge(input)
+        .chain(wick_component::iter_raw(vec![Ok(Packet::done("input"))]));
+      let stream = wick_packet::PacketStream::new(Box::pin(stream));
+      let mut stream = self.validate_raw(stream)?;
+      Ok(wick_component::payload_fan_out!(
+          stream, raw : false, wick_component::BoxError, [("output", String)]
+      ))
+    }
+    #[allow(unused)]
+    pub fn validate_raw<T: Into<wick_packet::PacketStream>>(
+      &self,
+      stream: T,
+    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
+      Ok(
+        self
+          .component
+          .call("validate", stream.into(), None, self.inherent.clone().into())?,
+      )
+    }
+  }
+}
+#[cfg(target_family = "wasm")]
+pub use imported::*;
 #[allow(unused)]
 #[cfg(target_family = "wasm")]
 mod provided_wasm {
@@ -68,12 +173,6 @@ mod provided_wasm {
   use super::*;
   pub(crate) struct Provided {
     pub dep1: Dep1Component,
-  }
-  pub(crate) fn get_provided(inherent: wick_component::flow_component::InherentContext) -> Provided {
-    let config = get_config();
-    Provided {
-      dep1: Dep1Component::new(config.provided.get("DEP1").cloned().unwrap(), inherent.clone()),
-    }
   }
   pub(crate) trait ProvidedContext {
     fn provided(&self) -> Provided;
@@ -83,12 +182,51 @@ mod provided_wasm {
     T: std::fmt::Debug,
   {
     fn provided(&self) -> Provided {
-      get_provided(self.inherent.clone())
+      let config = get_config();
+      let inherent = self.inherent.clone();
+      Provided {
+        dep1: Dep1Component::new(config.provided.get("DEP1").cloned().unwrap(), inherent.clone()),
+      }
     }
   }
 }
 #[cfg(target_family = "wasm")]
 pub(crate) use provided_wasm::*;
+#[allow(unused)]
+#[cfg(target_family = "wasm")]
+mod imported_wasm {
+  #[allow(unused)]
+  use super::*;
+  pub(crate) struct Imported {
+    pub http: HttpComponent,
+    pub aaa: AaaComponent,
+    pub zzz: ZzzComponent,
+    pub imported_component: ImportedComponentComponent,
+  }
+  pub(crate) trait ImportedContext {
+    fn imported(&self) -> Imported;
+  }
+  impl<T> ImportedContext for wick_component::flow_component::Context<T>
+  where
+    T: std::fmt::Debug,
+  {
+    fn imported(&self) -> Imported {
+      let config = get_config();
+      let inherent = self.inherent.clone();
+      Imported {
+        http: HttpComponent::new(config.imported.get("http").cloned().unwrap(), inherent.clone()),
+        aaa: AaaComponent::new(config.imported.get("AAA").cloned().unwrap(), inherent.clone()),
+        zzz: ZzzComponent::new(config.imported.get("ZZZ").cloned().unwrap(), inherent.clone()),
+        imported_component: ImportedComponentComponent::new(
+          config.imported.get("IMPORTED_COMPONENT").cloned().unwrap(),
+          inherent.clone(),
+        ),
+      }
+    }
+  }
+}
+#[cfg(target_family = "wasm")]
+pub(crate) use imported_wasm::*;
 #[cfg(target_family = "wasm")]
 thread_local! {
     static __CONFIG : std::cell::UnsafeCell < Option < SetupPayload >> =
@@ -102,6 +240,8 @@ pub struct RootConfig {}
 pub(crate) struct SetupPayload {
   #[allow(unused)]
   pub(crate) provided: std::collections::HashMap<String, wick_packet::ComponentReference>,
+  #[allow(unused)]
+  pub(crate) imported: std::collections::HashMap<String, wick_packet::ComponentReference>,
   #[allow(unused)]
   pub(crate) config: RootConfig,
 }

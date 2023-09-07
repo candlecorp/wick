@@ -71,7 +71,9 @@ macro_rules! payload_fan_out {
                   )*
                 }
               }
-              _ => panic!("Unexpected port: {}", packet.port())
+              _ => {
+                // TODO: add tracing to warn when we're sent packets we aren't expecting
+              }
             }
           } else {
             break;
@@ -155,7 +157,9 @@ macro_rules! payload_fan_out {
                     )*
                   }
                 }
-                _ => panic!("Unexpected port: {}", packet.port())
+                _ => {
+                  // TODO: add tracing to warn when we're sent packets we aren't expecting
+                }
               }
             } else {
               break;

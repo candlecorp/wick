@@ -29,6 +29,7 @@ config = [
   "normpath",
   "async-recursion",
   "wildmatch",
+  "once_cell",
 ]
 v1 = [
   "liquid-json",
@@ -84,6 +85,7 @@ property = { workspace = true, optional = true }
 normpath = { workspace = true, optional = true }
 async-recursion = { workspace = true, optional = true }
 wildmatch = { workspace = true, optional = true }
+once_cell = { workspace = true, optional = true }
 
 # v1 & v0
 num-traits = { workspace = true, optional = true }

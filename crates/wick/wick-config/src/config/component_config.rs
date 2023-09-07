@@ -1,6 +1,7 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 mod composite;
 mod wasm;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use asset_container::{AssetManager, Assets};
@@ -175,7 +176,6 @@ impl ComponentConfiguration {
   /// Returns a function that resolves a binding to a configuration item.
   #[must_use]
   pub fn resolver(&self) -> Box<Resolver> {
-    trace!("creating resolver for component {:?}", self.name());
     make_resolver(self.import.clone(), self.resources.clone())
   }
 
@@ -294,6 +294,19 @@ impl ComponentConfiguration {
       self.config(),
     )
     .map_err(Error::ConfigurationInvalid)?;
+    Ok(())
+  }
+}
+
+impl Renderable for ComponentConfiguration {
+  fn render_config(
+    &mut self,
+    source: Option<&Path>,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<()> {
+    self.resources.render_config(source, root_config, env)?;
+    self.import.render_config(source, root_config, env)?;
     Ok(())
   }
 }

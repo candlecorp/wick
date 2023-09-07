@@ -65,28 +65,27 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
       config.add_dep(Dependency::WasmRs);
     },
     quote! {
-
-    pub struct #outputs_name {
-      #[allow(unused)]
-      #(#output_port_fields,)*
-    }
-
-    impl wick_component::Broadcast for #outputs_name {
-      fn outputs_mut(&mut self) -> wick_packet::OutputIterator<'_>{
-        wick_packet::OutputIterator::new(vec![#(#output_port_fields_mut),*])
+      pub struct #outputs_name {
+        #[allow(unused)]
+        #(#output_port_fields,)*
       }
-    }
 
-    #single_output_impl
-
-
-    impl #outputs_name {
-      pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
-        Self {
-          #(#output_ports_new,)*
+      impl wick_component::Broadcast for #outputs_name {
+        fn outputs_mut(&mut self) -> wick_packet::OutputIterator<'_>{
+          wick_packet::OutputIterator::new(vec![#(#output_port_fields_mut),*])
         }
       }
-    }},
+
+      #single_output_impl
+
+      impl #outputs_name {
+        pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+          Self {
+            #(#output_ports_new,)*
+          }
+        }
+      }
+    },
   );
 
   quote! {

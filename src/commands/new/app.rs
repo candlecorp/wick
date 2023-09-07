@@ -9,7 +9,6 @@ use wick_config::config::{
   ComponentDefinition,
   ComponentOperationExpressionBuilder,
   ImportDefinition,
-  ResourceBindingBuilder,
   ScheduleConfigBuilder,
   TcpPort,
 };
@@ -85,13 +84,10 @@ pub(crate) async fn handle(
         }
         TriggerType::Http => {
           let port_name = "HTTP_PORT";
-          config.resources_mut().push(
-            ResourceBindingBuilder::default()
-              .id(port_name)
-              .kind(config::ResourceDefinition::TcpPort(TcpPort::new("0.0.0.0", 8080)))
-              .build()
-              .unwrap(),
-          );
+          config.resources_mut().push(Binding::new(
+            port_name,
+            config::ResourceDefinition::TcpPort(TcpPort::new("0.0.0.0", 8080)),
+          ));
           config.triggers_mut().push(config::TriggerDefinition::Http(
             config::HttpTriggerConfigBuilder::default()
               .resource(port_name)

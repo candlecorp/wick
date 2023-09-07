@@ -5,16 +5,14 @@ use std::path::Path;
 
 use asset_container::AssetManager;
 use wick_asset_reference::AssetReference;
+use wick_interface_types::OperationSignatures;
 use wick_packet::RuntimeConfig;
 
 use super::template_config::Renderable;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 /// A binding between an identifier and a target.
-pub struct Binding<T>
-where
-  T: serde::Serialize,
-{
+pub struct Binding<T> {
   /// The namespace to reference the collection's components on.
   pub(crate) id: String,
   /// The kind/type of the collection.
@@ -23,7 +21,7 @@ where
 
 impl<T> Renderable for Binding<T>
 where
-  T: serde::Serialize + Renderable,
+  T: Renderable,
 {
   fn render_config(
     &mut self,
@@ -37,7 +35,7 @@ where
 
 impl<T> AssetManager for Binding<T>
 where
-  T: serde::Serialize + AssetManager<Asset = AssetReference>,
+  T: AssetManager<Asset = AssetReference>,
 {
   type Asset = AssetReference;
 
@@ -50,10 +48,7 @@ where
   }
 }
 
-impl<T> Binding<T>
-where
-  T: serde::Serialize,
-{
+impl<T> Binding<T> {
   /// Create a new [Binding<ImportDefinition>] with specified name and [ImportDefinition].
   pub fn new<K: Into<String>, INTO: Into<T>>(name: K, kind: INTO) -> Self {
     Self {
@@ -72,5 +67,14 @@ where
   #[must_use]
   pub const fn kind(&self) -> &T {
     &self.kind
+  }
+}
+
+impl<T> OperationSignatures for Binding<T>
+where
+  T: OperationSignatures,
+{
+  fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
+    self.kind.operation_signatures()
   }
 }

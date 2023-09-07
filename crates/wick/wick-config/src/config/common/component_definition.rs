@@ -5,6 +5,7 @@ use std::path::Path;
 // delete when we move away from the `property` crate.
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
 use serde::Deserializer;
+use wick_interface_types::OperationSignatures;
 use wick_packet::{Entity, RuntimeConfig};
 
 use super::template_config::Renderable;
@@ -148,10 +149,18 @@ pub enum HighLevelComponent {
   HttpClient(config::components::HttpClientComponentConfig),
 }
 
-#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, serde::Serialize)]
-#[asset(asset(config::AssetReference))]
+impl OperationSignatures for HighLevelComponent {
+  fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
+    match self {
+      HighLevelComponent::Sql(c) => c.operation_signatures(),
+      HighLevelComponent::HttpClient(c) => c.operation_signatures(),
+    }
+  }
+}
 
 /// The kinds of collections that can operate in a flow.
+#[derive(Debug, Clone, PartialEq, derive_asset_container::AssetManager, serde::Serialize)]
+#[asset(asset(config::AssetReference))]
 #[must_use]
 #[serde(rename_all = "kebab-case")]
 pub enum ComponentDefinition {
@@ -174,11 +183,47 @@ pub enum ComponentDefinition {
   HighLevelComponent(HighLevelComponent),
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ComponentDefinitionKind {
+  Native,
+  Wasm,
+  Reference,
+  GrpcUrl,
+  Manifest,
+  HighLevelComponent,
+}
+
+impl std::fmt::Display for ComponentDefinitionKind {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      ComponentDefinitionKind::Native => write!(f, "native"),
+      ComponentDefinitionKind::Wasm => write!(f, "wasm"),
+      ComponentDefinitionKind::Reference => write!(f, "reference"),
+      ComponentDefinitionKind::GrpcUrl => write!(f, "grpc-url"),
+      ComponentDefinitionKind::Manifest => write!(f, "manifest"),
+      ComponentDefinitionKind::HighLevelComponent => write!(f, "high-level-component"),
+    }
+  }
+}
+
 impl ComponentDefinition {
   /// Returns true if the definition is a reference to another component.
   #[must_use]
   pub const fn is_reference(&self) -> bool {
     matches!(self, ComponentDefinition::Reference(_))
+  }
+
+  /// Returns the kind of the component definition.
+  #[must_use]
+  pub const fn kind(&self) -> ComponentDefinitionKind {
+    match self {
+      ComponentDefinition::Native(_) => ComponentDefinitionKind::Native,
+      ComponentDefinition::Wasm(_) => ComponentDefinitionKind::Wasm,
+      ComponentDefinition::Reference(_) => ComponentDefinitionKind::Reference,
+      ComponentDefinition::GrpcUrl(_) => ComponentDefinitionKind::GrpcUrl,
+      ComponentDefinition::Manifest(_) => ComponentDefinitionKind::Manifest,
+      ComponentDefinition::HighLevelComponent(_) => ComponentDefinitionKind::HighLevelComponent,
+    }
   }
 
   /// Returns the component config, if it exists
@@ -251,6 +296,20 @@ impl Renderable for ComponentDefinition {
     };
     self.set_config(val);
     Ok(())
+  }
+}
+
+impl OperationSignatures for &ComponentDefinition {
+  fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
+    match self {
+      ComponentDefinition::Manifest(c) => c.operation_signatures(),
+      ComponentDefinition::HighLevelComponent(c) => c.operation_signatures(),
+      ComponentDefinition::Native(_) => unreachable!(),
+      ComponentDefinition::Reference(_) => unreachable!(),
+      ComponentDefinition::GrpcUrl(_) => unreachable!(),
+      #[allow(deprecated)]
+      ComponentDefinition::Wasm(_) => unreachable!(),
+    }
   }
 }
 
