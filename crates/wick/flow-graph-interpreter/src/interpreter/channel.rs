@@ -21,27 +21,28 @@ pub struct Event {
 }
 
 impl Event {
-  pub(crate) fn new(ctx_id: Uuid, kind: EventKind, span: Option<Span>) -> Self {
+  pub(crate) const fn new(ctx_id: Uuid, kind: EventKind, span: Option<Span>) -> Self {
     Self { ctx_id, kind, span }
   }
 
   #[must_use]
-  pub fn ctx_id(&self) -> &Uuid {
+  pub const fn ctx_id(&self) -> &Uuid {
     &self.ctx_id
   }
 
   #[must_use]
-  pub fn name(&self) -> &str {
+  pub const fn name(&self) -> &str {
     self.kind.name()
   }
 
-  pub fn kind(&self) -> &EventKind {
+  pub const fn kind(&self) -> &EventKind {
     &self.kind
   }
 }
 
 #[derive(Debug)]
 #[must_use]
+#[allow(clippy::exhaustive_enums)]
 pub enum EventKind {
   Ping(usize),
   ExecutionStart(Box<ExecutionContext>),
@@ -53,7 +54,7 @@ pub enum EventKind {
 }
 
 impl EventKind {
-  pub(crate) fn name(&self) -> &str {
+  pub(crate) const fn name(&self) -> &str {
     match self {
       EventKind::Ping(_) => "ping",
       EventKind::ExecutionStart(_) => "exec_start",
@@ -73,16 +74,16 @@ pub struct CallComplete {
 }
 
 impl CallComplete {
-  fn new(component_index: NodeIndex) -> Self {
+  const fn new(component_index: NodeIndex) -> Self {
     Self {
       index: component_index,
       err: None,
     }
   }
-  pub fn index(&self) -> NodeIndex {
+  pub const fn index(&self) -> NodeIndex {
     self.index
   }
-  pub fn err(&self) -> &Option<PacketPayload> {
+  pub const fn err(&self) -> &Option<PacketPayload> {
     &self.err
   }
 }
@@ -132,7 +133,7 @@ impl std::fmt::Debug for InterpreterDispatchChannel {
 }
 
 impl InterpreterDispatchChannel {
-  fn new(sender: tokio::sync::mpsc::Sender<Event>, span: Option<Span>) -> Self {
+  const fn new(sender: tokio::sync::mpsc::Sender<Event>, span: Option<Span>) -> Self {
     Self { sender, span }
   }
 

@@ -4,7 +4,6 @@ use flow_component::{Component, ComponentError, RuntimeCallback};
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
-use crate::graph::LiquidOperationConfig;
 use crate::interpreter::channel::InterpreterDispatchChannel;
 use crate::interpreter::executor::SchematicExecutor;
 use crate::interpreter::program::ProgramState;
@@ -28,16 +27,17 @@ impl InnerSelf {
     components: Arc<HandlerMap>,
     state: &ProgramState,
     dispatcher: &InterpreterDispatchChannel,
+    root_config: Option<&RuntimeConfig>,
   ) -> Self {
     let schematics: Arc<Vec<SchematicExecutor>> = Arc::new(
       state
         .network
         .schematics()
         .iter()
-        .map(|s| SchematicExecutor::new(s.clone(), dispatcher.clone()))
+        .map(|s| SchematicExecutor::new(s.clone(), dispatcher.clone(), root_config.cloned()))
         .collect(),
     );
-    let signature = state.components.get(SelfComponent::ID).unwrap().clone();
+    let signature = state.components[SelfComponent::ID].clone();
     Self {
       signature,
       schematics,
@@ -58,8 +58,9 @@ impl SelfComponent {
     components: Arc<HandlerMap>,
     state: &ProgramState,
     dispatcher: &InterpreterDispatchChannel,
+    root_config: Option<&RuntimeConfig>,
   ) -> Self {
-    let inner_self = InnerSelf::new(components, state, dispatcher);
+    let inner_self = InnerSelf::new(components, state, dispatcher, root_config);
     Self {
       inner: Arc::new(inner_self),
     }
@@ -75,8 +76,6 @@ impl Component for SelfComponent {
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| debug!(target = %invocation.target, namespace = Self::ID));
 
-    let op_config = LiquidOperationConfig::new_value(config);
-
     let operation = invocation.target.operation_id().to_owned();
     let fut = self
       .inner
@@ -88,7 +87,7 @@ impl Component for SelfComponent {
           invocation,
           self.inner.components.clone(),
           self.clone(),
-          op_config,
+          config,
           callback,
         )
       })

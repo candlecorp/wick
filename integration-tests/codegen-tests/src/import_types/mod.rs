@@ -95,6 +95,7 @@ thread_local! {
     std::cell::UnsafeCell::new(None);
 }
 #[derive(Debug, Clone, Default, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+#[allow(clippy::exhaustive_structs)]
 pub struct RootConfig {}
 #[cfg(target_family = "wasm")]
 #[derive(Debug, ::serde::Deserialize)]
@@ -162,6 +163,7 @@ pub mod types {
   use super::types;
   #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
   ///a useful struct
+  #[allow(clippy::exhaustive_structs)]
   pub struct LocalStruct {
     #[serde(rename = "field1")]
     pub field1: String,
@@ -172,6 +174,7 @@ pub mod types {
     pub time: wick_component::datetime::DateTime,
   }
   #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+  #[allow(clippy::exhaustive_structs)]
   pub struct LocalStructInner {
     #[serde(rename = "field1")]
     pub field1: String,
@@ -195,6 +198,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP method enum
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum HttpMethod {
       ///HTTP GET method
       Get,
@@ -290,6 +294,7 @@ pub mod types {
     }
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP request
+    #[allow(clippy::exhaustive_structs)]
     pub struct HttpRequest {
       ///method from request line enum
       #[serde(rename = "method")]
@@ -325,6 +330,7 @@ pub mod types {
     }
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP response
+    #[allow(clippy::exhaustive_structs)]
     pub struct HttpResponse {
       ///HTTP version enum
       #[serde(rename = "version")]
@@ -341,6 +347,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP scheme
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum HttpScheme {
       ///HTTP scheme
       Http,
@@ -407,6 +414,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP version
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum HttpVersion {
       ///HTTP 1.0 version
       Http10,
@@ -490,6 +498,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP status code
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum StatusCode {
       ///Continue status code
       Continue,
@@ -826,6 +835,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP method enum
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum HttpMethod {
       ///HTTP GET method
       Get,
@@ -921,6 +931,7 @@ pub mod types {
     }
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP request
+    #[allow(clippy::exhaustive_structs)]
     pub struct HttpRequest {
       ///method from request line enum
       #[serde(rename = "method")]
@@ -956,6 +967,7 @@ pub mod types {
     }
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP response
+    #[allow(clippy::exhaustive_structs)]
     pub struct HttpResponse {
       ///HTTP version enum
       #[serde(rename = "version")]
@@ -972,6 +984,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP scheme
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum HttpScheme {
       ///HTTP scheme
       Http,
@@ -1038,6 +1051,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP version
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum HttpVersion {
       ///HTTP 1.0 version
       Http10,
@@ -1121,6 +1135,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP status code
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum StatusCode {
       ///Continue status code
       Continue,
@@ -1457,6 +1472,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP method enum
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum HttpMethod {
       ///HTTP GET method
       Get,
@@ -1552,6 +1568,7 @@ pub mod types {
     }
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP request
+    #[allow(clippy::exhaustive_structs)]
     pub struct HttpRequest {
       ///method from request line enum
       #[serde(rename = "method")]
@@ -1587,6 +1604,7 @@ pub mod types {
     }
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP response
+    #[allow(clippy::exhaustive_structs)]
     pub struct HttpResponse {
       ///HTTP version enum
       #[serde(rename = "version")]
@@ -1603,6 +1621,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP scheme
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum HttpScheme {
       ///HTTP scheme
       Http,
@@ -1669,6 +1688,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP version
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum HttpVersion {
       ///HTTP 1.0 version
       Http10,
@@ -1752,6 +1772,7 @@ pub mod types {
     #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
     ///HTTP status code
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
+    #[allow(clippy::exhaustive_enums)]
     pub enum StatusCode {
       ///Continue status code
       Continue,
@@ -2088,6 +2109,7 @@ pub mod echo {
   #[allow(unused)]
   use super::*;
   #[derive(Debug, Clone, Default, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+  #[allow(clippy::exhaustive_structs)]
   pub struct Config {}
   pub struct Outputs {
     #[allow(unused)]
@@ -2141,6 +2163,7 @@ pub mod testop {
   #[allow(unused)]
   use super::*;
   #[derive(Debug, Clone, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+  #[allow(clippy::exhaustive_structs)]
   pub struct Config {
     #[serde(rename = "A")]
     pub a: String,

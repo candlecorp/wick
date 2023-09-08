@@ -26,13 +26,7 @@ impl<'a> TestGroup<'a> {
     }
   }
 
-  pub fn get_tests<'b>(&'a mut self) -> Vec<&'a mut UnitTest<'b>>
-  where
-    'a: 'b,
-  {
-    self.tests.iter_mut().collect()
-  }
-
+  #[allow(clippy::missing_const_for_fn)]
   pub fn name(mut self, name: String) -> Self {
     self.name = name;
     self
@@ -47,8 +41,8 @@ impl<'a> TestGroup<'a> {
     let name = self.name.clone();
     let config = self.root_config.clone();
     let tests = self
-      .get_tests()
-      .into_iter()
+      .tests
+      .iter_mut()
       .filter(|test| {
         if filter.is_empty() {
           return true;

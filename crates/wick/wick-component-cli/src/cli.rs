@@ -17,6 +17,7 @@ pub(crate) const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("../../wick-rpc/src
 
 #[derive(Debug, Clone)]
 #[must_use]
+#[non_exhaustive]
 /// Metadata for the running server.
 pub struct ServerState {
   /// The address of the RPC server if it is running.
@@ -41,6 +42,7 @@ impl std::fmt::Debug for ServerControl {
 }
 
 impl ServerControl {
+  #[allow(clippy::missing_const_for_fn)]
   fn maybe_new(opt: Option<(SocketAddr, Sender<ServerMessage>)>) -> Option<Self> {
     if let Some((addr, tx)) = opt {
       Some(Self { addr, tx })

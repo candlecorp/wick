@@ -9,7 +9,7 @@ use crate::generate::{config, f};
 pub(crate) fn op_config(config: &mut config::Config, config_name: &str, op: &OperationSignature) -> TokenStream {
   let (_, config_def) = super::type_def(
     config,
-    &TypeDefinition::Struct(StructDefinition::new(config_name, op.config().to_vec())),
+    &TypeDefinition::Struct(StructDefinition::new(config_name, op.config().to_vec(), None)),
     TypeOptions::Defaults,
   );
 

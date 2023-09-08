@@ -5,6 +5,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 /// Crate error.
+#[non_exhaustive]
 pub enum OciError {
   /// No version found in annotations
   #[error("No version found in annotations")]

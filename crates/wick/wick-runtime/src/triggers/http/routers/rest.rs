@@ -49,15 +49,15 @@ impl RestRouter {
     }
 
     let oapi = config.tools().map_or(false, |t| t.openapi());
-    let oapi = if oapi {
-      info!(
-        path = format!("{}{}", config.path(), OPENAPI_PATH),
-        "openapi schema enabled"
-      );
-      Some(openapi::generate_openapi(app_config, &config, &routes)?)
-    } else {
-      None
-    };
+    let oapi = oapi
+      .then(|| {
+        info!(
+          path = format!("{}{}", config.path(), OPENAPI_PATH),
+          "openapi schema enabled"
+        );
+        openapi::generate_openapi(app_config, &config, &routes)
+      })
+      .transpose()?;
 
     Ok(Self {
       context: Arc::new(Context {
@@ -155,7 +155,7 @@ impl RestHandler {
       }
     }
 
-    for route in context.routes.iter() {
+    for route in &context.routes {
       if !route.config.methods().is_empty() && !route.config.methods().contains(&method) {
         continue;
       }
@@ -180,10 +180,10 @@ impl RestHandler {
       span.in_scope(|| trace!(route = %uri, len=body_bytes.len(), "body"));
 
       if !matches!(method, HttpMethod::Get) {
-        let payload: serde_json::Value = if body.trim().is_empty() {
-          serde_json::Value::Null
+        let payload: Option<serde_json::Value> = if body.trim().is_empty() {
+          None
         } else {
-          serde_json::from_str(&body).map_err(HttpError::InvalidBody)?
+          Some(serde_json::from_str(&body).map_err(HttpError::InvalidBody)?)
         };
 
         packets.push(Packet::encode("input", payload));
@@ -203,16 +203,7 @@ impl RestHandler {
         InherentData::unsafe_default(),
         &span,
       );
-      let runtime_config = if let Some(config) = route.operation.config() {
-        // TODO:FIX These operations are being rendered without access to the root config.
-        Some(
-          config
-            .render(None, None, None, Some(&invocation.inherent))
-            .map_err(|e| HttpError::OperationError(e.to_string()))?,
-        )
-      } else {
-        None
-      };
+      let runtime_config = route.operation.config().and_then(|c| c.value().cloned());
 
       let stream = runtime
         .invoke(invocation, runtime_config)

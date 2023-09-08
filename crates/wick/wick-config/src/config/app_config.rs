@@ -144,25 +144,13 @@ impl AppConfiguration {
   /// Get the configuration item a binding points to.
 
   pub fn resolve_binding(&self, name: &str) -> Result<OwnedConfigurationItem> {
-    let env = std::env::vars().collect();
-    resolve(
-      name,
-      &self.import,
-      &self.resources,
-      self.root_config.as_ref(),
-      Some(&env),
-    )
+    resolve(name, &self.import, &self.resources)
   }
 
   /// Returns a function that resolves a binding to a configuration item.
   #[must_use]
   pub fn resolver(&self) -> Box<Resolver> {
-    make_resolver(
-      self.import.clone(),
-      self.resources.clone(),
-      self.root_config.clone(),
-      Some(std::env::vars().collect()),
-    )
+    make_resolver(self.import.clone(), self.resources.clone())
   }
 
   /// Return the underlying version of the source manifest.
@@ -194,13 +182,13 @@ impl AppConfiguration {
   }
 
   /// Add a resource to the application configuration.
-  pub fn add_resource(&mut self, name: impl AsRef<str>, resource: ResourceDefinition) {
-    self.resources.push(ResourceBinding::new(name.as_ref(), resource));
+  pub fn add_resource<T: Into<String>>(&mut self, name: T, resource: ResourceDefinition) {
+    self.resources.push(ResourceBinding::new(name, resource));
   }
 
   /// Add a component to the application configuration.
-  pub fn add_import(&mut self, name: impl AsRef<str>, import: ImportDefinition) {
-    self.import.push(ImportBinding::new(name.as_ref(), import));
+  pub fn add_import<T: Into<String>>(&mut self, name: T, import: ImportDefinition) {
+    self.import.push(ImportBinding::new(name, import));
   }
 
   /// Generate V1 configuration yaml from this configuration.
@@ -212,10 +200,11 @@ impl AppConfiguration {
 
   /// Initialize the configuration with the given environment variables.
   pub(super) fn initialize(&mut self) -> Result<&Self> {
-    // This pre-renders the application config's resources with access to the environment
-    // so they're resulting value is intuitively based on where it was initially defined.
     let root_config = self.root_config.as_ref();
+    let source = self.source().map(std::path::Path::to_path_buf);
+
     trace!(
+      source = ?source,
       num_resources = self.resources.len(),
       num_imports = self.import.len(),
       ?root_config,
@@ -229,15 +218,15 @@ impl AppConfiguration {
     }
     self.import.extend(bindings);
 
-    self.resources.render_config(root_config, env)?;
-    self.import.render_config(root_config, env)?;
-    self.triggers.render_config(root_config, env)?;
+    self.resources.render_config(source.as_deref(), root_config, env)?;
+    self.import.render_config(source.as_deref(), root_config, env)?;
+    self.triggers.render_config(source.as_deref(), root_config, env)?;
 
     Ok(self)
   }
 
   /// Validate this configuration is good.
-  pub fn validate(&self) -> Result<()> {
+  pub const fn validate(&self) -> Result<()> {
     /* placeholder */
     Ok(())
   }
@@ -252,7 +241,7 @@ impl Lockdown for AppConfiguration {
     let mut errors = Vec::new();
     let id = Entity::LOCAL;
 
-    for resource in self.resources.iter() {
+    for resource in &self.resources {
       if let Err(e) = validate_resource(id, &(resource.into()), lockdown) {
         errors.push(FailureKind::Failed(Box::new(e)));
       }
@@ -268,6 +257,7 @@ impl Lockdown for AppConfiguration {
 /// A configuration item
 #[derive(Debug, Clone, PartialEq)]
 #[must_use]
+
 pub enum ConfigurationItem<'a> {
   /// A component definition.
   Component(&'a ComponentDefinition),
@@ -279,7 +269,7 @@ pub enum ConfigurationItem<'a> {
 
 impl<'a> ConfigurationItem<'a> {
   /// Get the component definition or return an error.
-  pub fn try_component(&self) -> std::result::Result<&'a ComponentDefinition, ReferenceError> {
+  pub const fn try_component(&self) -> std::result::Result<&'a ComponentDefinition, ReferenceError> {
     match self {
       Self::Component(c) => Ok(c),
       _ => Err(ReferenceError::Component),
@@ -287,7 +277,7 @@ impl<'a> ConfigurationItem<'a> {
   }
 
   /// Get the types definition or return an error.
-  pub fn try_types(&self) -> std::result::Result<&'a TypesComponent, ReferenceError> {
+  pub const fn try_types(&self) -> std::result::Result<&'a TypesComponent, ReferenceError> {
     match self {
       Self::Types(c) => Ok(c),
       _ => Err(ReferenceError::Types),
@@ -295,7 +285,7 @@ impl<'a> ConfigurationItem<'a> {
   }
 
   /// Get the resource definition or return an error.
-  pub fn try_resource(&self) -> std::result::Result<&'a ResourceDefinition, ReferenceError> {
+  pub const fn try_resource(&self) -> std::result::Result<&'a ResourceDefinition, ReferenceError> {
     match self {
       Self::Resource(c) => Ok(c),
       _ => Err(ReferenceError::Resource),
@@ -306,6 +296,7 @@ impl<'a> ConfigurationItem<'a> {
 /// A configuration item
 #[derive(Debug, Clone, PartialEq)]
 #[must_use]
+
 pub enum OwnedConfigurationItem {
   /// A component definition.
   Component(ComponentDefinition),
@@ -315,6 +306,7 @@ pub enum OwnedConfigurationItem {
 
 impl OwnedConfigurationItem {
   /// Get the component definition or return an error.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn try_component(self) -> Result<ComponentDefinition> {
     match self {
       Self::Component(c) => Ok(c),
@@ -322,6 +314,7 @@ impl OwnedConfigurationItem {
     }
   }
   /// Get the resource definition or return an error.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn try_resource(self) -> Result<ResourceDefinition> {
     match self {
       Self::Resource(c) => Ok(c),

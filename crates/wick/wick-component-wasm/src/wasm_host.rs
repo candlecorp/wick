@@ -64,6 +64,7 @@ impl WasmHostBuilder {
     }
   }
 
+  #[allow(clippy::missing_const_for_fn)]
   pub fn wasi_params(mut self, params: WasiParams) -> Self {
     self.wasi_params = Some(params);
     self
@@ -74,11 +75,13 @@ impl WasmHostBuilder {
     self
   }
 
+  #[allow(clippy::missing_const_for_fn)]
   pub fn engine(mut self, engine: wasmtime::Engine) -> Self {
     self.engine = Some(engine);
     self
   }
 
+  #[allow(clippy::missing_const_for_fn)]
   pub fn buffer_size(mut self, buffer_size: u32) -> Self {
     self.buffer_size = Some(buffer_size);
     self

@@ -1,17 +1,7 @@
 #![cfg(feature = "parser")]
 
 use anyhow::Result;
-use wick_interface_types::{
-  component,
-  fields,
-  operation,
-  parse,
-  ComponentMetadata,
-  ComponentSignature,
-  Field,
-  OperationSignature,
-  Type,
-};
+use wick_interface_types::{component, fields, operation, parse, ComponentSignature, Field, OperationSignature, Type};
 
 #[test_log::test]
 fn test_parser() -> Result<()> {
@@ -51,24 +41,24 @@ fn test_op_macro() -> Result<()> {
       outputs: {"output"=>"string",},
     }
   };
-  let expected = OperationSignature {
-    name: "test-component".to_owned(),
-    config: Default::default(),
-    inputs: fields! {"input"=>"string"},
-    outputs: fields! {"output"=>"string"},
-  };
+  let expected = OperationSignature::new(
+    "test-component",
+    fields! {"input"=>"string"},
+    fields! {"output"=>"string"},
+    Default::default(),
+  );
   assert_eq!(actual, expected);
   let actual = operation! {"math::subtract" => {
     config: {},
     inputs: { "left" => "u64", "right" => "u64",},
     outputs: { "output" => "u64" ,},
   }};
-  let expected = OperationSignature {
-    name: "math::subtract".to_owned(),
-    config: Default::default(),
-    inputs: fields! {"left"=>"u64","right"=>"u64"},
-    outputs: fields! {"output"=>"u64"},
-  };
+  let expected = OperationSignature::new(
+    "math::subtract".to_owned(),
+    fields! {"left"=>"u64","right"=>"u64"},
+    fields! {"output"=>"u64"},
+    Default::default(),
+  );
   assert_eq!(actual, expected);
 
   Ok(())
@@ -85,12 +75,13 @@ fn test_component_macro() -> Result<()> {
     }
   });
 
-  let expected = ComponentSignature {
-    name: Some("test-native-component".to_owned()),
-    operations: opmap,
-    metadata: ComponentMetadata::new(Some("0.1.0")),
-    ..Default::default()
-  };
+  let expected = ComponentSignature::new(
+    "test-native-component",
+    Some("0.1.0".to_owned()),
+    opmap,
+    Default::default(),
+    Default::default(),
+  );
   let actual = component! {
       name: "test-native-component",
       version: Some("0.1.0"),

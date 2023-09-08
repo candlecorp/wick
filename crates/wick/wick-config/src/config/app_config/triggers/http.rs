@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::Path;
 
 pub use middleware::{Middleware, MiddlewareBuilder, MiddlewareBuilderError};
 use wick_asset_reference::AssetReference;
@@ -51,6 +52,7 @@ pub struct HttpTriggerConfig {
 #[asset(asset(AssetReference))]
 #[must_use]
 #[serde(rename_all = "kebab-case")]
+
 pub enum HttpRouterConfig {
   RawRouter(RawRouterConfig),
   RestRouter(RestRouterConfig),
@@ -61,14 +63,15 @@ pub enum HttpRouterConfig {
 impl Renderable for HttpRouterConfig {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     match self {
-      HttpRouterConfig::RawRouter(v) => v.render_config(root_config, env),
-      HttpRouterConfig::RestRouter(v) => v.render_config(root_config, env),
-      HttpRouterConfig::StaticRouter(v) => v.render_config(root_config, env),
-      HttpRouterConfig::ProxyRouter(v) => v.render_config(root_config, env),
+      HttpRouterConfig::RawRouter(v) => v.render_config(source, root_config, env),
+      HttpRouterConfig::RestRouter(v) => v.render_config(source, root_config, env),
+      HttpRouterConfig::StaticRouter(v) => v.render_config(source, root_config, env),
+      HttpRouterConfig::ProxyRouter(v) => v.render_config(source, root_config, env),
     }
   }
 }
@@ -76,10 +79,11 @@ impl Renderable for HttpRouterConfig {
 impl Renderable for HttpTriggerConfig {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
-    self.routers.render_config(root_config, env)
+    self.routers.render_config(source, root_config, env)
   }
 }
 
@@ -107,7 +111,7 @@ impl ExpandImports for HttpTriggerConfig {
 
 impl HttpRouterConfig {
   #[must_use]
-  pub fn kind(&self) -> HttpRouterKind {
+  pub const fn kind(&self) -> HttpRouterKind {
     match self {
       Self::RawRouter(_) => HttpRouterKind::RawRouter,
       Self::RestRouter(_) => HttpRouterKind::RestRouter,

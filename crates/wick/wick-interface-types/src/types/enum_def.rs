@@ -5,6 +5,7 @@ use crate::is_false;
 /// Signatures of enum type definitions.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
 #[must_use]
+#[non_exhaustive]
 pub struct EnumDefinition {
   /// The name of the enum.
   pub name: String,
@@ -21,12 +22,12 @@ pub struct EnumDefinition {
 
 impl EnumDefinition {
   /// Constructor for [EnumDefinition]
-  pub fn new<T: AsRef<str>>(name: T, variants: Vec<EnumVariant>) -> Self {
+  pub fn new<T: Into<String>>(name: T, variants: Vec<EnumVariant>, description: Option<String>) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       variants,
       imported: false,
-      description: None,
+      description,
     }
   }
 }
@@ -39,6 +40,7 @@ impl PartialEq for EnumDefinition {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[must_use]
+#[non_exhaustive]
 /// An enum variant definition
 pub struct EnumVariant {
   /// The name of the variant.
@@ -56,12 +58,12 @@ pub struct EnumVariant {
 
 impl EnumVariant {
   /// Constructor for [EnumVariant]
-  pub fn new<T: AsRef<str>>(name: T, index: Option<u32>, value: Option<String>) -> Self {
+  pub fn new<T: Into<String>>(name: T, index: Option<u32>, value: Option<String>, description: Option<String>) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       index,
       value,
-      description: None,
+      description,
     }
   }
 }

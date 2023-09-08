@@ -2,6 +2,7 @@ use thiserror::Error;
 use wick_config::AssetReference;
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum ComponentError {
   #[error("Component not found: {0}")]
   ComponentNotFound(String),

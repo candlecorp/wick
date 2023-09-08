@@ -44,11 +44,11 @@ pub(crate) async fn fetch_wick_tree(
 }
 
 pub(crate) fn merge_config(
-  def: &ComponentConfiguration,
+  def: ComponentConfiguration,
   local_cli_opts: &crate::options::oci::OciOptions,
   server_cli_opts: Option<DefaultCliOptions>,
 ) -> ComponentConfiguration {
-  let mut merged_manifest = def.clone();
+  let mut merged_manifest = def;
   let mut host_config = merged_manifest.host().cloned().unwrap_or_default();
 
   host_config.set_allow_latest(local_cli_opts.allow_latest || host_config.allow_latest());

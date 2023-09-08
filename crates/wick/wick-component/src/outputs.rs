@@ -24,9 +24,10 @@ pub trait Broadcast {
   }
 
   /// Broadcast an error to all output streams.
-  fn broadcast_err(&mut self, err: impl AsRef<str>) {
+  fn broadcast_err(&mut self, err: impl Into<String>) {
+    let err = err.into();
     for output in self.outputs_mut() {
-      output.error(err.as_ref());
+      output.error(&err);
     }
   }
 

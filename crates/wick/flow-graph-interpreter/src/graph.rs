@@ -258,7 +258,7 @@ fn connection(
   ))
 }
 
-#[allow(clippy::option_if_let_else, clippy::too_many_lines)]
+#[allow(clippy::option_if_let_else, clippy::too_many_lines, clippy::cognitive_complexity)]
 fn expand_defaulted_ports(
   schematic: &mut Schematic,
   expressions: &mut [FlowExpression],

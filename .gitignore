@@ -1,6 +1,7 @@
 # rust
 **/target
 crates/*/**/Cargo.lock
+integration-tests/*/**/Cargo.lock
 
 # .env
 DEV.env

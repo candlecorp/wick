@@ -62,6 +62,7 @@ impl Interpreter {
     namespace: Option<String>,
     components: Option<HandlerMap>,
     callback: Arc<RuntimeCallback>,
+    root_config: Option<&RuntimeConfig>,
     parent_span: &Span,
   ) -> Result<Self, Error> {
     let span = info_span!(parent: parent_span, "interpreter");
@@ -107,7 +108,7 @@ impl Interpreter {
 
     // Make the self:: component
     let components = Arc::new(handlers);
-    let self_component = SelfComponent::new(components.clone(), program.state(), &dispatcher);
+    let self_component = SelfComponent::new(components.clone(), program.state(), &dispatcher, root_config);
 
     // If we expose a component, expose its signature as our own.
     // Otherwise expose our self signature.
@@ -287,6 +288,7 @@ impl Component for Interpreter {
 
 #[derive(Debug, Clone)]
 #[allow(missing_copy_implementations)]
+#[non_exhaustive]
 pub struct InterpreterOptions {
   /// Timeout after which a component that has received no output is considered dead.
   pub output_timeout: Duration,
@@ -306,14 +308,14 @@ mod test {
 
   use super::*;
 
-  fn sync_send<T>()
+  const fn sync_send<T>()
   where
     T: Sync + Send,
   {
   }
 
   #[test]
-  fn test_sync_send() -> Result<()> {
+  const fn test_sync_send() -> Result<()> {
     sync_send::<Interpreter>();
     Ok(())
   }

@@ -1,7 +1,6 @@
 use tap_harness::TestRunner;
 use wick_config::config::TestConfiguration;
 
-use crate::utils::render_config;
 use crate::{ComponentFactory, TestError, TestGroup};
 
 #[derive(Debug, Default)]
@@ -19,7 +18,7 @@ impl<'a> TestSuite<'a> {
       .iter()
       .map(|config| {
         Ok(TestGroup::from_test_cases(
-          render_config(config.config(), None)?,
+          config.config().and_then(|c| c.value().cloned()),
           config.cases(),
         ))
       })
@@ -32,7 +31,7 @@ impl<'a> TestSuite<'a> {
     'b: 'a,
   {
     self.tests.push(TestGroup::from_test_cases(
-      render_config(config.config(), None)?,
+      config.config().and_then(|c| c.value().cloned()),
       config.cases(),
     ));
     Ok(())

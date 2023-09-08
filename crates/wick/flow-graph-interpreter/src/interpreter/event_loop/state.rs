@@ -30,7 +30,7 @@ impl State {
     self.context_map.get(uuid)
   }
 
-  pub fn invocations(&self) -> &ContextMap {
+  pub const fn invocations(&self) -> &ContextMap {
     &self.context_map
   }
 
@@ -124,14 +124,11 @@ impl State {
 
   #[allow(clippy::unused_async)]
   async fn handle_input_data(&mut self, ctx_id: Uuid, port: PortReference, span: &Span) -> Result<(), ExecutionError> {
-    let (ctx, _) = match self.get_ctx(&ctx_id) {
-      Some(ctx) => ctx,
-      None => {
-        span.in_scope(||{debug!(
+    let Some((ctx, _)) = self.get_ctx(&ctx_id) else {
+      span.in_scope(||{debug!(
           port = %port, %ctx_id, "still receiving upstream data for invocation that has already been completed, this may be due to a component panic or premature close"
         );});
-        return Ok(());
-      }
+      return Ok(());
     };
 
     let graph = ctx.schematic();
@@ -179,15 +176,12 @@ impl State {
 
   #[allow(clippy::unused_async)]
   async fn handle_output_data(&mut self, ctx_id: Uuid, port: PortReference, span: &Span) -> Result<(), ExecutionError> {
-    let (ctx, _) = match self.get_ctx(&ctx_id) {
-      Some(ctx) => ctx,
-      None => {
-        span.in_scope(||{
+    let Some((ctx, _)) = self.get_ctx(&ctx_id) else {
+      span.in_scope(||{
           debug!(
           port = %port, %ctx_id, "still receiving downstream data for invocation that has already been completed, this may be due to a component panic or premature close")
         ;});
-        return Ok(());
-      }
+      return Ok(());
     };
 
     let graph = ctx.schematic();
@@ -253,17 +247,14 @@ impl State {
 
   #[allow(clippy::unused_async)]
   pub(super) async fn handle_call_complete(&self, ctx_id: Uuid, data: CallComplete) -> Result<(), ExecutionError> {
-    let (ctx, _) = match self.get_ctx(&ctx_id) {
-      Some(ctx) => ctx,
-      None => {
-        // This is a warning, not an error, because it's possible the transaction completes OK, it's just that a
-        // component is misbehaving.
-        debug!(
-          ?data,
-          %ctx_id, "tried to cleanup missing invocation, this may be due to a component panic or premature close"
-        );
-        return Ok(());
-      }
+    let Some((ctx, _)) = self.get_ctx(&ctx_id) else {
+      // This is a warning, not an error, because it's possible the transaction completes OK, it's just that a
+      // component is misbehaving.
+      debug!(
+        ?data,
+        %ctx_id, "tried to cleanup missing invocation, this may be due to a component panic or premature close"
+      );
+      return Ok(());
     };
     let instance = ctx.instance(data.index);
     debug!(operation = instance.id(), entity = %instance.entity(), "call complete");

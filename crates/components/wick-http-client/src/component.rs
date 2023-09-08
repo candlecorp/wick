@@ -47,7 +47,7 @@ impl HttpClientComponent {
       .and_then(|r| r.try_url())
       .into_component_error()?;
 
-    let mut sig = ComponentSignature::new("wick/component/http");
+    let mut sig = ComponentSignature::new_named("wick/component/http");
     sig.metadata.version = metadata.map(|v| v.version().to_owned());
     sig.operations = config.operation_signatures();
     sig.config = config.config().to_vec();
@@ -145,11 +145,8 @@ async fn handle(
   if baseurl.cannot_be_a_base() {
     return Err(Error::InvalidBaseUrl(baseurl).into());
   }
-  let opdef = match opdef {
-    Some(opdef) => opdef,
-    None => {
-      return Err(Error::OpNotFound(invocation.target.operation_id().to_owned()).into());
-    }
+  let Some(opdef) = opdef else {
+    return Err(Error::OpNotFound(invocation.target.operation_id().to_owned()).into());
   };
   // Defer to operation codec, then to client codec, then to default.
   let codec = opdef.codec().copied().unwrap_or(codec.unwrap_or_default());
@@ -403,8 +400,8 @@ mod test {
   use super::*;
 
   #[test]
-  fn test_component() {
-    fn is_send_sync<T: Send + Sync>() {}
+  const fn test_component() {
+    const fn is_send_sync<T: Send + Sync>() {}
     is_send_sync::<HttpClientComponent>();
   }
 

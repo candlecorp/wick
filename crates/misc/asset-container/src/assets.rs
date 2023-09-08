@@ -89,7 +89,7 @@ impl<'a, T> AssetRef<'a, T>
 where
   T: Asset + Clone,
 {
-  pub fn new(asset: Cow<'a, T>, flags: u32) -> Self {
+  pub const fn new(asset: Cow<'a, T>, flags: u32) -> Self {
     Self {
       parent_flags: AtomicU32::new(flags),
       asset,
@@ -222,10 +222,11 @@ impl CompleteAsset {
     &self.name
   }
 
-  pub fn result(&self) -> &Result<Vec<u8>, Error> {
+  pub const fn result(&self) -> &Result<Vec<u8>, Error> {
     &self.result
   }
 
+  #[allow(clippy::missing_const_for_fn)]
   pub fn into_bytes(self) -> Result<Vec<u8>, Error> {
     self.result
   }
@@ -266,7 +267,7 @@ impl<'a> Future for AssetPull<'a> {
     let mut all_done = true;
     let mut results = Vec::new();
     let this = self.get_mut();
-    for asset in this.assets.iter_mut() {
+    for asset in &mut this.assets {
       let name = &asset.name;
       let fut = &mut asset.progress;
       if asset.finished.load(std::sync::atomic::Ordering::Relaxed) {
@@ -329,7 +330,7 @@ impl<'a> Stream for AssetPullWithProgress<'a> {
   fn poll_next(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
     let mut all_done = true;
     let mut progress = Vec::new();
-    for asset in self.assets.iter_mut() {
+    for asset in &mut self.assets {
       let name = &asset.name;
       let stream = &mut asset.progress;
       match stream.poll_next_unpin(cx) {
@@ -368,6 +369,7 @@ impl<'a> Stream for AssetPullWithProgress<'a> {
 }
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 #[must_use]
 pub struct Progress {
   pub status: Status,
@@ -375,15 +377,16 @@ pub struct Progress {
 }
 
 impl Progress {
-  pub fn new(asset: impl AsRef<str>, status: Status) -> Self {
+  pub fn new<T: Into<String>>(asset: T, status: Status) -> Self {
     Self {
       status,
-      asset: asset.as_ref().to_owned(),
+      asset: asset.into(),
     }
   }
 }
 
 #[derive(Debug, Clone)]
+#[allow(clippy::exhaustive_enums)]
 pub enum Status {
   Error(String),
   AssetComplete(Vec<u8>),

@@ -11,6 +11,7 @@ use crate::port::PortDirection;
 use crate::{Connection, ConnectionIndex, PortReference, Schematic};
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum SchematicHop<'graph, DATA>
 where
   DATA: Clone,
@@ -52,6 +53,7 @@ where
 
 #[derive(Debug, Clone, Copy)]
 #[must_use]
+#[non_exhaustive]
 pub enum WalkDirection {
   Up,
   Down,

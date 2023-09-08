@@ -4,6 +4,7 @@ use wick_packet::TypeWrapper;
 
 #[derive(thiserror::Error, Debug)]
 #[allow(missing_docs)]
+#[non_exhaustive]
 pub enum Error {
   #[error("Invalid output for operations {}. At this time postgres operations can have at most one output named 'output' of type 'object'", .0.join(", "))]
   InvalidOutput(Vec<String>),

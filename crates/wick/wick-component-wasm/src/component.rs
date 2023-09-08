@@ -12,7 +12,8 @@ use crate::wasm_host::{SetupPayload, WasmHost, WasmHostBuilder};
 use crate::Error;
 
 #[derive(Clone, Default, derive_builder::Builder)]
-
+#[builder(default)]
+#[non_exhaustive]
 pub struct ComponentSetup {
   #[builder(setter(strip_option), default)]
   pub engine: Option<wasmtime::Engine>,
@@ -38,6 +39,7 @@ impl std::fmt::Debug for ComponentSetup {
 }
 
 #[derive(Debug, Default)]
+#[non_exhaustive]
 pub struct Context {
   pub documents: HashMap<String, String>,
   pub collections: HashMap<String, Vec<String>>,
@@ -60,14 +62,13 @@ fn permissions_to_wasi_params(perms: &Permissions) -> WasiParams {
 
 impl WasmComponent {
   pub async fn try_load(
-    ns: impl AsRef<str> + Send + Sync,
+    ns: &str,
     asset: FetchableAssetReference<'_>,
     options: ComponentSetup,
     span: Span,
   ) -> Result<Self, Error> {
     let mut builder = WasmHostBuilder::new(span.clone());
     let location = asset.location();
-    let ns = ns.as_ref();
 
     #[allow(clippy::option_if_let_else)]
     if let Some(config) = options.permissions {

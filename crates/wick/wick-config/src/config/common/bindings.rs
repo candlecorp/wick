@@ -1,6 +1,7 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 
 use std::collections::HashMap;
+use std::path::Path;
 
 use wick_packet::RuntimeConfig;
 
@@ -25,20 +26,18 @@ pub struct ImportBinding {
 impl Renderable for ImportBinding {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), crate::error::ManifestError> {
-    self.kind.render_config(root_config, env)
+    self.kind.render_config(source, root_config, env)
   }
 }
 
 impl ImportBinding {
   /// Create a new [ImportBinding] with specified name and [ImportDefinition].
-  pub fn new(name: impl AsRef<str>, kind: ImportDefinition) -> Self {
-    Self {
-      id: name.as_ref().to_owned(),
-      kind,
-    }
+  pub fn new<T: Into<String>>(name: T, kind: ImportDefinition) -> Self {
+    Self { id: name.into(), kind }
   }
 
   /// Get the configuration object for the collection.
@@ -60,19 +59,19 @@ impl ImportBinding {
   }
 
   /// Initialize a new import for the specified [ComponentDefinition].
-  pub fn component(name: impl AsRef<str>, component: ComponentDefinition) -> Self {
+  pub fn component<T: Into<String>>(name: T, component: ComponentDefinition) -> Self {
     #[allow(deprecated)]
     Self::new(name, ImportDefinition::Component(component))
   }
 
   /// Create a new Wasm component definition.
-  pub fn wasm(name: impl AsRef<str>, component: WasmComponent) -> Self {
+  pub fn wasm<T: Into<String>>(name: T, component: WasmComponent) -> Self {
     #[allow(deprecated)]
     Self::new(name, ImportDefinition::Component(ComponentDefinition::Wasm(component)))
   }
 
   /// Create a new GrpcUrl component definition.
-  pub fn grpc_url(name: impl AsRef<str>, component: config::components::GrpcUrlComponent) -> Self {
+  pub fn grpc_url<T: Into<String>>(name: T, component: config::components::GrpcUrlComponent) -> Self {
     Self::new(
       name,
       ImportDefinition::Component(ComponentDefinition::GrpcUrl(component)),
@@ -80,7 +79,7 @@ impl ImportBinding {
   }
 
   /// Create a new Manifest component definition.
-  pub fn manifest(name: impl AsRef<str>, component: config::components::ManifestComponent) -> Self {
+  pub fn manifest<T: Into<String>>(name: T, component: config::components::ManifestComponent) -> Self {
     Self::new(
       name,
       ImportDefinition::Component(ComponentDefinition::Manifest(component)),
@@ -88,7 +87,7 @@ impl ImportBinding {
   }
 
   /// Create a new High level component definition.
-  pub fn high_level(name: impl AsRef<str>, component: HighLevelComponent) -> Self {
+  pub fn high_level<T: Into<String>>(name: T, component: HighLevelComponent) -> Self {
     Self::new(
       name,
       ImportDefinition::Component(ComponentDefinition::HighLevelComponent(component)),

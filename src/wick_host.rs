@@ -34,9 +34,10 @@ pub(crate) async fn build_host(
   manifest.set_root_config(root_config);
   let host = match manifest.manifest() {
     WickConfiguration::Component(_) => {
+      span.in_scope(|| info!("initializing component host"));
       let manifest = manifest.finish()?.try_component_config()?;
 
-      let manifest = merge_config(&manifest, &oci, server_settings);
+      let manifest = merge_config(manifest, &oci, server_settings);
 
       let mut host = ComponentHostBuilder::default()
         .id(manifest.name().map_or_else(|| "component".to_owned(), |s| s.clone()))
@@ -48,6 +49,7 @@ pub(crate) async fn build_host(
       WickHost::Component(host)
     }
     WickConfiguration::App(_) => {
+      span.in_scope(|| info!("initializing application host"));
       let env: HashMap<String, String> = std::env::vars().collect();
       manifest.set_env(env);
       let app_config = manifest.finish()?.try_app_config()?;

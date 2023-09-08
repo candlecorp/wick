@@ -5,49 +5,75 @@
 // This is automatically generated. Add exceptions after this section.
 #![allow(unknown_lints)]
 #![deny(
-  clippy::expect_used,
-  clippy::explicit_deref_methods,
-  clippy::option_if_let_else,
   clippy::await_holding_lock,
+  clippy::borrow_as_ptr,
+  clippy::branches_sharing_code,
+  clippy::cast_lossless,
+  clippy::clippy::collection_is_never_read,
   clippy::cloned_instead_of_copied,
+  clippy::cognitive_complexity,
+  clippy::create_dir,
+  clippy::deref_by_slicing,
+  clippy::derivable_impls,
+  clippy::derive_partial_eq_without_eq,
+  clippy::equatable_if_let,
+  clippy::exhaustive_structs,
+  clippy::expect_used,
+  clippy::expl_impl_clone_on_copy,
+  clippy::explicit_deref_methods,
   clippy::explicit_into_iter_loop,
+  clippy::explicit_iter_loop,
+  clippy::filetype_is_file,
   clippy::flat_map_option,
+  clippy::format_push_string,
   clippy::fn_params_excessive_bools,
+  clippy::future_not_send,
+  clippy::get_unwrap,
+  clippy::implicit_clone,
+  clippy::if_then_some_else_none,
+  clippy::impl_trait_in_params,
   clippy::implicit_clone,
   clippy::inefficient_to_string,
+  clippy::inherent_to_string,
+  clippy::iter_not_returning_iterator,
   clippy::large_types_passed_by_value,
+  clippy::large_include_file,
+  clippy::let_and_return,
+  clippy::manual_assert,
   clippy::manual_ok_or,
+  clippy::manual_split_once,
+  clippy::manual_let_else,
+  clippy::manual_string_new,
   clippy::map_flatten,
   clippy::map_unwrap_or,
+  clippy::missing_enforced_import_renames,
+  clippy::missing_assert_message,
+  clippy::missing_const_for_fn,
   clippy::must_use_candidate,
+  clippy::mut_mut,
   clippy::needless_for_each,
+  clippy::needless_option_as_deref,
   clippy::needless_pass_by_value,
+  clippy::needless_collect,
+  clippy::needless_continue,
+  clippy::non_send_fields_in_send_ty,
+  clippy::nonstandard_macro_braces,
+  clippy::option_if_let_else,
   clippy::option_option,
+  clippy::rc_mutex,
   clippy::redundant_else,
+  clippy::same_name_method,
   clippy::semicolon_if_nothing_returned,
+  clippy::str_to_string,
+  clippy::string_to_string,
   clippy::too_many_lines,
   clippy::trivially_copy_pass_by_ref,
-  clippy::unnested_or_patterns,
-  clippy::future_not_send,
-  clippy::useless_let_if_seq,
-  clippy::str_to_string,
-  clippy::inherent_to_string,
-  clippy::let_and_return,
-  clippy::string_to_string,
+  clippy::trivial_regex,
   clippy::try_err,
+  clippy::unnested_or_patterns,
   clippy::unused_async,
-  clippy::missing_enforced_import_renames,
-  clippy::nonstandard_macro_braces,
-  clippy::rc_mutex,
   clippy::unwrap_or_else_default,
-  clippy::manual_split_once,
-  clippy::derivable_impls,
-  clippy::needless_option_as_deref,
-  clippy::iter_not_returning_iterator,
-  clippy::same_name_method,
-  clippy::manual_assert,
-  clippy::non_send_fields_in_send_ty,
-  clippy::equatable_if_let,
+  clippy::useless_let_if_seq,
   bad_style,
   clashing_extern_declarations,
   dead_code,
@@ -81,6 +107,7 @@
   while_true,
   missing_docs
 )]
+#![warn(clippy::exhaustive_enums)]
 #![allow(unused_attributes, clippy::derive_partial_eq_without_eq, clippy::box_default)]
 // !!END_LINTS
 // Add exceptions here
@@ -99,9 +126,10 @@ pub struct TestRunner {
 
 impl TestRunner {
   /// Create a new [TestRunner]
-  pub fn new<T: AsRef<str>>(desc: Option<T>) -> Self {
+  #[must_use]
+  pub const fn new(desc: Option<String>) -> Self {
     Self {
-      desc: desc.map(|v| v.as_ref().to_owned()),
+      desc,
       blocks: vec![],
       output: vec![],
     }
@@ -114,7 +142,7 @@ impl TestRunner {
 
   #[must_use]
   /// Get the TAP output.
-  pub fn get_tap_lines(&self) -> &Vec<String> {
+  pub const fn get_tap_lines(&self) -> &Vec<String> {
     &self.output
   }
 
@@ -134,7 +162,7 @@ impl TestRunner {
     let mut all_lines = vec![plan_line];
 
     let mut test_num = 0;
-    for block in self.blocks.iter_mut() {
+    for block in &mut self.blocks {
       if let Some(desc) = block.desc.as_ref() {
         all_lines.push(format!("# {}", desc));
       }
@@ -179,13 +207,13 @@ impl TestRunner {
   }
 }
 
-fn format_diagnostic_line<T: AsRef<str>>(line: T) -> String {
-  format!("# {}", line.as_ref())
+fn format_diagnostic_line<T: std::fmt::Display>(line: T) -> String {
+  format!("# {}", line)
 }
 
 fn format_diagnostics<T>(lines: &[T]) -> Vec<String>
 where
-  T: AsRef<str>,
+  T: std::fmt::Display,
 {
   lines.iter().map(format_diagnostic_line).collect()
 }
@@ -200,16 +228,17 @@ pub struct TestBlock {
 
 impl TestBlock {
   /// Create a new [TestBlock].
-  pub fn new<T: AsRef<str>>(desc: Option<T>) -> Self {
+  #[must_use]
+  pub const fn new(desc: Option<String>) -> Self {
     Self {
-      desc: desc.map(|v| v.as_ref().to_owned()),
+      desc,
       tests: vec![],
       diagnostics: vec![],
     }
   }
 
   /// Add a new test case.
-  pub fn add_test<T: AsRef<str>>(
+  pub fn add_test<T: Into<String>>(
     &mut self,
     test: impl FnOnce() -> bool + Sync + Send + 'static,
     description: T,
@@ -218,27 +247,27 @@ impl TestBlock {
     self.tests.push(TestCase {
       test: Some(Box::new(test)),
       result: Some(false),
-      description: description.as_ref().to_owned(),
+      description: description.into(),
       diagnostics,
     });
   }
 
   /// Add a test failure.
-  pub fn fail<T: AsRef<str>>(&mut self, description: T, diagnostics: Option<Vec<String>>) {
+  pub fn fail<T: Into<String>>(&mut self, description: T, diagnostics: Option<Vec<String>>) {
     self.tests.push(TestCase {
       test: None,
       result: Some(false),
-      description: description.as_ref().to_owned(),
+      description: description.into(),
       diagnostics,
     });
   }
 
   /// Add a test success.
-  pub fn succeed<T: AsRef<str>>(&mut self, description: T, diagnostics: Option<Vec<String>>) {
+  pub fn succeed<T: Into<String>>(&mut self, description: T, diagnostics: Option<Vec<String>>) {
     self.tests.push(TestCase {
       test: None,
       result: Some(true),
-      description: description.as_ref().to_owned(),
+      description: description.into(),
       diagnostics,
     });
   }
@@ -255,7 +284,7 @@ impl TestBlock {
   /// Execute the [TestBlock]'s test cases.
   pub fn run(&mut self) -> Vec<TapTest> {
     let mut tests: Vec<TapTest> = vec![];
-    for test_case in self.tests.iter_mut() {
+    for test_case in &mut self.tests {
       let mut tap_test = TapTestBuilder::new();
       tap_test.name(test_case.description.clone());
 

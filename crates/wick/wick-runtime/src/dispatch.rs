@@ -20,10 +20,11 @@ pub(crate) enum InvocationResponse {
 
 impl InvocationResponse {
   /// Creates an error response.
-  pub(crate) fn error(tx_id: Uuid, msg: String) -> InvocationResponse {
+  pub(crate) const fn error(tx_id: Uuid, msg: String) -> InvocationResponse {
     InvocationResponse::Error { tx_id, msg }
   }
 
+  #[allow(clippy::missing_const_for_fn)]
   pub(crate) fn ok(self) -> Result<PacketStream, RuntimeError> {
     match self {
       InvocationResponse::Stream { rx, .. } => Ok(rx),

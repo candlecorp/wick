@@ -5,6 +5,7 @@ use super::executor::error::ExecutionError;
 use super::program::validator::error::{OperationInvalid, ValidationError};
 
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
   #[error(transparent)]
   ExecutionError(#[from] ExecutionError),

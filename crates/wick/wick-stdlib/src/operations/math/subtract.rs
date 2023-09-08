@@ -11,6 +11,6 @@ request_response!(job, minijob => {
   output: "output",
 });
 
-pub(crate) fn minijob(left: u64, right: u64) -> Result<u64, wick_packet::Error> {
+pub(crate) const fn minijob(left: u64, right: u64) -> Result<u64, wick_packet::Error> {
   Ok(left - right)
 }

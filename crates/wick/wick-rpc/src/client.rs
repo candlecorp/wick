@@ -90,7 +90,7 @@ impl RpcClient {
   }
 
   /// Instantiate a new [RpcClient] from an existing InvocationServiceClient.
-  pub fn from_channel(channel: InvocationServiceClient<Channel>) -> Self {
+  pub const fn from_channel(channel: InvocationServiceClient<Channel>) -> Self {
     Self { inner: channel }
   }
 

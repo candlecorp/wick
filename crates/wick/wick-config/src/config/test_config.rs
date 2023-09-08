@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use asset_container::AssetManager;
+use tracing::trace;
+use wick_packet::{InherentData, RuntimeConfig};
 
+use super::template_config::Renderable;
 use super::LiquidJsonConfig;
 use crate::config::test_case;
 use crate::error::ManifestError;
@@ -68,8 +71,47 @@ impl TestConfiguration {
   }
 
   /// Validate this configuration is good.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn validate(&self) -> Result<(), ManifestError> {
     /* placeholder */
+    Ok(())
+  }
+
+  /// Initialize the configuration, rendering template configuration when possibles.
+  pub fn initialize(&mut self) -> Result<&Self, ManifestError> {
+    let source = self.source.clone();
+
+    trace!(
+      source = ?source,
+      "initializing test configuration"
+    );
+
+    let env = self.env.clone();
+
+    self.render_config(source.as_deref(), None, env.as_ref())?;
+
+    Ok(self)
+  }
+}
+
+impl Renderable for TestConfiguration {
+  fn render_config(
+    &mut self,
+    source: Option<&Path>,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    if let Some(config) = self.config.as_mut() {
+      config.set_value(Some(config.render(
+        source,
+        root_config,
+        None,
+        env,
+        Some(&InherentData::unsafe_default()),
+      )?));
+    }
+
+    self.cases.render_config(source, root_config, env)?;
     Ok(())
   }
 }

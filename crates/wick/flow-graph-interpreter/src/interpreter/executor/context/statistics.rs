@@ -17,10 +17,10 @@ impl ExecutionStatistics {
       performance: Mutex::new(Default::default()),
     }
   }
-  pub(crate) fn mark<T: AsRef<str>>(&self, label: T) {
+  pub(crate) fn mark<T: Into<String>>(&self, label: T) {
     self.performance.lock().mark(label);
   }
-  pub(crate) fn start<T: AsRef<str>>(&self, label: T) {
+  pub(crate) fn start<T: Into<String>>(&self, label: T) {
     self.performance.lock().start(label);
   }
   pub(crate) fn end(&mut self, label: &str) {

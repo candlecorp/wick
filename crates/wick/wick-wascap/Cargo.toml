@@ -11,6 +11,7 @@ include = [
   "test/test_wasi_component.wasm",
   "!**/test/**/*",
 ]
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]

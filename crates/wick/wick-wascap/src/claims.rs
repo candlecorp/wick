@@ -21,6 +21,7 @@ type Result<T> = std::result::Result<T, Error>;
 
 /// A structure containing a JWT and its associated decoded claims
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[non_exhaustive]
 pub struct Token<T> {
   /// The JWT itself
   pub jwt: String,
@@ -31,6 +32,7 @@ pub struct Token<T> {
 /// Represents a set of [RFC 7519](https://tools.ietf.org/html/rfc7519) compliant JSON Web Token
 /// claims.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
+#[non_exhaustive]
 pub struct Claims<T> {
   /// All timestamps in JWTs are stored in _seconds since the epoch_ format
   /// as described as `NumericDate` in the RFC. Corresponds to the `exp` field in a JWT.
@@ -103,8 +105,8 @@ fn to_jwt_segment<T: Serialize>(input: &T) -> Result<String> {
   Ok(base64.encode(encoded.as_bytes()))
 }
 
-fn from_jwt_segment<B: AsRef<str>, T: DeserializeOwned>(encoded: B) -> Result<T> {
-  let decoded = base64.decode(encoded.as_ref())?;
+fn from_jwt_segment<T: DeserializeOwned>(encoded: &str) -> Result<T> {
+  let decoded = base64.decode(encoded)?;
   let s = String::from_utf8(decoded).map_err(|_| Error::Utf8("jwt segment".to_owned()))?;
 
   Ok(serde_json::from_str(&s)?)
@@ -125,6 +127,7 @@ pub trait Named: Clone {
 
 /// A common struct to group related options together.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum ClaimsOptions {
   /// Version 0 Claims
   V0(v0::ClaimsOptions),
@@ -135,7 +138,7 @@ pub enum ClaimsOptions {
 impl ClaimsOptions {
   /// Create a new v0 claims.
   #[must_use]
-  pub fn v0(
+  pub const fn v0(
     revision: Option<u32>,
     version: Option<String>,
     expires_in_days: Option<u64>,
@@ -151,7 +154,7 @@ impl ClaimsOptions {
 
   /// Create a new v1 claims.
   #[must_use]
-  pub fn v1(version: Option<String>, expires_in_days: Option<u64>, not_before_days: Option<u64>) -> Self {
+  pub const fn v1(version: Option<String>, expires_in_days: Option<u64>, not_before_days: Option<u64>) -> Self {
     Self::V1(v1::ClaimsOptions {
       version,
       expires_in_days,
@@ -161,7 +164,7 @@ impl ClaimsOptions {
 
   /// Get when the claims expire in days
   #[must_use]
-  pub fn expires_in_days(&self) -> Option<u64> {
+  pub const fn expires_in_days(&self) -> Option<u64> {
     match self {
       Self::V0(opts) => opts.expires_in_days,
       Self::V1(opts) => opts.expires_in_days,
@@ -170,7 +173,7 @@ impl ClaimsOptions {
 
   /// Get when the claims are valid (in days)
   #[must_use]
-  pub fn not_before_days(&self) -> Option<u64> {
+  pub const fn not_before_days(&self) -> Option<u64> {
     match self {
       Self::V0(opts) => opts.not_before_days,
       Self::V1(opts) => opts.not_before_days,
@@ -207,7 +210,7 @@ pub struct TokenValidation {
 }
 
 /// Extract the claims embedded in a WebAssembly module.
-pub fn extract_claims(contents: impl AsRef<[u8]>) -> Result<Option<Token<WickComponent>>> {
+pub fn extract_claims<T: AsRef<[u8]>>(contents: T) -> Result<Option<Token<WickComponent>>> {
   let module = ParsedModule::new(contents.as_ref())?;
   let v0_section = module.get_custom_section(v0::SECTION_NAME);
   let v1_section = module.get_custom_section(v1::SECTION_NAME);
@@ -278,7 +281,7 @@ pub(crate) fn build_collection_claims(
     subject: subject_kp.public_key(),
     not_before: days_from_now_to_jwt_time(options.not_before_days()),
     metadata: Some(WickComponent {
-      module_hash: "".to_owned(),
+      module_hash: String::new(),
       tags: Some(Vec::new()),
       interface,
       ver: options.version(),
@@ -288,8 +291,8 @@ pub(crate) fn build_collection_claims(
 
 #[allow(clippy::too_many_arguments)]
 /// Sign WebAssembly bytes with the passed claims.
-pub fn sign_buffer_with_claims(
-  buf: impl AsRef<[u8]>,
+pub fn sign_buffer_with_claims<T: AsRef<[u8]>>(
+  buf: T,
   interface: ComponentSignature,
   mod_kp: &KeyPair,
   acct_kp: &KeyPair,

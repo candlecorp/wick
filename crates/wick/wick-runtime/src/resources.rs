@@ -6,6 +6,7 @@ use url::Url;
 use wick_config::config::{ResourceDefinition, TcpPort, UdpPort, UrlResource, Volume};
 
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
 pub enum ResourceError {
   #[error("Invalid IP address '{0}': {1}")]
   InvalidIpAddress(String, String),
@@ -15,6 +16,7 @@ pub enum ResourceError {
 
 #[derive(Debug, Clone, PartialEq)]
 #[allow(missing_copy_implementations)]
+#[allow(clippy::exhaustive_enums)]
 pub enum Resource {
   TcpPort(SocketAddr),
   UdpPort(SocketAddr),
@@ -24,6 +26,7 @@ pub enum Resource {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[must_use]
+#[allow(clippy::exhaustive_enums)]
 pub enum ResourceKind {
   TcpPort,
   UdpPort,
@@ -80,7 +83,7 @@ impl Resource {
     ))
   }
 
-  pub fn kind(&self) -> ResourceKind {
+  pub const fn kind(&self) -> ResourceKind {
     match self {
       Self::TcpPort(_) => ResourceKind::TcpPort,
       Self::UdpPort(_) => ResourceKind::UdpPort,

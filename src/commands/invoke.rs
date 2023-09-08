@@ -57,7 +57,7 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let root_config = parse_config_string(opts.component.with.as_deref())?;
-  let server_settings = DefaultCliOptions { ..Default::default() };
+  let server_settings = DefaultCliOptions::default();
 
   let host = build_host(
     &opts.component.path,
@@ -150,7 +150,7 @@ pub(crate) async fn handle(
         e
       )
     })?;
-    trace!(args= ?args, "parsed CLI arguments");
+    span.in_scope(|| trace!(args= ?args, "parsed CLI arguments"));
     let mut packets = Vec::new();
     let mut seen_ports = HashSet::new();
     for packet in args {
@@ -160,8 +160,10 @@ pub(crate) async fn handle(
     for port in seen_ports {
       packets.push(Ok(Packet::done(port)));
     }
-    debug!(cli_packets= ?packets, "wick invoke");
+    span.in_scope(|| debug!(cli_packets= ?packets, "wick invoke"));
     let stream = PacketStream::new(futures::stream::iter(packets));
+
+    span.in_scope(|| info!(operation=%target,path= ?path_parts, "host loaded, invoking operation"));
 
     let invocation = Invocation::new(Entity::server(host.namespace()), target, stream, inherent_data, &span);
 

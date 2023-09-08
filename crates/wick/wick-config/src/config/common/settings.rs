@@ -5,6 +5,7 @@ use std::time::Duration;
 #[property(get(public), set(private), mut(disable))]
 #[allow(missing_copy_implementations)]
 /// Settings related to execution behavior.
+#[non_exhaustive]
 pub struct ExecutionSettings {
   /// The timeout for the execution.
   pub timeout: Option<Duration>,
@@ -13,13 +14,13 @@ pub struct ExecutionSettings {
 impl ExecutionSettings {
   /// Create a new settings object.
   #[must_use]
-  pub fn new(timeout: Option<Duration>) -> Self {
+  pub const fn new(timeout: Option<Duration>) -> Self {
     Self { timeout }
   }
 
   /// Create a new settings object with a timeout from milliseconds.
   #[must_use]
-  pub fn from_timeout_millis(millis: u64) -> Self {
+  pub const fn from_timeout_millis(millis: u64) -> Self {
     Self {
       timeout: Some(Duration::from_millis(millis)),
     }

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -54,7 +55,19 @@ pub(crate) async fn handle(
     .into_inner()
     .try_component_config()?;
 
-  let mut suite = TestSuite::from_configuration(root_manifest.tests())?;
+  let mut tests = root_manifest.tests().to_vec();
+
+  let env: HashMap<_, _> = std::env::vars().collect();
+  for test in tests.iter_mut() {
+    // We need to explicitly initialize this part
+    // because we stole them from the unitialized component
+    // config.
+    test.set_env(env.clone());
+    test.set_source(root_manifest.source().unwrap());
+    test.initialize()?;
+  }
+
+  let mut suite = TestSuite::from_configuration(&tests)?;
 
   let test_files: Vec<_> = futures::future::join_all(opts.tests.iter().map(|path| {
     WickConfiguration::fetch(path, oci_opts.clone())
@@ -68,31 +81,31 @@ pub(crate) async fn handle(
     suite.add_configuration(config)?;
   }
 
-  let server_options = DefaultCliOptions { ..Default::default() };
+  let server_options = DefaultCliOptions::default();
 
-  let manifest = merge_config(&root_manifest, &opts.oci, Some(server_options));
+  let manifest = merge_config(root_manifest, &opts.oci, Some(server_options));
 
   let factory: ComponentFactory = Box::new(move |config| {
-    let mut builder = UninitializedConfiguration::new(WickConfiguration::Component(manifest.clone()));
+    let builder = UninitializedConfiguration::new(WickConfiguration::Component(manifest.clone()));
     let span = span.clone();
 
     let task = async move {
-      builder.set_root_config(config);
-      let manifest = builder
-        .finish()
-        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?
-        .try_component_config()
-        .unwrap();
+      let mut manifest = builder.into_inner().try_component_config().unwrap();
+      manifest.set_root_config(config);
+      manifest
+        .initialize()
+        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
 
       let mut host = ComponentHostBuilder::default()
         .manifest(manifest)
         .span(span)
         .build()
-        .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
+        .map_err(|e| wick_test::TestError::Factory(format!("could not build host: {}", e)))?;
       host
         .start_runtime(opts.seed.map(Seed::unsafe_new))
         .await
         .map_err(|e| wick_test::TestError::Factory(e.to_string()))?;
+
       let component: SharedComponent = Arc::new(wick_host::HostComponent::new(host));
       Ok(component)
     };

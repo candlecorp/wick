@@ -19,6 +19,7 @@ impl<T> LocalAwareSend for T {}
 impl<T> LocalAwareSend for T where T: Send {}
 
 #[derive(Clone)]
+#[non_exhaustive]
 /// A context that is passed to a component's operations.
 pub struct Context<T>
 where
@@ -63,6 +64,7 @@ where
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 /// Inherent data passed to an operation.
 pub struct InherentContext {
   /// A random number generator initialized from the invocation seed.
@@ -82,10 +84,7 @@ impl Clone for InherentContext {
 
 impl From<InherentContext> for InherentData {
   fn from(value: InherentContext) -> Self {
-    Self {
-      seed: value.rng.gen(),
-      timestamp: value.timestamp.timestamp_millis() as _,
-    }
+    Self::new(value.rng.gen(), value.timestamp.timestamp_millis() as _)
   }
 }
 

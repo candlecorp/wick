@@ -6458,6 +6458,7 @@ dependencies = [
  "anyhow",
  "cfg-if",
  "clap",
+ "derive_builder",
  "flow-component",
  "once_cell",
  "reqwest",
@@ -6659,6 +6660,7 @@ name = "wick-interface-types"
 version = "0.15.0"
 dependencies = [
  "anyhow",
+ "derive_builder",
  "env_logger",
  "nom",
  "pretty_assertions",
@@ -6696,6 +6698,7 @@ version = "0.2.0"
 dependencies = [
  "ansi_term",
  "console-subscriber",
+ "derive_builder",
  "opentelemetry",
  "opentelemetry-otlp",
  "rstest",
@@ -6878,6 +6881,7 @@ dependencies = [
 name = "wick-settings"
 version = "0.1.0"
 dependencies = [
+ "derive_builder",
  "serde",
  "serde_yaml",
  "thiserror",

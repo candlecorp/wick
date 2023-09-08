@@ -2,14 +2,13 @@ use std::sync::Arc;
 
 use flow_component::RuntimeCallback;
 use seeded_random::Seed;
-use wick_packet::{Invocation, PacketStream};
+use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
 use self::context::ExecutionContext;
 use self::error::ExecutionError;
 use super::channel::InterpreterDispatchChannel;
 use super::components::self_component::SelfComponent;
 use crate::graph::types::*;
-use crate::graph::LiquidOperationConfig;
 use crate::HandlerMap;
 
 pub(crate) mod error;
@@ -22,14 +21,20 @@ type Result<T> = std::result::Result<T, ExecutionError>;
 #[must_use]
 pub(crate) struct SchematicExecutor {
   channel: InterpreterDispatchChannel,
+  root_config: Option<RuntimeConfig>,
   schematic: Arc<Schematic>,
 }
 
 impl SchematicExecutor {
-  pub(crate) fn new(schematic: Schematic, channel: InterpreterDispatchChannel) -> Self {
+  pub(crate) fn new(
+    schematic: Schematic,
+    channel: InterpreterDispatchChannel,
+    root_config: Option<RuntimeConfig>,
+  ) -> Self {
     Self {
       channel,
       schematic: Arc::new(schematic),
+      root_config,
     }
   }
 
@@ -43,7 +48,7 @@ impl SchematicExecutor {
     invocation: Invocation,
     components: Arc<HandlerMap>,
     self_component: SelfComponent,
-    config: LiquidOperationConfig,
+    config: Option<RuntimeConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> Result<PacketStream> {
     invocation
@@ -58,6 +63,7 @@ impl SchematicExecutor {
       &components,
       &self_component,
       callback,
+      self.root_config.clone(),
       config,
       seed,
     );

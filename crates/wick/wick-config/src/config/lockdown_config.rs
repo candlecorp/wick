@@ -61,9 +61,9 @@ impl LockdownConfiguration {
       resource_restrictions = ?self.resources,
       "initializing lockdown configuration"
     );
-    for resource in self.resources.iter_mut() {
-      resource.render_config(None, self.env.as_ref())?;
-    }
+    self
+      .resources
+      .render_config(self.source.as_deref(), None, self.env.as_ref())?;
 
     Ok(self)
   }
@@ -86,11 +86,12 @@ impl LockdownConfiguration {
 
   /// Return the environment variables for this configuration.
   #[must_use]
-  pub fn env(&self) -> Option<&HashMap<String, String>> {
+  pub const fn env(&self) -> Option<&HashMap<String, String>> {
     None
   }
 
   /// Validate this configuration is good.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn validate(&self) -> Result<()> {
     /* placeholder */
     Ok(())

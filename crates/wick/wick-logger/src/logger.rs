@@ -17,24 +17,9 @@ enum Environment {
 /// Initialize a logger or panic on failure
 pub fn init(opts: &LoggingOptions) -> LoggingGuard {
   #![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
-  match try_init::<()>(&opts, Environment::Prod, None) {
-    Ok(Either::Logger(guard)) => guard,
+  match try_init(&opts, Environment::Prod) {
+    Ok(guard) => guard,
     Err(e) => panic!("Error initializing logger: {}", e),
-    _ => unreachable!(),
-  }
-}
-
-/// Initialize a logger for this specific scope only.
-#[allow(clippy::must_use_candidate)]
-pub fn with_default<T>(opts: &LoggingOptions, f: Box<dyn FnOnce() -> T>) -> T
-where
-  T: 'static,
-{
-  #![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
-  match try_init(&opts, Environment::Prod, Some(Box::new(f))) {
-    Ok(Either::ScopeReturn(v)) => v,
-    Err(e) => panic!("Error initializing logger: {}", e),
-    _ => unreachable!(),
   }
 }
 
@@ -42,10 +27,7 @@ where
 #[must_use]
 pub fn init_test(opts: &LoggingOptions) -> Option<LoggingGuard> {
   #![allow(clippy::trivially_copy_pass_by_ref, clippy::needless_borrow)]
-  match try_init::<()>(&opts, Environment::Test, None) {
-    Ok(Either::Logger(guard)) => Some(guard),
-    _ => None,
-  }
+  try_init(&opts, Environment::Test).ok()
 }
 
 #[must_use]
@@ -77,6 +59,7 @@ impl LoggingGuard {
     }
   }
   /// Call this function when you are done with the logger.
+  #[allow(clippy::missing_const_for_fn)]
   pub fn teardown(&self) {
     // noop right now
   }
@@ -120,20 +103,8 @@ fn get_stderr_writer(_opts: &LoggingOptions) -> (NonBlocking, WorkerGuard) {
   (stderr_writer, console_guard)
 }
 
-enum Either<T> {
-  Logger(LoggingGuard),
-  ScopeReturn(T),
-}
-
 #[allow(clippy::too_many_lines)]
-fn try_init<T>(
-  opts: &LoggingOptions,
-  environment: Environment,
-  with_default: Option<Box<dyn FnOnce() -> T>>,
-) -> Result<Either<T>, LoggerError>
-where
-  T: 'static,
-{
+fn try_init(opts: &LoggingOptions, environment: Environment) -> Result<LoggingGuard, LoggerError> {
   #[cfg(windows)]
   let with_color = ansi_term::enable_ansi_support().is_ok();
   #[cfg(not(windows))]
@@ -154,9 +125,7 @@ where
         otel::build_batch(otlp_endpoint).unwrap() // unwrap OK for now, this is infallible.
       };
 
-      if opts.global {
-        let _ = global::set_tracer_provider(provider.clone());
-      }
+      let _ = global::set_tracer_provider(provider.clone());
 
       let layer = Some(
         tracing_opentelemetry::layer()
@@ -227,21 +196,16 @@ where
     .with(verbose_layer)
     .with(normal_layer);
 
-  let guards = if let Some(f) = with_default {
-    Ok(Either::ScopeReturn(tracing::subscriber::with_default(subscriber, f)))
-  } else if opts.global {
-    #[cfg(feature = "console")]
-    let subscriber = subscriber.with(console_subscriber::spawn());
-    tracing::subscriber::set_global_default(subscriber)?;
-    Ok(Either::Logger(LoggingGuard::new(
-      environment,
-      logfile_guard,
-      console_guard,
-      tracer_provider,
-    )))
-  } else {
-    panic!("Logger must be global or scoped")
-  };
+  #[cfg(feature = "console")]
+  let subscriber = subscriber.with(console_subscriber::spawn());
+
+  tracing::subscriber::set_global_default(subscriber)?;
+  let guards = Ok(LoggingGuard::new(
+    environment,
+    logfile_guard,
+    console_guard,
+    tracer_provider,
+  ));
   trace!(options=?opts,"logger initialized");
 
   guards

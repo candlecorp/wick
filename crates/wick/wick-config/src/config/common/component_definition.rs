@@ -1,5 +1,6 @@
 #![allow(missing_docs, deprecated)]
 use std::collections::HashMap;
+use std::path::Path;
 
 // delete when we move away from the `property` crate.
 use serde::de::{IgnoredAny, SeqAccess, Visitor};
@@ -45,9 +46,9 @@ pub struct ComponentOperationExpression {
 
 impl ComponentOperationExpression {
   /// Create a new [ComponentOperationExpression] with specified operation and component.
-  pub fn new_default(operation: impl AsRef<str>, component: ComponentDefinition) -> Self {
+  pub fn new_default<T: Into<String>>(operation: T, component: ComponentDefinition) -> Self {
     Self {
-      name: operation.as_ref().to_owned(),
+      name: operation.into(),
       component,
       config: Default::default(),
       settings: Default::default(),
@@ -55,14 +56,14 @@ impl ComponentOperationExpression {
   }
 
   /// Create a new [ComponentOperationExpression] with specified operation and component.
-  pub fn new(
-    operation: impl AsRef<str>,
+  pub fn new<T: Into<String>>(
+    operation: T,
     component: ComponentDefinition,
     config: Option<LiquidJsonConfig>,
     settings: Option<ExecutionSettings>,
   ) -> Self {
     Self {
-      name: operation.as_ref().to_owned(),
+      name: operation.into(),
       component,
       config,
       settings,
@@ -101,11 +102,12 @@ impl ComponentOperationExpression {
 impl Renderable for ComponentOperationExpression {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     if let Some(config) = self.config.as_mut() {
-      config.set_value(Some(config.render(root_config, None, env, None)?));
+      config.set_value(Some(config.render(source, root_config, None, env, None)?));
     }
     Ok(())
   }
@@ -181,13 +183,13 @@ pub enum ComponentDefinition {
 impl ComponentDefinition {
   /// Returns true if the definition is a reference to another component.
   #[must_use]
-  pub fn is_reference(&self) -> bool {
+  pub const fn is_reference(&self) -> bool {
     matches!(self, ComponentDefinition::Reference(_))
   }
 
   /// Returns the component config, if it exists
   #[must_use]
-  pub fn config(&self) -> Option<&LiquidJsonConfig> {
+  pub const fn config(&self) -> Option<&LiquidJsonConfig> {
     match self {
       #[allow(deprecated)]
       ComponentDefinition::Wasm(c) => c.config.as_ref(),
@@ -244,11 +246,12 @@ impl ComponentDefinition {
 impl Renderable for ComponentDefinition {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     let val = if let Some(config) = self.config() {
-      Some(config.render(root_config, None, env, None)?)
+      Some(config.render(source, root_config, None, env, None)?)
     } else {
       None
     };

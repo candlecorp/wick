@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::Path;
 use std::str::FromStr;
 
 use liquid_json::LiquidJsonValue;
@@ -71,7 +72,7 @@ where
 {
   #[must_use]
   /// Create a new [TemplateConfig] from a value.
-  pub fn new_value(value: T) -> Self {
+  pub const fn new_value(value: T) -> Self {
     Self {
       value: Some(value),
       template: None,
@@ -90,7 +91,7 @@ where
   }
 
   /// Retrieve a previously rendered value rendered.
-  pub fn value(&self) -> Option<&T> {
+  pub const fn value(&self) -> Option<&T> {
     self.value.as_ref()
   }
 
@@ -121,11 +122,22 @@ where
   }
 
   /// Render a [TemplateConfig] into the desired value, creating a context from the passed configuration.
-  pub fn render(&self, root: Option<&RuntimeConfig>, env: Option<&HashMap<String, String>>) -> Result<T, crate::Error> {
+  pub fn render(
+    &self,
+    source: Option<&Path>,
+    root: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<T, crate::Error> {
     if let Some(value) = &self.value {
       return Ok(value.clone());
     }
-    let ctx = LiquidJsonConfig::make_context(None, root, None, env, None)?;
+
+    let base = source.map(|source| {
+      let dirname = source.parent().unwrap_or_else(|| Path::new("<unavailable>"));
+      serde_json::json!({"__dirname": dirname})
+    });
+
+    let ctx = LiquidJsonConfig::make_context(base, root, None, env, None)?;
 
     if let Some(template) = &self.template {
       let rendered = template
@@ -152,7 +164,7 @@ fn value_to_string(value: &Value) -> Result<String, ManifestError> {
   match value {
     serde_json::Value::String(v) => Ok(v.clone()),
     serde_json::Value::Number(v) => Ok(v.to_string()),
-    serde_json::Value::Null => Ok("".to_owned()),
+    serde_json::Value::Null => Ok(String::new()),
     serde_json::Value::Bool(v) => Ok(v.to_string()),
     serde_json::Value::Array(_) => Err(ManifestError::TemplateStructure),
     serde_json::Value::Object(_) => Err(ManifestError::TemplateStructure),
@@ -162,6 +174,7 @@ fn value_to_string(value: &Value) -> Result<String, ManifestError> {
 pub(crate) trait Renderable {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError>;
@@ -173,11 +186,12 @@ where
 {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     if let Some(v) = self {
-      v.render_config(root_config, env)?;
+      v.render_config(source, root_config, env)?;
     }
     Ok(())
   }
@@ -189,11 +203,12 @@ where
 {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     for el in self.iter_mut() {
-      el.render_config(root_config, env)?;
+      el.render_config(source, root_config, env)?;
     }
     Ok(())
   }

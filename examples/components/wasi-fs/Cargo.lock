@@ -2509,6 +2509,7 @@ dependencies = [
 name = "wick-interface-types"
 version = "0.15.0"
 dependencies = [
+ "derive_builder",
  "nom",
  "serde",
  "serde_json",

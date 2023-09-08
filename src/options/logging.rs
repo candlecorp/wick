@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
-use wick_logger::{FilterOptions, LogLevel, LogModifier, TargetLevel};
+use wick_logger::{FilterOptions, LogLevel, LogModifier, LoggingOptionsBuilder, TargetLevel};
 
 #[derive(clap::Args, Debug, Default, Clone)]
 /// Logging options that can be used directly or via [Args].
@@ -40,8 +40,8 @@ pub(crate) struct LoggingOptions {
 
 impl LoggingOptions {
   /// Set the name of the application doing the logging.
-  pub(crate) fn name(&mut self, name: impl AsRef<str>) -> &mut Self {
-    self.app_name = name.as_ref().to_owned();
+  pub(crate) fn name<T: Into<String>>(&mut self, name: T) -> &mut Self {
+    self.app_name = name.into();
     self
   }
 }
@@ -90,11 +90,8 @@ fn parse_logstr(default_level: LogLevel, default_filter: &[TargetLevel], logstr:
     .filter_map(|(modifier, target, level)| target.map(|target| TargetLevel::new(target, *level, *modifier)))
     .collect::<Vec<_>>();
 
-  FilterOptions {
-    level: global_level,
-    // If the filter had inclusion rules, use those. Otherwise, use the default.
-    filter: [filter, default_filter.to_vec()].concat(),
-  }
+  // If the filter had inclusion rules, use those. Otherwise, use the default.
+  FilterOptions::new(global_level, [filter, default_filter.to_vec()].concat())
 }
 
 impl From<&LoggingOptions> for wick_logger::LoggingOptions {
@@ -120,19 +117,19 @@ impl From<&LoggingOptions> for wick_logger::LoggingOptions {
       &DEFAULT_FILTER,
       value.tel_filter.as_deref().unwrap_or_default(),
     );
-
-    Self {
-      verbose: value.verbose == 1,
-      log_json: false,
-      log_dir: None,
-      otlp_endpoint: value.otlp_endpoint.clone(),
-      app_name: value.app_name.clone(),
-      global: false,
-      levels: wick_logger::LogFilters {
-        telemetry: otel_opts,
-        stderr: stderr_opts,
-      },
-    }
+    LoggingOptionsBuilder::default()
+      .verbose(value.verbose == 1)
+      .otlp_endpoint(value.otlp_endpoint.clone())
+      .app_name(value.app_name.clone())
+      .levels(
+        wick_logger::LogFiltersBuilder::default()
+          .telemetry(otel_opts)
+          .stderr(stderr_opts)
+          .build()
+          .unwrap(),
+      )
+      .build()
+      .unwrap()
   }
 }
 

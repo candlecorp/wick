@@ -97,27 +97,25 @@ fn expand_logging_init() -> Tokens {
 
   match found_crate {
     FoundCrate::Itself => quote! {
-      let __guard = crate::init_test(&crate::LoggingOptions {
-        app_name: "test".to_owned(),
-        otlp_endpoint: std::env::var("OTLP_ENDPOINT").ok(),
-        global:true,
-        levels: crate::LogFilters::with_level(crate::LogLevel::Trace),
-        ..Default::default()
-      });
+      let logging_options = crate::LoggingOptionsBuilder::default()
+        .app_name("test")
+        .otlp_endpoint(std::env::var("OTLP_ENDPOINT").ok())
+        .levels(crate::LogFilters::with_level(crate::LogLevel::Trace))
+        .build()
+        .unwrap();
+      let __guard = crate::init_test(&logging_options);
     },
     FoundCrate::Name(name) => {
       let ident = Ident::new(&name, Span::call_site());
 
       quote! {
-        let __guard =
-          #ident::init_test(&#ident::LoggingOptions {
-            app_name: "test".to_owned(),
-            otlp_endpoint: std::env::var("OTLP_ENDPOINT").ok(),
-            global:true,
-            levels: #ident::LogFilters::with_level(#ident::LogLevel::Trace),
-            ..Default::default()
-          });
-
+        let logging_options = #ident::LoggingOptionsBuilder::default()
+        .app_name("test")
+        .otlp_endpoint(std::env::var("OTLP_ENDPOINT").ok())
+        .levels(#ident::LogFilters::with_level(#ident::LogLevel::Trace))
+        .build()
+        .unwrap();
+        let __guard = #ident::init_test(&logging_options);
       }
     }
   }

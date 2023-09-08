@@ -44,15 +44,10 @@ enum JobResult {
 }
 
 impl InvocationServer {
-  fn record_execution<T: AsRef<str>>(&self, job: T, status: JobResult, time: Duration) {
+  fn record_execution<T: Into<String>>(&self, job: T, status: JobResult, time: Duration) {
     let mut stats = self.stats.write();
-    let job = job.as_ref().to_owned();
-    let stat = stats.entry(job.clone()).or_insert_with(|| Statistics {
-      name: job,
-      runs: 0,
-      errors: 0,
-      execution_duration: None,
-    });
+    let job = job.into();
+    let stat = stats.entry(job.clone()).or_insert_with(Statistics::default);
     stat.runs += 1;
     if status == JobResult::Error {
       stat.errors += 1;
@@ -71,12 +66,7 @@ impl InvocationServer {
 
       durations
     } else {
-      DurationStatistics {
-        min_time: time,
-        max_time: time,
-        average_time: time,
-        total_time: time,
-      }
+      DurationStatistics::new(time, time, time, time)
     };
     stat.execution_duration.replace(durations);
   }

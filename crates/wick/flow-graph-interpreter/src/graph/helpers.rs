@@ -63,7 +63,7 @@ pub(super) fn ensure_added(
       let (config, settings) = config;
       let op_settings = OperationSettings::new(config, settings);
 
-      let node = schematic.add_and_get_mut(id, NodeReference::new(component_id, op), op_settings);
+      let node = schematic.add_and_get_mut(id.clone(), NodeReference::new(component_id, op), op_settings);
       decorate(component_id, op, node, handlers)?;
     }
     InstanceTarget::Null(id) => {
@@ -86,6 +86,7 @@ pub(super) fn ensure_added(
   Ok(())
 }
 
+#[allow(clippy::cognitive_complexity)]
 pub(super) fn decorate(
   component: &str,
   operation: &str,

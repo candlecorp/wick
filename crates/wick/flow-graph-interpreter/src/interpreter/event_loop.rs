@@ -197,14 +197,14 @@ mod test {
 
   use super::*;
 
-  fn sync_send<T>()
+  const fn sync_send<T>()
   where
     T: Sync + Send,
   {
   }
 
   #[test]
-  fn test_sync_send() -> Result<()> {
+  const fn test_sync_send() -> Result<()> {
     sync_send::<EventLoop>();
     Ok(())
   }

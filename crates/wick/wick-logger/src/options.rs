@@ -1,30 +1,22 @@
 use std::cmp;
-use std::path::PathBuf;
 use std::str::FromStr;
 
 use tracing::{Level, Metadata};
 use tracing_subscriber::layer::Context;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_builder::Builder)]
+#[non_exhaustive]
+#[builder(default, derive(Debug), setter(into))]
 /// Logging options.
 pub struct LoggingOptions {
   /// Turns on verbose logging.
   pub verbose: bool,
-
-  /// Log as JSON.
-  pub log_json: bool,
-
-  /// The directory to store log files.
-  pub log_dir: Option<PathBuf>,
 
   /// The endpoint to send jaeger-format traces.
   pub otlp_endpoint: Option<String>,
 
   /// The application doing the logging.
   pub app_name: String,
-
-  /// Whether to install the global logger.
-  pub global: bool,
 
   /// Log filtering options
   pub levels: LogFilters,
@@ -36,7 +28,6 @@ impl LoggingOptions {
   pub fn with_level(level: LogLevel) -> Self {
     Self {
       levels: LogFilters::with_level(level),
-      global: true,
       ..Default::default()
     }
   }
@@ -46,17 +37,16 @@ impl Default for LoggingOptions {
   fn default() -> Self {
     Self {
       verbose: Default::default(),
-      log_json: Default::default(),
-      log_dir: Default::default(),
       otlp_endpoint: Default::default(),
       app_name: "app".to_owned(),
-      global: true,
       levels: Default::default(),
     }
   }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, derive_builder::Builder)]
+#[builder(default)]
+#[non_exhaustive]
 /// The filter configuration per log event destination.
 pub struct LogFilters {
   /// The log level for the open telemetry events.
@@ -84,6 +74,7 @@ impl LogFilters {
 
 /// Options for filtering logs.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct FilterOptions {
   /// The default log level for anything that does not match an include or exclude filter.
   pub level: LogLevel,
@@ -101,6 +92,12 @@ impl Default for FilterOptions {
 }
 
 impl FilterOptions {
+  /// Create a new instance with the given log level.
+  #[must_use]
+  pub fn new(level: LogLevel, filter: Vec<TargetLevel>) -> Self {
+    Self { level, filter }
+  }
+
   fn test_enabled(&self, module: &str, level: Level) -> bool {
     let matches = self.filter.iter().filter(|config| module.starts_with(&config.target));
     let match_hit = matches.fold(None, |acc, next| {
@@ -148,6 +145,7 @@ where
 
 /// The log level for specific targets.
 #[derive(Debug, Default, PartialEq, Clone)]
+#[non_exhaustive]
 pub struct TargetLevel {
   /// The target (module name).
   pub target: String,
@@ -159,9 +157,9 @@ pub struct TargetLevel {
 
 impl TargetLevel {
   /// Create a new instance for the given target, log level, and modifier.
-  pub fn new(target: impl AsRef<str>, level: LogLevel, modifier: LogModifier) -> Self {
+  pub fn new<T: Into<String>>(target: T, level: LogLevel, modifier: LogModifier) -> Self {
     Self {
-      target: target.as_ref().to_owned(),
+      target: target.into(),
       level,
       modifier,
     }
@@ -169,52 +167,53 @@ impl TargetLevel {
 
   /// Create a new negated instance for the given target and log level.
   #[must_use]
-  pub fn not(target: impl AsRef<str>, level: LogLevel) -> Self {
+  pub fn not<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::Not)
   }
 
   /// Create a new instance that matches the given target and any log level greater than the one specified.
   #[must_use]
-  pub fn gt(target: impl AsRef<str>, level: LogLevel) -> Self {
+  pub fn gt<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::GreaterThan)
   }
 
   /// Create a new instance that matches the given target and any log level greater than or equal to the one specified.
   #[must_use]
-  pub fn gte(target: impl AsRef<str>, level: LogLevel) -> Self {
+  pub fn gte<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::GreaterThanOrEqualTo)
   }
 
   /// Create a new instance that matches the given target and any log level less than or equal to the one specified.
   #[must_use]
-  pub fn lt(target: impl AsRef<str>, level: LogLevel) -> Self {
+  pub fn lt<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::LessThan)
   }
 
   /// Create a new instance that matches the given target and any log level less than or equal to the one specified.
   #[must_use]
-  pub fn lte(target: impl AsRef<str>, level: LogLevel) -> Self {
+  pub fn lte<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::LessThanOrEqualTo)
   }
 
   /// Create a new instance that matches the given target and any log level equal to the one specified.
   #[must_use]
-  pub fn is(target: impl AsRef<str>, level: LogLevel) -> Self {
+  pub fn is<T: Into<String>>(target: T, level: LogLevel) -> Self {
     Self::new(target, level, LogModifier::Equal)
   }
 }
 
 impl LoggingOptions {
   /// Set the name of the application doing the logging.
-  pub fn name(&self, name: impl AsRef<str>) -> Self {
+  pub fn name<T: Into<String>>(&self, name: T) -> Self {
     Self {
-      app_name: name.as_ref().to_owned(),
+      app_name: name.into(),
       ..self.clone()
     }
   }
 }
 
 #[derive(Debug, Clone, PartialEq, Copy)]
+#[non_exhaustive]
 /// Whether to include logs higher, lower, equal, or to not include them at all.
 pub enum LogModifier {
   /// Do not log the associated level.
@@ -251,7 +250,7 @@ impl std::fmt::Display for LogModifier {
 }
 
 impl LogModifier {
-  fn compare(self, a: usize, b: usize) -> bool {
+  const fn compare(self, a: usize, b: usize) -> bool {
     match self {
       LogModifier::Not => a != b,
       LogModifier::GreaterThan => a > b,
@@ -282,6 +281,7 @@ impl FromStr for LogModifier {
 
 /// The log levels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 #[repr(usize)]
 pub enum LogLevel {
   /// No logging.
@@ -375,7 +375,7 @@ impl PartialOrd<Level> for LogLevel {
 }
 
 #[inline(always)]
-fn filter_as_usize(x: Level) -> usize {
+const fn filter_as_usize(x: Level) -> usize {
   (match x {
     Level::ERROR => 0,
     Level::WARN => 1,

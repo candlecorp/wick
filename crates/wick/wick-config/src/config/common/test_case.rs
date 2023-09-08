@@ -1,7 +1,14 @@
-#![allow(missing_docs)] // delete when we move away from the `property` crate.
-use liquid_json::LiquidJsonValue;
+#![allow(missing_docs)]
+use std::collections::HashMap;
+use std::path::Path;
 
+// delete when we move away from the `property` crate.
+use liquid_json::LiquidJsonValue;
+use wick_packet::{InherentData, RuntimeConfig};
+
+use super::template_config::Renderable;
 use crate::config::{LiquidJsonConfig, TemplateConfig};
+use crate::error::ManifestError;
 
 #[derive(Debug, Clone, PartialEq, property::Property, serde::Serialize, derive_builder::Builder)]
 #[property(get(public), set(private), mut(disable))]
@@ -30,6 +37,26 @@ pub struct TestCase {
   #[builder(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) outputs: Vec<TestPacketData>,
+}
+
+impl Renderable for TestCase {
+  fn render_config(
+    &mut self,
+    source: Option<&Path>,
+    root_config: Option<&RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    if let Some(config) = self.config.as_mut() {
+      config.set_value(Some(config.render(
+        source,
+        root_config,
+        None,
+        env,
+        Some(&InherentData::unsafe_default()),
+      )?));
+    }
+    Ok(())
+  }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Copy, property::Property, serde::Serialize, derive_builder::Builder)]
@@ -135,7 +162,7 @@ impl PacketData {
 
   /// Get the flags for the packet.
   #[must_use]
-  pub fn flag(&self) -> MaybePacketFlag {
+  pub const fn flag(&self) -> MaybePacketFlag {
     MaybePacketFlag(match self {
       PacketData::SuccessPacket(data) => data.flag,
       PacketData::ErrorPacket(data) => data.flag,
@@ -144,7 +171,7 @@ impl PacketData {
 
   /// Get the data for the packet.
   #[must_use]
-  pub fn data(&self) -> Option<&LiquidJsonValue> {
+  pub const fn data(&self) -> Option<&LiquidJsonValue> {
     match self {
       PacketData::SuccessPacket(data) => data.data.as_ref(),
       PacketData::ErrorPacket(_) => None,
@@ -215,7 +242,7 @@ impl TestPacketData {
 
   /// Get the data for the packet.
   #[must_use]
-  pub fn data(&self) -> Option<&LiquidJsonValue> {
+  pub const fn data(&self) -> Option<&LiquidJsonValue> {
     match self {
       Self::SuccessPacket(data) => data.data.as_ref(),
       Self::ErrorPacket(_) => None,
@@ -239,19 +266,19 @@ impl std::ops::Deref for MaybePacketFlag {
 impl MaybePacketFlag {
   /// Check if the flag is set to `Done`.
   #[must_use]
-  pub fn is_done(&self) -> bool {
+  pub const fn is_done(&self) -> bool {
     matches!(self.0, Some(PacketFlag::Done))
   }
 
   /// Check if the flag is set to `Open`.
   #[must_use]
-  pub fn is_open(&self) -> bool {
+  pub const fn is_open(&self) -> bool {
     matches!(self.0, Some(PacketFlag::Open))
   }
 
   /// Check if the flag is set to `Close`.
   #[must_use]
-  pub fn is_close(&self) -> bool {
+  pub const fn is_close(&self) -> bool {
     matches!(self.0, Some(PacketFlag::Close))
   }
 }

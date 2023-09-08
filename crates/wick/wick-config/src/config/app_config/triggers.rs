@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::Path;
 
 use serde_json::Value;
 use wick_asset_reference::AssetReference;
@@ -58,6 +59,7 @@ use crate::config::common;
 
 /// Normalized representation of a trigger definition.
 #[serde(rename_all = "kebab-case")]
+
 pub enum TriggerDefinition {
   /// A CLI trigger.
   Cli(CliConfig),
@@ -69,7 +71,7 @@ pub enum TriggerDefinition {
 
 impl TriggerDefinition {
   /// Returns the kind of trigger.
-  pub fn kind(&self) -> TriggerKind {
+  pub const fn kind(&self) -> TriggerKind {
     match self {
       TriggerDefinition::Cli(_) => TriggerKind::Cli,
       TriggerDefinition::Http(_) => TriggerKind::Http,
@@ -81,13 +83,14 @@ impl TriggerDefinition {
 impl Renderable for TriggerDefinition {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     match self {
-      TriggerDefinition::Cli(v) => v.render_config(root_config, env),
-      TriggerDefinition::Http(v) => v.render_config(root_config, env),
-      TriggerDefinition::Time(v) => v.render_config(root_config, env),
+      TriggerDefinition::Cli(v) => v.render_config(source, root_config, env),
+      TriggerDefinition::Http(v) => v.render_config(source, root_config, env),
+      TriggerDefinition::Time(v) => v.render_config(source, root_config, env),
     }
   }
 }
@@ -106,6 +109,7 @@ impl ExpandImports for TriggerDefinition {
 #[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
 #[must_use]
 /// The kind of trigger.
+
 pub enum TriggerKind {
   /// A CLI trigger.
   Cli,
@@ -138,12 +142,12 @@ pub struct OperationInputConfig {
 
 impl OperationInputConfig {
   #[must_use]
-  pub fn name(&self) -> &String {
+  pub const fn name(&self) -> &String {
     &self.name
   }
 
   #[must_use]
-  pub fn value(&self) -> &Value {
+  pub const fn value(&self) -> &Value {
     &self.value
   }
 }

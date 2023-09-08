@@ -23,7 +23,10 @@
   missing_docs,
   clippy::large_enum_variant,
   missing_copy_implementations,
-  clippy::enum_variant_names
+  clippy::missing_const_for_fn,
+  clippy::enum_variant_names,
+  clippy::exhaustive_enums,
+  clippy::exhaustive_structs
 )]
 
 #[cfg(feature = "config")]

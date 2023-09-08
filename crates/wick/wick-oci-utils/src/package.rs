@@ -31,7 +31,7 @@ impl PackageFile {
 
   /// Get path for the file.
   #[must_use]
-  pub fn path(&self) -> &PathBuf {
+  pub const fn path(&self) -> &PathBuf {
     &self.path
   }
 
@@ -55,6 +55,7 @@ impl PackageFile {
 
   /// Get contents for the file.
   #[must_use]
+  #[allow(clippy::missing_const_for_fn)]
   pub fn into_contents(self) -> bytes::Bytes {
     self.contents
   }

@@ -36,10 +36,10 @@ impl std::fmt::Debug for ChildInit {
 pub(crate) fn init_child(
   uid: Uuid,
   manifest: ComponentConfiguration,
-  namespace: Option<String>,
+  namespace: String,
   opts: ChildInit,
 ) -> BoxFuture<'static, Result<Scope, ScopeError>> {
-  let child_span = info_span!(parent:opts.span,"runtime:child",id=%uid);
+  let child_span = info_span!(parent:&opts.span,"scope",id=%namespace);
   let mut components = ComponentRegistry::default();
 
   Box::pin(async move {
@@ -56,7 +56,7 @@ pub(crate) fn init_child(
       manifest,
       allow_latest: opts.allow_latest,
       allowed_insecure: opts.allowed_insecure,
-      namespace,
+      namespace: Some(namespace),
       constraints: Default::default(),
       span: child_span,
       initial_components: components,

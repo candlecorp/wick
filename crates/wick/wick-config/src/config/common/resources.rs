@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use asset_container::{Asset, AssetFlags};
 use url::Url;
@@ -34,18 +34,19 @@ pub struct ResourceBinding {
 impl Renderable for ResourceBinding {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
-    self.kind.render_config(root_config, env)
+    self.kind.render_config(source, root_config, env)
   }
 }
 
 impl ResourceBinding {
   /// Create a new [ResourceBinding] with specified name and [ResourceDefinition].
-  pub fn new(name: impl AsRef<str>, kind: impl Into<ResourceDefinition>) -> Self {
+  pub fn new<T: Into<String>>(name: T, kind: impl Into<ResourceDefinition>) -> Self {
     Self {
-      id: name.as_ref().to_owned(),
+      id: name.into(),
       kind: kind.into(),
     }
   }
@@ -92,21 +93,22 @@ pub enum ResourceDefinition {
 impl Renderable for ResourceDefinition {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
     match self {
-      ResourceDefinition::TcpPort(v) => v.render_config(root_config, env),
-      ResourceDefinition::UdpPort(v) => v.render_config(root_config, env),
-      ResourceDefinition::Url(v) => v.render_config(root_config, env),
-      ResourceDefinition::Volume(v) => v.render_config(root_config, env),
+      ResourceDefinition::TcpPort(v) => v.render_config(source, root_config, env),
+      ResourceDefinition::UdpPort(v) => v.render_config(source, root_config, env),
+      ResourceDefinition::Url(v) => v.render_config(source, root_config, env),
+      ResourceDefinition::Volume(v) => v.render_config(source, root_config, env),
     }
   }
 }
 
 impl ResourceDefinition {
   #[must_use]
-  pub fn kind(&self) -> ResourceKind {
+  pub const fn kind(&self) -> ResourceKind {
     match self {
       ResourceDefinition::TcpPort(_) => ResourceKind::TcpPort,
       ResourceDefinition::UdpPort(_) => ResourceKind::UdpPort,
@@ -175,10 +177,11 @@ impl Volume {
 impl Renderable for Volume {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
-    self.path.set_value(self.path.render(root_config, env)?);
+    self.path.set_value(self.path.render(source, root_config, env)?);
     Ok(())
   }
 }
@@ -197,7 +200,7 @@ impl asset_container::AssetManager for Volume {
     )
   }
 
-  fn set_baseurl(&self, baseurl: &std::path::Path) {
+  fn set_baseurl(&self, baseurl: &Path) {
     if let Some(path) = &self.path.value {
       path.update_baseurl(baseurl);
       match self.path() {
@@ -229,7 +232,7 @@ pub struct UrlResource {
 
 impl UrlResource {
   /// Create a new URL Resource.
-  pub fn new(url: Url) -> Self {
+  pub const fn new(url: Url) -> Self {
     Self {
       url: TemplateConfig::new_value(url),
     }
@@ -237,6 +240,7 @@ impl UrlResource {
 
   /// Get the URL.
   #[must_use]
+  #[allow(clippy::missing_const_for_fn)]
   pub fn into_inner(self) -> TemplateConfig<Url> {
     self.url
   }
@@ -251,10 +255,11 @@ impl std::fmt::Display for UrlResource {
 impl Renderable for UrlResource {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
-    self.url.set_value(self.url.render(root_config, env)?);
+    self.url.set_value(self.url.render(source, root_config, env)?);
     Ok(())
   }
 }
@@ -271,10 +276,10 @@ pub struct TcpPort {
 
 impl TcpPort {
   /// Create a new TCP port configuration.
-  pub fn new(host: impl AsRef<str>, port: u16) -> Self {
+  pub fn new<T: Into<String>>(host: T, port: u16) -> Self {
     Self {
       port: TemplateConfig::new_value(port),
-      host: TemplateConfig::new_value(host.as_ref().to_owned()),
+      host: TemplateConfig::new_value(host.into()),
     }
   }
 
@@ -288,11 +293,12 @@ impl TcpPort {
 impl Renderable for TcpPort {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
-    self.port.set_value(self.port.render(root_config, env)?);
-    self.host.set_value(self.host.render(root_config, env)?);
+    self.port.set_value(self.port.render(source, root_config, env)?);
+    self.host.set_value(self.host.render(source, root_config, env)?);
     Ok(())
   }
 }
@@ -309,10 +315,10 @@ pub struct UdpPort {
 
 impl UdpPort {
   /// Create a new UDP port configuration.
-  pub fn new(host: impl AsRef<str>, port: u16) -> Self {
+  pub fn new<T: Into<String>>(host: T, port: u16) -> Self {
     Self {
       port: TemplateConfig::new_value(port),
-      host: TemplateConfig::new_value(host.as_ref().to_owned()),
+      host: TemplateConfig::new_value(host.into()),
     }
   }
 
@@ -326,11 +332,12 @@ impl UdpPort {
 impl Renderable for UdpPort {
   fn render_config(
     &mut self,
+    source: Option<&Path>,
     root_config: Option<&RuntimeConfig>,
     env: Option<&HashMap<String, String>>,
   ) -> Result<(), ManifestError> {
-    self.port.set_value(self.port.render(root_config, env)?);
-    self.host.set_value(self.host.render(root_config, env)?);
+    self.port.set_value(self.port.render(source, root_config, env)?);
+    self.host.set_value(self.host.render(source, root_config, env)?);
     Ok(())
   }
 }

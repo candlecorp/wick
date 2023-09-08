@@ -73,7 +73,7 @@ fn validate_expiration(exp: Option<u64>) -> Result<()> {
   )
 }
 
-fn validate_issuer(iss: &str) -> Result<()> {
+const fn validate_issuer(iss: &str) -> Result<()> {
   if iss.is_empty() {
     Err(Error::MissingIssuer)
   } else {
@@ -81,7 +81,7 @@ fn validate_issuer(iss: &str) -> Result<()> {
   }
 }
 
-fn validate_subject(sub: &str) -> Result<()> {
+const fn validate_subject(sub: &str) -> Result<()> {
   if sub.is_empty() {
     Err(Error::MissingSubject)
   } else {
@@ -99,8 +99,8 @@ fn validate_header(h: &ClaimsHeader) -> Result<()> {
   }
 }
 
-fn from_jwt_segment<B: AsRef<str>, T: DeserializeOwned>(encoded: B) -> Result<T> {
-  let decoded = base64.decode(encoded.as_ref())?;
+fn from_jwt_segment<T: DeserializeOwned>(encoded: &str) -> Result<T> {
+  let decoded = base64.decode(encoded)?;
   let s = String::from_utf8(decoded).map_err(|_| Error::Utf8("jwt segment".to_owned()))?;
 
   Ok(serde_json::from_str(&s)?)

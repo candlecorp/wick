@@ -5,6 +5,7 @@ use thiserror::Error;
 use wasmparser::BinaryReaderError;
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 /// Wick WasCap's error type.
 pub enum Error {
   #[error("Invalid module hash")]

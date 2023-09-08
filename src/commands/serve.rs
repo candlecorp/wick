@@ -34,7 +34,7 @@ pub(crate) async fn handle(
   manifest.set_root_config(with_config);
   let manifest = manifest.finish()?.try_component_config()?;
 
-  let config = merge_config(&manifest, &opts.oci, Some(opts.cli));
+  let config = merge_config(manifest, &opts.oci, Some(opts.cli));
 
   let mut host = ComponentHostBuilder::default().manifest(config).span(span).build()?;
 

@@ -20,13 +20,13 @@ impl Performance {
   }
 
   /// Create a new [PerformanceMark] indicating a point in time.
-  pub fn mark<T: AsRef<str>>(&mut self, label: T) {
-    self.events.push(PerformanceMark::new(label.as_ref().to_owned()));
+  pub fn mark<T: Into<String>>(&mut self, label: T) {
+    self.events.push(PerformanceMark::new(label.into()));
   }
 
   /// Mark the start of a new [PerformancePeriod].
-  pub fn start<T: AsRef<str>>(&mut self, label: T) {
-    self.periods.insert(label.as_ref().to_owned(), PerformancePeriod::new());
+  pub fn start<T: Into<String>>(&mut self, label: T) {
+    self.periods.insert(label.into(), PerformancePeriod::new());
   }
 
   /// Mark the end of an existing [PerformancePeriod].
@@ -38,13 +38,13 @@ impl Performance {
 
   /// Get the map of [PerformancePeriod]s and their labels.
   #[must_use]
-  pub fn periods(&self) -> &HashMap<String, PerformancePeriod> {
+  pub const fn periods(&self) -> &HashMap<String, PerformancePeriod> {
     &self.periods
   }
 
   /// Get the list of [PerformanceMark]s.
   #[must_use]
-  pub fn events(&self) -> &Vec<PerformanceMark> {
+  pub const fn events(&self) -> &Vec<PerformanceMark> {
     &self.events
   }
 }
@@ -70,7 +70,7 @@ impl PerformanceMark {
 
   /// Get the [Instant] the event was marked.
   #[must_use]
-  pub fn instant(&self) -> Instant {
+  pub const fn instant(&self) -> Instant {
     self.instant
   }
 
@@ -144,14 +144,14 @@ mod tests {
 
   use super::*;
 
-  fn is_sync_send<T>()
+  const fn is_sync_send<T>()
   where
     T: Send + Sync,
   {
   }
 
   #[test]
-  fn test_sync_send() {
+  const fn test_sync_send() {
     is_sync_send::<Performance>();
   }
 
@@ -171,7 +171,7 @@ mod tests {
     assert_eq!(perf.events.len(), 2);
     assert!(perf.events[0] < perf.events[1]);
     assert_eq!(perf.periods.len(), 1);
-    assert!(perf.periods.get("middle").unwrap().duration() >= wait);
+    assert!(perf.periods["middle"].duration() >= wait);
 
     Ok(())
   }

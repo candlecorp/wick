@@ -7,7 +7,6 @@ use wick_interface_types::{Field, OperationSignature};
 use wick_packet::{Entity, Invocation, RuntimeConfig};
 
 use crate::assertion_packet::ToAssertionPacket;
-use crate::utils::render_config;
 use crate::{get_payload, TestError, UnitTest};
 
 #[must_use]
@@ -20,7 +19,7 @@ pub fn get_description(test: &UnitTest) -> String {
 }
 
 pub async fn run_test<'a, 'b>(
-  name: impl AsRef<str> + Sync + Send,
+  name: String,
   defs: Vec<&'a mut UnitTest<'a>>,
   id: Option<&'b str>,
   component: SharedComponent,
@@ -63,9 +62,8 @@ async fn run_unit<'a>(
 ) -> Result<TestBlock, TestError> {
   let span = info_span!("unit test", name = def.test.name());
 
-  let op_config = render_config(def.test.config(), None)?;
+  let op_config = def.test.config().and_then(|v| v.value().cloned());
   let signature = get_operation(&component, def.test.operation())?;
-
   validate_config(def.test.name(), op_config.as_ref(), &signature.config)?;
 
   let (stream, inherent, explicit_done) = get_payload(def, root_config.as_ref(), op_config.as_ref())?;

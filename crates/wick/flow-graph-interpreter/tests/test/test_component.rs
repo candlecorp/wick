@@ -26,71 +26,71 @@ pub struct TestComponent(ComponentSignature);
 impl TestComponent {
   #[allow(dead_code)]
   pub fn new() -> Self {
-    let signature = ComponentSignature::new("test-component")
-      .version("0.0.0")
+    let signature = ComponentSignature::new_named("test-component")
+      .set_version("0.0.0")
       .metadata(Default::default())
       .add_operation(
-        OperationSignature::new("echo")
+        OperationSignature::new_named("echo")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
-      .add_operation(OperationSignature::new("empty_stream").add_output("output", Type::String))
+      .add_operation(OperationSignature::new_named("empty_stream").add_output("output", Type::String))
       .add_operation(
-        OperationSignature::new("wait")
+        OperationSignature::new_named("wait")
           .add_input("input", Type::U64)
           .add_output("output", Type::U64),
       )
       .add_operation(
         #[allow(deprecated)]
-        OperationSignature::new("call")
+        OperationSignature::new_named("call")
           .add_input("component", Type::Link { schemas: vec![] })
           .add_input("message", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("uppercase")
+        OperationSignature::new_named("uppercase")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("reverse")
+        OperationSignature::new_named("reverse")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("add")
+        OperationSignature::new_named("add")
           .add_input("left", Type::U64)
           .add_input("right", Type::U64)
           .add_output("output", Type::U64),
       )
       .add_operation(
-        OperationSignature::new("timeout")
+        OperationSignature::new_named("timeout")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("timeout-nodone")
+        OperationSignature::new_named("timeout-nodone")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("concat")
+        OperationSignature::new_named("concat")
           .add_input("left", Type::String)
           .add_input("right", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("noimpl")
+        OperationSignature::new_named("noimpl")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("component_error")
+        OperationSignature::new_named("component_error")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("concat-five")
+        OperationSignature::new_named("concat-five")
           .add_input("one", Type::String)
           .add_input("two", Type::String)
           .add_input("three", Type::String)
@@ -99,46 +99,46 @@ impl TestComponent {
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("splitter")
+        OperationSignature::new_named("splitter")
           .add_input("input", Type::String)
           .add_output("rest", Type::String)
           .add_output("vowels", Type::String),
       )
       .add_operation(
-        OperationSignature::new("join")
+        OperationSignature::new_named("join")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
         #[allow(deprecated)]
-        OperationSignature::new("ref_to_string")
+        OperationSignature::new_named("ref_to_string")
           .add_input("link", Type::Link { schemas: vec![] })
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("exception")
+        OperationSignature::new_named("exception")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("panic")
+        OperationSignature::new_named("panic")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("error")
+        OperationSignature::new_named("error")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       )
       .add_operation(
-        OperationSignature::new("copy")
+        OperationSignature::new_named("copy")
           .add_input("input", Type::String)
           .add_input("times", Type::U64)
           .add_output("output", Type::String),
       )
-      .add_operation(OperationSignature::new("no-inputs").add_output("output", Type::String))
+      .add_operation(OperationSignature::new_named("no-inputs").add_output("output", Type::String))
       .add_operation(
-        OperationSignature::new("render")
+        OperationSignature::new_named("render")
           .add_input("input", Type::String)
           .add_output("output", Type::String),
       );

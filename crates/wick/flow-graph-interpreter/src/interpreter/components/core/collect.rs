@@ -42,7 +42,7 @@ pub(crate) struct Config {
 }
 
 fn gen_signature(id: &str, config: Config) -> OperationSignature {
-  let mut signature = OperationSignature::new(id);
+  let mut signature = OperationSignature::new_named(id);
   for field in config.inputs {
     signature = signature.add_input(&field, Type::Object);
   }
@@ -50,7 +50,7 @@ fn gen_signature(id: &str, config: Config) -> OperationSignature {
 }
 
 impl Op {
-  pub(crate) fn new() -> Self {
+  pub(crate) const fn new() -> Self {
     Self {}
   }
   pub(crate) fn gen_signature(id: &str, config: Config) -> OperationSignature {

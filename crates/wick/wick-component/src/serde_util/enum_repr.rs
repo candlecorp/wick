@@ -1,7 +1,7 @@
 #[derive(Debug, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
 #[serde(untagged)]
 /// A string or number to attempt deserializing from.
-#[allow(missing_docs)]
+#[allow(missing_docs, clippy::exhaustive_enums)]
 pub enum StringOrNum {
   String(String),
   Int(i64),

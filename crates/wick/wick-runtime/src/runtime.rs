@@ -47,9 +47,20 @@ impl Runtime {
   pub(crate) async fn new(seed: Seed, config: RuntimeInit) -> Result<Self> {
     let init = ScopeInit::new(seed, config);
 
+    let ns = init.namespace.as_deref().unwrap_or("__local__").to_owned();
+    init.span.in_scope(|| {
+      info!(id = ns, "initializing");
+    });
+    let span = init.span.clone();
+
+    let start = std::time::Instant::now();
     let service = Scope::start(init)
       .await
       .map_err(|e| RuntimeError::InitializationFailed(e.to_string()))?;
+    let end = std::time::Instant::now();
+
+    span.in_scope(|| info!(id = ns, duration_ms = %end.duration_since(start).as_millis(), "initialized"));
+
     Ok(Self {
       uid: service.id(),
       root: service,

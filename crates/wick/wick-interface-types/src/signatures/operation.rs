@@ -5,6 +5,7 @@ use crate::{contents_equal, Field, Type};
 /// The signature of a Wick component, including its input and output types.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Eq)]
 #[must_use]
+#[non_exhaustive]
 pub struct OperationSignature {
   /// The name of the component.
   #[serde(default)]
@@ -34,6 +35,15 @@ impl PartialEq for OperationSignature {
 }
 
 impl OperationSignature {
+  pub fn new<T: Into<String>>(name: T, inputs: Vec<Field>, outputs: Vec<Field>, config: Vec<Field>) -> Self {
+    Self {
+      name: name.into(),
+      config,
+      inputs,
+      outputs,
+    }
+  }
+
   /// Get the name of the operation.
   #[must_use]
   pub fn name(&self) -> &str {
@@ -59,21 +69,21 @@ impl OperationSignature {
   }
 
   /// Create a new [OperationSignature] with the passed name.
-  pub fn new<T: AsRef<str>>(name: T) -> Self {
+  pub fn new_named<T: Into<String>>(name: T) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       ..Default::default()
     }
   }
 
   /// Add an input port.
-  pub fn add_input(mut self, name: impl AsRef<str>, ty: Type) -> Self {
+  pub fn add_input<T: Into<String>>(mut self, name: T, ty: Type) -> Self {
     self.inputs.push(Field::new(name, ty));
     self
   }
 
   /// Add an input port.
-  pub fn add_output(mut self, name: impl AsRef<str>, ty: Type) -> Self {
+  pub fn add_output<T: Into<String>>(mut self, name: T, ty: Type) -> Self {
     self.outputs.push(Field::new(name, ty));
     self
   }

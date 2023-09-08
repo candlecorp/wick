@@ -4,6 +4,7 @@ use thiserror::Error;
 
 /// Error type for the flow expression parser.
 #[derive(Error, Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum ParserError {
   /// Component id is not a fully qualified name with a namespace.
   #[error("Component id '{0}' is not a fully qualified name with a namespace")]

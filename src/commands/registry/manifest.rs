@@ -96,7 +96,7 @@ fn print_annotations(annotations: &Option<HashMap<String, String>>, indent: u8) 
       .collect::<Vec<_>>()
       .join("\n");
   }
-  "".to_owned()
+  String::new()
 }
 
 fn print_oci_descriptor(descriptor: &OciDescriptor, indent: u8) -> String {

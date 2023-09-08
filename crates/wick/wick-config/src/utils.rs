@@ -18,6 +18,7 @@ pub(crate) fn opt_str_to_ipv4addr(v: &Option<String>) -> Result<Option<Ipv4Addr>
 }
 
 /// Utility macro for implementing `From` for a type.
+#[allow(unused)]
 macro_rules! impl_from_for {
   ($root:ident, $variant: ident, $type:ty) => {
     impl From<$type> for $root {

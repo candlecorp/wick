@@ -22,9 +22,9 @@ pub struct Glob {
 
 impl Glob {
   /// Create a new [Glob] instance from a glob pattern.
-  pub fn new(glob: impl AsRef<str>) -> Self {
+  pub fn new<T: Into<String>>(glob: T) -> Self {
     Self {
-      glob: glob.as_ref().to_owned(),
+      glob: glob.into(),
       ..Default::default()
     }
   }
@@ -54,7 +54,7 @@ impl AssetManager for Glob {
     };
     let mut asset_refs = Vec::new();
     for entry in entries {
-      asset_refs.push(AssetReference::new(&entry.unwrap().to_string_lossy()));
+      asset_refs.push(AssetReference::new(entry.unwrap().to_string_lossy()));
     }
 
     *self.assets.write() = asset_refs.clone();

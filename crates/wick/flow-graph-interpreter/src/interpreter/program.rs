@@ -20,14 +20,14 @@ pub(crate) struct Program {
 }
 
 impl Program {
-  pub(crate) fn new(network: Network, components: ComponentMap) -> Result<Self, Error> {
+  pub(crate) const fn new(network: Network, components: ComponentMap) -> Result<Self, Error> {
     let program = Self {
       state: ProgramState::new(network, components),
     };
     Ok(program)
   }
 
-  pub(crate) fn state(&self) -> &ProgramState {
+  pub(crate) const fn state(&self) -> &ProgramState {
     &self.state
   }
 
@@ -102,7 +102,7 @@ fn get_resolution_order(network: &Network) -> Result<Vec<Vec<&Schematic>>, Valid
 }
 
 pub(super) fn generate_self_signature(network: &Network, components: &mut ComponentMap) -> Result<(), ValidationError> {
-  let map = ComponentSignature::new(SelfComponent::ID);
+  let map = ComponentSignature::new_named(SelfComponent::ID);
   components.insert(SelfComponent::ID.to_owned(), map);
   let resolution_order = get_resolution_order(network)?;
 
@@ -121,7 +121,7 @@ fn get_schematic_signature(
   schematic: &Schematic,
   components: &ComponentMap,
 ) -> Result<OperationSignature, ValidationError> {
-  let mut schematic_signature = OperationSignature::new(schematic.name());
+  let mut schematic_signature = OperationSignature::new_named(schematic.name());
   for port in schematic.input().outputs() {
     for hop in schematic.walk_from_port(port, WalkDirection::Down).skip(1) {
       let signature = match hop {
@@ -240,7 +240,7 @@ pub(crate) struct ProgramState {
 }
 
 impl ProgramState {
-  pub(crate) fn new(network: Network, components: ComponentMap) -> Self {
+  pub(crate) const fn new(network: Network, components: ComponentMap) -> Self {
     Self { network, components }
   }
 

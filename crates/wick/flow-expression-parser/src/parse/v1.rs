@@ -27,6 +27,7 @@ pub static CONNECTION_SEPARATOR: &str = "->";
 const DEFAULT_ID: &str = "<>";
 
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 /// Errors that can occur during parsing.
 pub enum ParserError {
   /// General parse failure.

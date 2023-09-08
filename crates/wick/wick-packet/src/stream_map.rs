@@ -80,18 +80,15 @@ impl StreamMap {
     tokio::spawn(async move {
       while let Some(Ok(packet)) = stream.next().await {
         if packet.is_fatal_error() {
-          for (name, sender) in senders.iter_mut() {
+          for (name, sender) in &mut senders {
             let _ = sender.send(packet.clone().set_port(name));
           }
         } else {
-          let sender = match senders.get_mut(packet.port()) {
-            Some(stream) => stream,
-            None => {
-              if !packet.is_noop() {
-                warn!("received packet for unknown port: {}", packet.port());
-              }
-              continue;
+          let Some(sender) = senders.get_mut(packet.port()) else {
+            if !packet.is_noop() {
+              warn!("received packet for unknown port: {}", packet.port());
             }
+            continue;
           };
           let is_done = packet.is_done();
           let _ = sender.send(packet);

@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{is_false, Type};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct Field {
   /// The name of the field.
   pub name: String,
@@ -31,13 +32,13 @@ pub struct Field {
 }
 
 impl Field {
-  pub fn new(name: impl AsRef<str>, ty: Type) -> Self {
+  pub fn new<T: Into<String>>(name: T, ty: Type) -> Self {
     Self::new_with_description(name, ty, None)
   }
 
-  pub fn new_with_description(name: impl AsRef<str>, ty: Type, desc: Option<String>) -> Self {
+  pub fn new_with_description<T: Into<String>>(name: T, ty: Type, desc: Option<String>) -> Self {
     Self {
-      name: name.as_ref().to_owned(),
+      name: name.into(),
       description: desc,
       #[cfg(feature = "value")]
       default: None,
@@ -53,7 +54,7 @@ impl Field {
   }
 
   /// Get the type of the field
-  pub fn ty(&self) -> &Type {
+  pub const fn ty(&self) -> &Type {
     &self.ty
   }
 
@@ -66,13 +67,13 @@ impl Field {
   /// Get the default value of the field
   #[must_use]
   #[cfg(feature = "value")]
-  pub fn default(&self) -> Option<&serde_json::Value> {
+  pub const fn default(&self) -> Option<&serde_json::Value> {
     self.default.as_ref()
   }
 
   /// Get whether the field is required
   #[must_use]
-  pub fn required(&self) -> bool {
+  pub const fn required(&self) -> bool {
     self.required
   }
 
@@ -95,6 +96,7 @@ impl std::fmt::Display for Field {
 /// A field and its value.
 #[cfg(feature = "value")]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct FieldValue {
   /// The field.
   pub field: Field,
@@ -106,7 +108,7 @@ pub struct FieldValue {
 impl FieldValue {
   /// Create a new field value.
   #[must_use]
-  pub fn new(field: Field, value: serde_json::Value) -> Self {
+  pub const fn new(field: Field, value: serde_json::Value) -> Self {
     Self { field, value }
   }
 
@@ -117,13 +119,13 @@ impl FieldValue {
   }
 
   /// Get the type of the field
-  pub fn signature(&self) -> &Type {
+  pub const fn signature(&self) -> &Type {
     &self.field.ty
   }
 
   /// Get the value of the field
   #[must_use]
-  pub fn value(&self) -> &serde_json::Value {
+  pub const fn value(&self) -> &serde_json::Value {
     &self.value
   }
 }

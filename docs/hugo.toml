@@ -4,6 +4,7 @@ title = 'Candle Documentation'
 theme = 'hugo-theme-techdoc'
 canonifyURLs = true
 enableInlineShortcodes = true
+staticDir = ['static', 'content/candle-cloud/static']
 
 [params]
 menu_style = "open-menu"
