@@ -1038,6 +1038,9 @@ type WebSocketClientComponent @tagged("wick/component/websocket@v1") {
   "Configuration necessary to provide when instantiating the component."
   with: [Field]
 
+  "Any headers to add to the initial connection request."
+  headers: {string: [string]}?
+
   "A list of operations to expose on this component."
   operations: [WebSocketClientOperationDefinition]
 }
@@ -1053,9 +1056,12 @@ type WebSocketClientOperationDefinition {
   "Types of the inputs to the operation."
   inputs: [Field],
 
-  "The path / query string to append to our base URL, processed as a liquid template with each input as part of the template data."
-  path: string
+  "The codec to use when encoding/decoding data."
+  codec: Codec?
 
-  "The message to send, processed as a structured JSON liquid template."
+  "Types of the outputs from the operation."
+  outputs: [Field],
+
+  "The message to send, processed as either json, text, or bytes."
   message: LiquidJsonValue?
 }

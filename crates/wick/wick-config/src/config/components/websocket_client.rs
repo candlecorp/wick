@@ -1,11 +1,11 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 use std::borrow::Cow;
+use std::collections::HashMap;
 
-use liquid_json::LiquidJsonValue;
 use wick_interface_types::OperationSignatures;
 
 use super::{ComponentConfig, OperationConfig};
-use crate::config::{self};
+use crate::config::{self, Codec};
 
 #[derive(
   Debug,
@@ -31,6 +31,12 @@ pub struct WebSocketClientComponentConfig {
   #[builder(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) config: Vec<wick_interface_types::Field>,
+
+  /// The headers to send with the request.
+  #[asset(skip)]
+  #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) headers: Option<HashMap<String, Vec<String>>>,
 
   /// A list of operations to expose on this component.
   #[asset(skip)]
@@ -85,7 +91,13 @@ impl From<WebSocketClientOperationDefinition> for wick_interface_types::Operatio
       inputs: operation.inputs,
       outputs: vec![wick_interface_types::Field::new(
         "message",
-        wick_interface_types::Type::Object,
+        match operation.codec {
+          Some(Codec::Json) => wick_interface_types::Type::Object,
+          Some(Codec::Raw) => wick_interface_types::Type::Bytes,
+          Some(Codec::FormData) => wick_interface_types::Type::Object,
+          Some(Codec::Text) => wick_interface_types::Type::Object,
+          None => wick_interface_types::Type::Object,
+        },
       )],
     }
   }
@@ -111,11 +123,18 @@ pub struct WebSocketClientOperationDefinition {
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) inputs: Vec<wick_interface_types::Field>,
 
-  /// The path / query string to append to our base URL, processed as a liquid template with each input as part of the template data.
-  pub(crate) path: String,
+  /// The codec to use when encoding/decoding data.
+  #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) codec: Option<Codec>,
+
+  /// Types of the outputs to the operation.
+  #[property(skip)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub(crate) outputs: Vec<wick_interface_types::Field>,
 
   /// The message to send, processed as a structured JSON liquid template.
   #[builder(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub(crate) message: Option<LiquidJsonValue>,
+  pub(crate) message: Option<liquid_json::LiquidJsonValue>,
 }

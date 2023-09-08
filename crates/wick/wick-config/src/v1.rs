@@ -2092,6 +2092,11 @@ pub struct WebSocketClientComponent {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub with: Vec<Field>,
+  /// Any headers to add to the initial connection request.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub headers: Option<HashMap<String, Vec<String>>>,
   /// A list of operations to expose on this component.
 
   #[serde(default)]
@@ -2117,11 +2122,17 @@ pub struct WebSocketClientOperationDefinition {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub inputs: Vec<Field>,
-  /// The path / query string to append to our base URL, processed as a liquid template with each input as part of the template data.
+  /// The codec to use when encoding/decoding data.
 
   #[serde(default)]
-  pub path: String,
-  /// The message to send, processed as a structured JSON liquid template.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub codec: Option<Codec>,
+  /// Types of the outputs from the operation.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub outputs: Vec<Field>,
+  /// The message to send, processed as either json, text, or bytes.
 
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]

@@ -1397,7 +1397,7 @@ impl TryFrom<v1::WebSocketClientOperationDefinition> for components::WebSocketCl
     Ok(Self {
       name: value.name,
       inputs: value.inputs.try_map_into()?,
-      path: value.path,
+      outputs: value.outputs.try_map_into()?,
       message: value.message,
       config: value.with.try_map_into()?,
     })
@@ -1410,6 +1410,7 @@ impl TryFrom<v1::WebSocketClientComponent> for components::WebSocketClientCompon
     Ok(Self {
       resource: value.resource,
       config: value.with.try_map_into()?,
+      headers: value.headers,
       operations: value.operations.try_map_into()?,
     })
   }
@@ -1421,7 +1422,8 @@ impl TryFrom<components::WebSocketClientOperationDefinition> for v1::WebSocketCl
     Ok(Self {
       name: value.name,
       inputs: value.inputs.try_map_into()?,
-      path: value.path,
+      outputs: value.outputs.try_map_into()?,
+      codec: value.codec.map_into(),
       message: value.message,
       with: value.config.try_map_into()?,
     })
@@ -1434,6 +1436,7 @@ impl TryFrom<components::WebSocketClientComponentConfig> for v1::WebSocketClient
     Ok(Self {
       resource: value.resource,
       with: value.config.try_map_into()?,
+      headers: value.headers,
       operations: value.operations.try_map_into()?,
     })
   }

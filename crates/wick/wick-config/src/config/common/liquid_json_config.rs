@@ -80,7 +80,7 @@ impl LiquidJsonConfig {
 
     let base = source.map(|source| {
       let dirname = source.parent().unwrap_or_else(|| Path::new("<unavailable>"));
-      serde_json::json!({"__dirname": dirname})
+      serde_json::json!({ "__dirname": dirname })
     });
 
     let ctx = Self::make_context(base, root, config, env, inherent)?;
