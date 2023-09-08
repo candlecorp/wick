@@ -2,8 +2,6 @@ use std::path::PathBuf;
 
 use thiserror::Error;
 
-// type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
-
 /// Wick Manifest's Errors.
 #[derive(Error, Debug)]
 #[non_exhaustive]

@@ -178,10 +178,16 @@ pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 //
 //
-/// A stream of `Result<T,BoxError>`.
-pub type WickStream<T> = wasmrs_rx::BoxFlux<T, BoxError>;
+/// A re-export of the `anyhow::Error` type.
+pub type AnyError = anyhow::Error;
+pub use anyhow;
 
-/// Create a stream of `Result<T, BoxError>` that yields one value and ends.
+//
+//
+/// A stream of `Result<T, AnyError>`.
+pub type WickStream<T> = wasmrs_rx::BoxFlux<T, AnyError>;
+
+/// Create a stream of `Result<T, AnyError>` that yields one value and ends.
 ///
 /// # Example
 ///
@@ -193,11 +199,11 @@ pub type WickStream<T> = wasmrs_rx::BoxFlux<T, BoxError>;
 /// assert_eq!(stream.next().await, None);
 /// ```
 ///
-pub fn once<T>(value: T) -> impl Stream<Item = Result<T, BoxError>> {
+pub fn once<T>(value: T) -> impl Stream<Item = Result<T, AnyError>> {
   tokio_stream::once(Ok(value))
 }
 
-/// Create a stream of `Result<T, BoxError>` from an iterator of type T.
+/// Create a stream of `Result<T, AnyError>` from an iterator of type T.
 ///
 /// This is a convenience function for creating a Result/TryStream from an iterator of `Ok` values.
 ///
@@ -213,7 +219,7 @@ pub fn once<T>(value: T) -> impl Stream<Item = Result<T, BoxError>> {
 /// assert_eq!(stream.next().await, None);
 /// ```
 ///
-pub fn iter<I, O>(i: I) -> impl Stream<Item = Result<O, BoxError>>
+pub fn iter<I, O>(i: I) -> impl Stream<Item = Result<O, AnyError>>
 where
   I: IntoIterator<Item = O>,
 {

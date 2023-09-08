@@ -1,4 +1,3 @@
-use flow_component::ComponentError;
 use wick_config::error::ManifestError;
 use wick_packet::TypeWrapper;
 
@@ -91,12 +90,6 @@ pub enum Error {
 
   #[error("Got a row with no data")]
   NoRow,
-}
-
-impl From<Error> for ComponentError {
-  fn from(value: Error) -> Self {
-    ComponentError::new(value)
-  }
 }
 
 #[derive(thiserror::Error, Debug, Copy, Clone)]

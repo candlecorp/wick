@@ -1,4 +1,3 @@
-use flow_component::ComponentError;
 use url::Url;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
@@ -18,10 +17,4 @@ pub enum Error {
 
   #[error("Invalid baseurl: {0}")]
   InvalidBaseUrl(Url),
-}
-
-impl From<Error> for ComponentError {
-  fn from(value: Error) -> Self {
-    ComponentError::new(value)
-  }
 }

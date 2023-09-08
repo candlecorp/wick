@@ -44,6 +44,7 @@ pin-project-lite = { workspace = true }
 base64-serde = { workspace = true }
 base64 = { workspace = true, default-features = false, features = ["alloc"] }
 tokio-stream = { workspace = true, default-features = false }
+anyhow = { workspace = true }
 #
 # feature = rt-tokio
 tokio = { workspace = true, optional = true, features = ["rt"] }
@@ -61,5 +62,8 @@ chrono = { workspace = true, optional = true, features = [
 wasmrs-guest = { workspace = true }
 
 [dev-dependencies]
-anyhow = { workspace = true }
 rstest = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt"] }
+test-logger = { workspace = true }
+tracing = { workspace = true }
+wick-logger = { workspace = true }

@@ -8,7 +8,7 @@ use crate::generate::dependency::Dependency;
 use crate::generate::expand_type::{expand_field_types, expand_input_fields, fields_to_tuples};
 use crate::generate::ids::*;
 use crate::generate::templates::op_config;
-use crate::generate::{f, Direction};
+use crate::generate::Direction;
 use crate::*;
 
 struct ComponentCodegen {
@@ -118,19 +118,18 @@ fn operation_impls(config: &mut Config, ops: &[OperationSignature]) -> Vec<Opera
       let inputs = expand_input_fields(config, op.inputs(), dir, false);
       let encode_inputs = encoded_inputs(op.inputs());
       let merge_inputs = merged_inputs(op.inputs());
-      let response_stream_types = expand_field_types(config, op.outputs(), dir, raw);
+      let types = expand_field_types(config, op.outputs(), dir, raw);
       let fan_out: Vec<_> = fields_to_tuples(config, op.outputs(), dir, raw);
-      let types = f::maybe_parens(response_stream_types);
 
       let impls = quote! {
         #[allow(unused)]
-        pub fn #name(&self, #op_config_pair #(#inputs),*) -> std::result::Result<#types,wick_packet::Error> {
+        pub fn #name(&self, #op_config_pair #(#inputs),*) -> std::result::Result<(#(#types),*),wick_packet::Error> {
           #(#encode_inputs)*
           let stream = wick_component::empty();
           let stream = #merge_inputs;
           let stream = wick_packet::PacketStream::new(Box::pin(stream));
           let mut stream = self.#name_raw(#op_config_id stream)?;
-          Ok(wick_component::payload_fan_out!(stream, raw: false, wick_component::BoxError, [#(#fan_out),*]))
+          Ok(wick_component::payload_fan_out!(stream, raw: false, wick_component::AnyError, [#(#fan_out),*]))
         }
 
         #[allow(unused)]

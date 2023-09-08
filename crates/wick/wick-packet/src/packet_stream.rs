@@ -6,7 +6,7 @@ use tokio_stream::Stream;
 use tracing::{span_enabled, Span};
 use wasmrs_rx::FluxChannel;
 
-use crate::{BoxError, ContextTransport, InherentData, Packet, Result, RuntimeConfig};
+use crate::{ContextTransport, InherentData, Packet, Result, RuntimeConfig};
 
 pub type PacketSender = FluxChannel<Packet, crate::Error>;
 
@@ -163,7 +163,7 @@ impl Stream for PacketStream {
 
 pub fn into_packet<N: Into<String>, T: serde::Serialize>(
   name: N,
-) -> Box<dyn FnMut(std::result::Result<T, BoxError>) -> Result<Packet>> {
+) -> Box<dyn FnMut(anyhow::Result<T>) -> Result<Packet>> {
   let name = name.into();
   Box::new(move |x| Ok(x.map_or_else(|e| Packet::err(&name, e.to_string()), |x| Packet::encode(&name, &x))))
 }

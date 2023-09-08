@@ -14,7 +14,7 @@ macro_rules! binary_paired_right_stream {
   ($name:ident) => {
     #[async_trait::async_trait(?Send)]
     impl $name::Operation for Component {
-      type Error = Box<dyn std::error::Error + 'static>;
+      type Error = wick_component::AnyError;
       type Outputs = $name::Outputs;
       type Config = $name::Config;
 
@@ -106,9 +106,9 @@ where
           continue;
         }
         tracing::debug!("received open bracket while already started");
-        let _ = tx.send_result(Err(Box::new(wick_packet::Error::Component(
-          "Received open bracket while already started".to_owned(),
-        ))));
+        let _ = tx.send_result(Err(
+          wick_packet::Error::Component("Received open bracket while already started".to_owned()).into(),
+        ));
         continue;
       }
 

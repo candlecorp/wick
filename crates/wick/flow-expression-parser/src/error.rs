@@ -1,7 +1,5 @@
 use thiserror::Error;
 
-// type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
-
 /// Error type for the flow expression parser.
 #[derive(Error, Debug, Clone, PartialEq)]
 #[non_exhaustive]
