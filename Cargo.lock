@@ -6458,6 +6458,7 @@ dependencies = [
  "seeded-random",
  "serde",
  "serde_json",
+ "test-logger",
  "thiserror",
  "tokio",
  "tokio-stream",
