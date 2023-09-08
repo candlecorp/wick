@@ -70,14 +70,28 @@ pub(crate) async fn handle(
     .span(span.clone())
     .build()?;
 
-  if !opts.dryrun {
+  let output = if !opts.dryrun {
     host.start()?;
     span.in_scope(|| debug!("waiting on triggers to finish..."));
 
-    host.wait_for_done().instrument(span.clone()).await?;
+    let output = host.wait_for_done().instrument(span.clone()).await?;
+    let mut lines = String::new();
+    let mut json = Vec::new();
+    for output in output {
+      if !output.lines.trim().is_empty() {
+        lines.push_str(&output.lines);
+        lines.push('\n');
+      }
+      json.push(output.json);
+    }
+    StructuredOutput::new(lines, json!({"output":json}))
   } else {
     info!("application valid but not started because --dryrun set");
-  }
+    StructuredOutput::new(
+      "application valid but not started because --dryrun set",
+      json!({"status":"valid"}),
+    )
+  };
 
-  Ok(StructuredOutput::new("", json!({})))
+  Ok(output)
 }

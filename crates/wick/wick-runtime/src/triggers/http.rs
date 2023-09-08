@@ -193,16 +193,30 @@ impl Trigger for Http {
     Ok(())
   }
 
-  async fn wait_for_done(&self) {
+  async fn wait_for_done(&self) -> StructuredOutput {
     let rx = if let Some(instance) = self.instance.lock().as_mut() {
       instance.running_rx.take()
     } else {
       None
     };
     if let Some(rx) = rx {
-      let _ = rx.await;
+      match rx.await {
+        Ok(_) => {
+          info!("http trigger finished");
+          StructuredOutput::new("http trigger finished", json!({"status": "http trigger finished"}))
+        }
+        Err(e) => {
+          error!(err=%e,"http trigger failed");
+          let message = format!("http trigger failed: {}", e);
+          StructuredOutput::new(format!("http trigger failed: {}", e), json!({"status": message}))
+        }
+      }
     } else {
       error!("http trigger not running");
+      StructuredOutput::new(
+        "http trigger not running",
+        json!({"status": "http trigger not running"}),
+      )
     }
   }
 }
