@@ -37,11 +37,13 @@ chrono = { workspace = true, features = ["std"], optional = true }
 bytes = { workspace = true, optional = true }
 async-recursion = { workspace = true }
 tracing = { workspace = true }
+anyhow = { workspace = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasmrs-guest = { workspace = true }
 
 [dev-dependencies]
+wick-packet = { workspace = true, features = ["std", "rng"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 serde = { workspace = true }
 anyhow = { workspace = true }

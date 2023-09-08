@@ -28,7 +28,7 @@ pub(crate) fn field_pair(
     let name = &field.name;
     let id = id(&snake(name));
 
-    let ty = expand_type(config, dir, imported, &field.ty);
+    let ty = expand_type(config, dir, imported, config.raw, &field.ty);
     let desc = field
       .description
       .as_ref()

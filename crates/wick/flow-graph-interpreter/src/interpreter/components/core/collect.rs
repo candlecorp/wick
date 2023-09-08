@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::{anyhow, bail};
 use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use futures::FutureExt;
 use serde_json::{json, Value};
@@ -150,10 +151,10 @@ fn get_inner_array(value: &mut Value, depth: i16) -> Result<&mut Value, Componen
     Value::Array(ref mut array) => {
       let inner = array
         .last_mut()
-        .ok_or_else(|| ComponentError::message("Invalid structured in bracketed streams"))?;
+        .ok_or_else(|| anyhow!("Invalid structure in bracketed streams"))?;
       get_inner_array(inner, depth - 1)
     }
-    _ => Err(ComponentError::message("Value is not an array")),
+    _ => bail!("Value {} is not an array", value),
   }
 }
 
@@ -162,12 +163,11 @@ impl RenderConfiguration for Op {
   type ConfigSource = RuntimeConfig;
 
   fn decode_config(data: Option<Self::ConfigSource>) -> Result<Self::Config, ComponentError> {
-    let config = data.ok_or_else(|| {
-      ComponentError::message("Collect component requires configuration, please specify configuration.")
-    })?;
+    let config =
+      data.ok_or_else(|| anyhow!("Collect component requires configuration, please specify configuration."))?;
 
     Ok(Self::Config {
-      inputs: config.coerce_key("inputs").map_err(ComponentError::new)?,
+      inputs: config.coerce_key("inputs")?,
     })
   }
 }

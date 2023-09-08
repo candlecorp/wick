@@ -17,17 +17,13 @@ pub(crate) fn gen_wrapper_fn(config: &mut config::Config, component: &Ident, op:
     .iter()
     .map(|i| {
       let port_name = &i.name;
-      let port_type = expand_type(config, Direction::In, false, &i.ty);
+      let port_type = expand_type(config, Direction::In, false, config.raw, &i.ty);
       quote! {(#port_name, #port_type)}
     })
     .collect_vec();
   let inputs = op.inputs().iter().map(|i| id(&snake(&i.name))).collect_vec();
   let outputs_name = id(&op_outputs_name(op));
-  let sanitized_input_names = if inputs.is_empty() {
-    quote! {config}
-  } else {
-    quote! {(config, #(#inputs,)*)}
-  };
+  let op_args = quote! {(config, (#(#inputs),*))};
 
   let raw = if config.raw {
     quote! {raw:true}
@@ -40,12 +36,13 @@ pub(crate) fn gen_wrapper_fn(config: &mut config::Config, component: &Ident, op:
   let config_id = id(&generic_config_id());
 
   quote! {
-    fn #wrapper_id(mut input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>) -> std::result::Result<wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>,Box<dyn std::error::Error + Send + Sync>> {
+    fn #wrapper_id(mut input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>) -> std::result::Result<wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>,wick_component::BoxError> {
       let (channel, rx) = wasmrs_rx::FluxChannel::<wasmrs::RawPayload, wasmrs::PayloadError>::new_parts();
       let outputs = #impl_name::#outputs_name::new(channel.clone());
 
       runtime::spawn(#wrapper_name,async move {
-        let #sanitized_input_names = wick_component::payload_fan_out!(input, #raw, Box<dyn std::error::Error + Send + Sync>, #impl_name::#config_id, [#(#input_pairs,)*]);
+        #[allow(unused_parens)]
+        let #op_args = wick_component::payload_fan_out!(input, #raw, wick_component::AnyError, #impl_name::#config_id, [#(#input_pairs),*]);
          let config = match config.await {
           Ok(Ok(config)) => {
             config

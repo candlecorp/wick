@@ -48,7 +48,8 @@ pub trait Trigger {
   async fn shutdown_gracefully(self) -> Result<(), RuntimeError>;
 
   /// Wait for the trigger to finish.
-  async fn wait_for_done(&self);
+  #[must_use = "this returns the output of the trigger"]
+  async fn wait_for_done(&self) -> StructuredOutput;
 }
 
 /// Runtime configuration necessary for a trigger to execute.

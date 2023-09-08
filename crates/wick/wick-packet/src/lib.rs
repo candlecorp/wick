@@ -145,7 +145,7 @@ pub use inherent::InherentData;
 #[cfg(feature = "invocation")]
 pub use invocation::Invocation;
 pub use metadata::{Flags, WickMetadata, CLOSE_BRACKET, DONE_FLAG, OPEN_BRACKET};
-pub use output::{Output, OutputIterator, Port, ValuePort};
+pub use output::{OutgoingPort, OutputIterator, Port, ValuePort};
 pub use packet::{from_raw_wasmrs, from_wasmrs, packetstream_to_wasmrs, Packet, PacketError, PacketPayload};
 pub use packet_stream::{into_packet, PacketSender, PacketStream};
 pub use stream_map::StreamMap;
@@ -160,5 +160,4 @@ pub use b64_bytes::Base64Bytes;
 #[cfg(feature = "rt-tokio")]
 pub use runtime::split_stream;
 
-pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub(crate) type Result<T> = std::result::Result<T, Error>;

@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use futures::{FutureExt, StreamExt};
 use serde_json::Value;
@@ -120,26 +121,23 @@ impl RenderConfiguration for Op {
   type ConfigSource = RuntimeConfig;
 
   fn decode_config(data: Option<Self::ConfigSource>) -> Result<Self::Config, ComponentError> {
-    let config = data.ok_or_else(|| {
-      ComponentError::message("Pluck component requires configuration, please specify configuration.")
-    })?;
+    let config =
+      data.ok_or_else(|| anyhow!("Pluck component requires configuration, please specify configuration."))?;
 
     for (k, v) in config {
       if k == "field" {
-        let field: String = serde_json::from_value(v).map_err(ComponentError::new)?;
+        let field: String = serde_json::from_value(v)?;
         warn!("pluck should be configured with 'path' as an array of strings, 'field' is deprecated and will be removed in a future release.");
         return Ok(Self::Config {
           field: field.split('.').map(|s| s.to_owned()).collect(),
         });
       }
       if k == "path" {
-        let field: Vec<String> = serde_json::from_value(v).map_err(ComponentError::new)?;
+        let field: Vec<String> = serde_json::from_value(v)?;
         return Ok(Self::Config { field });
       }
     }
-    Err(ComponentError::message(
-      "invalid configuration for pluck, 'path' field is required",
-    ))
+    Err(anyhow!("invalid configuration for pluck, 'path' field is required",))
   }
 }
 

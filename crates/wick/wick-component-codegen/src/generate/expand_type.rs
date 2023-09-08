@@ -12,9 +12,10 @@ pub(super) fn expand_type(
   config: &mut config::Config,
   dir: Direction,
   imported: bool,
+  raw: bool,
   ty: &wick_interface_types::Type,
 ) -> TokenStream {
-  if config.raw && dir != Direction::Out {
+  if raw && dir != Direction::Out {
     return quote! { wick_component::wick_packet::Packet };
   }
   match ty {
@@ -31,7 +32,7 @@ pub(super) fn expand_type(
     wick_interface_types::Type::F64 => quote! { f64 },
     wick_interface_types::Type::String => quote! { String },
     wick_interface_types::Type::List { ty } => {
-      let ty = expand_type(config, dir, imported, ty);
+      let ty = expand_type(config, dir, imported, raw, ty);
       quote! { Vec<#ty> }
     }
     wick_interface_types::Type::Bytes => {
@@ -50,12 +51,12 @@ pub(super) fn expand_type(
       quote! {#location #(#mod_parts ::)*#ty}
     }
     wick_interface_types::Type::Optional { ty } => {
-      let ty = expand_type(config, dir, imported, ty);
+      let ty = expand_type(config, dir, imported, raw, ty);
       quote! { Option<#ty> }
     }
     wick_interface_types::Type::Map { key, value } => {
-      let key = expand_type(config, dir, imported, key);
-      let value = expand_type(config, dir, imported, value);
+      let key = expand_type(config, dir, imported, raw, key);
+      let value = expand_type(config, dir, imported, raw, value);
       quote! { std::collections::HashMap<#key,#value> }
     }
     #[allow(deprecated)]
@@ -79,15 +80,15 @@ pub(crate) fn expand_input_fields(
   config: &mut config::Config,
   fields: &[Field],
   direction: Direction,
-  raw: bool,
+  imported: bool,
 ) -> Vec<TokenStream> {
   fields
     .iter()
     .map(|input| {
       let name = id(&snake(input.name()));
-      let ty = expand_type(config, direction, raw, &input.ty);
+      let ty = expand_type(config, direction, imported, false, &input.ty);
       quote! {
-        #name: impl wick_component::Stream<Item = Result<#ty, wick_component::BoxError>> + 'static
+        #name: impl wick_component::Stream<Item = Result<#ty, wick_component::AnyError>> + 'static
       }
     })
     .collect_vec()
@@ -109,12 +110,12 @@ pub(crate) fn expand_field_types(
   config: &mut config::Config,
   fields: &[Field],
   direction: Direction,
-  raw: bool,
+  imported: bool,
 ) -> Vec<TokenStream> {
   fields
     .iter()
     .map(|input| {
-      let ty = expand_type(config, direction, raw, &input.ty);
+      let ty = expand_type(config, direction, imported, false, &input.ty);
       quote! {
         WickStream<#ty>
       }
@@ -132,7 +133,7 @@ pub(crate) fn fields_to_tuples(
     .iter()
     .map(|input| {
       let name = input.name();
-      let ty = expand_type(config, direction, raw, &input.ty);
+      let ty = expand_type(config, direction, raw, false, &input.ty);
       quote! {
         (#name, #ty)
       }
