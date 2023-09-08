@@ -22,6 +22,13 @@ pub(crate) struct Cli {
   done_rx: Mutex<Option<tokio::sync::oneshot::Receiver<StructuredOutput>>>,
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
+struct Interactive {
+  stdin: bool,
+  stdout: bool,
+  stderr: bool,
+}
+
 impl Cli {
   pub(crate) fn load() -> Result<Arc<dyn Trigger + Send + Sync>, RuntimeError> {
     Ok(Arc::new(Cli::load_impl()?))
@@ -36,7 +43,7 @@ impl Cli {
   }
 
   async fn handle(&self, runtime: Runtime, operation: Entity, args: Vec<String>) -> Result<(), RuntimeError> {
-    let is_interactive = wick_interface_cli::types::Interactive {
+    let is_interactive = Interactive {
       stdin: atty::is(atty::Stream::Stdin),
       stdout: atty::is(atty::Stream::Stdout),
       stderr: atty::is(atty::Stream::Stderr),
@@ -72,10 +79,24 @@ impl Cli {
                 format!("CLI Trigger produced error, {}", err.msg()),
                 json!({ "error": err.to_string() }),
               );
+              let message = if code > 0 {
+                format!("Exit code: {}", code)
+              } else {
+                String::new()
+              };
+              break StructuredOutput::new(message, json!({ "code": code }));
+            }
+            if p.is_error() {
+              let err = p.unwrap_err();
+              break StructuredOutput::new(
+                format!("CLI Trigger produced error, {}", err.msg()),
+                json!({ "error": err.to_string() }),
+              );
             }
           }
           Err(e) => {
             break StructuredOutput::new(
+              format!("CLI Trigger produced error, {}", e),
               format!("CLI Trigger produced error, {}", e),
               json!({ "error": e.to_string() }),
             );
@@ -90,7 +111,9 @@ impl Cli {
     };
 
     let _ = self.done_tx.lock().take().unwrap().send(output);
+    let _ = self.done_tx.lock().take().unwrap().send(output);
 
+    Ok(())
     Ok(())
   }
 }
@@ -134,7 +157,9 @@ impl Trigger for Cli {
   }
 
   async fn wait_for_done(&self) -> StructuredOutput {
+  async fn wait_for_done(&self) -> StructuredOutput {
     let rx = self.done_rx.lock().take().unwrap();
+    rx.await.unwrap_or_default()
     rx.await.unwrap_or_default()
   }
 }
