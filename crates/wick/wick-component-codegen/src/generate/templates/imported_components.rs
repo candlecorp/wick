@@ -167,13 +167,13 @@ fn operation_impls(config: &mut Config, ops: &[OperationSignature]) -> Vec<Opera
       let impls = quote! {
       let impls = quote! {
         #[allow(unused)]
-        pub fn #name(&self, #op_config_pair #(#inputs),*) -> std::result::Result<#types,wick_packet::Error> {
+        pub fn #name(&self, #op_config_pair #(#inputs),*) -> std::result::Result<(#(#types),*),wick_packet::Error> {
           #(#encode_inputs)*
           let stream = wick_component::empty();
           let stream = #merge_inputs;
           let stream = wick_packet::PacketStream::new(Box::pin(stream));
           let mut stream = self.#name_raw(#op_config_id stream)?;
-          Ok(wick_component::payload_fan_out!(stream, raw: false, wick_component::BoxError, [#(#fan_out),*]))
+          Ok(wick_component::payload_fan_out!(stream, raw: false, wick_component::AnyError, [#(#fan_out),*]))
         }
 
         #[allow(unused)]

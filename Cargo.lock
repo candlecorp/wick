@@ -6257,6 +6257,7 @@ dependencies = [
  "parking_lot",
  "seeded-random",
  "structured-output",
+ "test-logger",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -6474,6 +6475,7 @@ dependencies = [
  "seeded-random",
  "serde",
  "serde_json",
+ "test-logger",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -6488,8 +6490,6 @@ dependencies = [
  "wasmrs-rx",
  "wick-interface-types",
  "wick-logger",
- "wick-test-logger",
- "wick-test-logger",
 ]
 
 [[package]]

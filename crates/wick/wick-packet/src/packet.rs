@@ -1,9 +1,7 @@
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use tokio_stream::Stream;
-use tokio_stream::Stream;
 use wasmrs::{BoxFlux, Metadata, Payload, PayloadError, RawPayload};
-use wasmrs_runtime::ConditionallySend;
 use wasmrs_runtime::ConditionallySend;
 use wick_interface_types::Type;
 
@@ -349,8 +347,6 @@ impl std::fmt::Display for PacketError {
 
 impl From<Result<RawPayload, PayloadError>> for Packet {
   fn from(p: Result<RawPayload, PayloadError>) -> Self {
-impl From<Result<RawPayload, PayloadError>> for Packet {
-  fn from(p: Result<RawPayload, PayloadError>) -> Self {
     p.map_or_else(
       |e| {
         if let Some(mut metadata) = e.metadata {
@@ -389,13 +385,8 @@ impl From<Result<RawPayload, PayloadError>> for Packet {
       },
     )
   }
-    )
-  }
 }
 
-impl From<Result<Payload, PayloadError>> for Packet {
-  fn from(p: Result<Payload, PayloadError>) -> Self {
-    p.map_or_else(
 impl From<Result<Payload, PayloadError>> for Packet {
   fn from(p: Result<Payload, PayloadError>) -> Self {
     p.map_or_else(
@@ -433,37 +424,16 @@ pub fn packetstream_to_wasmrs(index: u32, stream: PacketStream) -> BoxFlux<RawPa
         }
       },
     )
-    )
-  }
-}
-
-#[must_use]
-pub fn packetstream_to_wasmrs(index: u32, stream: PacketStream) -> BoxFlux<RawPayload, PayloadError> {
-  let s = tokio_stream::StreamExt::map(stream, move |p| {
-    p.map_or_else(
-      |e| Err(PayloadError::application_error(e.to_string(), None)),
-      |p| {
-        let md = wasmrs::Metadata::new_extra(index, p.extra.encode()).encode();
-        match p.payload {
-          PacketPayload::Ok(b) => Ok(wasmrs::RawPayload::new_data(Some(md), b.map(Into::into))),
-          PacketPayload::Err(e) => Err(wasmrs::PayloadError::application_error(e.msg(), Some(md))),
-        }
-      },
-    )
   });
   Box::pin(s)
 }
 
-pub fn from_raw_wasmrs<T: Stream<Item = Result<RawPayload, PayloadError>> + ConditionallySend + Unpin + 'static>(
-  stream: T,
-) -> PacketStream {
+pub fn from_raw_wasmrs(stream: BoxFlux<RawPayload, PayloadError>) -> PacketStream {
   let s = tokio_stream::StreamExt::map(stream, move |p| Ok(p.into()));
   PacketStream::new(Box::new(s))
 }
 
-pub fn from_wasmrs<T: Stream<Item = Result<Payload, PayloadError>> + ConditionallySend + Unpin + 'static>(
-  stream: T,
-) -> PacketStream {
+pub fn from_wasmrs(stream: BoxFlux<Payload, PayloadError>) -> PacketStream {
   let s = tokio_stream::StreamExt::map(stream, move |p| Ok(p.into()));
   PacketStream::new(Box::new(s))
 }

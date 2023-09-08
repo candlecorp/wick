@@ -67,7 +67,7 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
     quote! {
       pub struct #outputs_name {
         #[allow(unused)]
-        #(#output_port_fields,)*
+        #(#output_port_fields),*
       }
 
       impl wick_component::Broadcast for #outputs_name {
@@ -86,7 +86,7 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
       impl #outputs_name {
         pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
           Self {
-            #(#output_ports_new,)*
+            #(#output_ports_new),*
           }
         }
       }

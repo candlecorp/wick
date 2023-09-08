@@ -33,8 +33,8 @@ mod provided {
     #[allow(unused)]
     pub fn echo(
       &self,
-      input: impl wick_component::Stream<Item = Result<types::http::HttpRequest, wick_component::BoxError>> + 'static,
-    ) -> std::result::Result<WickStream<types::http::HttpRequest>, wick_packet::Error> {
+      input: impl wick_component::Stream<Item = Result<types::http::HttpRequest, wick_component::AnyError>> + 'static,
+    ) -> std::result::Result<(WickStream<types::http::HttpRequest>), wick_packet::Error> {
       let input = input.map(wick_component::wick_packet::into_packet("input"));
       let stream = wick_component::empty();
       let stream = stream
@@ -84,9 +84,9 @@ mod imported {
     #[allow(unused)]
     pub fn add(
       &self,
-      left: impl wick_component::Stream<Item = Result<u64, wick_component::BoxError>> + 'static,
-      right: impl wick_component::Stream<Item = Result<u64, wick_component::BoxError>> + 'static,
-    ) -> std::result::Result<WickStream<u64>, wick_packet::Error> {
+      left: impl wick_component::Stream<Item = Result<u64, wick_component::AnyError>> + 'static,
+      right: impl wick_component::Stream<Item = Result<u64, wick_component::AnyError>> + 'static,
+    ) -> std::result::Result<(WickStream<u64>), wick_packet::Error> {
       let left = left.map(wick_component::wick_packet::into_packet("left"));
       let right = right.map(wick_component::wick_packet::into_packet("right"));
       let stream = wick_component::empty();
@@ -97,7 +97,7 @@ mod imported {
       let stream = wick_packet::PacketStream::new(Box::pin(stream));
       let mut stream = self.add_raw(stream)?;
       Ok(wick_component::payload_fan_out!(
-          stream, raw : false, wick_component::BoxError, [("output", u64)]
+          stream, raw : false, wick_component::AnyError, [("output", u64)]
       ))
     }
     #[allow(unused)]
@@ -114,8 +114,8 @@ mod imported {
     #[allow(unused)]
     pub fn error(
       &self,
-      input: impl wick_component::Stream<Item = Result<String, wick_component::BoxError>> + 'static,
-    ) -> std::result::Result<WickStream<String>, wick_packet::Error> {
+      input: impl wick_component::Stream<Item = Result<String, wick_component::AnyError>> + 'static,
+    ) -> std::result::Result<(WickStream<String>), wick_packet::Error> {
       let input = input.map(wick_component::wick_packet::into_packet("input"));
       let stream = wick_component::empty();
       let stream = stream
@@ -124,7 +124,7 @@ mod imported {
       let stream = wick_packet::PacketStream::new(Box::pin(stream));
       let mut stream = self.error_raw(stream)?;
       Ok(wick_component::payload_fan_out!(
-          stream, raw : false, wick_component::BoxError, [("output", String)]
+          stream, raw : false, wick_component::AnyError, [("output", String)]
       ))
     }
     #[allow(unused)]
@@ -142,8 +142,8 @@ mod imported {
     #[allow(unused)]
     pub fn validate(
       &self,
-      input: impl wick_component::Stream<Item = Result<String, wick_component::BoxError>> + 'static,
-    ) -> std::result::Result<WickStream<String>, wick_packet::Error> {
+      input: impl wick_component::Stream<Item = Result<String, wick_component::AnyError>> + 'static,
+    ) -> std::result::Result<(WickStream<String>), wick_packet::Error> {
       let input = input.map(wick_component::wick_packet::into_packet("input"));
       let stream = wick_component::empty();
       let stream = stream
@@ -152,7 +152,7 @@ mod imported {
       let stream = wick_packet::PacketStream::new(Box::pin(stream));
       let mut stream = self.validate_raw(stream)?;
       Ok(wick_component::payload_fan_out!(
-          stream, raw : false, wick_component::BoxError, [("output", String)]
+          stream, raw : false, wick_component::AnyError, [("output", String)]
       ))
     }
     #[allow(unused)]
