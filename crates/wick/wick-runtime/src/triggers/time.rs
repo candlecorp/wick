@@ -171,17 +171,21 @@ impl Trigger for Time {
     Ok(())
   }
 
-  async fn wait_for_done(&self) {
+  async fn wait_for_done(&self) -> StructuredOutput {
     let Some(handler) = self.handler.lock().take() else {
-      return;
+      return StructuredOutput::new("scheduled job never ran", json!({"status": "schedule job never ran"}));
     };
 
     match handler.await {
       Ok(_) => {
-        info!("cron done");
+        info!("time trigger done");
+        StructuredOutput::new("scheduled job complete", json!({"status": "schedule job complete"}))
       }
       Err(e) => {
-        error!("cron error: {}", e);
+        error!(err=%e,"time trigger error");
+        let message = format!("time trigger error: {}", e);
+        let json = json!({"error": message});
+        StructuredOutput::new(message, json)
       }
     }
   }

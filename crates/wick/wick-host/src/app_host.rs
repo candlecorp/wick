@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use futures::future::{join_all, select};
 use futures::pin_mut;
+use structured_output::StructuredOutput;
 use tokio::task::{JoinError, JoinHandle};
 use tracing::Span;
 use wick_config::config::AppConfiguration;
@@ -129,7 +130,7 @@ impl AppHost {
   }
 
   #[allow(clippy::unused_async)]
-  pub async fn wait_for_done(&mut self) -> Result<()> {
+  pub async fn wait_for_done(&mut self) -> Result<Vec<StructuredOutput>> {
     let state = self.triggers.take().unwrap();
     let (triggers, start_tasks): (Vec<_>, Vec<_>) = state
       .triggers
@@ -138,6 +139,7 @@ impl AppHost {
       .unzip();
     join_all(start_tasks).await;
     self.span.in_scope(|| debug!("all triggers started"));
+    let mut all_output = Vec::new();
     for trigger in &triggers {
       let ctrl_c = async {
         let _ = tokio::signal::ctrl_c().await;
@@ -148,14 +150,15 @@ impl AppHost {
           self.span.in_scope(|| debug!("ctrl-c received, stopping triggers"));
           break;
         }
-        futures::future::Either::Right(_) => {
+        futures::future::Either::Right((output, _)) => {
           self.span.in_scope(|| debug!("trigger finished"));
+          all_output.push(output);
         }
       }
     }
     self.span.in_scope(|| debug!("all triggers finished"));
 
-    Ok(())
+    Ok(all_output)
   }
 }
 
