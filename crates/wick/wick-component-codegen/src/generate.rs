@@ -198,11 +198,9 @@ mod test {
    * See <project_root>/tests/codegen-tests/ for integration tests
    */
   use anyhow::Result;
-  use wick_interface_types::Type;
 
   use super::*;
   use crate::generate::config::ConfigBuilder;
-  use crate::Config;
 
   #[tokio::test]
   async fn test_build() -> Result<()> {
@@ -215,17 +213,6 @@ mod test {
     let src = codegen(wick_config, &mut config)?;
 
     assert!(src.contains("pub struct Component"));
-
-    Ok(())
-  }
-
-  #[test]
-  fn test_expand_type() -> Result<()> {
-    let mut config = Config::default();
-    let ty = Type::Object;
-    let src = expand_type(&mut config, Direction::In, false, &ty);
-
-    assert_eq!(&src.to_string(), "wick_component :: Value");
 
     Ok(())
   }

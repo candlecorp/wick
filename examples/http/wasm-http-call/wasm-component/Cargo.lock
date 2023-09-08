@@ -2327,6 +2327,7 @@ dependencies = [
 name = "wick-component"
 version = "0.15.0"
 dependencies = [
+ "anyhow",
  "async-recursion",
  "flow-component",
  "paste",
@@ -2444,6 +2445,7 @@ dependencies = [
 name = "wick-packet"
 version = "0.15.0"
 dependencies = [
+ "anyhow",
  "base64 0.21.2",
  "base64-serde",
  "bytes 1.4.0",

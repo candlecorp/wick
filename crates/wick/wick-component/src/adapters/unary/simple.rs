@@ -11,7 +11,7 @@ macro_rules! unary_simple {
   ($name:ident) => {
     #[async_trait::async_trait(?Send)]
     impl $name::Operation for Component {
-      type Error = Box<dyn std::error::Error + 'static>;
+      type Error = wick_component::AnyError;
       type Outputs = $name::Outputs;
       type Config = $name::Config;
 

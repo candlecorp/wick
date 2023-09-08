@@ -48,7 +48,7 @@ pub(crate) fn imported_component_container<T>(name: &str, required: &[Binding<T>
           let config = get_config();
           let inherent = self.inherent.clone();
           #struct_id {
-            #(#required_names,)*
+            #(#required_names),*
           }
         }
       }

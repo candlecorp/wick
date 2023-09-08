@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use flow_component::{BoxFuture, Component, ComponentError, IntoComponentResult, RuntimeCallback};
+use anyhow::anyhow;
+use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use futures::{Stream, StreamExt, TryStreamExt};
 use reqwest::header::CONTENT_TYPE;
 use reqwest::{ClientBuilder, Method, Request, RequestBuilder};
@@ -44,8 +45,7 @@ impl HttpClientComponent {
     validate(&config, resolver)?;
     let addr: UrlResource = resolver(config.resource())
       .and_then(|r| r.try_resource())
-      .and_then(|r| r.try_url())
-      .into_component_error()?;
+      .and_then(|r| r.try_url())?;
 
     let mut sig = ComponentSignature::new_named("wick/component/http");
     sig.metadata.version = metadata.map(|v| v.version().to_owned());
@@ -56,7 +56,7 @@ impl HttpClientComponent {
       .url()
       .value()
       .cloned()
-      .ok_or_else(|| ComponentError::message("Internal Error - Invalid resource"))?;
+      .ok_or_else(|| anyhow!("Internal Error - Invalid resource"))?;
 
     let mut path_templates = HashMap::new();
     for ops in config.operations() {

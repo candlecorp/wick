@@ -42,7 +42,7 @@ impl Component for ScopeComponent {
 
     Box::pin(async move {
       let scope = Scope::for_id(&self.scope_id)
-        .ok_or_else(|| flow_component::ComponentError::message(&format!("scope '{}' not found", target_url)))?;
+        .ok_or_else(|| flow_component::ComponentError::msg(format!("scope '{}' not found", target_url)))?;
 
       let target_component = invocation.target.component_id().to_owned();
       if target_component != scope.namespace() {
