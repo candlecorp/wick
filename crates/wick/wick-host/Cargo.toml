@@ -33,6 +33,7 @@ futures = { workspace = true }
 derive_builder = { workspace = true }
 option-utils = { workspace = true }
 async-trait = { workspace = true }
+structured-output = { workspace = true }
 
 
 [dev-dependencies]
