@@ -44,7 +44,7 @@ pub(super) fn assert_constraints(constraints: &[RuntimeConstraint], components: 
 }
 
 pub(crate) async fn instantiate_import(
-  binding: &config::ImportBinding,
+  binding: &config::Binding<config::ImportDefinition>,
   opts: ChildInit,
   resolver: Box<Resolver>,
 ) -> Result<Option<NamespaceHandler>, ScopeError> {
@@ -54,10 +54,11 @@ pub(crate) async fn instantiate_import(
   let id = binding.id().to_owned();
   let start = std::time::Instant::now();
   let span = opts.span.clone();
-  let result = match binding.kind() {
-    config::ImportDefinition::Component(c) => instantiate_imported_component(id, c, opts, resolver).await,
-    config::ImportDefinition::Types(_) => Ok(None),
+
+  let config::ImportDefinition::Component(config) = binding.kind() else {
+    return Ok(None);
   };
+  let result = instantiate_imported_component(id, config, opts, resolver).await;
   let end = std::time::Instant::now();
   span.in_scope(|| {
     info!(id = binding.id(), duration_ms = %end.duration_since(start).as_millis(), "initialized");
@@ -75,7 +76,16 @@ pub(crate) async fn instantiate_imported_component(
   match kind {
     #[allow(deprecated)]
     config::ComponentDefinition::Wasm(def) => Ok(Some(
-      init_wasm_component(def.reference(), id, opts, None, None, Default::default()).await?,
+      init_wasm_component(
+        def.reference(),
+        id,
+        opts,
+        None,
+        None,
+        Default::default(),
+        Default::default(),
+      )
+      .await?,
     )),
     config::ComponentDefinition::Manifest(def) => Ok(Some(init_manifest_component(def, id, opts).await?)),
     config::ComponentDefinition::Reference(_) => unreachable!(),

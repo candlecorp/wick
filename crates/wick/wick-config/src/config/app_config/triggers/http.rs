@@ -20,7 +20,7 @@ pub use self::rest_router::{
 };
 pub use self::static_router::{StaticRouterConfig, StaticRouterConfigBuilder, StaticRouterConfigBuilderError};
 use crate::config::common::template_config::Renderable;
-use crate::config::ImportBinding;
+use crate::config::{Binding, ImportDefinition};
 use crate::error::ManifestError;
 use crate::ExpandImports;
 
@@ -89,7 +89,11 @@ impl Renderable for HttpTriggerConfig {
 
 impl ExpandImports for HttpTriggerConfig {
   type Error = ManifestError;
-  fn expand_imports(&mut self, bindings: &mut Vec<ImportBinding>, trigger_index: usize) -> Result<(), Self::Error> {
+  fn expand_imports(
+    &mut self,
+    bindings: &mut Vec<Binding<ImportDefinition>>,
+    trigger_index: usize,
+  ) -> Result<(), Self::Error> {
     for (router_index, router) in self.routers_mut().iter_mut().enumerate() {
       match router {
         HttpRouterConfig::RawRouter(r) => raw_router::process_runtime_config(trigger_index, router_index, r, bindings)?,

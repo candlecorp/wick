@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use serde_json::Value;
 use wick_interface_types::{operation, OperationSignature};
@@ -63,12 +64,11 @@ impl RenderConfiguration for Op {
   type ConfigSource = RuntimeConfig;
 
   fn decode_config(data: Option<Self::ConfigSource>) -> Result<Self::Config, ComponentError> {
-    let config = data.ok_or_else(|| {
-      ComponentError::message("Sender component requires configuration, please specify configuration.")
-    })?;
+    let config =
+      data.ok_or_else(|| anyhow!("Sender component requires configuration, please specify configuration."))?;
 
     Ok(Self::Config {
-      output: config.coerce_key("output").map_err(ComponentError::new)?,
+      output: config.coerce_key("output")?,
     })
   }
 }

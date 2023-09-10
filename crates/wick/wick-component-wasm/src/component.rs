@@ -25,6 +25,8 @@ pub struct ComponentSetup {
   pub callback: Option<Arc<RuntimeCallback>>,
   #[builder(default, setter(into))]
   pub provided: HashMap<String, String>,
+  #[builder(default, setter(into))]
+  pub imported: HashMap<String, String>,
   #[builder(setter(), default)]
   pub permissions: Option<Permissions>,
 }
@@ -33,7 +35,9 @@ impl std::fmt::Debug for ComponentSetup {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("ComponentSetup")
       .field("config", &self.config)
+      .field("buffer_size", &self.buffer_size)
       .field("provided", &self.provided)
+      .field("imported", &self.provided)
       .finish()
   }
 }
@@ -100,7 +104,12 @@ impl WasmComponent {
         .map_err(Error::SetupSignature)
     })?;
 
-    let setup = SetupPayload::new(&Entity::component(ns), options.provided, options.config);
+    let setup = SetupPayload::new(
+      &Entity::component(ns),
+      options.provided,
+      options.imported,
+      options.config,
+    );
     host.setup(setup).await?;
 
     Ok(Self { host: Arc::new(host) })

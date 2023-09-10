@@ -9,22 +9,13 @@ use std::sync::Arc;
 
 use flow_component::RuntimeCallback;
 use flow_graph_interpreter::NamespaceHandler;
-use once_cell::sync::Lazy;
-use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use tracing::Instrument;
 use uuid::Uuid;
 use wick_component_wasm::component::{ComponentSetupBuilder, WasmComponent};
 use wick_component_wasm::error::LinkError;
 use wick_config::config::components::ManifestComponent;
-use wick_config::config::{
-  BoundInterface,
-  Metadata,
-  Permissions,
-  PermissionsBuilder,
-  UninitializedConfiguration,
-  WasmComponentImplementation,
-};
+use wick_config::config::{Metadata, Permissions, PermissionsBuilder, WasmComponentImplementation};
 use wick_config::{AssetReference, FetchOptions, Resolver, WickConfiguration};
 use wick_packet::validation::expect_configuration_matches;
 use wick_packet::{Entity, Invocation, RuntimeConfig};
@@ -53,6 +44,7 @@ pub(crate) async fn init_wasm_component(
   buffer_size: Option<u32>,
   permissions: Option<Permissions>,
   provided: HashMap<String, String>,
+  imported: HashMap<String, String>,
 ) -> ComponentInitResult {
   opts
     .span
@@ -71,6 +63,7 @@ pub(crate) async fn init_wasm_component(
     .config(opts.root_config)
     .callback(Some(make_link_callback(opts.runtime_id)))
     .provided(provided)
+    .imported(imported)
     .build()
     .unwrap();
 
@@ -90,6 +83,7 @@ pub(crate) async fn init_wasm_impl_component(
   buffer_size: Option<u32>,
   permissions: Option<Permissions>,
   provided: HashMap<String, String>,
+  imported: HashMap<String, String>,
 ) -> ComponentInitResult {
   init_wasm_component(
     kind.reference(),
@@ -98,6 +92,7 @@ pub(crate) async fn init_wasm_impl_component(
     buffer_size.or(kind.max_packet_size()),
     permissions,
     provided,
+    imported,
   )
   .await
 }
@@ -127,42 +122,35 @@ pub(crate) fn make_link_callback(scope_id: Uuid) -> Arc<RuntimeCallback> {
   })
 }
 
-static CONFIG_CACHE: Lazy<Mutex<HashMap<AssetReference, UninitializedConfiguration>>> =
-  Lazy::new(|| Mutex::new(HashMap::new()));
-
 pub(crate) async fn init_manifest_component(
   kind: &ManifestComponent,
   id: String,
-  opts: ChildInit,
+  mut opts: ChildInit,
 ) -> ComponentInitResult {
   let span = opts.span.clone();
   span.in_scope(|| trace!(namespace = %id, ?opts, "registering wick component"));
 
-  let cache_result = CONFIG_CACHE.lock().get(kind.reference()).cloned();
+  let mut options = FetchOptions::default();
 
-  let mut builder = if let Some(config) = cache_result {
-    config
-  } else {
-    let mut options = FetchOptions::default();
-
-    options
-      .set_allow_latest(opts.allow_latest)
-      .set_allow_insecure(opts.allowed_insecure.clone());
-    let builder = WickConfiguration::fetch(kind.reference().clone(), options)
-      .instrument(span.clone())
-      .await?;
-
-    CONFIG_CACHE.lock().insert(kind.reference().clone(), builder.clone());
-    builder
-  };
+  options
+    .set_allow_latest(opts.allow_latest)
+    .set_allow_insecure(opts.allowed_insecure.clone());
+  let mut builder = WickConfiguration::fetch(kind.reference().clone(), options)
+    .instrument(span.clone())
+    .await?;
 
   builder.set_root_config(opts.root_config.clone());
   let manifest = builder.finish()?.try_component_config()?;
 
-  let requires = manifest.requires();
-  let provided = generate_provides_entities(requires, kind.provide())
-    .map_err(|e| ScopeError::ComponentInit(id.clone(), e.to_string()))?;
-  init_impl(&manifest, id, opts, kind.max_packet_size(), provided).await
+  let rng = Random::from_seed(opts.rng_seed);
+  opts.rng_seed = rng.seed();
+
+  let uuid = rng.uuid();
+  let _scope = init_child(uuid, manifest.clone(), id.clone(), opts).await?;
+
+  let component = Arc::new(scope_component::ScopeComponent::new(uuid));
+  let service = NativeComponentService::new(component);
+  Ok(NamespaceHandler::new(id, Box::new(service)))
 }
 
 pub(crate) async fn init_impl(
@@ -191,7 +179,13 @@ pub(crate) async fn init_impl(
         dirs.insert(volume.path().to_owned(), resource.path()?.to_string_lossy().to_string());
       }
       let perms = (!dirs.is_empty()).then(|| PermissionsBuilder::default().dirs(dirs).build().unwrap());
-      let comp = init_wasm_impl_component(wasmimpl, id.clone(), opts, buffer_size, perms, provided).await?;
+
+      let imported: HashMap<String, String> = manifest
+        .import()
+        .iter()
+        .map(|i| (i.id().to_owned(), Entity::component(i.id()).url()))
+        .collect();
+      let comp = init_wasm_impl_component(wasmimpl, id.clone(), opts, buffer_size, perms, provided, imported).await?;
       let signed_sig = comp.component().signature();
       let manifest_sig = manifest.signature()?;
       span.in_scope(|| {
@@ -205,12 +199,8 @@ pub(crate) async fn init_impl(
       Ok(comp)
     }
     config::ComponentImplementation::Composite(_) => {
-      let uuid = rng.uuid();
-      let _scope = init_child(uuid, manifest.clone(), id.clone(), opts).await?;
-
-      let component = Arc::new(scope_component::ScopeComponent::new(uuid));
-      let service = NativeComponentService::new(component);
-      Ok(NamespaceHandler::new(id, Box::new(service)))
+      // This is handled in the scope initialization.
+      unreachable!();
     }
     config::ComponentImplementation::Sql(c) => {
       init_hlc_component(
@@ -233,22 +223,6 @@ pub(crate) async fn init_impl(
       .await
     }
   }
-}
-
-pub(crate) fn generate_provides_entities(
-  requires: &[BoundInterface],
-  provides: &HashMap<String, String>,
-) -> Result<HashMap<String, String>> {
-  let mut provide = HashMap::new();
-  for req in requires {
-    if let Some(provided) = provides.get(req.id()) {
-      provide.insert(req.id().to_owned(), Entity::component(provided).url());
-      // TODO: validate interfaces against what was provided.
-    } else {
-      return Err(ComponentError::UnsatisfiedRequirement(req.id().to_owned()));
-    }
-  }
-  Ok(provide)
 }
 
 pub(crate) fn initialize_native_component(namespace: String, seed: Seed) -> ComponentInitResult {

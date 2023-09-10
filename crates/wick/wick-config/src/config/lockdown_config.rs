@@ -98,6 +98,18 @@ impl LockdownConfiguration {
   }
 }
 
+impl Renderable for LockdownConfiguration {
+  fn render_config(
+    &mut self,
+    source: Option<&Path>,
+    root_config: Option<&wick_packet::RuntimeConfig>,
+    env: Option<&HashMap<String, String>>,
+  ) -> Result<()> {
+    self.resources.render_config(source, root_config, env)?;
+    Ok(())
+  }
+}
+
 impl From<Vec<Audit>> for LockdownConfiguration {
   fn from(value: Vec<Audit>) -> Self {
     let mut url_restrictions: Vec<UrlRestriction> = Vec::new();

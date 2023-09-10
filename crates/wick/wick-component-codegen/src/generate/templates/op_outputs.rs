@@ -16,8 +16,8 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
     .iter()
     .map(|i| {
       let port_field_name = id(&snake(&i.name));
-      let port_type = expand_type(config, Direction::Out, false, &i.ty);
-      quote! {pub(crate) #port_field_name: wick_packet::Output<#port_type>}
+      let port_type = expand_type(config, Direction::Out, false, config.raw, &i.ty);
+      quote! {pub(crate) #port_field_name: wick_packet::OutgoingPort<#port_type>}
     })
     .collect_vec();
 
@@ -38,9 +38,9 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
       let port_name = &out.name;
       let port_field_name = id(&snake(&out.name));
       if i < op.outputs.len() - 1 {
-        quote! {#port_field_name: wick_packet::Output::new(#port_name, channel.clone())}
+        quote! {#port_field_name: wick_packet::OutgoingPort::new(#port_name, channel.clone())}
       } else {
-        quote! {#port_field_name: wick_packet::Output::new(#port_name, channel)}
+        quote! {#port_field_name: wick_packet::OutgoingPort::new(#port_name, channel)}
       }
     })
     .collect_vec();
@@ -65,28 +65,27 @@ pub(crate) fn op_outputs(config: &mut config::Config, op: &OperationSignature) -
       config.add_dep(Dependency::WasmRs);
     },
     quote! {
-
-    pub struct #outputs_name {
-      #[allow(unused)]
-      #(#output_port_fields,)*
-    }
-
-    impl wick_component::Broadcast for #outputs_name {
-      fn outputs_mut(&mut self) -> wick_packet::OutputIterator<'_>{
-        wick_packet::OutputIterator::new(vec![#(#output_port_fields_mut),*])
+      pub struct #outputs_name {
+        #[allow(unused)]
+        #(#output_port_fields),*
       }
-    }
 
-    #single_output_impl
-
-
-    impl #outputs_name {
-      pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
-        Self {
-          #(#output_ports_new,)*
+      impl wick_component::Broadcast for #outputs_name {
+        fn outputs_mut(&mut self) -> wick_packet::OutputIterator<'_>{
+          wick_packet::OutputIterator::new(vec![#(#output_port_fields_mut),*])
         }
       }
-    }},
+
+      #single_output_impl
+
+      impl #outputs_name {
+        pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+          Self {
+            #(#output_ports_new),*
+          }
+        }
+      }
+    },
   );
 
   quote! {

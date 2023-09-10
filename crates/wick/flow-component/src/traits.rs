@@ -19,13 +19,13 @@ pub trait Component {
     invocation: Invocation,
     data: Option<RuntimeConfig>,
     callback: Arc<RuntimeCallback>,
-  ) -> BoxFuture<Result<PacketStream, ComponentError>>;
+  ) -> BoxFuture<Result<PacketStream, anyhow::Error>>;
 
   /// The `signature` method returns the [ComponentSignature] for the component.
   fn signature(&self) -> &ComponentSignature;
 
   /// The `shutdown` method is called when the component is shutdown.
-  fn shutdown(&self) -> BoxFuture<Result<(), ComponentError>> {
+  fn shutdown(&self) -> BoxFuture<Result<(), anyhow::Error>> {
     // Override if you need a more explicit shutdown.
     Box::pin(async move { Ok(()) })
   }

@@ -28,7 +28,12 @@ impl TryFrom<v0::HostManifest> for config::ComponentConfiguration {
         .network
         .collections
         .into_iter()
-        .map(|val| Ok(config::ImportBinding::new(val.namespace.clone(), val.try_into()?)))
+        .map(|val| {
+          Ok(config::Binding::new(
+            val.namespace.clone(),
+            config::ImportDefinition::component(val.try_into()?),
+          ))
+        })
         .collect::<Result<Vec<_>>>()?,
       component: config::ComponentImplementation::Composite(composite),
       host: def.host.try_map_into()?,

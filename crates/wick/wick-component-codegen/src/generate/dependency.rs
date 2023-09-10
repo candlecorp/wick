@@ -5,7 +5,6 @@ use quote::{quote, ToTokens};
 pub(crate) enum Dependency {
   WasmRsRx,
   WasmRs,
-  WasmRsCodec,
   WasmRsRuntime,
   SerdeJson,
   Bytes,
@@ -30,9 +29,6 @@ impl ToTokens for Dependency {
         tokens.extend(quote! {});
       }
       Dependency::WasmRs => {
-        tokens.extend(quote! {});
-      }
-      Dependency::WasmRsCodec => {
         tokens.extend(quote! {});
       }
       Dependency::WickPacket => tokens.extend(quote! {}),

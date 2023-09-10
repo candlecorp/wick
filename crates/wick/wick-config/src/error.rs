@@ -2,14 +2,12 @@ use std::path::PathBuf;
 
 use thiserror::Error;
 
-// type BoxedSyncSendError = Box<dyn std::error::Error + Sync + std::marker::Send>;
-
 /// Wick Manifest's Errors.
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum ManifestError {
   /// Invalid version found in the parsed manifest.
-  #[error("Invalid Manifest Version '{0}'")]
+  #[error("Invalid Manifest Version '{0}'; if this is a valid version, ensure you have enabled the v{0} feature for the configuration")]
   VersionError(String),
 
   /// Error related to asset references.

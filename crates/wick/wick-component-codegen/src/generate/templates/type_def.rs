@@ -21,18 +21,14 @@ pub(crate) fn type_def<'a>(
   options: TypeOptions,
 ) -> (Vec<&'a str>, TokenStream) {
   match ty {
-    TypeDefinition::Enum(ty) => gen_enum(config, ty, options),
+    TypeDefinition::Enum(ty) => gen_enum(ty, options),
     TypeDefinition::Struct(ty) => gen_struct(config, ty, options),
     TypeDefinition::Union(ty) => gen_union(config, ty, options),
   }
 }
 
 #[allow(clippy::too_many_lines)]
-pub(crate) fn gen_enum<'a>(
-  _config: &config::Config,
-  ty: &'a EnumDefinition,
-  _options: TypeOptions,
-) -> (Vec<&'a str>, TokenStream) {
+pub(crate) fn gen_enum(ty: &EnumDefinition, _options: TypeOptions) -> (Vec<&str>, TokenStream) {
   let (path_parts, item_part) = get_typename_parts(&ty.name);
   let name = id(item_part);
   let variants = ty
@@ -144,7 +140,7 @@ pub(crate) fn gen_enum<'a>(
     #[serde(into = "String", try_from = "wick_component::serde_util::enum_repr::StringOrNum")]
     #[allow(clippy::exhaustive_enums)]
     pub enum #name {
-      #(#variants,)*
+      #(#variants),*
     }
 
     #try_from_strnum_impl
@@ -156,7 +152,7 @@ pub(crate) fn gen_enum<'a>(
       pub fn value(&self) -> Option<&'static str> {
         #[allow(clippy::match_single_binding)]
         match self {
-          #(#value_match_arms,)*
+          #(#value_match_arms),*
         }
       }
     }
@@ -188,7 +184,7 @@ pub(crate) fn gen_enum<'a>(
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[allow(clippy::match_single_binding)]
         match self {
-          #(#display_match_arms,)*
+          #(#display_match_arms),*
         }
       }
     }
@@ -229,7 +225,7 @@ pub(crate) fn gen_struct<'a>(
         impl Default for #name {
           fn default() -> Self {
             Self {
-              #(#fields,)*
+              #(#fields),*
             }
           }
         }
@@ -249,7 +245,7 @@ pub(crate) fn gen_struct<'a>(
     #description
     #[allow(clippy::exhaustive_structs)]
     pub struct #name {
-      #(#fields,)*
+      #(#fields),*
     }
     #default_impl
   };
@@ -289,7 +285,7 @@ pub(crate) fn gen_union<'a>(
     .map(|ty| {
       let name = id(&generic_type_name(ty));
       let description = format!("A {} value.", ty);
-      let ty = expand_type(config, Direction::In, imported, ty);
+      let ty = expand_type(config, Direction::In, imported, config.raw, ty);
       quote! {
         #[doc = #description]
         #name(#ty)
@@ -307,7 +303,7 @@ pub(crate) fn gen_union<'a>(
     #description
     #[serde(untagged)]
     pub enum #name {
-      #(#variants,)*
+      #(#variants),*
     }
   };
   (module_parts, item)

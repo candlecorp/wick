@@ -1,19 +1,23 @@
 use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
-use wick_config::config::BoundInterface;
+use wick_config::config::Binding;
 
 use crate::generate::ids::*;
-use crate::*;
 
-pub(crate) fn provided_struct(_config: &Config, required: &[BoundInterface]) -> TokenStream {
+pub(crate) fn imported_component_container<T>(name: &str, required: &[Binding<T>]) -> TokenStream {
+  let mod_id = id(&format!("{}_wasm", snake(name)));
+  let method_id = id(&snake(name));
+  let struct_id = id(&pascal(name));
+  let trait_id = id(&format!("{}Context", pascal(name)));
+
   let required_names = required
     .iter()
-    .map(|r: &BoundInterface| {
+    .map(|r: &Binding<T>| {
       let name = id(&snake(r.id()));
       let orig_name = r.id();
       let response_name = id(&component_id(r));
-      quote! { #name : #response_name::new(config.provided.get(#orig_name).cloned().unwrap(), inherent.clone()) }
+      quote! { #name : #response_name::new(config.#method_id.get(#orig_name).cloned().unwrap(), inherent.clone()) }
     })
     .collect_vec();
   let fields = required
@@ -24,34 +28,32 @@ pub(crate) fn provided_struct(_config: &Config, required: &[BoundInterface]) -> 
       quote! {pub #name: #uc_name}
     })
     .collect_vec();
+
   quote! {
     #[allow(unused)]
     #[cfg(target_family = "wasm")]
-    mod provided_wasm {
+    mod #mod_id {
       #[allow(unused)]
       use super::*;
-      pub(crate) struct Provided {
+      pub(crate) struct #struct_id {
         #(#fields),*
       }
 
-      pub(crate) fn get_provided(inherent: wick_component::flow_component::InherentContext) -> Provided {
-        let config = get_config();
-        Provided {
-          #(#required_names,)*
-        }
+      pub(crate) trait #trait_id {
+        fn #method_id(&self) -> #struct_id;
       }
 
-      pub(crate) trait ProvidedContext {
-        fn provided(&self) -> Provided;
-      }
-
-      impl<T> ProvidedContext for wick_component::flow_component::Context<T> where T:std::fmt::Debug{
-        fn provided(&self) -> Provided {
-          get_provided(self.inherent.clone())
+      impl<T> #trait_id for wick_component::flow_component::Context<T> where T:std::fmt::Debug{
+        fn #method_id(&self) -> #struct_id {
+          let config = get_config();
+          let inherent = self.inherent.clone();
+          #struct_id {
+            #(#required_names),*
+          }
         }
       }
     }
     #[cfg(target_family = "wasm")]
-    pub(crate) use provided_wasm::*;
+    pub(crate) use #mod_id::*;
   }
 }

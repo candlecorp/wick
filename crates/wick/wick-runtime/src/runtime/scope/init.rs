@@ -3,6 +3,7 @@ use std::path::Path;
 use flow_graph_interpreter::error::InterpreterError;
 use flow_graph_interpreter::{HandlerMap, Interpreter};
 use wick_config::config::ComponentImplementation;
+use wick_packet::Entity;
 
 use super::utils::{assert_constraints, instantiate_import};
 use super::{generate_provides_handlers, ChildInit, ComponentRegistry};
@@ -84,13 +85,15 @@ impl ScopeInit {
   pub(super) async fn instantiate_main(&self) -> Result<(Option<&[String]>, HandlerMap), ScopeError> {
     let mut components = HandlerMap::default();
     let ns = self.namespace.clone().unwrap_or_else(|| self.id.to_string());
+
+    // Initialize a starting set of components to make available.
+    for factory in self.initial_components.inner() {
+      components
+        .add(factory(self.seed())?)
+        .map_err(init_err(self.manifest.source()))?;
+    }
+
     let extends = if let ComponentImplementation::Composite(config) = self.manifest.component() {
-      // Initialize a starting set of components for the composite component.
-      for factory in self.initial_components.inner() {
-        components
-          .add(factory(self.seed())?)
-          .map_err(init_err(self.manifest.source()))?;
-      }
       for id in config.extends() {
         if !self.manifest.import().iter().any(|i| i.id() == id) {
           return Err(ScopeError::RuntimeInit(
@@ -109,7 +112,15 @@ impl ScopeInit {
         .span
         .in_scope(|| debug!(%ns,options=?child_init,"instantiating component"));
 
-      let component = init_impl(&self.manifest, ns.clone(), child_init, None, Default::default()).await?;
+      let mut provided: HashMap<String, String> = HashMap::new();
+      for req in self.manifest.requires() {
+        if !components.has(req.id()) {
+          return Err(ScopeError::RequirementUnsatisfied(req.id().to_owned()));
+        }
+        provided.insert(req.id().to_owned(), Entity::component(req.id()).url());
+      }
+
+      let component = init_impl(&self.manifest, ns.clone(), child_init, None, provided).await?;
       component.expose();
 
       expect_signature_match(
@@ -132,8 +143,8 @@ impl ScopeInit {
     mut components: HandlerMap,
   ) -> Result<HandlerMap, ScopeError> {
     for binding in self.manifest.import() {
-      let provided = generate_provides_handlers(binding.provide(), &components)?;
-      let component_init = self.child_init(binding.config().cloned(), Some(provided));
+      let provided = generate_provides_handlers(binding.kind().provide(), &components)?;
+      let component_init = self.child_init(binding.kind().config().cloned(), Some(provided));
       if let Some(component) = instantiate_import(binding, component_init, self.manifest.resolver()).await? {
         if let Some(extends) = extends {
           if extends.iter().any(|n| n == component.namespace()) {

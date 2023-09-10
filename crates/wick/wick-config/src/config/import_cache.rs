@@ -7,7 +7,7 @@ use parking_lot::RwLock;
 use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::TypeDefinition;
 
-use crate::config::{ImportBinding, ImportDefinition, TypesConfiguration};
+use crate::config::{Binding, ImportDefinition, TypesConfiguration};
 use crate::error::ManifestError;
 use crate::WickConfiguration;
 
@@ -45,7 +45,7 @@ impl ImportCache {
 
 pub(crate) async fn setup_cache(
   cache: &ImportCache,
-  imports: impl Iterator<Item = &ImportBinding> + Send,
+  imports: impl Iterator<Item = &Binding<ImportDefinition>> + Send,
   cached_types: &Arc<RwLock<Option<Vec<TypeDefinition>>>>,
   mut init: Vec<TypeDefinition>,
   options: FetchOptions,

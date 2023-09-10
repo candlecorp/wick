@@ -3,6 +3,7 @@ use std::hash::Hash;
 use std::sync::atomic::{AtomicBool, AtomicI32, AtomicUsize, Ordering};
 use std::sync::Arc;
 
+use anyhow::anyhow;
 use flow_component::{ComponentError, Context, Operation, RenderConfiguration, RuntimeCallback};
 use futures::{FutureExt, StreamExt};
 use parking_lot::Mutex;
@@ -719,9 +720,8 @@ impl RenderConfiguration for Op {
   type ConfigSource = RuntimeConfig;
 
   fn decode_config(data: Option<Self::ConfigSource>) -> Result<Self::Config, ComponentError> {
-    let config = data.ok_or_else(|| {
-      ComponentError::message("Switch component requires configuration, please specify configuration.")
-    })?;
+    let config =
+      data.ok_or_else(|| anyhow!("Switch component requires configuration, please specify configuration."))?;
     Ok(Self::Config {
       inputs: if config.has("context") {
         config.coerce_key("context")
@@ -729,20 +729,17 @@ impl RenderConfiguration for Op {
         config.coerce_key("inputs")
       } else {
         Ok(Vec::new())
-      }
-      .map_err(ComponentError::new)?,
+      }?,
       outputs: if config.has("outputs") {
         config.coerce_key("outputs")
       } else {
         Ok(Vec::new())
-      }
-      .map_err(ComponentError::new)?,
+      }?,
       cases: if config.has("cases") {
         config.coerce_key("cases")
       } else {
         Ok(Vec::new())
-      }
-      .map_err(ComponentError::new)?,
+      }?,
       default: config.coerce_key("default").map_err(ComponentError::new)?,
     })
   }

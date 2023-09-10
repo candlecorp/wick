@@ -114,9 +114,6 @@
 // Add exceptions here
 #![allow()]
 
-// mod config;
-// pub use config::*;
-
 mod context;
 pub use context::*;
 #[cfg(feature = "invocation")]
@@ -128,65 +125,9 @@ pub use traits::*;
 /// A boxed future that can be sent across threads.
 pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
 
-pub use serde_json::Value;
-
-#[derive(Debug)]
-#[must_use]
 /// A generic error type for components.
-pub struct ComponentError {
-  source: Box<dyn std::error::Error + Send + Sync>,
-}
-
-impl std::error::Error for ComponentError {}
-impl std::fmt::Display for ComponentError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.write_str(self.source.to_string().as_str())
-  }
-}
-impl ComponentError {
-  /// Create a new error from a boxed error.
-  pub fn new(source: impl std::error::Error + Send + Sync + 'static) -> Self {
-    Self {
-      source: Box::new(source),
-    }
-  }
-
-  /// Create a new error from a string.
-  pub fn message(msg: &str) -> Self {
-    Self {
-      source: Box::new(GenericError(msg.to_owned())),
-    }
-  }
-}
-impl From<Box<dyn std::error::Error + Send + Sync>> for ComponentError {
-  fn from(source: Box<dyn std::error::Error + Send + Sync>) -> Self {
-    Self { source }
-  }
-}
-
-impl From<anyhow::Error> for ComponentError {
-  fn from(source: anyhow::Error) -> Self {
-    Self::message(&source.to_string())
-  }
-}
-
-/// Trait that allows for conversion of a result into a component error.
-pub trait IntoComponentResult<T, E>
-where
-  E: std::error::Error + Send + Sync + 'static,
-{
-  /// Convert a Result<T,E> into a Result<T, ComponentError>.
-  fn into_component_error(self) -> Result<T, ComponentError>;
-}
-
-impl<T, E> IntoComponentResult<T, E> for Result<T, E>
-where
-  E: std::error::Error + Send + Sync + 'static,
-{
-  fn into_component_error(self) -> Result<T, ComponentError> {
-    self.map_err(ComponentError::new)
-  }
-}
+pub use anyhow::Error as ComponentError;
+pub use serde_json::Value;
 
 #[derive(Debug)]
 struct GenericError(String);

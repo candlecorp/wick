@@ -17,7 +17,7 @@ pub(crate) fn trait_signature(config: &mut config::Config, op: &OperationSignatu
     .iter()
     .map(|i| {
       let port_name = id(&snake(&i.name));
-      let port_type = expand_type(config, Direction::In, false, &i.ty);
+      let port_type = expand_type(config, Direction::In, false, config.raw, &i.ty);
       quote! {#port_name: WickStream<#port_type>}
     })
     .collect_vec();
@@ -32,7 +32,7 @@ pub(crate) fn trait_signature(config: &mut config::Config, op: &OperationSignatu
       #[async_trait::async_trait(?Send)]
       #[cfg(target_family = "wasm")]
       pub trait #trait_name {
-        type Error: std::fmt::Display;
+        type Error;
         type Outputs;
         type Config: std::fmt::Debug;
 
@@ -43,7 +43,7 @@ pub(crate) fn trait_signature(config: &mut config::Config, op: &OperationSignatu
       #[async_trait::async_trait]
       #[cfg(not(target_family = "wasm"))]
       pub trait #trait_name {
-        type Error: std::fmt::Display + Send ;
+        type Error: Send ;
         type Outputs: Send;
         type Config: std::fmt::Debug + Send ;
 

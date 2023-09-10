@@ -1,60 +1,104 @@
 use itertools::Itertools;
-use proc_macro2::TokenStream;
-use quote::quote;
-use wick_config::config::BoundInterface;
+use proc_macro2::{Ident, Span, TokenStream};
+use quote::{quote, ToTokens};
+use wick_config::config::Binding;
 use wick_interface_types::{Field, OperationSignature, OperationSignatures};
 
 use crate::generate::dependency::Dependency;
-use crate::generate::expand_type::{expand_field_types, expand_input_fields, field_names, fields_to_tuples};
+use crate::generate::expand_type::{expand_field_types, expand_input_fields, fields_to_tuples};
 use crate::generate::ids::*;
 use crate::generate::templates::op_config;
-use crate::generate::{f, Direction};
+use crate::generate::Direction;
 use crate::*;
 
-pub(crate) fn imported_components(config: &mut Config, required: Vec<BoundInterface>) -> TokenStream {
+struct ComponentCodegen {
+  struct_def: TokenStream,
+  struct_impl: TokenStream,
+  inputs: Vec<Option<TokenStream>>,
+  outputs: Vec<Option<TokenStream>>,
+}
+
+impl ToTokens for ComponentCodegen {
+  fn to_tokens(&self, tokens: &mut TokenStream) {
+    for opt in &self.inputs {
+      tokens.extend(opt.clone());
+    }
+    for opt in &self.outputs {
+      tokens.extend(opt.clone());
+    }
+    tokens.extend(self.struct_def.clone());
+    tokens.extend(self.struct_impl.clone());
+  }
+}
+
+pub(crate) fn imported_components<T: OperationSignatures>(
+  name: &str,
+  config: &mut Config,
+  required: &[Binding<T>],
+) -> TokenStream {
   let components = required
-    .into_iter()
+    .iter()
     .map(|v| {
       let name = id(&format!("{}Component", &pascal(v.id())));
       let configs = named_configs(config, &v.kind().operation_signatures());
       let ops = operation_impls(config, &v.kind().operation_signatures());
+      let (mut op_fns, mut op_inputs, mut op_outputs) = (Vec::new(), Vec::new(), Vec::new());
+      for op in ops {
+        op_fns.push(op.impls);
+        op_inputs.push(op.input);
+        op_outputs.push(op.output);
+      }
 
       config.add_dep(Dependency::WickPacket);
-      quote! {
-        #[allow(unused)]
-        pub struct #name {
-          component: wick_packet::ComponentReference,
-          inherent: flow_component::InherentContext
-        }
-        #(#configs)*
-        impl #name {
-          pub fn new(component: wick_packet::ComponentReference, inherent: flow_component::InherentContext) -> Self {
-            Self { component, inherent }
-          }
+      ComponentCodegen {
+        struct_def: quote! {
           #[allow(unused)]
-          pub fn component(&self) -> &wick_packet::ComponentReference {
-            &self.component
+          pub struct #name {
+            component: wick_packet::ComponentReference,
+            inherent: flow_component::InherentContext
           }
-          #(#ops)*
-        }
+        },
+        struct_impl: quote! {
+          #(#configs)*
+          impl #name {
+            pub fn new(component: wick_packet::ComponentReference, inherent: flow_component::InherentContext) -> Self {
+              Self { component, inherent }
+            }
+            #[allow(unused)]
+            pub fn component(&self) -> &wick_packet::ComponentReference {
+              &self.component
+            }
+            #(#op_fns)*
+          }
+        },
+        inputs: op_inputs,
+        outputs: op_outputs,
       }
     })
     .collect_vec();
+
+  let mod_name = Ident::new(name, Span::call_site());
   quote! {
     #[cfg(target_family = "wasm")]
-    mod imported_components_wasm {
+    mod #mod_name {
       #[allow(unused)]
       use super::*;
 
       #(#components)*
     }
     #[cfg(target_family = "wasm")]
-    pub use imported_components_wasm::*;
+    pub use #mod_name::*;
 
   }
 }
 
-fn operation_impls(config: &mut Config, ops: &[OperationSignature]) -> Vec<TokenStream> {
+struct OperationCodegen {
+  impls: TokenStream,
+  input: Option<TokenStream>,
+  output: Option<TokenStream>,
+}
+
+fn operation_impls(config: &mut Config, ops: &[OperationSignature]) -> Vec<OperationCodegen> {
   let dir = Direction::In;
   let raw = false;
   ops
@@ -71,31 +115,31 @@ fn operation_impls(config: &mut Config, ops: &[OperationSignature]) -> Vec<Token
       } else {
         (quote!{}, quote! {}, quote! { None })
       };
-      let inputs = expand_input_fields(config, op.inputs(), dir, raw);
-      let input_names = field_names( op.inputs());
+      let inputs = expand_input_fields(config, op.inputs(), dir, false);
       let encode_inputs = encoded_inputs(op.inputs());
       let merge_inputs = merged_inputs(op.inputs());
-      let response_stream_types = expand_field_types(config, op.outputs(), dir, raw);
+      let types = expand_field_types(config, op.outputs(), dir, raw);
       let fan_out: Vec<_> = fields_to_tuples(config, op.outputs(), dir, raw);
-      let types = f::maybe_parens(response_stream_types);
 
-      quote! {
+      let impls = quote! {
         #[allow(unused)]
-        pub fn #name(&self, #op_config_pair #(#inputs),*) -> std::result::Result<#types,wick_packet::Error> {
-          let mut stream = self.#name_raw(#op_config_id #(#input_names),*)?;
-          Ok(wick_component::payload_fan_out!(stream, raw: false, wick_component::BoxError, [#(#fan_out),*]))
-        }
-
-        #[allow(unused)]
-        pub fn #name_raw(&self, #op_config_pair #(#inputs),*) -> std::result::Result<wick_packet::PacketStream,wick_packet::Error> {
+        pub fn #name(&self, #op_config_pair #(#inputs),*) -> std::result::Result<(#(#types),*),wick_packet::Error> {
           #(#encode_inputs)*
           let stream = wick_component::empty();
           let stream = #merge_inputs;
           let stream = wick_packet::PacketStream::new(Box::pin(stream));
-
-          Ok(self.component.call(#op_name, stream, #set_context, self.inherent.clone().into())?)
+          let mut stream = self.#name_raw(#op_config_id stream)?;
+          Ok(wick_component::payload_fan_out!(stream, raw: false, wick_component::AnyError, [#(#fan_out),*]))
         }
-      }
+
+        #[allow(unused)]
+        pub fn #name_raw<T:Into<wick_packet::PacketStream>>(&self, #op_config_pair stream: T) -> std::result::Result<wick_packet::PacketStream,wick_packet::Error> {
+          Ok(self.component.call(#op_name, stream.into(), #set_context, self.inherent.clone().into())?)
+        }
+      };
+      let input = None;
+      let output = None;
+      OperationCodegen { impls, input, output }
     })
     .collect_vec()
 }

@@ -19,8 +19,8 @@ use crate::Runtime;
 
 #[derive(Debug)]
 pub(crate) struct Cli {
-  done_tx: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
-  done_rx: Mutex<Option<tokio::sync::oneshot::Receiver<()>>>,
+  done_tx: Mutex<Option<tokio::sync::oneshot::Sender<StructuredOutput>>>,
+  done_rx: Mutex<Option<tokio::sync::oneshot::Receiver<StructuredOutput>>>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
@@ -43,12 +43,7 @@ impl Cli {
     })
   }
 
-  async fn handle(
-    &self,
-    runtime: Runtime,
-    operation: Entity,
-    args: Vec<String>,
-  ) -> Result<StructuredOutput, RuntimeError> {
+  async fn handle(&self, runtime: Runtime, operation: Entity, args: Vec<String>) -> Result<(), RuntimeError> {
     let is_interactive = Interactive {
       stdin: atty::is(atty::Stream::Stdin),
       stdout: atty::is(atty::Stream::Stdout),
@@ -72,12 +67,24 @@ impl Cli {
           Ok(p) => {
             if p.port() == "code" && p.has_data() {
               let code: u32 = p.decode().unwrap();
-              break StructuredOutput::new(format!("Exit code: {}", code), json!({ "code": code }));
+              let message = if code > 0 {
+                format!("Exit code: {}", code)
+              } else {
+                String::new()
+              };
+              break StructuredOutput::new(message, json!({ "code": code }));
+            }
+            if p.is_error() {
+              let err = p.unwrap_err();
+              break StructuredOutput::new(
+                format!("CLI Trigger produced error, {}", err.msg()),
+                json!({ "error": err.to_string() }),
+              );
             }
           }
           Err(e) => {
             break StructuredOutput::new(
-              format!("CLI Trigger produced error: {}", e),
+              format!("CLI Trigger produced error, {}", e),
               json!({ "error": e.to_string() }),
             );
           }
@@ -90,9 +97,9 @@ impl Cli {
       }
     };
 
-    let _ = self.done_tx.lock().take().unwrap().send(());
+    let _ = self.done_tx.lock().take().unwrap().send(output);
 
-    Ok(output)
+    Ok(())
   }
 }
 
@@ -134,9 +141,9 @@ impl Trigger for Cli {
     Ok(())
   }
 
-  async fn wait_for_done(&self) {
+  async fn wait_for_done(&self) -> StructuredOutput {
     let rx = self.done_rx.lock().take().unwrap();
-    let _ = rx.await;
+    rx.await.unwrap_or_default()
   }
 }
 

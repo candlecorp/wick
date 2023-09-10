@@ -89,7 +89,7 @@ fn gen_trait_fns<'a>(
 
 #[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
 fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> Result<String> {
-  let (ops, types, required, root_config) = match &wick_config {
+  let (ops, types, required, imported, root_config) = match &wick_config {
     wick_config::WickConfiguration::Component(comp) => {
       let types = comp
         .types()?
@@ -98,16 +98,14 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
         .collect();
       let root_config = comp.config().to_owned();
       let requires = comp.requires().clone().to_vec();
-      let ops = match comp.component() {
-        wick_config::config::ComponentImplementation::Wasm(c) => c.operation_signatures(),
-        wick_config::config::ComponentImplementation::Composite(c) => c.operation_signatures(),
-        _ => panic!("Code generation only supports `wick/component/wasm|composite` and `wick/types` configurations"),
-      };
-      (ops, types, requires, Some(root_config))
+      let ops = comp.component().operation_signatures();
+      let imports = comp.import().to_vec();
+      (ops, types, requires, imports, Some(root_config))
     }
     wick_config::WickConfiguration::Types(config) => (
       config.operation_signatures(),
       config.types().to_vec(),
+      Default::default(),
       Default::default(),
       None,
     ),
@@ -122,7 +120,7 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
   let init = f::gen_if(
     !ops.is_empty(),
     || {},
-    templates::gen_component_impls(gen_config, &component_name, ops.iter(), required),
+    templates::gen_component_impls(gen_config, &component_name, ops.iter(), &required, &imported),
   );
 
   let root_config = templates::component_config(gen_config, root_config);
@@ -160,9 +158,18 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
     #( #trait_defs )*
     #components
   };
-  let reparsed = syn::parse_file(expanded.to_string().as_str())?;
-  let formatted = prettyplease::unparse(&reparsed);
-  Ok(formatted)
+  let source = expanded.to_string();
+  match syn::parse_file(source.as_str()) {
+    Ok(reparsed) => {
+      let formatted = prettyplease::unparse(&reparsed);
+      Ok(formatted)
+    }
+    Err(e) => {
+      println!("Failed to parse generated code: {}", e);
+      // This is an error, but return what we generated so we can troubleshoot It
+      Ok(source)
+    }
+  }
 }
 
 pub fn build(config: config::Config) -> Result<()> {
@@ -172,8 +179,9 @@ pub fn build(config: config::Config) -> Result<()> {
 
 pub async fn async_build(mut config: config::Config) -> Result<()> {
   let path = config.spec.as_path().to_str().unwrap();
-  let wick_config = wick_config::WickConfiguration::fetch(path, FetchOptions::default())
+  let wick_config = wick_config::WickConfiguration::fetch_uninitialized_tree(path, FetchOptions::default())
     .await?
+    .element
     .into_inner();
 
   let src = codegen(wick_config, &mut config)?;
@@ -190,11 +198,9 @@ mod test {
    * See <project_root>/tests/codegen-tests/ for integration tests
    */
   use anyhow::Result;
-  use wick_interface_types::Type;
 
   use super::*;
   use crate::generate::config::ConfigBuilder;
-  use crate::Config;
 
   #[tokio::test]
   async fn test_build() -> Result<()> {
@@ -207,17 +213,6 @@ mod test {
     let src = codegen(wick_config, &mut config)?;
 
     assert!(src.contains("pub struct Component"));
-
-    Ok(())
-  }
-
-  #[test]
-  fn test_expand_type() -> Result<()> {
-    let mut config = Config::default();
-    let ty = Type::Object;
-    let src = expand_type(&mut config, Direction::In, false, &ty);
-
-    assert_eq!(&src.to_string(), "wick_component :: Value");
 
     Ok(())
   }

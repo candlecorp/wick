@@ -5,9 +5,11 @@ use std::path::{Path, PathBuf};
 use asset_container::{AssetManager, Assets};
 use wick_asset_reference::AssetReference;
 use wick_interface_types::{OperationSignatures, TypeDefinition};
+use wick_packet::RuntimeConfig;
 
 use super::common::package_definition::PackageConfig;
 use super::components::ComponentConfig;
+use super::template_config::Renderable;
 use super::OperationDefinition;
 use crate::config;
 use crate::error::ManifestError;
@@ -123,5 +125,16 @@ impl ComponentConfig for TypesConfiguration {
 
   fn operations_mut(&mut self) -> &mut Vec<Self::Operation> {
     &mut self.operations
+  }
+}
+
+impl Renderable for TypesConfiguration {
+  fn render_config(
+    &mut self,
+    _source: Option<&Path>,
+    _root_config: Option<&RuntimeConfig>,
+    _env: Option<&HashMap<String, String>>,
+  ) -> Result<(), ManifestError> {
+    Ok(())
   }
 }

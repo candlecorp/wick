@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::anyhow;
 use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use futures::FutureExt;
 use wasmrs_rx::Observer;
@@ -109,12 +110,11 @@ impl RenderConfiguration for Op {
   type ConfigSource = RuntimeConfig;
 
   fn decode_config(data: Option<Self::ConfigSource>) -> Result<Self::Config, ComponentError> {
-    let config = data.ok_or_else(|| {
-      ComponentError::message("Merge component requires configuration, please specify configuration.")
-    })?;
+    let config =
+      data.ok_or_else(|| anyhow!("Merge component requires configuration, please specify configuration."))?;
 
     Ok(Self::Config {
-      inputs: config.coerce_key("inputs").map_err(ComponentError::new)?,
+      inputs: config.coerce_key("inputs")?,
     })
   }
 }

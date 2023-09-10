@@ -20,7 +20,7 @@ macro_rules! binary_interleaved_pairs {
     #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
     #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
     impl $name::Operation for Component {
-      type Error = Box<dyn std::error::Error + Send + Sync + 'static>;
+      type Error = wick_component::AnyError;
       type Outputs = $name::Outputs;
       type Config = $name::Config;
 

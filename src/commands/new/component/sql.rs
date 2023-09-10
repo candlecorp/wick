@@ -36,7 +36,7 @@ pub(crate) async fn handle(
     let mut config = ComponentConfiguration::default();
     config.set_name(name.clone());
     let resource_name = "DB_URL";
-    config.resources_mut().push(config::ResourceBinding::new(
+    config.resources_mut().push(config::Binding::new(
       resource_name,
       config::ResourceDefinition::Url(config::UrlResource::new(
         "postgres://postgres:postgres@localhost:5432/db_name".parse().unwrap(),
