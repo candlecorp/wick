@@ -57,10 +57,9 @@ just install # or cargo install --path .
 
 Dive deeper into the Wick Framework by exploring the following sections:
 
-- [Introduction](overview)
+- [Introduction](introduction)
 - [Getting Started](getting-started/tutorial/)
-- [Core Concepts](overview/concepts)
-- [Rust Component SDK Reference](rustdoc/wick_component/)
-- [Examples](examples)
+- [Core Concepts](introduction/concepts)
+- [Rust Component SDK Reference](/rustdoc/wick_component/)
 
 We're excited to have you join the Wick community! Be sure to join our public [Discord channel](https://discord.gg/candle) and share what you create!
