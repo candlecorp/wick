@@ -138,9 +138,6 @@ pub struct NetworkManifest {
   /// The unique identifier for this Network.
   #[serde(default)]
   pub name: Option<String>,
-  /// The collection to use as the entrypoint when running as a standalone process.
-  #[serde(default)]
-  pub triggers: Option<EntrypointDefinition>,
   /// The links between capabilities and components.
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -149,23 +146,6 @@ pub struct NetworkManifest {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub collections: Vec<CollectionDefinition>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-/// A collection definition for the main entrypoint.
-pub struct EntrypointDefinition {
-  /// The reference/location of the collection.
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub reference: String,
-  /// The component to use as the entrypoint.
-  #[serde(default)]
-  #[serde(deserialize_with = "with_expand_envs")]
-  pub component: String,
-  /// Data or configuration used to initialize the collection.
-  #[serde(default)]
-  pub data: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]

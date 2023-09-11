@@ -45,7 +45,7 @@
       {{#case "f32"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
       {{#case "f64"}}"oneOf" : [{"type":"number"},{"type":"string"}]{{/case}}
       {{#case "bool"}}"type":"boolean"{{/case}}
-      {{#default}}"$ref":"#/$defs/v1/{{name.value}}"{{/default}}
+      {{#default}}"$ref":"#/$defs/v1.{{name.value}}"{{/default}}
     {{~/switch}}
   {{~/case}}
 {{~/switch}}
