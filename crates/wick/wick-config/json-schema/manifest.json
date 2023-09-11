@@ -397,7 +397,9 @@
           }
         }
       },
-      "required": []
+      "required": [
+        "name"
+      ]
     },
     "v1.Metadata": {
       "$anchor": "v1.Metadata",
@@ -554,7 +556,10 @@
           "$ref": "#/$defs/v1.LiquidTemplate"
         }
       },
-      "required": []
+      "required": [
+        "port",
+        "address"
+      ]
     },
     "v1.UdpPort": {
       "$anchor": "v1.UdpPort",
@@ -577,7 +582,10 @@
           "$ref": "#/$defs/v1.LiquidTemplate"
         }
       },
-      "required": []
+      "required": [
+        "port",
+        "address"
+      ]
     },
     "v1.Volume": {
       "$anchor": "v1.Volume",
@@ -2503,6 +2511,9 @@
           "$ref": "#/$defs/v1.SuccessPacket"
         },
         {
+          "$ref": "#/$defs/v1.SignalPacket"
+        },
+        {
           "$ref": "#/$defs/v1.ErrorPacket"
         }
       ]
@@ -2513,6 +2524,9 @@
           "$ref": "#/$defs/v1.SuccessPacket"
         },
         {
+          "$ref": "#/$defs/v1.SignalPacket"
+        },
+        {
           "$ref": "#/$defs/v1.PacketAssertionDef"
         },
         {
@@ -2520,8 +2534,8 @@
         }
       ]
     },
-    "v1.SuccessPacket": {
-      "$anchor": "v1.SuccessPacket",
+    "v1.SignalPacket": {
+      "$anchor": "v1.SignalPacket",
       "additionalProperties": false,
       "type": "object",
       "properties": {
@@ -2536,6 +2550,20 @@
         "flag": {
           "description": "The flag set on the packet.",
           "$ref": "#/$defs/v1.PacketFlag"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "v1.SuccessPacket": {
+      "$anchor": "v1.SuccessPacket",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the input or output this packet is going to or coming from.",
+          "type": "string"
         },
         "value": {
           "description": "The packet payload.",
@@ -2543,7 +2571,8 @@
         }
       },
       "required": [
-        "name"
+        "name",
+        "value"
       ]
     },
     "v1.PacketAssertionDef": {
@@ -2690,7 +2719,9 @@
           }
         }
       },
-      "required": []
+      "required": [
+        "resource"
+      ]
     },
     "v1.SqlQueryKind": {
       "oneOf": [
@@ -2749,6 +2780,7 @@
         }
       },
       "required": [
+        "name",
         "query"
       ]
     },
@@ -2799,6 +2831,7 @@
         }
       },
       "required": [
+        "name",
         "exec"
       ]
     },
@@ -2860,7 +2893,9 @@
           }
         }
       },
-      "required": []
+      "required": [
+        "resource"
+      ]
     },
     "v1.Proxy": {
       "$anchor": "v1.Proxy",
@@ -2934,7 +2969,10 @@
           "type": "string"
         }
       },
-      "required": []
+      "required": [
+        "name",
+        "method"
+      ]
     },
     "v1.Codec": {
       "$anchor": "v1.Codec",

@@ -26,6 +26,7 @@ impl TryFrom<v1::PacketData> for test_case::PacketData {
     Ok(match value {
       v1::PacketData::SuccessPacket(v) => test_case::PacketData::SuccessPacket(v.try_into()?),
       v1::PacketData::ErrorPacket(v) => test_case::PacketData::ErrorPacket(v.try_into()?),
+      v1::PacketData::SignalPacket(v) => test_case::PacketData::SuccessPacket(v.try_into()?),
     })
   }
 }
@@ -47,6 +48,7 @@ impl TryFrom<v1::TestPacketData> for test_case::TestPacketData {
       v1::TestPacketData::SuccessPacket(v) => test_case::TestPacketData::SuccessPacket(v.try_into()?),
       v1::TestPacketData::ErrorPacket(v) => test_case::TestPacketData::ErrorPacket(v.try_into()?),
       v1::TestPacketData::PacketAssertionDef(v) => test_case::TestPacketData::PacketAssertion(v.try_into()?),
+      v1::TestPacketData::SignalPacket(v) => test_case::TestPacketData::SuccessPacket(v.try_into()?),
     })
   }
 }
@@ -155,10 +157,21 @@ impl TryFrom<v1::PacketFlags> for test_case::PacketFlag {
 impl TryFrom<v1::SuccessPacket> for test_case::SuccessPayload {
   type Error = crate::Error;
   fn try_from(value: v1::SuccessPacket) -> Result<Self> {
+    Ok(Self {
+      port: value.name,
+      flag: None,
+      data: Some(value.value),
+    })
+  }
+}
+
+impl TryFrom<v1::SignalPacket> for test_case::SuccessPayload {
+  type Error = crate::Error;
+  fn try_from(value: v1::SignalPacket) -> Result<Self> {
     let mut val = Self {
       port: value.name,
       flag: value.flag.map_into(),
-      data: value.value,
+      data: None,
     };
     #[allow(deprecated)]
     if let Some(flags) = value.flags {
@@ -229,12 +242,24 @@ impl TryFrom<test_case::ErrorPayload> for v1::ErrorPacket {
 
 impl From<test_case::SuccessPayload> for v1::SuccessPacket {
   fn from(value: test_case::SuccessPayload) -> Self {
+    assert!(
+      value.flag.is_none(),
+      "internal error, bad conversion from wick success packet to v1 success packet"
+    );
+    Self {
+      name: value.port,
+      value: value.data.unwrap(),
+    }
+  }
+}
+
+impl From<test_case::SuccessPayload> for v1::SignalPacket {
+  fn from(value: test_case::SuccessPayload) -> Self {
     #[allow(deprecated)]
     Self {
       name: value.port,
       flag: value.flag.map_into(),
       flags: None,
-      value: value.data,
     }
   }
 }

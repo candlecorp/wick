@@ -71,8 +71,6 @@ pub type LiquidTemplate = String;
 /// Configuration for a standalone Wick application.
 pub struct AppConfiguration {
   /// The application&#x27;s name.
-
-  #[serde(default)]
   pub name: String,
   /// Associated metadata for this application.
 
@@ -220,12 +218,8 @@ pub enum ResourceDefinition {
 /// A TCP port to bind to.
 pub struct TcpPort {
   /// The port to bind to.
-
-  #[serde(default)]
   pub port: LiquidTemplate,
   /// The address to bind to.
-
-  #[serde(default)]
   pub address: LiquidTemplate,
 }
 
@@ -234,12 +228,8 @@ pub struct TcpPort {
 /// A UDP port to bind to.
 pub struct UdpPort {
   /// The port to bind to.
-
-  #[serde(default)]
   pub port: LiquidTemplate,
   /// The address to bind to.
-
-  #[serde(default)]
   pub address: LiquidTemplate,
 }
 
@@ -1563,6 +1553,9 @@ pub enum PacketData {
   /// A variant representing a [SuccessPacket] type.
   #[serde(rename = "SuccessPacket")]
   SuccessPacket(SuccessPacket),
+  /// A variant representing a [SignalPacket] type.
+  #[serde(rename = "SignalPacket")]
+  SignalPacket(SignalPacket),
   /// A variant representing a [ErrorPacket] type.
   #[serde(rename = "ErrorPacket")]
   ErrorPacket(ErrorPacket),
@@ -1576,6 +1569,9 @@ pub enum TestPacketData {
   /// A variant representing a [SuccessPacket] type.
   #[serde(rename = "SuccessPacket")]
   SuccessPacket(SuccessPacket),
+  /// A variant representing a [SignalPacket] type.
+  #[serde(rename = "SignalPacket")]
+  SignalPacket(SignalPacket),
   /// A variant representing a [PacketAssertionDef] type.
   #[serde(rename = "PacketAssertionDef")]
   PacketAssertionDef(PacketAssertionDef),
@@ -1586,8 +1582,8 @@ pub enum TestPacketData {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-/// A simplified representation of a Wick data packet & payload, used when writing tests.
-pub struct SuccessPacket {
+/// A simplified representation of a Wick signal packet, used when writing tests.
+pub struct SignalPacket {
   /// The name of the input or output this packet is going to or coming from.
   pub name: String,
   /// Any flags set on the packet. Deprecated, use &#x27;flag:&#x27; instead
@@ -1601,12 +1597,18 @@ pub struct SuccessPacket {
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub flag: Option<PacketFlag>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A simplified representation of a Wick data packet & payload, used when writing tests.
+pub struct SuccessPacket {
+  /// The name of the input or output this packet is going to or coming from.
+  pub name: String,
   /// The packet payload.
 
-  #[serde(default)]
   #[serde(alias = "data")]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub value: Option<liquid_json::LiquidJsonValue>,
+  pub value: liquid_json::LiquidJsonValue,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1767,8 +1769,6 @@ impl FromPrimitive for PacketFlag {
 /// A dynamic component whose operations are SQL queries to a database.
 pub struct SqlComponent {
   /// The connect string URL resource for the database.
-
-  #[serde(default)]
   pub resource: String,
   /// Whether or not to use TLS.
 
@@ -1803,8 +1803,6 @@ pub enum SqlQueryKind {
 /// A dynamic operation whose implementation is a SQL query.
 pub struct SqlQueryOperationDefinition {
   /// The name of the operation.
-
-  #[serde(default)]
   pub name: String,
   /// Any configuration required by the operation.
 
@@ -1840,8 +1838,6 @@ pub struct SqlQueryOperationDefinition {
 /// A dynamic operation whose implementation is a SQL query that returns the number of rows affected or failure.
 pub struct SqlExecOperationDefinition {
   /// The name of the operation.
-
-  #[serde(default)]
   pub name: String,
   /// Any configuration required by the operation.
 
@@ -1919,8 +1915,6 @@ impl FromPrimitive for ErrorBehavior {
 /// A component whose operations are HTTP requests.
 pub struct HttpClientComponent {
   /// The URL base to use.
-
-  #[serde(default)]
   pub resource: String,
   /// The codec to use when encoding/decoding data. Can be overridden by individual operations.
 
@@ -1973,8 +1967,6 @@ pub struct Proxy {
 /// A dynamic operation whose implementation is an HTTP request. The outputs of HttpClientOperationDefinition are always `response` & `body`
 pub struct HttpClientOperationDefinition {
   /// The name of the operation.
-
-  #[serde(default)]
   pub name: String,
   /// Any configuration required by the operation.
 
@@ -1987,8 +1979,6 @@ pub struct HttpClientOperationDefinition {
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub inputs: Vec<Field>,
   /// The HTTP method to use.
-
-  #[serde(default)]
   pub method: HttpMethod,
   /// The codec to use when encoding/decoding data.
 

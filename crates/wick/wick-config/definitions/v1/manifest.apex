@@ -27,22 +27,22 @@ alias Glob = string @skip
 "Configuration for a standalone Wick application."
 type AppConfiguration @default @tagged("wick/app@v1") {
   "The application's name."
-  name: string,
+  name: string @required
 
   "Associated metadata for this application."
-  metadata: Metadata?,
+  metadata: Metadata?
 
   "Details about the package for this application."
-  package: PackageDefinition?,
+  package: PackageDefinition?
 
   "Resources and configuration that the application and its components can access."
-  resources: [ResourceBinding],
+  resources: [ResourceBinding]
 
   "Components that to import and make available to the application."
-  import: [ImportBinding],
+  import: [ImportBinding]
 
   "Triggers to load and instantiate to drive the application's behavior."
-  triggers: [TriggerDefinition],
+  triggers: [TriggerDefinition]
 }
 
 "Metadata to associate with an artifact."
@@ -102,17 +102,17 @@ union ResourceDefinition = TcpPort | UdpPort | Url | Volume
 "A TCP port to bind to."
 type TcpPort @tagged("wick/resource/tcpport@v1") {
   "The port to bind to."
-  port: LiquidTemplate
+  port: LiquidTemplate @required
   "The address to bind to."
-  address: LiquidTemplate
+  address: LiquidTemplate @required
 }
 
 "A UDP port to bind to."
 type UdpPort @tagged("wick/resource/udpport@v1") {
   "The port to bind to."
-  port: LiquidTemplate
+  port: LiquidTemplate @required
   "The address to bind to."
-  address: LiquidTemplate
+  address: LiquidTemplate @required
 }
 
 "A filesystem or network volume resource."
@@ -664,7 +664,7 @@ type Field {
   description: string?,
 }
 
-union TypeSignature @into_string @shortform @shortformonly = I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | Bool | StringType | Optional | Datetime | Bytes | Custom | List | Map | Object
+union TypeSignature @into_string @shortformonly = I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 | F32 | F64 | Bool | StringType | Optional | Datetime | Bytes | Custom | List | Map | Object
 
 type I8 @nameonly("i8") {}
 type I16 @nameonly("i16") {}
@@ -796,13 +796,13 @@ type InherentData {
 }
 
 "Either a success packet or an error packet."
-union PacketData @untagged = SuccessPacket | ErrorPacket
+union PacketData @untagged = SuccessPacket | SignalPacket | ErrorPacket
 
 "Packet assertions."
-union TestPacketData @untagged = SuccessPacket | PacketAssertionDef | ErrorPacket
+union TestPacketData @untagged = SuccessPacket | SignalPacket | PacketAssertionDef | ErrorPacket
 
-"A simplified representation of a Wick data packet & payload, used when writing tests."
-type SuccessPacket {
+"A simplified representation of a Wick signal packet, used when writing tests."
+type SignalPacket {
   "The name of the input or output this packet is going to or coming from."
   name: string @required
 
@@ -811,9 +811,15 @@ type SuccessPacket {
 
   "The flag set on the packet."
   flag: PacketFlag?
+}
+
+"A simplified representation of a Wick data packet & payload, used when writing tests."
+type SuccessPacket {
+  "The name of the input or output this packet is going to or coming from."
+  name: string @required
 
   "The packet payload."
-  value: LiquidJsonValue? @alias("data")
+  value: LiquidJsonValue @alias("data") @required
 }
 
 "A test case for a component's operation that uses loose equality for comparing data."
@@ -886,7 +892,7 @@ enum PacketFlag {
 "A dynamic component whose operations are SQL queries to a database."
 type SqlComponent @tagged("wick/component/sql@v1") {
   "The connect string URL resource for the database."
-  resource: string
+  resource: string @required
 
   "Whether or not to use TLS."
   tls: bool
@@ -903,7 +909,7 @@ union SqlQueryKind @untagged = SqlQueryOperationDefinition | SqlExecOperationDef
 "A dynamic operation whose implementation is a SQL query."
 type SqlQueryOperationDefinition {
   "The name of the operation."
-  name: string
+  name: string @required
 
   "Any configuration required by the operation."
   with: [Field],
@@ -927,7 +933,7 @@ type SqlQueryOperationDefinition {
 "A dynamic operation whose implementation is a SQL query that returns the number of rows affected or failure."
 type SqlExecOperationDefinition {
   "The name of the operation."
-  name: string
+  name: string @required
 
   "Any configuration required by the operation."
   with: [Field],
@@ -948,9 +954,6 @@ type SqlExecOperationDefinition {
   on_error: ErrorBehavior?
 }
 
-
-
-
 "What to do when an error occurs."
 enum ErrorBehavior {
   "Errors will be ignored."
@@ -964,7 +967,7 @@ enum ErrorBehavior {
 "A component whose operations are HTTP requests."
 type HttpClientComponent @tagged("wick/component/http@v1") {
   "The URL base to use."
-  resource: string
+  resource: string @required
 
   "The codec to use when encoding/decoding data. Can be overridden by individual operations."
   codec: Codec?
@@ -996,7 +999,7 @@ type Proxy {
 "A dynamic operation whose implementation is an HTTP request. The outputs of HttpClientOperationDefinition are always `response` & `body`"
 type HttpClientOperationDefinition {
   "The name of the operation."
-  name: string
+  name: string @required
 
   "Any configuration required by the operation."
   with: [Field],
@@ -1005,7 +1008,7 @@ type HttpClientOperationDefinition {
   inputs: [Field],
 
   "The HTTP method to use."
-  method: HttpMethod
+  method: HttpMethod @required
 
   "The codec to use when encoding/decoding data."
   codec: Codec?

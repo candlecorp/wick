@@ -1,0 +1,32 @@
+
+{{~#switch kind~}}
+  {{~#case "MapType"}}
+  Record<string, {{~> expand-type valueType ~}}>
+  {{~/case}}
+  {{~#case "ListType"}}
+  {{~> expand-type type ~}}[]
+  {{~/case}}
+  {{~#case "Optional"}}
+    {{~> expand-type type ~}} | undefined
+  {{~/case}}
+  {{~#case "Named"~}}
+    {{~#switch name.value~}}
+      {{~#case "any"}}any{{~/case}}
+      {{~#case "LocationReference"}}string{{~/case}}
+      {{~#case "Glob"}}string{{~/case}}
+      {{~#case "string"}}string{{~/case}}
+      {{~#case "i8"}}number{{~/case}}
+      {{~#case "u8"}}number{{~/case}}
+      {{~#case "i16"}}number{{~/case}}
+      {{~#case "u16"}}number{{~/case}}
+      {{~#case "i32"}}number{{~/case}}
+      {{~#case "u32"}}number{{~/case}}
+      {{~#case "i64"}}number{{~/case}}
+      {{~#case "u64"}}number{{~/case}}
+      {{~#case "f32"}}number{{~/case}}
+      {{~#case "f64"}}number{{~/case}}
+      {{~#case "bool"}}boolean{{~/case}}
+      {{~#default}}{{name.value}}{{~/default}}
+    {{~/switch}}
+  {{~/case}}
+{{~/switch}}

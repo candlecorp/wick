@@ -1,0 +1,30 @@
+
+{{~#switch kind~}}
+  {{~#case "MapType"}}
+  {}
+  {{~/case}}
+  {{~#case "ListType"}}
+  []
+  {{~/case}}
+  {{~#case "Optional"}}
+  undefined
+  {{~/case}}
+  {{~#case "Named"~}}
+    {{~#switch name.value~}}
+      {{~#case "any"}}{}{{~/case}}
+      {{~#case "string"}}""{{~/case}}
+      {{~#case "i8"}}0{{~/case}}
+      {{~#case "u8"}}0{{~/case}}
+      {{~#case "i16"}}0{{~/case}}
+      {{~#case "u16"}}0{{~/case}}
+      {{~#case "i32"}}0{{~/case}}
+      {{~#case "u32"}}0{{~/case}}
+      {{~#case "i64"}}0{{~/case}}
+      {{~#case "u64"}}0{{~/case}}
+      {{~#case "f32"}}0{{~/case}}
+      {{~#case "f64"}}0{{~/case}}
+      {{~#case "bool"}}false{{~/case}}
+      {{~#default}}{{name.value}}{{~/default}}
+    {{~/switch}}
+  {{~/case}}
+{{~/switch}}

@@ -1,0 +1,16 @@
+
+{{~#switch .~}}
+  {{~#case "import"}}{{.}}_{{~/case}}
+  {{~#case "export"}}{{.}}_{{~/case}}
+  {{~#case "with"}}{{.}}_{{~/case}}
+  {{~#case "extends"}}{{.}}_{{~/case}}
+  {{~#case "arguments"}}{{.}}_{{~/case}}
+  {{~#case "package"}}{{.}}_{{~/case}}
+  {{~#case "interface"}}{{.}}_{{~/case}}
+  {{~#case "type"}}{{.}}_{{~/case}}
+  {{~#case "const"}}{{.}}_{{~/case}}
+  {{~#case "let"}}{{.}}_{{~/case}}
+  {{~#case "class"}}{{.}}_{{~/case}}
+  {{~#case "class"}}{{.}}_{{~/case}}
+  {{~#default}}{{.}}{{~/default}}
+{{~/switch}}
