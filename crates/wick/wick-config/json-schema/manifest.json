@@ -3,36 +3,103 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "$defs": {
-    "v0.HostManifest": {
-      "$anchor": "v0.HostManifest",
+    "v0.CollectionDefinition": {
+      "$anchor": "v0.CollectionDefinition",
       "additionalProperties": false,
       "type": "object",
       "properties": {
-        "format": {
-          "description": "The configuration manifest format.",
-          "enum": [
-            0
-          ]
-        },
-        "version": {
-          "description": "The version of the configuration.",
+        "namespace": {
+          "description": "The local namespace for the collection.",
           "type": "string"
         },
-        "host": {
-          "description": "Additional host configuration.",
-          "$ref": "#/$defs/v0.HostConfig"
+        "kind": {
+          "description": "The kind/type of the collection.",
+          "$ref": "#/$defs/v0.CollectionKind"
         },
-        "network": {
-          "description": "The configuration for a Wick network.",
-          "$ref": "#/$defs/v0.NetworkManifest"
-        },
-        "default_schematic": {
-          "description": "The default schematic to execute if none is provided.",
+        "reference": {
+          "description": "The reference/location of the collection.",
           "type": "string"
+        },
+        "data": {
+          "description": "Data or configuration used to initialize the collection.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+          }
+        }
+      },
+      "required": []
+    },
+    "v0.CollectionKind": {
+      "$anchor": "v0.CollectionKind",
+      "enum": [
+        "Native",
+        "GrpcUrl",
+        "WaPc",
+        "Network"
+      ]
+    },
+    "v0.ComponentDefinition": {
+      "$anchor": "v0.ComponentDefinition",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The ID of the component (i.e. the alias, key, or namespace).",
+          "type": "string"
+        },
+        "data": {
+          "description": "Data to associate with the reference.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+          }
         }
       },
       "required": [
-        "format"
+        "id"
+      ]
+    },
+    "v0.ConnectionDefinition": {
+      "$anchor": "v0.ConnectionDefinition",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "from": {
+          "description": "The originating component from upstream.",
+          "$ref": "#/$defs/v0.ConnectionTargetDefinition"
+        },
+        "to": {
+          "description": "The destination component (downstream).",
+          "$ref": "#/$defs/v0.ConnectionTargetDefinition"
+        }
+      },
+      "required": []
+    },
+    "v0.ConnectionTargetDefinition": {
+      "$anchor": "v0.ConnectionTargetDefinition",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "instance": {
+          "description": "The instance name of the referenced component.",
+          "type": "string"
+        },
+        "port": {
+          "description": "The component&#x27;s port.",
+          "type": "string"
+        },
+        "data": {
+          "description": "Data to associate with a connection.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+          }
+        }
+      },
+      "required": [
+        "instance",
+        "port"
       ]
     },
     "v0.HostConfig": {
@@ -76,6 +143,38 @@
         }
       },
       "required": []
+    },
+    "v0.HostManifest": {
+      "$anchor": "v0.HostManifest",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "format": {
+          "description": "The configuration manifest format.",
+          "enum": [
+            0
+          ]
+        },
+        "version": {
+          "description": "The version of the configuration.",
+          "type": "string"
+        },
+        "host": {
+          "description": "Additional host configuration.",
+          "$ref": "#/$defs/v0.HostConfig"
+        },
+        "network": {
+          "description": "The configuration for a Wick network.",
+          "$ref": "#/$defs/v0.NetworkManifest"
+        },
+        "default_schematic": {
+          "description": "The default schematic to execute if none is provided.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "format"
+      ]
     },
     "v0.HttpConfig": {
       "$anchor": "v0.HttpConfig",
@@ -166,42 +265,6 @@
       },
       "required": []
     },
-    "v0.CollectionDefinition": {
-      "$anchor": "v0.CollectionDefinition",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "namespace": {
-          "description": "The local namespace for the collection.",
-          "type": "string"
-        },
-        "kind": {
-          "description": "The kind/type of the collection.",
-          "$ref": "#/$defs/v0.CollectionKind"
-        },
-        "reference": {
-          "description": "The reference/location of the collection.",
-          "type": "string"
-        },
-        "data": {
-          "description": "Data or configuration used to initialize the collection.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
-          }
-        }
-      },
-      "required": []
-    },
-    "v0.CollectionKind": {
-      "$anchor": "v0.CollectionKind",
-      "enum": [
-        "Native",
-        "GrpcUrl",
-        "WaPc",
-        "Network"
-      ]
-    },
     "v0.SchematicManifest": {
       "$anchor": "v0.SchematicManifest",
       "additionalProperties": false,
@@ -240,116 +303,6 @@
       "required": [
         "name"
       ]
-    },
-    "v0.ComponentDefinition": {
-      "$anchor": "v0.ComponentDefinition",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "id": {
-          "description": "The ID of the component (i.e. the alias, key, or namespace).",
-          "type": "string"
-        },
-        "data": {
-          "description": "Data to associate with the reference.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
-          }
-        }
-      },
-      "required": [
-        "id"
-      ]
-    },
-    "v0.ConnectionDefinition": {
-      "$anchor": "v0.ConnectionDefinition",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "from": {
-          "description": "The originating component from upstream.",
-          "$ref": "#/$defs/v0.ConnectionTargetDefinition"
-        },
-        "to": {
-          "description": "The destination component (downstream).",
-          "$ref": "#/$defs/v0.ConnectionTargetDefinition"
-        }
-      },
-      "required": []
-    },
-    "v0.ConnectionTargetDefinition": {
-      "$anchor": "v0.ConnectionTargetDefinition",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "instance": {
-          "description": "The instance name of the referenced component.",
-          "type": "string"
-        },
-        "port": {
-          "description": "The component&#x27;s port.",
-          "type": "string"
-        },
-        "data": {
-          "description": "Data to associate with a connection.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
-          }
-        }
-      },
-      "required": [
-        "instance",
-        "port"
-      ]
-    },
-    "v1.WickConfig": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.AppConfiguration"
-        },
-        {
-          "$ref": "#/$defs/v1.ComponentConfiguration"
-        },
-        {
-          "$ref": "#/$defs/v1.TypesConfiguration"
-        },
-        {
-          "$ref": "#/$defs/v1.TestConfiguration"
-        },
-        {
-          "$ref": "#/$defs/v1.LockdownConfiguration"
-        }
-      ]
-    },
-    "v1.LocationReference": {
-      "type": "string"
-    },
-    "v1.LiquidJsonValue": {
-      "oneOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "type": "object"
-        },
-        {
-          "type": "array"
-        },
-        {
-          "type": "string"
-        },
-        {
-          "type": "number"
-        }
-      ]
-    },
-    "v1.LiquidTemplate": {
-      "type": "string"
-    },
-    "v1.Glob": {
-      "type": "string"
     },
     "v1.AppConfiguration": {
       "$anchor": "v1.AppConfiguration",
@@ -399,239 +352,46 @@
       },
       "required": []
     },
-    "v1.Metadata": {
-      "$anchor": "v1.Metadata",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "version": {
-          "description": "The version of the artifact.",
-          "type": "string"
-        },
-        "authors": {
-          "description": "A list of the authors.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "vendors": {
-          "description": "A list of any vendors associated with the artifact.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "description": {
-          "description": "A short description.",
-          "type": "string"
-        },
-        "documentation": {
-          "description": "Where to find documentation.",
-          "type": "string"
-        },
-        "licenses": {
-          "description": "The license(s) for the artifact.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "icon": {
-          "description": "An icon to associate with the artifact.",
-          "type": "string"
-        }
-      },
-      "required": []
+    "v1.AssertionOperator": {
+      "$anchor": "v1.AssertionOperator",
+      "enum": [
+        "Equals",
+        "LessThan",
+        "GreaterThan",
+        "Regex",
+        "Contains"
+      ]
     },
-    "v1.PackageDefinition": {
-      "$anchor": "v1.PackageDefinition",
+    "v1.BlockExpression": {
+      "$anchor": "v1.BlockExpression",
       "additionalProperties": false,
       "type": "object",
       "properties": {
-        "files": {
-          "description": "The list of files and folders to be included with the package.",
+        "expressions": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/v1.FlowExpression"
           }
-        },
-        "registry": {
-          "description": "Configuration for publishing the package to a registry.",
-          "$ref": "#/$defs/v1.RegistryDefinition"
-        }
-      },
-      "required": []
-    },
-    "v1.RegistryDefinition": {
-      "$anchor": "v1.RegistryDefinition",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "host": {
-          "description": "The registry to publish to, e.g. registry.candle.dev",
-          "type": "string"
-        },
-        "namespace": {
-          "description": "The namespace on the registry. e.g.: [*your username*]",
-          "type": "string"
-        }
-      },
-      "required": []
-    },
-    "v1.ResourceBinding": {
-      "$anchor": "v1.ResourceBinding",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the binding.",
-          "type": "string"
-        },
-        "resource": {
-          "description": "The resource to bind to.",
-          "$ref": "#/$defs/v1.ResourceDefinition"
         }
       },
       "required": [
-        "name",
-        "resource"
+        "expressions"
       ]
     },
-    "v1.ImportBinding": {
-      "$anchor": "v1.ImportBinding",
+    "v1.Bool": {
+      "$anchor": "v1.Bool",
       "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the binding.",
-          "type": "string"
-        },
-        "component": {
-          "description": "The import to bind to.",
-          "$ref": "#/$defs/v1.ImportDefinition"
-        }
-      },
-      "required": [
-        "name",
-        "component"
+      "type": "string",
+      "enum": [
+        "i8"
       ]
     },
-    "v1.ResourceDefinition": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.TcpPort"
-        },
-        {
-          "$ref": "#/$defs/v1.UdpPort"
-        },
-        {
-          "$ref": "#/$defs/v1.Url"
-        },
-        {
-          "$ref": "#/$defs/v1.Volume"
-        }
-      ]
-    },
-    "v1.TcpPort": {
-      "$anchor": "v1.TcpPort",
+    "v1.Bytes": {
+      "$anchor": "v1.Bytes",
       "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/resource/tcpport@v1"
-          ]
-        },
-        "port": {
-          "description": "The port to bind to.",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        },
-        "address": {
-          "description": "The address to bind to.",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        }
-      },
-      "required": []
-    },
-    "v1.UdpPort": {
-      "$anchor": "v1.UdpPort",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/resource/udpport@v1"
-          ]
-        },
-        "port": {
-          "description": "The port to bind to.",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        },
-        "address": {
-          "description": "The address to bind to.",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        }
-      },
-      "required": []
-    },
-    "v1.Volume": {
-      "$anchor": "v1.Volume",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/resource/volume@v1"
-          ]
-        },
-        "path": {
-          "description": "The path.",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        }
-      },
-      "required": [
-        "path"
-      ]
-    },
-    "v1.Url": {
-      "$anchor": "v1.Url",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/resource/url@v1"
-          ]
-        },
-        "url": {
-          "description": "The url string.",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        }
-      },
-      "required": [
-        "url"
-      ]
-    },
-    "v1.TriggerDefinition": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.CliTrigger"
-        },
-        {
-          "$ref": "#/$defs/v1.HttpTrigger"
-        },
-        {
-          "$ref": "#/$defs/v1.TimeTrigger"
-        }
+      "type": "string",
+      "enum": [
+        "bytes"
       ]
     },
     "v1.CliTrigger": {
@@ -662,757 +422,13 @@
         "operation"
       ]
     },
-    "v1.TimeTrigger": {
-      "$anchor": "v1.TimeTrigger",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/trigger/time@v1"
-          ]
-        },
-        "schedule": {
-          "description": "The schedule to run the trigger with.",
-          "$ref": "#/$defs/v1.Schedule"
-        },
-        "operation": {
-          "description": "The operation to execute on the schedule.",
-          "oneOf": [
-            {
-              "type": "string"
-            },
-            {
-              "$ref": "#/$defs/v1.ComponentOperationExpression"
-            }
-          ]
-        },
-        "payload": {
-          "description": "Values passed to the operation as inputs",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.OperationInput"
-          }
-        }
-      },
-      "required": [
-        "schedule",
-        "operation",
-        "payload"
-      ]
-    },
-    "v1.OperationInput": {
-      "$anchor": "v1.OperationInput",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the input.",
-          "type": "string"
-        },
-        "value": {
-          "description": "The value to pass."
-        }
-      },
-      "required": [
-        "name",
-        "value"
-      ]
-    },
-    "v1.Schedule": {
-      "$anchor": "v1.Schedule",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "cron": {
-          "description": "Schedule in cron format with second precision. See [cron.help](https://cron.help) for more information.",
-          "type": "string"
-        },
-        "repeat": {
-          "description": "repeat &#x60;n&#x60; times. Use &#x60;0&#x60; to repeat indefinitely",
-          "oneOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "cron"
-      ]
-    },
-    "v1.ComponentOperationExpression": {
-      "$anchor": "v1.ComponentOperationExpression",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "component": {
-          "description": "The component that exports the operation.",
-          "oneOf": [
-            {
-              "type": "string"
-            },
-            {
-              "$ref": "#/$defs/v1.ComponentDefinition"
-            }
-          ]
-        },
-        "name": {
-          "description": "The operation name.",
-          "type": "string"
-        },
-        "with": {
-          "description": "Configuration to pass to this operation on invocation.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "$ref": "#/$defs/v1.LiquidJsonValue"
-            }
-          }
-        },
-        "timeout": {
-          "description": "Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely.",
-          "oneOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "component",
-        "name"
-      ]
-    },
-    "v1.HttpTrigger": {
-      "$anchor": "v1.HttpTrigger",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/trigger/http@v1"
-          ]
-        },
-        "resource": {
-          "description": "The TcpPort resource to listen on for connections.",
-          "type": "string"
-        },
-        "routers": {
-          "description": "The router to handle incoming requests",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.HttpRouter"
-          }
-        }
-      },
-      "required": [
-        "resource"
-      ]
-    },
-    "v1.HttpRouter": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.RawRouter"
-        },
-        {
-          "$ref": "#/$defs/v1.RestRouter"
-        },
-        {
-          "$ref": "#/$defs/v1.StaticRouter"
-        },
-        {
-          "$ref": "#/$defs/v1.ProxyRouter"
-        }
-      ]
-    },
-    "v1.ProxyRouter": {
-      "$anchor": "v1.ProxyRouter",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/router/proxy@v1"
-          ]
-        },
-        "path": {
-          "description": "The path that this router will trigger for.",
-          "type": "string"
-        },
-        "middleware": {
-          "description": "Middleware operations for this router.",
-          "$ref": "#/$defs/v1.Middleware"
-        },
-        "url": {
-          "description": "The URL resource to proxy to.",
-          "type": "string"
-        },
-        "strip_path": {
-          "description": "Whether or not to strip the router&#x27;s path from the proxied request.",
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "path",
-        "url"
-      ]
-    },
-    "v1.RestRouter": {
-      "$anchor": "v1.RestRouter",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/router/rest@v1"
-          ]
-        },
-        "path": {
-          "description": "The path that this router will trigger for.",
-          "type": "string"
-        },
-        "tools": {
-          "description": "Additional tools and services to enable.",
-          "$ref": "#/$defs/v1.Tools"
-        },
-        "middleware": {
-          "description": "Middleware operations for this router.",
-          "$ref": "#/$defs/v1.Middleware"
-        },
-        "routes": {
-          "description": "The routes to serve and operations that handle them.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Route"
-          }
-        },
-        "info": {
-          "description": "Information about the router to use when generating documentation and other tools.",
-          "$ref": "#/$defs/v1.Info"
-        }
-      },
-      "required": [
-        "path"
-      ]
-    },
-    "v1.Route": {
-      "$anchor": "v1.Route",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "sub_path": {
-          "description": "The path to serve this route from. See [URI documentation](/docs/configuration/uri) for more information on specifying query and path parameters.",
-          "type": "string"
-        },
-        "operation": {
-          "description": "The operation that will act as the main entrypoint for this route.",
-          "oneOf": [
-            {
-              "type": "string"
-            },
-            {
-              "$ref": "#/$defs/v1.ComponentOperationExpression"
-            }
-          ]
-        },
-        "methods": {
-          "description": "The HTTP methods to serve this route for.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.HttpMethod"
-          }
-        },
-        "id": {
-          "description": "The unique ID of the route, used for documentation and tooling.",
-          "type": "string"
-        },
-        "description": {
-          "description": "A short description of the route.",
-          "type": "string"
-        },
-        "summary": {
-          "description": "A longer description of the route.",
-          "type": "string"
-        }
-      },
-      "required": [
-        "sub_path",
-        "operation"
-      ]
-    },
-    "v1.Tools": {
-      "$anchor": "v1.Tools",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "openapi": {
-          "description": "Set to true to generate an OpenAPI specification and serve it at *router_path*/openapi.json",
-          "type": "boolean"
-        }
-      },
-      "required": []
-    },
-    "v1.Info": {
-      "$anchor": "v1.Info",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "title": {
-          "description": "The title of the API.",
-          "type": "string"
-        },
-        "description": {
-          "description": "A short description of the API.",
-          "type": "string"
-        },
-        "tos": {
-          "description": "The terms of service for the API.",
-          "type": "string"
-        },
-        "contact": {
-          "description": "The contact information for the API.",
-          "$ref": "#/$defs/v1.Contact"
-        },
-        "license": {
-          "description": "The license information for the API.",
-          "$ref": "#/$defs/v1.License"
-        },
-        "version": {
-          "description": "The version of the API.",
-          "type": "string"
-        },
-        "documentation": {
-          "description": "The URL to the API&#x27;s terms of service.",
-          "$ref": "#/$defs/v1.Documentation"
-        }
-      },
-      "required": []
-    },
-    "v1.Documentation": {
-      "$anchor": "v1.Documentation",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "url": {
-          "description": "The URL to the API&#x27;s documentation.",
-          "type": "string"
-        },
-        "description": {
-          "description": "A short description of the documentation.",
-          "type": "string"
-        }
-      },
-      "required": []
-    },
-    "v1.License": {
-      "$anchor": "v1.License",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the license.",
-          "type": "string"
-        },
-        "url": {
-          "description": "The URL to the license.",
-          "type": "string"
-        }
-      },
-      "required": [
-        "name"
-      ]
-    },
-    "v1.Contact": {
-      "$anchor": "v1.Contact",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the contact.",
-          "type": "string"
-        },
-        "url": {
-          "description": "The URL to the contact.",
-          "type": "string"
-        },
-        "email": {
-          "description": "The email address of the contact.",
-          "type": "string"
-        }
-      },
-      "required": []
-    },
-    "v1.StaticRouter": {
-      "$anchor": "v1.StaticRouter",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/router/static@v1"
-          ]
-        },
-        "path": {
-          "description": "The path that this router will trigger for.",
-          "type": "string"
-        },
-        "middleware": {
-          "description": "Middleware operations for this router.",
-          "$ref": "#/$defs/v1.Middleware"
-        },
-        "volume": {
-          "description": "The volume to serve static files from.",
-          "type": "string"
-        },
-        "fallback": {
-          "description": "Fallback path (relative to volume &#x60;resource&#x60;) for files to serve in case of a 404. Useful for SPA&#x27;s. if volume resource is: /www and fallback: index.html, then a 404 will serve /www/index.html",
-          "type": "string"
-<<<<<<< HEAD
-=======
-        },
-        "indexes": {
-          "description": "Whether or not to serve directory listings when a directory is requested.",
-          "type": "boolean"
->>>>>>> 7ca53308 (feat: added optional directory listing for the static server)
-        }
-      },
-      "required": [
-        "path",
-        "volume"
-      ]
-    },
-    "v1.RawRouter": {
-      "$anchor": "v1.RawRouter",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/router/raw@v1"
-          ]
-        },
-        "path": {
-          "description": "The path that this router will trigger for.",
-          "type": "string"
-        },
-        "middleware": {
-          "description": "Middleware operations for this router.",
-          "$ref": "#/$defs/v1.Middleware"
-        },
-        "codec": {
-          "description": "The codec to use when encoding/decoding data.",
-          "$ref": "#/$defs/v1.Codec"
-        },
-        "operation": {
-          "description": "The operation that handles HTTP requests.",
-          "oneOf": [
-            {
-              "type": "string"
-            },
-            {
-              "$ref": "#/$defs/v1.ComponentOperationExpression"
-            }
-          ]
-        }
-      },
-      "required": [
-        "path",
-        "operation"
-      ]
-    },
-    "v1.Middleware": {
-      "$anchor": "v1.Middleware",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "request": {
-          "description": "The middleware to apply to requests.",
-          "type": "array",
-          "items": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "$ref": "#/$defs/v1.ComponentOperationExpression"
-              }
-            ]
-          }
-        },
-        "response": {
-          "description": "The middleware to apply to responses.",
-          "type": "array",
-          "items": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "$ref": "#/$defs/v1.ComponentOperationExpression"
-              }
-            ]
-          }
-        }
-      },
-      "required": []
-    },
-    "v1.TypesConfiguration": {
-      "$anchor": "v1.TypesConfiguration",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/types@v1"
-          ]
-        },
-        "name": {
-          "description": "The name of this type.",
-          "type": "string"
-        },
-        "metadata": {
-          "description": "Associated metadata for this type.",
-          "$ref": "#/$defs/v1.Metadata"
-        },
-        "types": {
-          "description": "Additional types to export and make available to the type.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.TypeDefinition"
-          }
-        },
-        "operations": {
-          "description": "A list of operation signatures.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.OperationDefinition"
-          }
-        },
-        "package": {
-          "description": "Details about the package for this types.",
-          "$ref": "#/$defs/v1.PackageDefinition"
-        }
-      },
-      "required": []
-    },
-    "v1.TestConfiguration": {
-      "$anchor": "v1.TestConfiguration",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/tests@v1"
-          ]
-        },
-        "name": {
-          "description": "The name of this component.",
-          "type": "string"
-        },
-        "with": {
-          "description": "Configuration used to instantiate this component.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "$ref": "#/$defs/v1.LiquidJsonValue"
-            }
-          }
-        },
-        "cases": {
-          "description": "Unit tests to run against components and operations.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.TestDefinition"
-          }
-        }
-      },
-      "required": []
-    },
-    "v1.LockdownConfiguration": {
-      "$anchor": "v1.LockdownConfiguration",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/lockdown@v1"
-          ]
-        },
-        "metadata": {
-          "description": "Associated metadata for this configuration.",
-          "$ref": "#/$defs/v1.Metadata"
-        },
-        "resources": {
-          "description": "Restrictions to apply to resources before an application or component can be run.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.ResourceRestriction"
-          }
-        }
-      },
-      "required": []
-    },
-    "v1.ResourceRestriction": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.VolumeRestriction"
-        },
-        {
-          "$ref": "#/$defs/v1.UrlRestriction"
-        },
-        {
-          "$ref": "#/$defs/v1.TcpPortRestriction"
-        },
-        {
-          "$ref": "#/$defs/v1.UdpPortRestriction"
-        }
-      ]
-    },
-    "v1.VolumeRestriction": {
-      "$anchor": "v1.VolumeRestriction",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/resource/volume@v1"
-          ]
-        },
-        "components": {
-          "description": "The components this restriction applies to",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "allow": {
-          "description": "The volumes to allow",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        }
-      },
-      "required": [
-        "allow"
-      ]
-    },
-    "v1.UrlRestriction": {
-      "$anchor": "v1.UrlRestriction",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/resource/url@v1"
-          ]
-        },
-        "components": {
-          "description": "The components this restriction applies to",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "allow": {
-          "description": "The URLs to allow",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        }
-      },
-      "required": [
-        "allow"
-      ]
-    },
-    "v1.TcpPortRestriction": {
-      "$anchor": "v1.TcpPortRestriction",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/resource/tcpport@v1"
-          ]
-        },
-        "components": {
-          "description": "The components this restriction applies to",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "address": {
-          "description": "The address to allow",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        },
-        "port": {
-          "description": "The port to allow",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        }
-      },
-      "required": [
-        "address",
-        "port"
-      ]
-    },
-    "v1.UdpPortRestriction": {
-      "$anchor": "v1.UdpPortRestriction",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/resource/udpport@v1"
-          ]
-        },
-        "components": {
-          "description": "The components this restriction applies to",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "address": {
-          "description": "The address to allow",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        },
-        "port": {
-          "description": "The port to allow",
-          "$ref": "#/$defs/v1.LiquidTemplate"
-        }
-      },
-      "required": [
-        "address",
-        "port"
+    "v1.Codec": {
+      "$anchor": "v1.Codec",
+      "enum": [
+        "Json",
+        "Raw",
+        "FormData",
+        "Text"
       ]
     },
     "v1.ComponentConfiguration": {
@@ -1487,46 +503,107 @@
         "component"
       ]
     },
-    "v1.InterfaceBinding": {
-      "$anchor": "v1.InterfaceBinding",
+    "v1.ComponentDefinition": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.GrpcUrlComponent"
+        },
+        {
+          "$ref": "#/$defs/v1.ManifestComponent"
+        },
+        {
+          "$ref": "#/$defs/v1.ComponentReference"
+        },
+        {
+          "$ref": "#/$defs/v1.SqlComponent"
+        },
+        {
+          "$ref": "#/$defs/v1.HttpClientComponent"
+        }
+      ]
+    },
+    "v1.ComponentKind": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.WasmComponentConfiguration"
+        },
+        {
+          "$ref": "#/$defs/v1.CompositeComponentConfiguration"
+        },
+        {
+          "$ref": "#/$defs/v1.SqlComponent"
+        },
+        {
+          "$ref": "#/$defs/v1.HttpClientComponent"
+        }
+      ]
+    },
+    "v1.ComponentOperationExpression": {
+      "$anchor": "v1.ComponentOperationExpression",
       "additionalProperties": false,
       "type": "object",
       "properties": {
+        "component": {
+          "description": "The component that exports the operation.",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/v1.ComponentDefinition"
+            }
+          ]
+        },
         "name": {
-          "description": "The name of the interface.",
+          "description": "The operation name.",
           "type": "string"
         },
-        "interface": {
-          "description": "The interface to bind to.",
-          "$ref": "#/$defs/v1.InterfaceDefinition"
+        "with": {
+          "description": "Configuration to pass to this operation on invocation.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1.LiquidJsonValue"
+            }
+          }
+        },
+        "timeout": {
+          "description": "Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely.",
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
         }
       },
       "required": [
-        "name",
-        "interface"
+        "component",
+        "name"
       ]
     },
-    "v1.InterfaceDefinition": {
-      "$anchor": "v1.InterfaceDefinition",
+    "v1.ComponentReference": {
+      "$anchor": "v1.ComponentReference",
       "additionalProperties": false,
       "type": "object",
       "properties": {
-        "types": {
-          "description": "Types used by the interface&#x27;s operations",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.TypeDefinition"
-          }
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/component/reference@v1"
+          ]
         },
-        "operations": {
-          "description": "A list of operations defined by this interface.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.OperationDefinition"
-          }
+        "id": {
+          "description": "The id of the referenced component.",
+          "type": "string"
         }
       },
-      "required": []
+      "required": [
+        "id"
+      ]
     },
     "v1.CompositeComponentConfiguration": {
       "$anchor": "v1.CompositeComponentConfiguration",
@@ -1563,338 +640,6 @@
         }
       },
       "required": []
-    },
-    "v1.WasmComponentConfiguration": {
-      "$anchor": "v1.WasmComponentConfiguration",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/component/wasmrs@v1"
-          ]
-        },
-        "ref": {
-          "description": "The path or OCI reference to the WebAssembly module",
-          "type": "string"
-        },
-        "volumes": {
-          "description": "Volumes to expose to the component.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.ExposedVolume"
-          }
-        },
-        "max_packet_size": {
-          "description": "The default size to allocate to the component&#x27;s send/receive buffer.",
-          "oneOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "with": {
-          "description": "Configuration necessary to provide when instantiating the component.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Field"
-          }
-        },
-        "operations": {
-          "description": "A list of operations implemented by the WebAssembly module.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.OperationDefinition"
-          }
-        }
-      },
-      "required": [
-        "ref"
-      ]
-    },
-    "v1.ExposedVolume": {
-      "$anchor": "v1.ExposedVolume",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "resource": {
-          "description": "The resource ID of the volume.",
-          "type": "string"
-        },
-        "path": {
-          "description": "The path to map it to in the component.",
-          "type": "string"
-        }
-      },
-      "required": [
-        "resource",
-        "path"
-      ]
-    },
-    "v1.ComponentKind": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.WasmComponentConfiguration"
-        },
-        {
-          "$ref": "#/$defs/v1.CompositeComponentConfiguration"
-        },
-        {
-          "$ref": "#/$defs/v1.SqlComponent"
-        },
-        {
-          "$ref": "#/$defs/v1.HttpClientComponent"
-<<<<<<< HEAD
-        },
-        {
-          "$ref": "#/$defs/v1.WebSocketClientComponent"
-=======
->>>>>>> 7ca53308 (feat: added optional directory listing for the static server)
-        }
-      ]
-    },
-    "v1.ImportDefinition": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.TypesComponent"
-        },
-        {
-          "$ref": "#/$defs/v1.ManifestComponent"
-        },
-        {
-          "$ref": "#/$defs/v1.SqlComponent"
-        },
-        {
-          "$ref": "#/$defs/v1.HttpClientComponent"
-<<<<<<< HEAD
-        },
-        {
-          "$ref": "#/$defs/v1.WebSocketClientComponent"
-=======
->>>>>>> 7ca53308 (feat: added optional directory listing for the static server)
-        }
-      ]
-    },
-    "v1.ComponentDefinition": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.GrpcUrlComponent"
-        },
-        {
-          "$ref": "#/$defs/v1.ManifestComponent"
-        },
-        {
-          "$ref": "#/$defs/v1.ComponentReference"
-        },
-        {
-          "$ref": "#/$defs/v1.SqlComponent"
-        },
-        {
-          "$ref": "#/$defs/v1.HttpClientComponent"
-<<<<<<< HEAD
-        },
-        {
-          "$ref": "#/$defs/v1.WebSocketClientComponent"
-=======
->>>>>>> 7ca53308 (feat: added optional directory listing for the static server)
-        }
-      ]
-    },
-    "v1.TypesComponent": {
-      "$anchor": "v1.TypesComponent",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/component/types@v1"
-          ]
-        },
-        "ref": {
-          "description": "The URL (and optional tag) or local file path to find the types manifest.",
-          "type": "string"
-        },
-        "types": {
-          "description": "The types to import from the manifest.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "ref"
-      ]
-    },
-    "v1.ComponentReference": {
-      "$anchor": "v1.ComponentReference",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/component/reference@v1"
-          ]
-        },
-        "id": {
-          "description": "The id of the referenced component.",
-          "type": "string"
-        }
-      },
-      "required": [
-        "id"
-      ]
-    },
-    "v1.HostConfig": {
-      "$anchor": "v1.HostConfig",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "allow_latest": {
-          "description": "Whether or not to allow the &#x60;:latest&#x60; tag on remote artifacts.",
-          "type": "boolean"
-        },
-        "insecure_registries": {
-          "description": "A list of registries to connect to insecurely (over HTTP vs HTTPS).",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "rpc": {
-          "description": "Configuration for the GRPC server.",
-          "$ref": "#/$defs/v1.HttpConfig"
-        }
-      },
-      "required": []
-    },
-    "v1.HttpConfig": {
-      "$anchor": "v1.HttpConfig",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "description": "Enable/disable the server.",
-          "type": "boolean"
-        },
-        "port": {
-          "description": "The port to bind to.",
-          "oneOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "address": {
-          "description": "The address to bind to.",
-          "type": "string"
-        },
-        "pem": {
-          "description": "Path to pem file for TLS.",
-          "type": "string"
-        },
-        "key": {
-          "description": "Path to key file for TLS.",
-          "type": "string"
-        },
-        "ca": {
-          "description": "Path to CA file.",
-          "type": "string"
-        }
-      },
-      "required": []
-    },
-    "v1.GrpcUrlComponent": {
-      "$anchor": "v1.GrpcUrlComponent",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/component/grpc@v1"
-          ]
-        },
-        "url": {
-          "description": "The GRPC URL to connect to.",
-          "type": "string"
-        },
-        "with": {
-          "description": "Any configuration necessary for the component.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "$ref": "#/$defs/v1.LiquidJsonValue"
-            }
-          }
-        }
-      },
-      "required": [
-        "url"
-      ]
-    },
-    "v1.ManifestComponent": {
-      "$anchor": "v1.ManifestComponent",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/component/manifest@v1"
-          ]
-        },
-        "ref": {
-          "description": "The URL (and optional tag) or local file path to find the manifest.",
-          "type": "string"
-        },
-        "with": {
-          "description": "Any configuration necessary for the component.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "$ref": "#/$defs/v1.LiquidJsonValue"
-            }
-          }
-        },
-        "provide": {
-          "description": "External components to provide to the referenced component.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "type": "string"
-            }
-          }
-        },
-        "max_packet_size": {
-          "description": "If applicable, the default size to allocate to the component&#x27;s send/receive buffer.",
-          "oneOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "ref"
-      ]
     },
     "v1.CompositeOperationDefinition": {
       "$anchor": "v1.CompositeOperationDefinition",
@@ -1950,35 +695,6 @@
       },
       "required": []
     },
-    "v1.FlowExpression": {
-      "oneOf": [
-        {
-          "type": "string"
-        },
-        {
-          "$ref": "#/$defs/v1.ConnectionDefinition"
-        },
-        {
-          "$ref": "#/$defs/v1.BlockExpression"
-        }
-      ]
-    },
-    "v1.BlockExpression": {
-      "$anchor": "v1.BlockExpression",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "expressions": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.FlowExpression"
-          }
-        }
-      },
-      "required": [
-        "expressions"
-      ]
-    },
     "v1.ConnectionDefinition": {
       "$anchor": "v1.ConnectionDefinition",
       "additionalProperties": false,
@@ -2025,180 +741,25 @@
         "instance"
       ]
     },
-    "v1.OperationDefinition": {
-      "$anchor": "v1.OperationDefinition",
+    "v1.Contact": {
+      "$anchor": "v1.Contact",
       "additionalProperties": false,
       "type": "object",
       "properties": {
         "name": {
-          "description": "The name of the operation.",
+          "description": "The name of the contact.",
           "type": "string"
         },
-        "with": {
-          "description": "Any configuration required by the operation.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Field"
-          }
+        "url": {
+          "description": "The URL to the contact.",
+          "type": "string"
         },
-        "inputs": {
-          "description": "Types of the inputs to the operation.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Field"
-          }
-        },
-        "outputs": {
-          "description": "Types of the outputs to the operation.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Field"
-          }
+        "email": {
+          "description": "The email address of the contact.",
+          "type": "string"
         }
       },
       "required": []
-    },
-    "v1.Field": {
-      "$anchor": "v1.Field",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the field.",
-          "type": "string"
-        },
-        "type": {
-          "description": "The type signature of the field.",
-          "$ref": "#/$defs/v1.TypeSignature"
-        },
-        "description": {
-          "description": "The description of the field.",
-          "type": "string"
-        }
-      },
-      "required": [
-        "name",
-        "type"
-      ]
-    },
-    "v1.TypeSignature": {
-      "oneOf": [
-        {
-          "type": "string"
-        }
-      ]
-    },
-    "v1.I8": {
-      "$anchor": "v1.I8",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "i8"
-      ]
-    },
-    "v1.I16": {
-      "$anchor": "v1.I16",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "i16"
-      ]
-    },
-    "v1.I32": {
-      "$anchor": "v1.I32",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "i32"
-      ]
-    },
-    "v1.I64": {
-      "$anchor": "v1.I64",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "i64"
-      ]
-    },
-    "v1.U8": {
-      "$anchor": "v1.U8",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "u8"
-      ]
-    },
-    "v1.U16": {
-      "$anchor": "v1.U16",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "u16"
-      ]
-    },
-    "v1.U32": {
-      "$anchor": "v1.U32",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "u32"
-      ]
-    },
-    "v1.U64": {
-      "$anchor": "v1.U64",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "u64"
-      ]
-    },
-    "v1.F32": {
-      "$anchor": "v1.F32",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "f32"
-      ]
-    },
-    "v1.F64": {
-      "$anchor": "v1.F64",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "f64"
-      ]
-    },
-    "v1.Bool": {
-      "$anchor": "v1.Bool",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "i8"
-      ]
-    },
-    "v1.StringType": {
-      "$anchor": "v1.StringType",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "string"
-      ]
-    },
-    "v1.Datetime": {
-      "$anchor": "v1.Datetime",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "datetime"
-      ]
-    },
-    "v1.Bytes": {
-      "$anchor": "v1.Bytes",
-      "additionalProperties": false,
-      "type": "string",
-      "enum": [
-        "bytes"
-      ]
     },
     "v1.Custom": {
       "$anchor": "v1.Custom",
@@ -2212,125 +773,25 @@
       },
       "required": []
     },
-    "v1.Optional": {
-      "$anchor": "v1.Optional",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "type": {
-          "$ref": "#/$defs/v1.TypeSignature"
-        }
-      },
-      "required": [
-        "type"
-      ]
-    },
-    "v1.List": {
-      "$anchor": "v1.List",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "type": {
-          "$ref": "#/$defs/v1.TypeSignature"
-        }
-      },
-      "required": [
-        "type"
-      ]
-    },
-    "v1.Map": {
-      "$anchor": "v1.Map",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "key": {
-          "$ref": "#/$defs/v1.TypeSignature"
-        },
-        "value": {
-          "$ref": "#/$defs/v1.TypeSignature"
-        }
-      },
-      "required": [
-        "key",
-        "value"
-      ]
-    },
-    "v1.Object": {
-      "$anchor": "v1.Object",
+    "v1.Datetime": {
+      "$anchor": "v1.Datetime",
       "additionalProperties": false,
       "type": "string",
       "enum": [
-        "object"
+        "datetime"
       ]
     },
-    "v1.TypeDefinition": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.StructSignature"
-        },
-        {
-          "$ref": "#/$defs/v1.EnumSignature"
-        },
-        {
-          "$ref": "#/$defs/v1.UnionSignature"
-        }
-      ]
-    },
-    "v1.StructSignature": {
-      "$anchor": "v1.StructSignature",
+    "v1.Documentation": {
+      "$anchor": "v1.Documentation",
       "additionalProperties": false,
       "type": "object",
       "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/type/struct@v1"
-          ]
-        },
-        "name": {
-          "description": "The name of the struct.",
+        "url": {
+          "description": "The URL to the API&#x27;s documentation.",
           "type": "string"
-        },
-        "fields": {
-          "description": "The fields in this struct.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Field"
-          }
         },
         "description": {
-          "description": "The description of the struct.",
-          "type": "string"
-        }
-      },
-      "required": []
-    },
-    "v1.UnionSignature": {
-      "$anchor": "v1.UnionSignature",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string",
-          "description": "The kind of the collection",
-          "enum": [
-            "wick/type/union@v1"
-          ]
-        },
-        "name": {
-          "description": "The name of the union.",
-          "type": "string"
-        },
-        "types": {
-          "description": "The types in the union.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.TypeSignature"
-          }
-        },
-        "description": {
-          "description": "The description of the union.",
+          "description": "A short description of the documentation.",
           "type": "string"
         }
       },
@@ -2397,228 +858,12 @@
       },
       "required": []
     },
-    "v1.OperationInstance": {
-      "$anchor": "v1.OperationInstance",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the binding.",
-          "type": "string"
-        },
-        "operation": {
-          "description": "The operation to bind to.",
-          "oneOf": [
-            {
-              "type": "string"
-            },
-            {
-              "$ref": "#/$defs/v1.ComponentOperationExpression"
-            }
-          ]
-        },
-        "with": {
-          "description": "Data to associate with the reference, if any.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "$ref": "#/$defs/v1.LiquidJsonValue"
-            }
-          }
-        },
-        "timeout": {
-          "description": "Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely.",
-          "oneOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "name",
-        "operation"
-      ]
-    },
-    "v1.TestDefinition": {
-      "$anchor": "v1.TestDefinition",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the test.",
-          "type": "string"
-        },
-        "operation": {
-          "description": "The operaton to test.",
-          "type": "string"
-        },
-        "inherent": {
-          "description": "Inherent data to use for the test.",
-          "$ref": "#/$defs/v1.InherentData"
-        },
-        "with": {
-          "description": "The configuration for the operation, if any.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "$ref": "#/$defs/v1.LiquidJsonValue"
-            }
-          }
-        },
-        "inputs": {
-          "description": "The inputs to the test.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.PacketData"
-          }
-        },
-        "outputs": {
-          "description": "The expected outputs of the operation.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.TestPacketData"
-          }
-        }
-      },
-      "required": [
-        "operation"
-      ]
-    },
-    "v1.InherentData": {
-      "$anchor": "v1.InherentData",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "seed": {
-          "description": "A random seed, i.e. to initialize a random number generator.",
-          "oneOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "timestamp": {
-          "description": "A timestamp.",
-          "oneOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": []
-    },
-    "v1.PacketData": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.SuccessPacket"
-        },
-        {
-          "$ref": "#/$defs/v1.ErrorPacket"
-        }
-      ]
-    },
-    "v1.TestPacketData": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.SuccessPacket"
-        },
-        {
-          "$ref": "#/$defs/v1.PacketAssertionDef"
-        },
-        {
-          "$ref": "#/$defs/v1.ErrorPacket"
-        }
-      ]
-    },
-    "v1.SuccessPacket": {
-      "$anchor": "v1.SuccessPacket",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the input or output this packet is going to or coming from.",
-          "type": "string"
-        },
-        "flags": {
-          "description": "Any flags set on the packet. Deprecated, use &#x27;flag:&#x27; instead",
-          "$ref": "#/$defs/v1.PacketFlags"
-        },
-        "flag": {
-          "description": "The flag set on the packet.",
-          "$ref": "#/$defs/v1.PacketFlag"
-        },
-        "value": {
-          "description": "The packet payload.",
-          "$ref": "#/$defs/v1.LiquidJsonValue"
-        }
-      },
-      "required": [
-        "name"
-      ]
-    },
-    "v1.PacketAssertionDef": {
-      "$anchor": "v1.PacketAssertionDef",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the input or output this packet is going to or coming from.",
-          "type": "string"
-        },
-        "assertions": {
-          "description": "An assertion to test against the packet.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.PacketAssertion"
-          }
-        }
-      },
-      "required": [
-        "name"
-      ]
-    },
-    "v1.PacketAssertion": {
-      "$anchor": "v1.PacketAssertion",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "path": {
-          "description": "The optional path to a value in the packet to assert against.",
-          "type": "string"
-        },
-        "operator": {
-          "description": "The operation to use when asserting against a packet.",
-          "$ref": "#/$defs/v1.AssertionOperator"
-        },
-        "value": {
-          "description": "A value or object combine with the operator to assert against a packet value.",
-          "$ref": "#/$defs/v1.LiquidJsonValue"
-        }
-      },
-      "required": [
-        "operator",
-        "value"
-      ]
-    },
-    "v1.AssertionOperator": {
-      "$anchor": "v1.AssertionOperator",
+    "v1.ErrorBehavior": {
+      "$anchor": "v1.ErrorBehavior",
       "enum": [
-        "Equals",
-        "LessThan",
-        "GreaterThan",
-        "Regex",
-        "Contains"
+        "Ignore",
+        "Commit",
+        "Rollback"
       ]
     },
     "v1.ErrorPacket": {
@@ -2648,36 +893,82 @@
         "error"
       ]
     },
-    "v1.PacketFlags": {
-      "$anchor": "v1.PacketFlags",
+    "v1.ExposedVolume": {
+      "$anchor": "v1.ExposedVolume",
       "additionalProperties": false,
       "type": "object",
       "properties": {
-        "done": {
-          "description": "Indicates the port should be considered closed.",
-          "type": "boolean"
+        "resource": {
+          "description": "The resource ID of the volume.",
+          "type": "string"
         },
-        "open": {
-          "description": "Indicates the opening of a new substream context within the parent stream.",
-          "type": "boolean"
-        },
-        "close": {
-          "description": "Indicates the closing of a substream context within the parent stream.",
-          "type": "boolean"
+        "path": {
+          "description": "The path to map it to in the component.",
+          "type": "string"
         }
       },
-      "required": []
-    },
-    "v1.PacketFlag": {
-      "$anchor": "v1.PacketFlag",
-      "enum": [
-        "Done",
-        "Open",
-        "Close"
+      "required": [
+        "resource",
+        "path"
       ]
     },
-    "v1.SqlComponent": {
-      "$anchor": "v1.SqlComponent",
+    "v1.F32": {
+      "$anchor": "v1.F32",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "f32"
+      ]
+    },
+    "v1.F64": {
+      "$anchor": "v1.F64",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "f64"
+      ]
+    },
+    "v1.Field": {
+      "$anchor": "v1.Field",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the field.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type signature of the field.",
+          "$ref": "#/$defs/v1.TypeSignature"
+        },
+        "description": {
+          "description": "The description of the field.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ]
+    },
+    "v1.FlowExpression": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/v1.ConnectionDefinition"
+        },
+        {
+          "$ref": "#/$defs/v1.BlockExpression"
+        }
+      ]
+    },
+    "v1.Glob": {
+      "type": "string"
+    },
+    "v1.GrpcUrlComponent": {
+      "$anchor": "v1.GrpcUrlComponent",
       "additionalProperties": false,
       "type": "object",
       "properties": {
@@ -2685,151 +976,49 @@
           "type": "string",
           "description": "The kind of the collection",
           "enum": [
-            "wick/component/sql@v1"
+            "wick/component/grpc@v1"
           ]
         },
-        "resource": {
-          "description": "The connect string URL resource for the database.",
+        "url": {
+          "description": "The GRPC URL to connect to.",
           "type": "string"
         },
-        "tls": {
-          "description": "Whether or not to use TLS.",
+        "with": {
+          "description": "Any configuration necessary for the component.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1.LiquidJsonValue"
+            }
+          }
+        }
+      },
+      "required": [
+        "url"
+      ]
+    },
+    "v1.HostConfig": {
+      "$anchor": "v1.HostConfig",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "allow_latest": {
+          "description": "Whether or not to allow the &#x60;:latest&#x60; tag on remote artifacts.",
           "type": "boolean"
         },
-        "with": {
-          "description": "Configuration necessary to provide when instantiating the component.",
+        "insecure_registries": {
+          "description": "A list of registries to connect to insecurely (over HTTP vs HTTPS).",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/v1.Field"
+            "type": "string"
           }
         },
-        "operations": {
-          "description": "A list of operations to expose on this component.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.SqlQueryKind"
-          }
+        "rpc": {
+          "description": "Configuration for the GRPC server.",
+          "$ref": "#/$defs/v1.HttpConfig"
         }
       },
       "required": []
-    },
-    "v1.SqlQueryKind": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/v1.SqlQueryOperationDefinition"
-        },
-        {
-          "$ref": "#/$defs/v1.SqlExecOperationDefinition"
-        }
-      ]
-    },
-    "v1.SqlQueryOperationDefinition": {
-      "$anchor": "v1.SqlQueryOperationDefinition",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the operation.",
-          "type": "string"
-        },
-        "with": {
-          "description": "Any configuration required by the operation.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Field"
-          }
-        },
-        "inputs": {
-          "description": "Types of the inputs to the operation.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Field"
-          }
-        },
-        "outputs": {
-          "description": "Types of the outputs to the operation.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Field"
-          }
-        },
-        "query": {
-          "description": "The query to execute.",
-          "type": "string"
-        },
-        "arguments": {
-          "description": "The positional arguments to the query, defined as a list of input names.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "on_error": {
-          "description": "What to do when an error occurs.",
-          "$ref": "#/$defs/v1.ErrorBehavior"
-        }
-      },
-      "required": [
-        "query"
-      ]
-    },
-    "v1.SqlExecOperationDefinition": {
-      "$anchor": "v1.SqlExecOperationDefinition",
-      "additionalProperties": false,
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "The name of the operation.",
-          "type": "string"
-        },
-        "with": {
-          "description": "Any configuration required by the operation.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Field"
-          }
-        },
-        "inputs": {
-          "description": "Types of the inputs to the operation.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Field"
-          }
-        },
-        "outputs": {
-          "description": "Types of the outputs to the operation.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v1.Field"
-          }
-        },
-        "exec": {
-          "description": "The query to execute.",
-          "type": "string"
-        },
-        "arguments": {
-          "description": "The positional arguments to the query, defined as a list of input names.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "on_error": {
-          "description": "What to do when an error occurs.",
-          "$ref": "#/$defs/v1.ErrorBehavior"
-        }
-      },
-      "required": [
-        "exec"
-      ]
-    },
-    "v1.ErrorBehavior": {
-      "$anchor": "v1.ErrorBehavior",
-      "enum": [
-        "Ignore",
-        "Commit",
-        "Rollback"
-      ]
     },
     "v1.HttpClientComponent": {
       "$anchor": "v1.HttpClientComponent",
@@ -2922,14 +1111,44 @@
       },
       "required": []
     },
-    "v1.Codec": {
-      "$anchor": "v1.Codec",
-      "enum": [
-        "Json",
-        "Raw",
-        "FormData",
-        "Text"
-      ]
+    "v1.HttpConfig": {
+      "$anchor": "v1.HttpConfig",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Enable/disable the server.",
+          "type": "boolean"
+        },
+        "port": {
+          "description": "The port to bind to.",
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "address": {
+          "description": "The address to bind to.",
+          "type": "string"
+        },
+        "pem": {
+          "description": "Path to pem file for TLS.",
+          "type": "string"
+        },
+        "key": {
+          "description": "Path to key file for TLS.",
+          "type": "string"
+        },
+        "ca": {
+          "description": "Path to CA file.",
+          "type": "string"
+        }
+      },
+      "required": []
     },
     "v1.HttpMethod": {
       "$anchor": "v1.HttpMethod",
@@ -2939,10 +1158,25 @@
         "Put",
         "Delete"
       ]
-<<<<<<< HEAD
     },
-    "v1.WebSocketClientComponent": {
-      "$anchor": "v1.WebSocketClientComponent",
+    "v1.HttpRouter": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.RawRouter"
+        },
+        {
+          "$ref": "#/$defs/v1.RestRouter"
+        },
+        {
+          "$ref": "#/$defs/v1.StaticRouter"
+        },
+        {
+          "$ref": "#/$defs/v1.ProxyRouter"
+        }
+      ]
+    },
+    "v1.HttpTrigger": {
+      "$anchor": "v1.HttpTrigger",
       "additionalProperties": false,
       "type": "object",
       "properties": {
@@ -2950,44 +1184,439 @@
           "type": "string",
           "description": "The kind of the collection",
           "enum": [
-            "wick/component/websocket@v1"
+            "wick/trigger/http@v1"
           ]
         },
         "resource": {
-          "description": "The URL of the WebSocket server.",
+          "description": "The TcpPort resource to listen on for connections.",
           "type": "string"
         },
-        "with": {
-          "description": "Configuration necessary to provide when instantiating the component.",
+        "routers": {
+          "description": "The router to handle incoming requests",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/v1.Field"
+            "$ref": "#/$defs/v1.HttpRouter"
           }
+        }
+      },
+      "required": [
+        "resource"
+      ]
+    },
+    "v1.I16": {
+      "$anchor": "v1.I16",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "i16"
+      ]
+    },
+    "v1.I32": {
+      "$anchor": "v1.I32",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "i32"
+      ]
+    },
+    "v1.I64": {
+      "$anchor": "v1.I64",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "i64"
+      ]
+    },
+    "v1.I8": {
+      "$anchor": "v1.I8",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "i8"
+      ]
+    },
+    "v1.ImportBinding": {
+      "$anchor": "v1.ImportBinding",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the binding.",
+          "type": "string"
         },
-        "headers": {
-          "description": "Any headers to add to the initial connection request.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
+        "component": {
+          "description": "The import to bind to.",
+          "$ref": "#/$defs/v1.ImportDefinition"
+        }
+      },
+      "required": [
+        "name",
+        "component"
+      ]
+    },
+    "v1.ImportDefinition": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.TypesComponent"
+        },
+        {
+          "$ref": "#/$defs/v1.ManifestComponent"
+        },
+        {
+          "$ref": "#/$defs/v1.SqlComponent"
+        },
+        {
+          "$ref": "#/$defs/v1.HttpClientComponent"
+        }
+      ]
+    },
+    "v1.Info": {
+      "$anchor": "v1.Info",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "title": {
+          "description": "The title of the API.",
+          "type": "string"
+        },
+        "description": {
+          "description": "A short description of the API.",
+          "type": "string"
+        },
+        "tos": {
+          "description": "The terms of service for the API.",
+          "type": "string"
+        },
+        "contact": {
+          "description": "The contact information for the API.",
+          "$ref": "#/$defs/v1.Contact"
+        },
+        "license": {
+          "description": "The license information for the API.",
+          "$ref": "#/$defs/v1.License"
+        },
+        "version": {
+          "description": "The version of the API.",
+          "type": "string"
+        },
+        "documentation": {
+          "description": "The URL to the API&#x27;s terms of service.",
+          "$ref": "#/$defs/v1.Documentation"
+        }
+      },
+      "required": []
+    },
+    "v1.InherentData": {
+      "$anchor": "v1.InherentData",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "seed": {
+          "description": "A random seed, i.e. to initialize a random number generator.",
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
             }
+          ]
+        },
+        "timestamp": {
+          "description": "A timestamp.",
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": []
+    },
+    "v1.InterfaceBinding": {
+      "$anchor": "v1.InterfaceBinding",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the interface.",
+          "type": "string"
+        },
+        "interface": {
+          "description": "The interface to bind to.",
+          "$ref": "#/$defs/v1.InterfaceDefinition"
+        }
+      },
+      "required": [
+        "name",
+        "interface"
+      ]
+    },
+    "v1.InterfaceDefinition": {
+      "$anchor": "v1.InterfaceDefinition",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "types": {
+          "description": "Types used by the interface&#x27;s operations",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.TypeDefinition"
           }
         },
         "operations": {
-          "description": "A list of operations to expose on this component.",
+          "description": "A list of operations defined by this interface.",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/v1.WebSocketClientOperationDefinition"
+            "$ref": "#/$defs/v1.OperationDefinition"
           }
         }
       },
       "required": []
     },
-    "v1.WebSocketClientOperationDefinition": {
-      "$anchor": "v1.WebSocketClientOperationDefinition",
+    "v1.License": {
+      "$anchor": "v1.License",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the license.",
+          "type": "string"
+        },
+        "url": {
+          "description": "The URL to the license.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "v1.LiquidJsonValue": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "v1.LiquidTemplate": {
+      "type": "string"
+    },
+    "v1.List": {
+      "$anchor": "v1.List",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/v1.TypeSignature"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "v1.LocationReference": {
+      "type": "string"
+    },
+    "v1.LockdownConfiguration": {
+      "$anchor": "v1.LockdownConfiguration",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/lockdown@v1"
+          ]
+        },
+        "metadata": {
+          "description": "Associated metadata for this configuration.",
+          "$ref": "#/$defs/v1.Metadata"
+        },
+        "resources": {
+          "description": "Restrictions to apply to resources before an application or component can be run.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.ResourceRestriction"
+          }
+        }
+      },
+      "required": []
+    },
+    "v1.ManifestComponent": {
+      "$anchor": "v1.ManifestComponent",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/component/manifest@v1"
+          ]
+        },
+        "ref": {
+          "description": "The URL (and optional tag) or local file path to find the manifest.",
+          "type": "string"
+        },
+        "with": {
+          "description": "Any configuration necessary for the component.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1.LiquidJsonValue"
+            }
+          }
+        },
+        "provide": {
+          "description": "External components to provide to the referenced component.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "type": "string"
+            }
+          }
+        },
+        "max_packet_size": {
+          "description": "If applicable, the default size to allocate to the component&#x27;s send/receive buffer.",
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "ref"
+      ]
+    },
+    "v1.Map": {
+      "$anchor": "v1.Map",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/v1.TypeSignature"
+        },
+        "value": {
+          "$ref": "#/$defs/v1.TypeSignature"
+        }
+      },
+      "required": [
+        "key",
+        "value"
+      ]
+    },
+    "v1.Metadata": {
+      "$anchor": "v1.Metadata",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "version": {
+          "description": "The version of the artifact.",
+          "type": "string"
+        },
+        "authors": {
+          "description": "A list of the authors.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "vendors": {
+          "description": "A list of any vendors associated with the artifact.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "description": "A short description.",
+          "type": "string"
+        },
+        "documentation": {
+          "description": "Where to find documentation.",
+          "type": "string"
+        },
+        "licenses": {
+          "description": "The license(s) for the artifact.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "icon": {
+          "description": "An icon to associate with the artifact.",
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "v1.Middleware": {
+      "$anchor": "v1.Middleware",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "request": {
+          "description": "The middleware to apply to requests.",
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/v1.ComponentOperationExpression"
+              }
+            ]
+          }
+        },
+        "response": {
+          "description": "The middleware to apply to responses.",
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/v1.ComponentOperationExpression"
+              }
+            ]
+          }
+        }
+      },
+      "required": []
+    },
+    "v1.Object": {
+      "$anchor": "v1.Object",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "object"
+      ]
+    },
+    "v1.OperationDefinition": {
+      "$anchor": "v1.OperationDefinition",
       "additionalProperties": false,
       "type": "object",
       "properties": {
@@ -3009,44 +1638,1307 @@
             "$ref": "#/$defs/v1.Field"
           }
         },
+        "outputs": {
+          "description": "Types of the outputs to the operation.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.Field"
+          }
+        }
+      },
+      "required": []
+    },
+    "v1.OperationInput": {
+      "$anchor": "v1.OperationInput",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the input.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value to pass."
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ]
+    },
+    "v1.OperationInstance": {
+      "$anchor": "v1.OperationInstance",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the binding.",
+          "type": "string"
+        },
+        "operation": {
+          "description": "The operation to bind to.",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/v1.ComponentOperationExpression"
+            }
+          ]
+        },
+        "with": {
+          "description": "Data to associate with the reference, if any.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1.LiquidJsonValue"
+            }
+          }
+        },
+        "timeout": {
+          "description": "Timeout (in milliseconds) to wait for the operation to complete. Use 0 to wait indefinitely.",
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "operation"
+      ]
+    },
+    "v1.Optional": {
+      "$anchor": "v1.Optional",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/v1.TypeSignature"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "v1.PackageDefinition": {
+      "$anchor": "v1.PackageDefinition",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "files": {
+          "description": "The list of files and folders to be included with the package.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "registry": {
+          "description": "Configuration for publishing the package to a registry.",
+          "$ref": "#/$defs/v1.RegistryDefinition"
+        }
+      },
+      "required": []
+    },
+    "v1.PacketAssertion": {
+      "$anchor": "v1.PacketAssertion",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "path": {
+          "description": "The optional path to a value in the packet to assert against.",
+          "type": "string"
+        },
+        "operator": {
+          "description": "The operation to use when asserting against a packet.",
+          "$ref": "#/$defs/v1.AssertionOperator"
+        },
+        "value": {
+          "description": "A value or object combine with the operator to assert against a packet value.",
+          "$ref": "#/$defs/v1.LiquidJsonValue"
+        }
+      },
+      "required": [
+        "operator",
+        "value"
+      ]
+    },
+    "v1.PacketAssertionDef": {
+      "$anchor": "v1.PacketAssertionDef",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the input or output this packet is going to or coming from.",
+          "type": "string"
+        },
+        "assertions": {
+          "description": "An assertion to test against the packet.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.PacketAssertion"
+          }
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "v1.PacketData": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.SuccessPacket"
+        },
+        {
+          "$ref": "#/$defs/v1.ErrorPacket"
+        }
+      ]
+    },
+    "v1.PacketFlag": {
+      "$anchor": "v1.PacketFlag",
+      "enum": [
+        "Done",
+        "Open",
+        "Close"
+      ]
+    },
+    "v1.PacketFlags": {
+      "$anchor": "v1.PacketFlags",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "done": {
+          "description": "Indicates the port should be considered closed.",
+          "type": "boolean"
+        },
+        "open": {
+          "description": "Indicates the opening of a new substream context within the parent stream.",
+          "type": "boolean"
+        },
+        "close": {
+          "description": "Indicates the closing of a substream context within the parent stream.",
+          "type": "boolean"
+        }
+      },
+      "required": []
+    },
+    "v1.ProxyRouter": {
+      "$anchor": "v1.ProxyRouter",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/router/proxy@v1"
+          ]
+        },
+        "path": {
+          "description": "The path that this router will trigger for.",
+          "type": "string"
+        },
+        "middleware": {
+          "description": "Middleware operations for this router.",
+          "$ref": "#/$defs/v1.Middleware"
+        },
+        "url": {
+          "description": "The URL resource to proxy to.",
+          "type": "string"
+        },
+        "strip_path": {
+          "description": "Whether or not to strip the router&#x27;s path from the proxied request.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path",
+        "url"
+      ]
+    },
+    "v1.RawRouter": {
+      "$anchor": "v1.RawRouter",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/router/raw@v1"
+          ]
+        },
+        "path": {
+          "description": "The path that this router will trigger for.",
+          "type": "string"
+        },
+        "middleware": {
+          "description": "Middleware operations for this router.",
+          "$ref": "#/$defs/v1.Middleware"
+        },
         "codec": {
           "description": "The codec to use when encoding/decoding data.",
           "$ref": "#/$defs/v1.Codec"
         },
-        "outputs": {
-          "description": "Types of the outputs from the operation.",
+        "operation": {
+          "description": "The operation that handles HTTP requests.",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/v1.ComponentOperationExpression"
+            }
+          ]
+        }
+      },
+      "required": [
+        "path",
+        "operation"
+      ]
+    },
+    "v1.RegistryDefinition": {
+      "$anchor": "v1.RegistryDefinition",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "host": {
+          "description": "The registry to publish to, e.g. registry.candle.dev",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "The namespace on the registry. e.g.: [*your username*]",
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "v1.ResourceBinding": {
+      "$anchor": "v1.ResourceBinding",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the binding.",
+          "type": "string"
+        },
+        "resource": {
+          "description": "The resource to bind to.",
+          "$ref": "#/$defs/v1.ResourceDefinition"
+        }
+      },
+      "required": [
+        "name",
+        "resource"
+      ]
+    },
+    "v1.ResourceDefinition": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.TcpPort"
+        },
+        {
+          "$ref": "#/$defs/v1.UdpPort"
+        },
+        {
+          "$ref": "#/$defs/v1.Url"
+        },
+        {
+          "$ref": "#/$defs/v1.Volume"
+        }
+      ]
+    },
+    "v1.ResourceRestriction": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.VolumeRestriction"
+        },
+        {
+          "$ref": "#/$defs/v1.UrlRestriction"
+        },
+        {
+          "$ref": "#/$defs/v1.TcpPortRestriction"
+        },
+        {
+          "$ref": "#/$defs/v1.UdpPortRestriction"
+        }
+      ]
+    },
+    "v1.RestRouter": {
+      "$anchor": "v1.RestRouter",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/router/rest@v1"
+          ]
+        },
+        "path": {
+          "description": "The path that this router will trigger for.",
+          "type": "string"
+        },
+        "tools": {
+          "description": "Additional tools and services to enable.",
+          "$ref": "#/$defs/v1.Tools"
+        },
+        "middleware": {
+          "description": "Middleware operations for this router.",
+          "$ref": "#/$defs/v1.Middleware"
+        },
+        "routes": {
+          "description": "The routes to serve and operations that handle them.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.Route"
+          }
+        },
+        "info": {
+          "description": "Information about the router to use when generating documentation and other tools.",
+          "$ref": "#/$defs/v1.Info"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "v1.Route": {
+      "$anchor": "v1.Route",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "sub_path": {
+          "description": "The path to serve this route from. See [URI documentation](/docs/configuration/uri) for more information on specifying query and path parameters.",
+          "type": "string"
+        },
+        "operation": {
+          "description": "The operation that will act as the main entrypoint for this route.",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/v1.ComponentOperationExpression"
+            }
+          ]
+        },
+        "methods": {
+          "description": "The HTTP methods to serve this route for.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.HttpMethod"
+          }
+        },
+        "id": {
+          "description": "The unique ID of the route, used for documentation and tooling.",
+          "type": "string"
+        },
+        "description": {
+          "description": "A short description of the route.",
+          "type": "string"
+        },
+        "summary": {
+          "description": "A longer description of the route.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sub_path",
+        "operation"
+      ]
+    },
+    "v1.Schedule": {
+      "$anchor": "v1.Schedule",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "cron": {
+          "description": "Schedule in cron format with second precision. See [cron.help](https://cron.help) for more information.",
+          "type": "string"
+        },
+        "repeat": {
+          "description": "repeat &#x60;n&#x60; times. Use &#x60;0&#x60; to repeat indefinitely",
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "cron"
+      ]
+    },
+    "v1.SqlComponent": {
+      "$anchor": "v1.SqlComponent",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/component/sql@v1"
+          ]
+        },
+        "resource": {
+          "description": "The connect string URL resource for the database.",
+          "type": "string"
+        },
+        "tls": {
+          "description": "Whether or not to use TLS.",
+          "type": "boolean"
+        },
+        "with": {
+          "description": "Configuration necessary to provide when instantiating the component.",
           "type": "array",
           "items": {
             "$ref": "#/$defs/v1.Field"
           }
         },
-        "message": {
-          "description": "The message to send, processed as either json, text, or bytes.",
-          "$ref": "#/$defs/v1.LiquidJsonValue"
+        "operations": {
+          "description": "A list of operations to expose on this component.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.SqlQueryKind"
+          }
         }
       },
       "required": []
-=======
->>>>>>> 7ca53308 (feat: added optional directory listing for the static server)
+    },
+    "v1.SqlExecOperationDefinition": {
+      "$anchor": "v1.SqlExecOperationDefinition",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the operation.",
+          "type": "string"
+        },
+        "with": {
+          "description": "Any configuration required by the operation.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.Field"
+          }
+        },
+        "inputs": {
+          "description": "Types of the inputs to the operation.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.Field"
+          }
+        },
+        "outputs": {
+          "description": "Types of the outputs to the operation.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.Field"
+          }
+        },
+        "exec": {
+          "description": "The query to execute.",
+          "type": "string"
+        },
+        "arguments": {
+          "description": "The positional arguments to the query, defined as a list of input names.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "on_error": {
+          "description": "What to do when an error occurs.",
+          "$ref": "#/$defs/v1.ErrorBehavior"
+        }
+      },
+      "required": [
+        "exec"
+      ]
+    },
+    "v1.SqlQueryKind": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.SqlQueryOperationDefinition"
+        },
+        {
+          "$ref": "#/$defs/v1.SqlExecOperationDefinition"
+        }
+      ]
+    },
+    "v1.SqlQueryOperationDefinition": {
+      "$anchor": "v1.SqlQueryOperationDefinition",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the operation.",
+          "type": "string"
+        },
+        "with": {
+          "description": "Any configuration required by the operation.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.Field"
+          }
+        },
+        "inputs": {
+          "description": "Types of the inputs to the operation.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.Field"
+          }
+        },
+        "outputs": {
+          "description": "Types of the outputs to the operation.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.Field"
+          }
+        },
+        "query": {
+          "description": "The query to execute.",
+          "type": "string"
+        },
+        "arguments": {
+          "description": "The positional arguments to the query, defined as a list of input names.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "on_error": {
+          "description": "What to do when an error occurs.",
+          "$ref": "#/$defs/v1.ErrorBehavior"
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    "v1.StaticRouter": {
+      "$anchor": "v1.StaticRouter",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/router/static@v1"
+          ]
+        },
+        "path": {
+          "description": "The path that this router will trigger for.",
+          "type": "string"
+        },
+        "middleware": {
+          "description": "Middleware operations for this router.",
+          "$ref": "#/$defs/v1.Middleware"
+        },
+        "volume": {
+          "description": "The volume to serve static files from.",
+          "type": "string"
+        },
+        "fallback": {
+          "description": "Fallback path (relative to volume &#x60;resource&#x60;) for files to serve in case of a 404. Useful for SPA&#x27;s. if volume resource is: /www and fallback: index.html, then a 404 will serve /www/index.html",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "volume"
+      ]
+    },
+    "v1.StringType": {
+      "$anchor": "v1.StringType",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "string"
+      ]
+    },
+    "v1.StructSignature": {
+      "$anchor": "v1.StructSignature",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/type/struct@v1"
+          ]
+        },
+        "name": {
+          "description": "The name of the struct.",
+          "type": "string"
+        },
+        "fields": {
+          "description": "The fields in this struct.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.Field"
+          }
+        },
+        "description": {
+          "description": "The description of the struct.",
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "v1.SuccessPacket": {
+      "$anchor": "v1.SuccessPacket",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the input or output this packet is going to or coming from.",
+          "type": "string"
+        },
+        "flags": {
+          "description": "Any flags set on the packet. Deprecated, use &#x27;flag:&#x27; instead",
+          "$ref": "#/$defs/v1.PacketFlags"
+        },
+        "flag": {
+          "description": "The flag set on the packet.",
+          "$ref": "#/$defs/v1.PacketFlag"
+        },
+        "value": {
+          "description": "The packet payload.",
+          "$ref": "#/$defs/v1.LiquidJsonValue"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "v1.TcpPort": {
+      "$anchor": "v1.TcpPort",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/resource/tcpport@v1"
+          ]
+        },
+        "port": {
+          "description": "The port to bind to.",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        },
+        "address": {
+          "description": "The address to bind to.",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        }
+      },
+      "required": []
+    },
+    "v1.TcpPortRestriction": {
+      "$anchor": "v1.TcpPortRestriction",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/resource/tcpport@v1"
+          ]
+        },
+        "components": {
+          "description": "The components this restriction applies to",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "address": {
+          "description": "The address to allow",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        },
+        "port": {
+          "description": "The port to allow",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        }
+      },
+      "required": [
+        "address",
+        "port"
+      ]
+    },
+    "v1.TestConfiguration": {
+      "$anchor": "v1.TestConfiguration",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/tests@v1"
+          ]
+        },
+        "name": {
+          "description": "The name of this component.",
+          "type": "string"
+        },
+        "with": {
+          "description": "Configuration used to instantiate this component.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1.LiquidJsonValue"
+            }
+          }
+        },
+        "cases": {
+          "description": "Unit tests to run against components and operations.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.TestDefinition"
+          }
+        }
+      },
+      "required": []
+    },
+    "v1.TestDefinition": {
+      "$anchor": "v1.TestDefinition",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the test.",
+          "type": "string"
+        },
+        "operation": {
+          "description": "The operaton to test.",
+          "type": "string"
+        },
+        "inherent": {
+          "description": "Inherent data to use for the test.",
+          "$ref": "#/$defs/v1.InherentData"
+        },
+        "with": {
+          "description": "The configuration for the operation, if any.",
+          "type": "object",
+          "patternProperties": {
+            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+              "$ref": "#/$defs/v1.LiquidJsonValue"
+            }
+          }
+        },
+        "inputs": {
+          "description": "The inputs to the test.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.PacketData"
+          }
+        },
+        "outputs": {
+          "description": "The expected outputs of the operation.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.TestPacketData"
+          }
+        }
+      },
+      "required": [
+        "operation"
+      ]
+    },
+    "v1.TestPacketData": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.SuccessPacket"
+        },
+        {
+          "$ref": "#/$defs/v1.PacketAssertionDef"
+        },
+        {
+          "$ref": "#/$defs/v1.ErrorPacket"
+        }
+      ]
+    },
+    "v1.TimeTrigger": {
+      "$anchor": "v1.TimeTrigger",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/trigger/time@v1"
+          ]
+        },
+        "schedule": {
+          "description": "The schedule to run the trigger with.",
+          "$ref": "#/$defs/v1.Schedule"
+        },
+        "operation": {
+          "description": "The operation to execute on the schedule.",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/v1.ComponentOperationExpression"
+            }
+          ]
+        },
+        "payload": {
+          "description": "Values passed to the operation as inputs",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.OperationInput"
+          }
+        }
+      },
+      "required": [
+        "schedule",
+        "operation",
+        "payload"
+      ]
+    },
+    "v1.Tools": {
+      "$anchor": "v1.Tools",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "openapi": {
+          "description": "Set to true to generate an OpenAPI specification and serve it at *router_path*/openapi.json",
+          "type": "boolean"
+        }
+      },
+      "required": []
+    },
+    "v1.TriggerDefinition": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.CliTrigger"
+        },
+        {
+          "$ref": "#/$defs/v1.HttpTrigger"
+        },
+        {
+          "$ref": "#/$defs/v1.TimeTrigger"
+        }
+      ]
+    },
+    "v1.TypeDefinition": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.StructSignature"
+        },
+        {
+          "$ref": "#/$defs/v1.EnumSignature"
+        },
+        {
+          "$ref": "#/$defs/v1.UnionSignature"
+        }
+      ]
+    },
+    "v1.TypesComponent": {
+      "$anchor": "v1.TypesComponent",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/component/types@v1"
+          ]
+        },
+        "ref": {
+          "description": "The URL (and optional tag) or local file path to find the types manifest.",
+          "type": "string"
+        },
+        "types": {
+          "description": "The types to import from the manifest.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "ref"
+      ]
+    },
+    "v1.TypesConfiguration": {
+      "$anchor": "v1.TypesConfiguration",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/types@v1"
+          ]
+        },
+        "name": {
+          "description": "The name of this type.",
+          "type": "string"
+        },
+        "metadata": {
+          "description": "Associated metadata for this type.",
+          "$ref": "#/$defs/v1.Metadata"
+        },
+        "types": {
+          "description": "Additional types to export and make available to the type.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.TypeDefinition"
+          }
+        },
+        "operations": {
+          "description": "A list of operation signatures.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.OperationDefinition"
+          }
+        },
+        "package": {
+          "description": "Details about the package for this types.",
+          "$ref": "#/$defs/v1.PackageDefinition"
+        }
+      },
+      "required": []
+    },
+    "v1.TypeSignature": {
+      "oneOf": [
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "v1.U16": {
+      "$anchor": "v1.U16",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "u16"
+      ]
+    },
+    "v1.U32": {
+      "$anchor": "v1.U32",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "u32"
+      ]
+    },
+    "v1.U64": {
+      "$anchor": "v1.U64",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "u64"
+      ]
+    },
+    "v1.U8": {
+      "$anchor": "v1.U8",
+      "additionalProperties": false,
+      "type": "string",
+      "enum": [
+        "u8"
+      ]
+    },
+    "v1.UdpPort": {
+      "$anchor": "v1.UdpPort",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/resource/udpport@v1"
+          ]
+        },
+        "port": {
+          "description": "The port to bind to.",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        },
+        "address": {
+          "description": "The address to bind to.",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        }
+      },
+      "required": []
+    },
+    "v1.UdpPortRestriction": {
+      "$anchor": "v1.UdpPortRestriction",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/resource/udpport@v1"
+          ]
+        },
+        "components": {
+          "description": "The components this restriction applies to",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "address": {
+          "description": "The address to allow",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        },
+        "port": {
+          "description": "The port to allow",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        }
+      },
+      "required": [
+        "address",
+        "port"
+      ]
+    },
+    "v1.UnionSignature": {
+      "$anchor": "v1.UnionSignature",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/type/union@v1"
+          ]
+        },
+        "name": {
+          "description": "The name of the union.",
+          "type": "string"
+        },
+        "types": {
+          "description": "The types in the union.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.TypeSignature"
+          }
+        },
+        "description": {
+          "description": "The description of the union.",
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "v1.Url": {
+      "$anchor": "v1.Url",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/resource/url@v1"
+          ]
+        },
+        "url": {
+          "description": "The url string.",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        }
+      },
+      "required": [
+        "url"
+      ]
+    },
+    "v1.UrlRestriction": {
+      "$anchor": "v1.UrlRestriction",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/resource/url@v1"
+          ]
+        },
+        "components": {
+          "description": "The components this restriction applies to",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allow": {
+          "description": "The URLs to allow",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        }
+      },
+      "required": [
+        "allow"
+      ]
+    },
+    "v1.Volume": {
+      "$anchor": "v1.Volume",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/resource/volume@v1"
+          ]
+        },
+        "path": {
+          "description": "The path.",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "v1.VolumeRestriction": {
+      "$anchor": "v1.VolumeRestriction",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/resource/volume@v1"
+          ]
+        },
+        "components": {
+          "description": "The components this restriction applies to",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allow": {
+          "description": "The volumes to allow",
+          "$ref": "#/$defs/v1.LiquidTemplate"
+        }
+      },
+      "required": [
+        "allow"
+      ]
+    },
+    "v1.WasmComponentConfiguration": {
+      "$anchor": "v1.WasmComponentConfiguration",
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "The kind of the collection",
+          "enum": [
+            "wick/component/wasmrs@v1"
+          ]
+        },
+        "ref": {
+          "description": "The path or OCI reference to the WebAssembly module",
+          "type": "string"
+        },
+        "volumes": {
+          "description": "Volumes to expose to the component.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.ExposedVolume"
+          }
+        },
+        "max_packet_size": {
+          "description": "The default size to allocate to the component&#x27;s send/receive buffer.",
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "with": {
+          "description": "Configuration necessary to provide when instantiating the component.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.Field"
+          }
+        },
+        "operations": {
+          "description": "A list of operations implemented by the WebAssembly module.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/v1.OperationDefinition"
+          }
+        }
+      },
+      "required": [
+        "ref"
+      ]
+    },
+    "v1.WickConfig": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/v1.AppConfiguration"
+        },
+        {
+          "$ref": "#/$defs/v1.ComponentConfiguration"
+        },
+        {
+          "$ref": "#/$defs/v1.TypesConfiguration"
+        },
+        {
+          "$ref": "#/$defs/v1.TestConfiguration"
+        },
+        {
+          "$ref": "#/$defs/v1.LockdownConfiguration"
+        }
+      ]
     }
   },
   "oneOf": [
     {
       "$ref": "#/$defs/v1.AppConfiguration"
+      "$ref": "#/$defs/v1.AppConfiguration"
     },
     {
+      "$ref": "#/$defs/v1.ComponentConfiguration"
       "$ref": "#/$defs/v1.ComponentConfiguration"
     },
     {
       "$ref": "#/$defs/v1.TypesConfiguration"
+      "$ref": "#/$defs/v1.TypesConfiguration"
     },
     {
+      "$ref": "#/$defs/v1.TestConfiguration"
       "$ref": "#/$defs/v1.TestConfiguration"
     },
     {
       "$ref": "#/$defs/v1.LockdownConfiguration"
+      "$ref": "#/$defs/v1.LockdownConfiguration"
     },
     {
+      "$ref": "#/$defs/v0.HostManifest"
       "$ref": "#/$defs/v0.HostManifest"
     }
   ]
