@@ -1,0 +1,23 @@
+
+
+export interface HasKind {
+  getKind: () => string;
+}
+
+{{#each definitions}}
+  {{#switch kind}}
+    {{~#case "ImportDefinition"}}
+      {{~#import from.value}}{{~> module ~}}{{~/import~}}
+    {{~/case~}}
+    {{#case "TypeDefinition"}}{{> schema-definition-type}}{{/case}}
+    {{#case "NamespaceDefinition"}}{{/case}}
+    {{#case "EnumDefinition"}}{{> schema-definition-enum}}{{/case}}
+    {{#case "UnionDefinition"}}{{> schema-definition-union}}{{/case}}
+    {{#case "AliasDefinition"}}{{> schema-definition-alias}}{{/case}}
+    {{#default}}
+      // UNHANDLED
+      {{panic .}}
+    {{/default}}
+  {{/switch}}
+{{/each}}
+

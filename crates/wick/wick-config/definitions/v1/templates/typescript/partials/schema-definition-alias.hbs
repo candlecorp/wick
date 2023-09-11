@@ -1,0 +1,5 @@
+export type {{name.value}} =
+{{#switch name.value~}}
+  {{#case "LiquidJsonValue"}}any;{{/case}}
+  {{#default}}string;{{/default}}
+{{/switch}}

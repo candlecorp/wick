@@ -81,7 +81,7 @@
         }
       }
     },
-    "required": []
+    "required": ["name"]
   },
 
   "v1.Metadata": {
@@ -246,7 +246,7 @@
         "$ref": "#/$defs/v1.LiquidTemplate"
       }
     },
-    "required": []
+    "required": ["port", "address"]
   },
 
   "v1.UdpPort": {
@@ -270,7 +270,7 @@
         "$ref": "#/$defs/v1.LiquidTemplate"
       }
     },
-    "required": []
+    "required": ["port", "address"]
   },
 
   "v1.Volume": {
@@ -2119,6 +2119,7 @@
   "v1.PacketData": {
     "oneOf": [
       { "$ref": "#/$defs/v1.SuccessPacket" },
+      { "$ref": "#/$defs/v1.SignalPacket" },
       { "$ref": "#/$defs/v1.ErrorPacket" }
     ]
   },
@@ -2126,13 +2127,14 @@
   "v1.TestPacketData": {
     "oneOf": [
       { "$ref": "#/$defs/v1.SuccessPacket" },
+      { "$ref": "#/$defs/v1.SignalPacket" },
       { "$ref": "#/$defs/v1.PacketAssertionDef" },
       { "$ref": "#/$defs/v1.ErrorPacket" }
     ]
   },
 
-  "v1.SuccessPacket": {
-    "$anchor": "v1.SuccessPacket",
+  "v1.SignalPacket": {
+    "$anchor": "v1.SignalPacket",
     "additionalProperties": false,
     "type": "object",
     "properties": {
@@ -2150,6 +2152,20 @@
         "description": "The flag set on the packet.",
 
         "$ref": "#/$defs/v1.PacketFlag"
+      }
+    },
+    "required": ["name"]
+  },
+
+  "v1.SuccessPacket": {
+    "$anchor": "v1.SuccessPacket",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "name": {
+        "description": "The name of the input or output this packet is going to or coming from.",
+
+        "type": "string"
       },
       "value": {
         "description": "The packet payload.",
@@ -2157,7 +2173,7 @@
         "$ref": "#/$defs/v1.LiquidJsonValue"
       }
     },
-    "required": ["name"]
+    "required": ["name", "value"]
   },
 
   "v1.PacketAssertionDef": {
@@ -2306,7 +2322,7 @@
         }
       }
     },
-    "required": []
+    "required": ["resource"]
   },
 
   "v1.SqlQueryKind": {
@@ -2369,7 +2385,7 @@
         "$ref": "#/$defs/v1.ErrorBehavior"
       }
     },
-    "required": ["query"]
+    "required": ["name", "query"]
   },
 
   "v1.SqlExecOperationDefinition": {
@@ -2425,7 +2441,7 @@
         "$ref": "#/$defs/v1.ErrorBehavior"
       }
     },
-    "required": ["exec"]
+    "required": ["name", "exec"]
   },
 
   "v1.ErrorBehavior": {
@@ -2480,7 +2496,7 @@
         }
       }
     },
-    "required": []
+    "required": ["resource"]
   },
 
   "v1.Proxy": {
@@ -2567,7 +2583,7 @@
         "type": "string"
       }
     },
-    "required": []
+    "required": ["name", "method"]
   },
 
   "v1.Codec": {

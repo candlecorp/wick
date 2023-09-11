@@ -1,12 +1,14 @@
 "v1.{{name.value}}": {
   "oneOf" : [
     {{#withAnnotation "shortform" ~}}
-    { "type":"string" },
+      { "type":"string" },
     {{~/withAnnotation}}
-    {{#unlessAnnotation "shortformonly"}}
-    {{#join types "," ~}}
-    {"$ref": "#/$defs/v1.{{name.value}}"}
-    {{~/join}}
-    {{/unlessAnnotation}}
+    {{#withAnnotation "shortformonly"}}
+      { "type":"string" }
+    {{else}}
+      {{#join types "," ~}}
+      {"$ref": "#/$defs/v1.{{name.value}}"}
+      {{~/join}}
+    {{/withAnnotation}}
   ]
 },

@@ -1,0 +1,10 @@
+
+export type {{name.value}} =
+    {{#withAnnotation "shortform" ~}}
+      string |
+    {{~/withAnnotation}}
+    {{#withAnnotation "shortformonly"}}
+      string
+    {{else}}
+      {{#join types "|" ~}} {{name.value}} {{~/join}}
+    {{/withAnnotation}};

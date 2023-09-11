@@ -1,0 +1,65 @@
+
+
+
+{{#withAnnotation "nameonly"}}
+export const {{../name.value}} = {{#if arguments.0.value.value}}"{{arguments.0.value.value}}"{{else}}"{{../name.value}}"{{/if}};
+{{else}}
+export class {{name.value}} implements HasKind {
+    {{#each fields ~}}
+      {{#if description}} // {{description.value}} {{/if}}
+      {{#withAnnotation "discriminant"}}
+      _{{camelCase name.value}} = "{{arguments.0.value.value}}";
+      {{else}}
+      _{{camelCase name.value}} : {{~#withAnnotation "shortform" ~}} string | {{~/withAnnotation}} {{> expand-type type }} {{#unlessAnnotation "required"}}={{> default-value type}}{{/unlessAnnotation}};
+      {{/withAnnotation}}
+    {{~/each}}
+    constructor (
+      {{#each fields ~}}
+      {{#withAnnotation "required"}}{{> sanitize-id ../name.value }}:
+        {{#with ..}}
+        {{~#withAnnotation "shortform" ~}} string | {{~/withAnnotation}} {{> expand-type type }},
+        {{/with}}
+      {{/withAnnotation}}
+      {{/each}}
+      ) {
+        {{#each fields ~}}
+          {{#withAnnotation "required"}}
+          this._{{camelCase ../name.value}} = {{> sanitize-id ../name.value }};
+          {{/withAnnotation}}
+        {{/each}}
+    }
+
+    {{#each fields ~}}
+    {{camelCase name.value}}(value: {{> expand-type type }}) : {{../name.value}} {
+      this._{{camelCase name.value}} = value;
+      return this;
+    }
+    get{{pascalCase name.value}}() :{{~#withAnnotation "shortform" ~}} string | {{~/withAnnotation}} {{> expand-type type }} {
+      return this._{{camelCase name.value}};
+
+    }
+    {{/each}}
+
+    getKind() : string {
+      {{#withAnnotation "tagged"}}
+      return "{{arguments.0.value.value}}";
+      {{else}}
+      return "{{../name.value}}";
+      {{/withAnnotation}}
+    }
+
+    toJSON() : any {
+      return {
+        {{#withAnnotation "tagged"}}
+        {{#ifCond ../name.value "!==" "TestConfiguration"}}
+        kind : "{{arguments.0.value.value}}",
+        {{/ifCond}}
+        {{/withAnnotation}}
+        {{#each fields ~}}
+        {{name.value}}: this._{{camelCase name.value}},
+        {{~/each}}
+      }
+
+    }
+}
+{{/withAnnotation}}
