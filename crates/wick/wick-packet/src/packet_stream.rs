@@ -32,7 +32,7 @@ pin_project! {
   #[must_use]
   pub struct PacketStream {
     #[pin]
-    inner: Box<dyn Stream<Item = Result<Packet>> + Send + Unpin>,
+    inner: std::sync::Arc<parking_lot::Mutex<dyn Stream<Item = Result<Packet>> + Send + Unpin>>,
     config: Option<ContextConfig>,
     span: Span
   }
@@ -87,8 +87,6 @@ impl PacketStream {
 
   pub fn set_context(&mut self, context: RuntimeConfig, inherent: InherentData) {
     self.config.replace((context, inherent));
-  pub fn set_context(&mut self, context: RuntimeConfig, inherent: InherentData) {
-    self.config.replace((context, inherent));
   }
 
   pub fn new_channels() -> (PacketSender, Self) {
@@ -112,9 +110,13 @@ impl Stream for PacketStream {
 
   fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
     let mut this = self;
-    let mut this = Pin::new(&mut this);
+    #[allow(unsafe_code)] // this is the implementation of futures::pin_mut!()
+    let mut this = unsafe { Pin::new_unchecked(&mut this) };
     let config = this.config.take();
-    let poll = { Pin::new(&mut *this.inner).poll_next(cx) };
+    let poll = {
+      let mut stream = this.inner.lock();
+      Pin::new(&mut *stream).poll_next(cx)
+    };
 
     // Backwards compatibility note:
     // This is a hack added when context & operation configuration was introduced.
@@ -131,14 +133,12 @@ impl Stream for PacketStream {
           tracing::trace!("attached context to packet on port '{}'", packet.port());
           if cfg!(debug_assertions) {
             this.span.in_scope(|| {
-            this.span.in_scope(|| {
               if span_enabled!(tracing::Level::TRACE) {
                 let debug_packet = packet
                   .clone()
                   .decode_value()
                   .map_or_else(|_| format!("{:?}", packet.payload()), |j| j.to_string());
                 let until = std::cmp::min(debug_packet.len(), 2048);
-                this.span.in_scope(|| {
                 this.span.in_scope(|| {
                   tracing::trace!(flags=packet.flags(), port=packet.port(), packet=%&debug_packet[..until], "packet");
                 });
@@ -149,7 +149,6 @@ impl Stream for PacketStream {
         }
         x => {
           this.config.replace(config);
-          this.config.replace(config);
           x
         }
       }
@@ -157,14 +156,12 @@ impl Stream for PacketStream {
       if let Poll::Ready(Some(Ok(packet))) = &poll {
         if cfg!(debug_assertions) {
           this.span.in_scope(|| {
-          this.span.in_scope(|| {
             if span_enabled!(tracing::Level::TRACE) {
               let debug_packet = packet
                 .clone()
                 .decode_value()
                 .map_or_else(|_| format!("{:?}", packet.payload()), |j| j.to_string());
               let until = std::cmp::min(debug_packet.len(), 2048);
-              this.span.in_scope(|| {
               this.span.in_scope(|| {
                 tracing::trace!(flags=packet.flags(), port=packet.port(), packet=%&debug_packet[..until], "packet");
               });
