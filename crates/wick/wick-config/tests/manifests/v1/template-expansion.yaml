@@ -1,5 +1,6 @@
 # yaml-language-server: $schema=../../../json-schema/manifest.json
 ---
+name: 'my app'
 kind: wick/app@v1
 import:
   - name: test

@@ -1,7 +1,29 @@
-"{{name.value}}": {
-  "$anchor": "#v0/{{name.value}}",
+{{#withAnnotation "nameonly"}}
+"v0.{{../name.value}}": {
+  "$anchor": "v0.{{../name.value}}",
   "additionalProperties": false,
+  "type":"string",
+{{#if arguments.0.value.value}}
+  "enum": ["{{arguments.0.value.value}}"]
+{{else}}
+  "enum": ["{{../name.value}}"]
+{{/if}}
+},
+{{else}}
+"v0.{{name.value}}": {
+  "$anchor": "v0.{{name.value}}",
+  "additionalProperties": false,
+  "type":"object",
   "properties": {
+    {{#withAnnotation "tagged"}}
+    {{#ifCond name.value '===' 'tagged'}}
+    "kind": {
+      "type": "string",
+      "description": "The kind of the collection",
+      "enum": ["{{arguments.0.value.value}}"]
+    },
+    {{/ifCond}}
+    {{/withAnnotation}}
     {{#join fields "," ~}}
     "{{name.value}}" : {
       {{#if description}}
@@ -10,7 +32,16 @@
       {{#withAnnotation "discriminant"}}
       "enum": [{{arguments.0.value.value}}]
       {{else}}
-      {{> expand-type type }}
+        {{#withAnnotation "shortform" ~}}
+          "oneOf" : [
+          { "type":"string" },
+          {{#with "{"}}{{.}}{{/with}}
+        {{~/withAnnotation}}
+        {{> expand-type type }}
+        {{#withAnnotation "shortform" ~}}
+          {{#with "}"}}{{.}}{{/with}}
+        ]
+        {{~/withAnnotation}}
       {{/withAnnotation}}
     }
     {{~/join}}
@@ -21,3 +52,4 @@
       {{~/each~}}
   ]
 },
+{{/withAnnotation}}

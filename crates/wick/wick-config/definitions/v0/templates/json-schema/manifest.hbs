@@ -1,6 +1,5 @@
 
 {
-  "v0": {
   {{~#each definitions~}}
     {{~#switch kind~}}
       {{#case "TypeDefinition"}}{{> schema-definition-type}}{{/case}}
@@ -15,6 +14,5 @@
       {{~/default~}}
     {{~/switch~}}
   {{~/each~}}
-  }
 }
 

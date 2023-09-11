@@ -84,26 +84,11 @@ type NetworkManifest {
   "The unique identifier for this Network."
   name: string?,
 
-  "The collection to use as the entrypoint when running as a standalone process."
-  triggers: EntrypointDefinition?,
-
   "The links between capabilities and components."
   schematics: [SchematicManifest],
 
   "A list of component collections."
   collections: [CollectionDefinition],
-}
-
-"A collection definition for the main entrypoint."
-type EntrypointDefinition {
-  "The reference/location of the collection."
-  reference: string,
-
-  "The component to use as the entrypoint."
-  component: string,
-
-  "Data or configuration used to initialize the collection."
-  data: {string: any}?,
 }
 
 "A collection definition."

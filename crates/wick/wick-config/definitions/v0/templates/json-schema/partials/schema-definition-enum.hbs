@@ -1,8 +1,8 @@
-"{{name.value}}": {
-  "$anchor": "#v0/{{name.value}}",
+"v0.{{name.value}}": {
+  "$anchor": "v0.{{name.value}}",
   "enum" : [
     {{#join values "," ~}}
-    "{{name.value}}"
+    "{{ pascalCase name.value}}"
     {{~/join}}
   ]
 },

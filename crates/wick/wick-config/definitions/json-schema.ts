@@ -12,10 +12,10 @@ const inner_json = imports.map((path) =>
 
 let template_json = JSON.parse(readFileSync(template_path, 'utf-8'));
 
-for (const json of inner_json) {
-  for (const [key, value] of Object.entries(json)) {
-    template_json['$defs'][key] = value;
-  }
+let entries = inner_json.flatMap((json) => Object.entries(json));
+
+for (const [key, value] of entries) {
+  template_json['$defs'][key] = value;
 }
 
 console.log(JSON.stringify(template_json, null, 2));
