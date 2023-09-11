@@ -1,391 +1,318 @@
 {
-  "v0": {
-    "HostManifest": {
-      "$anchor": "#v0/HostManifest",
-      "additionalProperties": false,
-      "properties": {
-        "format": {
-          "description": "The configuration manifest format.",
-          "enum": [0]
-        },
-        "version": {
-          "description": "The version of the configuration.",
+  "v0.HostManifest": {
+    "$anchor": "v0.HostManifest",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "format": {
+        "description": "The configuration manifest format.",
+        "enum": [0]
+      },
+      "version": {
+        "description": "The version of the configuration.",
 
-          "type": "string"
-        },
-        "host": {
-          "description": "Additional host configuration.",
-          "required": false,
+        "type": "string"
+      },
+      "host": {
+        "description": "Additional host configuration.",
 
-          "$ref": "#/$defs/v0/HostConfig"
-        },
-        "network": {
-          "description": "The configuration for a Wick network.",
+        "$ref": "#/$defs/v0.HostConfig"
+      },
+      "network": {
+        "description": "The configuration for a Wick network.",
 
-          "$ref": "#/$defs/v0/NetworkManifest"
-        },
-        "default_schematic": {
-          "description": "The default schematic to execute if none is provided.",
-          "required": false,
+        "$ref": "#/$defs/v0.NetworkManifest"
+      },
+      "default_schematic": {
+        "description": "The default schematic to execute if none is provided.",
 
+        "type": "string"
+      }
+    },
+    "required": ["format"]
+  },
+
+  "v0.HostConfig": {
+    "$anchor": "v0.HostConfig",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "allow_latest": {
+        "description": "Whether or not to allow the :latest tag on remote artifacts.",
+
+        "type": "boolean"
+      },
+      "insecure_registries": {
+        "description": "A list of registries to connect to insecurely (over HTTP vs HTTPS).",
+        "type": "array",
+        "items": {
           "type": "string"
         }
       },
-      "required": ["format"]
+      "id": {
+        "description": "The ID for this host, used to identify the host over the mesh.",
+
+        "type": "string"
+      },
+      "expose": {
+        "description": "The schematics to expose via RPC or the mesh, if any.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "mesh": {
+        "description": "The mesh configuration.",
+
+        "$ref": "#/$defs/v0.MeshConfig"
+      },
+      "rpc": {
+        "description": "Configuration for the GRPC server.",
+
+        "$ref": "#/$defs/v0.HttpConfig"
+      },
+      "http": {
+        "description": "Configuration for the HTTP 1 server (development only).",
+
+        "$ref": "#/$defs/v0.HttpConfig"
+      }
     },
+    "required": []
+  },
 
-    "HostConfig": {
-      "$anchor": "#v0/HostConfig",
-      "additionalProperties": false,
-      "properties": {
-        "allow_latest": {
-          "description": "Whether or not to allow the :latest tag on remote artifacts.",
+  "v0.HttpConfig": {
+    "$anchor": "v0.HttpConfig",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "enabled": {
+        "description": "Enable/disable the server.",
 
-          "type": "boolean"
-        },
-        "insecure_registries": {
-          "description": "A list of registries to connect to insecurely (over HTTP vs HTTPS).",
-          "type": "array",
-          "items": {
+        "type": "boolean"
+      },
+      "port": {
+        "description": "The port to bind to.",
+
+        "oneOf": [{ "type": "number" }, { "type": "string" }]
+      },
+      "address": {
+        "description": "The address to bind to.",
+
+        "type": "string"
+      },
+      "pem": {
+        "description": "Path to pem file for TLS.",
+
+        "type": "string"
+      },
+      "key": {
+        "description": "Path to key file for TLS.",
+
+        "type": "string"
+      },
+      "ca": {
+        "description": "Path to CA file.",
+
+        "type": "string"
+      }
+    },
+    "required": []
+  },
+
+  "v0.MeshConfig": {
+    "$anchor": "v0.MeshConfig",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "enabled": {
+        "description": "Enable/disable the mesh connection.",
+
+        "type": "boolean"
+      },
+      "address": {
+        "description": "The address of the NATS server.",
+
+        "type": "string"
+      },
+      "creds_path": {
+        "description": "The path to the NATS credsfile.",
+
+        "type": "string"
+      },
+      "token": {
+        "description": "The NATS token.",
+
+        "type": "string"
+      }
+    },
+    "required": []
+  },
+
+  "v0.NetworkManifest": {
+    "$anchor": "v0.NetworkManifest",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "name": {
+        "description": "The unique identifier for this Network.",
+
+        "type": "string"
+      },
+      "schematics": {
+        "description": "The links between capabilities and components.",
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/v0.SchematicManifest"
+        }
+      },
+      "collections": {
+        "description": "A list of component collections.",
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/v0.CollectionDefinition"
+        }
+      }
+    },
+    "required": []
+  },
+
+  "v0.CollectionDefinition": {
+    "$anchor": "v0.CollectionDefinition",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "namespace": {
+        "description": "The local namespace for the collection.",
+
+        "type": "string"
+      },
+      "kind": {
+        "description": "The kind/type of the collection.",
+
+        "$ref": "#/$defs/v0.CollectionKind"
+      },
+      "reference": {
+        "description": "The reference/location of the collection.",
+
+        "type": "string"
+      },
+      "data": {
+        "description": "Data or configuration used to initialize the collection.",
+        "type": "object",
+        "patternProperties": {
+          "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
+        }
+      }
+    },
+    "required": []
+  },
+
+  "v0.CollectionKind": {
+    "$anchor": "v0.CollectionKind",
+    "enum": ["Native", "GrpcUrl", "WaPc", "Network"]
+  },
+  "v0.SchematicManifest": {
+    "$anchor": "v0.SchematicManifest",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "name": {
+        "description": "Schematic name.",
+
+        "type": "string"
+      },
+      "instances": {
+        "description": "A map from component reference to its target.",
+        "type": "object",
+        "patternProperties": {
+          "[a-zA-Z0-9][a-zA-Z0-9_]*": {
+            "$ref": "#/$defs/v0.ComponentDefinition"
+          }
+        }
+      },
+      "connections": {
+        "description": "A list of connections from component to component.",
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/v0.ConnectionDefinition"
+        }
+      },
+      "constraints": {
+        "description": "A map of constraints and values that limit where this schematic can run.",
+        "type": "object",
+        "patternProperties": {
+          "[a-zA-Z0-9][a-zA-Z0-9_]*": {
             "type": "string"
           }
-        },
-        "id": {
-          "description": "The ID for this host, used to identify the host over the mesh.",
-          "required": false,
-
-          "type": "string"
-        },
-        "expose": {
-          "description": "The schematics to expose via RPC or the mesh, if any.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "mesh": {
-          "description": "The mesh configuration.",
-          "required": false,
-
-          "$ref": "#/$defs/v0/MeshConfig"
-        },
-        "rpc": {
-          "description": "Configuration for the GRPC server.",
-          "required": false,
-
-          "$ref": "#/$defs/v0/HttpConfig"
-        },
-        "http": {
-          "description": "Configuration for the HTTP 1 server (development only).",
-          "required": false,
-
-          "$ref": "#/$defs/v0/HttpConfig"
         }
-      },
-      "required": []
+      }
     },
+    "required": ["name"]
+  },
 
-    "HttpConfig": {
-      "$anchor": "#v0/HttpConfig",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "description": "Enable/disable the server.",
+  "v0.ComponentDefinition": {
+    "$anchor": "v0.ComponentDefinition",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "id": {
+        "description": "The ID of the component (i.e. the alias, key, or namespace).",
 
-          "type": "boolean"
-        },
-        "port": {
-          "description": "The port to bind to.",
-          "required": false,
-
-          "type": "number"
-        },
-        "address": {
-          "description": "The address to bind to.",
-          "required": false,
-
-          "type": "string"
-        },
-        "pem": {
-          "description": "Path to pem file for TLS.",
-          "required": false,
-
-          "type": "string"
-        },
-        "key": {
-          "description": "Path to key file for TLS.",
-          "required": false,
-
-          "type": "string"
-        },
-        "ca": {
-          "description": "Path to CA file.",
-          "required": false,
-
-          "type": "string"
+        "type": "string"
+      },
+      "data": {
+        "description": "Data to associate with the reference.",
+        "type": "object",
+        "patternProperties": {
+          "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
         }
-      },
-      "required": []
+      }
     },
+    "required": ["id"]
+  },
 
-    "MeshConfig": {
-      "$anchor": "#v0/MeshConfig",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "description": "Enable/disable the mesh connection.",
+  "v0.ConnectionDefinition": {
+    "$anchor": "v0.ConnectionDefinition",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "from": {
+        "description": "The originating component from upstream.",
 
-          "type": "boolean"
-        },
-        "address": {
-          "description": "The address of the NATS server.",
+        "$ref": "#/$defs/v0.ConnectionTargetDefinition"
+      },
+      "to": {
+        "description": "The destination component (downstream).",
 
-          "type": "string"
-        },
-        "creds_path": {
-          "description": "The path to the NATS credsfile.",
-          "required": false,
+        "$ref": "#/$defs/v0.ConnectionTargetDefinition"
+      }
+    },
+    "required": []
+  },
 
-          "type": "string"
-        },
-        "token": {
-          "description": "The NATS token.",
-          "required": false,
+  "v0.ConnectionTargetDefinition": {
+    "$anchor": "v0.ConnectionTargetDefinition",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "instance": {
+        "description": "The instance name of the referenced component.",
 
-          "type": "string"
+        "type": "string"
+      },
+      "port": {
+        "description": "The component&#x27;s port.",
+
+        "type": "string"
+      },
+      "data": {
+        "description": "Data to associate with a connection.",
+        "type": "object",
+        "patternProperties": {
+          "[a-zA-Z0-9][a-zA-Z0-9_]*": {}
         }
-      },
-      "required": []
+      }
     },
-
-    "NetworkManifest": {
-      "$anchor": "#v0/NetworkManifest",
-      "additionalProperties": false,
-      "properties": {
-        "name": {
-          "description": "The unique identifier for this Network.",
-          "required": false,
-
-          "type": "string"
-        },
-        "triggers": {
-          "description": "The collection to use as the entrypoint when running as a standalone process.",
-          "required": false,
-
-          "$ref": "#/$defs/v0/EntrypointDefinition"
-        },
-        "schematics": {
-          "description": "The links between capabilities and components.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v0/SchematicManifest"
-          }
-        },
-        "collections": {
-          "description": "A list of component collections.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v0/CollectionDefinition"
-          }
-        }
-      },
-      "required": []
-    },
-
-    "EntrypointDefinition": {
-      "$anchor": "#v0/EntrypointDefinition",
-      "additionalProperties": false,
-      "properties": {
-        "reference": {
-          "description": "The reference/location of the collection.",
-
-          "type": "string"
-        },
-        "component": {
-          "description": "The component to use as the entrypoint.",
-
-          "type": "string"
-        },
-        "data": {
-          "description": "Data or configuration used to initialize the collection.",
-          "required": false,
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "oneOf": [
-                { "type": "boolean" },
-                { "type": "object" },
-                { "type": "array" },
-                { "type": "string" },
-                { "type": "number" }
-              ]
-            }
-          }
-        }
-      },
-      "required": []
-    },
-
-    "CollectionDefinition": {
-      "$anchor": "#v0/CollectionDefinition",
-      "additionalProperties": false,
-      "properties": {
-        "namespace": {
-          "description": "The local namespace for the collection.",
-
-          "type": "string"
-        },
-        "kind": {
-          "description": "The kind/type of the collection.",
-
-          "$ref": "#/$defs/v0/CollectionKind"
-        },
-        "reference": {
-          "description": "The reference/location of the collection.",
-
-          "type": "string"
-        },
-        "data": {
-          "description": "Data or configuration used to initialize the collection.",
-          "required": false,
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "oneOf": [
-                { "type": "boolean" },
-                { "type": "object" },
-                { "type": "array" },
-                { "type": "string" },
-                { "type": "number" }
-              ]
-            }
-          }
-        }
-      },
-      "required": []
-    },
-
-    "CollectionKind": {
-      "$anchor": "#v0/CollectionKind",
-      "enum": ["Native", "GrpcUrl", "WaPC", "Network"]
-    },
-    "SchematicManifest": {
-      "$anchor": "#v0/SchematicManifest",
-      "additionalProperties": false,
-      "properties": {
-        "name": {
-          "description": "Schematic name.",
-
-          "type": "string"
-        },
-        "instances": {
-          "description": "A map from component reference to its target.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "$ref": "#/$defs/v0/ComponentDefinition"
-            }
-          }
-        },
-        "connections": {
-          "description": "A list of connections from component to component.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/v0/ConnectionDefinition"
-          }
-        },
-        "constraints": {
-          "description": "A map of constraints and values that limit where this schematic can run.",
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "required": ["name"]
-    },
-
-    "ComponentDefinition": {
-      "$anchor": "#v0/ComponentDefinition",
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "description": "The ID of the component (i.e. the alias, key, or namespace).",
-
-          "type": "string"
-        },
-        "data": {
-          "description": "Data to associate with the reference.",
-          "required": false,
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "oneOf": [
-                { "type": "boolean" },
-                { "type": "object" },
-                { "type": "array" },
-                { "type": "string" },
-                { "type": "number" }
-              ]
-            }
-          }
-        }
-      },
-      "required": ["id"]
-    },
-
-    "ConnectionDefinition": {
-      "$anchor": "#v0/ConnectionDefinition",
-      "additionalProperties": false,
-      "properties": {
-        "from": {
-          "description": "The originating component from upstream.",
-
-          "$ref": "#/$defs/v0/ConnectionTargetDefinition"
-        },
-        "to": {
-          "description": "The destination component (downstream).",
-
-          "$ref": "#/$defs/v0/ConnectionTargetDefinition"
-        }
-      },
-      "required": []
-    },
-
-    "ConnectionTargetDefinition": {
-      "$anchor": "#v0/ConnectionTargetDefinition",
-      "additionalProperties": false,
-      "properties": {
-        "instance": {
-          "description": "The instance name of the referenced component.",
-
-          "type": "string"
-        },
-        "port": {
-          "description": "The component&#x27;s port.",
-
-          "type": "string"
-        },
-        "data": {
-          "description": "Data to associate with a connection.",
-          "required": false,
-          "type": "object",
-          "patternProperties": {
-            "[a-zA-Z0-9][a-zA-Z0-9_]*": {
-              "oneOf": [
-                { "type": "boolean" },
-                { "type": "object" },
-                { "type": "array" },
-                { "type": "string" },
-                { "type": "number" }
-              ]
-            }
-          }
-        }
-      },
-      "required": ["instance", "port"]
-    }
+    "required": ["instance", "port"]
   }
 }

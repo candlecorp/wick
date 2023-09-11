@@ -1,7 +1,7 @@
 
 {{#withAnnotation "nameonly"}}
-"{{../name.value}}": {
-  "$anchor": "#v1/{{../name.value}}",
+"v1.{{../name.value}}": {
+  "$anchor": "v1.{{../name.value}}",
   "additionalProperties": false,
   "type":"string",
 {{#if arguments.0.value.value}}
@@ -11,8 +11,8 @@
 {{/if}}
 },
 {{else}}
-"{{name.value}}": {
-  "$anchor": "#v1/{{name.value}}",
+"v1.{{name.value}}": {
+  "$anchor": "v1.{{name.value}}",
   "additionalProperties": false,
   "type":"object",
   "properties": {
@@ -30,9 +30,6 @@
       {{#if description}}
       "description": "{{description.value}}",
       {{/if}}
-      {{#ifCond type.kind "===" "Optional"}}
-      "required" : false,
-      {{/ifCond}}
       {{#withAnnotation "discriminant"}}
       "enum": [{{arguments.0.value.value}}]
       {{else}}
