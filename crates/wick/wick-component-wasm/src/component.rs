@@ -123,7 +123,7 @@ impl Component for WasmComponent {
     data: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| trace!(target = %invocation.target, config=?data, "wasm invoke"));
+    invocation.trace(|| trace!(target = %invocation.target(), config=?data, "wasm invoke"));
 
     let outputs = self.host.call(invocation, data);
 

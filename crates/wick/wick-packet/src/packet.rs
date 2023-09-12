@@ -1,6 +1,8 @@
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use tokio_stream::Stream;
 use wasmrs::{BoxFlux, Metadata, Payload, PayloadError, RawPayload};
+use wasmrs_runtime::ConditionallySend;
 use wick_interface_types::Type;
 
 use crate::metadata::DONE_FLAG;
@@ -426,12 +428,16 @@ pub fn packetstream_to_wasmrs(index: u32, stream: PacketStream) -> BoxFlux<RawPa
   Box::pin(s)
 }
 
-pub fn from_raw_wasmrs(stream: BoxFlux<RawPayload, PayloadError>) -> PacketStream {
+pub fn from_raw_wasmrs<T: Stream<Item = Result<RawPayload, PayloadError>> + ConditionallySend + Unpin + 'static>(
+  stream: T,
+) -> PacketStream {
   let s = tokio_stream::StreamExt::map(stream, move |p| Ok(p.into()));
   PacketStream::new(Box::new(s))
 }
 
-pub fn from_wasmrs(stream: BoxFlux<Payload, PayloadError>) -> PacketStream {
+pub fn from_wasmrs<T: Stream<Item = Result<Payload, PayloadError>> + ConditionallySend + Unpin + 'static>(
+  stream: T,
+) -> PacketStream {
   let s = tokio_stream::StreamExt::map(stream, move |p| Ok(p.into()));
   PacketStream::new(Box::new(s))
 }

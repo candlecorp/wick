@@ -64,7 +64,7 @@ impl Operation for Op {
   type Config = Config;
   fn handle(
     &self,
-    mut invocation: Invocation,
+    invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let (tx, rx) = invocation.make_response();
@@ -72,8 +72,9 @@ impl Operation for Op {
     tokio::spawn(async move {
       let mut ports: HashMap<String, Vec<Value>> = context.config.inputs.iter().map(|n| (n.clone(), vec![])).collect();
       let mut array_levels: HashMap<String, i16> = HashMap::new();
+      let mut stream = invocation.into_stream();
 
-      while let Some(next) = invocation.packets.next().await {
+      while let Some(next) = stream.next().await {
         if let Err(e) = next {
           ports
             .entry(Packet::FATAL_ERROR.to_owned())

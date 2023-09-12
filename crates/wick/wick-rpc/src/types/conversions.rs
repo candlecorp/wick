@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use wick_interface_types as wick;
-use wick_packet::{Entity, InherentData, Metadata, Packet, PacketStream, WickMetadata};
+use wick_packet::{Entity, InherentData, Metadata, Packet, WickMetadata};
 
 use crate::error::RpcError;
 use crate::{rpc, DurationStatistics};
@@ -156,8 +156,8 @@ impl From<rpc::Metadata> for Metadata {
   }
 }
 
-impl From<wick_packet::Invocation> for rpc::Invocation {
-  fn from(inv: wick_packet::Invocation) -> Self {
+impl From<wick_packet::InvocationData> for rpc::Invocation {
+  fn from(inv: wick_packet::InvocationData) -> Self {
     Self {
       origin: inv.origin.url(),
       target: inv.target.url(),
@@ -171,20 +171,19 @@ impl From<wick_packet::Invocation> for rpc::Invocation {
   }
 }
 
-impl TryFrom<rpc::Invocation> for wick_packet::Invocation {
+impl TryFrom<rpc::Invocation> for wick_packet::InvocationData {
   type Error = RpcError;
   fn try_from(inv: rpc::Invocation) -> Result<Self> {
     let inherent = inv.inherent.ok_or(RpcError::NoInherentData)?;
-    Ok(Self {
-      origin: Entity::from_str(&inv.origin).map_err(|_e| RpcError::TypeConversion)?,
-      target: Entity::from_str(&inv.target).map_err(|_e| RpcError::TypeConversion)?,
 
-      id: uuid::Uuid::from_str(&inv.id).map_err(|e| RpcError::UuidParseError(inv.id, e))?,
-      tx_id: uuid::Uuid::from_str(&inv.tx_id).map_err(|e| RpcError::UuidParseError(inv.tx_id, e))?,
-      inherent: InherentData::new(inherent.seed, inherent.timestamp),
-      span: tracing::Span::current(),
-      packets: PacketStream::empty(),
-    })
+    Ok(Self::new_raw(
+      Entity::from_str(&inv.origin).map_err(|_e| RpcError::TypeConversion)?,
+      Entity::from_str(&inv.target).map_err(|_e| RpcError::TypeConversion)?,
+      uuid::Uuid::from_str(&inv.id).map_err(|e| RpcError::UuidParseError(inv.id, e))?,
+      uuid::Uuid::from_str(&inv.tx_id).map_err(|e| RpcError::UuidParseError(inv.tx_id, e))?,
+      InherentData::new(inherent.seed, inherent.timestamp),
+      tracing::Span::current(),
+    ))
   }
 }
 

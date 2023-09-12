@@ -1,7 +1,7 @@
 use flow_graph::{NodeIndex, PortReference};
 use tracing::Span;
 use uuid::Uuid;
-use wick_packet::{Invocation, PacketPayload};
+use wick_packet::{Invocation, PacketPayload, PacketStream};
 
 pub(crate) use self::error::Error;
 use super::executor::error::ExecutionError;
@@ -45,7 +45,7 @@ impl Event {
 #[allow(clippy::exhaustive_enums)]
 pub enum EventKind {
   Ping(usize),
-  ExecutionStart(Box<ExecutionContext>),
+  ExecutionStart(Box<ExecutionContext>, PacketStream),
   ExecutionDone,
   PortData(PortReference),
   Invocation(NodeIndex, Box<Invocation>),
@@ -57,7 +57,7 @@ impl EventKind {
   pub(crate) const fn name(&self) -> &str {
     match self {
       EventKind::Ping(_) => "ping",
-      EventKind::ExecutionStart(_) => "exec_start",
+      EventKind::ExecutionStart(_, _) => "exec_start",
       EventKind::ExecutionDone => "exec_done",
       EventKind::PortData(_) => "port_data",
       EventKind::Invocation(_, _) => "invocation",
@@ -166,8 +166,12 @@ impl InterpreterDispatchChannel {
     self.dispatch(Event::new(CHANNEL_UUID, EventKind::Close(error), self.span.clone()));
   }
 
-  pub(crate) fn dispatch_start(&self, ctx: Box<ExecutionContext>) {
-    self.dispatch(Event::new(ctx.id(), EventKind::ExecutionStart(ctx), self.span.clone()));
+  pub(crate) fn dispatch_start(&self, ctx: Box<ExecutionContext>, stream: PacketStream) {
+    self.dispatch(Event::new(
+      ctx.id(),
+      EventKind::ExecutionStart(ctx, stream),
+      self.span.clone(),
+    ));
   }
 
   pub(crate) fn dispatch_call_complete(&self, ctx_id: Uuid, op_index: usize) {

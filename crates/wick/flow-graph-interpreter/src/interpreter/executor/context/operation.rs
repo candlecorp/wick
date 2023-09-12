@@ -15,7 +15,7 @@ use wasmrs_rx::{FluxChannel, Observer};
 use wick_packet::{
   Entity,
   InherentData,
-  Invocation,
+  InvocationData,
   Packet,
   PacketError,
   PacketPayload,
@@ -56,7 +56,7 @@ impl FutureInvocation {
     }
   }
 
-  pub(crate) fn next(value: &Invocation, target: Entity, seed: u64) -> Self {
+  pub(crate) fn next(value: &InvocationData, target: Entity, seed: u64) -> Self {
     let inherent = InherentData::new(
       seed,
       std::time::SystemTime::now()
@@ -69,16 +69,9 @@ impl FutureInvocation {
   }
 }
 
-impl From<FutureInvocation> for Invocation {
+impl From<FutureInvocation> for InvocationData {
   fn from(value: FutureInvocation) -> Self {
-    Self::new_with_id(
-      value.tx_id,
-      value.origin,
-      value.target,
-      PacketStream::empty(),
-      value.inherent,
-      &value.span,
-    )
+    Self::new_with_id(value.tx_id, value.origin, value.target, value.inherent, &value.span)
   }
 }
 
@@ -279,7 +272,7 @@ impl InstanceHandler {
     let Some(invocation) = self.invocation.take() else {
       return Err(StateError::InvocationMissing(identifier).into());
     };
-    let mut invocation: Invocation = invocation.into();
+    let invocation: InvocationData = invocation.into();
     let span =
       info_span!(parent:&invocation.span,"interpreter:op:instance", otel.name=format!("starting:{}",invocation.target));
 
@@ -314,7 +307,7 @@ impl InstanceHandler {
     } else {
       PacketStream::new(Box::new(self.sender.take_rx().unwrap()))
     };
-    invocation.attach_stream(stream);
+    let invocation = invocation.with_stream(stream);
     let cb = callback.clone();
 
     let fut = if namespace == SelfComponent::ID {
@@ -527,4 +520,20 @@ pub(crate) enum CompletionStatus {
   Finished,
   Timeout,
   Error,
+}
+
+#[cfg(test)]
+mod test {
+  use anyhow::Result;
+
+  use super::*;
+
+  #[test]
+  const fn test_send_sync() -> Result<()> {
+    const fn assert_send<T: Send>() {}
+    const fn assert_sync<T: Sync>() {}
+    assert_send::<InstanceHandler>();
+    assert_sync::<InstanceHandler>();
+    Ok(())
+  }
 }

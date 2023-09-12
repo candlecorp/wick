@@ -143,7 +143,7 @@ pub use entity::Entity;
 pub use error::{Error, ParseError};
 pub use inherent::InherentData;
 #[cfg(feature = "invocation")]
-pub use invocation::Invocation;
+pub use invocation::{Invocation, InvocationData};
 pub use metadata::{Flags, WickMetadata, CLOSE_BRACKET, DONE_FLAG, OPEN_BRACKET};
 pub use output::{OutgoingPort, OutputIterator, Port, ValuePort};
 pub use packet::{from_raw_wasmrs, from_wasmrs, packetstream_to_wasmrs, Packet, PacketError, PacketPayload};

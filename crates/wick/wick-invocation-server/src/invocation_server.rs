@@ -106,7 +106,7 @@ impl InvocationService for InvocationServer {
     let (tx, rx) = mpsc::channel(4);
     let mut stream = request.into_inner();
     let first = stream.next().await;
-    let mut invocation: wick_packet::Invocation = if let Some(Ok(inv)) = first {
+    let invocation: wick_packet::InvocationData = if let Some(Ok(inv)) = first {
       if let Some(rpc::invocation_request::Data::Invocation(inv)) = inv.data {
         inv
           .try_into()
@@ -119,9 +119,9 @@ impl InvocationService for InvocationServer {
     };
     let stream = convert_invocation_stream(stream);
     let packet_stream = PacketStream::new(Box::new(stream));
-    invocation.attach_stream(packet_stream);
+    let invocation = invocation.with_stream(packet_stream);
 
-    let op_id = invocation.target.operation_id().to_owned();
+    let op_id = invocation.target().operation_id().to_owned();
 
     let result = self
       .collection

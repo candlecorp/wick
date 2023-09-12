@@ -46,9 +46,9 @@ impl InvocationHandler for NativeComponentService {
     invocation: Invocation,
     config: Option<RuntimeConfig>,
   ) -> Result<BoxFuture<Result<InvocationResponse>>> {
-    let tx_id = invocation.tx_id;
+    let tx_id = invocation.tx_id();
 
-    let span = info_span!(parent:&invocation.span,"runtime:handle");
+    let span = info_span!(parent:invocation.span(),"runtime:handle");
     let fut = self.handle(invocation, config, panic_callback());
 
     let task = async move {
@@ -59,35 +59,4 @@ impl InvocationHandler for NativeComponentService {
     };
     Ok(Box::pin(task))
   }
-}
-
-#[cfg(test)]
-mod test {
-
-  // use std::sync::Arc;
-
-  // use anyhow::Result;
-  // use seeded_random::Seed;
-
-  // use super::*;
-  // use crate::test::prelude::assert_eq;
-
-  // #[test_logger::test(tokio::test)]
-  // async fn test_collection_component() -> Result<()> {
-  //   let seed: u64 = 100000;
-  //   let collection = NativeCollectionService::new(Arc::new(wick_stdlib::Collection::new(Seed::unsafe_new(seed))));
-
-  //   let user_data = "This is my payload";
-
-  //   let payload = vec![("input", user_data)].into();
-  //   let invocation = Invocation::new(Entity::test("test"), Entity::local("core::log"), payload, None);
-  //   let response = collection.invoke(invocation)?.await?;
-
-  //   let mut rx = response.ok()?;
-  //   let packets: Vec<_> = rx.collect().await;
-  //   let p = packets.pop().unwrap().unwrap();
-  //   assert_eq!(p, Packet::encode("output", user_data));
-
-  //   Ok(())
-  // }
 }

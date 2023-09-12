@@ -74,9 +74,9 @@ impl Component for SelfComponent {
     config: Option<RuntimeConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| debug!(target = %invocation.target, namespace = Self::ID));
+    invocation.trace(|| debug!(target = %invocation.target(), namespace = Self::ID));
 
-    let operation = invocation.target.operation_id().to_owned();
+    let operation = invocation.target().operation_id().to_owned();
     let fut = self
       .inner
       .schematics

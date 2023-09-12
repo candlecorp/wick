@@ -239,38 +239,42 @@ impl Component for Interpreter {
       }
       hosted
     };
-    let span = invocation.span.clone();
+    let span = invocation.span().clone();
 
-    span.in_scope(|| trace!(target=%invocation.target_url(),tx_id=%invocation.tx_id,id=%invocation.id, "invoking"));
-    let from_exposed = self.exposed_ops.get(invocation.target.operation_id());
+    span
+      .in_scope(|| trace!(target=%invocation.target().url(),tx_id=%invocation.tx_id(),id=%invocation.id(), "invoking"));
+    let from_exposed = self.exposed_ops.get(invocation.target().operation_id());
 
     Box::pin(async move {
-      let stream = match &invocation.target {
+      let stream = match invocation.target() {
         Entity::Operation(ns, _) => {
           if ns == SelfComponent::ID || ns == Entity::LOCAL || Some(ns) == self.namespace.as_ref() {
             if let Some(handler) = from_exposed {
-              let new_target = Entity::operation(handler.namespace(), invocation.target.operation_id());
-              span.in_scope(|| trace!(origin=%invocation.origin,original_target=%invocation.target, %new_target, "invoke::exposed::operation"));
-              invocation.target = new_target;
+              let new_target = Entity::operation(handler.namespace(), invocation.target().operation_id());
+              span.in_scope(|| trace!(origin=%invocation.origin(),original_target=%invocation.target(), %new_target, "invoke::exposed::operation"));
+              invocation = invocation.redirect(new_target);
               return handler.component.handle(invocation, config, cb).await;
             }
-            span
-              .in_scope(|| trace!(origin=%invocation.origin,target=%invocation.target, "invoke::composite::operation"));
+            span.in_scope(
+              || trace!(origin=%invocation.origin(),target=%invocation.target(), "invoke::composite::operation"),
+            );
             self
               .self_component
               .handle(invocation, config, self.get_callback())
               .await?
           } else if let Some(handler) = self.components.get(ns) {
-            span.in_scope(|| trace!(origin=%invocation.origin,target=%invocation.target, "invoke::handler::operation"));
+            span.in_scope(
+              || trace!(origin=%invocation.origin(),target=%invocation.target(), "invoke::handler::operation"),
+            );
             handler.component.handle(invocation, config, cb).await?
           } else {
             return Err(ComponentError::new(Error::TargetNotFound(
-              invocation.target.clone(),
+              invocation.target().clone(),
               known_targets(),
             )));
           }
         }
-        _ => return Err(ComponentError::new(Error::InvalidEntity(invocation.target))),
+        _ => return Err(ComponentError::new(Error::InvalidEntity(invocation.target().clone()))),
       };
 
       Ok::<_, ComponentError>(stream)

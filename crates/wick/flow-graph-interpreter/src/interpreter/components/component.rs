@@ -41,12 +41,12 @@ impl Component for ComponentComponent {
     _config: Option<RuntimeConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| debug!(target = %invocation.target, namespace = Self::ID));
+    invocation.trace(|| debug!(target = %invocation.target(), namespace = Self::ID));
 
     // This handler handles the components:: namespace and outputs the entity
     // to link to.
-    let target_name = invocation.target.operation_id().to_owned();
-    let entity = Entity::component(invocation.target.operation_id());
+    let target_name = invocation.target().operation_id().to_owned();
+    let entity = Entity::component(invocation.target().operation_id());
 
     let contains_components = self.signature.operations.iter().any(|op| op.name == target_name);
     let all_components: Vec<_> = self.signature.operations.iter().map(|op| op.name.clone()).collect();
@@ -63,7 +63,7 @@ impl Component for ComponentComponent {
 
       tx.send(Packet::encode(
         port_name,
-        ComponentReference::new(invocation.origin.clone(), Entity::component(entity.component_id())),
+        ComponentReference::new(invocation.origin().clone(), Entity::component(entity.component_id())),
       ))
       .map_err(ComponentError::new)?;
 

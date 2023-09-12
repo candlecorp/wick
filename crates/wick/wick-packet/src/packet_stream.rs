@@ -12,7 +12,7 @@ pub type PacketSender = FluxChannel<Packet, crate::Error>;
 
 type ContextConfig = (RuntimeConfig, InherentData);
 
-pub(crate) type BoxStream<'a, T> = Pin<Box<dyn Stream<Item = T> + Send + 'a>>;
+pub(crate) type BoxStream<'a, T> = Pin<Box<dyn Stream<Item = T> + Send + Sync + 'a>>;
 
 #[cfg(target_family = "wasm")]
 pin_project! {
@@ -20,8 +20,8 @@ pin_project! {
   #[must_use]
   pub struct PacketStream {
     #[pin]
-    inner: std::sync::Arc<parking_lot::Mutex<dyn Stream<Item = Result<Packet>> + Unpin>>,
-    config: std::sync::Arc<parking_lot::Mutex<Option<ContextConfig>>>,
+    inner: Box<dyn Stream<Item = Result<Packet>> + Unpin>,
+    config: Option<ContextConfig>,
     span: Span
   }
 }
@@ -32,9 +32,15 @@ pin_project! {
   #[must_use]
   pub struct PacketStream {
     #[pin]
-    inner: std::sync::Arc<parking_lot::Mutex<dyn Stream<Item = Result<Packet>> + Send + Unpin>>,
+    inner: Box<dyn Stream<Item = Result<Packet>> + Send + Unpin>,
     config: Option<ContextConfig>,
     span: Span
+  }
+}
+
+impl Default for PacketStream {
+  fn default() -> Self {
+    PacketStream::empty()
   }
 }
 
@@ -54,18 +60,18 @@ impl PacketStream {
   #[cfg(target_family = "wasm")]
   pub fn new(rx: impl Stream<Item = Result<Packet>> + Unpin + 'static) -> Self {
     Self {
-      inner: std::sync::Arc::new(parking_lot::Mutex::new(tokio_stream::StreamExt::fuse(rx))),
+      inner: Box::new(tokio_stream::StreamExt::fuse(rx)),
       config: Default::default(),
       span: Span::current(),
     }
   }
 
   #[cfg(not(target_family = "wasm"))]
-  pub fn new(rx: impl Stream<Item = Result<Packet>> + Unpin + Send + 'static) -> Self {
+  pub fn new<T: Stream<Item = Result<Packet>> + Unpin + Send + 'static>(rx: T) -> Self {
     use tokio_stream::StreamExt;
 
     Self {
-      inner: std::sync::Arc::new(parking_lot::Mutex::new(rx.fuse())),
+      inner: Box::new(rx.fuse()),
       config: Default::default(),
       span: Span::current(),
     }
@@ -104,14 +110,14 @@ impl Stream for PacketStream {
 
   fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
     let mut this = self;
-    #[allow(unsafe_code)] // this is the implementation of futures::pin_mut!()
-    let mut this = unsafe { Pin::new_unchecked(&mut this) };
+    let mut this = Pin::new(&mut this);
     let config = this.config.take();
-    let poll = {
-      let mut stream = this.inner.lock();
-      Pin::new(&mut *stream).poll_next(cx)
-    };
+    let poll = { Pin::new(&mut *this.inner).poll_next(cx) };
 
+    // Backwards compatibility note:
+    // This is a hack added when context & operation configuration was introduced.
+    // Rather than send it as a beginning packet, it's added as a sidecar to an existing packet and new
+    // components expect it to exist in the first packet they receive.
     if let Some(config) = config {
       match poll {
         Poll::Ready(Some(Ok(mut packet))) => {
@@ -169,23 +175,4 @@ pub fn into_packet<N: Into<String>, T: serde::Serialize>(
 ) -> Box<dyn FnMut(anyhow::Result<T>) -> Result<Packet>> {
   let name = name.into();
   Box::new(move |x| Ok(x.map_or_else(|e| Packet::err(&name, e.to_string()), |x| Packet::encode(&name, &x))))
-}
-
-#[cfg(test)]
-mod test {
-  use anyhow::Result;
-
-  use super::*;
-
-  const fn is_sync_send<T>()
-  where
-    T: Send + Sync,
-  {
-  }
-
-  #[test]
-  const fn test_sync_send() -> Result<()> {
-    is_sync_send::<PacketStream>();
-    Ok(())
-  }
 }

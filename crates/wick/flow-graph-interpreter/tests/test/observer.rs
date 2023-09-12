@@ -12,7 +12,7 @@ impl Observer for JsonWriter {
     let ctx_id = event.ctx_id();
     let entry = match event.kind() {
       EventKind::Ping(_) => serde_json::Value::Null,
-      EventKind::ExecutionStart(tx) => {
+      EventKind::ExecutionStart(tx, _) => {
         serde_json::json!({
           "type":event.name(),
           "index": index,

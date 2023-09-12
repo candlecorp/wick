@@ -9,7 +9,7 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wasmrs_rx::Observer;
-use wick_packet::{Entity, Invocation, Packet, PacketError, PacketSender, PacketStream, RuntimeConfig};
+use wick_packet::{Entity, InvocationData, Packet, PacketError, PacketSender, PacketStream, RuntimeConfig};
 
 use self::operation::{FutureInvocation, InstanceHandler};
 use super::error::ExecutionError;
@@ -38,9 +38,8 @@ pub(crate) enum TxState {
 #[must_use]
 pub struct ExecutionContext {
   schematic: Arc<Schematic>,
-  output: (Option<PacketSender>, Option<PacketStream>),
+  output: Option<PacketSender>,
   channel: InterpreterDispatchChannel,
-  invocation: Invocation,
   instances: Vec<Arc<InstanceHandler>>,
   id: Uuid,
   start_time: Instant,
@@ -64,7 +63,7 @@ impl std::fmt::Debug for ExecutionContext {
 impl ExecutionContext {
   pub(crate) fn new(
     schematic: Arc<Schematic>,
-    invocation: Invocation,
+    invocation: &InvocationData,
     channel: InterpreterDispatchChannel,
     components: &Arc<HandlerMap>,
     self_component: &SelfComponent,
@@ -72,7 +71,7 @@ impl ExecutionContext {
     root_config: Option<RuntimeConfig>,
     op_config: Option<RuntimeConfig>,
     seed: Seed,
-  ) -> Self {
+  ) -> (Self, PacketStream) {
     let rng = Random::from_seed(seed);
     let id = invocation.id;
 
@@ -83,7 +82,7 @@ impl ExecutionContext {
         Arc::new(InstanceHandler::new(
           schematic.clone(),
           FutureInvocation::next(
-            &invocation,
+            invocation,
             Entity::operation(op_node.cref().component_id(), op_node.cref().name()),
             rng.gen(),
           ),
@@ -101,14 +100,13 @@ impl ExecutionContext {
 
     let (tx, rx) = invocation.make_response();
 
-    Self {
+    let this = Self {
       channel,
       options: None,
-      invocation,
       schematic,
       root_config,
       op_config,
-      output: (Some(tx), Some(rx)),
+      output: Some(tx),
       instances,
       start_time: Instant::now(),
       stats,
@@ -117,12 +115,14 @@ impl ExecutionContext {
       span,
       finished: AtomicBool::new(false),
       callback,
-    }
+    };
+
+    (this, rx)
   }
 
-  pub fn run(self) {
+  pub fn run(self, stream: PacketStream) {
     let channel = self.channel.clone();
-    channel.dispatch_start(Box::new(self));
+    channel.dispatch_start(Box::new(self), stream);
   }
 
   pub fn in_scope<F: FnOnce() -> T, T>(&self, f: F) -> T {
@@ -163,7 +163,7 @@ impl ExecutionContext {
     outputs_done
   }
 
-  pub(crate) async fn start(&mut self, options: &InterpreterOptions) -> Result<()> {
+  pub(crate) async fn start(&mut self, options: &InterpreterOptions, incoming: PacketStream) -> Result<()> {
     self.stats.mark("start");
     self.stats.start("execution");
     self.span.in_scope(|| trace!("starting execution"));
@@ -192,26 +192,9 @@ impl ExecutionContext {
       }
     }
 
-    let incoming = self.invocation.eject_stream();
-
     self.prime_input_ports(self.schematic.input().index(), incoming)?;
 
     self.stats.mark("start_done");
-    Ok(())
-  }
-
-  pub(crate) async fn start_instance(&self, instance: Arc<InstanceHandler>) -> Result<()> {
-    instance
-      .start(
-        self.id(),
-        self.channel.clone(),
-        self.options.as_ref().unwrap(),
-        self.callback.clone(),
-        self.root_config.clone(),
-        self.op_config.clone(),
-      )
-      .await?;
-
     Ok(())
   }
 
@@ -250,7 +233,7 @@ impl ExecutionContext {
     self.span.in_scope(|| trace!("finishing execution output"));
 
     // drop our output sender;
-    drop(self.output.0.take());
+    drop(self.output.take());
 
     // mark our end of execution
     self.stats.end("execution");
@@ -265,7 +248,7 @@ impl ExecutionContext {
   }
 
   pub(crate) fn emit_output_message(&self, packets: Vec<Packet>) -> Result<()> {
-    if let Some(ref output) = self.output.0 {
+    if let Some(ref output) = self.output {
       for packet in packets {
         output.send(packet).map_err(|_e| ExecutionError::ChannelSend)?;
       }
@@ -288,10 +271,6 @@ impl ExecutionContext {
       self.channel.dispatch_done(self.id());
     }
     Ok(())
-  }
-
-  pub(crate) fn take_stream(&mut self) -> Option<PacketStream> {
-    self.output.1.take()
   }
 
   pub(crate) fn take_tx_output(&self) -> Result<Vec<Packet>> {
@@ -329,7 +308,16 @@ impl ExecutionContext {
   pub(crate) async fn push_packets(&self, index: NodeIndex, packets: Vec<Packet>) -> Result<()> {
     let instance = self.instance(index).clone();
     if !instance.has_started() {
-      self.start_instance(instance.clone()).await?;
+      InstanceHandler::start(
+        instance.clone(),
+        self.id(),
+        self.channel.clone(),
+        self.options.as_ref().unwrap(),
+        self.callback.clone(),
+        self.root_config.clone(),
+        self.op_config.clone(),
+      )
+      .await?;
     }
 
     let _ = instance.accept_packets(packets);
@@ -395,4 +383,20 @@ pub(crate) fn accept_output(
 ) {
   instance.buffer_out(&port, payload);
   channel.dispatch_data(ctx_id, port);
+}
+
+#[cfg(test)]
+mod test {
+  use anyhow::Result;
+
+  use super::*;
+
+  #[test]
+  const fn test_send_sync() -> Result<()> {
+    const fn assert_send<T: Send>() {}
+    const fn assert_sync<T: Sync>() {}
+    assert_send::<ExecutionContext>();
+    assert_sync::<ExecutionContext>();
+    Ok(())
+  }
 }

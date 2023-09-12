@@ -52,13 +52,15 @@ impl SchematicExecutor {
     callback: Arc<RuntimeCallback>,
   ) -> Result<PacketStream> {
     invocation
-      .trace(|| debug!(operation = self.name(), origin=%invocation.origin,target=%invocation.target,"invoking"));
+      .trace(|| debug!(operation = self.name(), origin=%invocation.origin(),target=%invocation.target(),"invoking"));
+
+    let (invocation, stream) = invocation.split();
 
     let seed = Seed::unsafe_new(invocation.seed());
 
-    let mut ctx = ExecutionContext::new(
+    let (ctx, output_stream) = ExecutionContext::new(
       self.schematic.clone(),
-      invocation,
+      &invocation,
       self.channel.clone(),
       &components,
       &self_component,
@@ -67,8 +69,7 @@ impl SchematicExecutor {
       config,
       seed,
     );
-    let stream = ctx.take_stream().unwrap();
-    ExecutionContext::run(ctx);
-    Ok(stream)
+    ExecutionContext::run(ctx, stream);
+    Ok(output_stream)
   }
 }

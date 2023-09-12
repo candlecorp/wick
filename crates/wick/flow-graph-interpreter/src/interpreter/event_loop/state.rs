@@ -4,7 +4,7 @@ use std::sync::atomic::AtomicBool;
 use flow_graph::{PortDirection, PortReference};
 use tracing::Span;
 use uuid::Uuid;
-use wick_packet::PacketPayload;
+use wick_packet::{PacketPayload, PacketStream};
 
 use super::EventLoop;
 use crate::interpreter::channel::{CallComplete, InterpreterDispatchChannel};
@@ -89,9 +89,10 @@ impl State {
   pub(super) async fn handle_exec_start(
     &mut self,
     mut ctx: ExecutionContext,
+    stream: PacketStream,
     options: &InterpreterOptions,
   ) -> Result<(), ExecutionError> {
-    match ctx.start(options).await {
+    match ctx.start(options, stream).await {
       Ok(_) => {
         self.context_map.init_tx(ctx.id(), ctx);
         Ok(())
@@ -169,7 +170,8 @@ impl State {
           );
         }
       });
-      ctx.push_packets(port.node_index(), vec![packet]).await?;
+      let fut = ctx.push_packets(port.node_index(), vec![packet]);
+      fut.await?;
     }
     Ok(())
   }
