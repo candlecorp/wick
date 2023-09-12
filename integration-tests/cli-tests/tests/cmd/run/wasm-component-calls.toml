@@ -1,0 +1,68 @@
+#:schema https://raw.githubusercontent.com/assert-rs/trycmd/main/schema.json
+bin.name = "wick"
+args = ["run", "examples/cli/wasm-component-calls.wick"]
+stdout = """
+Printing packets received from app_config.static_site
+kind: wick/app@v1
+name: my new app
+resources:
+- name: PORT
+  resource:
+    kind: wick/resource/tcpport@v1
+    port: '{{ctx.env.HTTP_PORT}}'
+    address: 0.0.0.0
+- name: DIR
+  resource:
+    kind: wick/resource/volume@v1
+    path: dist
+triggers:
+- kind: wick/trigger/http@v1
+  resource: DIR
+  routers:
+  - kind: wick/router/static@v1
+    path: /
+    volume: DIR
+
+Printing packets received from app_config.static_site_raw()
+kind: wick/app@v1
+name: my new app
+resources:
+- name: PORT
+  resource:
+    kind: wick/resource/tcpport@v1
+    port: '{{ctx.env.HTTP_PORT}}'
+    address: 0.0.0.0
+- name: DIR
+  resource:
+    kind: wick/resource/volume@v1
+    path: dist
+triggers:
+- kind: wick/trigger/http@v1
+  resource: DIR
+  routers:
+  - kind: wick/router/static@v1
+    path: /
+    volume: DIR
+
+Printing packets received from the app_config.component().call()
+kind: wick/app@v1
+name: my super app
+resources:
+- name: PORT
+  resource:
+    kind: wick/resource/tcpport@v1
+    port: '{{ctx.env.HTTP_PORT}}'
+    address: 0.0.0.0
+- name: DIR
+  resource:
+    kind: wick/resource/volume@v1
+    path: dist
+triggers:
+- kind: wick/trigger/http@v1
+  resource: DIR
+  routers:
+  - kind: wick/router/static@v1
+    path: /
+    volume: DIR
+
+"""

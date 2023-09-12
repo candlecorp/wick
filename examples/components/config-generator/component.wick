@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://github.com/candlecorp/wick/releases/download/nightly/schema.json
+---
+name: 'config-generator'
+kind: wick/component@v1
+package:
+  registry:
+    host: registry.candle.dev
+    namespace: common
+metadata:
+  version: '0.0.1'
+component:
+  kind: wick/component/wasmrs@v1
+  ref: build/component.signed.wasm
+  operations:
+    - name: static_site
+      with:
+        - name: app_name
+          type: string
+      inputs:
+        - name: dir
+          type: string
+      outputs:
+        - name: yaml
+          type: string

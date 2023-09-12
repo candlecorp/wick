@@ -65,16 +65,23 @@ test: codegen early-errors wasm unit-tests
 # Run unit tests
 unit-tests: _check_nextest _codegen-tests
   cargo nextest run --workspace -E 'not (test(slow_test) | test(integration_test))'
+  cargo nextest run -p cli-tests -E 'not (test(slow_test) | test(integration_test))'
+  just wick-unit-tests
 
 # Run integration tests
 integration-tests: _check_nextest _codegen-tests
   cargo nextest run --workspace -E 'not (test(slow_test))'
-  just wick-tests
+  cargo nextest run -p cli-tests -E 'not (test(slow_test))'
+  just wick-unit-tests
+  just wick-integration-tests
   cargo test --manifest-path integration-tests/template/Cargo.toml
 
 # Tests run via `wick test`
-wick-tests:
+wick-unit-tests:
   just _wick-component-tests
+
+# Integration tests run via `wick test`
+wick-integration-tests:
   just _wick-http-tests
   just _wick-db-tests
 
@@ -212,6 +219,9 @@ _run-wasm-task task:
     "crates/integration/test-cli-with-db",
     "examples/http/middleware/request",
     "examples/components/wasi-fs",
+    "examples/components/config-generator",
+    "examples/components/cli-trigger",
+    "examples/cli/wasm-cli",
     "examples/http/wasm-http-call/wasm-component",
   ]
   for dir in wasm:
@@ -228,6 +238,7 @@ _wick-db-tests:
   {{wick}} test ./examples/db/sqlite-component.wick
   {{wick}} test ./examples/db/sqlite-inmemory-component.wick
   {{wick}} test ./integration-tests/cli-tests/tests/cmd/db/azuresql-tx-test.wick
+  {{wick}} test ./examples/components/composite-db-import.wick
 
 # Run `wick` tests for http components
 _wick-http-tests:
@@ -237,7 +248,6 @@ _wick-http-tests:
 # Run `wick` tests for generic components
 _wick-component-tests:
   {{wick}} test ./examples/components/hello-world.wick
-  {{wick}} test ./examples/components/composite-db-import.wick
   {{wick}} test ./examples/components/wasi-fs/component.wick
   {{wick}} test ./examples/components/composite-imports.wick
   {{wick}} test ./examples/components/composite-provides.wick
