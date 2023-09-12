@@ -22,7 +22,6 @@ triggers:
   - kind: wick/router/static@v1
     path: /
     volume: DIR
-    indexes: true
 
 Printing packets received from app_config.static_site_raw()
 kind: wick/app@v1
@@ -44,7 +43,6 @@ triggers:
   - kind: wick/router/static@v1
     path: /
     volume: DIR
-    indexes: true
 
 Printing packets received from the app_config.component().call()
 kind: wick/app@v1
@@ -66,6 +64,5 @@ triggers:
   - kind: wick/router/static@v1
     path: /
     volume: DIR
-    indexes: true
 
 """
