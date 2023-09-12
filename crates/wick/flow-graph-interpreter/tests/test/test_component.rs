@@ -169,7 +169,7 @@ fn stream(_seed: u64) -> (Sender, PacketStream) {
   (sender, stream)
 }
 
-fn defer(futs: Vec<impl Future<Output = Result<(), impl std::error::Error + Send + Sync>> + Sync + Send + 'static>) {
+fn defer(futs: Vec<impl Future<Output = Result<(), impl std::error::Error + Send + Sync>> + Send + 'static>) {
   tokio::spawn(async move {
     let rng = Random::from_seed(Seed::unsafe_new(1));
     let millis = rng.range(10, 100);
@@ -188,9 +188,9 @@ impl Component for TestComponent {
     _config: Option<RuntimeConfig>,
     callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let operation = invocation.target.operation_id();
+    let operation = invocation.target().operation_id();
     println!("got op {} in test collection", operation);
-    Box::pin(async move { Ok(handler(invocation, callback)?) })
+    Box::pin(async move { handler(invocation, callback) })
   }
 
   fn signature(&self) -> &ComponentSignature {
@@ -199,7 +199,7 @@ impl Component for TestComponent {
 }
 
 fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Result<PacketStream> {
-  let mut payload_stream = invocation.packets;
+  let (invocation, mut payload_stream) = invocation.split();
   let operation = invocation.target.operation_id().to_owned();
   println!("handling {}", operation);
   let (mut send, stream) = stream(1);

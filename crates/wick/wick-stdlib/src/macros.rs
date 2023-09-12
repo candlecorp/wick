@@ -4,9 +4,10 @@ macro_rules! request_response {
     inputs: {$($ikey:ident => $ity:ty),* $(,)?},
     output: $okey:expr,
   }) => {
-    pub(crate) async fn $name(mut invocation: wick_packet::Invocation) -> Result<PacketStream, flow_component::ComponentError> {
+    pub(crate) async fn $name( invocation: wick_packet::Invocation) -> Result<PacketStream, flow_component::ComponentError> {
+      let (_inv, mut stream) = invocation.split();
       #[allow(unused_parens)]
-      let ($(mut $ikey),*) = fan_out!(invocation.packets, $(stringify!($ikey)),*);
+      let ($(mut $ikey),*) = fan_out!(stream, $(stringify!($ikey)),*);
       let (tx, rx) = PacketStream::new_channels();
       tokio::spawn(async move {
         let error = loop {

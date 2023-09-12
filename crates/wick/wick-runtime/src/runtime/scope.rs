@@ -121,7 +121,7 @@ impl InvocationHandler for Scope {
     invocation: Invocation,
     config: Option<RuntimeConfig>,
   ) -> std::result::Result<BoxFuture<std::result::Result<InvocationResponse, ComponentError>>, ComponentError> {
-    let tx_id = invocation.tx_id;
+    let tx_id = invocation.tx_id();
 
     let fut = self.inner.interpreter.invoke(invocation, config);
     let task = async move {

@@ -30,12 +30,12 @@ impl Component for ScopeComponent {
     config: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
-    let target_url = invocation.target_url();
+    let target_url = invocation.target().url();
 
     invocation.trace(|| {
       debug!(
         scope_id = %self.scope_id,
-        target =  %invocation.target,
+        target =  %invocation.target(),
         "scope:invoke",
       );
     });
@@ -44,14 +44,15 @@ impl Component for ScopeComponent {
       let scope = Scope::for_id(&self.scope_id)
         .ok_or_else(|| flow_component::ComponentError::msg(format!("scope '{}' not found", target_url)))?;
 
-      let target_component = invocation.target.component_id().to_owned();
+      let target_component = invocation.target().component_id().to_owned();
       if target_component != scope.namespace() {
         debug!(
           orig_target = target_component,
           runtime = scope.namespace(),
           "translating invocation target to scope namespace"
         );
-        invocation.target = Entity::operation(scope.namespace(), invocation.target.operation_id());
+        let new_target = Entity::operation(scope.namespace(), invocation.target().operation_id());
+        invocation = invocation.redirect(new_target);
       }
 
       invocation.trace(|| trace!(target = %target_url, "invoking"));
