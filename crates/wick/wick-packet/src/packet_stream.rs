@@ -32,7 +32,7 @@ pin_project! {
   #[must_use]
   pub struct PacketStream {
     #[pin]
-    inner: std::sync::Arc<parking_lot::Mutex<dyn Stream<Item = Result<Packet>> + Send + Unpin>>,
+    inner: Box<dyn Stream<Item = Result<Packet>> + Send + Unpin>,
     config: Option<ContextConfig>,
     span: Span
   }
@@ -110,13 +110,9 @@ impl Stream for PacketStream {
 
   fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
     let mut this = self;
-    #[allow(unsafe_code)] // this is the implementation of futures::pin_mut!()
-    let mut this = unsafe { Pin::new_unchecked(&mut this) };
+    let mut this = Pin::new(&mut this);
     let config = this.config.take();
-    let poll = {
-      let mut stream = this.inner.lock();
-      Pin::new(&mut *stream).poll_next(cx)
-    };
+    let poll = { Pin::new(&mut *this.inner).poll_next(cx) };
 
     // Backwards compatibility note:
     // This is a hack added when context & operation configuration was introduced.
