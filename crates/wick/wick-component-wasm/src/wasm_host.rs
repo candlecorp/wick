@@ -206,7 +206,7 @@ impl WasmHost {
   }
 
   #[allow(clippy::needless_pass_by_value)]
-  pub fn call(&self, mut invocation: Invocation, config: Option<RuntimeConfig>) -> Result<PacketStream> {
+  pub fn call(&self, invocation: Invocation, config: Option<RuntimeConfig>) -> Result<PacketStream> {
     let _span = self.span.enter();
     let (invocation, mut stream) = invocation.split();
     let component_name = invocation.target.operation_id();
