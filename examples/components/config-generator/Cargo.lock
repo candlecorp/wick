@@ -914,6 +914,15 @@ checksum = "28b29a3cd74f0f4598934efe3aeba42bae0eb4680554128851ebbecb02af14e6"
 
 [[package]]
 name = "itertools"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
@@ -974,20 +983,77 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4668fb0ea861c1df094127ac5f1da3409a82116a4ba74fca2e58ef927159bb3"
 
 [[package]]
-name = "liquid-json"
-version = "0.6.0"
+name = "liquid"
+version = "0.26.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fda1293f31a41ad176e3010dd595a2546185d03d698953d77e6b270e39df3ce"
+checksum = "69f68ae1011499ae2ef879f631891f21c78e309755f4a5e483c4a8f12e10b609"
+dependencies = [
+ "doc-comment",
+ "liquid-core",
+ "liquid-derive",
+ "liquid-lib",
+ "serde",
+]
+
+[[package]]
+name = "liquid-core"
+version = "0.26.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79e0724dfcaad5cfb7965ea0f178ca0870b8d7315178f4a7179f5696f7f04d5f"
+dependencies = [
+ "anymap2",
+ "itertools 0.10.5",
+ "kstring",
+ "liquid-derive",
+ "num-traits",
+ "pest",
+ "pest_derive",
+ "regex",
+ "serde",
+ "time",
+]
+
+[[package]]
+name = "liquid-derive"
+version = "0.26.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc2fb41a9bb4257a3803154bdf7e2df7d45197d1941c9b1a90ad815231630721"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.32",
+]
+
+[[package]]
+name = "liquid-json"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d2ca2e69be23a333da932de11a7e9384a34388484fa1e6397b96677e3e5b8bd"
 dependencies = [
  "base64 0.21.4",
- "loose-liquid",
- "loose-liquid-core",
- "loose-liquid-lib",
+ "liquid",
+ "liquid-core",
+ "liquid-lib",
  "once_cell",
  "regex",
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "liquid-lib"
+version = "0.26.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2a17e273a6fb1fb6268f7a5867ddfd0bd4683c7e19b51084f3d567fad4348c0"
+dependencies = [
+ "itertools 0.10.5",
+ "liquid-core",
+ "once_cell",
+ "percent-encoding",
+ "regex",
+ "time",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -1005,63 +1071,6 @@ name = "log"
 version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
-
-[[package]]
-name = "loose-liquid"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8f63f0abe02457a2deef7569256795cef63508e0cac98db080235bded31d7a7"
-dependencies = [
- "doc-comment",
- "loose-liquid-core",
- "loose-liquid-derive",
- "loose-liquid-lib",
- "serde",
-]
-
-[[package]]
-name = "loose-liquid-core"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7af79546e1a0ee1ccdf060851d483882bde7fa44867b96ae3f65c8b60a57000a"
-dependencies = [
- "anymap2",
- "itertools",
- "kstring",
- "loose-liquid-derive",
- "num-traits",
- "pest",
- "pest_derive",
- "regex",
- "serde",
- "time",
-]
-
-[[package]]
-name = "loose-liquid-derive"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "292ff081244def41f5f038322867d60472efcf42620703e930d50015cc526af6"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.32",
-]
-
-[[package]]
-name = "loose-liquid-lib"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9bc580906c4e98055fa02642f3c548653b4ba3988d9a43bb74a9a1ec604be28b"
-dependencies = [
- "itertools",
- "loose-liquid-core",
- "once_cell",
- "percent-encoding",
- "regex",
- "time",
- "unicode-segmentation",
-]
 
 [[package]]
 name = "memchr"
@@ -1592,7 +1601,7 @@ dependencies = [
 
 [[package]]
 name = "seeded-random"
-version = "0.4.0"
+version = "0.3.0"
 dependencies = [
  "parking_lot",
  "rand",
@@ -2406,7 +2415,7 @@ dependencies = [
  "check_keyword",
  "derive_builder",
  "heck",
- "itertools",
+ "itertools 0.11.0",
  "prettyplease",
  "proc-macro2",
  "quote",
