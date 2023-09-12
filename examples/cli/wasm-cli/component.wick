@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://github.com/candlecorp/wick/releases/download/nightly/schema.json
+---
+name: 'wasm-component-calls'
+kind: wick/component@v1
+package:
+  registry:
+    host: registry.candle.dev
+    namespace: common
+metadata:
+  version: '0.0.1'
+import:
+  - name: app_config
+    component:
+      kind: wick/component/manifest@v1
+      ref: ../../components/config-generator/component.wick
+component:
+  kind: wick/component/wasmrs@v1
+  ref: build/component.signed.wasm
+  operations:
+    - name: main
+      inputs:
+        - name: args
+          type: string[]
+      outputs:
+        - name: code
+          type: uint
