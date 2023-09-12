@@ -18,6 +18,7 @@ use wick_packet::{
   Entity,
   InherentData,
   Invocation,
+  InvocationData,
   Packet,
   PacketSender,
   PacketStream,
@@ -456,7 +457,7 @@ impl Operation for Op {
   #[allow(clippy::too_many_lines)]
   fn handle(
     &self,
-    mut invocation: Invocation,
+    invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let (root_tx, root_rx) = invocation.make_response();
@@ -467,8 +468,8 @@ impl Operation for Op {
     tokio::spawn(async move {
       // the substream level the condition was found at.
       let mut condition_level = 0;
-      let mut router = SwitchRouter::new(invocation.span.clone());
-      let mut root_stream = invocation.eject_stream();
+      let mut router = SwitchRouter::new(invocation.span().clone());
+      let (invocation, mut root_stream) = invocation.split();
 
       let input_streams: HashMap<String, InputStream> = context
         .config
@@ -674,7 +675,7 @@ impl Operation for Op {
 
 fn new_route_handler(
   target: Entity,
-  invocation: &Invocation,
+  invocation: &InvocationData,
   inherent: InherentData,
   callback: Arc<RuntimeCallback>,
   op_config: Option<RuntimeConfig>,
@@ -684,7 +685,7 @@ fn new_route_handler(
 
   let (outer_tx, outer_rx) = invocation.make_response();
   let (inner_tx, inner_rx) = invocation.make_response();
-  let compref = ComponentReference::new(invocation.target.clone(), target);
+  let compref = ComponentReference::new(invocation.target().clone(), target);
 
   span.in_scope(|| trace!(%compref,"switch:case: route handler created"));
   let handle = tokio::spawn(async move {

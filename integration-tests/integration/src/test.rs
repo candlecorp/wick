@@ -46,7 +46,7 @@ impl Component for NativeComponent {
     _data: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let target = invocation.target_url();
+    let target = invocation.target().url();
     trace!("test collection invoke: {}", target);
     Box::pin(async move {
       let stream = dispatch!(invocation, {
@@ -64,13 +64,14 @@ impl Component for NativeComponent {
 }
 
 async fn error(_input: Invocation) -> Result<PacketStream, ComponentError> {
-  Err(anyhow::anyhow!("Always errors").into())
+  Err(anyhow::anyhow!("Always errors"))
 }
 
-async fn test_component(mut input: Invocation) -> Result<PacketStream, ComponentError> {
+async fn test_component(input: Invocation) -> Result<PacketStream, ComponentError> {
   let (tx, stream) = input.make_response();
   tokio::spawn(async move {
-    let mut input = fan_out!(input.packets, "input");
+    let mut stream = input.into_stream();
+    let mut input = fan_out!(stream, "input");
     while let Some(Ok(input)) = input.next().await {
       if input.is_done() {
         break;
@@ -84,6 +85,7 @@ async fn test_component(mut input: Invocation) -> Result<PacketStream, Component
 
   Ok(stream)
 }
+
 mod tests {
 
   use flow_component::panic_callback;

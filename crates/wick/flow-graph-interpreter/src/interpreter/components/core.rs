@@ -153,7 +153,7 @@ impl CoreComponent {
 macro_rules! core_op {
   ($type:ty, $inv:expr, $name:expr, $callback:expr, $data:ident) => {{
     let config = <$type>::decode_config($data)?;
-    let ctx = Context::new(config, &$inv.inherent, $callback);
+    let ctx = Context::new(config, $inv.inherent(), $callback);
     $name.handle($inv, ctx).await
   }};
 }
@@ -165,17 +165,17 @@ impl Component for CoreComponent {
     data: Option<RuntimeConfig>,
     callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| debug!(target = %invocation.target, namespace = Self::ID));
+    invocation.trace(|| debug!(target = %invocation.target(), namespace = Self::ID));
 
     let task = async move {
-      match invocation.target.operation_id() {
+      match invocation.target().operation_id() {
         sender::Op::ID => core_op! {sender::Op, invocation, self.sender, callback, data},
         pluck::Op::ID => core_op! {pluck::Op, invocation, self.pluck, callback, data},
         merge::Op::ID => core_op! {merge::Op, invocation, self.merge, callback, data},
         switch::Op::ID => core_op! {switch::Op, invocation, self.switch, callback, data},
         collect::Op::ID => core_op! {collect::Op, invocation, self.collect, callback, data},
         _ => {
-          panic!("Core operation {} not handled.", invocation.target.operation_id());
+          panic!("Core operation {} not handled.", invocation.target().operation_id());
         }
       }
     };

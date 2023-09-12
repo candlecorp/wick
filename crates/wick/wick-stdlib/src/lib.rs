@@ -200,7 +200,7 @@ impl Component for Collection {
     _data: Option<RuntimeConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
-    let target = invocation.target_url();
+    let target = invocation.target().url();
     trace!("stdlib invoke: {}", target);
 
     Box::pin(async move {

@@ -133,7 +133,12 @@ async fn event_loop(
           EventKind::CallComplete(data) => state.handle_call_complete(ctx_id, data).instrument(tx_span).await,
           EventKind::PortData(data) => state.handle_port_data(ctx_id, data, &tx_span).await,
           EventKind::ExecutionDone => state.handle_exec_done(ctx_id).instrument(tx_span).await,
-          EventKind::ExecutionStart(context) => state.handle_exec_start(*context, &options).instrument(tx_span).await,
+          EventKind::ExecutionStart(context, stream) => {
+            state
+              .handle_exec_start(*context, stream, &options)
+              .instrument(tx_span)
+              .await
+          }
           EventKind::Ping(ping) => {
             trace!(ping);
             Ok(())

@@ -74,34 +74,6 @@ impl DatabaseProvider for Client {
     self.inner().get_connection().await
   }
 }
-// pub(crate) struct Transaction<'a>(Arc<dyn ClientConnection + Sync + Send + 'a>);
-
-// impl<'a> Transaction<'a> {
-//   fn new(conn: Arc<dyn ClientConnection + Sync + Send + 'a>) -> Self {
-//     Self(conn)
-//   }
-//   fn end_transaction(&self) -> BoxFuture<Result<(), Error>> {
-//     Box::pin(async move { Ok(()) })
-//   }
-// }
-
-// #[async_trait::async_trait]
-// impl<'a> ClientConnection for Transaction<'a> {
-//   async fn query(&mut self, stmt: &str, bound_args: Vec<SqlWrapper>) -> Result<BoxStream<Result<Value, Error>>, Error> {
-//     self.0.query(stmt, bound_args).await
-//   }
-//   async fn exec(&mut self, stmt: &str, bound_args: Vec<SqlWrapper>) -> Result<(), Error> {
-//     self.0.exec(stmt, bound_args).await
-//   }
-
-//   async fn handle_error(&mut self, e: Error, behavior: ErrorBehavior) -> Result<(), Error> {
-//     self.0.handle_error(e, behavior).await
-//   }
-
-//   async fn finish(&mut self) -> Result<(), Error> {
-//     todo!()
-//   }
-// }
 
 /// The Azure SQL Wick component.
 #[derive(Clone)]
@@ -159,15 +131,15 @@ impl SqlComponent {
 impl Component for SqlComponent {
   fn handle(
     &self,
-    mut invocation: Invocation,
+    invocation: Invocation,
     _data: Option<RuntimeConfig>, // TODO: this needs to be used
     _callback: Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let client = self.provider.clone();
     let opdef = self
       .config
-      .get_operation(invocation.target.operation_id())
-      .ok_or_else(|| Error::MissingOperation(invocation.target.operation_id().to_owned()))
+      .get_operation(invocation.target().operation_id())
+      .ok_or_else(|| Error::MissingOperation(invocation.target().operation_id().to_owned()))
       .cloned();
 
     Box::pin(async move {
@@ -175,7 +147,8 @@ impl Component for SqlComponent {
       let stmt = client.get_statement(opdef.name()).unwrap().to_owned();
 
       let input_names: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
-      let input_streams = wick_packet::split_stream(invocation.eject_stream(), input_names);
+      let (invocation, stream) = invocation.split();
+      let input_streams = wick_packet::split_stream(stream, input_names);
       let (tx, rx) = invocation.make_response();
       tokio::spawn(async move {
         let start = SystemTime::now();

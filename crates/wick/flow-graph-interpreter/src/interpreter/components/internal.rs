@@ -31,15 +31,15 @@ impl Component for InternalComponent {
     _config: Option<RuntimeConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    invocation.trace(|| debug!(target = %invocation.target, id=%invocation.id,namespace = Self::ID));
-    let op = invocation.target.operation_id().to_owned();
+    invocation.trace(|| debug!(target = %invocation.target(), id=%invocation.id(),namespace = Self::ID));
+    let op = invocation.target().operation_id().to_owned();
 
     let is_oneshot = op == SCHEMATIC_INPUT;
     let task = async move {
       if op == SCHEMATIC_OUTPUT {
         panic!("Output component should not be executed");
       } else if is_oneshot {
-        Ok(invocation.packets)
+        Ok(invocation.into_stream())
       } else {
         panic!("Internal component {} not handled.", op);
       }

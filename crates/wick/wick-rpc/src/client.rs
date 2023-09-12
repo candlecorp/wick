@@ -142,9 +142,9 @@ impl RpcClient {
   }
 
   /// Send an invoke RPC command with an [Invocation] object.
-  pub async fn invoke(&mut self, mut invocation: Invocation) -> Result<PacketStream, RpcClientError> {
+  pub async fn invoke(&mut self, invocation: Invocation) -> Result<PacketStream, RpcClientError> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
-    let mut stream = invocation.eject_stream();
+    let (invocation, mut stream) = invocation.split();
     tx.send(InvocationRequest {
       data: Some(generated::wick::invocation_request::Data::Invocation(invocation.into())),
     })
@@ -164,22 +164,4 @@ impl RpcClient {
       .invoke_raw(tokio_stream::wrappers::UnboundedReceiverStream::new(rx))
       .await
   }
-
-  // /// Make an invocation with data passed as a JSON string.
-  // pub async fn invoke_from_json(
-  //   &mut self,
-  //   origin: Entity,
-  //   component: Entity,
-  //   data: &str,
-  //   transpose: bool,
-  //   inherent_data: Option<InherentData>,
-  // ) -> Result<PacketStream, RpcClientError> {
-  //   let mut payload = TransportMap::from_json_output(data).map_err(|e| RpcClientError::Sdk(e.into()))?;
-  //   if transpose {
-  //     payload.transpose_output_name();
-  //   }
-  //   let invocation = Invocation::new(origin, component, payload, inherent_data);
-
-  //   self.invoke(invocation).await
-  // }
 }

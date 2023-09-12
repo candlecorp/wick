@@ -114,7 +114,7 @@ impl Runtime {
     } else {
       Err(RuntimeError::ScopeNotFound(
         path.map(|p| p.iter().copied().map(Into::into).collect()),
-        Some(invocation.target),
+        Some(invocation.target().clone()),
       ))
     }
   }

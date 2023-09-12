@@ -225,7 +225,7 @@ mod test {
   use wick_config::config::HttpConfigBuilder;
   use wick_config::WickConfiguration;
   use wick_invocation_server::connect_rpc_client;
-  use wick_packet::{packet_stream, packets, Entity, InherentData, Packet};
+  use wick_packet::{packet_stream, packets, Entity, InherentData, InvocationData, Packet};
 
   use super::*;
   use crate::{ComponentHostBuilder, Host};
@@ -309,7 +309,7 @@ mod test {
     println!("connected to server");
     let passed_data = "logging output";
     let packets = packets![("input", passed_data)];
-    let invocation: wick_rpc::rpc::Invocation = Invocation::test("test", Entity::local("logger"), Vec::new(), None)?
+    let invocation: wick_rpc::rpc::Invocation = InvocationData::test("test", Entity::local("logger"), None)?
       .try_into()
       .unwrap();
 

@@ -23,6 +23,7 @@ use wick_packet::{
   ComponentReference,
   ContextTransport,
   Entity,
+  InherentData,
   Invocation,
   PacketStream,
   RuntimeConfig,
@@ -205,20 +206,20 @@ impl WasmHost {
   }
 
   #[allow(clippy::needless_pass_by_value)]
-  pub fn call(&self, mut invocation: Invocation, config: Option<RuntimeConfig>) -> Result<PacketStream> {
+  pub fn call(&self, invocation: Invocation, config: Option<RuntimeConfig>) -> Result<PacketStream> {
     let _span = self.span.enter();
+    let (invocation, mut stream) = invocation.split();
     let component_name = invocation.target.operation_id();
-    let inherent = invocation.inherent;
     let now = Instant::now();
     let ctx = self.ctx.clone();
     let index = ctx
       .get_export("wick", component_name)
       .map_err(|_| crate::Error::OperationNotFound(component_name.to_owned(), ctx.get_exports()))?;
+    let inherent = InherentData::new(invocation.inherent.seed, invocation.inherent.timestamp);
+    stream.set_context(config.unwrap_or_default(), inherent);
 
-    invocation.packets.set_context(config.unwrap_or_default(), inherent);
-
-    let s = packetstream_to_wasmrs(index, invocation.packets);
-    let out = ctx.request_channel(Box::pin(s));
+    let wasmrs_stream = packetstream_to_wasmrs(index, stream);
+    let out = ctx.request_channel(Box::pin(wasmrs_stream));
     trace!(
       component = component_name,
       duration_μs = ?now.elapsed().as_micros(),

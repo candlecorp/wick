@@ -39,12 +39,12 @@ impl TestComponent {
 impl Component for TestComponent {
   fn handle(
     &self,
-    mut invocation: Invocation,
+    invocation: Invocation,
     _data: Option<RuntimeConfig>,
     _callback: Arc<RuntimeCallback>,
   ) -> flow_component::BoxFuture<std::result::Result<PacketStream, flow_component::ComponentError>> {
     Box::pin(async move {
-      let stream = invocation.eject_stream();
+      let stream = invocation.into_stream();
       let packets = stream.collect::<Vec<_>>().await;
       let mut packets = packets
         .into_iter()

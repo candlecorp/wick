@@ -3,7 +3,7 @@ use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use futures::{FutureExt, StreamExt};
 use serde_json::Value;
 use wick_interface_types::{operation, OperationSignature};
-use wick_packet::{Invocation, Packet, PacketStream, RuntimeConfig, StreamMap};
+use wick_packet::{Invocation, Packet, PacketStream, RuntimeConfig};
 
 use crate::BoxFuture;
 pub(crate) struct Op {
@@ -77,15 +77,19 @@ impl Operation for Op {
     invocation: Invocation,
     context: Context<Self::Config>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
-    let mut map = StreamMap::from_stream(invocation.packets, self.input_names(&context.config));
-    let mapped = map.take("input").map_err(ComponentError::new).map(|input| {
-      input
-        .map(move |next| {
-          let field = context.config.field.clone();
-          next.and_then(move |packet| {
-            if packet.has_data() {
-              let obj = packet.decode_value()?;
-              let value = pluck(&obj, &field).map_or_else(
+    // let mut map = StreamMap::from_stream(invocation.packets, self.input_names(&context.config));
+    let field = context.config.field.clone();
+    let stream = invocation.into_stream();
+    let mapped = stream.filter_map(move |next| {
+      let a = next.map_or_else(
+        |e| Some(Err(e)),
+        |packet| {
+          if packet.port() != "input" {
+            return None;
+          }
+          if packet.has_data() {
+            Some(packet.decode_value().map(|obj| {
+              pluck(&obj, &field).map_or_else(
                 || {
                   Packet::err(
                     "output",
@@ -93,18 +97,16 @@ impl Operation for Op {
                   )
                 },
                 |value| Packet::encode("output", value),
-              );
-
-              Ok(value)
-            } else {
-              Ok(packet.set_port("output"))
-            }
-          })
-        })
-        .boxed()
-        .into()
+              )
+            }))
+          } else {
+            Some(Ok(packet.set_port("output")))
+          }
+        },
+      );
+      futures::future::ready(a)
     });
-    async move { mapped }.boxed()
+    async move { Ok(PacketStream::new(mapped)) }.boxed()
   }
 
   fn get_signature(&self, _config: Option<&Self::Config>) -> &OperationSignature {

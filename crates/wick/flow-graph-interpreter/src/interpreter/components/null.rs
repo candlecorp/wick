@@ -39,12 +39,12 @@ impl NullComponent {
 impl Component for NullComponent {
   fn handle(
     &self,
-    mut invocation: Invocation,
+    invocation: Invocation,
     _data: Option<RuntimeConfig>,
     _callback: std::sync::Arc<RuntimeCallback>,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     spawn(async move {
-      let mut stream = invocation.eject_stream();
+      let (invocation, mut stream) = invocation.split();
       while let Some(p) = stream.next().await {
         match p {
           Err(e) => invocation.trace(|| error!("received error on dropped stream: {}", e)),

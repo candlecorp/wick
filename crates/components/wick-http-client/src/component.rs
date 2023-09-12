@@ -91,7 +91,7 @@ impl Component for HttpClientComponent {
     let config = self.config.clone();
     let baseurl = self.base.clone();
     let codec = config.codec().copied();
-    let opdef = get_op_by_name(&config, invocation.target.operation_id());
+    let opdef = get_op_by_name(&config, invocation.target().operation_id());
     let path_template = opdef
       .as_ref()
       .and_then(|op| self.path_templates.get(op.name()).cloned());
@@ -99,7 +99,7 @@ impl Component for HttpClientComponent {
 
     Box::pin(async move {
       let (tx, rx) = invocation.make_response();
-      let span = invocation.span.clone();
+      let span = invocation.span().clone();
       let fut = handle(
         opdef,
         tx.clone(),
@@ -134,7 +134,7 @@ fn get_op_by_name(config: &HttpClientComponentConfig, name: &str) -> Option<Http
 async fn handle(
   opdef: Option<HttpClientOperationDefinition>,
   tx: FluxChannel<Packet, wick_packet::Error>,
-  mut invocation: Invocation,
+  invocation: Invocation,
   root_config: Option<RuntimeConfig>,
   op_config: Option<RuntimeConfig>,
   codec: Option<Codec>,
@@ -146,14 +146,15 @@ async fn handle(
     return Err(Error::InvalidBaseUrl(baseurl).into());
   }
   let Some(opdef) = opdef else {
-    return Err(Error::OpNotFound(invocation.target.operation_id().to_owned()).into());
+    return Err(Error::OpNotFound(invocation.target().operation_id().to_owned()).into());
   };
   // Defer to operation codec, then to client codec, then to default.
   let codec = opdef.codec().copied().unwrap_or(codec.unwrap_or_default());
   let template = path_template.unwrap();
 
   let input_list: Vec<_> = opdef.inputs().iter().map(|i| i.name.clone()).collect();
-  let mut inputs = wick_packet::StreamMap::from_stream(invocation.eject_stream(), input_list);
+  let (invocation, stream) = invocation.split();
+  let mut inputs = wick_packet::StreamMap::from_stream(stream, input_list);
   let mut handles = Vec::new();
 
   'outer: loop {
