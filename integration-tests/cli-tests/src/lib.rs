@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod test {
-  use anyhow::Result;
+  use anyhow::{bail, Result};
   use escargot::CargoRun;
 
   fn build_wick() -> Result<CargoRun> {
@@ -30,19 +30,37 @@ mod test {
 
   fn run_tests(path: &str) -> Result<()> {
     let bin = build_wick()?;
-    set_dir()?;
+    let cwd = std::env::current_dir().unwrap();
+    println!("cwd: {}", cwd.display());
 
     std::env::set_var("TRYCMD", "dump");
 
-    let trycmd = trycmd::TestCases::new();
-    trycmd
-      .case(path)
-      .default_bin_name("wick")
-      .default_bin_path(bin.path())
-      .register_bin("wick", bin.path());
+    set_dir()?;
+    let files = glob::glob(path).unwrap().collect::<Vec<_>>();
+    if files.is_empty() {
+      bail!("No files found for pattern: {}", path);
+    }
+    for file in files {
+      set_dir()?;
+      let trycmd = trycmd::TestCases::new();
 
-    trycmd.run();
+      trycmd
+        .case(file.unwrap())
+        .default_bin_name("wick")
+        .default_bin_path(bin.path())
+        .register_bin("wick", bin.path());
+
+      trycmd.run();
+      reset_dir()?;
+    }
+
     reset_dir()?;
+    Ok(())
+  }
+
+  #[test]
+  fn wick_run() -> Result<()> {
+    run_tests("integration-tests/cli-tests/tests/cmd/run/*.toml")?;
     Ok(())
   }
 
@@ -51,22 +69,13 @@ mod test {
 
     #[test]
     fn db_tests() -> Result<()> {
-      run_tests("tests/cli-tests/tests/cmd/db/*.toml")?;
-      run_tests("tests/cli-tests/tests/cmd/db/*.trycmd")?;
-      Ok(())
-    }
-
-    #[test]
-    fn wick_run() -> Result<()> {
-      run_tests("tests/cli-tests/tests/cmd/run/*.toml")?;
-      run_tests("tests/cli-tests/tests/cmd/run/*.trycmd")?;
+      run_tests("integration-tests/cli-tests/tests/cmd/db/*.toml")?;
       Ok(())
     }
 
     #[test]
     fn wick_install() -> Result<()> {
-      run_tests("tests/cli-tests/tests/cmd/install/*.toml")?;
-      run_tests("tests/cli-tests/tests/cmd/install/*.trycmd")?;
+      run_tests("integration-tests/cli-tests/tests/cmd/install/*.toml")?;
       Ok(())
     }
   }

@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://github.com/candlecorp/wick/releases/download/nightly/schema.json
+---
+name: 'cli-configurator'
+kind: wick/app@v1
+package:
+  registry:
+    host: registry.candle.dev
+    namespace: common
+metadata:
+  version: '0.0.1'
+import:
+  - name: comp
+    component:
+      kind: wick/component/manifest@v1
+      ref: ./wasm-cli/component.wick
+triggers:
+  - kind: wick/trigger/cli@v1
+    operation: comp::main
