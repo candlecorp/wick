@@ -21,6 +21,10 @@ pub(crate) struct Options {
 
   #[clap(flatten)]
   pub(crate) oci_opts: crate::options::oci::OciOptions,
+
+  /// Write package files directly to output dir, don't use the wick heirachical structure.
+  #[clap(long = "flattened", short = 'F', action)]
+  pub(crate) flattened: bool,
 }
 
 #[allow(clippy::unused_async)]
@@ -29,20 +33,38 @@ pub(crate) async fn handle(
   settings: wick_settings::Settings,
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
-  let oci_opts = reconcile_fetch_options(&opts.reference, &settings, opts.oci_opts, Some(opts.output));
+  let flattened = opts.flattened;
+  let force = opts.oci_opts.force;
+  let mut oci_opts = reconcile_fetch_options(&opts.reference, &settings, opts.oci_opts, Some(opts.output));
+  oci_opts.set_ignore_manifest(true);
+  if flattened {
+    if !force {
+      oci_opts.set_on_existing(wick_oci_utils::OnExisting::Error);
+    }
+    oci_opts.set_flatten(true);
+  }
 
   span.in_scope(|| debug!(options=?oci_opts, reference= opts.reference, "pulling reference"));
 
-  let pull_result = pull(opts.reference, oci_opts).instrument(span.clone()).await?;
+  let package = pull(opts.reference, oci_opts).instrument(span.clone()).await?;
 
-  let files = pull_result
+  let files = package
     .list_files()
     .iter()
-    .map(|f| f.path().display().to_string())
+    .map(|f| f.package_path().display().to_string())
     .collect::<Vec<_>>();
 
+  let basedir = package.basedir().unwrap();
+
   Ok(StructuredOutput::new(
-    format!("Pulled file: \n {}", files.join("\n")),
+    format!(
+      "Pulled file: \n{}",
+      files
+        .iter()
+        .map(|n| format!("- {}", basedir.join(n).display()))
+        .collect::<Vec<_>>()
+        .join("\n")
+    ),
     serde_json::json!({"files": files}),
   ))
 }

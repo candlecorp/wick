@@ -13,16 +13,16 @@ pub mod media_types;
 /// Represents a single file in a Wick package.
 #[derive(Debug, Clone)]
 pub struct PackageFile {
-  path: PathBuf,
+  package_path: PathBuf,
   hash: String,
   media_type: String,
   contents: bytes::Bytes,
 }
 
 impl PackageFile {
-  pub fn new(path: PathBuf, hash: String, media_type: String, contents: bytes::Bytes) -> Self {
+  pub fn new(package_path: PathBuf, hash: String, media_type: String, contents: bytes::Bytes) -> Self {
     Self {
-      path,
+      package_path,
       hash,
       media_type,
       contents,
@@ -31,8 +31,8 @@ impl PackageFile {
 
   /// Get path for the file.
   #[must_use]
-  pub const fn path(&self) -> &PathBuf {
-    &self.path
+  pub const fn package_path(&self) -> &PathBuf {
+    &self.package_path
   }
 
   /// Get hash for the file.

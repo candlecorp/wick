@@ -27,11 +27,15 @@ pub struct PullResult {
 pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, Error> {
   let (image_ref, protocol) = crate::utils::parse_reference_and_protocol(reference, &options.allow_insecure)?;
 
-  let cache_dir = get_cache_directory(reference, &options.cache_dir)?;
+  let cache_dir = if options.flatten {
+    options.cache_dir.clone()
+  } else {
+    get_cache_directory(reference, &options.cache_dir)?
+  };
 
   let manifest_file = cache_dir.join(AssetManifest::FILENAME);
 
-  if manifest_file.exists() {
+  if !options.ignore_manifest && manifest_file.exists() {
     debug!(cache_hit = true, "remote asset");
     let json = tokio::fs::read_to_string(&manifest_file).await?;
 
@@ -194,9 +198,12 @@ pub async fn pull(reference: &str, options: &OciOptions) -> Result<PullResult, E
   };
 
   let root_file = root_file.ok_or_else(|| Error::PackageReadFailed("No root file found".to_owned()))?;
-  let manifest = AssetManifest::new(PathBuf::from(&root_file), version);
-  let contents = serde_json::to_string(&manifest).unwrap();
-  tokio::fs::write(cache_dir.join(AssetManifest::FILENAME), contents).await?;
+
+  if !options.ignore_manifest {
+    let manifest = AssetManifest::new(PathBuf::from(&root_file), version);
+    let contents = serde_json::to_string(&manifest).unwrap();
+    tokio::fs::write(cache_dir.join(AssetManifest::FILENAME), contents).await?;
+  }
 
   debug!(path = root_file, "Root file");
   Ok(PullResult {
