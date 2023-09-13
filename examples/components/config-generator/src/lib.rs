@@ -39,6 +39,7 @@ fn build_static_config(app_name: &str, dir: String) -> WickConfig {
         volume: volume_resource_id.clone(),
         middleware: None,
         fallback: None,
+        indexes: true,
       })],
     })],
     ..Default::default()

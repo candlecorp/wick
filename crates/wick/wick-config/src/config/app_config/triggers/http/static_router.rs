@@ -29,6 +29,8 @@ pub struct StaticRouterConfig {
   #[asset(skip)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) fallback: Option<String>,
+  #[asset(skip)]
+  pub(crate) indexes: bool,
 }
 
 impl super::WickRouter for StaticRouterConfig {
