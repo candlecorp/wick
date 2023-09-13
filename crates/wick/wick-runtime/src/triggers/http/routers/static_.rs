@@ -3,6 +3,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::task::{Context, Poll};
+mod index_list;
 
 use futures::future::BoxFuture;
 use hyper::service::Service;
@@ -12,6 +13,7 @@ use tracing::{Instrument, Span};
 use uuid::Uuid;
 use wick_config::config::{StaticRouterConfig, TriggerKind, WickRouter};
 
+use self::index_list::StaticError;
 use crate::dev::prelude::RuntimeError;
 use crate::resources::{Resource, ResourceKind};
 use crate::triggers::http::middleware::resolve_middleware_components;
@@ -25,9 +27,9 @@ pub(super) struct StaticRouter {
 }
 
 impl StaticRouter {
-  pub(super) fn new(root: PathBuf, strip: Option<String>, fallback: Option<String>) -> Self {
+  pub(super) fn new(root: PathBuf, strip: Option<String>, indexes: bool, fallback: Option<String>) -> Self {
     debug!(directory = %root.display(), "http:static:serving");
-    let handler = Static::new(root, strip, fallback);
+    let handler = Static::new(root, strip, indexes, fallback);
     Self { handler }
   }
 }
@@ -55,7 +57,7 @@ impl RawRouter for StaticRouter {
   }
 }
 
-fn create_response<B>(request: &Request<B>, result: ResolveResult) -> Result<Response<Body>, std::io::Error>
+fn create_response<B>(request: &Request<B>, result: ResolveResult) -> Result<Response<Body>, StaticError>
 where
   B: Send + Sync + 'static,
 {
@@ -67,26 +69,36 @@ where
       .expect("unable to build response"),
   )
 }
-
 #[derive(Clone)]
 struct Static {
   root: PathBuf,
   strip: Option<String>,
   fallback: Option<String>,
+  indexes: bool,
 }
 
 impl Static {
-  fn new(root: impl Into<PathBuf>, strip: Option<String>, fallback: Option<String>) -> Self {
+  fn new(root: impl Into<PathBuf>, strip: Option<String>, indexes: bool, fallback: Option<String>) -> Self {
     let root = root.into();
-    Static { root, strip, fallback }
+    Static {
+      root,
+      strip,
+      indexes,
+      fallback,
+    }
   }
 
   /// Serve a request.
-  async fn serve<B>(self, request: Request<B>) -> Result<Response<Body>, std::io::Error>
+  async fn serve<B>(self, request: Request<B>) -> Result<Response<Body>, StaticError>
   where
     B: Send + Sync + 'static,
   {
-    let Self { root, strip, fallback } = self;
+    let Self {
+      root,
+      strip,
+      indexes,
+      fallback,
+    } = self;
     // Handle only `GET`/`HEAD` and absolute paths.
     match *request.method() {
       Method::HEAD | Method::GET => {}
@@ -110,6 +122,10 @@ impl Static {
 
     match result {
       Ok(ResolveResult::Found(_, _, _)) => create_response(&request, result?),
+      Ok(ResolveResult::IsDirectory) if indexes => index_list::create(&root, &request).await,
+      Ok(ResolveResult::NotFound) if (indexes && request.uri().path() == "/") => {
+        index_list::create(&root, &request).await
+      }
       _ => {
         if let Some(fb) = &fallback {
           let fallback_result = resolve_path(root.clone(), fb).await;
@@ -124,7 +140,7 @@ impl Static {
 
 impl<B: Send + Sync + 'static> Service<Request<B>> for Static {
   type Response = Response<Body>;
-  type Error = std::io::Error;
+  type Error = StaticError;
   type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
   fn poll_ready(&mut self, _cx: &mut Context) -> Poll<Result<(), Self::Error>> {
@@ -161,8 +177,9 @@ pub(crate) fn register_static_router(
   };
 
   let fallback = router_config.fallback().cloned();
+  let indexes = router_config.indexes();
 
-  let router = StaticRouter::new(volume, Some(router_config.path().to_owned()), fallback);
+  let router = StaticRouter::new(volume, Some(router_config.path().to_owned()), indexes, fallback);
 
   Ok(HttpRouter::Raw(RawRouterHandler {
     path: router_config.path().to_owned(),

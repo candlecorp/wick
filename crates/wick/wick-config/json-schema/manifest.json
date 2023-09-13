@@ -1084,6 +1084,13 @@
         "fallback": {
           "description": "Fallback path (relative to volume &#x60;resource&#x60;) for files to serve in case of a 404. Useful for SPA&#x27;s. if volume resource is: /www and fallback: index.html, then a 404 will serve /www/index.html",
           "type": "string"
+<<<<<<< HEAD
+=======
+        },
+        "indexes": {
+          "description": "Whether or not to serve directory listings when a directory is requested.",
+          "type": "boolean"
+>>>>>>> 7ca53308 (feat: added optional directory listing for the static server)
         }
       },
       "required": [
@@ -1642,9 +1649,12 @@
         },
         {
           "$ref": "#/$defs/v1.HttpClientComponent"
+<<<<<<< HEAD
         },
         {
           "$ref": "#/$defs/v1.WebSocketClientComponent"
+=======
+>>>>>>> 7ca53308 (feat: added optional directory listing for the static server)
         }
       ]
     },
@@ -1661,9 +1671,12 @@
         },
         {
           "$ref": "#/$defs/v1.HttpClientComponent"
+<<<<<<< HEAD
         },
         {
           "$ref": "#/$defs/v1.WebSocketClientComponent"
+=======
+>>>>>>> 7ca53308 (feat: added optional directory listing for the static server)
         }
       ]
     },
@@ -1683,9 +1696,12 @@
         },
         {
           "$ref": "#/$defs/v1.HttpClientComponent"
+<<<<<<< HEAD
         },
         {
           "$ref": "#/$defs/v1.WebSocketClientComponent"
+=======
+>>>>>>> 7ca53308 (feat: added optional directory listing for the static server)
         }
       ]
     },
@@ -2923,6 +2939,7 @@
         "Put",
         "Delete"
       ]
+<<<<<<< HEAD
     },
     "v1.WebSocketClientComponent": {
       "$anchor": "v1.WebSocketClientComponent",
@@ -3009,6 +3026,8 @@
         }
       },
       "required": []
+=======
+>>>>>>> 7ca53308 (feat: added optional directory listing for the static server)
     }
   },
   "oneOf": [

@@ -306,6 +306,9 @@ type StaticRouter @tagged("wick/router/static@v1") {
 
   "Fallback path (relative to volume `resource`) for files to serve in case of a 404. Useful for SPA's. if volume resource is: /www and fallback: index.html, then a 404 will serve /www/index.html"
   fallback: string?
+
+  "Whether or not to serve directory listings when a directory is requested."
+  indexes: bool
 }
 
 "A router that delegates all requests to the configured operation, optionally encoding/decoding based on the specified codec."

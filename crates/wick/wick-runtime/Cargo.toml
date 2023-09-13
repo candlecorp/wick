@@ -48,6 +48,8 @@ hyper-reverse-proxy = { workspace = true }
 url = { workspace = true }
 bytes = { workspace = true }
 openapiv3 = { workspace = true }
+percent-encoding = { workspace = true }
+liquid = { workspace = true }
 #
 # For CLI Trigger
 #

@@ -584,6 +584,10 @@ pub struct StaticRouter {
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub fallback: Option<String>,
+  /// Whether or not to serve directory listings when a directory is requested.
+
+  #[serde(default)]
+  pub indexes: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
