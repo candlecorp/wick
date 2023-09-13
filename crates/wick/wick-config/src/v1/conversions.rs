@@ -392,6 +392,7 @@ impl TryFrom<StaticRouterConfig> for v1::StaticRouter {
       volume: value.volume,
       fallback: value.fallback,
       middleware: value.middleware.try_map_into()?,
+      indexes: value.indexes,
     })
   }
 }
@@ -1077,6 +1078,7 @@ impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
         volume: v.volume,
         fallback: v.fallback,
         middleware: v.middleware.try_map_into()?,
+        indexes: v.indexes,
       }),
       v1::HttpRouter::ProxyRouter(v) => Self::ProxyRouter(ProxyRouterConfig {
         path: v.path,
