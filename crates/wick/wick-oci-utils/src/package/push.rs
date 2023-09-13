@@ -27,7 +27,7 @@ pub async fn push(
   for file in files {
     let mut annotations_map: HashMap<String, String> = HashMap::new();
 
-    annotations_map.insert(annotations::TITLE.to_owned(), file.path().display().to_string());
+    annotations_map.insert(annotations::TITLE.to_owned(), file.package_path().display().to_string());
     let media_type = file.media_type().to_owned();
     let digest = file.hash().to_owned();
     let data = file.into_contents();

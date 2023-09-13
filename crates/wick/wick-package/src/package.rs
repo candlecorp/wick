@@ -122,6 +122,7 @@ pub struct WickPackage {
   absolute_path: PathBuf,
   registry: Option<RegistryConfig>,
   root: String,
+  basedir: Option<PathBuf>,
 }
 
 impl WickPackage {
@@ -130,14 +131,17 @@ impl WickPackage {
   /// The provided path can be a file or directory. If it is a directory, the WickPackage will be created
   /// based on the files within the directory.
   #[allow(clippy::too_many_lines)]
-  pub async fn from_path(path: &Path) -> Result<Self, Error> {
+  pub async fn from_path(basedir: Option<PathBuf>, path: &Path) -> Result<Self, Error> {
+    let path = basedir
+      .as_ref()
+      .map_or_else(|| path.to_path_buf(), |basedir| basedir.join(path));
     //add check to see if its a path or directory and call appropriate api to find files based on that.
     if path.is_dir() {
-      return Err(Error::Directory(path.to_path_buf()));
+      return Err(Error::Directory(path));
     }
 
     let options = wick_config::FetchOptions::default();
-    let config = WickConfiguration::fetch(path, options).await?.into_inner();
+    let config = WickConfiguration::fetch(&path, options).await?.into_inner();
     if !matches!(
       config,
       WickConfiguration::App(_) | WickConfiguration::Component(_) | WickConfiguration::Types(_)
@@ -146,7 +150,7 @@ impl WickPackage {
     }
     let full_path = path
       .normalize()
-      .map_err(|e| Error::ReadFile(path.to_path_buf(), e))?
+      .map_err(|e| Error::ReadFile(path.clone(), e))?
       .into_path_buf();
 
     let parent_dir = full_path
@@ -197,9 +201,7 @@ impl WickPackage {
     let assets = config.assets();
     let mut wick_files: Vec<PackageFile> = Vec::new();
 
-    let root_bytes = fs::read(path)
-      .await
-      .map_err(|e| Error::ReadFile(path.to_path_buf(), e))?;
+    let root_bytes = fs::read(&path).await.map_err(|e| Error::ReadFile(path.clone(), e))?;
     let root_hash = format!("sha256:{}", digest(root_bytes.as_slice()));
 
     let root_file = PackageFile::new(
@@ -231,7 +233,7 @@ impl WickPackage {
     let (_, return_assets) = process_assets(Default::default(), assets, parent_dir.clone(), parent_dir.clone()).await?;
     //merge return assets  vector to wick_files
     wick_files.extend(return_assets);
-    trace!(files = ?wick_files.iter().map(|f| f.path()).collect::<Vec<_>>(),
+    trace!(files = ?wick_files.iter().map(|f| f.package_path()).collect::<Vec<_>>(),
       "package files"
     );
 
@@ -244,6 +246,7 @@ impl WickPackage {
       absolute_path: full_path,
       registry,
       root: root_file_path,
+      basedir,
     })
   }
 
@@ -251,6 +254,12 @@ impl WickPackage {
   /// Returns a list of the files contained within the WickPackage.
   pub fn list_files(&self) -> Vec<&PackageFile> {
     self.files.iter().collect()
+  }
+
+  #[must_use]
+  /// Return the base directory of the WickPackage if it came from the filesystem.
+  pub const fn basedir(&self) -> Option<&PathBuf> {
+    self.basedir.as_ref()
   }
 
   #[must_use]
@@ -321,7 +330,7 @@ impl WickPackage {
   pub async fn pull(reference: &str, options: &OciOptions) -> Result<Self, Error> {
     let result = wick_oci_utils::package::pull(reference, options).await?;
 
-    let package = Self::from_path(&result.base_dir.join(Path::new(&result.root_path))).await;
+    let package = Self::from_path(Some(result.base_dir), &result.root_path).await;
 
     match package {
       Ok(package) => Ok(package),
