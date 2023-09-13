@@ -28,7 +28,7 @@ mod integration_test {
     // Run the push operation
     let package_path = Path::new("./tests/files/jinja.wick");
     println!("Package path: {:?}", package_path);
-    let mut package = WickPackage::from_path(package_path).await.unwrap();
+    let mut package = WickPackage::from_path(None, package_path).await.unwrap();
     // Set the host to the whatever docker registry the tests are using.
     package.registry_mut().map(|r| r.set_host(host));
 
@@ -71,22 +71,26 @@ mod integration_test {
     // Sort both the pushed_files and pulled_files by path
     let mut pushed_files_sorted = pushed_files.clone();
     let mut pulled_files_sorted = pulled_files.clone();
-    pushed_files_sorted.sort_by_key(|file| file.path());
-    pulled_files_sorted.sort_by_key(|file| file.path());
+    pushed_files_sorted.sort_by_key(|file| file.package_path());
+    pulled_files_sorted.sort_by_key(|file| file.package_path());
 
     for (pushed_file, pulled_file) in pushed_files_sorted.iter().zip(pulled_files_sorted.iter()) {
-      let pushed_file_path = pushed_file.path().to_str().unwrap().trim_start_matches(&crate_dir);
+      let pushed_file_path = pushed_file
+        .package_path()
+        .to_str()
+        .unwrap()
+        .trim_start_matches(&crate_dir);
       let pulled_file_path = pulled_file
-        .path()
+        .package_path()
         .to_str()
         .unwrap()
         .trim_start_matches(tempdir.to_str().unwrap());
       assert_eq!(pushed_file_path, pulled_file_path, "Mismatch in file paths");
       //if pushed_file.path() ends with .tar.gz, don't compare hashes
-      if pushed_file.path().to_str().unwrap().ends_with(".tar.gz") {
+      if pushed_file.package_path().to_str().unwrap().ends_with(".tar.gz") {
         continue;
       }
-      println!("Comparing hashes for file: {:?}", pushed_file.path());
+      println!("Comparing hashes for file: {:?}", pushed_file.package_path());
       assert_eq!(pushed_file.hash(), pulled_file.hash(), "Mismatch in file hashes");
       assert_eq!(
         pushed_file.media_type(),

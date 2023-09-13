@@ -24,7 +24,11 @@ pub struct OciOptions {
   #[getset(get = "pub", set = "pub")]
   pub(crate) cache_dir: PathBuf,
   #[getset(get = "pub", set = "pub")]
+  pub(crate) flatten: bool,
+  #[getset(get = "pub", set = "pub")]
   pub(crate) on_existing: OnExisting,
+  #[getset(get = "pub", set = "pub")]
+  pub(crate) ignore_manifest: bool,
 }
 
 impl Default for OciOptions {
@@ -35,8 +39,10 @@ impl Default for OciOptions {
       allow_insecure: vec![],
       username: None,
       password: None,
+      flatten: false,
       cache_dir: xdg.global().cache().clone(),
       on_existing: OnExisting::Ignore,
+      ignore_manifest: false,
     }
   }
 }

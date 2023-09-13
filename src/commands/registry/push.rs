@@ -35,7 +35,7 @@ pub(crate) async fn handle(
 ) -> Result<StructuredOutput> {
   span.in_scope(|| debug!("push artifact"));
 
-  let mut package = wick_package::WickPackage::from_path(&opts.source)
+  let mut package = wick_package::WickPackage::from_path(None, &opts.source)
     .instrument(span.clone())
     .await?;
 

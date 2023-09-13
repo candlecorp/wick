@@ -39,7 +39,7 @@ pub(crate) async fn handle(
   let oci_opts = reconcile_fetch_options(&opts.application, &settings, opts.oci, None);
   let app_as_path = PathBuf::from(&opts.application);
   let package = if app_as_path.exists() {
-    WickPackage::from_path(&app_as_path).await?
+    WickPackage::from_path(None, &app_as_path).await?
   } else {
     crate::oci::pull(opts.application, oci_opts).await?
   };
