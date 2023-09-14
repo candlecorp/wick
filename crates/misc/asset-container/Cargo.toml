@@ -5,7 +5,7 @@ edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/candlecorp/wick"
 description = "Manage local and remote assets in your structs "
-version = "0.2.0"
+version = "0.3.0"
 include = ["src/**/*", "README.md", "!**/assets/**/*"]
 
 [dependencies]
