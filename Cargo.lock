@@ -600,7 +600,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c9fd1a5729c4548118d7d70ff234a44868d00489a4b6597b0b020918a0e91a1a"
 dependencies = [
  "heck",
- "heck",
  "proc-macro2",
  "quote",
  "syn 2.0.29",
@@ -4256,7 +4255,6 @@ dependencies = [
  "dotenvy",
  "either",
  "heck",
- "heck",
  "hex",
  "once_cell",
  "proc-macro2",
@@ -4456,7 +4454,6 @@ version = "0.24.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
 dependencies = [
- "heck",
  "heck",
  "proc-macro2",
  "quote",
@@ -5116,8 +5113,6 @@ dependencies = [
 ]
 
 [[package]]
-=======
->>>>>>> 98f2519e (chore: remove unused crate)
 name = "typenum"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5929,7 +5924,6 @@ checksum = "84a4a005a6a2d5faa7cd953d389da8ae979cb571fe40edec7769649d8c98d874"
 dependencies = [
  "anyhow",
  "heck",
- "heck",
  "wit-parser",
 ]
 
@@ -6145,7 +6139,6 @@ dependencies = [
  "bitflags 2.4.0",
  "check_keyword",
  "derive_builder",
- "heck",
  "heck",
  "itertools 0.11.0",
  "prettyplease",
@@ -6763,7 +6756,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "12b5552356799612587de885e02b7e7e7d39e41657af1ddb985d18fbe5ac1642"
 dependencies = [
  "anyhow",
- "heck",
  "heck",
  "proc-macro2",
  "quote",
