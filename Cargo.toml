@@ -117,33 +117,48 @@ wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.2.0" }
 wick-test = { path = "./crates/wick/wick-test", version = "0.2.0" }
 wick-wascap = { path = "./crates/wick/wick-wascap", version = "0.2.0" }
 wick-xdg = { path = "./crates/wick/wick-xdg", version = "0.3.0" }
+flow-component = { path = "./crates/wick/flow-component", version = "0.6.0", default-features = false }
+flow-expression-parser = { path = "./crates/wick/flow-expression-parser", version = "0.6.0", default-features = false }
+flow-graph = { path = "./crates/wick/flow-graph", version = "0.22.0" }
+flow-graph-interpreter = { path = "./crates/wick/flow-graph-interpreter", version = "0.21.0" }
+wick-logger = { path = "./crates/wick/wick-logger", version = "0.3.0" }
+wick-asset-reference = { path = "./crates/wick/wick-asset-reference", version = "0.4.0" }
+wick-component = { path = "./crates/wick/wick-component", version = "0.16.0", default-features = false }
+wick-component-cli = { path = "./crates/wick/wick-component-cli", version = "0.2.0", default-features = false }
+wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.5.0" }
+wick-component-wasm = { path = "./crates/wick/wick-component-wasm", version = "0.3.0" }
+wick-config = { path = "./crates/wick/wick-config", version = "0.27.0", default-features = false }
+wick-host = { path = "./crates/wick/wick-host", version = "0.5.0" }
+wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.16.0" }
+wick-invocation-server = { path = "./crates/wick/wick-invocation-server", version = "0.2.0" }
+wick-oci-utils = { path = "./crates/wick/wick-oci-utils", version = "0.4.0", default-features = false }
+wick-operation = { path = "./crates/wick/wick-operation", version = "0.2.0", default-features = false }
+wick-package = { path = "./crates/wick/wick-package", version = "0.3.0" }
+wick-packet = { path = "./crates/wick/wick-packet", version = "0.16.0", default-features = false }
+wick-settings = { path = "./crates/wick/wick-settings", version = "0.2.0" }
+wick-rpc = { path = "./crates/wick/wick-rpc", version = "0.2.0", default-features = false }
+wick-runtime = { path = "./crates/wick/wick-runtime", version = "0.23.0" }
+wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.2.0" }
+wick-test = { path = "./crates/wick/wick-test", version = "0.2.0" }
+wick-wascap = { path = "./crates/wick/wick-wascap", version = "0.2.0" }
+wick-xdg = { path = "./crates/wick/wick-xdg", version = "0.3.0" }
 #
 # crates/misc
 #
-asset-container = { path = "./crates/misc/asset-container", version = "0.2.0" }
-derive-asset-container = { path = "./crates/misc/derive-asset-container", version = "0.2.0" }
-performance-mark = { path = "./crates/misc/performance-mark", version = "0.1.0" }
-seeded-random = { path = "./crates/misc/seeded-random", version = "0.4.0", default-features = false }
-tap-harness = { path = "./crates/misc/tap-harness", version = "0.1.0" }
-test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
-
-
-
-<<<<<<< HEAD
-wick-sql = { path = "./crates/components/wick-sql", version = "0.1.0" }#wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.3.0" }#
+asset-container = { path = "./crates/misc/asset-container", version = "0.3.0" }
+derive-asset-container = { path = "./crates/misc/derive-asset-container", version = "0.3.0" }
+performance-mark = { path = "./crates/misc/performance-mark", version = "0.2.0" }
+seeded-random = { path = "./crates/misc/seeded-random", version = "0.5.0", default-features = false }
+tap-harness = { path = "./crates/misc/tap-harness", version = "0.2.0" }
+test-logger = { path = "./crates/misc/test-logger", package = "wick-test-logger", version = "0.2.0" }
+#
 # crates/interfaces
 #
-
-
-
-=======
-
->>>>>>> 35ff51b8 (chore: updated versions and changelogs)
+wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.3.0" }
 wick-interface-cli = { path = "./crates/interfaces/wick-interface-cli", version = "0.3.0" }
+#
 # crates/components
 #
-wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
-wick-websocket-client = { path = "./crates/components/wick-websocket-client", version = "0.1.0" }
 wick-sql = { path = "./crates/components/wick-sql", version = "0.2.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.2.0" }
 # wasmtime (must align with version in wasmrs)

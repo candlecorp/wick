@@ -173,6 +173,7 @@ dependencies = [
 [[package]]
 name = "asset-container"
 version = "0.3.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "bitflags 2.4.0",
@@ -184,6 +185,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "wick-logger",
+ "wick-test-logger",
  "wick-test-logger",
 ]
 
@@ -1099,6 +1101,7 @@ dependencies = [
 [[package]]
 name = "derive-asset-container"
 version = "0.3.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "asset-container",
@@ -1510,6 +1513,7 @@ dependencies = [
 [[package]]
 name = "flow-component"
 version = "0.6.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "futures 0.3.28",
@@ -1524,6 +1528,7 @@ dependencies = [
 
 [[package]]
 name = "flow-expression-parser"
+version = "0.6.0"
 version = "0.6.0"
 dependencies = [
  "anyhow",
@@ -1541,10 +1546,12 @@ dependencies = [
  "tracing",
  "wick-logger",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "flow-graph"
+version = "0.22.0"
 version = "0.22.0"
 dependencies = [
  "anyhow",
@@ -1553,6 +1560,7 @@ dependencies = [
 
 [[package]]
 name = "flow-graph-interpreter"
+version = "0.21.0"
 version = "0.21.0"
 dependencies = [
  "anyhow",
@@ -1580,6 +1588,7 @@ dependencies = [
  "wick-interface-types",
  "wick-logger",
  "wick-packet",
+ "wick-test-logger",
  "wick-test-logger",
 ]
 
@@ -2227,6 +2236,7 @@ dependencies = [
  "wick-packet",
  "wick-rpc",
  "wick-test",
+ "wick-test-logger",
  "wick-test-logger",
 ]
 
@@ -3119,6 +3129,7 @@ checksum = "9b2a4787296e9989611394c33f193f676704af1686e70b8f8033ab5ba9a35a94"
 [[package]]
 name = "performance-mark"
 version = "0.2.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -3828,7 +3839,7 @@ dependencies = [
 
 [[package]]
 name = "seeded-random"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "parking_lot",
  "rand",
@@ -4515,6 +4526,7 @@ dependencies = [
 
 [[package]]
 name = "tap-harness"
+version = "0.2.0"
 version = "0.2.0"
 dependencies = [
  "anyhow",
@@ -5995,6 +6007,7 @@ checksum = "22fc3756b8a9133049b26c7f61ab35416c130e8c09b660f5b3958b446f52cc50"
 [[package]]
 name = "wick-asset-reference"
 version = "0.4.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "asset-container",
@@ -6011,10 +6024,12 @@ dependencies = [
  "wick-logger",
  "wick-oci-utils",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-cli"
+version = "0.15.0"
 version = "0.15.0"
 dependencies = [
  "anyhow",
@@ -6056,12 +6071,14 @@ dependencies = [
  "wick-settings",
  "wick-test",
  "wick-test-logger",
+ "wick-test-logger",
  "wick-wascap",
  "wick-xdg",
 ]
 
 [[package]]
 name = "wick-component"
+version = "0.16.0"
 version = "0.16.0"
 dependencies = [
  "anyhow",
@@ -6085,10 +6102,12 @@ dependencies = [
  "wick-operation",
  "wick-packet",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-component-cli"
+version = "0.2.0"
 version = "0.2.0"
 dependencies = [
  "anyhow",
@@ -6114,10 +6133,12 @@ dependencies = [
  "wick-packet",
  "wick-rpc",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-component-codegen"
+version = "0.5.0"
 version = "0.5.0"
 dependencies = [
  "anyhow",
@@ -6137,10 +6158,12 @@ dependencies = [
  "wick-interface-types",
  "wick-logger",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-component-wasm"
+version = "0.3.0"
 version = "0.3.0"
 dependencies = [
  "anyhow",
@@ -6168,11 +6191,13 @@ dependencies = [
  "wick-packet",
  "wick-rpc",
  "wick-test-logger",
+ "wick-test-logger",
  "wick-wascap",
 ]
 
 [[package]]
 name = "wick-config"
+version = "0.27.0"
 version = "0.27.0"
 dependencies = [
  "anyhow",
@@ -6211,12 +6236,14 @@ dependencies = [
  "wick-oci-utils",
  "wick-packet",
  "wick-test-logger",
+ "wick-test-logger",
  "wick-xdg",
  "wildmatch",
 ]
 
 [[package]]
 name = "wick-host"
+version = "0.5.0"
 version = "0.5.0"
 dependencies = [
  "anyhow",
@@ -6244,10 +6271,12 @@ dependencies = [
  "wick-rpc",
  "wick-runtime",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-http-client"
+version = "0.2.0"
 version = "0.2.0"
 dependencies = [
  "anyhow",
@@ -6268,10 +6297,12 @@ dependencies = [
  "wick-logger",
  "wick-packet",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-interface-cli"
+version = "0.3.0"
 version = "0.3.0"
 dependencies = [
  "serde",
@@ -6281,6 +6312,7 @@ dependencies = [
 
 [[package]]
 name = "wick-interface-http"
+version = "0.3.0"
 version = "0.3.0"
 dependencies = [
  "anyhow",
@@ -6292,10 +6324,12 @@ dependencies = [
  "wick-component-codegen",
  "wick-logger",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-interface-types"
+version = "0.16.0"
 version = "0.16.0"
 dependencies = [
  "anyhow",
@@ -6314,6 +6348,7 @@ dependencies = [
 [[package]]
 name = "wick-invocation-server"
 version = "0.2.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6329,10 +6364,12 @@ dependencies = [
  "wick-packet",
  "wick-rpc",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-logger"
+version = "0.3.0"
 version = "0.3.0"
 dependencies = [
  "ansi_term",
@@ -6353,6 +6390,7 @@ dependencies = [
 
 [[package]]
 name = "wick-oci-utils"
+version = "0.4.0"
 version = "0.4.0"
 dependencies = [
  "anyhow",
@@ -6377,11 +6415,13 @@ dependencies = [
  "tracing",
  "wick-logger",
  "wick-test-logger",
+ "wick-test-logger",
  "wick-xdg",
 ]
 
 [[package]]
 name = "wick-operation"
+version = "0.2.0"
 version = "0.2.0"
 dependencies = [
  "proc-macro-crate",
@@ -6394,6 +6434,7 @@ dependencies = [
 
 [[package]]
 name = "wick-package"
+version = "0.3.0"
 version = "0.3.0"
 dependencies = [
  "anyhow",
@@ -6414,10 +6455,12 @@ dependencies = [
  "wick-logger",
  "wick-oci-utils",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-packet"
+version = "0.16.0"
 version = "0.16.0"
 dependencies = [
  "anyhow",
@@ -6431,7 +6474,6 @@ dependencies = [
  "seeded-random",
  "serde",
  "serde_json",
- "test-logger",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -6447,10 +6489,12 @@ dependencies = [
  "wick-interface-types",
  "wick-logger",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-rpc"
+version = "0.2.0"
 version = "0.2.0"
 dependencies = [
  "option-utils",
@@ -6468,6 +6512,7 @@ dependencies = [
 
 [[package]]
 name = "wick-runtime"
+version = "0.23.0"
 version = "0.23.0"
 dependencies = [
  "anyhow",
@@ -6519,15 +6564,12 @@ dependencies = [
  "wick-rpc",
  "wick-sql",
  "wick-stdlib",
-<<<<<<< HEAD
- "wick-websocket-client",
-=======
  "wick-test-logger",
->>>>>>> 35ff51b8 (chore: updated versions and changelogs)
 ]
 
 [[package]]
 name = "wick-settings"
+version = "0.2.0"
 version = "0.2.0"
 dependencies = [
  "derive_builder",
@@ -6540,6 +6582,7 @@ dependencies = [
 
 [[package]]
 name = "wick-sql"
+version = "0.2.0"
 version = "0.2.0"
 dependencies = [
  "anyhow",
@@ -6569,10 +6612,12 @@ dependencies = [
  "wick-packet",
  "wick-rpc",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-stdlib"
+version = "0.2.0"
 version = "0.2.0"
 dependencies = [
  "anyhow",
@@ -6586,10 +6631,12 @@ dependencies = [
  "wick-packet",
  "wick-rpc",
  "wick-test-logger",
+ "wick-test-logger",
 ]
 
 [[package]]
 name = "wick-test"
+version = "0.2.0"
 version = "0.2.0"
 dependencies = [
  "anyhow",
@@ -6624,10 +6671,24 @@ dependencies = [
  "syn 2.0.29",
  "tokio",
  "wick-logger",
+ "wick-test-logger",
+]
+
+[[package]]
+name = "wick-test-logger"
+version = "0.2.0"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.29",
+ "tokio",
+ "wick-logger",
 ]
 
 [[package]]
 name = "wick-wascap"
+version = "0.2.0"
 version = "0.2.0"
 dependencies = [
  "anyhow",
@@ -6673,6 +6734,7 @@ dependencies = [
 
 [[package]]
 name = "wick-xdg"
+version = "0.3.0"
 version = "0.3.0"
 dependencies = [
  "getset",
