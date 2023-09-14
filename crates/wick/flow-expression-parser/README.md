@@ -2,4 +2,4 @@
 
 Parsers for Wick shortform/DSL snippets
 
-License: BSD-3-Clause
+License: Elastic-2.0

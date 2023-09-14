@@ -1,6 +1,6 @@
 [package]
-name = "test-logger"
-version = "0.1.0"
+name = "wick-test-logger"
+version = "0.2.0"
 edition = "2021"
 authors = [
   "Daniel Mueller <deso@posteo.net>",
