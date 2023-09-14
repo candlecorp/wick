@@ -22,13 +22,6 @@ pub(crate) struct Cli {
   done_rx: Mutex<Option<tokio::sync::oneshot::Receiver<StructuredOutput>>>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
-struct Interactive {
-  stdin: bool,
-  stdout: bool,
-  stderr: bool,
-}
-
 impl Cli {
   pub(crate) fn load() -> Result<Arc<dyn Trigger + Send + Sync>, RuntimeError> {
     Ok(Arc::new(Cli::load_impl()?))
@@ -43,7 +36,7 @@ impl Cli {
   }
 
   async fn handle(&self, runtime: Runtime, operation: Entity, args: Vec<String>) -> Result<(), RuntimeError> {
-    let is_interactive = Interactive {
+    let is_interactive = wick_interface_cli::types::Interactive {
       stdin: atty::is(atty::Stream::Stdin),
       stdout: atty::is(atty::Stream::Stdout),
       stderr: atty::is(atty::Stream::Stderr),
