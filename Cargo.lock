@@ -6465,6 +6465,7 @@ dependencies = [
  "wick-component-wasm",
  "wick-config",
  "wick-http-client",
+ "wick-interface-cli",
  "wick-interface-http",
  "wick-interface-types",
  "wick-invocation-server",
