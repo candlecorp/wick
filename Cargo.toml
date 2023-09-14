@@ -145,12 +145,12 @@ wick-xdg = { path = "./crates/wick/wick-xdg", version = "0.3.0" }
 #
 # crates/misc
 #
-asset-container = { path = "./crates/misc/asset-container", version = "0.3.0" }
-derive-asset-container = { path = "./crates/misc/derive-asset-container", version = "0.3.0" }
-performance-mark = { path = "./crates/misc/performance-mark", version = "0.2.0" }
-seeded-random = { path = "./crates/misc/seeded-random", version = "0.5.0", default-features = false }
-tap-harness = { path = "./crates/misc/tap-harness", version = "0.2.0" }
-test-logger = { path = "./crates/misc/test-logger", package = "wick-test-logger", version = "0.2.0" }
+asset-container = { path = "./crates/misc/asset-container", version = "0.2.0" }
+derive-asset-container = { path = "./crates/misc/derive-asset-container", version = "0.2.0" }
+performance-mark = { path = "./crates/misc/performance-mark", version = "0.1.0" }
+seeded-random = { path = "./crates/misc/seeded-random", version = "0.4.0", default-features = false }
+tap-harness = { path = "./crates/misc/tap-harness", version = "0.1.0" }
+test-logger = { path = "./crates/misc/test-logger", version = "0.1.0" }
 #
 # crates/interfaces
 #
