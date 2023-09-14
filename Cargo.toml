@@ -129,17 +129,18 @@ test-logger = { path = "./crates/misc/test-logger", package = "wick-test-logger"
 #
 # crates/interfaces
 #
-wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.3.0" }
-wick-interface-cli = { path = "./crates/interfaces/wick-interface-cli", version = "0.3.0" }
+
 
 <<<<<<< HEAD
-wick-sql = { path = "./crates/components/wick-sql", version = "0.1.0" }#
-# crates/components
-#
+wick-sql = { path = "./crates/components/wick-sql", version = "0.1.0" }#wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.3.0" }
+wick-interface-cli = { path = "./crates/interfaces/wick-interface-cli", version = "0.3.0" }
+
 
 =======
 
 >>>>>>> 35ff51b8 (chore: updated versions and changelogs)
+# crates/components
+#
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.1.0" }
 wick-websocket-client = { path = "./crates/components/wick-websocket-client", version = "0.1.0" }
 wick-sql = { path = "./crates/components/wick-sql", version = "0.2.0" }
