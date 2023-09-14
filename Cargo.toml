@@ -73,7 +73,6 @@ path = "src/main.rs"
 resolver = "2"
 members = [
   "crates/interfaces/*",
-  "crates/integration/test-bdd",
   "crates/misc/*",
   "crates/components/*",
   "crates/wick/*",
