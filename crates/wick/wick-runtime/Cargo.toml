@@ -25,6 +25,7 @@ wick-component-wasm = { workspace = true }
 wick-stdlib = { workspace = true }
 wick-rpc = { workspace = true }
 wick-interface-http = { workspace = true }
+wick-interface-cli = { workspace = true }
 #
 # High level components
 #
