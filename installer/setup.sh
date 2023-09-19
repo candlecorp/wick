@@ -35,10 +35,15 @@
   ARCH=$(uname -m)
   OS=$(echo $(uname) | tr '[:upper:]' '[:lower:]')
 
-  # Apple silicon machines expose ARCH as "arm64"
-  if [ "$OS" = "darwin" -a "$ARCH" = "arm64" ]; then
+  SUCCESSFUL=false
+
+  # Change "darwin" to "macos" to match up with release tarballs
+  if [ "$OS" = "darwin" ]; then
     OS="macos"
-    ARCH="aarch64"
+    # Apple silicon machines expose ARCH as "arm64"
+    if [ "$ARCH" = "arm64" ]; then
+        ARCH="aarch64"
+    fi
   fi
 
   #change x86_64 to amd64
@@ -147,7 +152,7 @@
         exit 4
       fi
     done
-
+    SUCCESSFUL=true
   }
 
   separate_output() {
@@ -213,7 +218,9 @@
   }
 
   cleanup() {
-    if [[ -d "${TMP_ROOT:-}" ]]; then
+    if [[ "$SUCCESSFUL" == "false" ]]; then
+      echo "Installation failed. Any downloaded files remain in ${TMP_ROOT} to aid troubleshooting."
+    elif [[ -d "${TMP_ROOT:-}" ]]; then
       rm -rf "$TMP_ROOT"
     fi
   }
