@@ -1927,6 +1927,16 @@ pub struct HttpClientComponent {
   #[serde(default)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub codec: Option<Codec>,
+  /// The proxy HTTP / HTTPS to use.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub proxy: Option<Proxy>,
+  /// The timeout in seconds
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub timeout: Option<u16>,
   /// Configuration necessary to provide when instantiating the component.
 
   #[serde(default)]
@@ -1937,6 +1947,25 @@ pub struct HttpClientComponent {
   #[serde(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub operations: Vec<HttpClientOperationDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Proxy {
+  /// The URL base to use. http, https are supported.
+
+  #[serde(default)]
+  pub resource: String,
+  /// The username to use when authenticating with the proxy.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub username: Option<String>,
+  /// The password to use when authenticating with the proxy.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub password: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

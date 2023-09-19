@@ -2453,6 +2453,16 @@
 
         "$ref": "#/$defs/v1.Codec"
       },
+      "proxy": {
+        "description": "The proxy HTTP / HTTPS to use.",
+
+        "$ref": "#/$defs/v1.Proxy"
+      },
+      "timeout": {
+        "description": "The timeout in seconds",
+
+        "oneOf": [{ "type": "number" }, { "type": "string" }]
+      },
       "with": {
         "description": "Configuration necessary to provide when instantiating the component.",
 
@@ -2468,6 +2478,30 @@
         "items": {
           "$ref": "#/$defs/v1.HttpClientOperationDefinition"
         }
+      }
+    },
+    "required": []
+  },
+
+  "v1.Proxy": {
+    "$anchor": "v1.Proxy",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "resource": {
+        "description": "The URL base to use. http, https are supported.",
+
+        "type": "string"
+      },
+      "username": {
+        "description": "The username to use when authenticating with the proxy.",
+
+        "type": "string"
+      },
+      "password": {
+        "description": "The password to use when authenticating with the proxy.",
+
+        "type": "string"
       }
     },
     "required": []

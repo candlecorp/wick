@@ -47,6 +47,28 @@ impl HttpClientComponent {
       .and_then(|r| r.try_resource())
       .and_then(|r| r.try_url())?;
 
+    let proxy_details = config.proxy().map(|proxy| {
+      let addr = resolver(proxy.resource())
+        .and_then(|r| r.try_resource())
+        .and_then(|r| r.try_url())
+        .ok();
+
+      let username = proxy.username();
+      let password = proxy.password();
+
+      (addr, username, password)
+    });
+
+    let (proxy_addr, proxy_username, proxy_password) = match proxy_details {
+      Some((addr, user, pass)) => (addr, Some(user).unwrap(), Some(pass).unwrap()),
+      None => (None, None, None),
+    };
+
+    let timeout = config.timeout().map_or_else(
+      || std::time::Duration::from_secs(5),
+      |timeout| std::time::Duration::from_secs(u64::from(timeout)),
+    );
+
     let mut sig = ComponentSignature::new_named("wick/component/http");
     sig.metadata.version = metadata.map(|v| v.version().to_owned());
     sig.operations = config.operation_signatures();
@@ -66,15 +88,36 @@ impl HttpClientComponent {
       );
     }
 
+    if proxy_addr == Some(addr.clone()) {
+      return Err(Error::ProxyLoop(addr.url().value().unwrap().clone()).into());
+    }
+
+    let client = match proxy_addr {
+      Some(proxy_addr) => {
+        let mut proxy = reqwest::Proxy::all(proxy_addr.url().value().unwrap().clone())?;
+
+        if let (Some(username), Some(password)) = (&proxy_username, &proxy_password) {
+          proxy = proxy.basic_auth(username.as_str(), password.as_str());
+        }
+
+        ClientBuilder::new()
+          .proxy(proxy)
+          .connect_timeout(timeout)
+          .user_agent(APP_USER_AGENT)
+          .build()?
+      }
+      None => ClientBuilder::new()
+        .connect_timeout(timeout)
+        .user_agent(APP_USER_AGENT)
+        .build()
+        .unwrap(),
+    };
+
     Ok(Self {
       signature: sig,
       base: url,
       path_templates,
-      client: ClientBuilder::new()
-        .connect_timeout(std::time::Duration::from_secs(5))
-        .user_agent(APP_USER_AGENT)
-        .build()
-        .unwrap(),
+      client,
       root_config,
       config,
     })

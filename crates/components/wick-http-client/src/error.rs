@@ -17,4 +17,7 @@ pub enum Error {
 
   #[error("Invalid baseurl: {0}")]
   InvalidBaseUrl(Url),
+
+  #[error("Proxy and baseurl must not be the same: {0}")]
+  ProxyLoop(Url),
 }
