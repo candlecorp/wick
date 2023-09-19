@@ -12,7 +12,7 @@ The {{<v1ref "httptrigger">}}HTTP Trigger{{</v1ref>}} takes a {{<v1ref "tcpport"
 
 ## Routers
 
-- [Rest Router](http/rest-router) {{<v1ref "restrouter"/>}}- A router that turns Wick component's into a JSON Rest API.
-- [Static Router](http/static-router) {{<v1ref "staticrouter"/>}}- A router that serves static files from a configured volume or directory.
-- [Proxy Router](http/proxy-router) {{<v1ref "proxyrouter"/>}}- A router that proxies requests to a configured URL.
-- [Raw Router](http/raw-router) {{<v1ref "rawrouter"/>}}- A router that delegates requests directly to a configured operation.
+- [Rest Router](rest-router) {{<v1ref "restrouter"/>}}- A router that turns Wick component's into a JSON Rest API.
+- [Static Router](static-router) {{<v1ref "staticrouter"/>}}- A router that serves static files from a configured volume or directory.
+- [Proxy Router](proxy-router) {{<v1ref "proxyrouter"/>}}- A router that proxies requests to a configured URL.
+- [Raw Router](raw-router) {{<v1ref "rawrouter"/>}}- A router that delegates requests directly to a configured operation.

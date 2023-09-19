@@ -24,6 +24,6 @@ Wick triggers:
 
 ### Application triggers
 
-- [HTTP Trigger](triggers/http) {{<v1ref "httptrigger"/>}}- A trigger whose events are HTTP requests from an HTTP server and whose operations produce HTTP responses.
-- [Time Trigger](triggers/time) {{<v1ref "timetrigger"/>}}- A trigger whose events are time-based and whose operations' output is logged.
-- [CLI Trigger](triggers/cli) {{<v1ref "clitrigger"/>}}- A trigger whose events are initiated upon CLI execution and whose operations produce exit codes.
+- [HTTP Trigger](triggers/http) {{<v1ref "httptrigger" />}}- A trigger whose events are HTTP requests from an HTTP server and whose operations produce HTTP responses.
+- [Time Trigger](triggers/time) {{<v1ref "timetrigger" />}}- A trigger whose events are time-based and whose operations' output is logged.
+- [CLI Trigger](triggers/cli) {{<v1ref "clitrigger" />}}- A trigger whose events are initiated upon CLI execution and whose operations produce exit codes.
