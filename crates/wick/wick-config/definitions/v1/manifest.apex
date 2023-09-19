@@ -969,11 +969,28 @@ type HttpClientComponent @tagged("wick/component/http@v1") {
   "The codec to use when encoding/decoding data. Can be overridden by individual operations."
   codec: Codec?
 
+  "The proxy HTTP / HTTPS to use."
+  proxy: Proxy?
+
+  "The timeout in seconds"
+  timeout: u16?
+
   "Configuration necessary to provide when instantiating the component."
   with: [Field]
 
   "A list of operations to expose on this component."
   operations: [HttpClientOperationDefinition]
+}
+
+type Proxy {
+  "The URL base to use. http, https are supported."
+  resource: string
+
+  "The username to use when authenticating with the proxy."
+  username: string?
+
+  "The password to use when authenticating with the proxy."
+  password: string?
 }
 
 "A dynamic operation whose implementation is an HTTP request. The outputs of HttpClientOperationDefinition are always `response` & `body`"

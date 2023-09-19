@@ -38,6 +38,18 @@ pub struct HttpClientComponentConfig {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) codec: Option<Codec>,
 
+  /// The proxy to use when connecting to server.
+  #[asset(skip)]
+  #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) proxy: Option<Proxy>,
+
+  /// The timeout for requests in seconds
+  #[asset(skip)]
+  #[builder(default)]
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub(crate) timeout: Option<u16>,
+
   /// A list of operations to expose on this component.
   #[asset(skip)]
   #[builder(default)]
@@ -47,6 +59,27 @@ pub struct HttpClientComponentConfig {
 }
 
 impl HttpClientComponentConfig {}
+
+#[derive(Debug, Clone, derive_builder::Builder, PartialEq, property::Property, serde::Serialize)]
+#[property(get(public), set(private), mut(disable))]
+#[builder(setter(into))]
+#[must_use]
+/// A proxy to use when connecting to server.
+pub struct Proxy {
+  /// The URL base to use.
+  #[builder(default)]
+  pub(crate) resource: String,
+
+  /// username for proxy authentication
+  #[builder(default)]
+  pub(crate) username: Option<String>,
+
+  /// password for proxy authentication
+  #[builder(default)]
+  pub(crate) password: Option<String>,
+}
+
+impl Proxy {}
 
 impl OperationSignatures for HttpClientComponentConfig {
   fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {

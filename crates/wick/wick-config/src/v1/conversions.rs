@@ -827,9 +827,22 @@ impl TryFrom<config::components::HttpClientComponentConfig> for v1::HttpClientCo
   fn try_from(value: config::components::HttpClientComponentConfig) -> Result<Self> {
     Ok(Self {
       resource: value.resource,
-      codec: value.codec.map_into(),
       with: value.config.try_map_into()?,
+      codec: value.codec.map_into(),
+      proxy: value.proxy.try_map_into()?,
+      timeout: value.timeout,
       operations: value.operations.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<config::components::Proxy> for v1::Proxy {
+  type Error = ManifestError;
+  fn try_from(value: config::components::Proxy) -> std::result::Result<Self, Self::Error> {
+    Ok(Self {
+      resource: value.resource,
+      username: value.username,
+      password: value.password,
     })
   }
 }
@@ -1286,7 +1299,20 @@ impl TryFrom<v1::HttpClientComponent> for components::HttpClientComponentConfig 
       resource: value.resource,
       config: value.with.try_map_into()?,
       codec: value.codec.map_into(),
+      proxy: value.proxy.try_map_into()?,
+      timeout: value.timeout,
       operations: value.operations.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<v1::Proxy> for components::Proxy {
+  type Error = crate::Error;
+  fn try_from(value: v1::Proxy) -> Result<Self> {
+    Ok(Self {
+      resource: value.resource,
+      username: value.username,
+      password: value.password,
     })
   }
 }
