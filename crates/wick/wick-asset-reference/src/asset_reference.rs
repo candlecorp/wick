@@ -213,7 +213,7 @@ impl Asset for AssetReference {
   fn fetch(
     &self,
     options: OciOptions,
-  ) -> std::pin::Pin<Box<dyn Future<Output = Result<Vec<u8>, assets::Error>> + Send + Sync>> {
+  ) -> std::pin::Pin<Box<dyn Future<Output = Result<Vec<u8>, assets::Error>> + Send>> {
     let asset = self.clone();
 
     Box::pin(async move {
