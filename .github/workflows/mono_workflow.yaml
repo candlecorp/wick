@@ -297,6 +297,8 @@ jobs:
           done
           #Copy the schema manifest into the dist directory
           cp crates/wick/wick-config/json-schema/manifest.json _dist/schema.json
+          #Copy the TypeScript SDKs into the dist directory
+          cp crates/wick/wick-config/typescript/v1.ts _dist/
           ls -la _dist
       - name: upload release assets (tag)
         uses: svenstaro/upload-release-action@v2
