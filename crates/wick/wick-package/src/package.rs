@@ -10,7 +10,7 @@ use tracing::trace;
 use wick_config::config::RegistryConfig;
 use wick_config::{AssetReference, WickConfiguration};
 use wick_oci_utils::package::annotations::Annotations;
-use wick_oci_utils::package::{media_types, PackageFile};
+use wick_oci_utils::package::{media_types, PackageFile, PushResponse};
 use wick_oci_utils::OciOptions;
 
 use crate::utils::{create_tar_gz, metadata_to_annotations};
@@ -298,32 +298,30 @@ impl WickPackage {
     self.registry.as_mut()
   }
 
-  /// Pushes the WickPackage to a specified registry using the provided reference, username, and password.
-  ///
-  /// The username and password are optional. If not provided, the function falls back to anonymous authentication.
-  pub async fn push(&mut self, reference: &str, options: &OciOptions) -> Result<String, Error> {
-    let kind = match self.kind {
-      wick_config::config::ConfigurationKind::App => wick_oci_utils::WickPackageKind::APPLICATION,
-      wick_config::config::ConfigurationKind::Component => wick_oci_utils::WickPackageKind::COMPONENT,
-      wick_config::config::ConfigurationKind::Types => wick_oci_utils::WickPackageKind::TYPES,
-      _ => {
-        return Err(Error::InvalidWickConfig(reference.to_owned()));
-      }
-    };
+  /// Pushes the WickPackage to a specified registry using the provided OciOptions.
+  pub async fn push(
+    &mut self,
+    reference: &str,
+    tags: Vec<String>,
+    options: &OciOptions,
+  ) -> Result<PushResponse, Error> {
+    let kind = convert_kind(self.kind).map_err(|_| Error::InvalidWickConfig(reference.to_owned()))?;
     let config = wick_oci_utils::WickOciConfig::new(kind, self.root.clone());
     let image_config_contents = serde_json::to_string(&config).unwrap();
     let files = self.files.drain(..).collect();
 
     let push_response = wick_oci_utils::package::push(
       reference,
+      kind,
       image_config_contents,
       files,
       self.annotations.clone(),
+      tags,
       options,
     )
     .await?;
 
-    Ok(push_response.manifest_url)
+    Ok(push_response)
   }
 
   /// This function pulls a WickPackage from a specified registry using the provided reference, username, and password.
@@ -337,4 +335,13 @@ impl WickPackage {
       Err(e) => Err(Error::PackageReadFailed(e.to_string())),
     }
   }
+}
+
+const fn convert_kind(kind: wick_config::config::ConfigurationKind) -> Result<wick_oci_utils::WickPackageKind, ()> {
+  Ok(match kind {
+    wick_config::config::ConfigurationKind::App => wick_oci_utils::WickPackageKind::APPLICATION,
+    wick_config::config::ConfigurationKind::Component => wick_oci_utils::WickPackageKind::COMPONENT,
+    wick_config::config::ConfigurationKind::Types => wick_oci_utils::WickPackageKind::TYPES,
+    _ => return Err(()),
+  })
 }

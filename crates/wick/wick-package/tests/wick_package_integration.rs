@@ -43,7 +43,7 @@ mod integration_test {
     let reference = expected
       .tagged_reference(&test_timestamp.as_secs().to_string())
       .unwrap();
-    let push_result = package.push(&reference, &options).await;
+    let push_result = package.push(&reference, Vec::new(), &options).await;
     if push_result.is_err() {
       panic!("Failed to push WickPackage: {:?}", push_result);
     };
