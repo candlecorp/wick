@@ -1,0 +1,65 @@
+[package]
+name = "wick-trigger"
+version = "0.1.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "Implementation and loader for Wick WASM components."
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+
+[dependencies]
+wick-runtime = { workspace = true }
+wick-config = { workspace = true }
+wick-packet = { workspace = true }
+
+#
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+
+tokio = { workspace = true }
+futures = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+url = { workspace = true }
+async-trait = { workspace = true }
+once_cell = { workspace = true }
+structured-output = { workspace = true }
+parking_lot = { workspace = true }
+uuid = { workspace = true }
+#
+# For Cron Trigger
+#
+cron = { workspace = true }
+#
+# For HTTP Trigger
+#
+wick-interface-http = { workspace = true }
+wick-interface-types = { workspace = true }
+hyper = { workspace = true, features = ["runtime", "server"] }
+hyper-staticfile = { workspace = true }
+hyper-reverse-proxy = { workspace = true }
+bytes = { workspace = true }
+openapiv3 = { workspace = true }
+percent-encoding = { workspace = true }
+liquid = { workspace = true }
+#
+# For CLI Trigger
+#
+wick-interface-cli = { workspace = true }
+atty = { workspace = true }
+
+
+[dev-dependencies]
+
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+wick-logger = { workspace = true }
+test-logger = { workspace = true }
+futures = { workspace = true }
+anyhow = { workspace = true }
+reqwest = { workspace = true }
+pretty_assertions = { workspace = true }
+wick-config = { workspace = true, features = ["v1"] }

@@ -5,7 +5,6 @@ use wick_config::config::{ComponentKind, TriggerKind};
 use wick_packet::Entity;
 
 pub use crate::components::error::ComponentError;
-use crate::resources::ResourceKind;
 pub use crate::runtime::scope::error::ScopeError;
 
 #[derive(Debug, Clone, Copy)]
@@ -15,7 +14,6 @@ pub enum Context {
   TriggerKind(TriggerKind),
   Import,
   Resource,
-  ResourceKind(ResourceKind),
   Component,
   ComponentKind(ComponentKind),
 }
@@ -27,7 +25,6 @@ impl std::fmt::Display for Context {
       Context::TriggerKind(kind) => write!(f, "trigger {}", kind),
       Context::Import => write!(f, "import"),
       Context::Resource => write!(f, "resource"),
-      Context::ResourceKind(kind) => write!(f, "resource {}", kind),
       Context::Component => write!(f, "component"),
       Context::ComponentKind(kind) => write!(f, "component {}", kind),
     }
@@ -37,12 +34,6 @@ impl std::fmt::Display for Context {
 impl From<TriggerKind> for Context {
   fn from(kind: TriggerKind) -> Self {
     Context::TriggerKind(kind)
-  }
-}
-
-impl From<ResourceKind> for Context {
-  fn from(kind: ResourceKind) -> Self {
-    Context::ResourceKind(kind)
   }
 }
 
@@ -66,9 +57,6 @@ pub enum RuntimeError {
 
   #[error("{0} requested resource '{1}' which could not be found")]
   ResourceNotFound(Context, String),
-
-  #[error("{0} requires resource kind {1}, not {2}")]
-  InvalidResourceType(Context, ResourceKind, ResourceKind),
 
   #[error("{0} did not shutdown gracefully: {1}")]
   ShutdownFailed(Context, String),

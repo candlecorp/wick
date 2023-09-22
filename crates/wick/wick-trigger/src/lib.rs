@@ -115,26 +115,11 @@
 #[macro_use]
 extern crate tracing;
 
+pub mod error;
+pub mod resources;
 #[cfg(test)]
 pub(crate) mod test;
+mod triggers;
 
-mod wasmtime;
-
-mod components;
-pub(crate) mod dev;
-mod dispatch;
-pub mod error;
-mod runtime;
-pub(crate) mod utils;
-
-pub use components::error::ComponentError;
-pub use components::scope_component::ScopeComponent;
-pub use runtime::scope::error::ScopeError;
-pub use runtime::{Runtime, RuntimeBuilder, RuntimeConstraint};
-
-pub type Error = error::RuntimeError;
-
-/// The reserved namespace for Wick's initial stdlib.
-pub const V0_NAMESPACE: &str = "wick";
-
-type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
+pub use error::*;
+pub use triggers::{build_trigger_runtime, get_trigger_loader, Trigger, TriggerRuntimeConfig};

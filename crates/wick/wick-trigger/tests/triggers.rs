@@ -3,11 +3,10 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-mod utils;
 use tracing::{debug, Span};
 use wick_config::config::AppConfiguration;
 use wick_config::WickConfiguration;
-use wick_runtime::resources::Resource;
+use wick_trigger::resources::Resource;
 
 async fn load_app_yaml(path: &str) -> anyhow::Result<AppConfiguration> {
   let mut config = WickConfiguration::fetch(path, Default::default()).await?;
@@ -28,7 +27,7 @@ fn init_resources(config: &AppConfiguration) -> Result<HashMap<String, Resource>
 #[test_logger::test(tokio::test)]
 async fn basic_cli() -> Result<()> {
   let manifest = load_app_yaml("./tests/manifests/v1/app_config/basic.yaml").await?;
-  let rt = wick_runtime::build_trigger_runtime(&manifest, Span::current())?
+  let rt = wick_trigger::build_trigger_runtime(&manifest, Span::current())?
     .build(None)
     .await?;
   let resources = Arc::new(init_resources(&manifest)?);
@@ -39,7 +38,7 @@ async fn basic_cli() -> Result<()> {
   let name = manifest.name().to_owned();
   let app_config = manifest.clone();
 
-  match wick_runtime::get_trigger_loader(&trigger_config.kind()) {
+  match wick_trigger::get_trigger_loader(&trigger_config.kind()) {
     Some(loader) => {
       let loader = loader()?;
       let inner = loader.clone();
@@ -62,7 +61,7 @@ mod integration_test {
   #[test_logger::test(tokio::test)]
   async fn cli_with_db() -> Result<()> {
     let manifest = load_app_yaml("../../../examples/cli/wasm-calling-postgres.wick").await?;
-    let rt = wick_runtime::build_trigger_runtime(&manifest, Span::current())?
+    let rt = wick_trigger::build_trigger_runtime(&manifest, Span::current())?
       .build(None)
       .await?;
     let resources = Arc::new(init_resources(&manifest)?);
@@ -73,7 +72,7 @@ mod integration_test {
     let name = manifest.name().to_owned();
     let app_config = manifest.clone();
 
-    let task = match wick_runtime::get_trigger_loader(&trigger_config.kind()) {
+    let task = match wick_trigger::get_trigger_loader(&trigger_config.kind()) {
       Some(loader) => {
         let loader = loader()?;
         let inner = loader.clone();

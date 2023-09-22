@@ -176,6 +176,7 @@ impl std::fmt::Debug for RuntimeBuilder {
 }
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum RuntimeConstraint {
   Operation {
     entity: Entity,
