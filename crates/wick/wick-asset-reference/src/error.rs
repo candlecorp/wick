@@ -15,7 +15,7 @@ pub enum Error {
   LoadError(PathBuf),
 
   /// Remote fetch failed.
-  #[error("Pulling asset {} failed: {1}", .0.display())]
+  #[error("Asset {} wasn't found locally and couldn't be pulled: {1}", .0.display())]
   PullFailed(PathBuf, String),
 
   /// Local path normalization failed.

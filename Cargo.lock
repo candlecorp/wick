@@ -6188,6 +6188,7 @@ dependencies = [
  "wick-rpc",
  "wick-runtime",
  "wick-test-logger",
+ "wick-trigger",
 ]
 
 [[package]]
@@ -6415,25 +6416,16 @@ version = "0.23.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "atty",
- "bytes 1.4.0",
  "chrono",
- "cron",
  "derive_builder",
  "flow-component",
  "flow-graph",
  "flow-graph-interpreter",
  "futures 0.3.28",
- "hyper",
- "hyper-reverse-proxy",
- "hyper-staticfile",
  "itertools 0.11.0",
  "lazy_static",
- "loose-liquid",
  "once_cell",
- "openapiv3",
  "parking_lot",
- "percent-encoding",
  "pretty_assertions",
  "reqwest",
  "rstest",
@@ -6445,7 +6437,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "url",
  "uuid",
  "wasmrs-codec",
  "wasmtime",
@@ -6562,6 +6553,45 @@ dependencies = [
  "syn 2.0.29",
  "tokio",
  "wick-logger",
+]
+
+[[package]]
+name = "wick-trigger"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "atty",
+ "bytes 1.4.0",
+ "chrono",
+ "cron",
+ "futures 0.3.28",
+ "hyper",
+ "hyper-reverse-proxy",
+ "hyper-staticfile",
+ "loose-liquid",
+ "once_cell",
+ "openapiv3",
+ "parking_lot",
+ "percent-encoding",
+ "pretty_assertions",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "structured-output",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+ "wick-config",
+ "wick-interface-cli",
+ "wick-interface-http",
+ "wick-interface-types",
+ "wick-logger",
+ "wick-packet",
+ "wick-runtime",
+ "wick-test-logger",
 ]
 
 [[package]]

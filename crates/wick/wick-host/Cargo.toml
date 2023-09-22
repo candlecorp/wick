@@ -16,6 +16,7 @@ readme = "README.md"
 seeded-random = { workspace = true }
 flow-component = { workspace = true }
 wick-runtime = { workspace = true }
+wick-trigger = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-config = { workspace = true, features = ["config"] }

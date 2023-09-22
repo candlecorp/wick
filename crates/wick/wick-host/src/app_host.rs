@@ -11,8 +11,9 @@ use wick_config::WickConfiguration;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, InherentData, Invocation, PacketStream, RuntimeConfig};
 use wick_runtime::error::RuntimeError;
-use wick_runtime::resources::Resource;
-use wick_runtime::{build_trigger_runtime, Runtime, Trigger};
+use wick_runtime::Runtime;
+use wick_trigger::resources::Resource;
+use wick_trigger::{build_trigger_runtime, Trigger};
 
 use crate::{Error, Result};
 
@@ -80,7 +81,7 @@ impl AppHost {
       let name = self.manifest.name().to_owned();
       let app_config = self.manifest.clone();
 
-      match wick_runtime::get_trigger_loader(&trigger_config.kind()) {
+      match wick_trigger::get_trigger_loader(&trigger_config.kind()) {
         Some(loader) => {
           let loader = loader()?;
           let inner = loader.clone();

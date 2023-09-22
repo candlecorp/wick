@@ -13,7 +13,10 @@ pub enum HostError {
   RuntimeError(#[from] Box<wick_runtime::Error>),
 
   #[error(transparent)]
-  Resource(#[from] wick_runtime::resources::ResourceError),
+  TriggerError(#[from] Box<wick_trigger::Error>),
+
+  #[error(transparent)]
+  Resource(#[from] wick_trigger::resources::ResourceError),
 
   #[error("General error : {0}")]
   Other(String),
@@ -22,5 +25,11 @@ pub enum HostError {
 impl From<RuntimeError> for HostError {
   fn from(e: RuntimeError) -> Self {
     HostError::RuntimeError(Box::new(e))
+  }
+}
+
+impl From<wick_trigger::Error> for HostError {
+  fn from(e: wick_trigger::Error) -> Self {
+    HostError::TriggerError(Box::new(e))
   }
 }

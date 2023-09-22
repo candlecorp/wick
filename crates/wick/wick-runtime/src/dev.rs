@@ -7,7 +7,7 @@ pub(crate) mod prelude {
   pub(crate) use tracing::Span;
   pub(crate) use uuid::Uuid;
   pub(crate) use wick_config::config;
-  pub(crate) use wick_config::config::{AppConfiguration, ComponentConfiguration};
+  pub(crate) use wick_config::config::ComponentConfiguration;
   pub(crate) use wick_interface_types::*;
   pub(crate) use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
