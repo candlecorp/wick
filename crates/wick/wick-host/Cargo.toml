@@ -13,16 +13,19 @@ readme = "README.md"
 [features]
 
 [dependencies]
-seeded-random = { workspace = true }
-flow-component = { workspace = true }
 wick-runtime = { workspace = true }
 wick-trigger = { workspace = true }
+wick-trigger-cli = { workspace = true }
+wick-trigger-http = { workspace = true }
+wick-trigger-time = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-config = { workspace = true, features = ["config"] }
 wick-component-cli = { workspace = true, features = ["grpc"] }
 wick-rpc = { workspace = true }
 wick-invocation-server = { workspace = true }
+seeded-random = { workspace = true }
+flow-component = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread"] }

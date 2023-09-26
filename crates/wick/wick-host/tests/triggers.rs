@@ -38,7 +38,7 @@ async fn basic_cli() -> Result<()> {
   let name = manifest.name().to_owned();
   let app_config = manifest.clone();
 
-  match wick_trigger::get_trigger_loader(&trigger_config.kind()) {
+  match wick_host::triggers::get_trigger_loader(&trigger_config.kind()) {
     Some(loader) => {
       let loader = loader()?;
       let inner = loader.clone();
@@ -72,7 +72,7 @@ mod integration_test {
     let name = manifest.name().to_owned();
     let app_config = manifest.clone();
 
-    let task = match wick_trigger::get_trigger_loader(&trigger_config.kind()) {
+    let task = match wick_host::triggers::get_trigger_loader(&trigger_config.kind()) {
       Some(loader) => {
         let loader = loader()?;
         let inner = loader.clone();

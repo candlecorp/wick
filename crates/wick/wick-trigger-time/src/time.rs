@@ -16,11 +16,10 @@ use tracing::Span;
 use wick_config::config::{self, AppConfiguration, TimeTriggerConfig, TriggerDefinition};
 use wick_packet::{Entity, InherentData, Invocation, Packet};
 use wick_runtime::Runtime;
+use wick_trigger::resources::Resource;
+use wick_trigger::{Error, Trigger};
 
 use self::error::TimeError;
-use super::{ComponentId, Trigger};
-use crate::error::Error;
-use crate::resources::Resource;
 
 async fn invoke_operation(
   runtime: Runtime,
@@ -108,22 +107,18 @@ async fn create_schedule(
 }
 
 #[derive(Debug)]
-pub(crate) struct Time {
+pub struct Time {
   #[allow(dead_code)]
   name: String,
   handler: Arc<Mutex<Option<tokio::task::JoinHandle<()>>>>,
 }
 
-impl Time {
-  pub(crate) fn new() -> Self {
+impl Default for Time {
+  fn default() -> Self {
     Self {
       name: "Schedule".to_owned(),
       handler: Default::default(),
     }
-  }
-
-  pub(crate) fn load() -> Result<Arc<dyn Trigger + Send + Sync>, Error> {
-    Ok(Arc::new(Self::new()))
   }
 }
 
@@ -152,7 +147,7 @@ impl Trigger for Time {
     };
 
     let span = info_span!("trigger:schedule", schedule = cron);
-    let component_id = config.operation().component_id()?.to_owned();
+    let component_id = config.operation().component_id().map_err(TimeError::from)?.to_owned();
 
     let scheduler_task = create_schedule(runtime, schedule, config, component_id, span).await?;
 
@@ -200,9 +195,9 @@ mod test {
   use std::path::Path;
 
   use anyhow::Result;
+  use wick_trigger::build_trigger_runtime;
 
   use super::*;
-  use crate::build_trigger_runtime;
   use crate::test::load_example;
 
   fn remove_test_file(test_file: &Path) {
@@ -229,7 +224,7 @@ mod test {
     let test_file = pwd.join("time-trigger.txt");
     remove_test_file(&test_file);
 
-    let trigger = Time::load()?;
+    let trigger = Time::default();
     let trigger_config = app_config.triggers()[0].clone();
     trigger
       .run(

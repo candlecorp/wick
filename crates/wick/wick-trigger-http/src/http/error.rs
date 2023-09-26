@@ -1,9 +1,8 @@
 use wick_config::config::Codec;
 use wick_packet::Entity;
 
-use crate::error::ErrorContext;
-
 #[derive(Debug, thiserror::Error)]
+#[allow(clippy::exhaustive_enums)]
 pub enum HttpError {
   #[error("Internal error: {:?}",.0)]
   InternalError(InternalError),
@@ -67,6 +66,9 @@ pub enum HttpError {
 
   #[error("{0}")]
   InitializationFailed(String),
+
+  #[error("error in configuration: {0}")]
+  Config(Box<wick_config::Error>),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -75,8 +77,14 @@ pub enum InternalError {
   Builder,
 }
 
-impl From<HttpError> for crate::error::Error {
+impl From<HttpError> for wick_trigger::Error {
   fn from(value: HttpError) -> Self {
-    crate::error::Error::new_context(ErrorContext::Http, crate::error::ErrorKind::Http(Box::new(value)))
+    wick_trigger::Error::new_context("http", wick_trigger::error::ErrorKind::Trigger(Box::new(value)))
+  }
+}
+
+impl From<wick_config::Error> for HttpError {
+  fn from(value: wick_config::Error) -> Self {
+    HttpError::Config(Box::new(value))
   }
 }

@@ -112,9 +112,12 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-pub mod error;
-pub mod resources;
-mod trigger;
+#[macro_use]
+extern crate tracing;
 
-pub use error::*;
-pub use trigger::{build_trigger_runtime, Trigger, TriggerRuntimeConfig};
+mod http;
+#[cfg(test)]
+pub(crate) mod test;
+
+pub use http::error::*;
+pub use http::Http;

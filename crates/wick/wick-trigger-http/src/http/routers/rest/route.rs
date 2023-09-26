@@ -1,7 +1,7 @@
 use serde_json::Value;
 use wick_interface_types::{Field, FieldValue, Type};
 
-use crate::triggers::http::HttpError;
+use crate::http::HttpError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum PathPart {

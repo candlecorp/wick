@@ -12,12 +12,10 @@ use wick_config::config::{Codec, RawRouterConfig, WickRouter};
 use wick_packet::{packets, Base64Bytes, Entity, InherentData, Invocation, Observer, Packet, PacketStream};
 use wick_runtime::Runtime;
 
-use crate::error::Error;
-use crate::triggers::http::component_utils::respond;
-use crate::triggers::http::conversions::request_and_body_to_wick;
-use crate::triggers::http::middleware::resolve_middleware_components;
-use crate::triggers::http::{BoxFuture, HttpError, HttpRouter, RawRouter, RawRouterHandler, RouterOperation};
-use crate::triggers::ComponentId;
+use crate::http::component_utils::respond;
+use crate::http::conversions::request_and_body_to_wick;
+use crate::http::middleware::resolve_middleware_components;
+use crate::http::{BoxFuture, HttpError, HttpRouter, RawRouter, RawRouterHandler, RouterOperation};
 
 #[derive()]
 #[must_use]
@@ -168,7 +166,7 @@ impl Service<Request<Body>> for RawHandler {
   }
 }
 
-pub(crate) fn register_raw_router(index: usize, router_config: &RawRouterConfig) -> Result<HttpRouter, Error> {
+pub(crate) fn register_raw_router(index: usize, router_config: &RawRouterConfig) -> Result<HttpRouter, HttpError> {
   trace!(index, "registering raw router");
   let middleware = resolve_middleware_components(router_config)?;
 

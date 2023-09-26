@@ -1,5 +1,5 @@
 [package]
-name = "wick-trigger"
+name = "wick-trigger-time"
 version = "0.1.0"
 edition = "2021"
 license = "Elastic-2.0"
@@ -11,14 +11,26 @@ readme = "README.md"
 [features]
 
 [dependencies]
+wick-trigger = { workspace = true }
 wick-runtime = { workspace = true }
 wick-config = { workspace = true }
+wick-packet = { workspace = true }
 
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+
+tokio = { workspace = true }
+futures = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-url = { workspace = true }
 async-trait = { workspace = true }
 structured-output = { workspace = true }
+parking_lot = { workspace = true }
+#
+# Specific for Cron Trigger
+#
+cron = { workspace = true }
 
 
 [dev-dependencies]

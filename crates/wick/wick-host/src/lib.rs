@@ -118,6 +118,8 @@ extern crate tracing;
 #[macro_use]
 pub(crate) mod macros;
 
+pub mod triggers;
+
 mod app_host;
 pub mod collection;
 mod component_host;

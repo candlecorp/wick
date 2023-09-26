@@ -1,0 +1,16 @@
+[package]
+name = "wick-trigger-wasm-component"
+version = "0.1.0"
+edition = "2021"
+license = "Elastic-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "Implementation and loader for Wick WASM components."
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+
+[dependencies]
+wick-runtime = { workspace = true }
+wick-config = { workspace = true }
+wick-packet = { workspace = true }

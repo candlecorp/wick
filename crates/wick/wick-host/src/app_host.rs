@@ -15,6 +15,7 @@ use wick_runtime::Runtime;
 use wick_trigger::resources::Resource;
 use wick_trigger::{build_trigger_runtime, Trigger};
 
+use crate::triggers::get_trigger_loader;
 use crate::{Error, Result};
 
 #[derive(derive_builder::Builder)]
@@ -81,7 +82,7 @@ impl AppHost {
       let name = self.manifest.name().to_owned();
       let app_config = self.manifest.clone();
 
-      match wick_trigger::get_trigger_loader(&trigger_config.kind()) {
+      match get_trigger_loader(&trigger_config.kind()) {
         Some(loader) => {
           let loader = loader()?;
           let inner = loader.clone();
