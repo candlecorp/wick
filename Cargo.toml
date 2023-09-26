@@ -115,6 +115,9 @@ wick-runtime = { path = "./crates/wick/wick-runtime", version = "0.23.0" }
 wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.2.0" }
 wick-test = { path = "./crates/wick/wick-test", version = "0.2.0" }
 wick-trigger = { path = "./crates/wick/wick-trigger", version = "0.1.0" }
+wick-trigger-cli = { path = "./crates/wick/wick-trigger-cli", version = "0.1.0" }
+wick-trigger-http = { path = "./crates/wick/wick-trigger-http", version = "0.1.0" }
+wick-trigger-time = { path = "./crates/wick/wick-trigger-time", version = "0.1.0" }
 wick-wascap = { path = "./crates/wick/wick-wascap", version = "0.2.0" }
 wick-xdg = { path = "./crates/wick/wick-xdg", version = "0.3.0" }
 #

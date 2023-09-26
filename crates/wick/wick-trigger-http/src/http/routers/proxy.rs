@@ -8,13 +8,13 @@ use url::Url;
 use uuid::Uuid;
 use wick_config::config::{ProxyRouterConfig, WickRouter};
 use wick_runtime::Runtime;
+use wick_trigger::resources::Resource;
+use wick_trigger::Error;
 
 use super::super::{HttpError, HttpRouter, RawRouter};
-use crate::error::Error;
-use crate::resources::Resource;
-use crate::triggers::http::middleware::resolve_middleware_components;
-use crate::triggers::http::routers::get_url;
-use crate::triggers::http::{BoxFuture, RawRouterHandler};
+use crate::http::middleware::resolve_middleware_components;
+use crate::http::routers::get_url;
+use crate::http::{BoxFuture, RawRouterHandler};
 
 #[derive()]
 #[must_use]

@@ -1512,7 +1512,6 @@ version = "0.6.0"
 dependencies = [
  "anyhow",
  "futures 0.3.28",
- "liquid-json",
  "seeded-random",
  "serde",
  "serde_json",
@@ -6135,7 +6134,6 @@ dependencies = [
  "parking_lot",
  "pretty_assertions",
  "property",
- "regex",
  "rstest",
  "serde",
  "serde-value",
@@ -6189,6 +6187,9 @@ dependencies = [
  "wick-runtime",
  "wick-test-logger",
  "wick-trigger",
+ "wick-trigger-cli",
+ "wick-trigger-http",
+ "wick-trigger-time",
 ]
 
 [[package]]
@@ -6304,7 +6305,6 @@ dependencies = [
  "async-recursion",
  "bytes 1.4.0",
  "clap",
- "derive_builder",
  "env_logger",
  "flate2",
  "getset",
@@ -6397,7 +6397,6 @@ dependencies = [
 name = "wick-rpc"
 version = "0.2.0"
 dependencies = [
- "option-utils",
  "prost",
  "serde",
  "thiserror",
@@ -6422,7 +6421,6 @@ dependencies = [
  "flow-graph",
  "flow-graph-interpreter",
  "futures 0.3.28",
- "itertools 0.11.0",
  "lazy_static",
  "once_cell",
  "parking_lot",
@@ -6561,10 +6559,54 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "futures 0.3.28",
+ "pretty_assertions",
+ "reqwest",
+ "structured-output",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "url",
+ "wick-config",
+ "wick-logger",
+ "wick-runtime",
+ "wick-test-logger",
+]
+
+[[package]]
+name = "wick-trigger-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
  "atty",
+ "futures 0.3.28",
+ "parking_lot",
+ "pretty_assertions",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "structured-output",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "wick-config",
+ "wick-interface-cli",
+ "wick-logger",
+ "wick-packet",
+ "wick-runtime",
+ "wick-test-logger",
+ "wick-trigger",
+]
+
+[[package]]
+name = "wick-trigger-http"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
  "bytes 1.4.0",
  "chrono",
- "cron",
  "futures 0.3.28",
  "hyper",
  "hyper-reverse-proxy",
@@ -6585,13 +6627,48 @@ dependencies = [
  "url",
  "uuid",
  "wick-config",
- "wick-interface-cli",
  "wick-interface-http",
  "wick-interface-types",
  "wick-logger",
  "wick-packet",
  "wick-runtime",
  "wick-test-logger",
+ "wick-trigger",
+]
+
+[[package]]
+name = "wick-trigger-time"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "cron",
+ "futures 0.3.28",
+ "parking_lot",
+ "pretty_assertions",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "structured-output",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "wick-config",
+ "wick-logger",
+ "wick-packet",
+ "wick-runtime",
+ "wick-test-logger",
+ "wick-trigger",
+]
+
+[[package]]
+name = "wick-trigger-wasm-component"
+version = "0.1.0"
+dependencies = [
+ "wick-config",
+ "wick-packet",
+ "wick-runtime",
 ]
 
 [[package]]

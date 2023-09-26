@@ -95,6 +95,13 @@ impl ComponentOperationExpression {
       None
     }
   }
+
+  pub fn component_id(&self) -> Result<&str, ManifestError> {
+    match &self.component {
+      ComponentDefinition::Reference(r) => Ok(r.id()),
+      _ => Err(ManifestError::InvalidReference),
+    }
+  }
 }
 
 impl Renderable for ComponentOperationExpression {

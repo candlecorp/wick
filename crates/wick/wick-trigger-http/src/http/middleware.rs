@@ -1,8 +1,7 @@
 use wick_config::config::WickRouter;
 use wick_packet::{Entity, RuntimeConfig};
 
-use crate::error::Error;
-use crate::triggers::ComponentId;
+use crate::HttpError;
 
 #[derive(Debug, Clone)]
 pub(crate) struct RouterMiddleware {
@@ -19,7 +18,7 @@ impl RouterMiddleware {
   }
 }
 
-pub(super) fn resolve_middleware_components(router: &impl WickRouter) -> Result<RouterMiddleware, Error> {
+pub(super) fn resolve_middleware_components(router: &impl WickRouter) -> Result<RouterMiddleware, HttpError> {
   let mut request_operations = Vec::new();
   let mut response_operations = Vec::new();
   if let Some(middleware) = router.middleware() {

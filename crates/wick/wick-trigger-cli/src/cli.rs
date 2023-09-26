@@ -11,31 +11,27 @@ use tracing::{Instrument, Span};
 use wick_config::config::{AppConfiguration, TriggerDefinition};
 use wick_packet::{packet_stream, Entity, InherentData, Invocation};
 use wick_runtime::Runtime;
-
-use super::Trigger;
-use crate::error::Error;
-use crate::resources::Resource;
+use wick_trigger::resources::Resource;
+use wick_trigger::Trigger;
 
 #[derive(Debug)]
-pub(crate) struct Cli {
+pub struct Cli {
   done_tx: Mutex<Option<tokio::sync::oneshot::Sender<StructuredOutput>>>,
   done_rx: Mutex<Option<tokio::sync::oneshot::Receiver<StructuredOutput>>>,
 }
 
-impl Cli {
-  pub(crate) fn load() -> Result<Arc<dyn Trigger + Send + Sync>, Error> {
-    Ok(Arc::new(Cli::load_impl()?))
-  }
-
-  pub(crate) fn load_impl() -> Result<Cli, Error> {
+impl Default for Cli {
+  fn default() -> Self {
     let (done_tx, done_rx) = tokio::sync::oneshot::channel();
-    Ok(Self {
+    Self {
       done_tx: Mutex::new(Some(done_tx)),
       done_rx: Mutex::new(Some(done_rx)),
-    })
+    }
   }
+}
 
-  async fn handle(&self, runtime: Runtime, operation: Entity, args: Vec<String>) -> Result<(), Error> {
+impl Cli {
+  async fn handle(&self, runtime: Runtime, operation: Entity, args: Vec<String>) -> Result<(), wick_trigger::Error> {
     let is_interactive = wick_interface_cli::types::Interactive {
       stdin: atty::is(atty::Stream::Stdin),
       stdout: atty::is(atty::Stream::Stdout),
@@ -105,7 +101,7 @@ impl Trigger for Cli {
     config: TriggerDefinition,
     _resources: Arc<HashMap<String, Resource>>,
     span: Span,
-  ) -> Result<StructuredOutput, Error> {
+  ) -> Result<StructuredOutput, wick_trigger::Error> {
     let TriggerDefinition::Cli(config) = config else {
       panic!("invalid trigger definition, expected CLI configuraton");
     };
@@ -129,7 +125,7 @@ impl Trigger for Cli {
     Ok(StructuredOutput::default())
   }
 
-  async fn shutdown_gracefully(self) -> Result<(), Error> {
+  async fn shutdown_gracefully(self) -> Result<(), wick_trigger::Error> {
     Ok(())
   }
 

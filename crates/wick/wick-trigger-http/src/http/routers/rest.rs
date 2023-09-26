@@ -15,14 +15,12 @@ mod openapi;
 mod route;
 
 use wick_runtime::Runtime;
+use wick_trigger::resources::Resource;
 
 use self::error::RestError;
-use crate::error::Error;
-use crate::resources::Resource;
-use crate::triggers::http::component_utils::stream_to_json;
-use crate::triggers::http::middleware::resolve_middleware_components;
-use crate::triggers::http::{BoxFuture, HttpError, HttpRouter, RawRouter, RawRouterHandler};
-use crate::triggers::ComponentId;
+use crate::http::component_utils::stream_to_json;
+use crate::http::middleware::resolve_middleware_components;
+use crate::http::{BoxFuture, HttpError, HttpRouter, RawRouter, RawRouterHandler};
 
 pub(crate) const OPENAPI_PATH: &str = "/openapi.json";
 
@@ -269,12 +267,12 @@ mod test {
   mod port_limited {
 
     use anyhow::Result;
+    use wick_trigger::resources::Resource;
+    use wick_trigger::{build_trigger_runtime, Trigger};
 
     use super::super::*;
-    use crate::resources::Resource;
+    use crate::http::Http;
     use crate::test::load_test_manifest;
-    use crate::triggers::http::Http;
-    use crate::{build_trigger_runtime, Trigger};
 
     static PORT: &str = "9005";
 
@@ -324,7 +322,7 @@ pub(crate) fn register_rest_router(
   _resources: Arc<HashMap<String, Resource>>,
   app_config: &AppConfiguration,
   router_config: &RestRouterConfig,
-) -> Result<HttpRouter, Error> {
+) -> Result<HttpRouter, HttpError> {
   trace!(index, "registering rest router");
   let middleware = resolve_middleware_components(router_config)?;
   let mut routes = Vec::new();

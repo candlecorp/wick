@@ -12,12 +12,12 @@ use tracing::{Instrument, Span};
 use uuid::Uuid;
 use wick_config::config::{StaticRouterConfig, WickRouter};
 use wick_runtime::Runtime;
+use wick_trigger::error::{Error, ErrorKind};
+use wick_trigger::resources::{Resource, ResourceKind};
 
 use self::index_list::StaticError;
-use crate::error::{Error, ErrorKind};
-use crate::resources::{Resource, ResourceKind};
-use crate::triggers::http::middleware::resolve_middleware_components;
-use crate::triggers::http::{BoxFuture, HttpError, HttpRouter, RawRouter, RawRouterHandler};
+use crate::http::middleware::resolve_middleware_components;
+use crate::http::{BoxFuture, HttpError, HttpRouter, RawRouter, RawRouterHandler};
 
 #[derive()]
 #[must_use]
@@ -158,17 +158,14 @@ pub(crate) fn register_static_router(
 ) -> Result<HttpRouter, Error> {
   trace!(index, "registering static router");
   let middleware = resolve_middleware_components(router_config)?;
-  let volume = resources.get(router_config.volume()).ok_or_else(|| {
-    Error::new_context(
-      crate::error::ErrorContext::Http,
-      ErrorKind::ResourceNotFound(router_config.volume().into()),
-    )
-  })?;
+  let volume = resources
+    .get(router_config.volume())
+    .ok_or_else(|| Error::new_context("http", ErrorKind::ResourceNotFound(router_config.volume().into())))?;
   let volume = match volume {
     Resource::Volume(s) => s.clone(),
     _ => {
       return Err(Error::new_context(
-        crate::error::ErrorContext::Http,
+        "http",
         ErrorKind::InvalidResourceType(ResourceKind::Volume, volume.kind()),
       ))
     }

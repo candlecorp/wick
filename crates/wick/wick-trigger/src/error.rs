@@ -3,7 +3,7 @@ use crate::resources::ResourceKind;
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
 pub struct Error {
-  pub context: Option<ErrorContext>,
+  pub context: Option<String>,
   #[source]
   pub kind: ErrorKind,
 }
@@ -15,44 +15,38 @@ impl std::fmt::Display for Error {
 }
 
 impl Error {
-  pub(crate) const fn new(kind: ErrorKind) -> Self {
+  #[must_use]
+  pub const fn new(kind: ErrorKind) -> Self {
     Self { kind, context: None }
   }
-  pub(crate) const fn new_context(context: ErrorContext, kind: ErrorKind) -> Self {
+  pub fn new_context<T: Into<String>>(context: T, kind: ErrorKind) -> Self {
     Self {
       kind,
-      context: Some(context),
+      context: Some(context.into()),
     }
   }
-}
-
-#[derive(Debug, Clone, Copy)]
-#[allow(clippy::exhaustive_enums)]
-pub enum ErrorContext {
-  Http,
-  Time,
 }
 
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
 pub enum ErrorKind {
-  #[error("expected a component reference but found an unimported definition, this is a bug")]
-  InvalidReference,
+  #[error("error during trigger startup: {0}")]
+  Startup(String),
+
+  #[error("error during trigger shutdown: {0}")]
+  Shutdown(String),
+
+  #[error("internal error in trigger: {0}")]
+  InternalError(String),
+
+  #[error("error in trigger: {0}")]
+  Trigger(Box<dyn std::error::Error + Send + Sync>),
 
   #[error("could not find resource by ID '{0}'")]
   ResourceNotFound(String),
 
   #[error("expected {0} resource, got a {1}")]
   InvalidResourceType(ResourceKind, ResourceKind),
-
-  #[error("{0}")]
-  ShutdownFailed(String),
-
-  #[error(transparent)]
-  Time(Box<crate::triggers::time::error::TimeError>),
-
-  #[error(transparent)]
-  Http(Box<crate::triggers::http::error::HttpError>),
 
   #[error(transparent)]
   Runtime(Box<wick_runtime::error::RuntimeError>),

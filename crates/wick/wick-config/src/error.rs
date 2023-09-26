@@ -140,6 +140,10 @@ pub enum ManifestError {
   /// Error converting configured Packet flags.
   #[error("Error converting configured Packet flags, use the singular version instead")]
   InvalidPacketFlags,
+
+  /// Error when trying to use a component as a bound reference when it wasn't bound.
+  #[error("Tried to use a component as a bound reference when it wasn't bound")]
+  InvalidReference,
 }
 
 #[cfg(feature = "config")]

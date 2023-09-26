@@ -18,17 +18,15 @@ use hyper::{Body, Request, Response, Server};
 use parking_lot::Mutex;
 use routers::{HttpRouter, RawRouterHandler, RouterOperation};
 use serde_json::json;
+use service_factory::ServiceFactory;
 use structured_output::StructuredOutput;
 use tokio::task::JoinHandle;
 use tracing::Span;
 use uuid::Uuid;
 use wick_config::config::{self, AppConfiguration, TriggerDefinition};
 use wick_runtime::Runtime;
-
-use super::{Trigger, TriggerKind};
-use crate::error::{Error, ErrorContext, ErrorKind};
-use crate::resources::{Resource, ResourceKind};
-use crate::triggers::http::service_factory::ServiceFactory;
+use wick_trigger::resources::{Resource, ResourceKind};
+use wick_trigger::{Error, ErrorKind, Trigger};
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
 
 trait RawRouter {
@@ -86,14 +84,14 @@ impl HttpInstance {
     debug!("shutting down http server");
     self.shutdown_tx.send(()).map_err(|_| {
       Error::new_context(
-        ErrorContext::Http,
-        ErrorKind::ShutdownFailed("could not send shutdown signal; server may have already died".to_owned()),
+        "http",
+        ErrorKind::Shutdown("could not send shutdown signal; server may have already died".to_owned()),
       )
     })?;
     self.handle.await.map_err(|_| {
       Error::new_context(
-        ErrorContext::Http,
-        ErrorKind::ShutdownFailed("waiting for server process to stop after sending shutdown signal failed".to_owned()),
+        "http",
+        ErrorKind::Shutdown("waiting for server process to stop after sending shutdown signal failed".to_owned()),
       )
     })?;
     Ok(())
@@ -101,14 +99,14 @@ impl HttpInstance {
 }
 
 #[derive(Default)]
-pub(crate) struct Http {
+pub struct Http {
   instance: Arc<Mutex<Option<HttpInstance>>>,
   span: Option<Span>,
 }
 
-impl Http {
-  pub(crate) fn load() -> Result<Arc<dyn Trigger + Send + Sync>, Error> {
-    Ok(Arc::new(Self::default()))
+impl std::fmt::Debug for Http {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "Http")
   }
 }
 
@@ -123,22 +121,19 @@ impl Trigger for Http {
     resources: Arc<HashMap<String, Resource>>,
     span: Span,
   ) -> Result<StructuredOutput, Error> {
-    span.in_scope(|| debug!(kind = %TriggerKind::Http, "trigger:run"));
+    span.in_scope(|| debug!(kind = "http", "trigger:run"));
     let config::TriggerDefinition::Http(config) = config else {
       panic!("invalid trigger definition, expected Http configuraton");
     };
     let resource_name = config.resource();
-    let resource = resources.get(resource_name).ok_or_else(|| {
-      Error::new_context(
-        ErrorContext::Http,
-        ErrorKind::ResourceNotFound(resource_name.to_owned()),
-      )
-    })?;
+    let resource = resources
+      .get(resource_name)
+      .ok_or_else(|| Error::new_context("http", ErrorKind::ResourceNotFound(resource_name.to_owned())))?;
     let socket = match resource {
       Resource::TcpPort(s) => *s,
       _ => {
         return Err(Error::new_context(
-          ErrorContext::Http,
+          "http",
           ErrorKind::InvalidResourceType(ResourceKind::TcpPort, resource.kind()),
         ))
       }
@@ -237,9 +232,9 @@ mod test {
   mod port_limited {
 
     use anyhow::Result;
+    use wick_trigger::build_trigger_runtime;
 
     use super::super::*;
-    use crate::build_trigger_runtime;
     use crate::test::{load_example, load_test_manifest};
 
     static PORT: &str = "9005";
