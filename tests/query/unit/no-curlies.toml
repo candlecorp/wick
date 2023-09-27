@@ -1,0 +1,6 @@
+#:schema https://raw.githubusercontent.com/assert-rs/trycmd/main/schema.json
+bin.name = "wick"
+args = ["query", "-f", "Cargo.toml", "   package.name   "]
+stdout = """
+wick-cli
+"""

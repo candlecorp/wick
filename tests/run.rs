@@ -1,28 +1,17 @@
-static DIR: &str = "run";
+mod utils;
 
-#[rstest::rstest]
-#[case("anonymous-component.toml")]
-#[case("imported-component.toml")]
-#[case("stdin.toml")]
-#[case("file-reader.toml")]
-#[case("file-reader-lockdown-fail.toml")]
-#[case("file-reader-lockdown-pass.toml")]
-#[case("file-reader-lockdown-pass-wildcard-dir.toml")]
-#[case("file-reader-lockdown-pass-wildcard-components.toml")]
-fn wick_run(#[case] file: &'static str) {
-  let kind = "unit";
-  let file = format!("tests/{}/{}/{}", DIR, kind, file);
-
-  trycmd::TestCases::new().case(file);
-}
-
-mod integration_test {
-  use super::DIR;
-  #[rstest::rstest]
-  #[case("postgres.toml")]
-  fn wick_run(#[case] file: &'static str) {
-    let kind = "integration";
-    let file = format!("tests/{}/{}/{}", DIR, kind, file);
-    trycmd::TestCases::new().case(file);
-  }
-}
+utils::test_cases!(
+  unit: [
+    "anonymous-component.toml",
+    "imported-component.toml",
+    "stdin.toml",
+    "file-reader.toml",
+    "file-reader-lockdown-fail.toml",
+    "file-reader-lockdown-pass.toml",
+    "file-reader-lockdown-pass-wildcard-dir.toml",
+    "file-reader-lockdown-pass-wildcard-components.toml"
+  ],
+  integration: [
+    "postgres.toml"
+  ]
+);

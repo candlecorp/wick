@@ -87,7 +87,7 @@ pub(crate) enum CliCommand {
   #[clap(subcommand, name = "rpc")]
   Rpc(rpc::SubCommands),
 
-  /// Command to query JSON, YAML, or TOML file.
+  /// Command to apply a liquid template to a JSON, YAML, or TOML file.
   #[clap(name = "query")]
   Query(query::Options),
 }

@@ -4,9 +4,8 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use clap::Args;
-use jaq_core::{parse, Ctx, Definitions, RcIter, Val};
 use markup_converter::{Format, Transcoder};
-use serde_json::{json, Value};
+use serde_json::json;
 use structured_output::StructuredOutput;
 
 #[derive(Debug, Clone, Args)]
@@ -17,7 +16,7 @@ pub(crate) struct Options {
   #[clap(short = 'r', long = "raw", action)]
   raw_output: bool,
 
-  /// Option to print raw output.
+  /// The markup kind if there is no extension.
   #[clap(short = 't', long = "type", action)]
   kind: Option<MarkupKind>,
 
@@ -25,9 +24,9 @@ pub(crate) struct Options {
   #[clap(short = 'f', long = "file", action)]
   path: Option<PathBuf>,
 
-  /// The query.
+  /// The template.
   #[clap(action)]
-  query: String,
+  template: String,
 }
 
 #[derive(Debug, Clone)]
@@ -81,58 +80,31 @@ pub(crate) async fn handle(
     }
   };
   let _enter = span.enter();
+  let trimmed = opts.template.trim();
 
-  let filter = &opts.query;
-
-  // parse the filter in the context of the given definitions
-  let mut errs = Vec::new();
-  let (filters, errors) = parse::parse(filter, parse::main());
-
-  if !errors.is_empty() {
-    for error in errors {
-      error!("error parsing query: {}", error);
-    }
-    return Err(anyhow!("Errors parsing queries"));
-  }
-
-  let mut lines = Vec::new();
-  let mut json = Vec::new();
-
-  #[allow(clippy::option_if_let_else)]
-  if let Some(filters) = filters {
-    // start out only from core filters,
-    // which do not include filters in the standard library
-    // such as `map`, `select` etc.
-    let defs = Definitions::core();
-
-    let filters = defs.finish(filters, Vec::new(), &mut errs);
-    let inputs = RcIter::new(core::iter::empty());
-
-    // iterator over the output values
-    let out = filters.run(Ctx::new([], &inputs), Val::from(input));
-
-    for val in out {
-      match val {
-        Ok(result) => {
-          let result: Value = result.into();
-          if let Value::String(v) = &result {
-            if opts.raw_output {
-              lines.push(v.clone());
-            } else {
-              lines.push(result.to_string());
-            }
-          } else {
-            lines.push(result.to_string());
-          }
-
-          json.push(result);
-        }
-        Err(e) => error!("error: {}", e),
-      };
-    }
+  // If the passed template includes '{{' then we can assume it's a raw template.
+  let template = if trimmed.contains("{{") {
+    opts.template
   } else {
-    debug!("no queries successfully parsed");
-  }
+    // The trim_start_matches('.') removes a leading '.' if it exists.
+    // This allows us to process a jq-style template as well as liquid-style templates.
+    // Finally, wrap it in double braces to make it a liquid template.
+    format!("{{{{ {} }}}}", trimmed.trim_start_matches('.'))
+  };
 
-  Ok(StructuredOutput::new(lines.join("\n"), json!({"results":json})))
+  let template = liquid::ParserBuilder::with_stdlib().build()?.parse(&template)?;
+
+  let globals = match input {
+    serde_json::Value::Object(map) => liquid::model::to_object(&map)?,
+    _ => {
+      liquid::object!({
+          "data": input
+      })
+    }
+  };
+
+  let result = template.render(&globals)?;
+  let json = json!({"results":result});
+
+  Ok(StructuredOutput::new(result, json))
 }
