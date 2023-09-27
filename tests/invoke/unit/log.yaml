@@ -6,7 +6,7 @@ network:
     - name: logger
       instances:
         logger:
-          id: wick::core::log
+          id: core::log
       connections:
         - <>[schem_input] => logger[input]
         - logger[output] => <>[schem_output]

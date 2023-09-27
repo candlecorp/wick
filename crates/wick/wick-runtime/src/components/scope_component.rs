@@ -28,7 +28,7 @@ impl Component for ScopeComponent {
     &self,
     mut invocation: Invocation,
     config: Option<RuntimeConfig>,
-    _callback: Arc<RuntimeCallback>,
+    _callback: LocalScope,
   ) -> flow_component::BoxFuture<Result<PacketStream, flow_component::ComponentError>> {
     let target_url = invocation.target().url();
 
@@ -78,7 +78,6 @@ impl Component for ScopeComponent {
 #[cfg(test)]
 mod tests {
 
-  use flow_component::panic_callback;
   use futures::StreamExt;
   use wick_packet::{packet_stream, Entity, Packet};
 
@@ -91,7 +90,7 @@ mod tests {
 
     let invocation = Invocation::test(file!(), Entity::local("simple"), stream, None)?;
     let outputs = component
-      .handle(invocation, Default::default(), panic_callback())
+      .handle(invocation, Default::default(), Default::default())
       .await?;
     let mut packets: Vec<_> = outputs.collect().await;
     println!("packets: {:#?}", packets);

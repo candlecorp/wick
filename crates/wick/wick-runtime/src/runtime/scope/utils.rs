@@ -4,7 +4,7 @@ use wick_config::Resolver;
 
 use super::error::ConstraintFailure;
 use super::ChildInit;
-use crate::components::{init_hlc_component, init_manifest_component, init_wasm_component};
+use crate::components::{init_hlc_component, init_manifest_component, init_wasmrs_component};
 use crate::dev::prelude::*;
 use crate::runtime::RuntimeConstraint;
 
@@ -76,7 +76,7 @@ pub(crate) async fn instantiate_imported_component(
   match kind {
     #[allow(deprecated)]
     config::ComponentDefinition::Wasm(def) => Ok(Some(
-      init_wasm_component(
+      init_wasmrs_component(
         def.reference(),
         id,
         opts,
@@ -102,8 +102,6 @@ pub(crate) async fn instantiate_imported_component(
 #[cfg(test)]
 mod test {
   // You can find many of the scope tests in the integration tests
-
-  use std::sync::Arc;
 
   use anyhow::Result;
   use flow_component::Component;
@@ -142,7 +140,7 @@ mod test {
       &self,
       _invocation: Invocation,
       _data: Option<RuntimeConfig>,
-      _callback: Arc<RuntimeCallback>,
+      _callback: LocalScope,
     ) -> flow_component::BoxFuture<std::result::Result<PacketStream, flow_component::ComponentError>> {
       todo!()
     }

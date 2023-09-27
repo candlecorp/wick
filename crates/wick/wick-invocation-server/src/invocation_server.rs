@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
-use flow_component::{panic_callback, SharedComponent};
+use flow_component::SharedComponent;
 use parking_lot::RwLock;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -125,7 +125,7 @@ impl InvocationService for InvocationServer {
 
     let result = self
       .collection
-      .handle(invocation, Default::default(), panic_callback())
+      .handle(invocation, Default::default(), Default::default())
       .await;
     if let Err(e) = result {
       let message = e.to_string();

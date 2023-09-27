@@ -9,7 +9,7 @@ use wick_packet::{packets, Entity, InherentData, Invocation, Packet};
 
 #[test_logger::test(tokio::test)]
 async fn test_deep_invoke() -> Result<()> {
-  let app_config = utils::load_app_config("run/unit/file-reader.wick", None).await?;
+  let app_config = utils::load_root_test_config("run/unit/file-reader.wick", None).await?;
   let rt = AppHost::build_runtime(&app_config, Some(1), Span::current()).await?;
   let app_host = AppHostBuilder::default().manifest(app_config).runtime(rt).build()?;
   let target = Entity::operation("wasi_fs", "read_string");
@@ -17,7 +17,7 @@ async fn test_deep_invoke() -> Result<()> {
   let invocation = Invocation::new(
     Entity::test("test_deep_invoke"),
     target,
-    packets!(("filename", file.to_string_lossy())),
+    packets!(("filename", "Cargo.toml")),
     InherentData::unsafe_default(),
     &Span::current(),
   );

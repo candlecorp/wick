@@ -3,3 +3,7 @@ package candle:wick
 world command-trigger {
   import wick
 }
+
+world component {
+  import wick
+}

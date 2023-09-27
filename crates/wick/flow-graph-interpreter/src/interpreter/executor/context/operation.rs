@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use flow_component::{Component, ComponentError, RuntimeCallback};
+use flow_component::{Component, ComponentError, LocalScope};
 use flow_graph::{NodeIndex, PortReference};
 use parking_lot::Mutex;
 use tokio::task::JoinHandle;
@@ -257,7 +257,7 @@ impl InstanceHandler {
     ctx_id: Uuid,
     channel: InterpreterDispatchChannel,
     options: &InterpreterOptions,
-    callback: Arc<RuntimeCallback>,
+    callback: LocalScope,
     root_config: Option<RuntimeConfig>,
     op_config: Option<RuntimeConfig>,
   ) -> Result<()> {
@@ -443,7 +443,8 @@ async fn output_handler(
   let reason = loop {
     let response = tokio::time::timeout(timeout, stream.next());
     let mut hanging = HashMap::new();
-    match response.await {
+    let next = response.await;
+    match next {
       Ok(Some(message)) => {
         num_received += 1;
         if let Err(e) = message {

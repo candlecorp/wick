@@ -8,8 +8,10 @@ use crate::config::{self};
 /// A root-level wick component implementation.
 #[serde(rename_all = "kebab-case")]
 pub enum ComponentImplementation {
-  /// A wasm component.
-  Wasm(config::WasmComponentImplementation),
+  /// A wasmRS component.
+  Wasm(config::WasmComponentDefinition),
+  /// A wasmRS component.
+  WasmRs(config::WasmRsComponent),
   /// A composite component.
   Composite(config::CompositeComponentImplementation),
   /// A sql component.
@@ -23,6 +25,7 @@ impl ComponentImplementation {
   pub const fn kind(&self) -> ComponentKind {
     match self {
       ComponentImplementation::Wasm(_) => ComponentKind::Wasm,
+      ComponentImplementation::WasmRs(_) => ComponentKind::WasmRs,
       ComponentImplementation::Composite(_) => ComponentKind::Composite,
       ComponentImplementation::Sql(_) => ComponentKind::Sql,
       ComponentImplementation::HttpClient(_) => ComponentKind::HttpClient,
@@ -34,6 +37,7 @@ impl ComponentImplementation {
   pub fn operation_signatures(&self) -> Vec<wick_interface_types::OperationSignature> {
     match self {
       ComponentImplementation::Wasm(c) => c.operation_signatures(),
+      ComponentImplementation::WasmRs(c) => c.operation_signatures(),
       ComponentImplementation::Composite(c) => c.operation_signatures(),
       ComponentImplementation::Sql(c) => c.operation_signatures(),
       ComponentImplementation::HttpClient(c) => c.operation_signatures(),
@@ -45,6 +49,7 @@ impl ComponentImplementation {
   pub fn default_name(&self) -> &'static str {
     match self {
       ComponentImplementation::Wasm(_) => panic!("Wasm components must be named"),
+      ComponentImplementation::WasmRs(_) => panic!("WasmRs components must be named"),
       ComponentImplementation::Composite(_) => panic!("Composite components must be named"),
       ComponentImplementation::Sql(_) => "wick/component/sql",
       ComponentImplementation::HttpClient(_) => "wick/component/http",
@@ -65,6 +70,8 @@ impl Default for ComponentImplementation {
 pub enum ComponentKind {
   /// A wasm component.
   Wasm,
+  /// A wasmRs component.
+  WasmRs,
   /// A composite component.
   Composite,
   /// A sql component.
@@ -77,6 +84,7 @@ impl std::fmt::Display for ComponentKind {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
       ComponentKind::Wasm => write!(f, "wick/component/wasm"),
+      ComponentKind::WasmRs => write!(f, "wick/component/wasmrs"),
       ComponentKind::Composite => write!(f, "wick/component/composite"),
       ComponentKind::Sql => write!(f, "wick/component/sql"),
       ComponentKind::HttpClient => write!(f, "wick/component/http"),

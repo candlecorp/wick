@@ -100,7 +100,7 @@ impl Operation for Op {
               )
             }))
           } else {
-            Some(Ok(packet.set_port("output")))
+            Some(Ok(packet.to_port("output")))
           }
         },
       );
@@ -148,7 +148,6 @@ mod test {
   use std::collections::HashMap;
 
   use anyhow::Result;
-  use flow_component::panic_callback;
   use serde_json::json;
   use wick_packet::{packet_stream, Entity, InherentData};
 
@@ -171,7 +170,7 @@ mod test {
     let mut packets = op
       .handle(
         inv,
-        Context::new(config, &InherentData::unsafe_default(), panic_callback()),
+        Context::new(config, &InherentData::unsafe_default(), Default::default()),
       )
       .await?
       .collect::<Vec<_>>()
@@ -201,7 +200,7 @@ mod test {
     let mut packets = op
       .handle(
         inv,
-        Context::new(config, &InherentData::unsafe_default(), panic_callback()),
+        Context::new(config, &InherentData::unsafe_default(), Default::default()),
       )
       .await?
       .collect::<Vec<_>>()

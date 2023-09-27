@@ -18,11 +18,19 @@ component:
         - name: optional
           type: string?
       uses:
+        - name: MERGE
+          operation: core::merge
+          with:
+            inputs:
+              - name: left
+                type: string
+              - name: right
+                type: string
         - name: SENDER
           operation: core::sender
           with:
             output: 'root_required: {{ ctx.root_config.required }}, root_optional: {{ ctx.root_config.optional | default: "" }}, required: {{ ctx.config.required }}, optional: {{ ctx.config.optional | default: "" }}'
       flow:
-        - <>.input -> wick::string::concat[a].left
-        - SENDER.output -> a.right
-        - a.output -> <>
+        - <>.input -> MERGE.left
+        - SENDER.output -> MERGE.right
+        - MERGE.output -> <>

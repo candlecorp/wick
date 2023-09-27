@@ -7,15 +7,15 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use flow_component::RuntimeCallback;
+use flow_component::LocalScope;
 use flow_graph_interpreter::NamespaceHandler;
-use seeded_random::{Random, Seed};
+use seeded_random::Random;
 use tracing::Instrument;
 use uuid::Uuid;
-use wick_component_wasm::component::{ComponentSetupBuilder, WasmComponent};
-use wick_component_wasm::error::LinkError;
+use wick_component_wasmrs::component::WasmrsComponent;
+use wick_component_wasmrs::error::LinkError;
 use wick_config::config::components::ManifestComponent;
-use wick_config::config::{Metadata, Permissions, PermissionsBuilder, WasmComponentImplementation};
+use wick_config::config::{Metadata, Permissions, PermissionsBuilder, WasmComponentDefinition, WasmRsComponent};
 use wick_config::{AssetReference, FetchOptions, Resolver, WickConfiguration};
 use wick_packet::validation::expect_configuration_matches;
 use wick_packet::{Entity, Invocation, RuntimeConfig};
@@ -25,7 +25,6 @@ use self::validation::expect_signature_match;
 use crate::dev::prelude::*;
 use crate::dispatch::scope_invoke_async;
 use crate::runtime::scope::{init_child, ChildInit};
-use crate::wasmtime::WASMTIME_ENGINE;
 use crate::BoxFuture;
 
 pub(crate) trait InvocationHandler {
@@ -37,7 +36,7 @@ type Result<T> = std::result::Result<T, ComponentError>;
 
 type ComponentInitResult = std::result::Result<NamespaceHandler, ScopeError>;
 
-pub(crate) async fn init_wasm_component(
+pub(crate) async fn init_wasmrs_component(
   reference: &AssetReference,
   namespace: String,
   opts: ChildInit,
@@ -48,7 +47,7 @@ pub(crate) async fn init_wasm_component(
 ) -> ComponentInitResult {
   opts
     .span
-    .in_scope(|| trace!(namespace = %namespace, ?opts, ?permissions, "registering wasm component"));
+    .in_scope(|| trace!(namespace = %namespace, ?opts, ?permissions, "registering wasmrs component"));
 
   let mut options = FetchOptions::default();
   options
@@ -56,12 +55,51 @@ pub(crate) async fn init_wasm_component(
     .set_allow_insecure(opts.allowed_insecure.clone());
   let asset = reference.with_options(options);
 
+  use wick_component_wasmrs::component::ComponentSetupBuilder;
+
   let setup = ComponentSetupBuilder::default()
-    .engine(WASMTIME_ENGINE.clone())
     .buffer_size(buffer_size)
     .permissions(permissions)
     .config(opts.root_config)
     .callback(Some(make_link_callback(opts.runtime_id)))
+    .provided(provided)
+    .imported(imported)
+    .build()
+    .unwrap();
+
+  let component = WasmrsComponent::try_load(&namespace, asset, setup, opts.span).await?;
+
+  let component = Arc::new(component);
+
+  let service = NativeComponentService::new(component);
+
+  Ok(NamespaceHandler::new(namespace, Box::new(service)))
+}
+
+pub(crate) async fn init_wasm_component(
+  reference: &AssetReference,
+  namespace: String,
+  opts: ChildInit,
+  permissions: Option<Permissions>,
+  provided: HashMap<String, String>,
+  imported: HashMap<String, String>,
+) -> ComponentInitResult {
+  opts
+    .span
+    .in_scope(|| trace!(namespace = %namespace, ?opts, ?permissions, "registering wasmrs component"));
+
+  let mut options = FetchOptions::default();
+  options
+    .set_allow_latest(opts.allow_latest)
+    .set_allow_insecure(opts.allowed_insecure.clone());
+  let asset = reference.with_options(options);
+
+  use wick_component_wasm::component::{ComponentSetupBuilder, WasmComponent};
+
+  let setup = ComponentSetupBuilder::default()
+    .permissions(permissions)
+    .config(opts.root_config)
+    .callback(make_link_callback(opts.runtime_id))
     .provided(provided)
     .imported(imported)
     .build()
@@ -76,8 +114,8 @@ pub(crate) async fn init_wasm_component(
   Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
-pub(crate) async fn init_wasm_impl_component(
-  kind: &WasmComponentImplementation,
+pub(crate) async fn init_wasmrs_def(
+  kind: &WasmRsComponent,
   namespace: String,
   opts: ChildInit,
   buffer_size: Option<u32>,
@@ -85,7 +123,7 @@ pub(crate) async fn init_wasm_impl_component(
   provided: HashMap<String, String>,
   imported: HashMap<String, String>,
 ) -> ComponentInitResult {
-  init_wasm_component(
+  init_wasmrs_component(
     kind.reference(),
     namespace,
     opts,
@@ -97,8 +135,19 @@ pub(crate) async fn init_wasm_impl_component(
   .await
 }
 
-pub(crate) fn make_link_callback(scope_id: Uuid) -> Arc<RuntimeCallback> {
-  Arc::new(move |compref, op, stream, inherent, config, span| {
+pub(crate) async fn init_wasm_def(
+  kind: &WasmComponentDefinition,
+  namespace: String,
+  opts: ChildInit,
+  permissions: Option<Permissions>,
+  provided: HashMap<String, String>,
+  imported: HashMap<String, String>,
+) -> ComponentInitResult {
+  init_wasm_component(kind.reference(), namespace, opts, permissions, provided, imported).await
+}
+
+pub(crate) fn make_link_callback(scope_id: Uuid) -> LocalScope {
+  LocalScope::new(Arc::new(move |compref, op, stream, inherent, config, span| {
     let origin_url = compref.get_origin_url();
     let target_id = compref.get_target_id().to_owned();
     let invocation = compref.to_invocation(&op, stream, inherent, span);
@@ -119,7 +168,7 @@ pub(crate) fn make_link_callback(scope_id: Uuid) -> Arc<RuntimeCallback> {
         Ok(result)
       }
     })
-  })
+  }))
 }
 
 pub(crate) async fn init_manifest_component(
@@ -176,7 +225,7 @@ pub(crate) async fn init_impl(
       let mut dirs = HashMap::new();
       for volume in wasmimpl.volumes() {
         let resource = (resolver)(volume.resource())?.try_resource()?.try_volume()?;
-        dirs.insert(volume.path().to_owned(), resource.path()?.to_string_lossy().to_string());
+        dirs.insert(volume.path().to_owned(), resource.path()?);
       }
       let perms = (!dirs.is_empty()).then(|| PermissionsBuilder::default().dirs(dirs).build().unwrap());
 
@@ -185,7 +234,33 @@ pub(crate) async fn init_impl(
         .iter()
         .map(|i| (i.id().to_owned(), Entity::component(i.id()).url()))
         .collect();
-      let comp = init_wasm_impl_component(wasmimpl, id.clone(), opts, buffer_size, perms, provided, imported).await?;
+      let comp = init_wasm_def(wasmimpl, id.clone(), opts, perms, provided, imported).await?;
+      let signed_sig = comp.component().signature();
+      let manifest_sig = manifest.signature()?;
+      span.in_scope(|| {
+        expect_signature_match(
+          Some(&PathBuf::from(&id)),
+          signed_sig,
+          Some(&PathBuf::from(wasmimpl.reference().location())),
+          &manifest_sig,
+        )
+      })?;
+      Ok(comp)
+    }
+    config::ComponentImplementation::WasmRs(wasmimpl) => {
+      let mut dirs = HashMap::new();
+      for volume in wasmimpl.volumes() {
+        let resource = (resolver)(volume.resource())?.try_resource()?.try_volume()?;
+        dirs.insert(volume.path().to_owned(), resource.path()?);
+      }
+      let perms = (!dirs.is_empty()).then(|| PermissionsBuilder::default().dirs(dirs).build().unwrap());
+
+      let imported: HashMap<String, String> = manifest
+        .import()
+        .iter()
+        .map(|i| (i.id().to_owned(), Entity::component(i.id()).url()))
+        .collect();
+      let comp = init_wasmrs_def(wasmimpl, id.clone(), opts, buffer_size, perms, provided, imported).await?;
       let signed_sig = comp.component().signature();
       let manifest_sig = manifest.signature()?;
       span.in_scope(|| {
@@ -223,13 +298,6 @@ pub(crate) async fn init_impl(
       .await
     }
   }
-}
-
-pub(crate) fn initialize_native_component(namespace: String, seed: Seed) -> ComponentInitResult {
-  let collection = Arc::new(wick_stdlib::Collection::new(seed));
-  let service = NativeComponentService::new(collection);
-
-  Ok(NamespaceHandler::new(namespace, Box::new(service)))
 }
 
 pub(crate) async fn init_hlc_component(

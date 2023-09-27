@@ -5,7 +5,7 @@ network:
     - name: simple
       instances:
         REF_ID_LOGGER:
-          id: wick::core::log
+          id: core::log
       connections:
         - <>[MAIN_IN] => REF_ID_LOGGER[input]
         - REF_ID_LOGGER[output] => <>[MAIN_OUT]

@@ -118,8 +118,6 @@ extern crate tracing;
 #[cfg(test)]
 pub(crate) mod test;
 
-mod wasmtime;
-
 mod components;
 pub(crate) mod dev;
 mod dispatch;
@@ -132,16 +130,6 @@ pub use components::scope_component::ScopeComponent;
 pub use runtime::scope::error::ScopeError;
 pub use runtime::{Runtime, RuntimeBuilder, RuntimeConstraint};
 
-use self::wasmtime::WASMTIME_ENGINE;
-
 pub type Error = error::RuntimeError;
 
-/// The reserved namespace for Wick's initial stdlib.
-pub const V0_NAMESPACE: &str = "wick";
-
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
-
-#[must_use]
-pub fn wasm_engine() -> &'static ::wasmtime::Engine {
-  &WASMTIME_ENGINE
-}

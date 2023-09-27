@@ -1,4 +1,4 @@
-use flow_component::{Component, ComponentError, Context, Operation, RenderConfiguration, RuntimeCallback};
+use flow_component::{Component, ComponentError, Context, LocalScope, Operation, RenderConfiguration};
 use wick_interface_types::{ComponentSignature, TypeDefinition};
 use wick_packet::{InherentData, Invocation, PacketStream, RuntimeConfig};
 
@@ -7,6 +7,7 @@ use crate::interpreter::components::dyn_component_id;
 use crate::{BoxFuture, HandlerMap};
 
 pub(crate) mod collect;
+pub(crate) mod log;
 pub(crate) mod merge;
 pub(crate) mod pluck;
 pub(crate) mod sender;
@@ -22,6 +23,7 @@ pub(crate) struct CoreComponent {
   merge: merge::Op,
   switch: switch::Op,
   collect: collect::Op,
+  log: log::Op,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -73,11 +75,13 @@ impl CoreComponent {
       sender: sender::Op::new(),
       merge: merge::Op::new(),
       switch: switch::Op::new(),
+      log: log::Op::new(),
       collect: collect::Op::new(),
     };
 
-    this.signature = this.signature.add_operation(this.pluck.get_signature(None).clone());
-    this.signature = this.signature.add_operation(this.sender.get_signature(None).clone());
+    this.signature.operations.push(this.pluck.get_signature(None).clone());
+    this.signature.operations.push(this.sender.get_signature(None).clone());
+    this.signature.operations.push(this.log.get_signature(None).clone());
 
     // scour program for dynamic components
     for schematic in graph.schematics() {
@@ -163,13 +167,14 @@ impl Component for CoreComponent {
     &self,
     invocation: Invocation,
     data: Option<RuntimeConfig>,
-    callback: std::sync::Arc<RuntimeCallback>,
+    callback: LocalScope,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| debug!(target = %invocation.target(), namespace = Self::ID));
 
     let task = async move {
       match invocation.target().operation_id() {
         sender::Op::ID => core_op! {sender::Op, invocation, self.sender, callback, data},
+        log::Op::ID => core_op! {log::Op, invocation, self.log, callback, data},
         pluck::Op::ID => core_op! {pluck::Op, invocation, self.pluck, callback, data},
         merge::Op::ID => core_op! {merge::Op, invocation, self.merge, callback, data},
         switch::Op::ID => core_op! {switch::Op, invocation, self.switch, callback, data},

@@ -20,7 +20,7 @@ use crate::config::{
   OperationDefinition,
   TemplateConfig,
   WasmCommandConfig,
-  WasmComponentImplementation,
+  WasmRsComponent,
 };
 // use flow_expression_parser::parse_id;
 use crate::config::{
@@ -112,7 +112,7 @@ impl TryFrom<RegistryConfig> for v1::RegistryDefinition {
   }
 }
 
-impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentImplementation {
+impl TryFrom<v1::WasmComponentConfiguration> for WasmRsComponent {
   type Error = ManifestError;
   fn try_from(value: v1::WasmComponentConfiguration) -> Result<Self> {
     Ok(Self {
@@ -121,6 +121,30 @@ impl TryFrom<v1::WasmComponentConfiguration> for WasmComponentImplementation {
       operations: value.operations.try_map_into()?,
       volumes: value.volumes.try_map_into()?,
       max_packet_size: value.max_packet_size,
+    })
+  }
+}
+
+impl TryFrom<v1::WasmComponentModel> for config::WasmComponentDefinition {
+  type Error = ManifestError;
+  fn try_from(value: v1::WasmComponentModel) -> Result<Self> {
+    Ok(Self {
+      reference: value.reference.try_into()?,
+      config: value.with.try_map_into()?,
+      operations: value.operations.try_map_into()?,
+      volumes: value.volumes.try_map_into()?,
+    })
+  }
+}
+
+impl TryFrom<config::WasmComponentDefinition> for v1::WasmComponentModel {
+  type Error = ManifestError;
+  fn try_from(value: config::WasmComponentDefinition) -> Result<Self> {
+    Ok(Self {
+      reference: value.reference.try_into()?,
+      with: value.config.try_map_into()?,
+      operations: value.operations.try_map_into()?,
+      volumes: value.volumes.try_map_into()?,
     })
   }
 }
@@ -169,9 +193,9 @@ impl TryFrom<CompositeComponentImplementation> for v1::CompositeComponentConfigu
   }
 }
 
-impl TryFrom<WasmComponentImplementation> for v1::WasmComponentConfiguration {
+impl TryFrom<WasmRsComponent> for v1::WasmComponentConfiguration {
   type Error = ManifestError;
-  fn try_from(value: WasmComponentImplementation) -> Result<Self> {
+  fn try_from(value: WasmRsComponent) -> Result<Self> {
     Ok(Self {
       operations: value.operations.try_map_into()?,
       reference: value.reference.try_into()?,
@@ -362,9 +386,10 @@ impl TryFrom<v1::ComponentKind> for ComponentImplementation {
   fn try_from(value: v1::ComponentKind) -> Result<Self> {
     Ok(match value {
       v1::ComponentKind::CompositeComponentConfiguration(v) => ComponentImplementation::Composite(v.try_into()?),
-      v1::ComponentKind::WasmComponentConfiguration(v) => ComponentImplementation::Wasm(v.try_into()?),
+      v1::ComponentKind::WasmComponentConfiguration(v) => ComponentImplementation::WasmRs(v.try_into()?),
       v1::ComponentKind::HttpClientComponent(v) => ComponentImplementation::HttpClient(v.try_into()?),
       v1::ComponentKind::SqlComponent(v) => ComponentImplementation::Sql(v.try_into()?),
+      v1::ComponentKind::WasmComponentModel(v) => ComponentImplementation::Wasm(v.try_into()?),
     })
   }
 }
@@ -374,7 +399,8 @@ impl TryFrom<ComponentImplementation> for v1::ComponentKind {
   fn try_from(value: ComponentImplementation) -> Result<Self> {
     Ok(match value {
       ComponentImplementation::Composite(v) => v1::ComponentKind::CompositeComponentConfiguration(v.try_into()?),
-      ComponentImplementation::Wasm(v) => v1::ComponentKind::WasmComponentConfiguration(v.try_into()?),
+      ComponentImplementation::Wasm(v) => v1::ComponentKind::WasmComponentModel(v.try_into()?),
+      ComponentImplementation::WasmRs(v) => v1::ComponentKind::WasmComponentConfiguration(v.try_into()?),
       ComponentImplementation::Sql(v) => v1::ComponentKind::SqlComponent(v.try_into()?),
       ComponentImplementation::HttpClient(v) => v1::ComponentKind::HttpClientComponent(v.try_into()?),
     })

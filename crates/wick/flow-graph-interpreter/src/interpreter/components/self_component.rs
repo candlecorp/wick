@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use flow_component::{Component, ComponentError, RuntimeCallback};
+use flow_component::{Component, ComponentError, LocalScope};
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
@@ -72,7 +72,7 @@ impl Component for SelfComponent {
     &self,
     invocation: Invocation,
     config: Option<RuntimeConfig>,
-    callback: Arc<RuntimeCallback>,
+    callback: LocalScope,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| debug!(target = %invocation.target(), namespace = Self::ID));
 

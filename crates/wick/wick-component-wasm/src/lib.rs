@@ -112,13 +112,11 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-pub mod component;
-pub mod error;
-pub mod wasm_host;
-mod wasm_module;
-
-pub(crate) type Result<T> = std::result::Result<T, error::WasmComponentError>;
-pub type Error = error::WasmComponentError;
-
 #[macro_use]
 extern crate tracing;
+
+pub mod component;
+mod error;
+pub use component::WasmComponent;
+pub use error::*;
+mod wasi;

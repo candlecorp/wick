@@ -1,6 +1,7 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 mod composite;
-mod wasm;
+mod wasm_component_model;
+mod wasmrs;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -8,7 +9,12 @@ use asset_container::{AssetManager, Assets};
 pub use composite::*;
 use config::{ComponentImplementation, ComponentKind};
 use tracing::trace;
-pub use wasm::*;
+pub use wasm_component_model::{
+  WasmComponentDefinition,
+  WasmComponentDefinitionBuilder,
+  WasmComponentDefinitionBuilderError,
+};
+pub use wasmrs::{WasmRsComponent, WasmRsComponentBuilder, WasmRsComponentBuilderError};
 use wick_asset_reference::{AssetReference, FetchOptions};
 use wick_interface_types::{ComponentMetadata, ComponentSignature, Field, OperationSignature, TypeDefinition};
 use wick_packet::{Entity, RuntimeConfig};
@@ -139,11 +145,11 @@ impl ComponentConfiguration {
   }
 
   /// Unwrap the inner wasm component implementation or return an error.
-  pub const fn try_wasm(&self) -> Result<&WasmComponentImplementation> {
+  pub const fn try_wasmrs(&self) -> Result<&WasmRsComponent> {
     match &self.component {
-      ComponentImplementation::Wasm(c) => Ok(c),
+      ComponentImplementation::WasmRs(c) => Ok(c),
       _ => Err(Error::UnexpectedComponentType(
-        ComponentKind::Wasm,
+        ComponentKind::WasmRs,
         self.component.kind(),
       )),
     }
@@ -244,6 +250,7 @@ impl ComponentConfiguration {
     match &self.component {
       ComponentImplementation::Composite(c) => &c.config,
       ComponentImplementation::Wasm(c) => &c.config,
+      ComponentImplementation::WasmRs(c) => &c.config,
       ComponentImplementation::Sql(c) => &c.config,
       ComponentImplementation::HttpClient(c) => &c.config,
     }

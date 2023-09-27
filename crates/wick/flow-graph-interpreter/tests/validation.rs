@@ -2,7 +2,7 @@ use std::path::Path;
 
 mod test;
 use anyhow::Result;
-use flow_component::{panic_callback, Component, ComponentError};
+use flow_component::{Component, ComponentError};
 use flow_graph_interpreter::error::{InterpreterError, OperationInvalid, ValidationError};
 use flow_graph_interpreter::graph::{from_def, GraphError};
 use flow_graph_interpreter::{HandlerMap, Interpreter, NamespaceHandler};
@@ -28,7 +28,7 @@ impl Component for SignatureTestCollection {
     &self,
     _invocation: Invocation,
     _config: Option<RuntimeConfig>,
-    _callback: std::sync::Arc<flow_component::RuntimeCallback>,
+    _callback: flow_component::LocalScope,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     todo!()
   }
@@ -54,7 +54,7 @@ async fn interp(path: &str, sig: ComponentSignature) -> std::result::Result<Inte
     network,
     None,
     Some(components),
-    panic_callback(),
+    Default::default(),
     None,
     &Span::current(),
   )

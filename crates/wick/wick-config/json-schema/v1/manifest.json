@@ -1319,6 +1319,49 @@
     "required": ["ref"]
   },
 
+  "v1.WasmComponentModel": {
+    "$anchor": "v1.WasmComponentModel",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "kind": {
+        "type": "string",
+        "description": "The kind of the collection",
+        "enum": ["wick/component/wasm@v1"]
+      },
+      "ref": {
+        "description": "The path or OCI reference to the WebAssembly module",
+
+        "type": "string"
+      },
+      "volumes": {
+        "description": "Volumes to expose to the component.",
+
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/v1.ExposedVolume"
+        }
+      },
+      "with": {
+        "description": "Configuration necessary to provide when instantiating the component.",
+
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/v1.Field"
+        }
+      },
+      "operations": {
+        "description": "A list of operations implemented by the WebAssembly module.",
+
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/v1.OperationDefinition"
+        }
+      }
+    },
+    "required": ["ref"]
+  },
+
   "v1.ExposedVolume": {
     "$anchor": "v1.ExposedVolume",
     "additionalProperties": false,
@@ -1341,6 +1384,7 @@
   "v1.ComponentKind": {
     "oneOf": [
       { "$ref": "#/$defs/v1.WasmComponentConfiguration" },
+      { "$ref": "#/$defs/v1.WasmComponentModel" },
       { "$ref": "#/$defs/v1.CompositeComponentConfiguration" },
       { "$ref": "#/$defs/v1.SqlComponent" },
       { "$ref": "#/$defs/v1.HttpClientComponent" }

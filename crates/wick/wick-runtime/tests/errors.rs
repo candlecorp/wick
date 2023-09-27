@@ -7,7 +7,7 @@ use wick_packet::{packet_stream, Packet};
 async fn panics() -> Result<()> {
   common_test(
     "./tests/manifests/v0/errors/panics.yaml",
-    packet_stream!(("input", "input")),
+    packet_stream!(("input", "this is my message")),
     "panics",
     vec![
       Packet::err(
@@ -27,7 +27,7 @@ async fn errors() -> Result<()> {
     packet_stream!(("input", "input")),
     "errors",
     vec![
-      Packet::err("output", "This component will always error"),
+      Packet::err("output", "Needs to be longer than 8 characters"),
       Packet::done("output"),
     ],
   )

@@ -101,6 +101,7 @@ wick-component = { path = "./crates/wick/wick-component", version = "0.16.0", de
 wick-component-cli = { path = "./crates/wick/wick-component-cli", version = "0.2.0", default-features = false }
 wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.5.0" }
 wick-component-wasm = { path = "./crates/wick/wick-component-wasm", version = "0.3.0" }
+wick-component-wasmrs = { path = "./crates/wick/wick-component-wasmrs", version = "0.3.0" }
 wick-config = { path = "./crates/wick/wick-config", version = "0.27.0", default-features = false }
 wick-host = { path = "./crates/wick/wick-host", version = "0.5.0" }
 wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.16.0" }
@@ -112,15 +113,16 @@ wick-packet = { path = "./crates/wick/wick-packet", version = "0.16.0", default-
 wick-settings = { path = "./crates/wick/wick-settings", version = "0.2.0" }
 wick-rpc = { path = "./crates/wick/wick-rpc", version = "0.2.0", default-features = false }
 wick-runtime = { path = "./crates/wick/wick-runtime", version = "0.23.0" }
-wick-stdlib = { path = "./crates/wick/wick-stdlib", version = "0.2.0" }
 wick-test = { path = "./crates/wick/wick-test", version = "0.2.0" }
 wick-trigger = { path = "./crates/wick/wick-trigger", version = "0.1.0" }
 wick-trigger-cli = { path = "./crates/wick/wick-trigger-cli", version = "0.1.0" }
 wick-trigger-http = { path = "./crates/wick/wick-trigger-http", version = "0.1.0" }
 wick-trigger-time = { path = "./crates/wick/wick-trigger-time", version = "0.1.0" }
-wick-trigger-wasm-component = { path = "./crates/wick/wick-trigger-wasm-component", version = "0.1.0" }
+wick-trigger-wasm-command = { path = "./crates/wick/wick-trigger-wasm-command", version = "0.1.0" }
 wick-wascap = { path = "./crates/wick/wick-wascap", version = "0.2.0" }
+wick-wasm-engine = { path = "./crates/wick/wick-wasm-engine", version = "0.1.0" }
 wick-xdg = { path = "./crates/wick/wick-xdg", version = "0.3.0" }
+
 #
 # crates/misc
 #
@@ -130,17 +132,21 @@ performance-mark = { path = "./crates/misc/performance-mark", version = "0.2.0" 
 seeded-random = { path = "./crates/misc/seeded-random", version = "0.5.0", default-features = false }
 tap-harness = { path = "./crates/misc/tap-harness", version = "0.2.0" }
 test-logger = { path = "./crates/misc/test-logger", package = "wick-test-logger", version = "0.2.0" }
+
 #
 # crates/interfaces
 #
 wick-interface-http = { path = "./crates/interfaces/wick-interface-http", version = "0.3.0" }
 wick-interface-cli = { path = "./crates/interfaces/wick-interface-cli", version = "0.3.0" }
+
 #
 # crates/components
 #
 wick-sql = { path = "./crates/components/wick-sql", version = "0.2.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.2.0" }
+#
 # wasmtime (must align with version in wasmrs)
+#
 wasmtime = { version = "13.0", default-features = false, features = [
   "cache",
   "jitdump",
@@ -150,6 +156,7 @@ wasmtime = { version = "13.0", default-features = false, features = [
 ] }
 wasmtime-wasi = { version = "13.0", features = ["sync"] }
 wasi-common = { version = "13.0" }
+
 # wasmrs
 wasmrs = { version = "0.15.0" }
 wasmrs-codec = { version = "0.15.0" }

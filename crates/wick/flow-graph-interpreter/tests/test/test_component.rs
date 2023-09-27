@@ -1,9 +1,8 @@
-use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use anyhow::{anyhow, Result};
 type BoxFuture<'a, T> = std::pin::Pin<Box<dyn futures::Future<Output = T> + Send + 'a>>;
-use flow_component::{Component, ComponentError, RuntimeCallback};
+use flow_component::{Component, ComponentError, LocalScope};
 use futures::{Future, StreamExt};
 use seeded_random::{Random, Seed};
 use tokio::spawn;
@@ -186,7 +185,7 @@ impl Component for TestComponent {
     &self,
     invocation: Invocation,
     _config: Option<RuntimeConfig>,
-    callback: Arc<RuntimeCallback>,
+    callback: LocalScope,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let operation = invocation.target().operation_id();
     println!("got op {} in test collection", operation);
@@ -198,7 +197,7 @@ impl Component for TestComponent {
   }
 }
 
-fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Result<PacketStream> {
+fn handler(invocation: Invocation, callback: LocalScope) -> anyhow::Result<PacketStream> {
   let (invocation, mut payload_stream) = invocation.split();
   let operation = invocation.target.operation_id().to_owned();
   println!("handling {}", operation);
@@ -218,7 +217,7 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
       $(
         if $id.is_bracket() {
         for port in ports {
-            defer(vec![send($id.clone().set_port(port))]);
+            defer(vec![send($id.clone().to_port(port))]);
         }
         continue;
       }
@@ -232,7 +231,7 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
         let mut input = fan_out!(payload_stream, "input");
         while let Some(Ok(payload)) = input.next().await {
           break_if_done!(payload);
-          defer(vec![send(payload.set_port("output"))]);
+          defer(vec![send(payload.to_port("output"))]);
         }
         defer(vec![send(Packet::done("output"))]);
       });
@@ -276,18 +275,19 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
           let link: ComponentReference = component.decode().unwrap();
           let message: String = message.decode().unwrap();
           let packets = packet_stream!(("input", message));
-          let mut response = callback(
-            link,
-            "reverse".to_owned(),
-            packets,
-            InherentData::unsafe_default(),
-            Default::default(),
-            &Span::current(),
-          )
-          .await
-          .unwrap();
+          let mut response = callback
+            .invoke(
+              link,
+              "reverse".to_owned(),
+              packets,
+              InherentData::unsafe_default(),
+              Default::default(),
+              &Span::current(),
+            )
+            .await
+            .unwrap();
           while let Some(Ok(res)) = response.next().await {
-            defer(vec![send(res.set_port("output"))]);
+            defer(vec![send(res.to_port("output"))]);
           }
         }
       });
@@ -450,7 +450,7 @@ fn handler(invocation: Invocation, callback: Arc<RuntimeCallback>) -> anyhow::Re
         while let Some(input) = input.next().await {
           let input = input?;
           break_if_done!(input);
-          defer(vec![send(input.set_port("output"))]);
+          defer(vec![send(input.to_port("output"))]);
         }
         Ok::<_, wick_packet::Error>(())
       };

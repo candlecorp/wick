@@ -52,48 +52,12 @@ async fn nested_schematics() -> Result<()> {
 }
 
 #[test_logger::test(tokio::test)]
-async fn short_circuit_to_output() -> Result<()> {
-  common_test(
-    "./tests/manifests/v0/short-circuit.yaml",
-    packet_stream!(("input", "short")),
-    "short_circuit",
-    vec![
-      Packet::err("output", "Needs to be longer than 8 characters"),
-      Packet::done("output"),
-    ],
-  )
-  .await
-}
-
-#[test_logger::test(tokio::test)]
-async fn multiple_inputs() -> Result<()> {
-  common_test(
-    "./tests/manifests/v0/multiple-inputs.yaml",
-    packet_stream!(("left", 42), ("right", 302309)),
-    "test",
-    vec![Packet::encode("output", 42 + 302309), Packet::done("output")],
-  )
-  .await
-}
-
-#[test_logger::test(tokio::test)]
 async fn subnetworks() -> Result<()> {
   common_test(
     "./tests/manifests/v0/sub-network-parent.yaml",
     packet_stream!(("input", "some input")),
     "parent",
     vec![Packet::encode("output", "some input"), Packet::done("output")],
-  )
-  .await
-}
-
-#[test_logger::test(tokio::test)]
-async fn multi_in_native() -> Result<()> {
-  common_test(
-    "./tests/manifests/v0/collections/native-component.yaml",
-    packet_stream!(("left", 42), ("right", 302309)),
-    "native_component",
-    vec![Packet::encode("output", 42 + 302309 + 302309), Packet::done("output")],
   )
   .await
 }

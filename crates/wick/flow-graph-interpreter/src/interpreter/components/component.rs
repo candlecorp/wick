@@ -1,4 +1,4 @@
-use flow_component::{Component, ComponentError, RuntimeCallback};
+use flow_component::{Component, ComponentError, LocalScope};
 use wasmrs_rx::Observer;
 use wick_interface_types::{ComponentSignature, Field, OperationSignature};
 use wick_packet::{ComponentReference, Entity, Invocation, Packet, PacketStream, RuntimeConfig};
@@ -39,7 +39,7 @@ impl Component for ComponentComponent {
     &self,
     invocation: Invocation,
     _config: Option<RuntimeConfig>,
-    _callback: std::sync::Arc<RuntimeCallback>,
+    _callback: LocalScope,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| debug!(target = %invocation.target(), namespace = Self::ID));
 

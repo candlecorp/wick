@@ -98,6 +98,7 @@ pub(super) fn decorate(
       components::core::pluck::Op::ID => components::core::pluck::Op::decorate(node),
       components::core::collect::Op::ID => components::core::collect::Op::decorate(node),
       components::core::merge::Op::ID => components::core::merge::Op::decorate(node),
+      components::core::log::Op::ID => components::core::log::Op::decorate(node),
       components::core::sender::Op::ID => components::core::sender::Op::decorate(node),
       components::core::switch::Op::ID => components::core::switch::Op::decorate(node),
       _ => {

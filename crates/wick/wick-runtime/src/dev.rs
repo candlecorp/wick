@@ -2,7 +2,7 @@ pub(crate) mod prelude {
   pub(crate) use std::collections::HashMap;
   pub(crate) use std::sync::Arc;
 
-  pub(crate) use flow_component::{Component, RuntimeCallback, SharedComponent};
+  pub(crate) use flow_component::{Component, LocalScope, SharedComponent};
   pub(crate) use seeded_random::{Random, Seed};
   pub(crate) use tracing::Span;
   pub(crate) use uuid::Uuid;

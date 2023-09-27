@@ -1,4 +1,4 @@
-use flow_component::{Component, ComponentError, RuntimeCallback};
+use flow_component::{Component, ComponentError, LocalScope};
 use futures::FutureExt;
 use tokio::spawn;
 use tokio_stream::StreamExt;
@@ -41,7 +41,7 @@ impl Component for NullComponent {
     &self,
     invocation: Invocation,
     _data: Option<RuntimeConfig>,
-    _callback: std::sync::Arc<RuntimeCallback>,
+    _callback: LocalScope,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     spawn(async move {
       let (invocation, mut stream) = invocation.split();

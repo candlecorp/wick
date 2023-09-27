@@ -225,7 +225,7 @@ impl State {
 
         let channel = self.channel.clone();
         let downstream_instance = ctx.instance(downport.node_index()).clone();
-        let message = packet.clone().set_port(name);
+        let message = packet.clone().to_port(name);
         trace!(%connection, "delivering packet to downstream",);
         downstream_instance.buffer_in(&downport, message);
         channel.dispatch_data(ctx_id, downport);

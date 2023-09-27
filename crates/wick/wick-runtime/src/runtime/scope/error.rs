@@ -50,6 +50,9 @@ pub enum ScopeError {
   NativeComponent(#[from] flow_component::ComponentError),
 
   #[error(transparent)]
+  WasmRs(#[from] Box<wick_component_wasmrs::Error>),
+
+  #[error(transparent)]
   Wasm(#[from] Box<wick_component_wasm::Error>),
 
   #[error("constraint not met, {0}")]
@@ -94,6 +97,11 @@ impl From<ScopeError> for ComponentError {
   }
 }
 
+impl From<wick_component_wasmrs::Error> for ScopeError {
+  fn from(e: wick_component_wasmrs::Error) -> Self {
+    ScopeError::WasmRs(Box::new(e))
+  }
+}
 impl From<wick_component_wasm::Error> for ScopeError {
   fn from(e: wick_component_wasm::Error) -> Self {
     ScopeError::Wasm(Box::new(e))

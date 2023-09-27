@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use flow_component::{Component, ComponentError, RuntimeCallback};
+use flow_component::{Component, ComponentError, LocalScope};
 use futures::{FutureExt, TryFutureExt};
 use parking_lot::Mutex;
 use tracing::{info_span, Span};
@@ -39,7 +39,7 @@ pub struct Interpreter {
   self_component: SelfComponent,
   dispatcher: InterpreterDispatchChannel,
   namespace: Option<String>,
-  callback: Arc<RuntimeCallback>,
+  callback: LocalScope,
   exposed_ops: HashMap<String, NamespaceHandler>, // A map from op name to the ns of the handler that exposes it.
   span: Span,
 }
@@ -61,7 +61,7 @@ impl Interpreter {
     network: Network,
     namespace: Option<String>,
     components: Option<HandlerMap>,
-    callback: Arc<RuntimeCallback>,
+    callback: LocalScope,
     root_config: Option<&RuntimeConfig>,
     parent_span: &Span,
   ) -> Result<Self, Error> {
@@ -141,18 +141,18 @@ impl Interpreter {
     })
   }
 
-  fn get_callback(&self) -> Arc<RuntimeCallback> {
+  fn get_callback(&self) -> LocalScope {
     let outside_callback = self.callback.clone();
     let internal_components = self.components.clone();
     let self_component = self.self_component.clone();
 
-    let cb_container = Arc::new(Mutex::new(None));
+    let scope_hack = Arc::new(Mutex::new(None));
 
-    let inner_cb = cb_container.clone();
-    let local_first_callback: Arc<RuntimeCallback> = Arc::new(move |compref, op, stream, inherent, config, span| {
+    let inner_cb = scope_hack.clone();
+    let scope_proxy = LocalScope::new(Arc::new(move |compref, op, stream, inherent, config, span| {
       let internal_components = internal_components.clone();
       let inner_cb = inner_cb.clone();
-      let outside_callback = outside_callback.clone();
+      let outer_scope = outside_callback.clone();
       let self_component = self_component.clone();
       let span = span.clone();
       Box::pin(async move {
@@ -168,12 +168,12 @@ impl Interpreter {
           let invocation = compref.to_invocation(&op, stream, inherent, &span);
           handler.component().handle(invocation, config, cb).await
         } else {
-          outside_callback(compref, op, stream, inherent, config, &span).await
+          outer_scope.invoke(compref, op, stream, inherent, config, &span).await
         }
       })
-    });
-    cb_container.lock().replace(local_first_callback.clone());
-    local_first_callback
+    }));
+    scope_hack.lock().replace(scope_proxy.clone());
+    scope_proxy
   }
 
   pub async fn invoke(&self, invocation: Invocation, config: Option<RuntimeConfig>) -> Result<PacketStream, Error> {
@@ -230,7 +230,7 @@ impl Component for Interpreter {
     &self,
     mut invocation: Invocation,
     config: Option<RuntimeConfig>,
-    cb: Arc<RuntimeCallback>,
+    cb: LocalScope,
   ) -> flow_component::BoxFuture<Result<PacketStream, ComponentError>> {
     let known_targets = || {
       let mut hosted: Vec<_> = self.components.inner().keys().cloned().collect();
