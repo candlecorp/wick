@@ -1,8 +1,7 @@
-use tokio::time::sleep;
-
-pub type TestResult<T> = Result<T, TestError>;
-
+#![allow(unused)]
 use std::time::Duration;
+
+use tokio::time::sleep;
 
 pub type TestError = anyhow::Error;
 use std::panic;
@@ -14,6 +13,33 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::select;
 use tokio::sync::mpsc::{self, Sender};
 use tokio::task::JoinHandle;
+
+macro_rules! test_cases {
+  (tests: $kind:literal, []) => {};
+  (tests: $kind:literal, [$($file:literal),*]) => {
+    static DIR: &str = env!("CARGO_CRATE_NAME");
+
+    #[rstest::rstest]
+    $(#[case($file)])*
+    fn test(#[case] file: &'static str) {
+      let kind = $kind;
+      let file = format!("tests/{}/{}/{}", DIR, kind, file);
+
+      trycmd::TestCases::new().case(file);
+    }
+  };
+  (unit: [$($file:tt),*], integration: [$($int_file:tt),*]) => {
+
+    crate::utils::test_cases!(tests: "unit", [$($file),*]);
+
+    mod integration_test {
+      crate::utils::test_cases!(tests: "integration", [$($int_file),*]);
+    }
+
+  };
+}
+
+pub(crate) use test_cases;
 
 pub async fn wick_invoke(port: &str, name: &str, data: Vec<String>) -> Result<Vec<serde_json::Value>, TestError> {
   println!("Executing wick for schematic {}", name);
