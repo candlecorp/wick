@@ -220,11 +220,13 @@ _run-wasm-task task:
     "examples/http/middleware/request",
     "examples/components/wasi-fs",
     "examples/components/config-generator",
+    "examples/component-model/wasi-command",
     "examples/components/cli-trigger",
     "examples/cli/wasm-cli",
     "examples/http/wasm-http-call/wasm-component",
   ]
   for dir in wasm:
+    print("just %s/{{task}}" % (dir))
     if subprocess.call(["just", "{}/{{task}}".format(dir)]) != 0:
       exit(1)
 

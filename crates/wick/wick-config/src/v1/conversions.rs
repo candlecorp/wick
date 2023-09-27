@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 mod impls;
 mod root_configs;
+mod triggers;
 
 use option_utils::OptionUtils;
 use wick_asset_reference::AssetReference;
@@ -17,8 +18,8 @@ use crate::config::{
   HighLevelComponent,
   HostConfig,
   OperationDefinition,
-  ScheduleConfig,
   TemplateConfig,
+  WasmCommandConfig,
   WasmComponentImplementation,
 };
 // use flow_expression_parser::parse_id;
@@ -38,7 +39,7 @@ use crate::config::{
   UdpPort,
 };
 use crate::error::ManifestError;
-use crate::utils::{opt_str_to_ipv4addr, VecMapInto, VecTryMapInto};
+use crate::utils::{opt_str_to_ipv4addr, VecTryMapInto};
 use crate::{v1, Result};
 
 impl TryFrom<v1::PackageDefinition> for PackageConfig {
@@ -129,7 +130,7 @@ impl TryFrom<v1::InterfaceBinding> for Binding<config::InterfaceDefinition> {
 
   fn try_from(value: v1::InterfaceBinding) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      id: value.name,
+      id: value.name.into(),
       kind: value.interface.try_into()?,
     })
   }
@@ -187,7 +188,7 @@ impl TryFrom<v1::ExposedVolume> for config::ExposedVolume {
   fn try_from(value: v1::ExposedVolume) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       path: value.path,
-      resource: value.resource,
+      resource: value.resource.into(),
     })
   }
 }
@@ -198,7 +199,7 @@ impl TryFrom<config::ExposedVolume> for v1::ExposedVolume {
   fn try_from(value: config::ExposedVolume) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
       path: value.path,
-      resource: value.resource,
+      resource: value.resource.id().to_owned(),
     })
   }
 }
@@ -208,7 +209,7 @@ impl TryFrom<Binding<config::InterfaceDefinition>> for v1::InterfaceBinding {
 
   fn try_from(value: Binding<config::InterfaceDefinition>) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      name: value.id,
+      name: value.id().to_owned(),
       interface: value.kind.try_into()?,
     })
   }
@@ -269,323 +270,6 @@ impl TryFrom<AppConfiguration> for v1::AppConfiguration {
       resources: value.resources.try_map_into()?,
       triggers: value.triggers.try_map_into()?,
       package: value.package.try_map_into()?,
-    })
-  }
-}
-
-impl TryFrom<TriggerDefinition> for v1::TriggerDefinition {
-  type Error = ManifestError;
-  fn try_from(value: TriggerDefinition) -> Result<Self> {
-    Ok(match value {
-      TriggerDefinition::Http(v) => v1::TriggerDefinition::HttpTrigger(v.try_into()?),
-      TriggerDefinition::Cli(v) => v1::TriggerDefinition::CliTrigger(v.try_into()?),
-      TriggerDefinition::Time(v) => v1::TriggerDefinition::TimeTrigger(v.try_into()?),
-    })
-  }
-}
-
-impl TryFrom<TimeTriggerConfig> for v1::TimeTrigger {
-  type Error = ManifestError;
-  fn try_from(value: TimeTriggerConfig) -> Result<Self> {
-    let payload: Result<Vec<v1::OperationInput>> = value.payload.try_map_into();
-
-    Ok(Self {
-      schedule: value.schedule.try_into()?,
-      operation: value.operation.try_into()?,
-      payload: payload?,
-    })
-  }
-}
-
-impl TryFrom<ScheduleConfig> for v1::Schedule {
-  type Error = ManifestError;
-  fn try_from(value: ScheduleConfig) -> Result<Self> {
-    Ok(Self {
-      cron: value.cron,
-      repeat: value.repeat,
-    })
-  }
-}
-
-impl TryFrom<v1::Schedule> for ScheduleConfig {
-  type Error = ManifestError;
-  fn try_from(value: v1::Schedule) -> Result<Self> {
-    Ok(Self {
-      cron: value.cron,
-      repeat: value.repeat,
-    })
-  }
-}
-
-// Implement conversion from OperationInputConfig to v1::OperationInput
-impl TryFrom<config::OperationInputConfig> for v1::OperationInput {
-  type Error = ManifestError;
-
-  fn try_from(value: config::OperationInputConfig) -> Result<Self> {
-    Ok(v1::OperationInput {
-      name: value.name,
-      value: value.value,
-    })
-  }
-}
-
-// Implement conversion from v1::OperationInput to OperationInputConfig
-impl TryFrom<v1::OperationInput> for config::OperationInputConfig {
-  type Error = ManifestError;
-
-  fn try_from(value: v1::OperationInput) -> Result<Self> {
-    Ok(config::OperationInputConfig {
-      name: value.name,
-      value: value.value,
-    })
-  }
-}
-
-impl TryFrom<CliConfig> for v1::CliTrigger {
-  type Error = ManifestError;
-  fn try_from(value: CliConfig) -> Result<Self> {
-    Ok(Self {
-      operation: value.operation.try_into()?,
-    })
-  }
-}
-
-impl TryFrom<HttpTriggerConfig> for v1::HttpTrigger {
-  type Error = ManifestError;
-  fn try_from(value: HttpTriggerConfig) -> Result<Self> {
-    Ok(Self {
-      resource: value.resource,
-      routers: value.routers.into_iter().map(|v| v.try_into()).collect::<Result<_>>()?,
-    })
-  }
-}
-
-impl TryFrom<HttpRouterConfig> for v1::HttpRouter {
-  type Error = ManifestError;
-  fn try_from(value: HttpRouterConfig) -> Result<Self> {
-    Ok(match value {
-      HttpRouterConfig::RawRouter(v) => v1::HttpRouter::RawRouter(v.try_into()?),
-      HttpRouterConfig::RestRouter(v) => v1::HttpRouter::RestRouter(v.try_into()?),
-      HttpRouterConfig::StaticRouter(v) => v1::HttpRouter::StaticRouter(v.try_into()?),
-      HttpRouterConfig::ProxyRouter(v) => v1::HttpRouter::ProxyRouter(v.try_into()?),
-    })
-  }
-}
-
-impl TryFrom<ProxyRouterConfig> for v1::ProxyRouter {
-  type Error = ManifestError;
-  fn try_from(value: ProxyRouterConfig) -> Result<Self> {
-    Ok(Self {
-      path: value.path,
-      url: value.url,
-      strip_path: value.strip_path,
-      middleware: value.middleware.try_map_into()?,
-    })
-  }
-}
-
-impl TryFrom<StaticRouterConfig> for v1::StaticRouter {
-  type Error = ManifestError;
-  fn try_from(value: StaticRouterConfig) -> Result<Self> {
-    Ok(Self {
-      path: value.path,
-      volume: value.volume,
-      fallback: value.fallback,
-      middleware: value.middleware.try_map_into()?,
-      indexes: value.indexes,
-    })
-  }
-}
-
-impl TryFrom<RawRouterConfig> for v1::RawRouter {
-  type Error = ManifestError;
-  fn try_from(value: RawRouterConfig) -> Result<Self> {
-    Ok(Self {
-      path: value.path,
-      codec: value.codec.map_into(),
-      operation: value.operation.try_into()?,
-      middleware: value.middleware.try_map_into()?,
-    })
-  }
-}
-
-impl TryFrom<RestRouterConfig> for v1::RestRouter {
-  type Error = ManifestError;
-  fn try_from(value: RestRouterConfig) -> Result<Self> {
-    Ok(Self {
-      path: value.path,
-      tools: value.tools.try_map_into()?,
-      routes: value.routes.try_map_into()?,
-      middleware: value.middleware.try_map_into()?,
-      info: value.info.try_map_into()?,
-    })
-  }
-}
-
-impl TryFrom<config::Middleware> for v1::Middleware {
-  type Error = ManifestError;
-
-  fn try_from(value: config::Middleware) -> Result<Self> {
-    Ok(Self {
-      request: value.request.try_map_into()?,
-      response: value.response.try_map_into()?,
-    })
-  }
-}
-
-impl TryFrom<v1::Middleware> for config::Middleware {
-  type Error = ManifestError;
-
-  fn try_from(value: v1::Middleware) -> Result<Self> {
-    Ok(Self {
-      request: value.request.try_map_into()?,
-      response: value.response.try_map_into()?,
-    })
-  }
-}
-
-impl TryFrom<config::Tools> for v1::Tools {
-  type Error = ManifestError;
-
-  fn try_from(value: config::Tools) -> std::result::Result<Self, Self::Error> {
-    Ok(Self { openapi: value.openapi })
-  }
-}
-
-impl TryFrom<v1::Tools> for config::Tools {
-  type Error = ManifestError;
-
-  fn try_from(value: v1::Tools) -> std::result::Result<Self, Self::Error> {
-    Ok(Self { openapi: value.openapi })
-  }
-}
-
-impl TryFrom<v1::Route> for config::RestRoute {
-  type Error = ManifestError;
-
-  fn try_from(value: v1::Route) -> std::result::Result<Self, Self::Error> {
-    Ok(Self {
-      id: value.id,
-      methods: value.methods.map_into(),
-      sub_path: value.sub_path,
-      operation: value.operation.try_into()?,
-      description: value.description,
-      summary: value.summary,
-    })
-  }
-}
-
-impl TryFrom<config::RestRoute> for v1::Route {
-  type Error = ManifestError;
-
-  fn try_from(value: config::RestRoute) -> std::result::Result<Self, Self::Error> {
-    Ok(Self {
-      id: value.id,
-      methods: value.methods.map_into(),
-      sub_path: value.sub_path,
-      operation: value.operation.try_into()?,
-      description: value.description,
-      summary: value.summary,
-    })
-  }
-}
-
-impl TryFrom<v1::Info> for config::Info {
-  type Error = ManifestError;
-
-  fn try_from(value: v1::Info) -> std::result::Result<Self, Self::Error> {
-    Ok(Self {
-      title: value.title,
-      description: value.description,
-      tos: value.tos,
-      contact: value.contact.try_map_into()?,
-      license: value.license.try_map_into()?,
-      version: value.version,
-      documentation: value.documentation.try_map_into()?,
-    })
-  }
-}
-
-impl TryFrom<config::Info> for v1::Info {
-  type Error = ManifestError;
-
-  fn try_from(value: config::Info) -> std::result::Result<Self, Self::Error> {
-    Ok(Self {
-      title: value.title,
-      description: value.description,
-      tos: value.tos,
-      contact: value.contact.try_map_into()?,
-      license: value.license.try_map_into()?,
-      version: value.version,
-      documentation: value.documentation.try_map_into()?,
-    })
-  }
-}
-
-impl TryFrom<v1::Documentation> for config::Documentation {
-  type Error = ManifestError;
-
-  fn try_from(value: v1::Documentation) -> std::result::Result<Self, Self::Error> {
-    Ok(Self {
-      description: value.description,
-      url: value.url,
-    })
-  }
-}
-
-impl TryFrom<config::Documentation> for v1::Documentation {
-  type Error = ManifestError;
-
-  fn try_from(value: config::Documentation) -> std::result::Result<Self, Self::Error> {
-    Ok(Self {
-      description: value.description,
-      url: value.url,
-    })
-  }
-}
-
-impl TryFrom<v1::Contact> for config::Contact {
-  type Error = ManifestError;
-
-  fn try_from(value: v1::Contact) -> std::result::Result<Self, Self::Error> {
-    Ok(Self {
-      name: value.name,
-      url: value.url,
-      email: value.email,
-    })
-  }
-}
-
-impl TryFrom<config::Contact> for v1::Contact {
-  type Error = ManifestError;
-
-  fn try_from(value: config::Contact) -> std::result::Result<Self, Self::Error> {
-    Ok(Self {
-      name: value.name,
-      url: value.url,
-      email: value.email,
-    })
-  }
-}
-
-impl TryFrom<v1::License> for config::License {
-  type Error = ManifestError;
-
-  fn try_from(value: v1::License) -> std::result::Result<Self, Self::Error> {
-    Ok(Self {
-      name: value.name,
-      url: value.url,
-    })
-  }
-}
-
-impl TryFrom<config::License> for v1::License {
-  type Error = ManifestError;
-
-  fn try_from(value: config::License) -> std::result::Result<Self, Self::Error> {
-    Ok(Self {
-      name: value.name,
-      url: value.url,
     })
   }
 }
@@ -727,7 +411,7 @@ impl TryFrom<Binding<config::ImportDefinition>> for v1::ImportBinding {
   type Error = ManifestError;
   fn try_from(def: Binding<config::ImportDefinition>) -> Result<Self> {
     Ok(Self {
-      name: def.id,
+      name: def.id().to_owned(),
       component: def.kind.try_into()?,
     })
   }
@@ -758,7 +442,7 @@ impl TryFrom<Binding<config::ResourceDefinition>> for v1::ResourceBinding {
   type Error = ManifestError;
   fn try_from(value: Binding<config::ResourceDefinition>) -> Result<Self> {
     Ok(Self {
-      name: value.id,
+      name: value.id().to_owned(),
       resource: value.kind.try_into()?,
     })
   }
@@ -826,7 +510,7 @@ impl TryFrom<config::components::HttpClientComponentConfig> for v1::HttpClientCo
   type Error = ManifestError;
   fn try_from(value: config::components::HttpClientComponentConfig) -> Result<Self> {
     Ok(Self {
-      resource: value.resource,
+      resource: value.resource.id().to_owned(),
       with: value.config.try_map_into()?,
       codec: value.codec.map_into(),
       proxy: value.proxy.try_map_into()?,
@@ -840,7 +524,7 @@ impl TryFrom<config::components::Proxy> for v1::Proxy {
   type Error = ManifestError;
   fn try_from(value: config::components::Proxy) -> std::result::Result<Self, Self::Error> {
     Ok(Self {
-      resource: value.resource,
+      resource: value.resource.id().to_owned(),
       username: value.username,
       password: value.password,
     })
@@ -1056,13 +740,17 @@ impl TryFrom<v1::TriggerDefinition> for TriggerDefinition {
         operation: cli.operation.try_into()?,
       }),
       v1::TriggerDefinition::HttpTrigger(v) => Self::Http(HttpTriggerConfig {
-        resource: v.resource,
+        resource: v.resource.into(),
         routers: v.routers.try_map_into()?,
       }),
       v1::TriggerDefinition::TimeTrigger(time) => Self::Time(TimeTriggerConfig {
         schedule: time.schedule.try_into()?,
         operation: time.operation.try_into()?,
         payload: time.payload.try_map_into()?,
+      }),
+      v1::TriggerDefinition::WasmCommandTrigger(v) => Self::WasmCommand(WasmCommandConfig {
+        reference: v.reference.try_into()?,
+        volumes: v.volumes.try_map_into()?,
       }),
     };
     Ok(rv)
@@ -1088,14 +776,14 @@ impl TryFrom<v1::HttpRouter> for HttpRouterConfig {
       }),
       v1::HttpRouter::StaticRouter(v) => Self::StaticRouter(StaticRouterConfig {
         path: v.path,
-        volume: v.volume,
+        volume: v.volume.into(),
         fallback: v.fallback,
         middleware: v.middleware.try_map_into()?,
         indexes: v.indexes,
       }),
       v1::HttpRouter::ProxyRouter(v) => Self::ProxyRouter(ProxyRouterConfig {
         path: v.path,
-        url: v.url,
+        url: v.url.into(),
         strip_path: v.strip_path,
         middleware: v.middleware.try_map_into()?,
       }),
@@ -1108,7 +796,7 @@ impl TryFrom<v1::ImportBinding> for Binding<config::ImportDefinition> {
   type Error = ManifestError;
   fn try_from(value: v1::ImportBinding) -> Result<Self> {
     Ok(Self {
-      id: value.name,
+      id: value.name.into(),
       kind: value.component.try_into()?,
     })
   }
@@ -1148,7 +836,7 @@ impl TryFrom<v1::ResourceBinding> for Binding<config::ResourceDefinition> {
   type Error = ManifestError;
   fn try_from(value: v1::ResourceBinding) -> Result<Self> {
     Ok(Self {
-      id: value.name,
+      id: value.name.into(),
       kind: value.resource.try_into()?,
     })
   }
@@ -1202,7 +890,7 @@ impl TryFrom<v1::SqlComponent> for components::SqlComponentConfig {
   type Error = crate::Error;
   fn try_from(value: v1::SqlComponent) -> Result<Self> {
     Ok(Self {
-      resource: value.resource,
+      resource: value.resource.into(),
       tls: value.tls,
       config: value.with.try_map_into()?,
       operations: value
@@ -1296,7 +984,7 @@ impl TryFrom<v1::HttpClientComponent> for components::HttpClientComponentConfig 
   type Error = crate::Error;
   fn try_from(value: v1::HttpClientComponent) -> Result<Self> {
     Ok(Self {
-      resource: value.resource,
+      resource: value.resource.into(),
       config: value.with.try_map_into()?,
       codec: value.codec.map_into(),
       proxy: value.proxy.try_map_into()?,
@@ -1310,7 +998,7 @@ impl TryFrom<v1::Proxy> for components::Proxy {
   type Error = crate::Error;
   fn try_from(value: v1::Proxy) -> Result<Self> {
     Ok(Self {
-      resource: value.resource,
+      resource: value.resource.into(),
       username: value.username,
       password: value.password,
     })
@@ -1321,7 +1009,7 @@ impl TryFrom<components::SqlComponentConfig> for v1::SqlComponent {
   type Error = crate::Error;
   fn try_from(value: components::SqlComponentConfig) -> Result<Self> {
     Ok(Self {
-      resource: value.resource,
+      resource: value.resource.id().to_owned(),
       with: value.config.try_map_into()?,
       tls: value.tls,
       operations: value.operations.try_map_into()?,

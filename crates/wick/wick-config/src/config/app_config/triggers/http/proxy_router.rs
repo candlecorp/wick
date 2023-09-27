@@ -6,6 +6,7 @@ use wick_packet::RuntimeConfig;
 
 use super::index_to_router_id;
 use super::middleware::expand_for_middleware_components;
+use crate::config::bindings::BoundIdentifier;
 use crate::config::template_config::Renderable;
 use crate::config::{self, Binding, ImportDefinition};
 use crate::error::ManifestError;
@@ -27,7 +28,7 @@ pub struct ProxyRouterConfig {
   pub(crate) middleware: Option<super::middleware::Middleware>,
   /// The URL resource to proxy to.
   #[asset(skip)]
-  pub(crate) url: String,
+  pub(crate) url: BoundIdentifier,
   /// Whether or not to strip the router's path from the proxied request.
   #[asset(skip)]
   pub(crate) strip_path: bool,

@@ -19,6 +19,7 @@ pub use self::rest_router::{
   Tools,
 };
 pub use self::static_router::{StaticRouterConfig, StaticRouterConfigBuilder, StaticRouterConfigBuilderError};
+use crate::config::bindings::BoundIdentifier;
 use crate::config::common::template_config::Renderable;
 use crate::config::{Binding, ImportDefinition};
 use crate::error::ManifestError;
@@ -42,7 +43,7 @@ fn index_to_router_id(trigger_index: usize, index: usize) -> String {
 #[must_use]
 pub struct HttpTriggerConfig {
   #[asset(skip)]
-  pub(crate) resource: String,
+  pub(crate) resource: BoundIdentifier,
   #[builder(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) routers: Vec<HttpRouterConfig>,

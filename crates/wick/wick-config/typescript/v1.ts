@@ -29,6 +29,14 @@ export type WickConfig =
     
     
     
+    export type BoundIdentifier =
+
+  string;
+
+
+    
+    
+    
     export type LiquidJsonValue =
 any;
   
@@ -610,8 +618,56 @@ url: this._url,      }
     
     
 export type TriggerDefinition =
-      CliTrigger|HttpTrigger|TimeTrigger
+      CliTrigger|HttpTrigger|TimeTrigger|WasmCommandTrigger
     ;
+    
+
+
+
+export class WasmCommandTrigger implements HasKind {
+ // The component to execute 
+      _reference : string ;
+ // Volumes to expose to the component. 
+      _volumes : ExposedVolume[] =  [];
+    constructor (
+reference:
+ string,
+      ) {
+          this._reference = reference;
+    }
+
+reference(value: string) : WasmCommandTrigger {
+      this._reference = value;
+      return this;
+    }
+    getReference() : string {
+      return this._reference;
+
+    }
+volumes(value: ExposedVolume[]) : WasmCommandTrigger {
+      this._volumes = value;
+      return this;
+    }
+    getVolumes() : ExposedVolume[] {
+      return this._volumes;
+
+    }
+
+    getKind() : string {
+      return "wick/trigger/wasm-command@v1";
+    }
+
+    toJSON() : any {
+      return {
+        kind : "wick/trigger/wasm-command@v1",
+reference: this._reference,volumes: this._volumes,      }
+
+    }
+}
+
+    
+    
+    
     
 
 
@@ -887,21 +943,21 @@ component: this._component,name: this._name,with: this._with,timeout: this._time
 
 export class HttpTrigger implements HasKind {
  // The TcpPort resource to listen on for connections. 
-      _resource : string ;
+      _resource : BoundIdentifier ;
  // The router to handle incoming requests 
       _routers : HttpRouter[] =  [];
     constructor (
 resource:
- string,
+ BoundIdentifier,
       ) {
           this._resource = resource;
     }
 
-resource(value: string) : HttpTrigger {
+resource(value: BoundIdentifier) : HttpTrigger {
       this._resource = value;
       return this;
     }
-    getResource() : string {
+    getResource() : BoundIdentifier {
       return this._resource;
 
     }
@@ -947,14 +1003,14 @@ export class ProxyRouter implements HasKind {
  // Middleware operations for this router. 
       _middleware : Middleware| undefined =  undefined;
  // The URL resource to proxy to. 
-      _url : string ;
+      _url : BoundIdentifier ;
  // Whether or not to strip the router&#x27;s path from the proxied request. 
       _stripPath : boolean =false;
     constructor (
 path:
  string,
 url:
- string,
+ BoundIdentifier,
       ) {
           this._path = path;
           this._url = url;
@@ -976,11 +1032,11 @@ middleware(value: Middleware| undefined) : ProxyRouter {
       return this._middleware;
 
     }
-url(value: string) : ProxyRouter {
+url(value: BoundIdentifier) : ProxyRouter {
       this._url = value;
       return this;
     }
-    getUrl() : string {
+    getUrl() : BoundIdentifier {
       return this._url;
 
     }
@@ -2406,12 +2462,12 @@ ref: this._ref,volumes: this._volumes,max_packet_size: this._maxPacketSize,with:
 
 export class ExposedVolume implements HasKind {
  // The resource ID of the volume. 
-      _resource : string ;
+      _resource : BoundIdentifier ;
  // The path to map it to in the component. 
       _path : string ;
     constructor (
 resource:
- string,
+ BoundIdentifier,
 path:
  string,
       ) {
@@ -2419,11 +2475,11 @@ path:
           this._path = path;
     }
 
-resource(value: string) : ExposedVolume {
+resource(value: BoundIdentifier) : ExposedVolume {
       this._resource = value;
       return this;
     }
-    getResource() : string {
+    getResource() : BoundIdentifier {
       return this._resource;
 
     }
@@ -2528,19 +2584,19 @@ ref: this._ref,types: this._types,      }
 
 export class ComponentReference implements HasKind {
  // The id of the referenced component. 
-      _id : string ;
+      _id : BoundIdentifier ;
     constructor (
 id:
- string,
+ BoundIdentifier,
       ) {
           this._id = id;
     }
 
-id(value: string) : ComponentReference {
+id(value: BoundIdentifier) : ComponentReference {
       this._id = value;
       return this;
     }
-    getId() : string {
+    getId() : BoundIdentifier {
       return this._id;
 
     }
@@ -4297,7 +4353,7 @@ Done = "Done",Open = "Open",Close = "Close",}
 
 export class SqlComponent implements HasKind {
  // The connect string URL resource for the database. 
-      _resource : string ;
+      _resource : BoundIdentifier ;
  // Whether or not to use TLS. 
       _tls : boolean =false;
  // Configuration necessary to provide when instantiating the component. 
@@ -4306,16 +4362,16 @@ export class SqlComponent implements HasKind {
       _operations : SqlQueryKind[] =  [];
     constructor (
 resource:
- string,
+ BoundIdentifier,
       ) {
           this._resource = resource;
     }
 
-resource(value: string) : SqlComponent {
+resource(value: BoundIdentifier) : SqlComponent {
       this._resource = value;
       return this;
     }
-    getResource() : string {
+    getResource() : BoundIdentifier {
       return this._resource;
 
     }
@@ -4580,25 +4636,29 @@ Ignore = "Ignore",Commit = "Commit",Rollback = "Rollback",}
 
 export class HttpClientComponent implements HasKind {
  // The URL base to use. 
-      _resource : string ;
+      _resource : BoundIdentifier ;
  // The codec to use when encoding/decoding data. Can be overridden by individual operations. 
       _codec : Codec| undefined =  undefined;
+ // The proxy HTTP / HTTPS to use. 
+      _proxy : Proxy| undefined =  undefined;
+ // The timeout in seconds 
+      _timeout : number| undefined =  undefined;
  // Configuration necessary to provide when instantiating the component. 
       _with : Field[] =  [];
  // A list of operations to expose on this component. 
       _operations : HttpClientOperationDefinition[] =  [];
     constructor (
 resource:
- string,
+ BoundIdentifier,
       ) {
           this._resource = resource;
     }
 
-resource(value: string) : HttpClientComponent {
+resource(value: BoundIdentifier) : HttpClientComponent {
       this._resource = value;
       return this;
     }
-    getResource() : string {
+    getResource() : BoundIdentifier {
       return this._resource;
 
     }
@@ -4608,6 +4668,22 @@ codec(value: Codec| undefined) : HttpClientComponent {
     }
     getCodec() : Codec| undefined {
       return this._codec;
+
+    }
+proxy(value: Proxy| undefined) : HttpClientComponent {
+      this._proxy = value;
+      return this;
+    }
+    getProxy() : Proxy| undefined {
+      return this._proxy;
+
+    }
+timeout(value: number| undefined) : HttpClientComponent {
+      this._timeout = value;
+      return this;
+    }
+    getTimeout() : number| undefined {
+      return this._timeout;
 
     }
 with(value: Field[]) : HttpClientComponent {
@@ -4634,7 +4710,61 @@ operations(value: HttpClientOperationDefinition[]) : HttpClientComponent {
     toJSON() : any {
       return {
         kind : "wick/component/http@v1",
-resource: this._resource,codec: this._codec,with: this._with,operations: this._operations,      }
+resource: this._resource,codec: this._codec,proxy: this._proxy,timeout: this._timeout,with: this._with,operations: this._operations,      }
+
+    }
+}
+
+    
+    
+    
+    
+
+
+
+export class Proxy implements HasKind {
+ // The URL base to use. http, https are supported. 
+      _resource : string ="";
+ // The username to use when authenticating with the proxy. 
+      _username : string| undefined =  undefined;
+ // The password to use when authenticating with the proxy. 
+      _password : string| undefined =  undefined;
+    constructor (
+      ) {
+    }
+
+resource(value: string) : Proxy {
+      this._resource = value;
+      return this;
+    }
+    getResource() : string {
+      return this._resource;
+
+    }
+username(value: string| undefined) : Proxy {
+      this._username = value;
+      return this;
+    }
+    getUsername() : string| undefined {
+      return this._username;
+
+    }
+password(value: string| undefined) : Proxy {
+      this._password = value;
+      return this;
+    }
+    getPassword() : string| undefined {
+      return this._password;
+
+    }
+
+    getKind() : string {
+      return "";
+    }
+
+    toJSON() : any {
+      return {
+resource: this._resource,username: this._username,password: this._password,      }
 
     }
 }

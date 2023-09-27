@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use wick_interface_types::OperationSignatures;
 
 use super::{ComponentConfig, OperationConfig};
+use crate::config::bindings::BoundIdentifier;
 use crate::config::{self, Codec, HttpMethod};
 
 #[derive(
@@ -24,7 +25,7 @@ use crate::config::{self, Codec, HttpMethod};
 pub struct HttpClientComponentConfig {
   /// The URL base to use.
   #[asset(skip)]
-  pub(crate) resource: String,
+  pub(crate) resource: BoundIdentifier,
 
   /// The configuration for the component.
   #[asset(skip)]
@@ -67,8 +68,7 @@ impl HttpClientComponentConfig {}
 /// A proxy to use when connecting to server.
 pub struct Proxy {
   /// The URL base to use.
-  #[builder(default)]
-  pub(crate) resource: String,
+  pub(crate) resource: BoundIdentifier,
 
   /// username for proxy authentication
   #[builder(default)]

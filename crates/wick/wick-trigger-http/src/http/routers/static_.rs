@@ -10,7 +10,7 @@ use hyper::{Body, Method, Request, Response};
 use hyper_staticfile::{resolve_path, ResolveResult, ResponseBuilder};
 use tracing::{Instrument, Span};
 use uuid::Uuid;
-use wick_config::config::{StaticRouterConfig, WickRouter};
+use wick_config::config::{BoundIdentifier, StaticRouterConfig, WickRouter};
 use wick_runtime::Runtime;
 use wick_trigger::error::{Error, ErrorKind};
 use wick_trigger::resources::{Resource, ResourceKind};
@@ -153,14 +153,14 @@ impl<B: Send + Sync + 'static> Service<Request<B>> for Static {
 
 pub(crate) fn register_static_router(
   index: usize,
-  resources: Arc<HashMap<String, Resource>>,
+  resources: Arc<HashMap<BoundIdentifier, Resource>>,
   router_config: &StaticRouterConfig,
 ) -> Result<HttpRouter, Error> {
   trace!(index, "registering static router");
   let middleware = resolve_middleware_components(router_config)?;
   let volume = resources
     .get(router_config.volume())
-    .ok_or_else(|| Error::new_context("http", ErrorKind::ResourceNotFound(router_config.volume().into())))?;
+    .ok_or_else(|| Error::new_context("http", ErrorKind::ResourceNotFound(router_config.volume().id().into())))?;
   let volume = match volume {
     Resource::Volume(s) => s.clone(),
     _ => {

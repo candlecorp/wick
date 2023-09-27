@@ -158,10 +158,12 @@ pub type Error = crate::error::ManifestError;
 
 #[cfg(feature = "config")]
 mod feature_config {
+  use crate::config::BoundIdentifier;
   pub use crate::config::WickConfiguration;
   use crate::error::ManifestError;
   /// The type associated with a resolver function.
-  pub type Resolver = dyn Fn(&str) -> Result<crate::config::OwnedConfigurationItem, ManifestError> + Send + Sync;
+  pub type Resolver =
+    dyn Fn(&BoundIdentifier) -> Result<crate::config::OwnedConfigurationItem, ManifestError> + Send + Sync;
   pub use crate::traits::*;
 
   // Todo: flesh out per-component validation of configuration.

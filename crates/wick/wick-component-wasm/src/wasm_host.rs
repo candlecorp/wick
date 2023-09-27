@@ -171,7 +171,9 @@ impl WasmHost {
 
     trace!(duration_μs = %time.elapsed().as_micros(), %buffer_size, "wasmtime instance loaded");
 
-    let host = Host::new(engine).map_err(|e| WasmComponentError::EngineFailure(e.to_string()))?;
+    let host = Host::new(engine)
+      .await
+      .map_err(|e| WasmComponentError::EngineFailure(e.to_string()))?;
 
     debug!(duration_μs = ?time.elapsed().as_micros(), "wasmtime initialize");
     if let Some(callback) = callback {
@@ -182,7 +184,9 @@ impl WasmHost {
       trace!(index, "wasmrs callback index");
     }
 
-    let ctx = match host.new_context(buffer_size, buffer_size) {
+    let fut = host.new_context(buffer_size, buffer_size);
+
+    let ctx = match fut.await {
       Ok(ctx) => ctx,
       Err(e) => {
         // wasmtime has junk errors so we need to parse the string to provide useful information.
@@ -214,7 +218,10 @@ impl WasmHost {
     let ctx = self.ctx.clone();
     let index = ctx
       .get_export("wick", component_name)
-      .map_err(|_| crate::Error::OperationNotFound(component_name.to_owned(), ctx.get_exports()))?;
+      .ok_or(crate::Error::OperationNotFound(
+        component_name.to_owned(),
+        ctx.get_exports(),
+      ))?;
     let inherent = InherentData::new(invocation.inherent.seed, invocation.inherent.timestamp);
     stream.set_context(config.unwrap_or_default(), inherent);
 
@@ -233,9 +240,7 @@ impl WasmHost {
     let payload = self.span.in_scope(|| {
       debug!("wasm setup");
 
-      let index = ctx
-        .get_export("wick", "__setup")
-        .map_err(|_| crate::Error::SetupOperation)?;
+      let index = ctx.get_export("wick", "__setup").ok_or(crate::Error::SetupOperation)?;
       let metadata = wasmrs::Metadata::new(index);
       let data = serialize(&provided).unwrap();
       Ok::<_, WasmComponentError>(RawPayload::new(metadata.encode(), data.into()))

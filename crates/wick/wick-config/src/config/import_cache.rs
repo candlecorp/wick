@@ -55,10 +55,10 @@ pub(crate) async fn setup_cache(
   }
   let mut types = Vec::new();
   for import in imports {
-    let prefix = &import.id;
+    let prefix = import.id();
     if let ImportDefinition::Types(t) = &import.kind {
       let config = cache
-        .fetch_type(import.id.clone(), t.reference.clone(), options.clone())
+        .fetch_type(import.id().to_owned(), t.reference.clone(), options.clone())
         .await?;
       // if we didn't specify types to import, import everything.
       if t.types.is_empty() {

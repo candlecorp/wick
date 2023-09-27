@@ -8,7 +8,7 @@ use parking_lot::Mutex;
 use serde_json::json;
 use structured_output::StructuredOutput;
 use tracing::{Instrument, Span};
-use wick_config::config::{AppConfiguration, TriggerDefinition};
+use wick_config::config::{AppConfiguration, TriggerDefinition, BoundIdentifier};
 use wick_packet::{packet_stream, Entity, InherentData, Invocation};
 use wick_runtime::Runtime;
 use wick_trigger::resources::Resource;
@@ -99,7 +99,7 @@ impl Trigger for Cli {
     runtime: Runtime,
     _app_config: AppConfiguration,
     config: TriggerDefinition,
-    _resources: Arc<HashMap<String, Resource>>,
+    _resources: Arc<HashMap<BoundIdentifier, Resource>>,
     span: Span,
   ) -> Result<StructuredOutput, wick_trigger::Error> {
     let TriggerDefinition::Cli(config) = config else {

@@ -3,7 +3,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use url::Url;
-use wick_config::config::Codec;
+use wick_config::config::{BoundIdentifier, Codec};
 use wick_packet::RuntimeConfig;
 use wick_trigger::error::{Error, ErrorKind};
 use wick_trigger::resources::{Resource, ResourceKind};
@@ -49,10 +49,10 @@ pub(super) struct RouterOperation {
   path: String,
 }
 
-fn get_url(resources: Arc<HashMap<String, Resource>>, id: &str) -> Result<Url, Error> {
+fn get_url(resources: Arc<HashMap<BoundIdentifier, Resource>>, id: &BoundIdentifier) -> Result<Url, Error> {
   let url = resources
     .get(id)
-    .ok_or_else(|| -> Error { Error::new_context("http", ErrorKind::ResourceNotFound(id.to_owned())) })?;
+    .ok_or_else(|| -> Error { Error::new_context("http", ErrorKind::ResourceNotFound(id.clone())) })?;
   match url {
     Resource::Url(s) => Ok(s.clone()),
     _ => Err(Error::new_context(
