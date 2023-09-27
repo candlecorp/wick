@@ -12,12 +12,8 @@ pub enum Error {
   PortMissing(String),
 
   /// Error deserializing payload.
-  #[error("Error deserializing payload '{}': {} (raw payload was: {:?})",.as_json,.error,.payload)]
-  Decode {
-    as_json: String,
-    payload: Vec<u8>,
-    error: String,
-  },
+  #[error("Error deserializing payload '{}': {}",.as_json,.error)]
+  Decode { as_json: String, error: String },
 
   /// Error converting payload into JSON.
   #[error("Error JSON-ifying payload: {0}")]

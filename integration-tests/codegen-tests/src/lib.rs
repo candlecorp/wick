@@ -41,7 +41,7 @@ mod test1 {
   mod test {
 
     use anyhow::Result;
-    use flow_component::{panic_callback, Context};
+    use flow_component::Context;
     use types::http;
     use wick_component::datetime::TimeZone;
     use wick_component::*;
@@ -111,7 +111,7 @@ mod test1 {
       let ctx = Context::new(
         testop::Config::default(),
         &InherentData::unsafe_default(),
-        panic_callback(),
+        Default::default(),
       );
 
       Component::testop(Box::pin(packets), outputs, ctx).await?;

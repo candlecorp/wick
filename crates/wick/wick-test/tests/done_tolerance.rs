@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use anyhow::Result;
-use flow_component::{Component, RuntimeCallback, SharedComponent};
+use flow_component::{Component, LocalScope, SharedComponent};
 use serde_json::json;
 use tokio_stream::StreamExt;
 use wick_config::config::test_case::{PacketData, TestCaseBuilder, TestPacketData};
@@ -41,7 +41,7 @@ impl Component for TestComponent {
     &self,
     invocation: Invocation,
     _data: Option<RuntimeConfig>,
-    _callback: Arc<RuntimeCallback>,
+    _callback: LocalScope,
   ) -> flow_component::BoxFuture<std::result::Result<PacketStream, flow_component::ComponentError>> {
     Box::pin(async move {
       let stream = invocation.into_stream();

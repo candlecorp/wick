@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use flow_component::RuntimeCallback;
+use flow_component::LocalScope;
 use seeded_random::Seed;
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
@@ -49,7 +49,7 @@ impl SchematicExecutor {
     components: Arc<HandlerMap>,
     self_component: SelfComponent,
     config: Option<RuntimeConfig>,
-    callback: Arc<RuntimeCallback>,
+    callback: LocalScope,
   ) -> Result<PacketStream> {
     invocation
       .trace(|| debug!(operation = self.name(), origin=%invocation.origin(),target=%invocation.target(),"invoking"));

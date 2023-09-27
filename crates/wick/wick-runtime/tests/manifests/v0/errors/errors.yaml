@@ -1,11 +1,17 @@
 ---
 format: 0
 network:
+  collections:
+    - namespace: wapc
+      kind: WaPC
+      reference: ../../../../../../integration/test-baseline-component/build/baseline.signed.wasm
+      data:
+        default_err: 'custom error'
   schematics:
     - name: errors
       instances:
         error:
-          id: wick::core::error
+          id: wapc::validate
       connections:
         - <> => error[input]
         - error[output] => <>

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use flow_component::{Component, ComponentError, RuntimeCallback};
+use flow_component::{Component, ComponentError, LocalScope};
 use wick_interface_types::*;
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
 
@@ -46,7 +46,7 @@ impl Component for HostComponent {
     &self,
     invocation: Invocation,
     data: Option<RuntimeConfig>,
-    _callback: Arc<RuntimeCallback>,
+    _callback: LocalScope,
   ) -> flow_component::BoxFuture<Result<PacketStream, ComponentError>> {
     let fut = self.host.invoke(invocation, data);
 
@@ -66,7 +66,6 @@ impl Component for HostComponent {
 mod tests {
 
   use anyhow::Result as TestResult;
-  use flow_component::panic_callback;
   use tokio_stream::StreamExt;
   use wick_config::WickConfiguration;
   use wick_packet::{packet_stream, Entity, Packet};
@@ -92,7 +91,7 @@ mod tests {
 
     let invocation = Invocation::test(file!(), Entity::local("logger"), job_payload, None)?;
     let mut outputs = collection
-      .handle(invocation, Default::default(), panic_callback())
+      .handle(invocation, Default::default(), Default::default())
       .await?;
     let output = outputs.next().await.unwrap().unwrap();
 

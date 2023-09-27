@@ -8,7 +8,7 @@ union WickConfig = AppConfiguration | ComponentConfiguration | TypesConfiguratio
 "A reference to a location on disk, URL, or registry."
 alias LocationReference = string @skip
 
-"A string that must be bound to an import, resource, or type."
+"An identifier/variable name bound to an import, resource, or type."
 alias BoundIdentifier = string
 
 """
@@ -507,6 +507,21 @@ type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
   operations: [OperationDefinition]
 }
 
+"A component whose implementation is a WasmRS WebAssembly module."
+type WasmComponentModel @tagged("wick/component/wasm@v1") {
+  "The path or OCI reference to the WebAssembly module"
+  ref: LocationReference @rename("reference") @required
+
+  "Volumes to expose to the component."
+  volumes: [ExposedVolume]
+
+  "Configuration necessary to provide when instantiating the component."
+  with: [Field]
+
+  "A list of operations implemented by the WebAssembly module."
+  operations: [OperationDefinition]
+}
+
 "Volumes to expose to a component and the internal paths they map to."
 type ExposedVolume {
   "The resource ID of the volume."
@@ -515,10 +530,8 @@ type ExposedVolume {
   path: string @required
 }
 
-
-
 "Root component types. These are the components that can be instantiated and run."
-union ComponentKind = WasmComponentConfiguration | CompositeComponentConfiguration | SqlComponent | HttpClientComponent
+union ComponentKind = WasmComponentConfiguration | WasmComponentModel | CompositeComponentConfiguration | SqlComponent | HttpClientComponent
 
 "Types of possible imports."
 union ImportDefinition = TypesComponent | ManifestComponent | SqlComponent | HttpClientComponent

@@ -1,0 +1,22 @@
+[package]
+name = "wick-wasm-engine"
+version = "0.1.0"
+authors = ["Jarrod Overson <jsoverson@gmail.com>"]
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/candlecorp/wick"
+description = "The wasm engine used in the Wick project."
+include = ["src/**/*", "LICENSE", "README.md"]
+readme = "README.md"
+
+[features]
+
+[dependencies]
+wasmtime = { workspace = true, features = ["component-model", "async"] }
+wasmtime-wasi = { workspace = true, features = ["tokio"] }
+
+parking_lot = { workspace = true }
+once_cell = { workspace = true }
+tokio = { workspace = true, features = ["fs"] }
+
+[dev-dependencies]

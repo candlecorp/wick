@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Instant, SystemTime};
 
-use flow_component::RuntimeCallback;
+use flow_component::LocalScope;
 use flow_graph::{NodeIndex, PortReference, SCHEMATIC_OUTPUT_INDEX};
 use futures::StreamExt;
 use parking_lot::Mutex;
@@ -45,7 +45,7 @@ pub struct ExecutionContext {
   start_time: Instant,
   finished: AtomicBool,
   span: tracing::Span,
-  callback: Arc<RuntimeCallback>,
+  callback: LocalScope,
   root_config: Option<RuntimeConfig>,
   op_config: Option<RuntimeConfig>,
   options: Option<InterpreterOptions>,
@@ -67,7 +67,7 @@ impl ExecutionContext {
     channel: InterpreterDispatchChannel,
     components: &Arc<HandlerMap>,
     self_component: &SelfComponent,
-    callback: Arc<RuntimeCallback>,
+    callback: LocalScope,
     root_config: Option<RuntimeConfig>,
     op_config: Option<RuntimeConfig>,
     seed: Seed,

@@ -19,17 +19,6 @@ checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
 name = "ahash"
-version = "0.7.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcb51a0695d8f838b1ee009b3fbf66bda078cd64590202a864a8f3e8c4315c47"
-dependencies = [
- "getrandom",
- "once_cell",
- "version_check",
-]
-
-[[package]]
-name = "ahash"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c99f64d1e06488f620f932677e24bc6e2897582980441ae90a671415bd7ec2f"
@@ -560,15 +549,6 @@ dependencies = [
  "time 0.1.45",
  "wasm-bindgen",
  "windows-targets 0.48.5",
-]
-
-[[package]]
-name = "chumsky"
-version = "0.9.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23170228b96236b5a7299057ac284a321457700bc8c41a4476052f0f4ba5349d"
-dependencies = [
- "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -1246,12 +1226,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
-name = "dyn-clone"
-version = "1.0.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbfc4744c1b8f2a09adc0e55242f60b1af195d88596bd8700be74418c056c555"
-
-[[package]]
 name = "ed25519"
 version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1837,9 +1811,6 @@ name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
-dependencies = [
- "ahash 0.7.6",
-]
 
 [[package]]
 name = "hashbrown"
@@ -1847,7 +1818,7 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
 dependencies = [
- "ahash 0.8.3",
+ "ahash",
 ]
 
 [[package]]
@@ -1856,7 +1827,7 @@ version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c6201b9ff9fd90a5a3bac2e56a830d0caa509576f0e503818ee82c181b3437a"
 dependencies = [
- "ahash 0.8.3",
+ "ahash",
  "allocator-api2",
 ]
 
@@ -1924,12 +1895,6 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
-
-[[package]]
-name = "hifijson"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85ef6b41c333e6dd2a4aaa59125a19b633cd17e7aaf372b2260809777bcdef4a"
 
 [[package]]
 name = "hkdf"
@@ -2307,34 +2272,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2f8763c96e54e6d6a0dccc2990d8b5e33e3313aaeae6185921a3f4c1614a77c"
 dependencies = [
  "cc",
-]
-
-[[package]]
-name = "jaq-core"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb52eeac20f256459e909bd4a03bb8c4fab6a1fdbb8ed52d00f644152df48ece"
-dependencies = [
- "ahash 0.7.6",
- "dyn-clone",
- "hifijson",
- "indexmap 1.9.3",
- "itertools 0.10.5",
- "jaq-parse",
- "log",
- "once_cell",
- "regex",
- "serde_json",
-]
-
-[[package]]
-name = "jaq-parse"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f0f97f01eb9e87af3cbcc843b0dfe693fc6b0a2b9093dc8980dd9fc682826b0"
-dependencies = [
- "chumsky",
- "serde",
 ]
 
 [[package]]
@@ -4131,7 +4068,7 @@ version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd4cef4251aabbae751a3710927945901ee1d97ee96d757f6880ebb9a79bfd53"
 dependencies = [
- "ahash 0.8.3",
+ "ahash",
  "atoi",
  "byteorder",
  "bytes 1.4.0",
@@ -5950,8 +5887,8 @@ dependencies = [
  "flow-expression-parser",
  "futures 0.3.28",
  "human-panic",
- "jaq-core",
  "liquid-json",
+ "loose-liquid",
  "markup-converter",
  "nkeys",
  "once_cell",
@@ -6066,6 +6003,27 @@ dependencies = [
 name = "wick-component-wasm"
 version = "0.3.0"
 dependencies = [
+ "async-trait",
+ "derive_builder",
+ "flow-component",
+ "parking_lot",
+ "serde_json",
+ "structured-output",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "wasmtime",
+ "wasmtime-wasi",
+ "wick-config",
+ "wick-interface-types",
+ "wick-packet",
+ "wick-wasm-engine",
+]
+
+[[package]]
+name = "wick-component-wasmrs"
+version = "0.3.0"
+dependencies = [
  "anyhow",
  "derive_builder",
  "flow-component",
@@ -6170,7 +6128,7 @@ dependencies = [
  "wick-trigger-cli",
  "wick-trigger-http",
  "wick-trigger-time",
- "wick-trigger-wasm-component",
+ "wick-trigger-wasm-command",
 ]
 
 [[package]]
@@ -6421,6 +6379,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-wasi",
  "wick-component-wasm",
+ "wick-component-wasmrs",
  "wick-config",
  "wick-http-client",
  "wick-interface-cli",
@@ -6431,8 +6390,8 @@ dependencies = [
  "wick-packet",
  "wick-rpc",
  "wick-sql",
- "wick-stdlib",
  "wick-test-logger",
+ "wick-wasm-engine",
 ]
 
 [[package]]
@@ -6473,23 +6432,6 @@ dependencies = [
  "tracing",
  "url",
  "wick-config",
- "wick-interface-types",
- "wick-logger",
- "wick-packet",
- "wick-rpc",
- "wick-test-logger",
-]
-
-[[package]]
-name = "wick-stdlib"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "flow-component",
- "futures 0.3.28",
- "seeded-random",
- "tokio",
- "tracing",
  "wick-interface-types",
  "wick-logger",
  "wick-packet",
@@ -6645,11 +6587,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "wick-trigger-wasm-component"
+name = "wick-trigger-wasm-command"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "parking_lot",
+ "serde_json",
  "structured-output",
  "thiserror",
  "tokio",
@@ -6660,6 +6603,7 @@ dependencies = [
  "wick-packet",
  "wick-runtime",
  "wick-trigger",
+ "wick-wasm-engine",
 ]
 
 [[package]]
@@ -6681,6 +6625,17 @@ dependencies = [
  "wasm-encoder 0.31.1",
  "wasmparser 0.110.0",
  "wick-interface-types",
+]
+
+[[package]]
+name = "wick-wasm-engine"
+version = "0.1.0"
+dependencies = [
+ "once_cell",
+ "parking_lot",
+ "tokio",
+ "wasmtime",
+ "wasmtime-wasi",
 ]
 
 [[package]]

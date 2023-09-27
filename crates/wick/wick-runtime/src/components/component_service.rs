@@ -1,4 +1,3 @@
-use flow_component::panic_callback;
 use tracing::Instrument;
 
 use crate::dev::prelude::*;
@@ -27,7 +26,7 @@ impl Component for NativeComponentService {
     &self,
     invocation: Invocation,
     config: Option<RuntimeConfig>,
-    callback: Arc<RuntimeCallback>,
+    callback: LocalScope,
   ) -> flow_component::BoxFuture<std::result::Result<PacketStream, flow_component::ComponentError>> {
     let component = self.component.clone();
 
@@ -49,7 +48,7 @@ impl InvocationHandler for NativeComponentService {
     let tx_id = invocation.tx_id();
 
     let span = info_span!(parent:invocation.span(),"runtime:handle");
-    let fut = self.handle(invocation, config, panic_callback());
+    let fut = self.handle(invocation, config, Default::default());
 
     let task = async move {
       Ok(crate::dispatch::InvocationResponse::Stream {

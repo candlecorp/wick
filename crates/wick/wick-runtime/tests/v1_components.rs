@@ -51,7 +51,7 @@ async fn test_context_passthrough() -> Result<()> {
       ("optional".to_owned(), json!("optional field")),
     ])),
     vec![
-      Packet::encode("output", "[from input]root_required: required field, root_optional: optional field, required: required field, optional: optional field"),
+      Packet::encode("output", json!({"left":"[from input]","right":"root_required: required field, root_optional: optional field, required: required field, optional: optional field"})),
       Packet::done("output"),
     ],
   )
@@ -69,7 +69,7 @@ async fn test_context_passthrough_root_config_opt() -> Result<()> {
       ("optional".to_owned(), json!("optional field")),
     ])),
     vec![
-      Packet::encode("output", "[from input]root_required: required field, root_optional: , required: required field, optional: optional field"),
+      Packet::encode("output", json!({"left":"[from input]","right":"root_required: required field, root_optional: , required: required field, optional: optional field"})),
       Packet::done("output"),
     ],
   )
@@ -87,7 +87,7 @@ async fn test_context_passthrough_op_config_opt() -> Result<()> {
     ])),
     RuntimeConfig::from(HashMap::from([("required".to_owned(), json!("required field"))])),
     vec![
-      Packet::encode("output", "[from input]root_required: required field, root_optional: optional field, required: required field, optional: "),
+      Packet::encode("output", json!({"left":"[from input]","right":"root_required: required field, root_optional: optional field, required: required field, optional: "})),
       Packet::done("output"),
     ],
   )

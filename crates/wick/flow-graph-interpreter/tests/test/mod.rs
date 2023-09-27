@@ -3,7 +3,7 @@ mod observer;
 mod test_component;
 
 use anyhow::Result;
-use flow_component::{panic_callback, Component};
+use flow_component::Component;
 use flow_graph_interpreter::graph::from_def;
 use flow_graph_interpreter::Interpreter;
 pub use observer::JsonWriter;
@@ -55,7 +55,7 @@ pub async fn base_setup(
     network,
     None,
     Some(collections),
-    panic_callback(),
+    Default::default(),
     None,
     &tracing::Span::current(),
   )?;

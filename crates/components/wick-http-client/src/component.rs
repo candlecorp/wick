@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
+use flow_component::{BoxFuture, Component, ComponentError, LocalScope};
 use futures::{Stream, StreamExt, TryStreamExt};
 use reqwest::header::CONTENT_TYPE;
 use reqwest::{ClientBuilder, Method, Request, RequestBuilder};
@@ -129,7 +129,7 @@ impl Component for HttpClientComponent {
     &self,
     invocation: Invocation,
     op_config: Option<RuntimeConfig>,
-    _callback: Arc<RuntimeCallback>,
+    _callback: LocalScope,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let config = self.config.clone();
     let baseurl = self.base.clone();
@@ -429,7 +429,6 @@ mod test {
   use std::str::FromStr;
 
   use anyhow::Result;
-  use flow_component::panic_callback;
   use futures::StreamExt;
   use serde_json::json;
   use wick_config::config::components::{
@@ -553,7 +552,7 @@ mod test {
       let invocation = Invocation::test("test_get_request", Entity::local(GET_OP), packets, Default::default())?;
       let config = json!({"secret":"0xDEADBEEF"});
       let mut stream = comp
-        .handle(invocation, Some(RuntimeConfig::from_value(config)?), panic_callback())
+        .handle(invocation, Some(RuntimeConfig::from_value(config)?), Default::default())
         .await?
         .collect::<Vec<_>>()
         .await;
@@ -581,7 +580,7 @@ mod test {
       let packets = packet_stream!(("input", "SENTINEL"), ("number", [123, 345, 678]));
       let invocation = Invocation::test("test_post_request", Entity::local(POST_OP), packets, Default::default())?;
       let stream = comp
-        .handle(invocation, Default::default(), panic_callback())
+        .handle(invocation, Default::default(), Default::default())
         .await?
         .filter(|p| futures::future::ready(p.as_ref().map_or(false, |p| p.has_data())))
         .collect::<Vec<_>>()
@@ -628,7 +627,7 @@ mod test {
         Default::default(),
       )?;
       let stream = comp
-        .handle(invocation, Default::default(), panic_callback())
+        .handle(invocation, Default::default(), Default::default())
         .await?
         .filter(|p| futures::future::ready(p.as_ref().map_or(false, |p| p.has_data())))
         .collect::<Vec<_>>()

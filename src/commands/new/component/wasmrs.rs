@@ -1,12 +1,7 @@
 use anyhow::Result;
 use clap::Args;
 use structured_output::StructuredOutput;
-use wick_config::config::{
-  self,
-  ComponentConfiguration,
-  OperationDefinitionBuilder,
-  WasmComponentImplementationBuilder,
-};
+use wick_config::config::{self, ComponentConfiguration, OperationDefinitionBuilder, WasmRsComponentBuilder};
 use wick_config::AssetReference;
 use wick_interface_types::{Field, StructDefinition, Type, TypeDefinition};
 
@@ -52,7 +47,7 @@ pub(crate) async fn handle(
 
     config.set_metadata(crate::commands::new::generic_metadata("New WebAssembly wick component"));
 
-    let component = WasmComponentImplementationBuilder::default()
+    let component = WasmRsComponentBuilder::default()
       .reference(AssetReference::new(format!("./build/{}", &name)))
       .operations([
         OperationDefinitionBuilder::default()
@@ -65,7 +60,7 @@ pub(crate) async fn handle(
       .build()
       .unwrap();
 
-    config.set_component(config::ComponentImplementation::Wasm(component));
+    config.set_component(config::ComponentImplementation::WasmRs(component));
 
     let config = wick_config::WickConfiguration::Component(config);
 

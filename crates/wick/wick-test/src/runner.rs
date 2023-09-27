@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use flow_component::{panic_callback, SharedComponent};
+use flow_component::SharedComponent;
 use tap_harness::{TestBlock, TestRunner};
 use tokio_stream::StreamExt;
 use wick_interface_types::{Field, OperationSignature};
@@ -77,7 +77,7 @@ async fn run_unit<'a>(
 
   let fut = tokio::time::timeout(
     Duration::from_secs(5),
-    component.handle(invocation, op_config.clone(), panic_callback()),
+    component.handle(invocation, op_config.clone(), Default::default()),
   );
 
   let result = fut

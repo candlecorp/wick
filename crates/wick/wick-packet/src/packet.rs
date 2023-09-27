@@ -128,7 +128,7 @@ impl Packet {
   }
 
   /// Try to deserialize a [Packet] into the target type.
-  pub fn decode<T: DeserializeOwned>(self) -> Result<T, Error> {
+  pub fn decode<T: DeserializeOwned>(&self) -> Result<T, Error> {
     self.payload.decode()
   }
 
@@ -138,14 +138,19 @@ impl Packet {
   }
 
   /// Decode a [Packet] into a [serde_json::Value].
-  pub fn decode_value(self) -> Result<serde_json::Value, Error> {
+  pub fn decode_value(&self) -> Result<serde_json::Value, Error> {
     self.payload.decode()
   }
 
   /// Set the port for this packet.
-  pub fn set_port<T: Into<String>>(mut self, port: T) -> Self {
+  pub fn to_port<T: Into<String>>(mut self, port: T) -> Self {
     self.extra.port = port.into();
     self
+  }
+
+  /// Set the port for this packet.
+  pub fn set_port<T: Into<String>>(&mut self, port: T) {
+    self.extra.port = port.into();
   }
 
   /// Get the port for this packet.
@@ -268,19 +273,18 @@ impl PacketPayload {
   }
 
   /// Try to deserialize a [Packet] into the target type
-  pub fn decode<T: DeserializeOwned>(self) -> Result<T, Error> {
+  pub fn decode<T: DeserializeOwned>(&self) -> Result<T, Error> {
     match self {
-      PacketPayload::Ok(Some(bytes)) => match wasmrs_codec::messagepack::deserialize(&bytes) {
+      PacketPayload::Ok(Some(bytes)) => match wasmrs_codec::messagepack::deserialize(bytes) {
         Ok(data) => Ok(data),
         Err(err) => Err(crate::Error::Decode {
-          as_json: wasmrs_codec::messagepack::deserialize::<serde_json::Value>(&bytes)
+          as_json: wasmrs_codec::messagepack::deserialize::<serde_json::Value>(bytes)
             .map_or_else(|_e| "could not convert".to_owned(), |v| v.to_string()),
-          payload: bytes.into(),
           error: err.to_string(),
         }),
       },
       PacketPayload::Ok(None) => Err(crate::Error::NoData),
-      PacketPayload::Err(err) => Err(crate::Error::PayloadError(err)),
+      PacketPayload::Err(err) => Err(crate::Error::PayloadError(err.clone())),
     }
   }
 

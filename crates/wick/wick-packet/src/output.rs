@@ -99,7 +99,7 @@ where
   T: serde::Serialize + ConditionallySend,
 {
   fn send_packet(&mut self, value: Packet) {
-    let value = value.set_port(&self.name);
+    let value = value.to_port(&self.name);
     if let Err(e) = self.channel.send_result(value.into()) {
       warn!(
         port = self.name,

@@ -1,4 +1,4 @@
-use flow_component::{Component, ComponentError, RuntimeCallback};
+use flow_component::{Component, ComponentError, LocalScope};
 use flow_graph::{SCHEMATIC_INPUT, SCHEMATIC_OUTPUT};
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Invocation, PacketStream, RuntimeConfig};
@@ -29,7 +29,7 @@ impl Component for InternalComponent {
     &self,
     invocation: Invocation,
     _config: Option<RuntimeConfig>,
-    _callback: std::sync::Arc<RuntimeCallback>,
+    _callback: LocalScope,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     invocation.trace(|| debug!(target = %invocation.target(), id=%invocation.id(),namespace = Self::ID));
     let op = invocation.target().operation_id().to_owned();

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 /// The set of validated privileges and permissions for a component.
 #[derive(Debug, Default, Clone, derive_builder::Builder, property::Property, PartialEq)]
@@ -8,5 +9,5 @@ use std::collections::HashMap;
 pub struct Permissions {
   /// A map of directories (TO -> FROM) to expose to the component.
   #[builder(default)]
-  pub(crate) dirs: HashMap<String, String>,
+  pub(crate) dirs: HashMap<String, PathBuf>,
 }

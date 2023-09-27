@@ -23,7 +23,7 @@ pub async fn load_wick_config(
   Ok(config.finish()?)
 }
 
-pub async fn load_app_config(path: &str, root_config: Option<RuntimeConfig>) -> Result<AppConfiguration> {
+pub async fn load_root_test_config(path: &str, root_config: Option<RuntimeConfig>) -> Result<AppConfiguration> {
   let mut config = load_config(path).await?;
   let env = std::env::vars().collect();
   config.set_env(Some(env)).set_root_config(root_config);

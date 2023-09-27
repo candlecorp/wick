@@ -28,3 +28,9 @@ impl From<wick_component_wasm::Error> for ComponentError {
     ComponentError::Downstream(Box::new(e))
   }
 }
+
+impl From<wick_component_wasmrs::Error> for ComponentError {
+  fn from(e: wick_component_wasmrs::Error) -> Self {
+    ComponentError::Downstream(Box::new(e))
+  }
+}

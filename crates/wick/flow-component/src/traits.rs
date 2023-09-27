@@ -18,7 +18,7 @@ pub trait Component {
     &self,
     invocation: Invocation,
     data: Option<RuntimeConfig>,
-    callback: Arc<RuntimeCallback>,
+    callback: crate::LocalScope,
   ) -> BoxFuture<Result<PacketStream, anyhow::Error>>;
 
   /// The `signature` method returns the [ComponentSignature] for the component.
@@ -66,7 +66,7 @@ pub trait Operation {
 }
 
 /// The [RuntimeCallback] type is used to invoke other components within the executing runtime.
-pub type RuntimeCallback = dyn Fn(
+pub type ScopeInvokeFn = dyn Fn(
     ComponentReference,
     String,
     PacketStream,
@@ -76,13 +76,3 @@ pub type RuntimeCallback = dyn Fn(
   ) -> BoxFuture<'static, Result<PacketStream, ComponentError>>
   + Send
   + Sync;
-
-#[must_use]
-/// A [RuntimeCallback] that panics when invoked.
-pub fn panic_callback() -> Arc<RuntimeCallback> {
-  Arc::new(|_, _, _, _, _, _| {
-    Box::pin(async move {
-      panic!("Panic callback invoked. This should never happen outside of tests.");
-    })
-  })
-}

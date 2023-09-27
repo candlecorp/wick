@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
+use flow_component::{BoxFuture, Component, ComponentError, LocalScope};
 use futures::StreamExt;
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
@@ -133,7 +133,7 @@ impl Component for SqlComponent {
     &self,
     invocation: Invocation,
     _data: Option<RuntimeConfig>, // TODO: this needs to be used
-    _callback: Arc<RuntimeCallback>,
+    _callback: LocalScope,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let client = self.provider.clone();
     let opdef = self
@@ -268,7 +268,7 @@ where
         break 'outer;
       }
       if packet.is_open_bracket() || packet.is_close_bracket() {
-        let _ = tx.send(packet.set_port("output"));
+        let _ = tx.send(packet.to_port("output"));
         continue 'outer;
       }
       let ty = fields.iter().find(|f| f.name() == packet.port()).unwrap().ty().clone();
@@ -469,7 +469,7 @@ mod test {
 #[cfg(test)]
 mod integration_test {
   use anyhow::Result;
-  use flow_component::{panic_callback, Component};
+  use flow_component::Component;
   use futures::StreamExt;
   use serde_json::json;
   use wick_config::config::components::{
@@ -527,7 +527,7 @@ mod integration_test {
     let db = init_mssql_component().await?;
     let input = packet_stream!(("input", 1_i32));
     let inv = Invocation::test("mssql", "wick://__local__/test", input, None)?;
-    let response = db.handle(inv, Default::default(), panic_callback()).await.unwrap();
+    let response = db.handle(inv, Default::default(), Default::default()).await.unwrap();
     let packets: Vec<_> = response.collect().await;
 
     assert_eq!(
@@ -583,7 +583,7 @@ mod integration_test {
     let pg = init_pg_component().await?;
     let input = packet_stream!(("input", 1_u32));
     let inv = Invocation::test("postgres", "wick://__local__/test", input, None)?;
-    let response = pg.handle(inv, Default::default(), panic_callback()).await.unwrap();
+    let response = pg.handle(inv, Default::default(), Default::default()).await.unwrap();
     let packets: Vec<_> = response.collect().await;
 
     assert_eq!(
@@ -630,7 +630,7 @@ mod integration_test {
     let pg = init_sqlite_component().await?;
     let input = packet_stream!(("input", 1_i32));
     let inv = Invocation::test("sqlite", "wick://__local__/test", input, None)?;
-    let response = pg.handle(inv, Default::default(), panic_callback()).await.unwrap();
+    let response = pg.handle(inv, Default::default(), Default::default()).await.unwrap();
     let packets: Vec<_> = response.collect().await;
 
     assert_eq!(

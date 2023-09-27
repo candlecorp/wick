@@ -81,7 +81,7 @@ impl StreamMap {
       while let Some(Ok(packet)) = stream.next().await {
         if packet.is_fatal_error() {
           for (name, sender) in &mut senders {
-            let _ = sender.send(packet.clone().set_port(name));
+            let _ = sender.send(packet.clone().to_port(name));
           }
         } else {
           let Some(sender) = senders.get_mut(packet.port()) else {

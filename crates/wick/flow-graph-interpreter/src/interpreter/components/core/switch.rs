@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, AtomicI32, AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use flow_component::{ComponentError, Context, Operation, RenderConfiguration, RuntimeCallback};
+use flow_component::{ComponentError, Context, LocalScope, Operation, RenderConfiguration};
 use futures::{FutureExt, StreamExt};
 use parking_lot::Mutex;
 use seeded_random::Seed;
@@ -570,7 +570,7 @@ impl Operation for Op {
           CanHandle::No => {
             invocation.trace(|| trace!(input = packet.port(), "switch:stream: routing packet to root stream"));
             for output in &context.config.outputs {
-              let _ = root_tx.send(packet.clone().set_port(output.name()));
+              let _ = root_tx.send(packet.clone().to_port(output.name()));
             }
             continue;
           }
@@ -677,7 +677,7 @@ fn new_route_handler(
   target: Entity,
   invocation: &InvocationData,
   inherent: InherentData,
-  callback: Arc<RuntimeCallback>,
+  callback: LocalScope,
   op_config: Option<RuntimeConfig>,
   span: Span,
 ) -> RouteHandler {
@@ -691,7 +691,10 @@ fn new_route_handler(
   let handle = tokio::spawn(async move {
     let call = compref.to_string();
     span.in_scope(|| trace!(invocation = %call, state="starting", "switch:case:task"));
-    match callback(compref, op_id, inner_rx, inherent, op_config, &span).await {
+    match callback
+      .invoke(compref, op_id, inner_rx, inherent, op_config, &span)
+      .await
+    {
       Ok(mut inv_stream) => {
         span.in_scope(|| trace!(invocation = %call, state="starting", "switch:case:stream"));
         while let Some(packet) = inv_stream.next().await {

@@ -2460,6 +2460,74 @@ ref: this._ref,volumes: this._volumes,max_packet_size: this._maxPacketSize,with:
 
 
 
+export class WasmComponentModel implements HasKind {
+ // The path or OCI reference to the WebAssembly module 
+      _ref : string ;
+ // Volumes to expose to the component. 
+      _volumes : ExposedVolume[] =  [];
+ // Configuration necessary to provide when instantiating the component. 
+      _with : Field[] =  [];
+ // A list of operations implemented by the WebAssembly module. 
+      _operations : OperationDefinition[] =  [];
+    constructor (
+ref:
+ string,
+      ) {
+          this._ref = ref;
+    }
+
+ref(value: string) : WasmComponentModel {
+      this._ref = value;
+      return this;
+    }
+    getRef() : string {
+      return this._ref;
+
+    }
+volumes(value: ExposedVolume[]) : WasmComponentModel {
+      this._volumes = value;
+      return this;
+    }
+    getVolumes() : ExposedVolume[] {
+      return this._volumes;
+
+    }
+with(value: Field[]) : WasmComponentModel {
+      this._with = value;
+      return this;
+    }
+    getWith() : Field[] {
+      return this._with;
+
+    }
+operations(value: OperationDefinition[]) : WasmComponentModel {
+      this._operations = value;
+      return this;
+    }
+    getOperations() : OperationDefinition[] {
+      return this._operations;
+
+    }
+
+    getKind() : string {
+      return "wick/component/wasm@v1";
+    }
+
+    toJSON() : any {
+      return {
+        kind : "wick/component/wasm@v1",
+ref: this._ref,volumes: this._volumes,with: this._with,operations: this._operations,      }
+
+    }
+}
+
+    
+    
+    
+    
+
+
+
 export class ExposedVolume implements HasKind {
  // The resource ID of the volume. 
       _resource : BoundIdentifier ;
@@ -2512,7 +2580,7 @@ resource: this._resource,path: this._path,      }
     
     
 export type ComponentKind =
-      WasmComponentConfiguration|CompositeComponentConfiguration|SqlComponent|HttpClientComponent
+      WasmComponentConfiguration|WasmComponentModel|CompositeComponentConfiguration|SqlComponent|HttpClientComponent
     ;
     
 

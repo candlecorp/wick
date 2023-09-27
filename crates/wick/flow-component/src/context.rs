@@ -32,7 +32,7 @@ where
   pub inherent: InherentContext,
   #[cfg(feature = "invocation")]
   /// A callback to invoke other components within the executing runtime.
-  pub callback: Arc<crate::RuntimeCallback>,
+  pub callback: LocalScope,
 }
 
 impl<T> std::fmt::Debug for Context<T>
@@ -58,7 +58,7 @@ where
       },
       config: Arc::new(value.config),
       #[cfg(feature = "invocation")]
-      callback: crate::panic_callback(),
+      callback: Default::default(),
     }
   }
 }
@@ -104,7 +104,7 @@ where
 {
   /// Create a new context.
   #[cfg(feature = "invocation")]
-  pub fn new(config: T, inherent: &InherentData, callback: Arc<crate::RuntimeCallback>) -> Self {
+  pub fn new(config: T, inherent: &InherentData, callback: LocalScope) -> Self {
     Self {
       inherent: InherentContext {
         rng: Random::from_seed(Seed::unsafe_new(inherent.seed)),
@@ -125,5 +125,52 @@ where
       },
       config: Arc::new(config),
     }
+  }
+}
+
+#[allow(missing_debug_implementations, missing_copy_implementations)]
+#[derive(Default, Clone)]
+#[non_exhaustive]
+/// The [LocalScope] type is used to invoke other components within the executing scope.
+pub struct LocalScope {
+  #[allow(unused)]
+  #[cfg(feature = "invocation")]
+  invocation: Option<Arc<crate::ScopeInvokeFn>>,
+}
+
+impl LocalScope {
+  /// Initialize a new environment context.
+  #[must_use]
+  #[cfg(feature = "invocation")]
+  pub fn new(invocation: Arc<crate::ScopeInvokeFn>) -> Self {
+    Self {
+      invocation: Some(invocation),
+    }
+  }
+  #[cfg(feature = "invocation")]
+  #[must_use]
+  /// Invoke a component on a foreign runtime.
+  pub fn invoke(
+    &self,
+    component_ref: wick_packet::ComponentReference,
+    op: String,
+    stream: wick_packet::PacketStream,
+    inherent: InherentData,
+    config: Option<wick_packet::RuntimeConfig>,
+    span: &tracing::Span,
+  ) -> crate::BoxFuture<'static, Result<wick_packet::PacketStream, crate::ComponentError>> {
+    self.invocation.as_ref().map_or_else(
+      || {
+        panic!("invocation not configured");
+      },
+      |invoke| (invoke)(component_ref, op, stream, inherent, config, span),
+    )
+  }
+  #[must_use]
+  #[allow(clippy::missing_const_for_fn)]
+  /// Initialize a new environment context.
+  #[cfg(not(feature = "invocation"))]
+  pub fn new() -> Self {
+    Self {}
   }
 }

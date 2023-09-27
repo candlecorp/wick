@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
+use flow_component::{BoxFuture, Component, ComponentError, LocalScope};
 use futures::StreamExt;
 use wick_interface_types::{component, ComponentSignature};
 use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream, RuntimeConfig};
@@ -44,7 +42,7 @@ impl Component for NativeComponent {
     &self,
     invocation: Invocation,
     _data: Option<RuntimeConfig>,
-    _callback: Arc<RuntimeCallback>,
+    _callback: LocalScope,
   ) -> BoxFuture<Result<PacketStream, ComponentError>> {
     let target = invocation.target().url();
     trace!("test collection invoke: {}", target);
@@ -88,7 +86,6 @@ async fn test_component(input: Invocation) -> Result<PacketStream, ComponentErro
 
 mod tests {
 
-  use flow_component::panic_callback;
   use pretty_assertions::assert_eq;
   use tracing::*;
   use wick_interface_types::*;
@@ -106,7 +103,7 @@ mod tests {
     let invocation = Invocation::test(file!(), entity, input_stream, None)?;
 
     let outputs = collection
-      .handle(invocation, Default::default(), panic_callback())
+      .handle(invocation, Default::default(), Default::default())
       .await?;
     let mut packets: Vec<_> = outputs.collect().await;
     let output = packets.pop().unwrap().unwrap();

@@ -84,7 +84,17 @@ pub async fn base_test(
   expected.reverse();
   for packet in messages {
     let expected = expected.pop().unwrap();
-    assert_eq!(packet.unwrap(), expected);
+    let actual = packet.unwrap();
+    if actual.has_data() {
+      let actual = actual.decode_value()?;
+      let expected = expected.decode_value()?;
+      assert_eq!(
+        actual, expected,
+        "actual packet value should be equal to expected packet value"
+      );
+    } else {
+      assert_eq!(actual, expected, "actual packet should be equal to expected packet");
+    }
   }
 
   Ok(())

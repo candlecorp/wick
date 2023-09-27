@@ -8,4 +8,4 @@ args = [
   "--schem_input=\"testing123\"",
 ]
 stdin = "Hello\nworld"
-stdout = "Logger: testing123\n...\n"
+stdout = "testing123\n...\n"

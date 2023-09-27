@@ -53,7 +53,7 @@ async fn test_component() -> Result<(), ManifestError> {
     .await?
     .try_component_config()?;
 
-  assert!(matches!(component.component().kind(), config::ComponentKind::Wasm));
+  assert!(matches!(component.component().kind(), config::ComponentKind::WasmRs));
 
   Ok(())
 }
@@ -64,7 +64,7 @@ async fn test_component_singular_input_field() -> Result<(), ManifestError> {
     .await?
     .try_component_config()?;
 
-  assert!(matches!(component.component().kind(), config::ComponentKind::Wasm));
+  assert!(matches!(component.component().kind(), config::ComponentKind::WasmRs));
 
   Ok(())
 }

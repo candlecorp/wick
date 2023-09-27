@@ -176,7 +176,6 @@ impl RenderConfiguration for Op {
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use flow_component::panic_callback;
   use serde_json::json;
   use tokio_stream::StreamExt;
   use wick_packet::{Entity, InherentData};
@@ -204,7 +203,7 @@ mod test {
     let mut packets = op
       .handle(
         inv,
-        Context::new(config, &InherentData::unsafe_default(), panic_callback()),
+        Context::new(config, &InherentData::unsafe_default(), Default::default()),
       )
       .await?
       .collect::<Vec<_>>()

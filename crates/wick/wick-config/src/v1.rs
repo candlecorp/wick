@@ -62,7 +62,7 @@ pub enum WickConfig {
   LockdownConfiguration(LockdownConfiguration),
 }
 
-/// A string that must be bound to an import, resource, or type.
+/// An identifier/variable name bound to an import, resource, or type.
 #[allow(unused)]
 pub type BoundIdentifier = String;
 
@@ -916,6 +916,31 @@ pub struct WasmComponentConfiguration {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
+/// A component whose implementation is a WasmRS WebAssembly module.
+pub struct WasmComponentModel {
+  /// The path or OCI reference to the WebAssembly module
+
+  #[serde(rename = "ref")]
+  pub reference: crate::v1::helpers::LocationReference,
+  /// Volumes to expose to the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub volumes: Vec<ExposedVolume>,
+  /// Configuration necessary to provide when instantiating the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub with: Vec<Field>,
+  /// A list of operations implemented by the WebAssembly module.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub operations: Vec<OperationDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 /// Volumes to expose to a component and the internal paths they map to.
 pub struct ExposedVolume {
   /// The resource ID of the volume.
@@ -932,6 +957,9 @@ pub enum ComponentKind {
   /// A variant representing a [WasmComponentConfiguration] type.
   #[serde(rename = "wick/component/wasmrs@v1")]
   WasmComponentConfiguration(WasmComponentConfiguration),
+  /// A variant representing a [WasmComponentModel] type.
+  #[serde(rename = "wick/component/wasm@v1")]
+  WasmComponentModel(WasmComponentModel),
   /// A variant representing a [CompositeComponentConfiguration] type.
   #[serde(rename = "wick/component/composite@v1")]
   CompositeComponentConfiguration(CompositeComponentConfiguration),

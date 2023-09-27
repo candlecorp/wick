@@ -88,7 +88,7 @@ impl Operation for Op {
             .map(|map| Packet::encode("output", map))
         } else {
           let outlier = next.into_values().find(|x| !x.has_data()).unwrap();
-          Ok(outlier.set_port("output"))
+          Ok(outlier.to_port("output"))
         };
         let _ = tx.send_result(output);
       }
@@ -123,7 +123,6 @@ impl RenderConfiguration for Op {
 #[cfg(test)]
 mod test {
   use anyhow::Result;
-  use flow_component::panic_callback;
   use serde_json::json;
   use tokio_stream::StreamExt;
   use wick_packet::{packet_stream, Entity, InherentData};
@@ -141,7 +140,7 @@ mod test {
     let mut packets = op
       .handle(
         inv,
-        Context::new(config, &InherentData::unsafe_default(), panic_callback()),
+        Context::new(config, &InherentData::unsafe_default(), Default::default()),
       )
       .await?
       .collect::<Vec<_>>()

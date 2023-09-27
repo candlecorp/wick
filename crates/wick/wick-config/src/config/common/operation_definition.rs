@@ -1,6 +1,10 @@
 #![allow(missing_docs)] // delete when we move away from the `property` crate.
 
+use std::borrow::Cow;
+
 use wick_interface_types::Field;
+
+use crate::config::components::OperationConfig;
 
 #[derive(Debug, derive_builder::Builder, Clone, property::Property, serde::Serialize)]
 #[property(get(disable), set(private), mut(disable))]
@@ -24,4 +28,18 @@ pub struct OperationDefinition {
   #[builder(default)]
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub(crate) outputs: Vec<Field>,
+}
+
+impl OperationConfig for OperationDefinition {
+  fn name(&self) -> &str {
+    &self.name
+  }
+
+  fn inputs(&self) -> Cow<Vec<Field>> {
+    Cow::Borrowed(&self.inputs)
+  }
+
+  fn outputs(&self) -> Cow<Vec<Field>> {
+    Cow::Borrowed(&self.outputs)
+  }
 }

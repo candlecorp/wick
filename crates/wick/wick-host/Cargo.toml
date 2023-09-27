@@ -18,7 +18,7 @@ wick-trigger = { workspace = true }
 wick-trigger-cli = { workspace = true }
 wick-trigger-http = { workspace = true }
 wick-trigger-time = { workspace = true }
-wick-trigger-wasm-component = { workspace = true }
+wick-trigger-wasm-command = { workspace = true }
 wick-packet = { workspace = true }
 wick-interface-types = { workspace = true }
 wick-config = { workspace = true, features = ["config"] }
