@@ -5,6 +5,7 @@ use std::borrow::Cow;
 use wick_interface_types::{Field, OperationSignatures};
 
 use super::{ComponentConfig, OperationConfig};
+use crate::config::bindings::BoundIdentifier;
 use crate::config::{self, ErrorBehavior};
 use crate::utils::impl_from_for;
 
@@ -24,7 +25,7 @@ use crate::utils::impl_from_for;
 pub struct SqlComponentConfig {
   /// The TcpPort reference to listen on for connections.
   #[asset(skip)]
-  pub(crate) resource: String,
+  pub(crate) resource: BoundIdentifier,
 
   /// Whether or not to use TLS.
   #[asset(skip)]

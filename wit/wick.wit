@@ -1,0 +1,28 @@
+interface wick {
+  type json = string
+
+  record invocation {
+    target: operation,
+    payload: json,
+  }
+
+  record operation {
+    name: string,
+    component: string,
+  }
+
+  record response {
+    payload: json,
+  }
+
+  variant invocation-error {
+    internal,
+  }
+
+  request-sync: func(invocation: invocation) -> result<response, invocation-error>
+
+  request-async: func(invocation: invocation) -> u64
+  get-response: func(id: u64) -> result<response, invocation-error>
+  cancel-request: func(id: u64) -> ()
+}
+

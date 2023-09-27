@@ -14,7 +14,7 @@ use super::common::component_definition::ComponentDefinition;
 use super::common::package_definition::PackageConfig;
 use super::components::TypesComponent;
 use super::import_cache::{setup_cache, ImportCache};
-use super::{Binding, ImportDefinition};
+use super::{Binding, BoundIdentifier, ImportDefinition};
 use crate::config::common::resources::*;
 use crate::config::template_config::Renderable;
 use crate::error::{ManifestError, ReferenceError};
@@ -143,7 +143,7 @@ impl AppConfiguration {
 
   /// Get the configuration item a binding points to.
 
-  pub fn resolve_binding(&self, name: &str) -> Result<OwnedConfigurationItem> {
+  pub fn resolve_binding(&self, name: &BoundIdentifier) -> Result<OwnedConfigurationItem> {
     resolve(name, &self.import, &self.resources)
   }
 

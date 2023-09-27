@@ -6,7 +6,7 @@ use hyper::{Body, Request, Response, StatusCode};
 use tracing::Span;
 use url::Url;
 use uuid::Uuid;
-use wick_config::config::{ProxyRouterConfig, WickRouter};
+use wick_config::config::{BoundIdentifier, ProxyRouterConfig, WickRouter};
 use wick_runtime::Runtime;
 use wick_trigger::resources::Resource;
 use wick_trigger::Error;
@@ -72,7 +72,7 @@ impl RawRouter for ProxyRouter {
 
 pub(crate) fn register_proxy_router(
   index: usize,
-  resources: Arc<HashMap<String, Resource>>,
+  resources: Arc<HashMap<BoundIdentifier, Resource>>,
   router_config: &ProxyRouterConfig,
 ) -> Result<HttpRouter, Error> {
   trace!(index, "registering proxy router");

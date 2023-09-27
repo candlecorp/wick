@@ -13,6 +13,10 @@
     "type": "string"
   },
 
+  "v1.BoundIdentifier": {
+    "type": "string"
+  },
+
   "v1.LiquidJsonValue": {
     "oneOf": [
       { "type": "boolean" },
@@ -315,8 +319,36 @@
     "oneOf": [
       { "$ref": "#/$defs/v1.CliTrigger" },
       { "$ref": "#/$defs/v1.HttpTrigger" },
-      { "$ref": "#/$defs/v1.TimeTrigger" }
+      { "$ref": "#/$defs/v1.TimeTrigger" },
+      { "$ref": "#/$defs/v1.WasmCommandTrigger" }
     ]
+  },
+
+  "v1.WasmCommandTrigger": {
+    "$anchor": "v1.WasmCommandTrigger",
+    "additionalProperties": false,
+    "type": "object",
+    "properties": {
+      "kind": {
+        "type": "string",
+        "description": "The kind of the collection",
+        "enum": ["wick/trigger/wasm-command@v1"]
+      },
+      "reference": {
+        "description": "The component to execute",
+
+        "type": "string"
+      },
+      "volumes": {
+        "description": "Volumes to expose to the component.",
+
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/v1.ExposedVolume"
+        }
+      }
+    },
+    "required": ["reference"]
   },
 
   "v1.CliTrigger": {
@@ -465,7 +497,7 @@
       "resource": {
         "description": "The TcpPort resource to listen on for connections.",
 
-        "type": "string"
+        "$ref": "#/$defs/v1.BoundIdentifier"
       },
       "routers": {
         "description": "The router to handle incoming requests",
@@ -511,7 +543,7 @@
       "url": {
         "description": "The URL resource to proxy to.",
 
-        "type": "string"
+        "$ref": "#/$defs/v1.BoundIdentifier"
       },
       "strip_path": {
         "description": "Whether or not to strip the router&#x27;s path from the proxied request.",
@@ -1295,7 +1327,7 @@
       "resource": {
         "description": "The resource ID of the volume.",
 
-        "type": "string"
+        "$ref": "#/$defs/v1.BoundIdentifier"
       },
       "path": {
         "description": "The path to map it to in the component.",
@@ -1374,7 +1406,7 @@
       "id": {
         "description": "The id of the referenced component.",
 
-        "type": "string"
+        "$ref": "#/$defs/v1.BoundIdentifier"
       }
     },
     "required": ["id"]
@@ -2298,7 +2330,7 @@
       "resource": {
         "description": "The connect string URL resource for the database.",
 
-        "type": "string"
+        "$ref": "#/$defs/v1.BoundIdentifier"
       },
       "tls": {
         "description": "Whether or not to use TLS.",
@@ -2462,7 +2494,7 @@
       "resource": {
         "description": "The URL base to use.",
 
-        "type": "string"
+        "$ref": "#/$defs/v1.BoundIdentifier"
       },
       "codec": {
         "description": "The codec to use when encoding/decoding data. Can be overridden by individual operations.",

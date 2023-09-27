@@ -1,0 +1,10 @@
+[package]
+name = "command"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { version = "1.0" }
+
+# Adding [workspace] to a child Cargo.toml file will exclude it from a parent workspace
+[workspace]

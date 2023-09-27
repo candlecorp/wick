@@ -8,7 +8,14 @@ use hyper::service::Service;
 use hyper::{Body, Request, Response, StatusCode};
 use tracing::{Instrument, Span};
 use uuid::Uuid;
-use wick_config::config::{AppConfiguration, ComponentOperationExpression, HttpMethod, RestRouterConfig, WickRouter};
+use wick_config::config::{
+  AppConfiguration,
+  BoundIdentifier,
+  ComponentOperationExpression,
+  HttpMethod,
+  RestRouterConfig,
+  WickRouter,
+};
 use wick_packet::{Entity, InherentData, Invocation, Packet};
 mod error;
 mod openapi;
@@ -286,7 +293,7 @@ mod test {
 
       let trigger = Http::default();
       let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
-      let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
+      let resources = Arc::new([("http".into(), resource)].iter().cloned().collect());
       let trigger_config = app_config.triggers()[0].clone();
       trigger
         .run(
@@ -319,7 +326,7 @@ mod test {
 
 pub(crate) fn register_rest_router(
   index: usize,
-  _resources: Arc<HashMap<String, Resource>>,
+  _resources: Arc<HashMap<BoundIdentifier, Resource>>,
   app_config: &AppConfiguration,
   router_config: &RestRouterConfig,
 ) -> Result<HttpRouter, HttpError> {

@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use tracing::{debug, Span};
-use wick_config::config::AppConfiguration;
+use wick_config::config::{AppConfiguration, BoundIdentifier};
 use wick_config::WickConfiguration;
 use wick_trigger::resources::Resource;
 
@@ -15,11 +15,11 @@ async fn load_app_yaml(path: &str) -> anyhow::Result<AppConfiguration> {
   Ok(config.finish()?.try_app_config()?)
 }
 
-fn init_resources(config: &AppConfiguration) -> Result<HashMap<String, Resource>> {
+fn init_resources(config: &AppConfiguration) -> Result<HashMap<BoundIdentifier, Resource>> {
   let mut resources = HashMap::new();
   for res in config.resources() {
     let resource = Resource::new(res.kind().clone())?;
-    resources.insert(res.id().to_owned(), resource);
+    resources.insert(res.binding().clone(), resource);
   }
   Ok(resources)
 }
@@ -37,20 +37,13 @@ async fn basic_cli() -> Result<()> {
   let config = trigger_config.clone();
   let name = manifest.name().to_owned();
   let app_config = manifest.clone();
+  let trigger = wick_host::triggers::load_trigger(&trigger_config.kind())?;
 
-  match wick_host::triggers::get_trigger_loader(&trigger_config.kind()) {
-    Some(loader) => {
-      let loader = loader()?;
-      let inner = loader.clone();
-      let resources = resources.clone();
-      inner
-        .run(name, rt, app_config, config, resources.clone(), Span::current())
-        .await?;
-    }
-    _ => {
-      panic!("could not find trigger {}", &trigger_config.kind());
-    }
-  };
+  let inner = trigger.clone();
+  let resources = resources.clone();
+  inner
+    .run(name, rt, app_config, config, resources.clone(), Span::current())
+    .await?;
   Ok(())
 }
 
@@ -71,23 +64,16 @@ mod integration_test {
     let config = trigger_config.clone();
     let name = manifest.name().to_owned();
     let app_config = manifest.clone();
+    let trigger = wick_host::triggers::load_trigger(&trigger_config.kind())?;
 
-    let task = match wick_host::triggers::get_trigger_loader(&trigger_config.kind()) {
-      Some(loader) => {
-        let loader = loader()?;
-        let inner = loader.clone();
-        let resources = resources.clone();
-        tokio::spawn(async move {
-          let _ = inner
-            .run(name, rt, app_config, config, resources.clone(), Span::current())
-            .await;
-          inner.wait_for_done().await;
-        })
-      }
-      _ => {
-        panic!("could not find trigger {}", &trigger_config.kind());
-      }
-    };
+    let inner = trigger.clone();
+    let resources = resources.clone();
+    let task = tokio::spawn(async move {
+      let _ = inner
+        .run(name, rt, app_config, config, resources.clone(), Span::current())
+        .await;
+      inner.wait_for_done().await;
+    });
     let fut = tokio::time::timeout(Duration::from_millis(10000), task);
     println!("waiting for trigger to finish...");
     let _ = fut.await?;

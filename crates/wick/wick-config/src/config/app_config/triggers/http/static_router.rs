@@ -6,6 +6,7 @@ use wick_packet::RuntimeConfig;
 
 use super::index_to_router_id;
 use super::middleware::expand_for_middleware_components;
+use crate::config::bindings::BoundIdentifier;
 use crate::config::template_config::Renderable;
 use crate::config::{self, Binding, ImportDefinition};
 use crate::error::ManifestError;
@@ -25,7 +26,7 @@ pub struct StaticRouterConfig {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) middleware: Option<super::middleware::Middleware>,
   #[asset(skip)]
-  pub(crate) volume: String,
+  pub(crate) volume: BoundIdentifier,
   #[asset(skip)]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) fallback: Option<String>,

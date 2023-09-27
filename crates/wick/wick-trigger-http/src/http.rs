@@ -23,7 +23,7 @@ use structured_output::StructuredOutput;
 use tokio::task::JoinHandle;
 use tracing::Span;
 use uuid::Uuid;
-use wick_config::config::{self, AppConfiguration, TriggerDefinition};
+use wick_config::config::{self, AppConfiguration, BoundIdentifier, TriggerDefinition};
 use wick_runtime::Runtime;
 use wick_trigger::resources::{Resource, ResourceKind};
 use wick_trigger::{Error, ErrorKind, Trigger};
@@ -118,7 +118,7 @@ impl Trigger for Http {
     runtime: Runtime,
     app_config: AppConfiguration,
     config: TriggerDefinition,
-    resources: Arc<HashMap<String, Resource>>,
+    resources: Arc<HashMap<BoundIdentifier, Resource>>,
     span: Span,
   ) -> Result<StructuredOutput, Error> {
     span.in_scope(|| debug!(kind = "http", "trigger:run"));
@@ -128,7 +128,7 @@ impl Trigger for Http {
     let resource_name = config.resource();
     let resource = resources
       .get(resource_name)
-      .ok_or_else(|| Error::new_context("http", ErrorKind::ResourceNotFound(resource_name.to_owned())))?;
+      .ok_or_else(|| Error::new_context("http", ErrorKind::ResourceNotFound(resource_name.clone())))?;
     let socket = match resource {
       Resource::TcpPort(s) => *s,
       _ => {
@@ -255,7 +255,7 @@ mod test {
 
       let trigger = Http::default();
       let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
-      let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
+      let resources = Arc::new([("http".into(), resource)].iter().cloned().collect());
       let trigger_config = app_config.triggers()[0].clone();
       trigger
         .run(
@@ -291,7 +291,7 @@ mod test {
 
       let trigger = Http::default();
       let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
-      let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
+      let resources = Arc::new([("http".into(), resource)].iter().cloned().collect());
       let trigger_config = app_config.triggers()[0].clone();
       trigger
         .run(
@@ -351,7 +351,7 @@ mod test {
 
       let trigger = Http::default();
       let resource = Resource::new(app_config.resources().get(0).as_ref().unwrap().kind().clone())?;
-      let resources = Arc::new([("http".to_owned(), resource)].iter().cloned().collect());
+      let resources = Arc::new([("http".into(), resource)].iter().cloned().collect());
       let trigger_config = app_config.triggers()[0].clone();
       trigger
         .run(

@@ -6,7 +6,7 @@ use futures::pin_mut;
 use structured_output::StructuredOutput;
 use tokio::task::{JoinError, JoinHandle};
 use tracing::Span;
-use wick_config::config::AppConfiguration;
+use wick_config::config::{AppConfiguration, BoundIdentifier};
 use wick_config::WickConfiguration;
 use wick_interface_types::ComponentSignature;
 use wick_packet::{Entity, InherentData, Invocation, PacketStream, RuntimeConfig};
@@ -15,8 +15,8 @@ use wick_runtime::Runtime;
 use wick_trigger::resources::Resource;
 use wick_trigger::{build_trigger_runtime, Trigger};
 
-use crate::triggers::get_trigger_loader;
-use crate::{Error, Result};
+use crate::triggers::load_trigger;
+use crate::Result;
 
 #[derive(derive_builder::Builder)]
 #[builder(derive(Debug), setter(into))]
@@ -53,11 +53,11 @@ impl AppHost {
     self.span.in_scope(|| debug!("host stopping"));
   }
 
-  fn init_resources(&mut self) -> Result<HashMap<String, Resource>> {
+  fn init_resources(&mut self) -> Result<HashMap<BoundIdentifier, Resource>> {
     let mut resources = HashMap::new();
     for def in self.manifest.resources() {
       let resource = Resource::new(def.kind().clone())?;
-      resources.insert(def.id().to_owned(), resource);
+      resources.insert(def.binding().clone(), resource);
     }
     Ok(resources)
   }
@@ -70,7 +70,7 @@ impl AppHost {
     Ok(rt)
   }
 
-  fn start_triggers(&mut self, resources: HashMap<String, Resource>) -> Result<()> {
+  fn start_triggers(&mut self, resources: HashMap<BoundIdentifier, Resource>) -> Result<()> {
     assert!(self.triggers.is_none(), "triggers already started");
 
     let resources = Arc::new(resources);
@@ -81,39 +81,27 @@ impl AppHost {
       let config = trigger_config.clone();
       let name = self.manifest.name().to_owned();
       let app_config = self.manifest.clone();
+      let trigger = load_trigger(&trigger_config.kind())?;
 
-      match get_trigger_loader(&trigger_config.kind()) {
-        Some(loader) => {
-          let loader = loader()?;
-          let inner = loader.clone();
-          let resources = resources.clone();
-          let span = info_span!("trigger", kind=%trigger_config.kind());
-          span.follows_from(&self.span);
-          let rt = self.runtime.clone();
+      let inner = trigger.clone();
+      let resources = resources.clone();
+      let span = info_span!("trigger", kind=%trigger_config.kind());
+      span.follows_from(&self.span);
+      let rt = self.runtime.clone();
 
-          let task = tokio::spawn(async move {
-            span.in_scope(|| trace!("initializing trigger"));
-            match inner.run(name, rt, app_config, config, resources, span.clone()).await {
-              Ok(_output) => {
-                span.in_scope(|| debug!("trigger initialized"));
-              }
-              Err(e) => {
-                span.in_scope(|| error!("trigger failed to start: {}", e));
-              }
-            }
-            Ok(())
-          });
-          triggers.add((loader, task));
+      let task = tokio::spawn(async move {
+        span.in_scope(|| trace!("initializing trigger"));
+        match inner.run(name, rt, app_config, config, resources, span.clone()).await {
+          Ok(_output) => {
+            span.in_scope(|| debug!("trigger initialized"));
+          }
+          Err(e) => {
+            span.in_scope(|| error!("trigger failed to start: {}", e));
+          }
         }
-        _ => {
-          return Err(Error::RuntimeError(Box::new(
-            wick_runtime::error::RuntimeError::InitializationFailed(format!(
-              "could not find trigger {}",
-              &trigger_config.kind()
-            )),
-          )))
-        }
-      };
+        Ok(())
+      });
+      triggers.add((trigger, task));
     }
     self.triggers.replace(triggers);
 

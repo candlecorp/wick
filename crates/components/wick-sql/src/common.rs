@@ -3,7 +3,7 @@ pub(crate) mod sql_wrapper;
 use futures::stream::BoxStream;
 use serde_json::Value;
 use url::Url;
-use wick_config::config::{ErrorBehavior, Metadata, UrlResource};
+use wick_config::config::{BoundIdentifier, ErrorBehavior, Metadata, UrlResource};
 use wick_config::Resolver;
 use wick_interface_types::{component, ComponentSignature, Field, OperationSignature, Type};
 use wick_packet::{Packet, TypeWrapper};
@@ -35,7 +35,7 @@ pub(crate) fn gen_signature(
   Ok(sig)
 }
 
-pub(crate) fn convert_url_resource(resolver: &Resolver, id: &str) -> Result<Url> {
+pub(crate) fn convert_url_resource(resolver: &Resolver, id: &BoundIdentifier) -> Result<Url> {
   let addr = resolver(id).and_then(|r| r.try_resource())?;
 
   let resource: UrlResource = addr.try_into()?;

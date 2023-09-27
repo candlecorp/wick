@@ -11,6 +11,22 @@ readme = "README.md"
 [features]
 
 [dependencies]
+# Wick
 wick-runtime = { workspace = true }
 wick-config = { workspace = true }
 wick-packet = { workspace = true }
+wick-trigger = { workspace = true }
+
+# Wasmtime
+wasmtime = { workspace = true, features = ["component-model", "async"] }
+wasmtime-wasi = { workspace = true, features = ["tokio"] }
+
+tokio = { workspace = true, features = ["sync"] }
+
+# Misc
+thiserror = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+serde_json = { workspace = true }
+structured-output = { workspace = true }
+parking_lot = { workspace = true }

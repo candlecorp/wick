@@ -107,7 +107,7 @@ impl std::fmt::Display for AuditedResourceBinding {
 impl From<&Binding<ResourceDefinition>> for AuditedResourceBinding {
   fn from(value: &Binding<ResourceDefinition>) -> Self {
     Self {
-      name: value.id.clone(),
+      name: value.id().to_owned(),
       resource: AuditedResource::from(&value.kind),
     }
   }

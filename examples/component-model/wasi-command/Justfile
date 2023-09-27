@@ -1,0 +1,7 @@
+crate_name := `cargo read-manifest | wick query '.name'`
+target := "wasm32-wasi"
+
+build:
+  cargo build --release --target {{target}}
+  mkdir -p build
+  wasm-tools component new target/{{target}}/release/{{crate_name}}.wasm -o build/{{crate_name}}.wasm --adapt ../adapters/command/wasi_snapshot_preview1.wasm

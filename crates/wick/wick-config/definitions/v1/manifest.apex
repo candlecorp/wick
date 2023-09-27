@@ -8,6 +8,9 @@ union WickConfig = AppConfiguration | ComponentConfiguration | TypesConfiguratio
 "A reference to a location on disk, URL, or registry."
 alias LocationReference = string @skip
 
+"A string that must be bound to an import, resource, or type."
+alias BoundIdentifier = string
+
 """
 A liquid JSON value. Liquid-JSON is a way of using Liquid templates in structured JSON-like data.
 
@@ -128,7 +131,16 @@ type Url @tagged("wick/resource/url@v1") {
 }
 
 "Triggers that operate off events and translate environment data to components. Triggers are the way that Wick handles standard use cases and translates them into the component world."
-union TriggerDefinition = CliTrigger | HttpTrigger | TimeTrigger
+union TriggerDefinition = CliTrigger | HttpTrigger | TimeTrigger | WasmCommandTrigger
+
+"A trigger that runs when an application is called via the command line."
+type WasmCommandTrigger @tagged("wick/trigger/wasm-command@v1") {
+  "The component to execute"
+  reference: LocationReference @required
+
+  "Volumes to expose to the component."
+  volumes: [ExposedVolume]
+}
 
 "A trigger that runs when an application is called via the command line."
 type CliTrigger @tagged("wick/trigger/cli@v1") {
@@ -182,7 +194,7 @@ type ComponentOperationExpression @shortform  {
 "An HTTP server that delegates to HTTP routers on every request."
 type HttpTrigger @tagged("wick/trigger/http@v1") {
   "The TcpPort resource to listen on for connections."
-  resource: string @required
+  resource: BoundIdentifier @required
 
   "The router to handle incoming requests"
   routers: [HttpRouter]
@@ -200,7 +212,7 @@ type ProxyRouter @tagged("wick/router/proxy@v1") {
   middleware: Middleware?
 
   "The URL resource to proxy to."
-  url: string @required
+  url: BoundIdentifier @required
 
   "Whether or not to strip the router's path from the proxied request."
   strip_path: bool
@@ -498,7 +510,7 @@ type WasmComponentConfiguration @tagged("wick/component/wasmrs@v1") {
 "Volumes to expose to a component and the internal paths they map to."
 type ExposedVolume {
   "The resource ID of the volume."
-  resource: string @required
+  resource: BoundIdentifier @required
   "The path to map it to in the component."
   path: string @required
 }
@@ -526,7 +538,7 @@ type TypesComponent @tagged("wick/component/types@v1") {
 "A reference to a component in the application's scope."
 type ComponentReference  @tagged("wick/component/reference@v1") {
   "The id of the referenced component."
-  id: string  @required
+  id: BoundIdentifier  @required
 }
 
 "Host configuration options."
@@ -892,7 +904,7 @@ enum PacketFlag {
 "A dynamic component whose operations are SQL queries to a database."
 type SqlComponent @tagged("wick/component/sql@v1") {
   "The connect string URL resource for the database."
-  resource: string @required
+  resource: BoundIdentifier @required
 
   "Whether or not to use TLS."
   tls: bool
@@ -967,7 +979,7 @@ enum ErrorBehavior {
 "A component whose operations are HTTP requests."
 type HttpClientComponent @tagged("wick/component/http@v1") {
   "The URL base to use."
-  resource: string @required
+  resource: BoundIdentifier @required
 
   "The codec to use when encoding/decoding data. Can be overridden by individual operations."
   codec: Codec?

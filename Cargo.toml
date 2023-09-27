@@ -118,6 +118,7 @@ wick-trigger = { path = "./crates/wick/wick-trigger", version = "0.1.0" }
 wick-trigger-cli = { path = "./crates/wick/wick-trigger-cli", version = "0.1.0" }
 wick-trigger-http = { path = "./crates/wick/wick-trigger-http", version = "0.1.0" }
 wick-trigger-time = { path = "./crates/wick/wick-trigger-time", version = "0.1.0" }
+wick-trigger-wasm-component = { path = "./crates/wick/wick-trigger-wasm-component", version = "0.1.0" }
 wick-wascap = { path = "./crates/wick/wick-wascap", version = "0.2.0" }
 wick-xdg = { path = "./crates/wick/wick-xdg", version = "0.3.0" }
 #
@@ -140,15 +141,15 @@ wick-interface-cli = { path = "./crates/interfaces/wick-interface-cli", version 
 wick-sql = { path = "./crates/components/wick-sql", version = "0.2.0" }
 wick-http-client = { path = "./crates/components/wick-http-client", version = "0.2.0" }
 # wasmtime (must align with version in wasmrs)
-wasmtime = { version = "11.0", default-features = false, features = [
+wasmtime = { version = "13.0", default-features = false, features = [
   "cache",
   "jitdump",
   "parallel-compilation",
   "cranelift",
   "vtune",
 ] }
-wasmtime-wasi = { version = "11.0", features = ["sync"] }
-wasi-common = { version = "11.0" }
+wasmtime-wasi = { version = "13.0", features = ["sync"] }
+wasi-common = { version = "13.0" }
 # wasmrs
 wasmrs = { version = "0.15.0" }
 wasmrs-codec = { version = "0.15.0" }

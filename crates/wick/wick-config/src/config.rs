@@ -19,6 +19,7 @@ use std::path::{Path, PathBuf};
 
 pub use app_config::*;
 use asset_container::Asset;
+pub use bindings::BoundIdentifier;
 pub use common::*;
 pub use component_config::*;
 pub use configuration_tree::*;

@@ -31,10 +31,13 @@ wick-interface-cli = { workspace = true }
 #
 wick-sql = { workspace = true }
 wick-http-client = { workspace = true }
+
 #
 # Wasmtime
 #
-wasmtime = { workspace = true }
+wasmtime = { workspace = true, features = ["component-model", "async"] }
+wasmtime-wasi = { workspace = true, features = ["tokio"] }
+
 #
 # The rest
 #

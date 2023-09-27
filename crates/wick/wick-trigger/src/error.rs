@@ -1,3 +1,5 @@
+use wick_config::config::BoundIdentifier;
+
 use crate::resources::ResourceKind;
 
 #[derive(thiserror::Error, Debug)]
@@ -43,7 +45,7 @@ pub enum ErrorKind {
   Trigger(Box<dyn std::error::Error + Send + Sync>),
 
   #[error("could not find resource by ID '{0}'")]
-  ResourceNotFound(String),
+  ResourceNotFound(BoundIdentifier),
 
   #[error("expected {0} resource, got a {1}")]
   InvalidResourceType(ResourceKind, ResourceKind),

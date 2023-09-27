@@ -62,6 +62,10 @@ pub enum WickConfig {
   LockdownConfiguration(LockdownConfiguration),
 }
 
+/// A string that must be bound to an import, resource, or type.
+#[allow(unused)]
+pub type BoundIdentifier = String;
+
 /// A liquid template. Liquid-JSON is a way of using Liquid templates in structured JSON-like data. See liquid's [homepage](https://shopify.github.io/liquid/) for more information.
 #[allow(unused)]
 pub type LiquidTemplate = String;
@@ -263,6 +267,22 @@ pub enum TriggerDefinition {
   /// A variant representing a [TimeTrigger] type.
   #[serde(rename = "wick/trigger/time@v1")]
   TimeTrigger(TimeTrigger),
+  /// A variant representing a [WasmCommandTrigger] type.
+  #[serde(rename = "wick/trigger/wasm-command@v1")]
+  WasmCommandTrigger(WasmCommandTrigger),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+/// A trigger that runs when an application is called via the command line.
+pub struct WasmCommandTrigger {
+  /// The component to execute
+  pub reference: crate::v1::helpers::LocationReference,
+  /// Volumes to expose to the component.
+
+  #[serde(default)]
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub volumes: Vec<ExposedVolume>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -347,7 +367,7 @@ pub struct ComponentOperationExpression {
 /// An HTTP server that delegates to HTTP routers on every request.
 pub struct HttpTrigger {
   /// The TcpPort resource to listen on for connections.
-  pub resource: String,
+  pub resource: BoundIdentifier,
   /// The router to handle incoming requests
 
   #[serde(default)]
@@ -386,7 +406,7 @@ pub struct ProxyRouter {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub middleware: Option<Middleware>,
   /// The URL resource to proxy to.
-  pub url: String,
+  pub url: BoundIdentifier,
   /// Whether or not to strip the router&#x27;s path from the proxied request.
 
   #[serde(default)]
@@ -899,7 +919,7 @@ pub struct WasmComponentConfiguration {
 /// Volumes to expose to a component and the internal paths they map to.
 pub struct ExposedVolume {
   /// The resource ID of the volume.
-  pub resource: String,
+  pub resource: BoundIdentifier,
   /// The path to map it to in the component.
   pub path: String,
 }
@@ -984,7 +1004,7 @@ pub struct TypesComponent {
 /// A reference to a component in the application's scope.
 pub struct ComponentReference {
   /// The id of the referenced component.
-  pub id: String,
+  pub id: BoundIdentifier,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -1769,7 +1789,7 @@ impl FromPrimitive for PacketFlag {
 /// A dynamic component whose operations are SQL queries to a database.
 pub struct SqlComponent {
   /// The connect string URL resource for the database.
-  pub resource: String,
+  pub resource: BoundIdentifier,
   /// Whether or not to use TLS.
 
   #[serde(default)]
@@ -1915,7 +1935,7 @@ impl FromPrimitive for ErrorBehavior {
 /// A component whose operations are HTTP requests.
 pub struct HttpClientComponent {
   /// The URL base to use.
-  pub resource: String,
+  pub resource: BoundIdentifier,
   /// The codec to use when encoding/decoding data. Can be overridden by individual operations.
 
   #[serde(default)]

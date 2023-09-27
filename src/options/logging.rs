@@ -97,7 +97,7 @@ fn parse_logstr(default_level: LogLevel, default_filter: &[TargetLevel], logstr:
 impl From<&LoggingOptions> for wick_logger::LoggingOptions {
   fn from(value: &LoggingOptions) -> Self {
     let global_level = if value.quiet {
-      wick_logger::LogLevel::Quiet
+      wick_logger::LogLevel::Error
     } else if value.trace {
       wick_logger::LogLevel::Trace
     } else if value.debug {

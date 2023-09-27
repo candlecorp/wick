@@ -244,7 +244,7 @@ impl RuntimeBuilder {
   pub async fn build(self, seed: Option<Seed>) -> Result<Runtime> {
     let span = self.span.unwrap_or_else(tracing::Span::current);
 
-    let definition = self.manifest.ok_or(RuntimeError::MissingComponentDefinition)?;
+    let definition = self.manifest.unwrap_or_default();
     Runtime::new(
       seed.unwrap_or_else(new_seed),
       RuntimeInit {

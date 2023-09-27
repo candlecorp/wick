@@ -13,7 +13,7 @@ use serde_json::json;
 use structured_output::StructuredOutput;
 use tokio::time::Duration;
 use tracing::Span;
-use wick_config::config::{self, AppConfiguration, TimeTriggerConfig, TriggerDefinition};
+use wick_config::config::{self, AppConfiguration, BoundIdentifier, TimeTriggerConfig, TriggerDefinition};
 use wick_packet::{Entity, InherentData, Invocation, Packet};
 use wick_runtime::Runtime;
 use wick_trigger::resources::Resource;
@@ -130,7 +130,7 @@ impl Trigger for Time {
     runtime: Runtime,
     _app_config: AppConfiguration,
     config: TriggerDefinition,
-    _resources: Arc<HashMap<String, Resource>>,
+    _resources: Arc<HashMap<BoundIdentifier, Resource>>,
     _span: Span,
   ) -> Result<StructuredOutput, Error> {
     let TriggerDefinition::Time(config) = config else {

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use structured_output::StructuredOutput;
 use tracing::Span;
-use wick_config::config::{AppConfiguration, TriggerDefinition};
+use wick_config::config::{AppConfiguration, BoundIdentifier, TriggerDefinition};
 use wick_runtime::{Runtime, RuntimeBuilder, RuntimeConstraint};
 
 use crate::error::Error;
@@ -36,7 +36,7 @@ pub trait Trigger {
     runtime: Runtime,
     app_config: AppConfiguration,
     config: TriggerDefinition,
-    resources: Arc<HashMap<String, Resource>>,
+    resources: Arc<HashMap<BoundIdentifier, Resource>>,
     span: Span,
   ) -> Result<StructuredOutput, Error>;
 

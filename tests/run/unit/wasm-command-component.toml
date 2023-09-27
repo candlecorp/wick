@@ -1,0 +1,6 @@
+#:schema https://raw.githubusercontent.com/assert-rs/trycmd/main/schema.json
+bin.name = "wick"
+args = ["run", "-q", "examples/cli/wasm-command-component.wick"]
+stdout = """
+Hello world!
+"""

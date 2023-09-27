@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use parking_lot::RwLock;
 
-use crate::config::{Binding, ImportDefinition, OwnedConfigurationItem, ResourceDefinition};
+use crate::config::{Binding, BoundIdentifier, ImportDefinition, OwnedConfigurationItem, ResourceDefinition};
 use crate::{Error, Resolver, Result};
 
 pub(crate) type RwOption<T> = Arc<RwLock<Option<T>>>;
@@ -15,12 +15,17 @@ pub(crate) fn make_resolver(
 }
 
 pub(crate) fn resolve(
-  name: &str,
+  name: &BoundIdentifier,
   imports: &[Binding<ImportDefinition>],
   resources: &[Binding<ResourceDefinition>],
 ) -> Result<OwnedConfigurationItem> {
-  tracing::trace!("resolving {}, imports: {:?}, resources: {:?}", name, imports, resources);
-  if let Some(import) = imports.iter().find(|i| i.id == name) {
+  tracing::trace!(
+    "resolving {}, imports: {:?}, resources: {:?}",
+    name.id(),
+    imports,
+    resources
+  );
+  if let Some(import) = imports.iter().find(|i| i.binding() == name) {
     match &import.kind {
       ImportDefinition::Component(component) => {
         let component = component.clone();
@@ -30,12 +35,12 @@ pub(crate) fn resolve(
       ImportDefinition::Types(_) => todo!(),
     }
   }
-  if let Some(resource) = resources.iter().find(|i| i.id == name) {
+  if let Some(resource) = resources.iter().find(|i| i.binding() == name) {
     let resource = resource.kind.clone();
     return Ok(OwnedConfigurationItem::Resource(resource));
   }
   Err(Error::IdNotFound {
-    id: name.to_owned(),
+    id: name.id().to_owned(),
     ids: [
       imports.iter().map(|i| i.id().to_owned()).collect::<Vec<_>>(),
       resources.iter().map(|i| i.id().to_owned()).collect::<Vec<_>>(),
