@@ -1036,6 +1036,9 @@ enum Codec {
 
   "Raw text"
   Text = 3 as "text",
+
+  "Eventstream"
+  EventStream = 4 as "event-stream",
 }
 
 "Supported HTTP methods"

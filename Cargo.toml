@@ -185,6 +185,9 @@ dyn-clone = { version = "1.0", default-features = false }
 either = { version = "1.9.0", default-features = false }
 env_logger = { version = "0.10", default-features = false }
 escargot = { version = "0.5", default-features = false }
+eventsource-stream = { version = "0.2", default-features = false, features = [
+  "std",
+] }
 futures = { version = "0.3", default-features = false, features = ["std"] }
 getrandom = { version = "0.2", default-features = false }
 getset = { version = "0.1", default-features = false }

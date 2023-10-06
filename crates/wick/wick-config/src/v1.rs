@@ -2013,6 +2013,8 @@ pub enum Codec {
   FormData = 2,
   /// Raw text
   Text = 3,
+  /// Eventstream
+  EventStream = 4,
 }
 
 impl Default for Codec {
@@ -2028,6 +2030,7 @@ impl FromPrimitive for Codec {
       1 => Self::Raw,
       2 => Self::FormData,
       3 => Self::Text,
+      4 => Self::EventStream,
       _ => {
         return None;
       }
@@ -2040,6 +2043,7 @@ impl FromPrimitive for Codec {
       1 => Self::Raw,
       2 => Self::FormData,
       3 => Self::Text,
+      4 => Self::EventStream,
       _ => {
         return None;
       }

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::anyhow;
+use eventsource_stream::Eventsource;
 use flow_component::{BoxFuture, Component, ComponentError, RuntimeCallback};
 use futures::{Stream, StreamExt, TryStreamExt};
 use reqwest::header::CONTENT_TYPE;
@@ -281,6 +282,9 @@ async fn handle(
         }
         Codec::FormData => request_builder.form(&body),
         Codec::Text => request_builder.body(body.to_string()),
+        Codec::EventStream => {
+          unimplemented!("Event stream is not a valid client content-type")
+        }
       }
     } else {
       request_builder
@@ -322,9 +326,11 @@ async fn handle(
       match value {
         "application/json" => Codec::Json,
         "application/x-www-form-urlencoded" => Codec::FormData,
+        "text/event-stream" => Codec::EventStream,
         _ => Codec::Raw,
       }
     });
+
     let (our_response, body_stream) = match crate::conversions::to_wick_response(response) {
       Ok(r) => r,
       Err(e) => {
@@ -349,6 +355,18 @@ async fn handle(
   Ok(())
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+struct WickEvent {
+  /// The event name if given
+  event: String,
+  /// The event data
+  data: String,
+  /// The event id if given
+  id: String,
+  /// Retry duration if given
+  retry: Option<tokio::time::Duration>,
+}
+
 fn output_task(
   span: Span,
   codec: Codec,
@@ -357,6 +375,27 @@ fn output_task(
 ) -> BoxFuture<'static, ()> {
   let task = async move {
     match codec {
+      Codec::EventStream => {
+        let mut stream = body_stream.map(Into::into).eventsource();
+        while let Some(event) = stream.next().await {
+          match event {
+            Ok(event) => {
+              let wick_event = WickEvent {
+                event: event.event,
+                data: event.data,
+                id: event.id,
+                retry: event.retry,
+              };
+              span.in_scope(|| debug!("{} {}", format!("{:?}", wick_event), "http:client:response_body"));
+              let _ = tx.send(Packet::encode("body", wick_event));
+            }
+            Err(e) => {
+              let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
+              return;
+            }
+          }
+        }
+      }
       Codec::Json => {
         let bytes: Vec<Base64Bytes> = match body_stream.try_collect().await {
           Ok(r) => r,
@@ -651,6 +690,44 @@ mod test {
             &json!("application/json")
           );
           assert_eq!(response_headers.get("X-Custom-Header").unwrap(), &json!("SENTINEL"));
+        } else {
+          let response: HttpResponse = packet.decode().unwrap();
+          assert_eq!(response.version, HttpVersion::Http11);
+        }
+      }
+
+      Ok(())
+    }
+
+    #[test_logger::test(tokio::test)]
+    async fn test_event_stream() -> Result<()> {
+      let (app_config, component_config) = get_config();
+      let comp = get_component(&app_config, component_config);
+
+      // Simulate an event stream
+      let event_stream = "data: {\"id\":\"1\",\"object\":\"event1\"}\n\n\
+         data: {\"id\":\"2\",\"object\":\"event2\"}\n\n";
+      let packets = packet_stream!(("input", event_stream));
+
+      // Replace "event_stream_op" with the actual operation id for event stream
+      let invocation = Invocation::test(
+        "test_event_stream",
+        Entity::local("event_stream_op"),
+        packets,
+        Default::default(),
+      )?;
+      let stream = comp
+        .handle(invocation, Default::default(), panic_callback())
+        .await?
+        .filter(|p| futures::future::ready(p.as_ref().map_or(false, |p| p.has_data())))
+        .collect::<Vec<_>>()
+        .await;
+
+      let packets = stream.into_iter().collect::<Result<Vec<_>, _>>()?;
+      for packet in packets {
+        if packet.port() == "body" {
+          let response: WickEvent = packet.decode().unwrap();
+          assert!(response.id == "1" && response.event == "event1" || response.id == "2" && response.event == "event2");
         } else {
           let response: HttpResponse = packet.decode().unwrap();
           assert_eq!(response.version, HttpVersion::Http11);

@@ -20,6 +20,8 @@ pub enum Codec {
   FormData = 2,
   /// Raw Text Data
   Text = 3,
+  /// Event Stream Data
+  EventStream = 4,
 }
 
 impl Default for Codec {
@@ -35,6 +37,7 @@ impl std::fmt::Display for Codec {
       Codec::Raw => write!(f, "raw"),
       Codec::FormData => write!(f, "form-data"),
       Codec::Text => write!(f, "text"),
+      Codec::EventStream => write!(f, "event-stream"),
     }
   }
 }

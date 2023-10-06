@@ -2980,7 +2980,8 @@
         "Json",
         "Raw",
         "FormData",
-        "Text"
+        "Text",
+        "EventStream"
       ]
     },
     "v1.HttpMethod": {

@@ -20,4 +20,7 @@ pub enum Error {
 
   #[error("Proxy and baseurl must not be the same: {0}")]
   ProxyLoop(Url),
+
+  #[error("Conversion error: {0}")]
+  Conversion(String),
 }

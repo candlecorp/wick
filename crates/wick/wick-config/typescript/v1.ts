@@ -4583,6 +4583,10 @@ export class HttpClientComponent implements HasKind {
       _resource : string ;
  // The codec to use when encoding/decoding data. Can be overridden by individual operations. 
       _codec : Codec| undefined =  undefined;
+ // The proxy HTTP / HTTPS to use. 
+      _proxy : Proxy| undefined =  undefined;
+ // The timeout in seconds 
+      _timeout : number| undefined =  undefined;
  // Configuration necessary to provide when instantiating the component. 
       _with : Field[] =  [];
  // A list of operations to expose on this component. 
@@ -4610,6 +4614,22 @@ codec(value: Codec| undefined) : HttpClientComponent {
       return this._codec;
 
     }
+proxy(value: Proxy| undefined) : HttpClientComponent {
+      this._proxy = value;
+      return this;
+    }
+    getProxy() : Proxy| undefined {
+      return this._proxy;
+
+    }
+timeout(value: number| undefined) : HttpClientComponent {
+      this._timeout = value;
+      return this;
+    }
+    getTimeout() : number| undefined {
+      return this._timeout;
+
+    }
 with(value: Field[]) : HttpClientComponent {
       this._with = value;
       return this;
@@ -4634,7 +4654,61 @@ operations(value: HttpClientOperationDefinition[]) : HttpClientComponent {
     toJSON() : any {
       return {
         kind : "wick/component/http@v1",
-resource: this._resource,codec: this._codec,with: this._with,operations: this._operations,      }
+resource: this._resource,codec: this._codec,proxy: this._proxy,timeout: this._timeout,with: this._with,operations: this._operations,      }
+
+    }
+}
+
+    
+    
+    
+    
+
+
+
+export class Proxy implements HasKind {
+ // The URL base to use. http, https are supported. 
+      _resource : string ="";
+ // The username to use when authenticating with the proxy. 
+      _username : string| undefined =  undefined;
+ // The password to use when authenticating with the proxy. 
+      _password : string| undefined =  undefined;
+    constructor (
+      ) {
+    }
+
+resource(value: string) : Proxy {
+      this._resource = value;
+      return this;
+    }
+    getResource() : string {
+      return this._resource;
+
+    }
+username(value: string| undefined) : Proxy {
+      this._username = value;
+      return this;
+    }
+    getUsername() : string| undefined {
+      return this._username;
+
+    }
+password(value: string| undefined) : Proxy {
+      this._password = value;
+      return this;
+    }
+    getPassword() : string| undefined {
+      return this._password;
+
+    }
+
+    getKind() : string {
+      return "";
+    }
+
+    toJSON() : any {
+      return {
+resource: this._resource,username: this._username,password: this._password,      }
 
     }
 }
@@ -4757,7 +4831,7 @@ name: this._name,with: this._with,inputs: this._inputs,method: this._method,code
     
     
 export enum Codec {
-Json = "Json",Raw = "Raw",FormData = "FormData",Text = "Text",}
+Json = "Json",Raw = "Raw",FormData = "FormData",Text = "Text",EventStream = "EventStream",}
     
     
 

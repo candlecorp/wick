@@ -10,6 +10,7 @@ description = "SQL Database component for the wick project."
 [features]
 
 [dependencies]
+bytes = { workspace = true }
 wick-packet = { workspace = true, features = ["rt-tokio", "invocation"] }
 wick-interface-http = { workspace = true }
 flow-component = { workspace = true, features = ["invocation"] }
@@ -28,6 +29,7 @@ serde = { workspace = true, features = ["derive"] }
 futures = { workspace = true }
 thiserror = { workspace = true }
 serde_json = { workspace = true }
+eventsource-stream = { workspace = true }
 
 #
 [dev-dependencies]
