@@ -47,6 +47,7 @@ hyper-staticfile = { workspace = true }
 hyper-reverse-proxy = { workspace = true }
 url = { workspace = true }
 bytes = { workspace = true }
+eventsource-stream = { workspace = true }
 openapiv3 = { workspace = true }
 percent-encoding = { workspace = true }
 liquid = { workspace = true }

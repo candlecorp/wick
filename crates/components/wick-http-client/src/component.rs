@@ -16,7 +16,7 @@ use wick_config::config::components::{
   HttpClientOperationDefinition,
   OperationConfig,
 };
-use wick_config::config::{Codec, HttpMethod, LiquidJsonConfig, Metadata, UrlResource};
+use wick_config::config::{Codec, HttpEvent, HttpMethod, LiquidJsonConfig, Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{ComponentSignature, OperationSignatures};
 use wick_packet::{Base64Bytes, FluxChannel, Invocation, Observer, Packet, PacketSender, PacketStream, RuntimeConfig};
@@ -355,18 +355,6 @@ async fn handle(
   Ok(())
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
-struct WickEvent {
-  /// The event name if given
-  event: String,
-  /// The event data
-  data: String,
-  /// The event id if given
-  id: String,
-  /// Retry duration if given
-  retry: Option<tokio::time::Duration>,
-}
-
 fn output_task(
   span: Span,
   codec: Codec,
@@ -380,12 +368,7 @@ fn output_task(
         while let Some(event) = stream.next().await {
           match event {
             Ok(event) => {
-              let wick_event = WickEvent {
-                event: event.event,
-                data: event.data,
-                id: event.id,
-                retry: event.retry,
-              };
+              let wick_event = HttpEvent::new(Some(event.event), event.data, Some(event.id), event.retry);
               span.in_scope(|| debug!("{} {}", format!("{:?}", wick_event), "http:client:response_body"));
               let _ = tx.send(Packet::encode("body", wick_event));
             }
@@ -704,12 +687,10 @@ mod test {
       let (app_config, component_config) = get_config();
       let comp = get_component(&app_config, component_config);
 
-      // Simulate an event stream
       let event_stream = "data: {\"id\":\"1\",\"object\":\"event1\"}\n\n\
          data: {\"id\":\"2\",\"object\":\"event2\"}\n\n";
       let packets = packet_stream!(("input", event_stream));
 
-      // Replace "event_stream_op" with the actual operation id for event stream
       let invocation = Invocation::test(
         "test_event_stream",
         Entity::local("event_stream_op"),
@@ -726,8 +707,10 @@ mod test {
       let packets = stream.into_iter().collect::<Result<Vec<_>, _>>()?;
       for packet in packets {
         if packet.port() == "body" {
-          let response: WickEvent = packet.decode().unwrap();
-          assert!(response.id == "1" && response.event == "event1" || response.id == "2" && response.event == "event2");
+          let response: HttpEvent = packet.decode().unwrap();
+          let response_id = response.get_id().as_ref().unwrap();
+          let response_event = response.get_event().as_ref().unwrap();
+          assert!(response_id == "1" && response_event == "event1" || response_id == "2" && response_event == "event2");
         } else {
           let response: HttpResponse = packet.decode().unwrap();
           assert_eq!(response.version, HttpVersion::Http11);

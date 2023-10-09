@@ -5,10 +5,12 @@ use hyper::http::response::Builder;
 use hyper::http::{HeaderName, HeaderValue};
 use hyper::{Body, Response, StatusCode};
 use serde_json::{Map, Value};
+use tokio::sync::mpsc::unbounded_channel;
+use tokio::sync::oneshot;
 use tokio_stream::StreamExt;
 use tracing::Span;
 use uuid::Uuid;
-use wick_config::config::Codec;
+use wick_config::config::{Codec, HttpEvent};
 use wick_interface_http::types as wick_http;
 use wick_packet::{
   packets,
@@ -132,6 +134,52 @@ pub(super) async fn handle_response_middleware(
   }
 }
 
+async fn stream_response(
+  codec: Codec,
+  mut stream: PacketStream,
+  mut oneshot_channel: Option<oneshot::Sender<Builder>>,
+  tx_channel: tokio::sync::mpsc::UnboundedSender<Result<Vec<u8>, HttpError>>,
+) -> Result<(), HttpError> {
+  while let Some(packet) = stream.next().await {
+    match packet {
+      Ok(p) => {
+        if p.port() == "response" {
+          if let PacketPayload::Err(e) = p.payload() {
+            return Err(HttpError::OutputStream(p.port().to_owned(), e.msg().to_owned()));
+          }
+          if p.is_done() {
+            continue;
+          }
+          let response: wick_interface_http::types::HttpResponse = p
+            .decode()
+            .map_err(|e| HttpError::Deserialize("response".to_owned(), e.to_string()))
+            .unwrap();
+          let mut builder = Response::builder();
+          builder = convert_response(builder, response).unwrap();
+          let _ = oneshot_channel.take().unwrap().send(builder);
+        } else if p.port() == "body" {
+          if let PacketPayload::Err(e) = p.payload() {
+            return Err(HttpError::OutputStream(p.port().to_owned(), e.msg().to_owned()));
+          }
+          if !p.has_data() {
+            continue;
+          }
+          let response: Value = p
+            .decode_value()
+            .map_err(|e| HttpError::Codec(codec, e.to_string()))
+            .unwrap();
+          let http_event: HttpEvent = serde_json::from_value(response).unwrap();
+          let as_str = http_event.to_sse_string();
+          let bytes = as_str.as_bytes();
+          let _ = tx_channel.send(Ok::<_, HttpError>(bytes.to_vec()));
+        }
+      }
+      Err(e) => return Err(HttpError::OperationError(e.to_string())),
+    }
+  }
+  Ok(())
+}
+
 pub(super) async fn respond(
   codec: Codec,
   stream: Result<PacketStream, HttpError>,
@@ -145,45 +193,74 @@ pub(super) async fn respond(
     );
   }
   let mut stream = stream.unwrap();
-  let mut builder = Response::builder();
-  let mut body = bytes::BytesMut::new();
-  while let Some(packet) = stream.next().await {
-    match packet {
-      Ok(p) => {
-        if p.port() == "response" {
-          if let PacketPayload::Err(e) = p.payload() {
-            return Err(HttpError::OutputStream(p.port().to_owned(), e.msg().to_owned()));
-          }
-          if p.is_done() {
-            continue;
-          }
-          let response: wick_interface_http::types::HttpResponse = p
-            .decode()
-            .map_err(|e| HttpError::Deserialize("response".to_owned(), e.to_string()))?;
-          builder = convert_response(builder, response)?;
-        } else if p.port() == "body" {
-          if let PacketPayload::Err(e) = p.payload() {
-            return Err(HttpError::OutputStream(p.port().to_owned(), e.msg().to_owned()));
-          }
-          if !p.has_data() {
-            continue;
-          }
-          if codec == Codec::Json {
-            let response: Value = p.decode().map_err(|e| HttpError::Codec(codec, e.to_string()))?;
-            let as_str = response.to_string();
-            let bytes = as_str.as_bytes();
-            body.extend_from_slice(bytes);
-          } else {
-            let response: Base64Bytes = p.decode().map_err(|e| HttpError::Bytes(e.to_string()))?;
-            body.extend_from_slice(&response);
+  if codec == Codec::EventStream {
+    let (tx, rx) = unbounded_channel();
+    let (tx_one, rx_one) = oneshot::channel();
+    let tx_one = Some(tx_one);
+
+    tokio::spawn(async move {
+      let _ = stream_response(codec, stream, tx_one, tx).await;
+    });
+
+    let response = rx_one.await;
+    response.map_or_else(
+      |_| {
+        Ok(
+          Builder::new()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(Body::from("data: No response received\n\ndata: [DONE]"))
+            .unwrap(),
+        )
+      },
+      |response| {
+        let mut builder = response;
+        builder = reset_header(builder, CONTENT_LENGTH, 0);
+        builder = builder.header("content-type", "text/event-stream");
+        let body = Body::wrap_stream(tokio_stream::wrappers::UnboundedReceiverStream::new(rx));
+        Ok(builder.body(body).unwrap())
+      },
+    )
+  } else {
+    let mut body = bytes::BytesMut::new();
+    let mut builder = Response::builder();
+    while let Some(packet) = stream.next().await {
+      match packet {
+        Ok(p) => {
+          if p.port() == "response" {
+            if let PacketPayload::Err(e) = p.payload() {
+              return Err(HttpError::OutputStream(p.port().to_owned(), e.msg().to_owned()));
+            }
+            if p.is_done() {
+              continue;
+            }
+            let response: wick_interface_http::types::HttpResponse = p
+              .decode()
+              .map_err(|e| HttpError::Deserialize("response".to_owned(), e.to_string()))?;
+            builder = convert_response(builder, response)?;
+          } else if p.port() == "body" {
+            if let PacketPayload::Err(e) = p.payload() {
+              return Err(HttpError::OutputStream(p.port().to_owned(), e.msg().to_owned()));
+            }
+            if !p.has_data() {
+              continue;
+            }
+            if codec == Codec::Json {
+              let response: Value = p.decode().map_err(|e| HttpError::Codec(codec, e.to_string()))?;
+              let as_str: String = response.to_string();
+              let bytes = as_str.as_bytes();
+              body.extend_from_slice(bytes);
+            } else {
+              let response: Base64Bytes = p.decode().map_err(|e| HttpError::Bytes(e.to_string()))?;
+              body.extend_from_slice(&response);
+            }
           }
         }
+        Err(e) => return Err(HttpError::OperationError(e.to_string())),
       }
-      Err(e) => return Err(HttpError::OperationError(e.to_string())),
     }
+    builder = reset_header(builder, CONTENT_LENGTH, body.len());
+    Ok(builder.body(body.freeze().into()).unwrap())
   }
-  builder = reset_header(builder, CONTENT_LENGTH, body.len());
-  Ok(builder.body(body.freeze().into()).unwrap())
 }
 
 fn reset_header(mut builder: Builder, header: HeaderName, value: impl Into<HeaderValue>) -> Builder {

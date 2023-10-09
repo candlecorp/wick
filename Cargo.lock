@@ -6370,6 +6370,7 @@ dependencies = [
  "chrono",
  "cron",
  "derive_builder",
+ "eventsource-stream",
  "flow-component",
  "flow-graph",
  "flow-graph-interpreter",

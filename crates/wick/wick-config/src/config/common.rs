@@ -29,7 +29,7 @@ pub use self::error_behavior::ErrorBehavior;
 pub use self::exposed_resources::{ExposedVolume, ExposedVolumeBuilder};
 pub use self::glob::Glob;
 pub use self::host_definition::{HostConfig, HostConfigBuilder, HttpConfig, HttpConfigBuilder};
-pub use self::http::{Codec, HttpMethod};
+pub use self::http::{Codec, HttpEvent, HttpMethod};
 pub use self::import_definition::ImportDefinition;
 pub use self::interface::InterfaceDefinition;
 pub use self::liquid_json_config::LiquidJsonConfig;
