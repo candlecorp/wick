@@ -213,9 +213,7 @@ pub(super) async fn respond(
         )
       },
       |response| {
-        let mut builder = response;
-        builder = reset_header(builder, CONTENT_LENGTH, 0);
-        builder = builder.header("content-type", "text/event-stream");
+        let builder = response;
         let body = Body::wrap_stream(tokio_stream::wrappers::UnboundedReceiverStream::new(rx));
         Ok(builder.body(body).unwrap())
       },

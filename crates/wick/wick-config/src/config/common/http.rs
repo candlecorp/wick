@@ -86,7 +86,9 @@ impl HttpEvent {
     }
 
     if let Some(ref id) = self.id {
-      writeln!(sse_string, "id: {}", id).unwrap();
+      if id != "" {
+        writeln!(sse_string, "id: {}", id).unwrap();
+      }
     }
 
     if let Some(ref retry) = self.retry {
