@@ -22,7 +22,6 @@ wick-packet = { workspace = true, features = ["validation", "rng", "std"] }
 wick-interface-types = { workspace = true, features = ["value"] }
 wick-config = { workspace = true, features = ["config"] }
 wick-component-wasmrs = { workspace = true }
-wick-component-wasm = { workspace = true }
 wick-rpc = { workspace = true }
 wick-interface-http = { workspace = true }
 wick-interface-cli = { workspace = true }

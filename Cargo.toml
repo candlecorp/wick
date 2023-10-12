@@ -100,7 +100,6 @@ wick-asset-reference = { path = "./crates/wick/wick-asset-reference", version = 
 wick-component = { path = "./crates/wick/wick-component", version = "0.16.0", default-features = false }
 wick-component-cli = { path = "./crates/wick/wick-component-cli", version = "0.2.0", default-features = false }
 wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.5.0" }
-wick-component-wasm = { path = "./crates/wick/wick-component-wasm", version = "0.3.0" }
 wick-component-wasmrs = { path = "./crates/wick/wick-component-wasmrs", version = "0.3.0" }
 wick-config = { path = "./crates/wick/wick-config", version = "0.27.0", default-features = false }
 wick-host = { path = "./crates/wick/wick-host", version = "0.5.0" }
