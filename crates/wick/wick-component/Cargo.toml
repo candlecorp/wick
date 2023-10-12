@@ -16,10 +16,9 @@ readme = "README.md"
 maintenance = { status = "actively-developed" }
 
 [features]
-default = ["json"]
+default = []
 datetime = ["chrono/serde", "wick-packet/datetime"]
 uuid = ["flow-component/uuid"]
-json = []
 
 [dependencies]
 wick-packet = { workspace = true, default-features = false }

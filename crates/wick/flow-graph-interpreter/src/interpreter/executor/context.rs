@@ -9,7 +9,7 @@ use parking_lot::Mutex;
 use seeded_random::{Random, Seed};
 use uuid::Uuid;
 use wasmrs_rx::Observer;
-use wick_packet::{Entity, InvocationData, Packet, PacketError, PacketSender, PacketStream, RuntimeConfig};
+use wick_packet::{Entity, InvocationData, Packet, PacketError, PacketExt, PacketSender, PacketStream, RuntimeConfig};
 
 use self::operation::{FutureInvocation, InstanceHandler};
 use super::error::ExecutionError;

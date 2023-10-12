@@ -15,25 +15,25 @@ fn add(left: i64, right: i64, _ctx: Context<add::Config>) -> Result<i64, anyhow:
 #[async_trait::async_trait(?Send)]
 impl greet::Operation for Component {
   type Error = anyhow::Error;
+  type Inputs = greet::Inputs;
   type Outputs = greet::Outputs;
   type Config = greet::Config;
 
   async fn greet(
-    mut name: WickStream<Packet>,
+    mut inputs: Self::Inputs,
     mut outputs: Self::Outputs,
     _ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
-    while let Some(name) = name.next().await {
-      let name = propagate_if_error!(name, outputs, continue);
+    while let Some(packet) = inputs.input.next().await {
       // "Signals" are special packets that are used to indicate that a stream
       // has ended, has opened a substream, or has closed a substream.
-      if name.is_signal() {
+      if packet.is_signal() {
         // This example propagates all signals to the output stream, resetting
         // the port name to our output port.
-        outputs.output.send_packet(name.set_port("output"));
+        outputs.output.send_raw_payload(packet.into());
         continue;
       }
-      let name: String = name.decode()?;
+      let name = propagate_if_error!(packet.decode(), outputs, continue);
 
       outputs.output.send(&format!("Hello, {}", name));
     }

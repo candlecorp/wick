@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use wick_interface_types as wick;
-use wick_packet::{Entity, InherentData, Metadata, Packet, WickMetadata};
+use wick_packet::{Entity, InherentData, Metadata, Packet, PacketExt, WickMetadata};
 
 use crate::error::RpcError;
 use crate::{rpc, DurationStatistics};
@@ -138,7 +138,7 @@ impl From<Packet> for rpc::Packet {
     let md = rpc::Metadata {
       flags: value.flags().into(),
       port: value.port().to_owned(),
-      index: value.index(),
+      index: value.index().unwrap_or_default(),
     };
     rpc::Packet {
       data: Some(value.payload.into()),
@@ -150,7 +150,7 @@ impl From<Packet> for rpc::Packet {
 impl From<rpc::Metadata> for Metadata {
   fn from(v: rpc::Metadata) -> Self {
     Self {
-      index: v.index,
+      index: Some(v.index),
       extra: Some(WickMetadata::new(v.port, 0).encode()),
     }
   }

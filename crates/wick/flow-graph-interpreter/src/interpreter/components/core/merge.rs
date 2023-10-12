@@ -5,7 +5,7 @@ use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use futures::FutureExt;
 use wasmrs_rx::Observer;
 use wick_interface_types::{Field, OperationSignature, StructDefinition, Type};
-use wick_packet::{InherentData, Invocation, Packet, PacketStream, RuntimeConfig, StreamMap};
+use wick_packet::{InherentData, Invocation, Packet, PacketExt, PacketStream, RuntimeConfig, StreamMap};
 
 use crate::BoxFuture;
 pub(crate) struct Op {}

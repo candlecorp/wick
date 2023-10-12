@@ -1,12 +1,9 @@
-#![allow(unused)]
-use itertools::Itertools;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
-use wick_interface_types::Field;
 
 use super::dependency::Dependency;
 use super::{config, Direction};
-use crate::generate::ids::{get_typename_parts, id, snake};
+use crate::generate::ids::get_typename_parts;
 
 pub(super) fn expand_type(
   config: &mut config::Config,
@@ -74,69 +71,4 @@ pub(super) fn expand_type(
     }
     wick_interface_types::Type::AnonymousStruct(_) => todo!("implement anonymous struct in new codegen"),
   }
-}
-
-pub(crate) fn expand_input_fields(
-  config: &mut config::Config,
-  fields: &[Field],
-  direction: Direction,
-  imported: bool,
-) -> Vec<TokenStream> {
-  fields
-    .iter()
-    .map(|input| {
-      let name = id(&snake(input.name()));
-      let ty = expand_type(config, direction, imported, false, &input.ty);
-      quote! {
-        #name: impl wick_component::Stream<Item = Result<#ty, wick_component::AnyError>> + 'static
-      }
-    })
-    .collect_vec()
-}
-
-pub(crate) fn field_names(fields: &[Field]) -> Vec<TokenStream> {
-  fields
-    .iter()
-    .map(|input| {
-      let name = id(&snake(input.name()));
-      quote! {
-        #name
-      }
-    })
-    .collect_vec()
-}
-
-pub(crate) fn expand_field_types(
-  config: &mut config::Config,
-  fields: &[Field],
-  direction: Direction,
-  imported: bool,
-) -> Vec<TokenStream> {
-  fields
-    .iter()
-    .map(|input| {
-      let ty = expand_type(config, direction, imported, false, &input.ty);
-      quote! {
-        WickStream<#ty>
-      }
-    })
-    .collect_vec()
-}
-
-pub(crate) fn fields_to_tuples(
-  config: &mut config::Config,
-  fields: &[Field],
-  direction: Direction,
-  raw: bool,
-) -> Vec<TokenStream> {
-  fields
-    .iter()
-    .map(|input| {
-      let name = input.name();
-      let ty = expand_type(config, direction, raw, false, &input.ty);
-      quote! {
-        (#name, #ty)
-      }
-    })
-    .collect_vec()
 }

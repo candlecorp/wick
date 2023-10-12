@@ -17,14 +17,31 @@ impl<T> std::fmt::Debug for OutgoingPort<T> {
   }
 }
 
-pub trait Port: ConditionallySend {
-  fn send_packet(&mut self, value: Packet);
+pub trait WasmRsChannel: ConditionallySend {
+  fn channel(&self) -> FluxChannel<RawPayload, PayloadError>;
+}
+
+pub trait Port: WasmRsChannel + ConditionallySend {
+  fn name(&self) -> &str;
+
+  fn send_raw_result(&mut self, value: Result<RawPayload, PayloadError>) {
+    if let Err(e) = self.channel().send_result(value) {
+      warn!(
+        port = self.name(),
+        error = %e,
+        "failed sending packet on output channel, this is a bug"
+      );
+    };
+  }
+
+  fn send_packet(&mut self, value: Packet) {
+    let value = value.to_port(self.name());
+    self.send_raw_result(value.into());
+  }
 
   fn send_raw_payload(&mut self, value: PacketPayload) {
     self.send_packet(Packet::new_for_port(self.name(), value, 0));
   }
-
-  fn name(&self) -> &str;
 
   fn open_bracket(&mut self) {
     self.send_packet(Packet::open_bracket(self.name()));
@@ -98,19 +115,17 @@ impl<T> Port for OutgoingPort<T>
 where
   T: serde::Serialize + ConditionallySend,
 {
-  fn send_packet(&mut self, value: Packet) {
-    let value = value.to_port(&self.name);
-    if let Err(e) = self.channel.send_result(value.into()) {
-      warn!(
-        port = self.name,
-        error = %e,
-        "failed sending packet on output channel, this is a bug"
-      );
-    };
-  }
-
   fn name(&self) -> &str {
     &self.name
+  }
+}
+
+impl<T> WasmRsChannel for OutgoingPort<T>
+where
+  T: serde::Serialize + ConditionallySend,
+{
+  fn channel(&self) -> FluxChannel<RawPayload, PayloadError> {
+    self.channel.clone()
   }
 }
 
@@ -164,7 +179,7 @@ mod test {
   use tokio_stream::StreamExt;
 
   use super::*;
-  use crate::{packet_stream, PacketStream};
+  use crate::{packet_stream, PacketExt, PacketStream};
 
   #[test_logger::test(tokio::test)]
   async fn test_outputs() -> Result<()> {

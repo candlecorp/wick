@@ -10,7 +10,7 @@ use wick_component_cli::options::DefaultCliOptions;
 use wick_config::config::{ComponentConfiguration, ConfigurationTreeNode, HttpConfigBuilder, LiquidJsonConfig};
 use wick_config::{AssetReference, WickConfiguration};
 use wick_oci_utils::{OciOptions, OnExisting};
-use wick_packet::{InherentData, Packet, PacketStream, RuntimeConfig};
+use wick_packet::{InherentData, Packet, PacketExt, PacketStream, RuntimeConfig};
 use wick_settings::Credential;
 
 pub(crate) async fn fetch_wick_config(

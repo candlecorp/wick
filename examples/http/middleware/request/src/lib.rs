@@ -10,16 +10,17 @@ use self::wick::types::http::{self, RequestMiddlewareResponse};
 #[async_trait::async_trait(?Send)]
 impl redirect::Operation for Component {
   type Error = anyhow::Error;
+  type Inputs = redirect::Inputs;
   type Outputs = redirect::Outputs;
   type Config = redirect::Config;
 
   async fn redirect(
-    mut request: WickStream<http::HttpRequest>,
+    mut inputs: Self::Inputs,
     mut outputs: Self::Outputs,
     _ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
-    while let Some(request) = request.next().await {
-      let mut request = propagate_if_error!(request, outputs, continue);
+    while let Some(request) = inputs.request.next().await {
+      let mut request = propagate_if_error!(request.decode(), outputs, continue);
       let mut response = http::HttpResponse {
         status: http::StatusCode::Found,
         headers: HashMap::default(),
@@ -51,18 +52,18 @@ thread_local! {
 #[async_trait::async_trait(?Send)]
 impl count::Operation for Component {
   type Error = anyhow::Error;
+  type Inputs = count::Inputs;
   type Outputs = count::Outputs;
   type Config = count::Config;
 
   async fn count(
-    mut request: WickStream<http::HttpRequest>,
-    mut response: WickStream<http::HttpResponse>,
+    mut inputs: Self::Inputs,
     mut outputs: Self::Outputs,
     _ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
-    while let (Some(request), Some(response)) = (request.next().await, response.next().await) {
-      let mut response = propagate_if_error!(response, outputs, continue);
-      let request = propagate_if_error!(request, outputs, continue);
+    while let (Some(request), Some(response)) = (inputs.request.next().await, inputs.response.next().await) {
+      let mut response = propagate_if_error!(response.decode(), outputs, continue);
+      let request = propagate_if_error!(request.decode(), outputs, continue);
 
       let request_mw_header = request
         .headers

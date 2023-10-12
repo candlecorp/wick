@@ -8,7 +8,7 @@ use flow_component::Component;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use test::*;
-use wick_packet::{packets, ComponentReference, Entity, Packet, RuntimeConfig};
+use wick_packet::{packets, ComponentReference, Entity, Packet, PacketExt, RuntimeConfig};
 
 #[test_logger::test(tokio::test)]
 async fn test_echo() -> Result<()> {

@@ -1,7 +1,7 @@
 use flow_component::{BoxFuture, Component, ComponentError, LocalScope};
 use futures::StreamExt;
 use wick_interface_types::{component, ComponentSignature};
-use wick_packet::{fan_out, Invocation, Observer, Packet, PacketStream, RuntimeConfig};
+use wick_packet::{fan_out, Invocation, Observer, Packet, PacketExt, PacketStream, RuntimeConfig};
 use wick_rpc::dispatch;
 
 mod wick_component_cli;

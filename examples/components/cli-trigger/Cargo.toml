@@ -15,6 +15,10 @@ panic = "abort"
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+default = []
+localgen = []
+
 [dependencies]
 wick-component = { path = "../../../crates/wick/wick-component" }
 serde = { version = "1", features = ["derive"] }

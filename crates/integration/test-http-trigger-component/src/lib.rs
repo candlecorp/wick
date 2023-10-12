@@ -25,20 +25,21 @@ struct Response {
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl http_handler::Operation for Component {
   type Error = Box<dyn std::error::Error + Send + Sync>;
+  type Inputs = http_handler::Inputs;
   type Outputs = http_handler::Outputs;
   type Config = http_handler::Config;
 
   async fn http_handler(
-    mut request: WickStream<types::http::HttpRequest>,
-    body: WickStream<Bytes>,
+    inputs: Self::Inputs,
     mut outputs: Self::Outputs,
     _ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
-    if let Some(Ok(request)) = request.next().await {
+    let Self::Inputs { mut request, body } = inputs;
+    if let Some(request) = request.next().await {
       println!("{:#?}", request);
     }
 
-    let body: bytes::BytesMut = body.try_collect().await?;
+    let body: bytes::BytesMut = body.map(|p| p.decode()).try_collect().await?;
     let res_body = if body.is_empty() {
       Bytes::default()
     } else {

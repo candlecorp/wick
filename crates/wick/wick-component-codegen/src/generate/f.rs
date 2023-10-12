@@ -1,10 +1,6 @@
-#![allow(unused)]
-
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::quote;
 use serde_json::Value;
-use wick_config::config::components::OperationConfig;
-use wick_config::config::OperationDefinition;
 use wick_interface_types::{Field, Type};
 
 use super::config;
@@ -70,21 +66,11 @@ pub(crate) fn field_pair(
   }
 }
 
-pub(crate) fn field_default(config: &mut config::Config, imported: bool) -> impl FnMut(&Field) -> TokenStream + '_ {
+pub(crate) fn field_default(_config: &mut config::Config, _imported: bool) -> impl FnMut(&Field) -> TokenStream + '_ {
   move |f| {
     let name = id(&snake(&f.name));
     let default = default_val()(f.default());
     quote! {#name: #default}
-  }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-pub(crate) fn gen_if(condition: bool, mut func: impl FnMut(), value: TokenStream) -> TokenStream {
-  if condition {
-    func();
-    quote! { #value }
-  } else {
-    quote! {}
   }
 }
 
@@ -95,15 +81,6 @@ pub(crate) fn default_val() -> impl FnMut(Option<&Value>) -> TokenStream {
 fn from_json(value: &Value) -> TokenStream {
   let json_str = serde_json::to_string(&value).unwrap();
   quote! {wick_component::from_str(#json_str).unwrap()}
-}
-
-#[allow(clippy::needless_pass_by_value)]
-pub(crate) fn maybe_parens(list: Vec<impl ToTokens>) -> TokenStream {
-  if list.len() == 1 {
-    quote! { #(#list),* }
-  } else {
-    quote! { (#(#list),*) }
-  }
 }
 
 fn default_from_val(value: &Value) -> TokenStream {
@@ -123,12 +100,4 @@ fn default_from_val(value: &Value) -> TokenStream {
     Value::Object(_) => from_json(value),
     Value::Null => quote! {None},
   }
-}
-
-fn op_names(ops: &[OperationDefinition]) -> Vec<String> {
-  ops.iter().map(|op| op.name().to_owned()).collect()
-}
-
-fn field_names(fields: &[Field]) -> Vec<String> {
-  fields.iter().map(|field| field.name().to_owned()).collect()
 }

@@ -5,7 +5,7 @@ use anyhow::Result;
 use clap::Args;
 use structured_output::StructuredOutput;
 use wick_component_cli::parse_args;
-use wick_packet::{Entity, InherentData, Invocation, Observer, Packet, PacketStream};
+use wick_packet::{Entity, InherentData, Invocation, Observer, Packet, PacketExt, PacketStream};
 
 use crate::utils;
 

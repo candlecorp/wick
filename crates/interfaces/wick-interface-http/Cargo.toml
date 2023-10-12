@@ -17,7 +17,7 @@ wick-component = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]
-wick-component = { workspace = true, features = ["json"] }
+wick-component = { workspace = true, features = [] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 wick-logger = { workspace = true }
 test-logger = { workspace = true }

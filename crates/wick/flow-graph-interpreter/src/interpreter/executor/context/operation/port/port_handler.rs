@@ -3,7 +3,7 @@ use std::ops::RangeBounds;
 use flow_graph::PortReference;
 use parking_lot::Mutex;
 use tracing::Span;
-use wick_packet::Packet;
+use wick_packet::{Packet, PacketExt};
 
 use super::port_buffer::PortBuffer;
 use super::PortStatus;

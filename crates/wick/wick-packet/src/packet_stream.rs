@@ -6,13 +6,18 @@ use tokio_stream::Stream;
 use tracing::{span_enabled, Span};
 use wasmrs_rx::FluxChannel;
 
-use crate::{ContextTransport, InherentData, Packet, Result, RuntimeConfig};
+use crate::{ContextTransport, InherentData, Packet, PacketExt, Result, RuntimeConfig};
 
 pub type PacketSender = FluxChannel<Packet, crate::Error>;
 
 type ContextConfig = (RuntimeConfig, InherentData);
 
-pub(crate) type BoxStream<'a, T> = Pin<Box<dyn Stream<Item = T> + Send + Sync + 'a>>;
+#[cfg(target_family = "wasm")]
+/// A Pin<Box<Stream>> of `T`.
+pub type BoxStream<T> = Pin<Box<dyn Stream<Item = T> + 'static>>;
+#[cfg(not(target_family = "wasm"))]
+/// A Pin<Box<Stream>> of `T`.
+pub type BoxStream<T> = Pin<Box<dyn Stream<Item = T> + Send + 'static>>;
 
 #[cfg(target_family = "wasm")]
 pin_project! {
@@ -44,8 +49,8 @@ impl Default for PacketStream {
   }
 }
 
-impl From<BoxStream<'static, Result<Packet>>> for PacketStream {
-  fn from(stream: BoxStream<'static, Result<Packet>>) -> Self {
+impl From<BoxStream<Result<Packet>>> for PacketStream {
+  fn from(stream: BoxStream<Result<Packet>>) -> Self {
     Self::new(stream)
   }
 }

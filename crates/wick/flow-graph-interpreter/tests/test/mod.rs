@@ -10,7 +10,7 @@ pub use observer::JsonWriter;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 pub use test_component::TestComponent;
-use wick_packet::{Entity, Packet, RuntimeConfig};
+use wick_packet::{Entity, Packet, PacketExt, RuntimeConfig};
 
 use crate::test;
 

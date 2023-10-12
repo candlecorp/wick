@@ -18,6 +18,7 @@ use wick_packet::{
   InvocationData,
   Packet,
   PacketError,
+  PacketExt,
   PacketPayload,
   PacketSender,
   PacketStream,

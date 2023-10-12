@@ -21,10 +21,6 @@ pub(crate) fn generic_config_id() -> String {
   "Config".to_owned()
 }
 
-pub(crate) fn named_config_id(name: &str) -> String {
-  format!("{}Config", pascal(name))
-}
-
 pub(crate) fn snake(s: &str) -> String {
   AsSnakeCase(s).to_string()
 }
@@ -35,10 +31,6 @@ pub(crate) fn pascal(s: &str) -> String {
 
 pub(crate) fn op_wrapper_name(op: &OperationSignature) -> String {
   snake(&format!("{}_wrapper", op.name()))
-}
-
-pub(crate) fn op_outputs_name(_op: &OperationSignature) -> String {
-  "Outputs".to_owned()
 }
 
 pub(crate) fn get_typename_parts(name: &str) -> (Vec<&str>, &str) {

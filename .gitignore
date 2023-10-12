@@ -4,6 +4,7 @@ crates/*/**/Cargo.lock
 integration-tests/*/**/Cargo.lock
 examples/**/build/*
 examples/**/*/Cargo.lock
+examples/**/*/generated/
 
 # .env
 DEV.env

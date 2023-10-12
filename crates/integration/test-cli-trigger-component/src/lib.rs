@@ -9,31 +9,41 @@ mod wick {
   #![allow(unused_imports, missing_debug_implementations, clippy::needless_pass_by_value)]
   wick_component::wick_import!();
 }
+use provided::baseline_component::power;
 use wick::*;
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl main::Operation for Component {
   type Error = anyhow::Error;
+  type Inputs = main::Inputs;
   type Outputs = main::Outputs;
   type Config = main::Config;
 
   async fn main(
-    mut args: WickStream<Vec<String>>,
-    mut is_interactive: WickStream<types::cli::Interactive>,
+    inputs: Self::Inputs,
     mut outputs: Self::Outputs,
     ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
-    while let (Some(Ok(args)), Some(Ok(tty))) = (args.next().await, is_interactive.next().await) {
+    let Self::Inputs {
+      mut args,
+      mut interactive,
+    } = inputs;
+    while let (Some(args), Some(tty)) = (args.next().await, interactive.next().await) {
+      let args = args.decode()?;
+      let tty = tty.decode()?;
       println!(
         "args: {:?}, interactive: {{ stdin: {}, stdout: {}, stderr: {} }}",
         args, tty.stdin, tty.stdout, tty.stderr
       );
 
-      let mut provided_component_result = ctx.provided().baseline.power(PowerConfig { exponent: 3 }, once(2))?;
+      let mut provided_component_result = ctx
+        .provided()
+        .baseline
+        .power(power::Config { exponent: 3 }, power::Request { input: 2 })?;
 
-      if let Some(Ok(result)) = provided_component_result.next().await {
-        println!("Got result for provided component: {}", result);
+      if let Some(result) = provided_component_result.output.next().await {
+        println!("Got result for provided component: {}", result.decode()?);
       } else {
         println!("Got no result for provided component.");
       }

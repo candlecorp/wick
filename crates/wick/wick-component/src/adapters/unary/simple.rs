@@ -1,26 +1,31 @@
 use tokio_stream::StreamExt;
 use wasmrs_runtime::BoxFuture;
-use wick_packet::Packet;
+use wick_packet::{BoxStream, PacketExt, VPacket};
 
 use crate::adapters::encode;
-use crate::{propagate_if_error, SingleOutput, WickStream};
+use crate::{propagate_if_error, SingleOutput};
 
 #[macro_export]
 /// This macro will generate the implementations for simple binary operations, operations that take two inputs, produce one output, and are largely want to remain ignorant of stream state.
 macro_rules! unary_simple {
-  ($name:ident) => {
-    #[async_trait::async_trait(?Send)]
+  ($name:ident => $handler:ident) => {
+    #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+    #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
     impl $name::Operation for Component {
       type Error = wick_component::AnyError;
+      type Inputs = $name::Inputs;
       type Outputs = $name::Outputs;
       type Config = $name::Config;
 
       async fn $name(
-        input: WickStream<Packet>,
+        mut inputs: Self::Inputs,
         mut outputs: Self::Outputs,
         ctx: Context<Self::Config>,
       ) -> Result<(), Self::Error> {
-        wick_component::unary::simple(input, &mut outputs, &ctx, &$name).await?;
+        use wick_packet::UnaryInputs;
+        let input = inputs.take_input();
+
+        wick_component::unary::simple(input, &mut outputs, &ctx, &$handler).await?;
 
         Ok(())
       }
@@ -30,7 +35,7 @@ macro_rules! unary_simple {
 
 /// Operation helper for common binary operations that have one output.
 pub async fn simple<'c, INPUT, OUTPUT, CONTEXT, OUTPORT, F, E>(
-  input: WickStream<Packet>,
+  input: BoxStream<VPacket<INPUT>>,
   outputs: &mut OUTPORT,
   ctx: &'c CONTEXT,
   func: &'static F,
@@ -52,11 +57,11 @@ where
 #[cfg_attr(not(target_family = "wasm"), async_recursion::async_recursion)]
 #[cfg_attr(target_family = "wasm", async_recursion::async_recursion(?Send))]
 async fn inner<'out, 'c, INPUT, OUTPUT, CONTEXT, OUTPORT, F, E>(
-  mut input_stream: WickStream<Packet>,
+  mut input_stream: BoxStream<VPacket<INPUT>>,
   outputs: &'out mut OUTPORT,
   ctx: &'c CONTEXT,
   func: &'static F,
-) -> WickStream<Packet>
+) -> BoxStream<VPacket<INPUT>>
 where
   CONTEXT: Clone + wasmrs_runtime::ConditionallySendSync,
   F: Fn(INPUT, CONTEXT) -> BoxFuture<Result<OUTPUT, E>> + wasmrs_runtime::ConditionallySendSync,
@@ -66,12 +71,8 @@ where
   E: std::fmt::Display + wasmrs_runtime::ConditionallySendSync,
 {
   loop {
-    let input = input_stream.next().await;
-    if input.is_none() {
-      break;
-    }
-    let input = input.unwrap();
-    let input = propagate_if_error!(input, outputs, continue);
+    let Some(input) = input_stream.next().await else { break };
+
     if input.is_open_bracket() {
       outputs.broadcast_open();
       input_stream = inner(input_stream, outputs, ctx, func).await;

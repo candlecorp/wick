@@ -122,6 +122,7 @@ mod datetime;
 mod entity;
 mod error;
 mod inherent;
+mod input;
 #[cfg(feature = "invocation")]
 mod invocation;
 mod macros;
@@ -130,6 +131,7 @@ mod output;
 mod packet;
 mod packet_stream;
 mod stream_map;
+mod vpacket;
 mod wrapped_type;
 
 #[cfg(feature = "validation")]
@@ -142,13 +144,15 @@ pub use datetime::{date_from_millis, parse_date, serde, DateTime};
 pub use entity::Entity;
 pub use error::{Error, ParseError};
 pub use inherent::InherentData;
+pub use input::{BinaryInputs, UnaryInputs};
 #[cfg(feature = "invocation")]
 pub use invocation::{Invocation, InvocationData};
 pub use metadata::{Flags, WickMetadata, CLOSE_BRACKET, DONE_FLAG, OPEN_BRACKET};
-pub use output::{OutgoingPort, OutputIterator, Port, ValuePort};
-pub use packet::{from_raw_wasmrs, from_wasmrs, packetstream_to_wasmrs, Packet, PacketError, PacketPayload};
-pub use packet_stream::{into_packet, PacketSender, PacketStream};
+pub use output::{OutgoingPort, OutputIterator, Port, ValuePort, WasmRsChannel};
+pub use packet::{from_raw_wasmrs, from_wasmrs, packetstream_to_wasmrs, Packet, PacketError, PacketExt, PacketPayload};
+pub use packet_stream::{into_packet, BoxStream, PacketSender, PacketStream};
 pub use stream_map::StreamMap;
+pub use vpacket::VPacket;
 pub use wasmrs::Metadata;
 pub use wasmrs_rx;
 pub use wasmrs_rx::{Flux, FluxChannel, FluxReceiver, Mono, Observable, Observer};

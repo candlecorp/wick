@@ -142,7 +142,6 @@ pub mod datetime {
 //
 //
 /// Re-export of serde_json utilities;
-#[cfg(feature = "json")]
 pub use serde_json::{from_slice, from_str, from_value, json, to_value, Map, Value};
 //
 //
@@ -165,7 +164,7 @@ pub use wick_packet as packet;
 //
 //
 /// Re-export of [wick_packet::Base64Bytes] as [Bytes].
-pub use wick_packet::{Base64Bytes as Bytes, Packet, PacketSender, Port, ValuePort};
+pub use wick_packet::{Base64Bytes as Bytes, BoxStream, Packet, PacketExt, PacketSender, Port, VPacket, ValuePort};
 //
 //
 /// Other re-exported crates;

@@ -16,7 +16,7 @@ use wick_config::config::{
   RestRouterConfig,
   WickRouter,
 };
-use wick_packet::{Entity, InherentData, Invocation, Packet};
+use wick_packet::{Entity, InherentData, Invocation, Packet, PacketExt};
 mod error;
 mod openapi;
 mod route;

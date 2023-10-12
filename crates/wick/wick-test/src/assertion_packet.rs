@@ -2,7 +2,7 @@ use either::Either;
 use flow_component::Value;
 use wick_config::config::test_case::{AssertionOperator, PacketData, TestPacketData};
 use wick_config::config::LiquidJsonConfig;
-use wick_packet::{Packet, RuntimeConfig};
+use wick_packet::{Packet, PacketExt, RuntimeConfig};
 
 use crate::utils::{gen_packet, ConfigError};
 use crate::TestError;
@@ -124,7 +124,7 @@ impl TestKind {
     }
   }
 
-  pub(crate) const fn flags(&self) -> u8 {
+  pub(crate) fn flags(&self) -> u8 {
     match self {
       TestKind::Exact(p) => p.flags(),
       TestKind::Assertion(_) => 0,

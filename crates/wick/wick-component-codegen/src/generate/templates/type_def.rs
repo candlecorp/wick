@@ -233,7 +233,7 @@ pub(crate) fn gen_struct<'a>(
     )
   };
 
-  let default_impl = f::gen_if(options == TypeOptions::Defaults, || {}, default_impl);
+  let default_impl = (options == TypeOptions::Defaults).then_some(default_impl);
 
   let description = ty
     .description

@@ -13,9 +13,99 @@ extern "C" fn __wasmrs_init(guest_buffer_size: u32, host_buffer_size: u32, max_h
   wick_component::wasmrs_guest::register_request_channel("wick", "testop", Box::new(Component::testop_wrapper));
 }
 #[cfg(target_family = "wasm")]
-mod provided {
+pub(crate) mod provided {
   #[allow(unused)]
   use super::*;
+  pub(crate) mod dep1_component {
+    use super::*;
+    pub(crate) mod echo {
+      use super::*;
+      pub struct Inputs {
+        pub(crate) channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>,
+        #[allow(unused)]
+        pub(crate) input: wick_packet::OutgoingPort<types::http::HttpRequest>,
+      }
+      impl wick_component::Broadcast for Inputs {
+        fn outputs_mut(&mut self) -> wick_packet::OutputIterator<'_> {
+          wick_packet::OutputIterator::new(vec![&mut self.input])
+        }
+      }
+      impl wick_packet::WasmRsChannel for Inputs {
+        fn channel(&self) -> wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError> {
+          self.channel.clone()
+        }
+      }
+      impl wick_component::SingleOutput for Inputs {
+        fn single_output(&mut self) -> &mut dyn wick_packet::Port {
+          &mut self.input
+        }
+      }
+      impl Inputs {
+        #[allow(unused)]
+        pub fn new() -> Self {
+          let channel = wasmrs_rx::FluxChannel::new();
+          Self {
+            input: wick_packet::OutgoingPort::new("input", channel.clone()),
+            channel,
+          }
+        }
+        #[allow(unused)]
+        pub fn with_channel(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+          Self {
+            input: wick_packet::OutgoingPort::new("input", channel.clone()),
+            channel,
+          }
+        }
+      }
+      pub struct Request {
+        #[allow(unused)]
+        pub(crate) input: types::http::HttpRequest,
+      }
+      impl From<Request> for Inputs {
+        fn from(v: Request) -> Inputs {
+          let mut inputs = Inputs::new();
+          inputs.input.send(v.input);
+          inputs
+        }
+      }
+      pub struct Outputs {
+        pub(crate) output: BoxStream<VPacket<types::http::HttpRequest>>,
+      }
+      impl wick_packet::UnaryInputs<types::http::HttpRequest> for Outputs {
+        fn input(&mut self) -> &mut BoxStream<VPacket<types::http::HttpRequest>> {
+          &mut self.output
+        }
+        fn take_input(self) -> BoxStream<VPacket<types::http::HttpRequest>> {
+          self.output
+        }
+      }
+      pub fn process_incoming(
+        mut stream: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
+      ) -> (wasmrs_rx::BoxMono<Context<Config>, String>, Outputs) {
+        #[allow(unused_parens)]
+        let (config, (output)) = wick_component::payload_fan_out!(
+          stream,
+          wick_component::AnyError,
+          Config,
+          [("output", types::http::HttpRequest)]
+        );
+        (config, Outputs::new(output))
+      }
+      impl Outputs {
+        pub fn new(output: BoxStream<VPacket<types::http::HttpRequest>>) -> Self {
+          Self { output }
+        }
+      }
+      #[derive(Debug, Clone, Default, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+      #[allow(clippy::exhaustive_structs)]
+      pub struct Config {}
+      impl From<Config> for wick_packet::RuntimeConfig {
+        fn from(v: Config) -> Self {
+          wick_component::to_value(v).unwrap().try_into().unwrap()
+        }
+      }
+    }
+  }
   #[allow(unused)]
   pub struct Dep1Component {
     component: wick_packet::ComponentReference,
@@ -32,29 +122,36 @@ mod provided {
     #[allow(unused)]
     pub fn echo(
       &self,
-      input: impl wick_component::Stream<Item = Result<types::http::HttpRequest, wick_component::AnyError>> + 'static,
-    ) -> std::result::Result<(WickStream<types::http::HttpRequest>), wick_packet::Error> {
-      let input = input.map(wick_component::wick_packet::into_packet("input"));
-      let stream = wick_component::empty();
-      let stream = stream
-        .merge(input)
-        .chain(wick_component::iter_raw(vec![Ok(Packet::done("input"))]));
-      let stream = wick_packet::PacketStream::new(Box::pin(stream));
-      let mut stream = self.echo_raw(stream)?;
-      Ok(wick_component::payload_fan_out!(
-          stream, raw : false, wick_component::AnyError, [("output",
-          types::http::HttpRequest)]
+      op_config: dep1_component::echo::Config,
+      mut inputs: impl Into<dep1_component::echo::Inputs>,
+    ) -> std::result::Result<dep1_component::echo::Outputs, wick_packet::Error> {
+      let mut stream = self.echo_raw(op_config, inputs.into().channel.take_rx().unwrap().boxed())?;
+      let (_, outputs) = dep1_component::echo::process_incoming(stream);
+      Ok(outputs)
+    }
+    #[allow(unused)]
+    pub fn echo_packets(
+      &self,
+      op_config: dep1_component::echo::Config,
+      stream: wick_packet::PacketStream,
+    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
+      Ok(wick_packet::from_wasmrs(
+        self.echo_raw(op_config, wick_packet::packetstream_to_wasmrs(0, stream))?,
       ))
     }
     #[allow(unused)]
-    pub fn echo_raw<T: Into<wick_packet::PacketStream>>(
+    pub fn echo_raw(
       &self,
-      stream: T,
-    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
+      op_config: dep1_component::echo::Config,
+      stream: wick_component::wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>,
+    ) -> std::result::Result<
+      wick_component::wasmrs_rx::BoxFlux<wick_component::wasmrs::Payload, wick_component::wasmrs::PayloadError>,
+      wick_packet::Error,
+    > {
       Ok(
         self
           .component
-          .call("echo", stream.into(), None, self.inherent.clone().into())?,
+          .call("echo", stream, Some(op_config.into()), self.inherent.clone().into())?,
       )
     }
   }
@@ -62,9 +159,261 @@ mod provided {
 #[cfg(target_family = "wasm")]
 pub use provided::*;
 #[cfg(target_family = "wasm")]
-mod imported {
+pub(crate) mod imported {
   #[allow(unused)]
   use super::*;
+  pub(crate) mod imported_component_component {
+    use super::*;
+    pub(crate) mod add {
+      use super::*;
+      pub struct Inputs {
+        pub(crate) channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>,
+        #[allow(unused)]
+        pub(crate) left: wick_packet::OutgoingPort<u64>,
+        pub(crate) right: wick_packet::OutgoingPort<u64>,
+      }
+      impl wick_component::Broadcast for Inputs {
+        fn outputs_mut(&mut self) -> wick_packet::OutputIterator<'_> {
+          wick_packet::OutputIterator::new(vec![&mut self.left, &mut self.right])
+        }
+      }
+      impl wick_packet::WasmRsChannel for Inputs {
+        fn channel(&self) -> wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError> {
+          self.channel.clone()
+        }
+      }
+      impl Inputs {
+        #[allow(unused)]
+        pub fn new() -> Self {
+          let channel = wasmrs_rx::FluxChannel::new();
+          Self {
+            left: wick_packet::OutgoingPort::new("left", channel.clone()),
+            right: wick_packet::OutgoingPort::new("right", channel.clone()),
+            channel,
+          }
+        }
+        #[allow(unused)]
+        pub fn with_channel(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+          Self {
+            left: wick_packet::OutgoingPort::new("left", channel.clone()),
+            right: wick_packet::OutgoingPort::new("right", channel.clone()),
+            channel,
+          }
+        }
+      }
+      pub struct Request {
+        #[allow(unused)]
+        pub(crate) left: u64,
+        pub(crate) right: u64,
+      }
+      impl From<Request> for Inputs {
+        fn from(v: Request) -> Inputs {
+          let mut inputs = Inputs::new();
+          inputs.left.send(v.left);
+          inputs.right.send(v.right);
+          inputs
+        }
+      }
+      pub struct Outputs {
+        pub(crate) output: BoxStream<VPacket<u64>>,
+      }
+      impl wick_packet::UnaryInputs<u64> for Outputs {
+        fn input(&mut self) -> &mut BoxStream<VPacket<u64>> {
+          &mut self.output
+        }
+        fn take_input(self) -> BoxStream<VPacket<u64>> {
+          self.output
+        }
+      }
+      pub fn process_incoming(
+        mut stream: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
+      ) -> (wasmrs_rx::BoxMono<Context<Config>, String>, Outputs) {
+        #[allow(unused_parens)]
+        let (config, (output)) =
+          wick_component::payload_fan_out!(stream, wick_component::AnyError, Config, [("output", u64)]);
+        (config, Outputs::new(output))
+      }
+      impl Outputs {
+        pub fn new(output: BoxStream<VPacket<u64>>) -> Self {
+          Self { output }
+        }
+      }
+      #[derive(Debug, Clone, Default, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+      #[allow(clippy::exhaustive_structs)]
+      pub struct Config {}
+      impl From<Config> for wick_packet::RuntimeConfig {
+        fn from(v: Config) -> Self {
+          wick_component::to_value(v).unwrap().try_into().unwrap()
+        }
+      }
+    }
+    pub(crate) mod error {
+      use super::*;
+      pub struct Inputs {
+        pub(crate) channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>,
+        #[allow(unused)]
+        pub(crate) input: wick_packet::OutgoingPort<String>,
+      }
+      impl wick_component::Broadcast for Inputs {
+        fn outputs_mut(&mut self) -> wick_packet::OutputIterator<'_> {
+          wick_packet::OutputIterator::new(vec![&mut self.input])
+        }
+      }
+      impl wick_packet::WasmRsChannel for Inputs {
+        fn channel(&self) -> wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError> {
+          self.channel.clone()
+        }
+      }
+      impl wick_component::SingleOutput for Inputs {
+        fn single_output(&mut self) -> &mut dyn wick_packet::Port {
+          &mut self.input
+        }
+      }
+      impl Inputs {
+        #[allow(unused)]
+        pub fn new() -> Self {
+          let channel = wasmrs_rx::FluxChannel::new();
+          Self {
+            input: wick_packet::OutgoingPort::new("input", channel.clone()),
+            channel,
+          }
+        }
+        #[allow(unused)]
+        pub fn with_channel(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+          Self {
+            input: wick_packet::OutgoingPort::new("input", channel.clone()),
+            channel,
+          }
+        }
+      }
+      pub struct Request {
+        #[allow(unused)]
+        pub(crate) input: String,
+      }
+      impl From<Request> for Inputs {
+        fn from(v: Request) -> Inputs {
+          let mut inputs = Inputs::new();
+          inputs.input.send(v.input);
+          inputs
+        }
+      }
+      pub struct Outputs {
+        pub(crate) output: BoxStream<VPacket<String>>,
+      }
+      impl wick_packet::UnaryInputs<String> for Outputs {
+        fn input(&mut self) -> &mut BoxStream<VPacket<String>> {
+          &mut self.output
+        }
+        fn take_input(self) -> BoxStream<VPacket<String>> {
+          self.output
+        }
+      }
+      pub fn process_incoming(
+        mut stream: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
+      ) -> (wasmrs_rx::BoxMono<Context<Config>, String>, Outputs) {
+        #[allow(unused_parens)]
+        let (config, (output)) =
+          wick_component::payload_fan_out!(stream, wick_component::AnyError, Config, [("output", String)]);
+        (config, Outputs::new(output))
+      }
+      impl Outputs {
+        pub fn new(output: BoxStream<VPacket<String>>) -> Self {
+          Self { output }
+        }
+      }
+      #[derive(Debug, Clone, Default, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+      #[allow(clippy::exhaustive_structs)]
+      pub struct Config {}
+      impl From<Config> for wick_packet::RuntimeConfig {
+        fn from(v: Config) -> Self {
+          wick_component::to_value(v).unwrap().try_into().unwrap()
+        }
+      }
+    }
+    pub(crate) mod validate {
+      use super::*;
+      pub struct Inputs {
+        pub(crate) channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>,
+        #[allow(unused)]
+        pub(crate) input: wick_packet::OutgoingPort<String>,
+      }
+      impl wick_component::Broadcast for Inputs {
+        fn outputs_mut(&mut self) -> wick_packet::OutputIterator<'_> {
+          wick_packet::OutputIterator::new(vec![&mut self.input])
+        }
+      }
+      impl wick_packet::WasmRsChannel for Inputs {
+        fn channel(&self) -> wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError> {
+          self.channel.clone()
+        }
+      }
+      impl wick_component::SingleOutput for Inputs {
+        fn single_output(&mut self) -> &mut dyn wick_packet::Port {
+          &mut self.input
+        }
+      }
+      impl Inputs {
+        #[allow(unused)]
+        pub fn new() -> Self {
+          let channel = wasmrs_rx::FluxChannel::new();
+          Self {
+            input: wick_packet::OutgoingPort::new("input", channel.clone()),
+            channel,
+          }
+        }
+        #[allow(unused)]
+        pub fn with_channel(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+          Self {
+            input: wick_packet::OutgoingPort::new("input", channel.clone()),
+            channel,
+          }
+        }
+      }
+      pub struct Request {
+        #[allow(unused)]
+        pub(crate) input: String,
+      }
+      impl From<Request> for Inputs {
+        fn from(v: Request) -> Inputs {
+          let mut inputs = Inputs::new();
+          inputs.input.send(v.input);
+          inputs
+        }
+      }
+      pub struct Outputs {
+        pub(crate) output: BoxStream<VPacket<String>>,
+      }
+      impl wick_packet::UnaryInputs<String> for Outputs {
+        fn input(&mut self) -> &mut BoxStream<VPacket<String>> {
+          &mut self.output
+        }
+        fn take_input(self) -> BoxStream<VPacket<String>> {
+          self.output
+        }
+      }
+      pub fn process_incoming(
+        mut stream: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
+      ) -> (wasmrs_rx::BoxMono<Context<Config>, String>, Outputs) {
+        #[allow(unused_parens)]
+        let (config, (output)) =
+          wick_component::payload_fan_out!(stream, wick_component::AnyError, Config, [("output", String)]);
+        (config, Outputs::new(output))
+      }
+      impl Outputs {
+        pub fn new(output: BoxStream<VPacket<String>>) -> Self {
+          Self { output }
+        }
+      }
+      #[derive(Debug, Clone, Default, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
+      #[allow(clippy::exhaustive_structs)]
+      pub struct Config {}
+      impl From<Config> for wick_packet::RuntimeConfig {
+        fn from(v: Config) -> Self {
+          wick_component::to_value(v).unwrap().try_into().unwrap()
+        }
+      }
+    }
+  }
   #[allow(unused)]
   pub struct ImportedComponentComponent {
     component: wick_packet::ComponentReference,
@@ -81,85 +430,107 @@ mod imported {
     #[allow(unused)]
     pub fn add(
       &self,
-      left: impl wick_component::Stream<Item = Result<u64, wick_component::AnyError>> + 'static,
-      right: impl wick_component::Stream<Item = Result<u64, wick_component::AnyError>> + 'static,
-    ) -> std::result::Result<(WickStream<u64>), wick_packet::Error> {
-      let left = left.map(wick_component::wick_packet::into_packet("left"));
-      let right = right.map(wick_component::wick_packet::into_packet("right"));
-      let stream = wick_component::empty();
-      let stream = stream.merge(left).merge(right).chain(wick_component::iter_raw(vec![
-        Ok(Packet::done("left")),
-        Ok(Packet::done("right")),
-      ]));
-      let stream = wick_packet::PacketStream::new(Box::pin(stream));
-      let mut stream = self.add_raw(stream)?;
-      Ok(wick_component::payload_fan_out!(
-          stream, raw : false, wick_component::AnyError, [("output", u64)]
+      op_config: imported_component_component::add::Config,
+      mut inputs: impl Into<imported_component_component::add::Inputs>,
+    ) -> std::result::Result<imported_component_component::add::Outputs, wick_packet::Error> {
+      let mut stream = self.add_raw(op_config, inputs.into().channel.take_rx().unwrap().boxed())?;
+      let (_, outputs) = imported_component_component::add::process_incoming(stream);
+      Ok(outputs)
+    }
+    #[allow(unused)]
+    pub fn add_packets(
+      &self,
+      op_config: imported_component_component::add::Config,
+      stream: wick_packet::PacketStream,
+    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
+      Ok(wick_packet::from_wasmrs(
+        self.add_raw(op_config, wick_packet::packetstream_to_wasmrs(0, stream))?,
       ))
     }
     #[allow(unused)]
-    pub fn add_raw<T: Into<wick_packet::PacketStream>>(
+    pub fn add_raw(
       &self,
-      stream: T,
-    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
+      op_config: imported_component_component::add::Config,
+      stream: wick_component::wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>,
+    ) -> std::result::Result<
+      wick_component::wasmrs_rx::BoxFlux<wick_component::wasmrs::Payload, wick_component::wasmrs::PayloadError>,
+      wick_packet::Error,
+    > {
       Ok(
         self
           .component
-          .call("add", stream.into(), None, self.inherent.clone().into())?,
+          .call("add", stream, Some(op_config.into()), self.inherent.clone().into())?,
       )
     }
     #[allow(unused)]
     pub fn error(
       &self,
-      input: impl wick_component::Stream<Item = Result<String, wick_component::AnyError>> + 'static,
-    ) -> std::result::Result<(WickStream<String>), wick_packet::Error> {
-      let input = input.map(wick_component::wick_packet::into_packet("input"));
-      let stream = wick_component::empty();
-      let stream = stream
-        .merge(input)
-        .chain(wick_component::iter_raw(vec![Ok(Packet::done("input"))]));
-      let stream = wick_packet::PacketStream::new(Box::pin(stream));
-      let mut stream = self.error_raw(stream)?;
-      Ok(wick_component::payload_fan_out!(
-          stream, raw : false, wick_component::AnyError, [("output", String)]
+      op_config: imported_component_component::error::Config,
+      mut inputs: impl Into<imported_component_component::error::Inputs>,
+    ) -> std::result::Result<imported_component_component::error::Outputs, wick_packet::Error> {
+      let mut stream = self.error_raw(op_config, inputs.into().channel.take_rx().unwrap().boxed())?;
+      let (_, outputs) = imported_component_component::error::process_incoming(stream);
+      Ok(outputs)
+    }
+    #[allow(unused)]
+    pub fn error_packets(
+      &self,
+      op_config: imported_component_component::error::Config,
+      stream: wick_packet::PacketStream,
+    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
+      Ok(wick_packet::from_wasmrs(
+        self.error_raw(op_config, wick_packet::packetstream_to_wasmrs(0, stream))?,
       ))
     }
     #[allow(unused)]
-    pub fn error_raw<T: Into<wick_packet::PacketStream>>(
+    pub fn error_raw(
       &self,
-      stream: T,
-    ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
+      op_config: imported_component_component::error::Config,
+      stream: wick_component::wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>,
+    ) -> std::result::Result<
+      wick_component::wasmrs_rx::BoxFlux<wick_component::wasmrs::Payload, wick_component::wasmrs::PayloadError>,
+      wick_packet::Error,
+    > {
       Ok(
         self
           .component
-          .call("error", stream.into(), None, self.inherent.clone().into())?,
+          .call("error", stream, Some(op_config.into()), self.inherent.clone().into())?,
       )
     }
     #[allow(unused)]
     pub fn validate(
       &self,
-      input: impl wick_component::Stream<Item = Result<String, wick_component::AnyError>> + 'static,
-    ) -> std::result::Result<(WickStream<String>), wick_packet::Error> {
-      let input = input.map(wick_component::wick_packet::into_packet("input"));
-      let stream = wick_component::empty();
-      let stream = stream
-        .merge(input)
-        .chain(wick_component::iter_raw(vec![Ok(Packet::done("input"))]));
-      let stream = wick_packet::PacketStream::new(Box::pin(stream));
-      let mut stream = self.validate_raw(stream)?;
-      Ok(wick_component::payload_fan_out!(
-          stream, raw : false, wick_component::AnyError, [("output", String)]
-      ))
+      op_config: imported_component_component::validate::Config,
+      mut inputs: impl Into<imported_component_component::validate::Inputs>,
+    ) -> std::result::Result<imported_component_component::validate::Outputs, wick_packet::Error> {
+      let mut stream = self.validate_raw(op_config, inputs.into().channel.take_rx().unwrap().boxed())?;
+      let (_, outputs) = imported_component_component::validate::process_incoming(stream);
+      Ok(outputs)
     }
     #[allow(unused)]
-    pub fn validate_raw<T: Into<wick_packet::PacketStream>>(
+    pub fn validate_packets(
       &self,
-      stream: T,
+      op_config: imported_component_component::validate::Config,
+      stream: wick_packet::PacketStream,
     ) -> std::result::Result<wick_packet::PacketStream, wick_packet::Error> {
+      Ok(wick_packet::from_wasmrs(self.validate_raw(
+        op_config,
+        wick_packet::packetstream_to_wasmrs(0, stream),
+      )?))
+    }
+    #[allow(unused)]
+    pub fn validate_raw(
+      &self,
+      op_config: imported_component_component::validate::Config,
+      stream: wick_component::wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>,
+    ) -> std::result::Result<
+      wick_component::wasmrs_rx::BoxFlux<wick_component::wasmrs::Payload, wick_component::wasmrs::PayloadError>,
+      wick_packet::Error,
+    > {
       Ok(
         self
           .component
-          .call("validate", stream.into(), None, self.inherent.clone().into())?,
+          .call("validate", stream, Some(op_config.into()), self.inherent.clone().into())?,
       )
     }
   }
@@ -2251,7 +2622,13 @@ pub mod echo {
   #[derive(Debug, Clone, Default, ::serde::Serialize, ::serde::Deserialize, PartialEq)]
   #[allow(clippy::exhaustive_structs)]
   pub struct Config {}
+  impl From<Config> for wick_packet::RuntimeConfig {
+    fn from(v: Config) -> Self {
+      wick_component::to_value(v).unwrap().try_into().unwrap()
+    }
+  }
   pub struct Outputs {
+    pub(crate) channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>,
     #[allow(unused)]
     pub(crate) output: wick_packet::OutgoingPort<types::http::HttpRequest>,
     pub(crate) time: wick_packet::OutgoingPort<wick_component::datetime::DateTime>,
@@ -2261,24 +2638,84 @@ pub mod echo {
       wick_packet::OutputIterator::new(vec![&mut self.output, &mut self.time])
     }
   }
+  impl wick_packet::WasmRsChannel for Outputs {
+    fn channel(&self) -> wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError> {
+      self.channel.clone()
+    }
+  }
   impl Outputs {
-    pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+    #[allow(unused)]
+    pub fn new() -> Self {
+      let channel = wasmrs_rx::FluxChannel::new();
       Self {
         output: wick_packet::OutgoingPort::new("output", channel.clone()),
-        time: wick_packet::OutgoingPort::new("time", channel),
+        time: wick_packet::OutgoingPort::new("time", channel.clone()),
+        channel,
       }
+    }
+    #[allow(unused)]
+    pub fn with_channel(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+      Self {
+        output: wick_packet::OutgoingPort::new("output", channel.clone()),
+        time: wick_packet::OutgoingPort::new("time", channel.clone()),
+        channel,
+      }
+    }
+  }
+  pub struct Inputs {
+    pub(crate) input: BoxStream<VPacket<types::http::HttpRequest>>,
+    pub(crate) time: BoxStream<VPacket<wick_component::datetime::DateTime>>,
+  }
+  impl wick_packet::BinaryInputs<types::http::HttpRequest, wick_component::datetime::DateTime> for Inputs {
+    fn left(&mut self) -> &mut BoxStream<VPacket<types::http::HttpRequest>> {
+      &mut self.input
+    }
+    fn right(&mut self) -> &mut BoxStream<VPacket<wick_component::datetime::DateTime>> {
+      &mut self.time
+    }
+    fn both(
+      self,
+    ) -> (
+      BoxStream<VPacket<types::http::HttpRequest>>,
+      BoxStream<VPacket<wick_component::datetime::DateTime>>,
+    ) {
+      let Self { input, time } = self;
+      (input, time)
+    }
+  }
+  pub fn process_incoming(
+    mut stream: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
+  ) -> (wasmrs_rx::BoxMono<Context<Config>, String>, Inputs) {
+    #[allow(unused_parens)]
+    let (config, (input, time)) = wick_component::payload_fan_out!(
+      stream,
+      wick_component::AnyError,
+      Config,
+      [
+        ("input", types::http::HttpRequest),
+        ("time", wick_component::datetime::DateTime)
+      ]
+    );
+    (config, Inputs::new(input, time))
+  }
+  impl Inputs {
+    pub fn new(
+      input: BoxStream<VPacket<types::http::HttpRequest>>,
+      time: BoxStream<VPacket<wick_component::datetime::DateTime>>,
+    ) -> Self {
+      Self { input, time }
     }
   }
   #[async_trait::async_trait(?Send)]
   #[cfg(target_family = "wasm")]
   pub trait Operation {
     type Error;
+    type Inputs;
     type Outputs;
     type Config: std::fmt::Debug;
     #[allow(unused)]
     async fn echo(
-      input: WickStream<types::http::HttpRequest>,
-      time: WickStream<wick_component::datetime::DateTime>,
+      inputs: Self::Inputs,
       outputs: Self::Outputs,
       ctx: wick_component::flow_component::Context<Self::Config>,
     ) -> std::result::Result<(), Self::Error>;
@@ -2287,12 +2724,12 @@ pub mod echo {
   #[cfg(not(target_family = "wasm"))]
   pub trait Operation {
     type Error: Send;
+    type Inputs: Send;
     type Outputs: Send;
     type Config: std::fmt::Debug + Send;
     #[allow(unused)]
     async fn echo(
-      input: WickStream<types::http::HttpRequest>,
-      time: WickStream<wick_component::datetime::DateTime>,
+      inputs: Self::Inputs,
       outputs: Self::Outputs,
       ctx: wick_component::flow_component::Context<Self::Config>,
     ) -> std::result::Result<(), Self::Error>;
@@ -2318,7 +2755,13 @@ pub mod testop {
       }
     }
   }
+  impl From<Config> for wick_packet::RuntimeConfig {
+    fn from(v: Config) -> Self {
+      wick_component::to_value(v).unwrap().try_into().unwrap()
+    }
+  }
   pub struct Outputs {
+    pub(crate) channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>,
     #[allow(unused)]
     pub(crate) output: wick_packet::OutgoingPort<String>,
   }
@@ -2327,27 +2770,71 @@ pub mod testop {
       wick_packet::OutputIterator::new(vec![&mut self.output])
     }
   }
+  impl wick_packet::WasmRsChannel for Outputs {
+    fn channel(&self) -> wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError> {
+      self.channel.clone()
+    }
+  }
   impl wick_component::SingleOutput for Outputs {
     fn single_output(&mut self) -> &mut dyn wick_packet::Port {
       &mut self.output
     }
   }
   impl Outputs {
-    pub fn new(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+    #[allow(unused)]
+    pub fn new() -> Self {
+      let channel = wasmrs_rx::FluxChannel::new();
       Self {
-        output: wick_packet::OutgoingPort::new("output", channel),
+        output: wick_packet::OutgoingPort::new("output", channel.clone()),
+        channel,
       }
+    }
+    #[allow(unused)]
+    pub fn with_channel(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
+      Self {
+        output: wick_packet::OutgoingPort::new("output", channel.clone()),
+        channel,
+      }
+    }
+  }
+  pub struct Inputs {
+    pub(crate) message: BoxStream<VPacket<types::http::HttpResponse>>,
+  }
+  impl wick_packet::UnaryInputs<types::http::HttpResponse> for Inputs {
+    fn input(&mut self) -> &mut BoxStream<VPacket<types::http::HttpResponse>> {
+      &mut self.message
+    }
+    fn take_input(self) -> BoxStream<VPacket<types::http::HttpResponse>> {
+      self.message
+    }
+  }
+  pub fn process_incoming(
+    mut stream: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
+  ) -> (wasmrs_rx::BoxMono<Context<Config>, String>, Inputs) {
+    #[allow(unused_parens)]
+    let (config, (message)) = wick_component::payload_fan_out!(
+      stream,
+      wick_component::AnyError,
+      Config,
+      [("message", types::http::HttpResponse)]
+    );
+    (config, Inputs::new(message))
+  }
+  impl Inputs {
+    pub fn new(message: BoxStream<VPacket<types::http::HttpResponse>>) -> Self {
+      Self { message }
     }
   }
   #[async_trait::async_trait(?Send)]
   #[cfg(target_family = "wasm")]
   pub trait Operation {
     type Error;
+    type Inputs;
     type Outputs;
     type Config: std::fmt::Debug;
     #[allow(unused)]
     async fn testop(
-      message: WickStream<types::http::HttpResponse>,
+      inputs: Self::Inputs,
       outputs: Self::Outputs,
       ctx: wick_component::flow_component::Context<Self::Config>,
     ) -> std::result::Result<(), Self::Error>;
@@ -2356,11 +2843,12 @@ pub mod testop {
   #[cfg(not(target_family = "wasm"))]
   pub trait Operation {
     type Error: Send;
+    type Inputs: Send;
     type Outputs: Send;
     type Config: std::fmt::Debug + Send;
     #[allow(unused)]
     async fn testop(
-      message: WickStream<types::http::HttpResponse>,
+      inputs: Self::Inputs,
       outputs: Self::Outputs,
       ctx: wick_component::flow_component::Context<Self::Config>,
     ) -> std::result::Result<(), Self::Error>;
@@ -2371,63 +2859,44 @@ pub mod testop {
 pub struct Component;
 impl Component {
   fn echo_wrapper(
-    mut input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
+    input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
   ) -> std::result::Result<wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>, wick_component::BoxError> {
     let (channel, rx) = wasmrs_rx::FluxChannel::<wasmrs::RawPayload, wasmrs::PayloadError>::new_parts();
-    let outputs = echo::Outputs::new(channel.clone());
+    let outputs = echo::Outputs::with_channel(channel.clone());
     runtime::spawn("echo_wrapper", async move {
-      #[allow(unused_parens)]
-      let (config, (input, time)) = wick_component::payload_fan_out!(
-          input, raw : false, wick_component::AnyError, echo::Config,
-          [("input", types::http::HttpRequest), ("time",
-          wick_component::datetime::DateTime)]
-      );
+      let (config, inputs) = echo::process_incoming(input);
       let config = match config.await {
-        Ok(Ok(config)) => config,
+        Ok(config) => config,
         Err(e) => {
           let _ = channel
             .send_result(wick_packet::Packet::component_error(format!("Component sent invalid context: {}", e)).into());
           return;
         }
-        Ok(Err(e)) => {
-          let _ = channel
-            .send_result(wick_packet::Packet::component_error(format!("Component sent invalid context: {}", e)).into());
-          return;
-        }
       };
-      use echo::Operation;
-      if let Err(e) = Component::echo(Box::pin(input), Box::pin(time), outputs, config).await {
+      use self::echo::Operation;
+      if let Err(e) = Component::echo(inputs, outputs, config).await {
         let _ = channel.send_result(wick_packet::Packet::component_error(e.to_string()).into());
       }
     });
     Ok(Box::pin(rx))
   }
   fn testop_wrapper(
-    mut input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
+    input: wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs::PayloadError>,
   ) -> std::result::Result<wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs::PayloadError>, wick_component::BoxError> {
     let (channel, rx) = wasmrs_rx::FluxChannel::<wasmrs::RawPayload, wasmrs::PayloadError>::new_parts();
-    let outputs = testop::Outputs::new(channel.clone());
+    let outputs = testop::Outputs::with_channel(channel.clone());
     runtime::spawn("testop_wrapper", async move {
-      #[allow(unused_parens)]
-      let (config, (message)) = wick_component::payload_fan_out!(
-          input, raw : false, wick_component::AnyError, testop::Config,
-          [("message", types::http::HttpResponse)]
-      );
+      let (config, inputs) = testop::process_incoming(input);
       let config = match config.await {
-        Ok(Ok(config)) => config,
+        Ok(config) => config,
         Err(e) => {
           let _ = channel
             .send_result(wick_packet::Packet::component_error(format!("Component sent invalid context: {}", e)).into());
           return;
         }
-        Ok(Err(e)) => {
-          let _ = channel
-            .send_result(wick_packet::Packet::component_error(format!("Component sent invalid context: {}", e)).into());
-          return;
-        }
       };
-      use testop::Operation;
-      if let Err(e) = Component::testop(Box::pin(message), outputs, config).await {
+      use self::testop::Operation;
+      if let Err(e) = Component::testop(inputs, outputs, config).await {
         let _ = channel.send_result(wick_packet::Packet::component_error(e.to_string()).into());
       }
     });

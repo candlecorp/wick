@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 use tokio_stream::StreamExt;
 use wasmrs_rx::Observer;
 use wick_interface_types::{OperationSignature, Type};
-use wick_packet::{InherentData, Invocation, Packet, PacketStream, RuntimeConfig};
+use wick_packet::{InherentData, Invocation, Packet, PacketExt, PacketStream, RuntimeConfig};
 
 use crate::BoxFuture;
 pub(crate) struct Op {}

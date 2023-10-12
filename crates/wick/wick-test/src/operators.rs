@@ -5,7 +5,7 @@ mod regex;
 use json_dotpath::DotPaths;
 use serde_json::Value;
 use wick_config::config::test_case::AssertionOperator;
-use wick_packet::Packet;
+use wick_packet::{Packet, PacketExt};
 
 pub(crate) use self::contains::ContainsError;
 pub(crate) use self::order::OrderingError;
