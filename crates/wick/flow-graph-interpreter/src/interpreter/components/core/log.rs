@@ -2,7 +2,7 @@ use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use serde_json::Value;
 use tokio_stream::StreamExt;
 use wick_interface_types::{operation, OperationSignature};
-use wick_packet::{Invocation, PacketStream, RuntimeConfig};
+use wick_packet::{Invocation, PacketExt, PacketStream, RuntimeConfig};
 
 use crate::BoxFuture;
 #[derive()]

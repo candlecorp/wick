@@ -8,7 +8,7 @@ use tokio_stream::StreamExt;
 use wick_config::config::test_case::{PacketData, TestCaseBuilder, TestPacketData};
 use wick_config::config::TestConfigurationBuilder;
 use wick_interface_types::{component, ComponentSignature};
-use wick_packet::{Invocation, Packet, PacketStream, RuntimeConfig};
+use wick_packet::{Invocation, Packet, PacketExt, PacketStream, RuntimeConfig};
 use wick_test::{ComponentFactory, TestSuite};
 
 struct TestComponent {

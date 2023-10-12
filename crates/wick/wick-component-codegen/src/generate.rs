@@ -69,7 +69,8 @@ fn gen_trait_fns<'a>(
   op.map(|op| {
     let op_name = id(&snake(op.name()));
     let op_config = templates::op_config(config, &generic_config_id(), op);
-    let op_output = templates::op_outputs(config, op);
+    let op_output = templates::op_outgoing(config, "Outputs", op.outputs());
+    let op_input = templates::op_incoming(config, "Inputs", op.inputs());
     let trait_sig = templates::trait_signature(config, op);
     let desc = format!("Types associated with the `{}` operation", op.name());
     quote! {
@@ -79,6 +80,7 @@ fn gen_trait_fns<'a>(
         use super::*;
         #op_config
         #op_output
+        #op_input
         #trait_sig
       }
 
@@ -117,18 +119,15 @@ fn codegen(wick_config: WickConfiguration, gen_config: &mut config::Config) -> R
   let trait_defs = gen_trait_fns(gen_config, ops.iter());
   let typedefs = gen_types("types", gen_config, types.iter());
 
-  let init = f::gen_if(
-    !ops.is_empty(),
-    || {},
-    templates::gen_component_impls(gen_config, &component_name, ops.iter(), &required, &imported),
-  );
+  let init = (!ops.is_empty())
+    .then(|| templates::gen_component_impls(gen_config, &component_name, ops.iter(), &required, &imported));
 
   let root_config = templates::component_config(gen_config, root_config);
 
   let imports = gen_config.deps.iter().map(|dep| quote! { #dep }).collect_vec();
   let imports = quote! { #( #imports )* };
 
-  let components = f::gen_if(gen_config.components, || {}, {
+  let components = gen_config.components.then(|| {
     quote! {
       #[derive(Default, Clone)]
       #[doc = "The struct that the component implementation hinges around"]

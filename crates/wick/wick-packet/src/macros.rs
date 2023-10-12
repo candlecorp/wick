@@ -1,4 +1,13 @@
 #[macro_export]
+macro_rules! raw_packet_stream {
+  ($(($port:expr, $value:expr)),*) => {{
+    let packets = $crate::packets!($(($port, $value)),*);
+    let packets :$crate::PacketStream = packets.into();
+    $crate::packetstream_to_wasmrs(0,packets)
+  }};
+}
+
+#[macro_export]
 macro_rules! packet_stream {
   ($(($port:expr, $value:expr)),*) => {{
     let packets = $crate::packets!($(($port, $value)),*);
@@ -36,6 +45,7 @@ macro_rules! fan_out {
           senders.insert($port, streams.init($port));
         )*
         tokio::spawn(async move {
+            use $crate::PacketExt;
             while let Some(Ok(payload)) = $stream.next().await {
             let sender = senders.get_mut(payload.port()).unwrap();
             if payload.is_done() {

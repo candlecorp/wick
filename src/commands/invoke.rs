@@ -8,7 +8,7 @@ use structured_output::StructuredOutput;
 use wick_component_cli::options::DefaultCliOptions;
 use wick_component_cli::parse_args;
 use wick_host::Host;
-use wick_packet::{Entity, InherentData, Invocation, Packet, PacketStream};
+use wick_packet::{Entity, InherentData, Invocation, Packet, PacketExt, PacketStream};
 
 use crate::utils::{self, parse_config_string};
 use crate::wick_host::build_host;

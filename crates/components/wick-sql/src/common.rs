@@ -6,7 +6,7 @@ use url::Url;
 use wick_config::config::{BoundIdentifier, ErrorBehavior, Metadata, UrlResource};
 use wick_config::Resolver;
 use wick_interface_types::{component, ComponentSignature, Field, OperationSignature, Type};
-use wick_packet::{Packet, TypeWrapper};
+use wick_packet::{Packet, PacketExt, TypeWrapper};
 
 use self::sql_wrapper::ConvertedType;
 use crate::error::ConversionError;

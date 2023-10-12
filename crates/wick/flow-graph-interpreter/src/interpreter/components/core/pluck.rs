@@ -3,7 +3,7 @@ use flow_component::{ComponentError, Context, Operation, RenderConfiguration};
 use futures::{FutureExt, StreamExt};
 use serde_json::Value;
 use wick_interface_types::{operation, OperationSignature};
-use wick_packet::{Invocation, Packet, PacketStream, RuntimeConfig};
+use wick_packet::{Invocation, Packet, PacketExt, PacketStream, RuntimeConfig};
 
 use crate::BoxFuture;
 pub(crate) struct Op {

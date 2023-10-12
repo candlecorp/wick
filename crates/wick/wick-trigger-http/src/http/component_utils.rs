@@ -17,6 +17,7 @@ use wick_packet::{
   InherentData,
   Invocation,
   Packet,
+  PacketExt,
   PacketPayload,
   PacketStream,
   RuntimeConfig,

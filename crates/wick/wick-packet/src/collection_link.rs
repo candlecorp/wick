@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{Entity, PacketStream, Result};
+use crate::{Entity, Result};
 
 /// An implementation that encapsulates a collection link that components use to call out to components on other Wick collections.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -21,7 +21,7 @@ impl ComponentReference {
   pub fn to_invocation(
     &self,
     operation: &str,
-    packets: impl Into<PacketStream>,
+    packets: impl Into<crate::PacketStream>,
     inherent: crate::InherentData,
     parent: &tracing::Span,
   ) -> crate::Invocation {
@@ -46,10 +46,10 @@ impl ComponentReference {
   pub fn call(
     &self,
     operation: &str,
-    stream: PacketStream,
+    stream: wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs_frames::PayloadError>,
     config: Option<crate::RuntimeConfig>,
     previous_inherent: crate::InherentData,
-  ) -> Result<PacketStream> {
+  ) -> Result<wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs_frames::PayloadError>> {
     link_call(self.clone(), operation, stream, config, previous_inherent)
   }
 }
@@ -71,15 +71,14 @@ struct InvocationPayload {
 fn link_call(
   compref: ComponentReference,
   target_op: &str,
-  input: PacketStream,
+  mut stream: wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs_frames::PayloadError>,
   config: Option<crate::RuntimeConfig>,
   previous_inherent: crate::InherentData,
-) -> Result<PacketStream> {
+) -> Result<wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs_frames::PayloadError>> {
   use tokio_stream::StreamExt;
   use wasmrs::RSocket;
   use wasmrs_guest::{FluxChannel, Observer};
 
-  let mut stream = crate::packetstream_to_wasmrs(0, input);
   let (tx, rx) = FluxChannel::new_parts();
   let first = crate::ContextTransport {
     config,
@@ -103,8 +102,13 @@ fn link_call(
     }
   });
 
-  let response = wasmrs_guest::Host::default().request_channel(rx.boxed());
-  Ok(crate::from_raw_wasmrs(response))
+  Ok(Box::pin(wasmrs_guest::Host::default().request_channel(rx.boxed()).map(
+    |r| {
+      r.and_then(|r| {
+        wasmrs::Payload::try_from(r).map_err(|e| wasmrs_frames::PayloadError::application_error(e.to_string(), None))
+      })
+    },
+  )))
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -112,9 +116,9 @@ fn link_call(
 fn link_call(
   _compref: ComponentReference,
   _target_op: &str,
-  _input: PacketStream,
+  _input: wasmrs_rx::BoxFlux<wasmrs::RawPayload, wasmrs_frames::PayloadError>,
   _config: Option<crate::RuntimeConfig>,
   _previous_inherent: crate::InherentData,
-) -> Result<PacketStream> {
+) -> Result<wasmrs_rx::BoxFlux<wasmrs::Payload, wasmrs_frames::PayloadError>> {
   unimplemented!("Link calls from native components is not implemented yet")
 }

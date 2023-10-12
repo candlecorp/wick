@@ -54,15 +54,6 @@ impl Packet {
     }
   }
 
-  /// Returns `true` if the packet contains data in the payload.
-  pub fn has_data(&self) -> bool {
-    match &self.payload {
-      PacketPayload::Ok(Some(data)) => !data.is_empty(),
-      PacketPayload::Ok(None) => false,
-      PacketPayload::Err(_) => false,
-    }
-  }
-
   pub fn no_input() -> Self {
     Self::encode(Self::NO_INPUT, ())
   }
@@ -117,13 +108,8 @@ impl Packet {
     Self::new_for_port(port, PacketPayload::encode(data), 0)
   }
 
-  /// Get the flags for this packet.
-  pub const fn flags(&self) -> u8 {
-    self.extra.flags
-  }
-
   /// Get the operation index associated with this packet.
-  pub const fn index(&self) -> u32 {
+  pub const fn index(&self) -> Option<u32> {
     self.metadata.index
   }
 
@@ -153,21 +139,6 @@ impl Packet {
     self.extra.port = port.into();
   }
 
-  /// Get the port for this packet.
-  pub fn port(&self) -> &str {
-    &self.extra.port
-  }
-
-  /// Return `true` if this is a No-Op packet. No action should be taken.
-  pub fn is_noop(&self) -> bool {
-    self.port() == Self::NO_INPUT
-  }
-
-  /// Return `true` if this is a fatal, component wide error packet.
-  pub fn is_fatal_error(&self) -> bool {
-    self.port() == Self::FATAL_ERROR
-  }
-
   /// Return `true` if this is an error packet.
   pub const fn is_error(&self) -> bool {
     matches!(self.payload, PacketPayload::Err(_))
@@ -176,31 +147,6 @@ impl Packet {
   /// Get the inner payload of this packet.
   pub const fn payload(&self) -> &PacketPayload {
     &self.payload
-  }
-
-  /// Returns true if this packet is a signal packet (i.e. done, open_bracket, close_bracket, etc).
-  pub const fn is_signal(&self) -> bool {
-    self.extra.flags() > 0
-  }
-
-  /// Returns true if this packet is a bracket packet (i.e open_bracket, close_bracket, etc).
-  pub const fn is_bracket(&self) -> bool {
-    self.extra.flags() & (OPEN_BRACKET | CLOSE_BRACKET) > 0
-  }
-
-  /// Returns true if this packet is a done packet.
-  pub const fn is_done(&self) -> bool {
-    self.extra.is_done()
-  }
-
-  /// Returns true if this packet is an open bracket packet.
-  pub const fn is_open_bracket(&self) -> bool {
-    self.extra.is_open_bracket()
-  }
-
-  /// Returns true if this packet is a close bracket packet.
-  pub const fn is_close_bracket(&self) -> bool {
-    self.extra.is_close_bracket()
   }
 
   /// Returns the payload, panicking if it is an error.
@@ -239,6 +185,70 @@ impl Packet {
         "payload": self.payload.to_json(),
       })
     }
+  }
+}
+
+impl PacketExt for Packet {
+  fn has_data(&self) -> bool {
+    match &self.payload {
+      PacketPayload::Ok(Some(data)) => !data.is_empty(),
+      PacketPayload::Ok(None) => false,
+      PacketPayload::Err(_) => false,
+    }
+  }
+
+  fn port(&self) -> &str {
+    &self.extra.port
+  }
+
+  fn flags(&self) -> u8 {
+    self.extra.flags
+  }
+}
+
+pub trait PacketExt {
+  /// Returns `true` if the packet contains data in the payload.
+  fn has_data(&self) -> bool;
+
+  /// Get the port for this packet.
+  fn port(&self) -> &str;
+
+  /// Get the inner payload of this packet.
+  fn flags(&self) -> u8;
+
+  /// Return `true` if this is a No-Op packet. No action should be taken.
+  fn is_noop(&self) -> bool {
+    self.port() == Packet::NO_INPUT
+  }
+
+  /// Return `true` if this is a fatal, component wide error packet.
+  fn is_fatal_error(&self) -> bool {
+    self.port() == Packet::FATAL_ERROR
+  }
+
+  /// Returns true if this packet is a signal packet (i.e. done, open_bracket, close_bracket, etc).
+  fn is_signal(&self) -> bool {
+    self.flags() > 0
+  }
+
+  /// Returns true if this packet is a bracket packet (i.e open_bracket, close_bracket, etc).
+  fn is_bracket(&self) -> bool {
+    self.flags() & (OPEN_BRACKET | CLOSE_BRACKET) > 0
+  }
+
+  /// Returns true if this packet is a done packet.
+  fn is_done(&self) -> bool {
+    self.flags() & DONE_FLAG == DONE_FLAG
+  }
+
+  /// Returns true if this packet is an open bracket packet.
+  fn is_open_bracket(&self) -> bool {
+    self.flags() & OPEN_BRACKET == OPEN_BRACKET
+  }
+
+  /// Returns true if this packet is a close bracket packet.
+  fn is_close_bracket(&self) -> bool {
+    self.flags() & CLOSE_BRACKET == CLOSE_BRACKET
   }
 }
 

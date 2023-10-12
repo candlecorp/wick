@@ -1,6 +1,4 @@
 {
   "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
-  "extensions": [
-    "CandleCorp.wick-development-framework"
-  ]
+  "rust-analyzer.cargo.features": ["localgen"]
 }

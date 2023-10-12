@@ -20,21 +20,13 @@ macro_rules! wick_import {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! handle_port {
-  (raw: true, $packet:ident, $tx:ident, $port:expr, $ty:ty) => {{
+  ($packet:ident, $tx:ident, $port:expr, $ty:ty) => {{
     use $crate::wasmrs_rx::Observer;
+    use $crate::wick_packet::PacketExt;
     if $packet.is_done() {
       $tx.complete();
     } else {
       let _ = $tx.send($packet);
-    }
-  }};
-  (raw: false, $packet:ident, $tx:ident, $port:expr, $ty:ty) => {{
-    use $crate::wasmrs_rx::Observer;
-    if $packet.is_done() {
-      $tx.complete();
-    } else {
-      let packet: Result<$ty, _> = $packet.decode().map_err(|e| e.into());
-      let _ = $tx.send_result(packet);
     }
   }};
 }
@@ -46,16 +38,16 @@ macro_rules! stream_senders {
     $crate::paste::paste! {
       struct $name {
         $(
-          [<$port:snake>]: $crate::wasmrs_rx::FluxChannel<$($ty)*,$error>
+          [<$port:snake>]: $crate::wasmrs_rx::FluxChannel<$crate::wick_packet::Packet,$error>
         ),*
       }
       impl $name {
         #[allow(clippy::missing_const_for_fn,unreachable_pub,unused,unused_parens)]
         pub fn receivers(&self) -> Option<($(
-          $crate::WickStream<$($ty)*>
+          $crate::BoxStream<$crate::wick_packet::VPacket<$($ty)*>>
         ),*)> {
           Some((
-            $(Box::pin(self.[<$port:snake>].take_rx().ok()?)),*
+            $(Box::pin(self.[<$port:snake>].take_rx().ok()?.map($crate::wick_packet::VPacket::from_result))),*
           ))
         }
       }
@@ -108,14 +100,14 @@ macro_rules! stream_receivers {
 macro_rules! payload_fan_out {
     (@handle_packet $payload: ident, $sender:ident, $config:ty) => {
       {
-        let mut packet: $crate::wick_packet::Packet = $payload.into();
+        let packet: $crate::wick_packet::Packet = $payload.into();
 
         if let Some(config_tx) = $sender.take() {
           if let Some(context) = packet.context() {
             let config: Result<$crate::wick_packet::ContextTransport<$config>, _> = $crate::wasmrs_codec::messagepack::deserialize(&context).map_err(|e|format!("Cound not deserialize context: {}", e));
             let _ = config_tx.send(config.map($crate::flow_component::Context::from));
           } else {
-            packet = $crate::wick_packet::Packet::component_error("No context attached to first invocation packet");
+            // packet = $crate::wick_packet::Packet::component_error("No context attached to first invocation packet");
           }
         }
         packet
@@ -128,12 +120,12 @@ macro_rules! payload_fan_out {
       }
     };
 
-    (@route_packet $packet:ident, $channels:ident, raw:$raw:tt,[ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
-      match $packet.port() {
+    (@route_packet $packet:ident, $channels:ident, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
+      match $crate::wick_packet::PacketExt::port(&$packet) {
         $(
           $port => {
             let tx = &$crate::paste::paste! { $channels.[<$port:snake>] };
-            $crate::handle_port!(raw: $raw, $packet, tx, $port, $($ty)*)
+            $crate::handle_port!($packet, tx, $port, $($ty)*)
           }
         ),*
         $crate::wick_packet::Packet::FATAL_ERROR =>
@@ -154,7 +146,7 @@ macro_rules! payload_fan_out {
         }
       }
     };
-    ($stream:expr, raw:$raw:tt, $error:ty, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
+    ($stream:expr, $error:ty, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
       {
         $crate::stream_senders!($error, Channels, [ $(($port, $($ty)+)),* ]);
         #[allow(unused)]
@@ -169,9 +161,7 @@ macro_rules! payload_fan_out {
           loop {
             if let Some(Ok(payload)) = $stream.next().await {
               let packet = $crate::payload_fan_out!(@handle_packet payload);
-
-              $crate::payload_fan_out!(@route_packet packet, channels, raw:$raw, [ $(($port, $($ty)+)),* ]);
-
+              $crate::payload_fan_out!(@route_packet packet, channels, [ $(($port, $($ty)+)),* ]);
             } else {
               break;
             }
@@ -182,7 +172,7 @@ macro_rules! payload_fan_out {
       }
 
     };
-    ($stream:expr, raw:$raw:tt, $error:ty, $config:ty, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
+    ($stream:expr, $error:ty, $config:ty, [ $(($port:expr, $($ty:tt)+)),* $(,)? ]) => {
       {
         $crate::stream_senders!($error, Channels, [ $(($port, $($ty)+)),* ]);
         #[allow(unused)]
@@ -190,7 +180,7 @@ macro_rules! payload_fan_out {
 
         let (config_tx,config_rx) = $crate::runtime::oneshot();
         let mut config_tx = Some(config_tx);
-        let config_mono = Box::pin(config_rx);
+        let config_mono = Box::pin(async move {config_rx.await.unwrap()});
         let output_streams = (config_mono, channels.receivers().unwrap());
 
         $crate::runtime::spawn("payload_fan_out", async move {
@@ -199,7 +189,7 @@ macro_rules! payload_fan_out {
           loop {
             if let Some(Ok(payload)) = $stream.next().await {
               let packet = $crate::payload_fan_out!(@handle_packet payload, config_tx, $config);
-              $crate::payload_fan_out!(@route_packet packet, channels, raw:$raw, [ $(($port, $($ty)+)),* ]);
+              $crate::payload_fan_out!(@route_packet packet, channels, [ $(($port, $($ty)+)),* ]);
             } else {
               break;
             }
@@ -323,13 +313,13 @@ mod test {
     let mut stream = packet_stream!(("foo", 1), ("bar", 2), ("foo", 3), ("bar", 4), ("foo", 5), ("bar", 6));
     stream.set_context(Default::default(), InherentData::unsafe_default());
     let (_config, (mut foo_rx, mut bar_rx)) =
-      payload_fan_out!(stream, raw: false, anyhow::Error, Config, [("foo", i32), ("bar", i32)]);
-    assert_eq!(foo_rx.next().await.unwrap().unwrap(), 1);
-    assert_eq!(bar_rx.next().await.unwrap().unwrap(), 2);
-    assert_eq!(foo_rx.next().await.unwrap().unwrap(), 3);
-    assert_eq!(bar_rx.next().await.unwrap().unwrap(), 4);
-    assert_eq!(foo_rx.next().await.unwrap().unwrap(), 5);
-    assert_eq!(bar_rx.next().await.unwrap().unwrap(), 6);
+      payload_fan_out!(stream, anyhow::Error, Config, [("foo", i32), ("bar", i32)]);
+    assert_eq!(foo_rx.next().await.unwrap().decode().unwrap(), 1);
+    assert_eq!(bar_rx.next().await.unwrap().decode().unwrap(), 2);
+    assert_eq!(foo_rx.next().await.unwrap().decode().unwrap(), 3);
+    assert_eq!(bar_rx.next().await.unwrap().decode().unwrap(), 4);
+    assert_eq!(foo_rx.next().await.unwrap().decode().unwrap(), 5);
+    assert_eq!(bar_rx.next().await.unwrap().decode().unwrap(), 6);
 
     Ok(())
   }
@@ -338,13 +328,13 @@ mod test {
   async fn test_fan_out_no_config() -> Result<()> {
     let mut stream = packet_stream!(("foo", 1), ("bar", 2), ("foo", 3), ("bar", 4), ("foo", 5), ("bar", 6));
     stream.set_context(Default::default(), InherentData::unsafe_default());
-    let (mut foo_rx, mut bar_rx) = payload_fan_out!(stream, raw: false, anyhow::Error, [("foo", i32), ("bar", i32)]);
-    assert_eq!(foo_rx.next().await.unwrap().unwrap(), 1);
-    assert_eq!(bar_rx.next().await.unwrap().unwrap(), 2);
-    assert_eq!(foo_rx.next().await.unwrap().unwrap(), 3);
-    assert_eq!(bar_rx.next().await.unwrap().unwrap(), 4);
-    assert_eq!(foo_rx.next().await.unwrap().unwrap(), 5);
-    assert_eq!(bar_rx.next().await.unwrap().unwrap(), 6);
+    let (mut foo_rx, mut bar_rx) = payload_fan_out!(stream, anyhow::Error, [("foo", i32), ("bar", i32)]);
+    assert_eq!(foo_rx.next().await.unwrap().decode().unwrap(), 1);
+    assert_eq!(bar_rx.next().await.unwrap().decode().unwrap(), 2);
+    assert_eq!(foo_rx.next().await.unwrap().decode().unwrap(), 3);
+    assert_eq!(bar_rx.next().await.unwrap().decode().unwrap(), 4);
+    assert_eq!(foo_rx.next().await.unwrap().decode().unwrap(), 5);
+    assert_eq!(bar_rx.next().await.unwrap().decode().unwrap(), 6);
 
     Ok(())
   }
@@ -353,7 +343,7 @@ mod test {
   async fn test_fan_out_no_fields() -> Result<()> {
     let mut stream = packet_stream!(("foo", 1), ("bar", 2), ("foo", 3), ("bar", 4), ("foo", 5), ("bar", 6));
     stream.set_context(Default::default(), InherentData::unsafe_default());
-    let _config = payload_fan_out!(stream, raw: false, anyhow::Error, Config, []);
+    let _config = payload_fan_out!(stream, anyhow::Error, Config, []);
 
     Ok(())
   }

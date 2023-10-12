@@ -18,7 +18,17 @@ use wick_config::config::components::{
 use wick_config::config::{Codec, HttpMethod, LiquidJsonConfig, Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
 use wick_interface_types::{ComponentSignature, OperationSignatures};
-use wick_packet::{Base64Bytes, FluxChannel, Invocation, Observer, Packet, PacketSender, PacketStream, RuntimeConfig};
+use wick_packet::{
+  Base64Bytes,
+  FluxChannel,
+  Invocation,
+  Observer,
+  Packet,
+  PacketExt,
+  PacketSender,
+  PacketStream,
+  RuntimeConfig,
+};
 
 use crate::error::Error;
 static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);

@@ -1,5 +1,8 @@
 /// Utility functions for binary operations (operations with two inputs).
 pub mod binary;
+
+/// Generic utility functions.
+pub mod generic;
 /// Utility functions for unary operations (operations with one input).
 pub mod unary;
 

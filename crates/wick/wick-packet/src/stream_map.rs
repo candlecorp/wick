@@ -71,6 +71,8 @@ impl StreamMap {
     use tracing::warn;
     use wasmrs_rx::Observer;
 
+    use crate::PacketExt;
+
     #[must_use]
     let mut streams = StreamMap::default();
     let mut senders = HashMap::new();

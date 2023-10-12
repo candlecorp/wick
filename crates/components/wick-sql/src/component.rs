@@ -13,7 +13,7 @@ use wick_config::config::components::{ComponentConfig, OperationConfig, SqlCompo
 use wick_config::config::{ErrorBehavior, Metadata};
 use wick_config::Resolver;
 use wick_interface_types::{ComponentSignature, Field, OperationSignatures, Type};
-use wick_packet::{Invocation, Observer, Packet, PacketSender, PacketStream, RuntimeConfig};
+use wick_packet::{Invocation, Observer, Packet, PacketExt, PacketSender, PacketStream, RuntimeConfig};
 
 use crate::common::{Connection, DatabaseProvider};
 use crate::{common, Error};

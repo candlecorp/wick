@@ -126,6 +126,8 @@ enum Adapter {
   BinaryInterleavedPairs,
   BinaryPairedRightStream,
   UnarySimple,
+  UnaryWithOutputs,
+  GenericRaw,
 }
 
 impl Adapter {
@@ -136,6 +138,8 @@ impl Adapter {
       "binary_interleaved_pairs" => Some(Adapter::BinaryInterleavedPairs),
       "binary_paired_right_stream" => Some(Adapter::BinaryPairedRightStream),
       "unary_simple" => Some(Adapter::UnarySimple),
+      "unary_with_outputs" => Some(Adapter::UnaryWithOutputs),
+      "generic_raw" => Some(Adapter::GenericRaw),
       _ => None,
     }
   }
@@ -145,6 +149,8 @@ impl Adapter {
       Adapter::BinaryInterleavedPairs,
       Adapter::BinaryPairedRightStream,
       Adapter::UnarySimple,
+      Adapter::UnaryWithOutputs,
+      Adapter::GenericRaw,
     ]
   }
 }
@@ -155,6 +161,8 @@ impl std::fmt::Display for Adapter {
       Adapter::BinaryInterleavedPairs => write!(f, "binary_interleaved_pairs"),
       Adapter::BinaryPairedRightStream => write!(f, "binary_paired_right_stream"),
       Adapter::UnarySimple => write!(f, "unary_simple"),
+      Adapter::UnaryWithOutputs => write!(f, "unary_with_outputs"),
+      Adapter::GenericRaw => write!(f, "generic_raw"),
     }
   }
 }
@@ -253,7 +261,7 @@ fn expand_wrapper(adapter: Adapter, wrappee: &ItemFn) -> TokenStream {
     ReturnType::Default => quote! {()},
     ReturnType::Type(_, type_) => quote! {#type_},
   };
-  let fn_wrapper_name = Ident::new(&format!("real_{}", fn_name), Span::call_site());
+  let fn_wrapper_name = Ident::new(&format!("{}_wrapper", fn_name), Span::call_site());
 
   let (async_, await_) = if async_.is_some() {
     (Some(quote! {async}), Some(quote! {.await}))
@@ -262,14 +270,21 @@ fn expand_wrapper(adapter: Adapter, wrappee: &ItemFn) -> TokenStream {
   };
 
   let result = quote! {
-    wick_component::#adapter !(#fn_name);
+    wick_component::#adapter !(#fn_name => #fn_wrapper_name);
 
+    #[cfg(not(target_family = "wasm"))]
     #(#attrs)*
-    fn #fn_name(#(#fn_arg_types_outer),*) -> std::pin::Pin<Box<dyn std::future::Future<Output = #fn_return> + 'static>> {
-      Box::pin(async move { #fn_wrapper_name(#(#fn_arg_names),*)#await_ })
+    fn #fn_wrapper_name(#(#fn_arg_types_outer),*) -> std::pin::Pin<Box<dyn std::future::Future<Output = #fn_return> + Send + Sync + 'static>> {
+      Box::pin(async move { #fn_name(#(#fn_arg_names),*)#await_ })
     }
 
-    #async_ fn #fn_wrapper_name(#(#fn_arg_types),*) -> #fn_return {
+    #[cfg(target_family = "wasm")]
+    #(#attrs)*
+    fn #fn_wrapper_name(#(#fn_arg_types_outer),*) -> std::pin::Pin<Box<dyn std::future::Future<Output = #fn_return> + 'static>> {
+      Box::pin(async move { #fn_name(#(#fn_arg_names),*)#await_ })
+    }
+
+    #async_ fn #fn_name(#(#fn_arg_types),*) -> #fn_return {
       #fn_body
     }
 

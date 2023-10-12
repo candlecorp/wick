@@ -7,11 +7,12 @@ mod test1 {
   impl testop::Operation for Component {
     type Error = anyhow::Error;
     type Outputs = testop::Outputs;
+    type Inputs = testop::Inputs;
     type Config = testop::Config;
 
     #[allow(unused)]
     async fn testop(
-      message: WickStream<types::http::HttpResponse>,
+      inputs: Self::Inputs,
       outputs: Self::Outputs,
       ctx: Context<Self::Config>,
     ) -> Result<(), Self::Error> {
@@ -24,15 +25,11 @@ mod test1 {
   impl echo::Operation for Component {
     type Error = anyhow::Error;
     type Outputs = echo::Outputs;
+    type Inputs = echo::Inputs;
     type Config = echo::Config;
 
     #[allow(unused)]
-    async fn echo(
-      message: WickStream<types::http::HttpRequest>,
-      time: WickStream<datetime::DateTime>,
-      outputs: Self::Outputs,
-      ctx: Context<Self::Config>,
-    ) -> Result<(), Self::Error> {
+    async fn echo(inputs: Self::Inputs, outputs: Self::Outputs, ctx: Context<Self::Config>) -> Result<(), Self::Error> {
       Ok(())
     }
   }
@@ -105,16 +102,18 @@ mod test1 {
         status: http::StatusCode::Ok,
         headers: Default::default(),
       };
-      let packets = once(response);
+      let packets = once_raw(VPacket::from_value(response));
       let tx = FluxChannel::new();
-      let outputs = testop::Outputs::new(tx);
+      let outputs = testop::Outputs::with_channel(tx);
       let ctx = Context::new(
         testop::Config::default(),
         &InherentData::unsafe_default(),
         Default::default(),
       );
 
-      Component::testop(Box::pin(packets), outputs, ctx).await?;
+      let inputs = testop::Inputs::new(Box::pin(packets));
+
+      Component::testop(inputs, outputs, ctx).await?;
       Ok(())
     }
 

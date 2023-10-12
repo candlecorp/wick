@@ -20,6 +20,7 @@ use wick_packet::{
   Invocation,
   InvocationData,
   Packet,
+  PacketExt,
   PacketSender,
   PacketStream,
   RuntimeConfig,

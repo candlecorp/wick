@@ -4,7 +4,9 @@ mod wick {
   wick_component::wick_import!();
 }
 use wick::*;
-use wick_component::wick_packet::packet_stream;
+use wick_component::wick_packet::{packet_stream, raw_packet_stream};
+
+use imported::app_config_component::static_site;
 
 #[wick_component::operation(unary_simple)]
 async fn main(_args: Vec<String>, ctx: Context<main::Config>) -> anyhow::Result<u64> {
@@ -19,7 +21,7 @@ async fn main(_args: Vec<String>, ctx: Context<main::Config>) -> anyhow::Result<
   /*
    * The StaticSiteConfig struct is the configuration for the static_site operation
    */
-  let config = StaticSiteConfig {
+  let config = static_site::Config {
     app_name: "my new app".to_string(),
   };
 
@@ -28,15 +30,18 @@ async fn main(_args: Vec<String>, ctx: Context<main::Config>) -> anyhow::Result<
    * directly. This is the simplest way to call a component, but does not give you
    * access to the underlying packet stream nor any signals that may be present.
    */
-  let mut stream = ctx.imported().app_config.static_site(config, once("dist".to_owned()))?;
+  let mut stream = ctx
+    .imported()
+    .app_config
+    .static_site(config, static_site::Request { dir: "dist".to_owned() })?;
   println!("Printing packets received from app_config.static_site");
-  while let Some(packet) = stream.next().await {
-    let packet = packet?;
+  while let Some(packet) = stream.yaml.next().await {
+    let packet = packet.decode()?;
 
     println!("{}", packet);
   }
 
-  let config = StaticSiteConfig {
+  let config = static_site::Config {
     app_name: "my new app".to_string(),
   };
 
@@ -48,7 +53,7 @@ async fn main(_args: Vec<String>, ctx: Context<main::Config>) -> anyhow::Result<
   let mut stream = ctx
     .imported()
     .app_config
-    .static_site_raw(config, packet_stream!(("dir", "dist")))?;
+    .static_site_packets(config, packet_stream!(("dir", "dist")))?;
 
   println!("Printing packets received from app_config.static_site_raw()");
   while let Some(packet) = stream.next().await {
@@ -68,13 +73,13 @@ async fn main(_args: Vec<String>, ctx: Context<main::Config>) -> anyhow::Result<
    */
   let mut stream_direct = ctx.imported().app_config.component().call(
     "static_site",
-    packet_stream!(("dir", "dist")),
+    raw_packet_stream!(("dir", "dist")),
     Some(json!({"app_name":"my super app"}).try_into()?),
     ctx.inherent.clone().into(),
   )?;
   println!("Printing packets received from the app_config.component().call()");
   while let Some(packet) = stream_direct.next().await {
-    let packet = packet?;
+    let packet: Packet = packet?.try_into()?;
     if !packet.has_data() {
       continue;
     }

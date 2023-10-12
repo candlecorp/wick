@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use futures::stream::StreamExt;
 use tracing::debug;
 use wick_config::WickConfiguration;
-use wick_packet::{Entity, InherentData, Invocation, Packet, PacketStream, RuntimeConfig};
+use wick_packet::{Entity, InherentData, Invocation, Packet, PacketExt, PacketStream, RuntimeConfig};
 use wick_runtime::{Runtime, RuntimeBuilder};
 
 #[allow(unused)]

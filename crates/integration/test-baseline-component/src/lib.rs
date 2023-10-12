@@ -16,27 +16,22 @@ use wick::*;
 impl add::Operation for Component {
   type Error = String;
   type Outputs = add::Outputs;
+
+  type Inputs = add::Inputs;
   type Config = add::Config;
   async fn add(
-    mut left: WickStream<u64>,
-    mut right: WickStream<u64>,
+    mut inputs: Self::Inputs,
     mut outputs: Self::Outputs,
     _ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
     println!("op:add: in add operation, waiting for inputs");
-    while let (Some(left), Some(right)) = (left.next().await, right.next().await) {
+    while let (Some(left), Some(right)) = (inputs.left.next().await, inputs.right.next().await) {
+      let left = propagate_if_error!(left.decode(), outputs, continue);
+      let right = propagate_if_error!(right.decode(), outputs, continue);
       println!("op:add: received inputs");
-      match (left, right) {
-        (Ok(left), Ok(right)) => {
-          let output = left + right;
-          println!("op:add: sending output");
-          outputs.output.send(&output);
-        }
-        (Err(err), _) | (_, Err(err)) => {
-          println!("op:add: received error, propagating forward");
-          outputs.output.error(&format!("Error adding numbers: {}", err));
-        }
-      }
+      let output = left + right;
+      println!("op:add: sending output");
+      outputs.output.send(&output);
     }
     println!("op:add: done");
     outputs.output.done();
@@ -49,15 +44,18 @@ impl add::Operation for Component {
 impl power::Operation for Component {
   type Error = String;
   type Outputs = power::Outputs;
+
+  type Inputs = power::Inputs;
   type Config = power::Config;
 
   async fn power(
-    mut input: WickStream<u64>,
+    mut inputs: Self::Inputs,
     mut outputs: Self::Outputs,
     ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
     println!("op:power: received exponent {}", ctx.config.exponent);
-    while let Some(Ok(input)) = input.next().await {
+    while let Some(input) = inputs.input.next().await {
+      let input = propagate_if_error!(input.decode(), outputs, continue);
       let output = input.pow(ctx.config.exponent);
       outputs.output.send(&output);
     }
@@ -71,17 +69,19 @@ impl power::Operation for Component {
 impl error::Operation for Component {
   type Error = String;
   type Outputs = error::Outputs;
+
+  type Inputs = error::Inputs;
   type Config = error::Config;
 
   async fn error(
-    mut input: WickStream<String>,
+    mut inputs: Self::Inputs,
     _outputs: Self::Outputs,
     ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
     let config = ctx.root_config();
 
     println!("In error operation");
-    while let Some(Ok(_)) = input.next().await {
+    while let Some(_input) = inputs.input.next().await {
       println!("Going to panic! This is expected!");
       panic!("This component always panics: {}", config.default_err);
     }
@@ -95,9 +95,15 @@ impl error::Operation for Component {
 impl uuid::Operation for Component {
   type Error = String;
   type Outputs = uuid::Outputs;
+
+  type Inputs = uuid::Inputs;
   type Config = uuid::Config;
 
-  async fn uuid(mut outputs: Self::Outputs, ctx: Context<Self::Config>) -> Result<(), Self::Error> {
+  async fn uuid(
+    _inputs: uuid::Inputs,
+    mut outputs: Self::Outputs,
+    ctx: Context<Self::Config>,
+  ) -> Result<(), Self::Error> {
     let uuid = ctx.inherent.rng.uuid().to_string();
     outputs.output.send(&uuid);
     outputs.output.done();
@@ -111,15 +117,17 @@ impl uuid::Operation for Component {
 impl validate::Operation for Component {
   type Error = String;
   type Outputs = validate::Outputs;
+
+  type Inputs = validate::Inputs;
   type Config = validate::Config;
 
   async fn validate(
-    mut input: WickStream<String>,
+    mut inputs: Self::Inputs,
     mut outputs: Self::Outputs,
     _ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
-    while let Some(password) = input.next().await {
-      let password = propagate_if_error!(password, outputs, continue);
+    while let Some(password) = inputs.input.next().await {
+      let password = propagate_if_error!(password.decode(), outputs, continue);
       println!("Checking password {}", password);
 
       if password.len() < MINIMUM_LENGTH {
@@ -171,16 +179,18 @@ static MAXIMUM_LENGTH: usize = 512;
 impl strftime::Operation for Component {
   type Error = String;
   type Outputs = strftime::Outputs;
+
+  type Inputs = strftime::Inputs;
   type Config = strftime::Config;
 
   async fn strftime(
-    mut input: WickStream<datetime::DateTime>,
+    mut inputs: Self::Inputs,
     mut outputs: Self::Outputs,
     ctx: Context<Self::Config>,
   ) -> Result<(), Self::Error> {
     let fmt = &ctx.config.format;
-    while let Some(input) = input.next().await {
-      let input = propagate_if_error!(input, outputs, continue);
+    while let Some(input) = inputs.input.next().await {
+      let input = propagate_if_error!(input.decode(), outputs, continue);
       let output = input.format(fmt).to_string();
       outputs.output.send(&output);
     }
