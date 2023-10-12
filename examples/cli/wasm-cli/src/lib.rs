@@ -3,10 +3,9 @@ mod wick {
   #[rustfmt::skip]
   wick_component::wick_import!();
 }
+use imported::app_config::static_site;
 use wick::*;
 use wick_component::wick_packet::{packet_stream, raw_packet_stream};
-
-use imported::app_config_component::static_site;
 
 #[wick_component::operation(unary_simple)]
 async fn main(_args: Vec<String>, ctx: Context<main::Config>) -> anyhow::Result<u64> {

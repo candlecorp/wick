@@ -8,7 +8,7 @@ mod wick {
   wick_component::wick_import!();
 }
 
-use provided::client_component::post_op;
+use provided::client::post_op;
 use wick::*;
 
 #[async_trait::async_trait(?Send)]

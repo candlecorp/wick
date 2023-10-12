@@ -85,6 +85,14 @@ pub(crate) fn op_outgoing(config: &mut config::Config, name: &str, fields: &[Fie
           }
         }
         #[allow(unused)]
+        pub fn new_parts() -> (Self,wasmrs_rx::FluxReceiver<wasmrs::RawPayload, wasmrs::PayloadError>) {
+          let (channel,rx) = wasmrs_rx::FluxChannel::new_parts();
+          (Self {
+            #(#output_ports_new,)*
+            channel,
+          },rx)
+        }
+        #[allow(unused)]
         pub fn with_channel(channel: wasmrs_rx::FluxChannel<wasmrs::RawPayload, wasmrs::PayloadError>) -> Self {
           Self {
             #(#output_ports_new,)*

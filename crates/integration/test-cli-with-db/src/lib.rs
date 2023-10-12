@@ -40,7 +40,7 @@ impl main::Operation for Component {
         console::style(format!("{}get_user", provided.db.component())).green()
       );
 
-      let mut get_user = provided::db_component::get_user::Inputs::new();
+      let mut get_user = provided::db::get_user::Inputs::new();
       get_user.id.send(&id);
       let mut response = ctx.provided().db.get_user(Default::default(), get_user)?;
 
