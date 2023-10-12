@@ -61,8 +61,6 @@ impl Trigger for WasmTrigger {
     let wasi = wasi.build(&mut table).map_err(Error::WasiBuild)?;
     let mut store = Store::new(engine, SimpleState { wasi, table });
 
-    state::generated::add_to_linker(&mut linker, |state: &mut SimpleState| state).map_err(Error::Linker)?;
-
     let (_bindings, instance) = state::generated::CommandTrigger::instantiate_async(&mut store, &component, &linker)
       .await
       .map_err(Error::Instantiation)?;
