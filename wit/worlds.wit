@@ -6,4 +6,5 @@ world command-trigger {
 
 world component {
   import wick
+  export wick
 }

@@ -22,7 +22,7 @@ macro_rules! unary_with_outputs {
         mut outputs: Self::Outputs,
         ctx: Context<Self::Config>,
       ) -> Result<(), Self::Error> {
-        let output_factory = || $name::Outputs::new();
+        let output_factory = || $name::Outputs::new_parts();
         use wick_packet::UnaryInputs;
         let input = inputs.take_input();
         wick_component::unary::with_outputs(input, outputs, output_factory, &ctx, &$handler).await?;

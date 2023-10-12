@@ -45,7 +45,7 @@ pub(crate) fn imported_components<T: OperationSignatures>(
     .iter()
     .map(|v| {
       let name = id(&format!("{}Component", &pascal(v.id())));
-      let mod_name = id(&format!("{}_component", &snake(v.id())));
+      let mod_name = id(&snake(v.id()));
       let ops = operation_impls(config, &mod_name, &v.kind().operation_signatures());
       let (mut op_fns, mut op_modules) = (Vec::new(), Vec::new());
       for op in ops {

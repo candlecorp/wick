@@ -9,7 +9,7 @@ mod wick {
   #![allow(unused_imports, missing_debug_implementations, clippy::needless_pass_by_value)]
   wick_component::wick_import!();
 }
-use provided::baseline_component::power;
+use provided::baseline::power;
 use wick::*;
 
 #[cfg_attr(target_family = "wasm",async_trait::async_trait(?Send))]
