@@ -69,7 +69,6 @@ allow = [
   "BSD-2-Clause",
   "OpenSSL",
   "Unicode-DFS-2016",
-  "BlueOak-1.0.0",
 ]
 # List of explictly disallowed licenses
 # See https://spdx.org/licenses/ for list of possible licenses
@@ -98,28 +97,31 @@ confidence-threshold = 0.8
 # aren't accepted for every possible crate as with the normal allow list
 exceptions = [
   # Wick-core is licensed under the Elastic License 2.0
-    { name = "wick-host", allow = ["Elastic-2.0"] },
-    { name = "wick-runtime", allow = ["Elastic-2.0"] },
-    { name = "wick-cli", allow = ["Elastic-2.0"] },
-    { name = "wick-test", allow = ["Elastic-2.0"] },
-    { name = "wick-rpc", allow = ["Elastic-2.0"] },
-    { name = "wick-oci-utils", allow = ["Elastic-2.0"] },
-    { name = "wick-invocation-server", allow = ["Elastic-2.0"] },
-    { name = "wick-package", allow = ["Elastic-2.0"] },
-    { name = "wick-sql", allow = ["Elastic-2.0"] },
-    { name = "wick-stdlib", allow = ["Elastic-2.0"] },
-    { name = "wick-http-client", allow = ["Elastic-2.0"] },
-    { name = "wick-component-wasm", allow = ["Elastic-2.0"] },
-    { name = "wick-component-cli", allow = ["Elastic-2.0"] },
-    { name = "wick-logger", allow = ["Elastic-2.0"] },
-    { name = "flow-graph-interpreter", allow = ["Elastic-2.0"] },
-    { name = "flow-component", allow = ["Elastic-2.0"] },
-    { name = "flow-graph", allow = ["Elastic-2.0"] },
-    { name = "flow-expression-parser", allow = ["Elastic-2.0"] },
-    { name = "webpki-roots", allow = ["MPL-2.0"] },
-    { name = "option-ext", allow = ["MPL-2.0"] },
-    { name = "ittapi-sys", allow = ["GPL-2.0","BSD-3-Clause"] },
-    { name = "ittapi", allow = ["GPL-2.0","BSD-3-Clause"] },
+  { name = "wick-host", allow = ["Elastic-2.0"] },
+  { name = "wick-runtime", allow = ["Elastic-2.0"] },
+  { name = "wick-cli", allow = ["Elastic-2.0"] },
+  { name = "wick-test", allow = ["Elastic-2.0"] },
+  { name = "wick-rpc", allow = ["Elastic-2.0"] },
+  { name = "wick-oci-utils", allow = ["Elastic-2.0"] },
+  { name = "wick-invocation-server", allow = ["Elastic-2.0"] },
+  { name = "wick-package", allow = ["Elastic-2.0"] },
+  { name = "wick-sql", allow = ["Elastic-2.0"] },
+  { name = "wick-http-client", allow = ["Elastic-2.0"] },
+  { name = "wick-trigger", allow = ["Elastic-2.0"] },
+  { name = "wick-trigger-cli", allow = ["Elastic-2.0"] },
+  { name = "wick-trigger-http", allow = ["Elastic-2.0"] },
+  { name = "wick-trigger-time", allow = ["Elastic-2.0"] },
+  { name = "wick-trigger-wasm-command", allow = ["Elastic-2.0"] },
+  { name = "wick-component-wasmrs", allow = ["Elastic-2.0"] },
+  { name = "wick-component-cli", allow = ["Elastic-2.0"] },
+  { name = "wick-logger", allow = ["Elastic-2.0"] },
+  { name = "flow-graph-interpreter", allow = ["Elastic-2.0"] },
+  { name = "flow-component", allow = ["Elastic-2.0"] },
+  { name = "flow-graph", allow = ["Elastic-2.0"] },
+  { name = "flow-expression-parser", allow = ["Elastic-2.0"] },
+  { name = "webpki-roots", allow = ["MPL-2.0"] },
+  { name = "ittapi-sys", allow = ["GPL-2.0", "BSD-3-Clause"] },
+  { name = "ittapi", allow = ["GPL-2.0", "BSD-3-Clause"] },
 ]
 
 # Some crates don't have (easily) machine readable licensing information,
@@ -139,7 +141,7 @@ expression = "MIT AND ISC AND OpenSSL"
 # depending on the rest of your configuration
 license-files = [
   # Each entry is a crate relative path, and the (opaque) hash of its contents
-  { path = "LICENSE", hash = 0xbd0eed23 }
+  { path = "LICENSE", hash = 0xbd0eed23 },
 ]
 
 [licenses.private]
