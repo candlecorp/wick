@@ -183,6 +183,9 @@ pub(super) async fn respond(
     let (tx, rx) = unbounded_channel();
     let _output_handle = tokio::spawn(async move {
       while let Some(p) = body_stream.recv().await {
+        if !p.has_data() {
+          continue;
+        }
         match codec {
           Codec::Json => {
             let chunk = p
