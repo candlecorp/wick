@@ -1,9 +1,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::task::{Context, Poll};
 
 use futures::{StreamExt, TryStreamExt};
-use hyper::service::Service;
 use hyper::{Body, Request, Response};
 use serde_json::Value;
 use tracing::{Instrument, Span};
@@ -149,20 +147,6 @@ impl RawHandler {
       let _ = tx.send(Packet::done("body"));
     });
     stream
-  }
-}
-
-impl Service<Request<Body>> for RawHandler {
-  type Response = Response<Body>;
-  type Error = HttpError;
-  type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
-
-  fn poll_ready(&mut self, _cx: &mut Context) -> Poll<Result<(), Self::Error>> {
-    Poll::Ready(Ok(()))
-  }
-
-  fn call(&mut self, request: Request<Body>) -> Self::Future {
-    Box::pin(self.clone().serve(request))
   }
 }
 

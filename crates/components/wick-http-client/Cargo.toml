@@ -22,6 +22,8 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 liquid-json = { workspace = true, features = ["serde"] }
 anyhow = { workspace = true }
+eventsource-stream = { workspace = true }
+uhttp_sse = { workspace = true }
 #
 serde = { workspace = true, features = ["derive"] }
 #

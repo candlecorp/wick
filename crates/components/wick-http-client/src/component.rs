@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::anyhow;
+use eventsource_stream::Eventsource;
 use flow_component::{BoxFuture, Component, ComponentError, LocalScope};
 use futures::{Stream, StreamExt, TryStreamExt};
 use reqwest::header::CONTENT_TYPE;
@@ -17,6 +18,7 @@ use wick_config::config::components::{
 };
 use wick_config::config::{Codec, HttpMethod, LiquidJsonConfig, Metadata, UrlResource};
 use wick_config::{ConfigValidation, Resolver};
+use wick_interface_http::types::HttpEvent;
 use wick_interface_types::{ComponentSignature, OperationSignatures};
 use wick_packet::{
   Base64Bytes,
@@ -326,15 +328,28 @@ async fn handle(
 
     invocation.trace(|| debug!(status=%response.status(), "http:client:response_status"));
 
-    let codec = response.headers().get(CONTENT_TYPE).map_or(Codec::Raw, |value| {
+    let content_type = response.headers().get(CONTENT_TYPE);
+    let event_stream = content_type.map_or(false, |t| t == "text/event-stream");
+
+    let codec = content_type.map_or(Codec::Raw, |value| {
       let value = value.to_str().unwrap();
       let (value, _other) = value.split_once(';').unwrap_or((value, ""));
-      match value {
-        "application/json" => Codec::Json,
-        "application/x-www-form-urlencoded" => Codec::FormData,
-        _ => Codec::Raw,
+      if value.starts_with("text/") {
+        if event_stream {
+          Codec::Json
+        } else {
+          Codec::Text
+        }
+      } else {
+        match value {
+          "application/json" => Codec::Json,
+          "application/x-www-form-urlencoded" => Codec::FormData,
+          "application/xhtml+xml" => Codec::Text,
+          _ => Codec::Raw,
+        }
       }
     });
+
     let (our_response, body_stream) = match crate::conversions::to_wick_response(response) {
       Ok(r) => r,
       Err(e) => {
@@ -348,7 +363,8 @@ async fn handle(
     handles.push(tokio::spawn(output_task(
       invocation.span.clone(),
       codec,
-      Box::pin(body_stream),
+      body_stream,
+      event_stream,
       tx.clone(),
     )));
   }
@@ -359,67 +375,81 @@ async fn handle(
   Ok(())
 }
 
-fn output_task(
+fn output_task<T: Stream<Item = Result<Base64Bytes, reqwest::Error>> + Send + Unpin + 'static>(
   span: Span,
   codec: Codec,
-  mut body_stream: std::pin::Pin<Box<impl Stream<Item = Result<Base64Bytes, reqwest::Error>> + Send + 'static>>,
+  body_stream: T,
+  event_stream: bool,
   tx: PacketSender,
 ) -> BoxFuture<'static, ()> {
   let task = async move {
-    match codec {
-      Codec::Json => {
-        let bytes: Vec<Base64Bytes> = match body_stream.try_collect().await {
-          Ok(r) => r,
-          Err(e) => {
-            let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
-            return;
-          }
-        };
-        let bytes = bytes.concat();
-
-        let json: Value = match serde_json::from_slice(&bytes) {
-          Ok(r) => r,
-          Err(e) => {
-            let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
-            return;
-          }
-        };
-        span.in_scope(|| trace!(%json, "http:client:response_body"));
-        let _ = tx.send(Packet::encode("body", json));
-      }
-      Codec::Raw => {
-        let _ = tx.send(Packet::open_bracket("body"));
-        while let Some(Ok(bytes)) = body_stream.next().await {
-          span.in_scope(|| debug!(len = bytes.len(), "http:client:response_body"));
-
-          let _ = tx.send(Packet::encode("body", bytes));
-        }
-        let _ = tx.send(Packet::close_bracket("body"));
-      }
-      Codec::FormData => unreachable!("Form data on the response is not supported."),
-      Codec::Text => {
-        let bytes: Vec<Base64Bytes> = match body_stream.try_collect().await {
-          Ok(r) => r,
-          Err(e) => {
-            let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
-            return;
-          }
-        };
-        let bytes = bytes.concat();
-
-        let text = match String::from_utf8(bytes) {
-          Ok(r) => r,
-          Err(e) => {
-            let _ = tx.error(wick_packet::Error::component_error(e.to_string()));
-            return;
-          }
-        };
-        span.in_scope(|| trace!(%text, "response body"));
-        let _ = tx.send(Packet::encode("body", text));
-      }
+    if let Err(e) = output_task_inner(span, codec, body_stream, event_stream, tx.clone()).await {
+      let _ = tx.send(Packet::err("body", e.to_string()));
     }
   };
   Box::pin(task)
+}
+
+async fn output_task_inner<T: Stream<Item = Result<Base64Bytes, reqwest::Error>> + Send + Unpin + 'static>(
+  span: Span,
+  codec: Codec,
+  mut body_stream: T,
+  event_stream: bool,
+  tx: PacketSender,
+) -> Result<(), anyhow::Error> {
+  match codec {
+    Codec::Json => {
+      if event_stream {
+        let mut stream = body_stream.map(Into::into).eventsource();
+        while let Some(event) = stream.next().await {
+          if let Err(e) = event {
+            tx.send(Packet::err("body", e.to_string()))?;
+            break;
+          }
+          let event = event.unwrap();
+          let wick_event = HttpEvent {
+            event: event.event,
+            data: event.data,
+            id: event.id,
+            retry: event.retry.map(|d| d.as_millis() as _),
+          };
+
+          span.in_scope(|| debug!("{} {}", format!("{:?}", wick_event), "http:client:response_body:event"));
+          tx.send(Packet::encode("body", wick_event))?;
+        }
+      } else {
+        let bytes: Vec<Base64Bytes> = body_stream.try_collect().await?;
+        let bytes = bytes.concat();
+
+        let json: Value = serde_json::from_slice(&bytes)?;
+        span.in_scope(|| trace!(%json, "http:client:response_body"));
+        tx.send(Packet::encode("body", json))?;
+      }
+    }
+    Codec::Raw => {
+      tx.send(Packet::open_bracket("body"))?;
+      while let Some(bytes) = body_stream.next().await {
+        let bytes = bytes?;
+
+        span.in_scope(|| debug!(len = bytes.len(), "http:client:response_body"));
+
+        tx.send(Packet::encode("body", bytes))?;
+      }
+      tx.send(Packet::close_bracket("body"))?;
+    }
+    Codec::FormData => unreachable!("Form data on the response is not supported."),
+    Codec::Text => {
+      tx.send(Packet::open_bracket("body"))?;
+      while let Some(bytes) = body_stream.next().await {
+        let bytes = bytes?;
+        let text = String::from_utf8(bytes.into())?;
+        span.in_scope(|| debug!(%text, "http:client:response_body"));
+        tx.send(Packet::encode("body", text))?;
+      }
+      tx.send(Packet::close_bracket("body"))?;
+    }
+  }
+  Ok(())
 }
 
 impl ConfigValidation for HttpClientComponent {

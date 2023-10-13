@@ -34,8 +34,14 @@ pub enum HttpError {
   #[error("Could not serialize output into '{0}' codec: {1}")]
   Codec(Codec, String),
 
-  #[error("Could not read output as base64 bytes: {0}")]
+  #[error("Could not decode stream item as base64 bytes: {0}")]
   Bytes(String),
+
+  #[error("Could not decode stream item as a utf-8 string: {0}")]
+  Utf8Text(String),
+
+  #[error("Could not decode stream item as HttpEvent: {0}")]
+  HttpEvent(String),
 
   #[error("Invalid header name: {0}")]
   InvalidHeaderName(String),
