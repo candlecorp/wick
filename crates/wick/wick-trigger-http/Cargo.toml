@@ -44,7 +44,8 @@ bytes = { workspace = true }
 openapiv3 = { workspace = true }
 percent-encoding = { workspace = true }
 liquid = { workspace = true }
-
+eventsource-stream = { workspace = true }
+tokio-stream = { workspace = true }
 
 [dev-dependencies]
 

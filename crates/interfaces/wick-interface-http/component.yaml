@@ -242,3 +242,19 @@ types:
     types:
       - HttpRequest
       - HttpResponse
+  - name: HttpEvent
+    kind: wick/type/struct@v1
+    description: HTTP server side event
+    fields:
+      - name: event
+        type: string
+        description: The event name if given
+      - name: data
+        type: string
+        description: The event data
+      - name: id
+        type: string
+        description: The event id if given
+      - name: retry
+        type: u64?
+        description: Retry duration if given

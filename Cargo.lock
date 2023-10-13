@@ -1420,6 +1420,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
+name = "eventsource-stream"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74fef4569247a5f429d9156b9d0a2599914385dd189c539334c625d8099d90ab"
+dependencies = [
+ "futures-core",
+ "nom",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "fallible-iterator"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4964,6 +4975,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed646292ffc8188ef8ea4d1e0e0150fb15a5c2e12ad9b8fc191ae7a8a7f3c4b9"
 
 [[package]]
+name = "uhttp_sse"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6ff93345ba2206230b1bb1aa3ece1a63dd9443b7531024575d16a0680a59444"
+
+[[package]]
 name = "unicase"
 version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6131,6 +6148,7 @@ name = "wick-http-client"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "eventsource-stream",
  "flow-component",
  "futures 0.3.28",
  "liquid-json",
@@ -6141,6 +6159,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "uhttp_sse",
  "url",
  "wick-config",
  "wick-interface-http",
@@ -6525,6 +6544,7 @@ dependencies = [
  "async-trait",
  "bytes 1.4.0",
  "chrono",
+ "eventsource-stream",
  "futures 0.3.28",
  "hyper",
  "hyper-reverse-proxy",
@@ -6541,6 +6561,7 @@ dependencies = [
  "structured-output",
  "thiserror",
  "tokio",
+ "tokio-stream",
  "tracing",
  "url",
  "uuid",
