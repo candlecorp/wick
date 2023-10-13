@@ -180,39 +180,28 @@ pub(super) async fn respond(
     .map_or(false, |v| v == "text/event-stream");
 
   let res = if event_stream {
-    let (tx, rx) = unbounded_channel();
-    let _output_handle = tokio::spawn(async move {
-      while let Some(p) = body_stream.recv().await {
+    let body_stream =
+      tokio_stream::wrappers::UnboundedReceiverStream::new(body_stream).filter_map(move |p| async move {
         if !p.has_data() {
-          continue;
+          return None;
         }
-        match codec {
-          Codec::Json => {
-            let chunk = p
-              .decode::<wick_http::HttpEvent>()
-              .map_err(|e| HttpError::Bytes(e.to_string()))
-              .map(|v| to_sse_string_bytes(&v));
-            let _ = tx.send(chunk);
-          }
-          Codec::Raw => {
-            let chunk = p
-              .decode::<Base64Bytes>()
-              .map_err(|e| HttpError::Bytes(e.to_string()))
-              .map(Into::into);
-            let _ = tx.send(chunk);
-          }
-          Codec::Text => {
-            let chunk = p
-              .decode::<String>()
-              .map_err(|e| HttpError::Utf8Text(e.to_string()))
-              .map(Into::into);
-            let _ = tx.send(chunk);
-          }
+        Some(match codec {
+          Codec::Json => p
+            .decode::<wick_http::HttpEvent>()
+            .map_err(|e| HttpError::Bytes(e.to_string()))
+            .map(|v| to_sse_string_bytes(&v)),
+          Codec::Raw => p
+            .decode::<Base64Bytes>()
+            .map_err(|e| HttpError::Bytes(e.to_string()))
+            .map(Into::into),
+          Codec::Text => p
+            .decode::<String>()
+            .map_err(|e| HttpError::Utf8Text(e.to_string()))
+            .map(Into::into),
           Codec::FormData => unreachable!("FormData is not supported as a decoder for HTTP responses"),
-        }
-      }
-    });
-    let body = Body::wrap_stream(tokio_stream::wrappers::UnboundedReceiverStream::new(rx));
+        })
+      });
+    let body = Body::wrap_stream(body_stream);
     builder.body(body).unwrap()
   } else {
     let mut body = bytes::BytesMut::new();
@@ -273,6 +262,12 @@ fn split_stream(
             let _ = sender.send(response);
           } else if p.port() == "body" {
             let _ = body_tx.send(p);
+          } else if let PacketPayload::Err(e) = p.payload {
+            if let Some(sender) = res_tx.take() {
+              let _ = sender.send(Err(HttpError::OperationError(e.to_string())));
+            }
+            warn!(?e, "http:stream:error");
+            break;
           }
         }
         Err(e) => {
