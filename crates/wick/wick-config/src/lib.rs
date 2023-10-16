@@ -122,7 +122,6 @@
 /// Structures and functions for auditing Wick Manifests.
 #[cfg(feature = "config")]
 pub mod audit;
-mod default;
 mod helpers;
 mod traits;
 
@@ -150,8 +149,6 @@ pub mod v1;
 
 /// Methods to read and load raw configurations.
 pub mod load;
-
-pub use default::{parse_default, process_default, ERROR_STR};
 
 /// The crate's error type.
 pub type Error = crate::error::ManifestError;

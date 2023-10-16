@@ -112,7 +112,6 @@
 // Add exceptions here
 #![allow(missing_docs)]
 
-mod default;
 pub mod error;
 pub mod graph;
 mod interpreter;
