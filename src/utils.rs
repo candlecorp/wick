@@ -205,8 +205,16 @@ pub(crate) async fn print_stream_json(
 pub(crate) fn parse_config_string(source: Option<&str>) -> Result<Option<RuntimeConfig>> {
   let component_config = match source {
     Some(c) => {
-      let config = serde_json::from_str::<LiquidJsonValue>(c)
-        .map_err(|e| anyhow::anyhow!("Failed to parse config argument as JSON: {}", e))?;
+      let config = if c.starts_with('@') {
+        let path = c.trim_start_matches('@');
+        let source = std::fs::read_to_string(path)?;
+        serde_json::from_str::<LiquidJsonValue>(&source)
+          .map_err(|e| anyhow::anyhow!("Failed to parse {} as JSON: {}", path, e))?
+      } else {
+        serde_json::from_str::<LiquidJsonValue>(c)
+          .map_err(|e| anyhow::anyhow!("Failed to parse config argument as JSON: {}", e))?
+      };
+
       let ctx = LiquidJsonConfig::make_context(
         None,
         None,
