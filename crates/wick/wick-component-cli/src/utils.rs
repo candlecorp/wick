@@ -29,20 +29,35 @@ pub fn parse_args(args: &[String], sig: &OperationSignature) -> Result<Vec<Packe
       return Err(Error::InvalidInput(name.to_owned()));
     }
     let input = input.unwrap();
-    let value: Value = match input.ty() {
-      // Datetime can be parsed from a string or a number but numbers need to be stringified.
-      // Strings must be explicit because a bare number will be parsed as a number.
-      Type::Datetime | Type::String => {
-        if is_valid(value) {
-          coerce_string(name, value, input.ty())?
-        } else {
-          // if it's not valid JSON then it's a bare string.
-          value.into()
+
+    let value = if value.starts_with('@') {
+      let path = value.trim_start_matches('@');
+
+      match input.ty() {
+        Type::String => Value::String(std::fs::read_to_string(path)?),
+        Type::Bytes => {
+          let bytes: wick_packet::Base64Bytes = std::fs::read(path)?.into();
+          serde_json::to_value(bytes).unwrap()
         }
+        _ => encode(&std::fs::read_to_string(path)?),
       }
-      // serde_json does an adequate job on the rest.
-      _ => encode(value),
+    } else {
+      match input.ty() {
+        // Datetime can be parsed from a string or a number but numbers need to be stringified.
+        // Strings must be explicit because a bare number will be parsed as a number.
+        Type::Datetime | Type::String => {
+          if is_valid(value) {
+            coerce_string(name, value, input.ty())?
+          } else {
+            // if it's not valid JSON then it's a bare string.
+            value.into()
+          }
+        }
+        // serde_json does an adequate job on the rest.
+        _ => encode(value),
+      }
     };
+
     // Note on above: complex objects with embedded Datetime/Strings
     // may not be parsed correctly but that's an edge case we're ignoring for now.
 
