@@ -5,7 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.16.0 (2023-10-18)
+
+### New Features
+
+ - <csr-id-0cdd79d9ed0313eb0301ea796ef05c6182415f4d/> added "@file.txt" style inclusion of files for CLI args
+ - <csr-id-11449d002b80fbc22ec5e4b684b09fbcc949a9c7/> added support for wasm component-model triggers
+
+### Refactor
+
+ - <csr-id-378c726823ec2fe65a168d7e205ea613b2b1c1b3/> unified input/output structs for all calls
+ - <csr-id-69d79c1c8eee66dcd766648c359145a1898691c7/> removed native stdlib and associated references
+
+### New Features (BREAKING)
+
+ - <csr-id-f2ca7b3fa2682c58dfa9111ee93134c8e07c97b3/> changed `wick query` from jaq to liquid
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release over the course of 20 calendar days.
+ - 33 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Added "@file.txt" style inclusion of files for CLI args ([`0cdd79d`](https://github.com/candlecorp/wick/commit/0cdd79d9ed0313eb0301ea796ef05c6182415f4d))
+    - Unified input/output structs for all calls ([`378c726`](https://github.com/candlecorp/wick/commit/378c726823ec2fe65a168d7e205ea613b2b1c1b3))
+    - Removed native stdlib and associated references ([`69d79c1`](https://github.com/candlecorp/wick/commit/69d79c1c8eee66dcd766648c359145a1898691c7))
+    - Added support for wasm component-model triggers ([`11449d0`](https://github.com/candlecorp/wick/commit/11449d002b80fbc22ec5e4b684b09fbcc949a9c7))
+    - Changed `wick query` from jaq to liquid ([`f2ca7b3`](https://github.com/candlecorp/wick/commit/f2ca7b3fa2682c58dfa9111ee93134c8e07c97b3))
+</details>
+
 ## v0.15.0 (2023-09-14)
+
+<csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/>
+<csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/>
+<csr-id-644c2ffde3be9b39bd087147d2e6599fbb6c1c85/>
+<csr-id-43fa5081c09f1e4003f550c6ae62bfcc50d6e6f5/>
+<csr-id-67740fc8d8543374ecbbe0198ba694bb543750c9/>
+<csr-id-a576880fa97834d9f89cfd7db4a42598b24fc02c/>
 
 ### Chore
 
@@ -41,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 16 commits contributed to the release over the course of 16 calendar days.
- - 16 days passed between releases.
+ - 17 days passed between releases.
  - 14 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 

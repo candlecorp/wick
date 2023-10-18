@@ -5,10 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.3.0 (2023-09-14)
+## v0.4.0 (2023-10-18)
 
 ### Chore
 
+ - <csr-id-35ff51b8a93c27475765a7eb65c23256f4f93d67/> updated versions and changelogs
  - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
  - <csr-id-fd1b6d4cdc66e769d304d9168bb5575a6c5f930c/> consolidated deps to workspace
@@ -30,9 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 8 commits contributed to the release over the course of 135 calendar days.
- - 148 days passed between releases.
- - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 9 commits contributed to the release over the course of 169 calendar days.
+ - 182 days passed between releases.
+ - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -42,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Updated versions and changelogs ([`35ff51b`](https://github.com/candlecorp/wick/commit/35ff51b8a93c27475765a7eb65c23256f4f93d67))
     - Updated lints ([`7bb6865`](https://github.com/candlecorp/wick/commit/7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c))
     - Merge remote-tracking branch 'refs/remotes/origin/main' ([`344b60c`](https://github.com/candlecorp/wick/commit/344b60c854bd33f1d267c7f422378e2716496ba6))
     - Added changelog ([`3790520`](https://github.com/candlecorp/wick/commit/37905206a10ff16406b77ad296d467ebf76fc8fb))
@@ -51,6 +53,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added settings file, wick reg login, & wick reg push --latest ([`63858e1`](https://github.com/candlecorp/wick/commit/63858e1bc6673b61d50fa8f66dc4378369850910))
     - Added gzip error handling ([`6fb111c`](https://github.com/candlecorp/wick/commit/6fb111cc0068ca5a4709ef274b046c0b590eee08))
 </details>
+
+## v0.3.0 (2023-09-14)
+
+<csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/>
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-fd1b6d4cdc66e769d304d9168bb5575a6c5f930c/>
+
+### Chore
+
+ - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
+ - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
+ - <csr-id-fd1b6d4cdc66e769d304d9168bb5575a6c5f930c/> consolidated deps to workspace
+
+### Documentation
+
+ - <csr-id-37905206a10ff16406b77ad296d467ebf76fc8fb/> added changelog
+
+### New Features
+
+ - <csr-id-63858e1bc6673b61d50fa8f66dc4378369850910/> added settings file, wick reg login, & wick reg push --latest
+ - <csr-id-6fb111cc0068ca5a4709ef274b046c0b590eee08/> added gzip error handling
+
+### Bug Fixes
+
+ - <csr-id-fac116c0a98235e454dfdd4826e11508ebae68c6/> made env path usage more clear, fixed pull behavior, added wick show
 
 ## v0.2.1 (2023-08-28)
 

@@ -5,10 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.27.0 (2023-09-14)
+## v0.28.0 (2023-10-18)
 
 ### Chore
 
+ - <csr-id-35ff51b8a93c27475765a7eb65c23256f4f93d67/> updated versions and changelogs
  - <csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/> migrated AsRef<str> to concrete types or Into<String>
  - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
@@ -28,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New Features
 
+ - <csr-id-11449d002b80fbc22ec5e4b684b09fbcc949a9c7/> added support for wasm component-model triggers
+ - <csr-id-ee711616cfaa412433b975bcf14791bcb198d712/> added first-pass at TypeScript config SDK
+ - <csr-id-dc38b405ef148e8ed6d991b567b497e2d07368ea/> added http client proxy support
  - <csr-id-7ca53308add4e920c0e8ce3755ec62c56ceedb80/> added optional directory listing for the static server
  - <csr-id-2ce019fed2c7d9348c9c47d5221d322e700ce293/> added support for wasm imports
  - <csr-id-7bacdb9a4559e3de86e0a17544e76634ffe4de28/> made generating v1 configs wasm-compatible
@@ -127,6 +131,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Refactor
 
+ - <csr-id-2a29e9bf1c22e751df6981cfc208b2336d2dd65b/> removed old, dead code
+ - <csr-id-69d79c1c8eee66dcd766648c359145a1898691c7/> removed native stdlib and associated references
+ - <csr-id-42a39c2b9150b56e27c8b7b41cccebc0cef09015/> pulled triggers into their own crates
  - <csr-id-644c2ffde3be9b39bd087147d2e6599fbb6c1c85/> made generic Binding struct
  - <csr-id-43fa5081c09f1e4003f550c6ae62bfcc50d6e6f5/> lowercased the start character of all log events
  - <csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/> made v0, v1, and normalized config conditional features
@@ -150,9 +157,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 115 commits contributed to the release over the course of 146 calendar days.
- - 148 days passed between releases.
- - 109 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 122 commits contributed to the release over the course of 180 calendar days.
+ - 182 days passed between releases.
+ - 116 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 9 unique issues were worked on: [#221](https://github.com/candlecorp/wick/issues/221), [#232](https://github.com/candlecorp/wick/issues/232), [#254](https://github.com/candlecorp/wick/issues/254), [#319](https://github.com/candlecorp/wick/issues/319), [#328](https://github.com/candlecorp/wick/issues/328), [#341](https://github.com/candlecorp/wick/issues/341), [#345](https://github.com/candlecorp/wick/issues/345), [#375](https://github.com/candlecorp/wick/issues/375), [#405](https://github.com/candlecorp/wick/issues/405)
 
 ### Commit Details
@@ -180,6 +187,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#405](https://github.com/candlecorp/wick/issues/405)**
     - Fixed "refusing to overwrite ..." errors on application runs. ([`a10242d`](https://github.com/candlecorp/wick/commit/a10242d4786cfa199eaf61289b9da99d09c114a7))
  * **Uncategorized**
+    - Removed old, dead code ([`2a29e9b`](https://github.com/candlecorp/wick/commit/2a29e9bf1c22e751df6981cfc208b2336d2dd65b))
+    - Removed native stdlib and associated references ([`69d79c1`](https://github.com/candlecorp/wick/commit/69d79c1c8eee66dcd766648c359145a1898691c7))
+    - Added support for wasm component-model triggers ([`11449d0`](https://github.com/candlecorp/wick/commit/11449d002b80fbc22ec5e4b684b09fbcc949a9c7))
+    - Pulled triggers into their own crates ([`42a39c2`](https://github.com/candlecorp/wick/commit/42a39c2b9150b56e27c8b7b41cccebc0cef09015))
+    - Added first-pass at TypeScript config SDK ([`ee71161`](https://github.com/candlecorp/wick/commit/ee711616cfaa412433b975bcf14791bcb198d712))
+    - Added http client proxy support ([`dc38b40`](https://github.com/candlecorp/wick/commit/dc38b405ef148e8ed6d991b567b497e2d07368ea))
+    - Updated versions and changelogs ([`35ff51b`](https://github.com/candlecorp/wick/commit/35ff51b8a93c27475765a7eb65c23256f4f93d67))
     - Added optional directory listing for the static server ([`7ca5330`](https://github.com/candlecorp/wick/commit/7ca53308add4e920c0e8ce3755ec62c56ceedb80))
     - Flattened $defs in JSON schema generation ([`9b6380e`](https://github.com/candlecorp/wick/commit/9b6380ebb0a5f82e8c06784890f05e1f80908804))
     - Merge remote-tracking branch 'refs/remotes/origin/main' ([`4d6e3f4`](https://github.com/candlecorp/wick/commit/4d6e3f437964552cfd6917310c17548b12e83eaf))
@@ -287,6 +301,167 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added the ability to create inline node IDs in flow config ([`f7d7274`](https://github.com/candlecorp/wick/commit/f7d72741adae67477634ccdf52b93fe8f0c3c35f))
     - Added URL resource, migrated sql component to it ([`4c86477`](https://github.com/candlecorp/wick/commit/4c86477ce3176b546e06dc0e9db969921babe3d6))
 </details>
+
+## v0.27.0 (2023-09-14)
+
+<csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/>
+<csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/>
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/>
+<csr-id-6cbc8b53e1f68fa5336220261fc80f0256601133/>
+<csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-ab7d5355945adb592c4e00ccdc8b268e146e6535/>
+<csr-id-644c2ffde3be9b39bd087147d2e6599fbb6c1c85/>
+<csr-id-43fa5081c09f1e4003f550c6ae62bfcc50d6e6f5/>
+<csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/>
+<csr-id-be57f85e388c38265c33d457339c4dbf5f1ae65f/>
+<csr-id-6aecefa7d7fe4e806b239cf9cadb914837c10dbe/>
+<csr-id-33527b199a5057e0bf9d51c6e5a4068b9a8dc830/>
+<csr-id-586ace0978ca8adf58bf4d1fa5ed392015297c21/>
+<csr-id-f5c8df4f1ec673b8e8811c8d03e0ad68e85fabd7/>
+<csr-id-888814bb24d3d4dd4b460af2616a72814f2bd7a1/>
+<csr-id-b590d66e24d1e1dd582656b54b896586e9c8f4fb/>
+<csr-id-5172449837c489f0231d4979ca4a5bb48f412aa2/>
+
+### Chore
+
+ - <csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/> migrated AsRef<str> to concrete types or Into<String>
+ - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
+ - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
+ - <csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/> updated include directives in Cargo.toml
+ - <csr-id-6cbc8b53e1f68fa5336220261fc80f0256601133/> added experimental settings section, removed incomplete example
+ - <csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/> removed unused deps, consolidated versions at root workspace
+ - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
+ - <csr-id-ab7d5355945adb592c4e00ccdc8b268e146e6535/> fixed warnings
+
+### Documentation
+
+ - <csr-id-37905206a10ff16406b77ad296d467ebf76fc8fb/> added changelog
+ - <csr-id-e343e7d9bfc02d3ee817f596f4fdf184db087046/> update docs for cloud
+ - <csr-id-f1360f859e13dc49f6e6978f606e1315f1cf370e/> updated generated markdown for enums
+ - <csr-id-0d37e8af72f6578595deb2138b57711a2ff6ceca/> added example docs, updated generated docs
+ - <csr-id-10672c5db34d10e50869b2c14977f9235761cabd/> updated config codegen, refactored config for clarity, fixed template
+
+### New Features
+
+<csr-id-63858e1bc6673b61d50fa8f66dc4378369850910/>
+<csr-id-ba2015ddf2d24324c311fa681a39c4a65ac886bc/>
+<csr-id-58045d0fe75f519b84ebd45f3b1493e55fd4b282/>
+<csr-id-56959c74e0fa96870d6fdd4197a30606041a0f8a/>
+<csr-id-e08b20481d197c3ceff74b7d42eabecef1ef3c78/>
+<csr-id-5495686f598e766a73c240554e5c8fbdfb297376/>
+<csr-id-1d37fb5a9aebec3653425ddc102c2f2d4f5fcd71/>
+<csr-id-ba94e4dd43a85bb0dd79953f92b5a053e1536e62/>
+<csr-id-49a53de6cb6631e2dc1f1e633d1c29d0510383cb/>
+<csr-id-27c1fba1d6af314e3b5f317178426331acc4b071/>
+<csr-id-88dbedb624e1e381f253fb6b56d9af81ceeb00c8/>
+<csr-id-3dd4cdb6ff02a5ccdeb32d28522a8a0fe24e3d08/>
+<csr-id-302612d5322fcc211b1ab7a05969c6de4bca7d7e/>
+<csr-id-0f05d770d08d86fc256154739b62ff089e26b503/>
+<csr-id-027392a9514ba4846e068b21476e980ea53bee1d/>
+<csr-id-53ff1dd49057a0b7cb45deff02b350d8f1b2970e/>
+<csr-id-6fb111cc0068ca5a4709ef274b046c0b590eee08/>
+<csr-id-8c58c354e765a51abb602b184c45055b9d561ed5/>
+<csr-id-399c5d518b0a291dba63fb3f69337af2911d1776/>
+<csr-id-dbbd787131fd959c8cf5c8130ca03da6a63221e7/>
+<csr-id-17c9058b98935fa8ed29dbc27b899c9e3244eb67/>
+<csr-id-cbd6515303db5bb5fb9383116f0ee69a90e4c537/>
+<csr-id-16940c8908ef9a463c227d8e8fdd5c1ad6bfc379/>
+<csr-id-f7d72741adae67477634ccdf52b93fe8f0c3c35f/>
+<csr-id-4c86477ce3176b546e06dc0e9db969921babe3d6/>
+
+ - <csr-id-7ca53308add4e920c0e8ce3755ec62c56ceedb80/> added optional directory listing for the static server
+ - <csr-id-2ce019fed2c7d9348c9c47d5221d322e700ce293/> added support for wasm imports
+ - <csr-id-7bacdb9a4559e3de86e0a17544e76634ffe4de28/> made generating v1 configs wasm-compatible
+ - <csr-id-8760659095ce1f0f9a0bbd835bcf34827b21317c/> added __dirname, consolidated loose render events
+ - <csr-id-4516bb7034d4dbe0ffbe6625df32302d40e63570/> support volume restrictions on file:// urls, in-mem SQLite DBs
+ - <csr-id-72a2fb3af224ff0b674c8e75a8c6e94070c181a7/> added packet assertions to wick test cases
+ - <csr-id-24152b7cc0002eac2ac1b0d75b545d5ca0b795b2/> made --with configs less strict so you can better leverage liquidjson to generate the config
+ - <csr-id-bff97fe93ab537c2549893a33c8faa147dad0842/> added deep invocation, refactored runtime/engine names
+ - <csr-id-ddf1008983c1f4a880a42ac4c29c0f60bc619cf3/> added wick audit & lockdown config
+ - <csr-id-70f0fd07ac70ae4fd1bb1734b306266f14f3af3c/> made buffer_size configurable
+ - <csr-id-8ceae1a2a357b34d10eafe9295d7b4b6ae8d4b4d/> support provides/requires relationship in composite components
+ - <csr-id-8fdef58ea207acb9ecb853c2c4934fe6daab39dd/> reorganized tracing span relationships
+ - <csr-id-b0b9cd20f748ffe1956ad2501fe23991fededf13/> added sqlite support, added inline ids for queries, normalized ms sql $1->@p1 syntax
+ - <csr-id-ce9d2020b4a1a8397ae2013b05f8de4fd1e96a85/> re-added exposing volumes to WASI components
+ - <csr-id-33ea9cd5fff9a85398e7fc15661cb9401a085c18/> added `wick config expand`
+ - <csr-id-2a5cf0c1adcd6aacd083967da9e8e7c6c46a9695/> added flow sequences, enhanced port inference
+ - <csr-id-e46db5f2138254c227a2c39a3821074b77cf0166/> added inheritance/delegation to composite components, reorganized test files
+ - <csr-id-dd57e5062f3cf5d01e163ad104e56f7debc50aa4/> added xml codec for wick-http-component
+ - <csr-id-222cc7f6b992f10ceeedfcf93b2d0b8b75d3de5f/> added unions to type definitions
+ - <csr-id-cc404a0dd2006e63fbd399c8c8ae5d12cec55913/> made name in test definitions optional
+ - <csr-id-efe605510b846d2556f6060ba710fa154bdca7c4/> added ctx.inherent.timestamp, improved error message output
+ - <csr-id-1528f18c896c16ba798d37dcca5e017beecfd7c2/> added openapi spec generation
+ - <csr-id-cbf564eebf5c96f1d827c319e927c5f4150c5e56/> added spread operator in SQL positional args, merge sql components.
+ - <csr-id-7ab25d2fc1274fbf552b86f59774b1b24ea12b0f/> propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates
+ - <csr-id-d0d58bed91a911c19a8fcd54d2ec5f9a6fd1d74d/> added configurable timeout per-operation
+ - <csr-id-d85d6f568d4548036c1af61e515c3fc187be6a6e/> added on_error & transaction support to ms sql server SQL implementation
+ - <csr-id-64e30fbb7e64e7f744190ebcbab107b4916a24e1/> better discriminated HTTP errors, removed error output from 500 responses
+ - <csr-id-f9a4b37da51df156e4293e639becbed06813ff46/> added wick new and better config serialization
+ - <csr-id-3213e75c9e1a08db300d521e228d65e27671a779/> added support for input-less ops, added test for wasm RNG from inherent seed
+ - <csr-id-954e9ffbdab962ad051764f5a9dcb90bfe543175/> added config validation, passing of config on command line, exposing config to user
+ - <csr-id-8058284a1a686366fa8829f9377981d7ba389554/> propagating component config through to user code
+ - <csr-id-e2abceed2d1cc7436fbe4631d3eac861ae91675e/> updated headers to be liquidjson
+ - <csr-id-85e1abfc142a4f20e12a498e68c83de3f9971e8f/> added request/response middle to http trigger, refactored component codegen
+ - <csr-id-262e0b50c84229872ce7d1f006a878281b46d8e9/> added pluck shorthand where e.g. `op.name.input -> op.name`
+ - <csr-id-f4f04af492c7e0fe90472a6a5bafebfdbeddf622/> added types to package
+ - <csr-id-103c9d8e67fff895d02c10597faedfe8b72d1eab/> added fallback option for static http
+   * feat: added fallback option for static http
+* fix: fix clippy error
+* refactor: cleaned up code for style
+* fix: corrected documentation
+* fix: remove async from response function
+
+### Bug Fixes
+
+ - <csr-id-9b6380ebb0a5f82e8c06784890f05e1f80908804/> flattened $defs in JSON schema generation
+ - <csr-id-7d0a399741cc1f0ab1b876cc6a31ad00fc1a58c6/> fixed config rendering within trigger operations
+ - <csr-id-3239a4453868d04ea32ace557cc14ca75a3045e8/> reused existing imports in triggers and http routers
+ - <csr-id-d901966927c3eec44270bbd2cd5d84baaa1f3462/> fixed relative volumes again
+ - <csr-id-ce1eeaa918b9b49817cd1cf220dde0865c2ff97f/> fixed relative volume resources
+ - <csr-id-ae1400caa092433bec0f66c04bd6e0efea30d173/> added more tests for #378, fixed fields being requide by default from config
+ - <csr-id-3108cf583cf49a93b706be93ce87c47f77633727/> corrected openapi path + replaced name with id in rest router config
+ - <csr-id-4577461e0a767ec99ae6482c2e2efeb3069ca0c8/> fixed included cached assets on wick reg push
+ - <csr-id-e107d7cc2fb3d36925fe8af471b164c07ec3e15d/> fixed broken cache path, fixed unrendered Volume configuraton
+ - <csr-id-bf239832ccb282b7ce56430157a3412efc9737a6/> made configuration init a hard boundary with earlier validation
+ - <csr-id-ce2837aaacbd70d43c7f87150790f72880ac0703/> reordered error behavior variants to make ignore default
+ - <csr-id-fac116c0a98235e454dfdd4826e11508ebae68c6/> made env path usage more clear, fixed pull behavior, added wick show
+ - <csr-id-f113d307535081caa4248315607db17f3180a107/> changed formal datetime type to DateTime<Utc>
+ - <csr-id-221be200017943aae5d2c78254a8194d72600f7a/> made inherent data required vs optional/missing
+ - <csr-id-44d10001d8d3464963dd7e1872d49d98113950d3/> added `registry` as alias for `host` in package and `data` as alias for `value` in tests
+ - <csr-id-34c2f4ebe5eee06d4fa999687a7327264bb957e7/> fixed source having an empty filename in error messages
+ - <csr-id-9cd1fc007e6a21944f4fd65f3f65f4a2a86fd1bd/> fixed trace spans, jaeger->otlp, fixed serving static from root
+ - <csr-id-76331ad61955d86a5776b742f7cec8d163daeb2f/> derived asset traits on resource bindings
+ - <csr-id-8a481a3f749ac4102f5041aefff94b1363893cd4/> pass oci credentials to fetch
+ - <csr-id-28c625552c460ac5c337efad3b0d621c9ec593cc/> don't fetch lazy assets
+ - <csr-id-fdf152db1a352c48b75d08b4d4187a748c7f0795/> removed dependency on jq
+ - <csr-id-c1bb1d409adbf77c59da9e3241fa23d90cc39c8e/> added config fetch_all to fetch everything & made the default lazy
+ - <csr-id-6c6f9a80f9873f5989453c7800a355724cb61fff/> fixed linting issues
+
+### Refactor
+
+ - <csr-id-644c2ffde3be9b39bd087147d2e6599fbb6c1c85/> made generic Binding struct
+ - <csr-id-43fa5081c09f1e4003f550c6ae62bfcc50d6e6f5/> lowercased the start character of all log events
+ - <csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/> made v0, v1, and normalized config conditional features
+ - <csr-id-be57f85e388c38265c33d457339c4dbf5f1ae65f/> renamed XML codec to Text
+ - <csr-id-6aecefa7d7fe4e806b239cf9cadb914837c10dbe/> removed experimental block, changed expose to extends
+ - <csr-id-33527b199a5057e0bf9d51c6e5a4068b9a8dc830/> improved reliability and tolerance of wick test execution
+ - <csr-id-586ace0978ca8adf58bf4d1fa5ed392015297c21/> eliminated fetching of bytes before checking cache
+ - <csr-id-f5c8df4f1ec673b8e8811c8d03e0ad68e85fabd7/> updated rust-analyzer settings to be in line with CI checks, fixed lint errors
+ - <csr-id-888814bb24d3d4dd4b460af2616a72814f2bd7a1/> removed conflicting timeouts in favor of per-op timeouts
+ - <csr-id-b590d66e24d1e1dd582656b54b896586e9c8f4fb/> adjusted data types, fixed code-genned files
+
+### Test
+
+ - <csr-id-5172449837c489f0231d4979ca4a5bb48f412aa2/> added cli test for wick test, fixed wasm test
+
+### New Features (BREAKING)
+
+ - <csr-id-534d209c797d962d4fd90d590ecdb5916ecede56/> made ComponentError anyhow::Error
+
+<csr-unknown>
+ added settings file, wick reg login, & wick reg push –latest added azure-sql support added restapi router normalized accessor api for wick-config added rest router config added form-data codec to http client added codec to HTTP server, added runtime constraints, ability to explicitly drop packets added op config to http client operations, added builders for config types added proper type defs into config, closes #200. Fixed #228, #227 added context for wasm components added operation context added asset flags, fixed relative volumes, fixed manifest locations added switch/case operation added sub-flow operatiions added pluck & merge added glob support in package files added gzip error handling adding tar.gz for extra files add Base64Bytes to wick-packet added http client component added type imports added reverse proxy router added static router added the ability to create inline node IDs in flow config added URL resource, migrated sql component to it<csr-unknown/>
 
 ## v0.26.1 (2023-08-28)
 
@@ -429,6 +604,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-unknown>
  added settings file, wick reg login, & wick reg push –latest added azure-sql support added restapi router normalized accessor api for wick-config added rest router config added form-data codec to http client added codec to HTTP server, added runtime constraints, ability to explicitly drop packets added op config to http client operations, added builders for config types added proper type defs into config, closes #200. Fixed #228, #227 added context for wasm components added operation context added asset flags, fixed relative volumes, fixed manifest locations added switch/case operation added sub-flow operatiions added pluck & merge added glob support in package files added gzip error handling adding tar.gz for extra files add Base64Bytes to wick-packet added http client component added type imports added reverse proxy router added static router added the ability to create inline node IDs in flow config added URL resource, migrated sql component to it<csr-unknown/>
+<csr-unknown/>
 
 ## v0.26.0 (2023-04-18)
 

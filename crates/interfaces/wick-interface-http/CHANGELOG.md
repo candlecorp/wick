@@ -5,9 +5,85 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.4.0 (2023-10-18)
+
+### Chore
+
+ - <csr-id-35ff51b8a93c27475765a7eb65c23256f4f93d67/> updated versions and changelogs
+ - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
+ - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
+
+### Documentation
+
+ - <csr-id-37905206a10ff16406b77ad296d467ebf76fc8fb/> added changelog
+ - <csr-id-10672c5db34d10e50869b2c14977f9235761cabd/> updated config codegen, refactored config for clarity, fixed template
+
+### New Features
+
+ - <csr-id-29a4831b7629d1e68bb07a54ec278a3ebab0f79d/> added event-stream handling to http client and raw router
+ - <csr-id-dd57e5062f3cf5d01e163ad104e56f7debc50aa4/> added xml codec for wick-http-component
+ - <csr-id-85e1abfc142a4f20e12a498e68c83de3f9971e8f/> added request/response middle to http trigger, refactored component codegen
+ - <csr-id-49a53de6cb6631e2dc1f1e633d1c29d0510383cb/> added proper type defs into config, closes #200. Fixed #228, #227
+ - <csr-id-88dbedb624e1e381f253fb6b56d9af81ceeb00c8/> added operation context
+ - <csr-id-027392a9514ba4846e068b21476e980ea53bee1d/> added pluck & merge
+ - <csr-id-dbbd787131fd959c8cf5c8130ca03da6a63221e7/> added http client component
+ - <csr-id-17c9058b98935fa8ed29dbc27b899c9e3244eb67/> added type imports
+
+### Bug Fixes
+
+ - <csr-id-4577461e0a767ec99ae6482c2e2efeb3069ca0c8/> fixed included cached assets on wick reg push
+ - <csr-id-f113d307535081caa4248315607db17f3180a107/> changed formal datetime type to DateTime<Utc>
+
+### Refactor
+
+ - <csr-id-051de9cd392b4625ff4964ff08582767ca1dc3fe/> removed spawns in favor of stream chains
+ - <csr-id-378c726823ec2fe65a168d7e205ea613b2b1c1b3/> unified input/output structs for all calls
+
+### New Features (BREAKING)
+
+ - <csr-id-34e1484443de014ebe010063640f937e528df10a/> changed pre-request middleware to one output union vs a request/response race
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 19 commits contributed to the release over the course of 176 calendar days.
+ - 181 days passed between releases.
+ - 18 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Removed spawns in favor of stream chains ([`051de9c`](https://github.com/candlecorp/wick/commit/051de9cd392b4625ff4964ff08582767ca1dc3fe))
+    - Added event-stream handling to http client and raw router ([`29a4831`](https://github.com/candlecorp/wick/commit/29a4831b7629d1e68bb07a54ec278a3ebab0f79d))
+    - Unified input/output structs for all calls ([`378c726`](https://github.com/candlecorp/wick/commit/378c726823ec2fe65a168d7e205ea613b2b1c1b3))
+    - Updated versions and changelogs ([`35ff51b`](https://github.com/candlecorp/wick/commit/35ff51b8a93c27475765a7eb65c23256f4f93d67))
+    - Updated lints ([`7bb6865`](https://github.com/candlecorp/wick/commit/7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c))
+    - Merge remote-tracking branch 'refs/remotes/origin/main' ([`344b60c`](https://github.com/candlecorp/wick/commit/344b60c854bd33f1d267c7f422378e2716496ba6))
+    - Added changelog ([`3790520`](https://github.com/candlecorp/wick/commit/37905206a10ff16406b77ad296d467ebf76fc8fb))
+    - Added xml codec for wick-http-component ([`dd57e50`](https://github.com/candlecorp/wick/commit/dd57e5062f3cf5d01e163ad104e56f7debc50aa4))
+    - Changed pre-request middleware to one output union vs a request/response race ([`34e1484`](https://github.com/candlecorp/wick/commit/34e1484443de014ebe010063640f937e528df10a))
+    - Fixed included cached assets on wick reg push ([`4577461`](https://github.com/candlecorp/wick/commit/4577461e0a767ec99ae6482c2e2efeb3069ca0c8))
+    - Changed formal datetime type to DateTime<Utc> ([`f113d30`](https://github.com/candlecorp/wick/commit/f113d307535081caa4248315607db17f3180a107))
+    - Updated config codegen, refactored config for clarity, fixed template ([`10672c5`](https://github.com/candlecorp/wick/commit/10672c5db34d10e50869b2c14977f9235761cabd))
+    - Updated lints, deprecated Link type, removed Ref type, renamed Custom->Named ([`eb26a15`](https://github.com/candlecorp/wick/commit/eb26a1586f0e00137bbd9ee608cd15d3cde074d0))
+    - Added request/response middle to http trigger, refactored component codegen ([`85e1abf`](https://github.com/candlecorp/wick/commit/85e1abfc142a4f20e12a498e68c83de3f9971e8f))
+    - Added proper type defs into config, closes #200. Fixed #228, #227 ([`49a53de`](https://github.com/candlecorp/wick/commit/49a53de6cb6631e2dc1f1e633d1c29d0510383cb))
+    - Added operation context ([`88dbedb`](https://github.com/candlecorp/wick/commit/88dbedb624e1e381f253fb6b56d9af81ceeb00c8))
+    - Added pluck & merge ([`027392a`](https://github.com/candlecorp/wick/commit/027392a9514ba4846e068b21476e980ea53bee1d))
+    - Added http client component ([`dbbd787`](https://github.com/candlecorp/wick/commit/dbbd787131fd959c8cf5c8130ca03da6a63221e7))
+    - Added type imports ([`17c9058`](https://github.com/candlecorp/wick/commit/17c9058b98935fa8ed29dbc27b899c9e3244eb67))
+</details>
+
 ## v0.3.0 (2023-09-14)
 
 <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/>
 
 ### Chore
 
@@ -40,39 +116,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### New Features (BREAKING)
 
  - <csr-id-34e1484443de014ebe010063640f937e528df10a/> changed pre-request middleware to one output union vs a request/response race
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 15 commits contributed to the release over the course of 143 calendar days.
- - 148 days passed between releases.
- - 14 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Updated lints ([`7bb6865`](https://github.com/candlecorp/wick/commit/7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c))
-    - Merge remote-tracking branch 'refs/remotes/origin/main' ([`344b60c`](https://github.com/candlecorp/wick/commit/344b60c854bd33f1d267c7f422378e2716496ba6))
-    - Added changelog ([`3790520`](https://github.com/candlecorp/wick/commit/37905206a10ff16406b77ad296d467ebf76fc8fb))
-    - Added xml codec for wick-http-component ([`dd57e50`](https://github.com/candlecorp/wick/commit/dd57e5062f3cf5d01e163ad104e56f7debc50aa4))
-    - Changed pre-request middleware to one output union vs a request/response race ([`34e1484`](https://github.com/candlecorp/wick/commit/34e1484443de014ebe010063640f937e528df10a))
-    - Fixed included cached assets on wick reg push ([`4577461`](https://github.com/candlecorp/wick/commit/4577461e0a767ec99ae6482c2e2efeb3069ca0c8))
-    - Changed formal datetime type to DateTime<Utc> ([`f113d30`](https://github.com/candlecorp/wick/commit/f113d307535081caa4248315607db17f3180a107))
-    - Updated config codegen, refactored config for clarity, fixed template ([`10672c5`](https://github.com/candlecorp/wick/commit/10672c5db34d10e50869b2c14977f9235761cabd))
-    - Updated lints, deprecated Link type, removed Ref type, renamed Custom->Named ([`eb26a15`](https://github.com/candlecorp/wick/commit/eb26a1586f0e00137bbd9ee608cd15d3cde074d0))
-    - Added request/response middle to http trigger, refactored component codegen ([`85e1abf`](https://github.com/candlecorp/wick/commit/85e1abfc142a4f20e12a498e68c83de3f9971e8f))
-    - Added proper type defs into config, closes #200. Fixed #228, #227 ([`49a53de`](https://github.com/candlecorp/wick/commit/49a53de6cb6631e2dc1f1e633d1c29d0510383cb))
-    - Added operation context ([`88dbedb`](https://github.com/candlecorp/wick/commit/88dbedb624e1e381f253fb6b56d9af81ceeb00c8))
-    - Added pluck & merge ([`027392a`](https://github.com/candlecorp/wick/commit/027392a9514ba4846e068b21476e980ea53bee1d))
-    - Added http client component ([`dbbd787`](https://github.com/candlecorp/wick/commit/dbbd787131fd959c8cf5c8130ca03da6a63221e7))
-    - Added type imports ([`17c9058`](https://github.com/candlecorp/wick/commit/17c9058b98935fa8ed29dbc27b899c9e3244eb67))
-</details>
 
 ## v0.2.0 (2023-04-19)
 

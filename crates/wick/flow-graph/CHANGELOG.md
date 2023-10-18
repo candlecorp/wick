@@ -5,10 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.22.0 (2023-09-14)
+## v0.23.0 (2023-10-18)
 
 ### Chore
 
+ - <csr-id-35ff51b8a93c27475765a7eb65c23256f4f93d67/> updated versions and changelogs
  - <csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/> migrated AsRef<str> to concrete types or Into<String>
  - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
  - <csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/> updated include directives in Cargo.toml
@@ -40,9 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 18 commits contributed to the release over the course of 146 calendar days.
- - 148 days passed between releases.
- - 17 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 19 commits contributed to the release over the course of 180 calendar days.
+ - 182 days passed between releases.
+ - 18 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#232](https://github.com/candlecorp/wick/issues/232), [#319](https://github.com/candlecorp/wick/issues/319)
 
 ### Commit Details
@@ -56,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#319](https://github.com/candlecorp/wick/issues/319)**
     - Propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates ([`7ab25d2`](https://github.com/candlecorp/wick/commit/7ab25d2fc1274fbf552b86f59774b1b24ea12b0f))
  * **Uncategorized**
+    - Updated versions and changelogs ([`35ff51b`](https://github.com/candlecorp/wick/commit/35ff51b8a93c27475765a7eb65c23256f4f93d67))
     - Migrated AsRef<str> to concrete types or Into<String> ([`60128f7`](https://github.com/candlecorp/wick/commit/60128f7707f2d2a537ffa32e24376f58d7faa7be))
     - Updated lints ([`7bb6865`](https://github.com/candlecorp/wick/commit/7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c))
     - Merge remote-tracking branch 'refs/remotes/origin/main' ([`344b60c`](https://github.com/candlecorp/wick/commit/344b60c854bd33f1d267c7f422378e2716496ba6))
@@ -73,6 +75,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added pluck & merge ([`027392a`](https://github.com/candlecorp/wick/commit/027392a9514ba4846e068b21476e980ea53bee1d))
     - Added the ability to create inline node IDs in flow config ([`f7d7274`](https://github.com/candlecorp/wick/commit/f7d72741adae67477634ccdf52b93fe8f0c3c35f))
 </details>
+
+## v0.22.0 (2023-09-14)
+
+<csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/>
+<csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/>
+<csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/>
+<csr-id-3580951b5faa8ef279291e5a6f994d1c9e0785d6/>
+
+### Chore
+
+ - <csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/> migrated AsRef<str> to concrete types or Into<String>
+ - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
+ - <csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/> updated include directives in Cargo.toml
+ - <csr-id-3580951b5faa8ef279291e5a6f994d1c9e0785d6/> cleaned up legacy naming
+
+### Documentation
+
+ - <csr-id-37905206a10ff16406b77ad296d467ebf76fc8fb/> added changelog
+
+### New Features
+
+ - <csr-id-2a5cf0c1adcd6aacd083967da9e8e7c6c46a9695/> added flow sequences, enhanced port inference
+ - <csr-id-04d4fb0fc7137946fa10ee3e0f0be4c0cc73c8b3/> added ability to pass `with:` config to switch case operations
+ - <csr-id-7ab25d2fc1274fbf552b86f59774b1b24ea12b0f/> propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates
+ - <csr-id-d0d58bed91a911c19a8fcd54d2ec5f9a6fd1d74d/> added configurable timeout per-operation
+ - <csr-id-8058284a1a686366fa8829f9377981d7ba389554/> propagating component config through to user code
+ - <csr-id-262e0b50c84229872ce7d1f006a878281b46d8e9/> added pluck shorthand where e.g. `op.name.input -> op.name`
+ - <csr-id-56959c74e0fa96870d6fdd4197a30606041a0f8a/> normalized accessor api for wick-config
+ - <csr-id-1d37fb5a9aebec3653425ddc102c2f2d4f5fcd71/> added codec to HTTP server, added runtime constraints, ability to explicitly drop packets
+ - <csr-id-88dbedb624e1e381f253fb6b56d9af81ceeb00c8/> added operation context
+ - <csr-id-027392a9514ba4846e068b21476e980ea53bee1d/> added pluck & merge
+ - <csr-id-f7d72741adae67477634ccdf52b93fe8f0c3c35f/> added the ability to create inline node IDs in flow config
+
+### Bug Fixes
+
+ - <csr-id-9cd1fc007e6a21944f4fd65f3f65f4a2a86fd1bd/> fixed trace spans, jaeger->otlp, fixed serving static from root
 
 ## v0.21.1 (2023-08-28)
 

@@ -11,7 +11,7 @@ DEV.env
 .env.local
 
 # node/js
-node_modules
+node_modules/
 
 # hugo
 .hugo_build.lock

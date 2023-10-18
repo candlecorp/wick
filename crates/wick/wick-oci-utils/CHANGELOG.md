@@ -5,7 +5,101 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.5.0 (2023-10-18)
+
+### Chore
+
+ - <csr-id-35ff51b8a93c27475765a7eb65c23256f4f93d67/> updated versions and changelogs
+ - <csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/> migrated AsRef<str> to concrete types or Into<String>
+ - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
+ - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
+ - <csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/> updated include directives in Cargo.toml
+ - <csr-id-1b09917bf75ad3d954d4864bc3bf552137c3cd0f/> updated rustfmt and fixed formatting errors
+ - <csr-id-f3904cfd28afb82fc727d096ef117c47e81b4160/> marked cache pull test as integration test
+
+### Documentation
+
+ - <csr-id-37905206a10ff16406b77ad296d467ebf76fc8fb/> added changelog
+
+### New Features
+
+ - <csr-id-398a034a3950c5b5dc95418248dfeb1f4f27f2bc/> added oci options so `wick reg pull` can pull more intuitively
+ - <csr-id-33ea9cd5fff9a85398e7fc15661cb9401a085c18/> added `wick config expand`
+ - <csr-id-3ae02baaaa302521b0abc571ebdb08ae55a3a48e/> improved performance of frequently used regex
+ - <csr-id-f4f04af492c7e0fe90472a6a5bafebfdbeddf622/> added types to package
+ - <csr-id-53ff1dd49057a0b7cb45deff02b350d8f1b2970e/> added glob support in package files
+ - <csr-id-6fb111cc0068ca5a4709ef274b046c0b590eee08/> added gzip error handling
+ - <csr-id-8c58c354e765a51abb602b184c45055b9d561ed5/> adding tar.gz for extra files
+
+### Bug Fixes
+
+ - <csr-id-4577461e0a767ec99ae6482c2e2efeb3069ca0c8/> fixed included cached assets on wick reg push
+ - <csr-id-e107d7cc2fb3d36925fe8af471b164c07ec3e15d/> fixed broken cache path, fixed unrendered Volume configuraton
+ - <csr-id-37f52c4bf5903d0e6be0e167846bc4aff64ed384/> fixed panic on invalid reference format, added candle reg as default domain
+ - <csr-id-fac116c0a98235e454dfdd4826e11508ebae68c6/> made env path usage more clear, fixed pull behavior, added wick show
+ - <csr-id-c61ca5f7320b533db3b69bdbe81fd37edbaa8eac/> multi-level recursive files in package
+ - <csr-id-57698d4a6e4b86f5f438d12928ccdbbbb20a8abf/> fixed importing of assets from assets
+ - <csr-id-6c6f9a80f9873f5989453c7800a355724cb61fff/> fixed linting issues
+
+### Refactor
+
+ - <csr-id-42a39c2b9150b56e27c8b7b41cccebc0cef09015/> pulled triggers into their own crates
+ - <csr-id-732db25382951c1cb5c245af35dd3fcbf2677a71/> removed double parse and added cheaper function to check OCI references
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 26 commits contributed to the release over the course of 169 calendar days.
+ - 182 days passed between releases.
+ - 24 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#405](https://github.com/candlecorp/wick/issues/405)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#405](https://github.com/candlecorp/wick/issues/405)**
+    - Fixed "refusing to overwrite ..." errors on application runs. ([`a10242d`](https://github.com/candlecorp/wick/commit/a10242d4786cfa199eaf61289b9da99d09c114a7))
+ * **Uncategorized**
+    - Pulled triggers into their own crates ([`42a39c2`](https://github.com/candlecorp/wick/commit/42a39c2b9150b56e27c8b7b41cccebc0cef09015))
+    - Updated versions and changelogs ([`35ff51b`](https://github.com/candlecorp/wick/commit/35ff51b8a93c27475765a7eb65c23256f4f93d67))
+    - Added oci options so `wick reg pull` can pull more intuitively ([`398a034`](https://github.com/candlecorp/wick/commit/398a034a3950c5b5dc95418248dfeb1f4f27f2bc))
+    - Migrated AsRef<str> to concrete types or Into<String> ([`60128f7`](https://github.com/candlecorp/wick/commit/60128f7707f2d2a537ffa32e24376f58d7faa7be))
+    - Updated lints ([`7bb6865`](https://github.com/candlecorp/wick/commit/7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c))
+    - Merge remote-tracking branch 'refs/remotes/origin/main' ([`344b60c`](https://github.com/candlecorp/wick/commit/344b60c854bd33f1d267c7f422378e2716496ba6))
+    - Added changelog ([`3790520`](https://github.com/candlecorp/wick/commit/37905206a10ff16406b77ad296d467ebf76fc8fb))
+    - Explicitly defined all features ([`7968fb0`](https://github.com/candlecorp/wick/commit/7968fb0b6fe519732595ed1e3ed9cc429a45d0c4))
+    - Updated include directives in Cargo.toml ([`4090c8f`](https://github.com/candlecorp/wick/commit/4090c8fa7fba8254570cc10024fd8a6b15c076ab))
+    - Added `wick config expand` ([`33ea9cd`](https://github.com/candlecorp/wick/commit/33ea9cd5fff9a85398e7fc15661cb9401a085c18))
+    - Removed double parse and added cheaper function to check OCI references ([`732db25`](https://github.com/candlecorp/wick/commit/732db25382951c1cb5c245af35dd3fcbf2677a71))
+    - Improved performance of frequently used regex ([`3ae02ba`](https://github.com/candlecorp/wick/commit/3ae02baaaa302521b0abc571ebdb08ae55a3a48e))
+    - Updated rustfmt and fixed formatting errors ([`1b09917`](https://github.com/candlecorp/wick/commit/1b09917bf75ad3d954d4864bc3bf552137c3cd0f))
+    - Fixed included cached assets on wick reg push ([`4577461`](https://github.com/candlecorp/wick/commit/4577461e0a767ec99ae6482c2e2efeb3069ca0c8))
+    - Marked cache pull test as integration test ([`f3904cf`](https://github.com/candlecorp/wick/commit/f3904cfd28afb82fc727d096ef117c47e81b4160))
+    - Fixed broken cache path, fixed unrendered Volume configuraton ([`e107d7c`](https://github.com/candlecorp/wick/commit/e107d7cc2fb3d36925fe8af471b164c07ec3e15d))
+    - Fixed panic on invalid reference format, added candle reg as default domain ([`37f52c4`](https://github.com/candlecorp/wick/commit/37f52c4bf5903d0e6be0e167846bc4aff64ed384))
+    - Made env path usage more clear, fixed pull behavior, added wick show ([`fac116c`](https://github.com/candlecorp/wick/commit/fac116c0a98235e454dfdd4826e11508ebae68c6))
+    - Added types to package ([`f4f04af`](https://github.com/candlecorp/wick/commit/f4f04af492c7e0fe90472a6a5bafebfdbeddf622))
+    - Multi-level recursive files in package ([`c61ca5f`](https://github.com/candlecorp/wick/commit/c61ca5f7320b533db3b69bdbe81fd37edbaa8eac))
+    - Fixed importing of assets from assets ([`57698d4`](https://github.com/candlecorp/wick/commit/57698d4a6e4b86f5f438d12928ccdbbbb20a8abf))
+    - Added glob support in package files ([`53ff1dd`](https://github.com/candlecorp/wick/commit/53ff1dd49057a0b7cb45deff02b350d8f1b2970e))
+    - Fixed linting issues ([`6c6f9a8`](https://github.com/candlecorp/wick/commit/6c6f9a80f9873f5989453c7800a355724cb61fff))
+    - Added gzip error handling ([`6fb111c`](https://github.com/candlecorp/wick/commit/6fb111cc0068ca5a4709ef274b046c0b590eee08))
+    - Adding tar.gz for extra files ([`8c58c35`](https://github.com/candlecorp/wick/commit/8c58c354e765a51abb602b184c45055b9d561ed5))
+</details>
+
 ## v0.4.0 (2023-09-14)
+
+<csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/>
+<csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/>
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/>
+<csr-id-1b09917bf75ad3d954d4864bc3bf552137c3cd0f/>
+<csr-id-f3904cfd28afb82fc727d096ef117c47e81b4160/>
+<csr-id-732db25382951c1cb5c245af35dd3fcbf2677a71/>
 
 ### Chore
 
@@ -43,49 +137,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Refactor
 
  - <csr-id-732db25382951c1cb5c245af35dd3fcbf2677a71/> removed double parse and added cheaper function to check OCI references
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 24 commits contributed to the release over the course of 135 calendar days.
- - 148 days passed between releases.
- - 22 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 1 unique issue was worked on: [#405](https://github.com/candlecorp/wick/issues/405)
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **[#405](https://github.com/candlecorp/wick/issues/405)**
-    - Fixed "refusing to overwrite ..." errors on application runs. ([`a10242d`](https://github.com/candlecorp/wick/commit/a10242d4786cfa199eaf61289b9da99d09c114a7))
- * **Uncategorized**
-    - Added oci options so `wick reg pull` can pull more intuitively ([`398a034`](https://github.com/candlecorp/wick/commit/398a034a3950c5b5dc95418248dfeb1f4f27f2bc))
-    - Migrated AsRef<str> to concrete types or Into<String> ([`60128f7`](https://github.com/candlecorp/wick/commit/60128f7707f2d2a537ffa32e24376f58d7faa7be))
-    - Updated lints ([`7bb6865`](https://github.com/candlecorp/wick/commit/7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c))
-    - Merge remote-tracking branch 'refs/remotes/origin/main' ([`344b60c`](https://github.com/candlecorp/wick/commit/344b60c854bd33f1d267c7f422378e2716496ba6))
-    - Added changelog ([`3790520`](https://github.com/candlecorp/wick/commit/37905206a10ff16406b77ad296d467ebf76fc8fb))
-    - Explicitly defined all features ([`7968fb0`](https://github.com/candlecorp/wick/commit/7968fb0b6fe519732595ed1e3ed9cc429a45d0c4))
-    - Updated include directives in Cargo.toml ([`4090c8f`](https://github.com/candlecorp/wick/commit/4090c8fa7fba8254570cc10024fd8a6b15c076ab))
-    - Added `wick config expand` ([`33ea9cd`](https://github.com/candlecorp/wick/commit/33ea9cd5fff9a85398e7fc15661cb9401a085c18))
-    - Removed double parse and added cheaper function to check OCI references ([`732db25`](https://github.com/candlecorp/wick/commit/732db25382951c1cb5c245af35dd3fcbf2677a71))
-    - Improved performance of frequently used regex ([`3ae02ba`](https://github.com/candlecorp/wick/commit/3ae02baaaa302521b0abc571ebdb08ae55a3a48e))
-    - Updated rustfmt and fixed formatting errors ([`1b09917`](https://github.com/candlecorp/wick/commit/1b09917bf75ad3d954d4864bc3bf552137c3cd0f))
-    - Fixed included cached assets on wick reg push ([`4577461`](https://github.com/candlecorp/wick/commit/4577461e0a767ec99ae6482c2e2efeb3069ca0c8))
-    - Marked cache pull test as integration test ([`f3904cf`](https://github.com/candlecorp/wick/commit/f3904cfd28afb82fc727d096ef117c47e81b4160))
-    - Fixed broken cache path, fixed unrendered Volume configuraton ([`e107d7c`](https://github.com/candlecorp/wick/commit/e107d7cc2fb3d36925fe8af471b164c07ec3e15d))
-    - Fixed panic on invalid reference format, added candle reg as default domain ([`37f52c4`](https://github.com/candlecorp/wick/commit/37f52c4bf5903d0e6be0e167846bc4aff64ed384))
-    - Made env path usage more clear, fixed pull behavior, added wick show ([`fac116c`](https://github.com/candlecorp/wick/commit/fac116c0a98235e454dfdd4826e11508ebae68c6))
-    - Added types to package ([`f4f04af`](https://github.com/candlecorp/wick/commit/f4f04af492c7e0fe90472a6a5bafebfdbeddf622))
-    - Multi-level recursive files in package ([`c61ca5f`](https://github.com/candlecorp/wick/commit/c61ca5f7320b533db3b69bdbe81fd37edbaa8eac))
-    - Fixed importing of assets from assets ([`57698d4`](https://github.com/candlecorp/wick/commit/57698d4a6e4b86f5f438d12928ccdbbbb20a8abf))
-    - Added glob support in package files ([`53ff1dd`](https://github.com/candlecorp/wick/commit/53ff1dd49057a0b7cb45deff02b350d8f1b2970e))
-    - Fixed linting issues ([`6c6f9a8`](https://github.com/candlecorp/wick/commit/6c6f9a80f9873f5989453c7800a355724cb61fff))
-    - Added gzip error handling ([`6fb111c`](https://github.com/candlecorp/wick/commit/6fb111cc0068ca5a4709ef274b046c0b590eee08))
-    - Adding tar.gz for extra files ([`8c58c35`](https://github.com/candlecorp/wick/commit/8c58c354e765a51abb602b184c45055b9d561ed5))
-</details>
 
 ## v0.3.1 (2023-08-28)
 

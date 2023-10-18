@@ -5,10 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.3.0 (2023-09-14)
+## v0.4.0 (2023-10-18)
 
 ### Chore
 
+ - <csr-id-35ff51b8a93c27475765a7eb65c23256f4f93d67/> updated versions and changelogs
  - <csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/> migrated AsRef<str> to concrete types or Into<String>
  - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
@@ -49,9 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 24 commits contributed to the release over the course of 132 calendar days.
- - 148 days passed between releases.
- - 23 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 25 commits contributed to the release over the course of 165 calendar days.
+ - 182 days passed between releases.
+ - 24 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#319](https://github.com/candlecorp/wick/issues/319)
 
 ### Commit Details
@@ -63,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#319](https://github.com/candlecorp/wick/issues/319)**
     - Propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates ([`7ab25d2`](https://github.com/candlecorp/wick/commit/7ab25d2fc1274fbf552b86f59774b1b24ea12b0f))
  * **Uncategorized**
+    - Updated versions and changelogs ([`35ff51b`](https://github.com/candlecorp/wick/commit/35ff51b8a93c27475765a7eb65c23256f4f93d67))
     - Migrated AsRef<str> to concrete types or Into<String> ([`60128f7`](https://github.com/candlecorp/wick/commit/60128f7707f2d2a537ffa32e24376f58d7faa7be))
     - Updated lints ([`7bb6865`](https://github.com/candlecorp/wick/commit/7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c))
     - Merge remote-tracking branch 'refs/remotes/origin/main' ([`344b60c`](https://github.com/candlecorp/wick/commit/344b60c854bd33f1d267c7f422378e2716496ba6))
@@ -87,6 +89,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added azure-sql support ([`ba2015d`](https://github.com/candlecorp/wick/commit/ba2015ddf2d24324c311fa681a39c4a65ac886bc))
     - Added operation context ([`88dbedb`](https://github.com/candlecorp/wick/commit/88dbedb624e1e381f253fb6b56d9af81ceeb00c8))
 </details>
+
+## v0.3.0 (2023-09-14)
+
+<csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/>
+<csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/>
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/>
+<csr-id-f76ecf1e1bc9ae4ec04c3df66b7fa15d0d2e3498/>
+<csr-id-37030caa9d8930774f6cac2f0b921d6f7d793941/>
+
+### Chore
+
+ - <csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/> migrated AsRef<str> to concrete types or Into<String>
+ - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
+ - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
+ - <csr-id-e452ae37b04b13666129fcbaa4af089555d456a2/> removed unused deps, consolidated versions at root workspace
+
+### Documentation
+
+ - <csr-id-37905206a10ff16406b77ad296d467ebf76fc8fb/> added changelog
+ - <csr-id-0d37e8af72f6578595deb2138b57711a2ff6ceca/> added example docs, updated generated docs
+
+### New Features
+
+ - <csr-id-ddf1008983c1f4a880a42ac4c29c0f60bc619cf3/> added wick audit & lockdown config
+ - <csr-id-7ef0b24cf6112f3f11cd9309d545d38ab0ea9d28/> added better granularity to log filter rules
+ - <csr-id-517b96da7ba93357229b7c1725ecb3331120c636/> decoupled telemetry from log output
+ - <csr-id-a8232d0d8a8f02a8f7c7b8aa0cefa4b78e258c65/> rounded out preliminary support for switch substreams
+ - <csr-id-7ab25d2fc1274fbf552b86f59774b1b24ea12b0f/> propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates
+ - <csr-id-d85d6f568d4548036c1af61e515c3fc187be6a6e/> added on_error & transaction support to ms sql server SQL implementation
+ - <csr-id-63858e1bc6673b61d50fa8f66dc4378369850910/> added settings file, wick reg login, & wick reg push --latest
+ - <csr-id-ba2015ddf2d24324c311fa681a39c4a65ac886bc/> added azure-sql support
+ - <csr-id-88dbedb624e1e381f253fb6b56d9af81ceeb00c8/> added operation context
+
+### Bug Fixes
+
+ - <csr-id-8a49c20f77257e7e325d83858802efb8982eb719/> fixed dropped spans
+ - <csr-id-856034236cc523e7f7e6c044555498798837bf30/> ensured spans don't get filtered out by the logger
+ - <csr-id-21863bff7f583df47a87dde689000f4d6dfc1a21/> fixed silenced errors from hushed modules
+ - <csr-id-fac116c0a98235e454dfdd4826e11508ebae68c6/> made env path usage more clear, fixed pull behavior, added wick show
+ - <csr-id-9cd1fc007e6a21944f4fd65f3f65f4a2a86fd1bd/> fixed trace spans, jaeger->otlp, fixed serving static from root
+ - <csr-id-c0ab15b0cf854a4ae8047c9f00d6da85febe0db2/> updated trace configuration, added jaeger endpoint to config.yaml settings
+
+### Refactor
+
+ - <csr-id-f76ecf1e1bc9ae4ec04c3df66b7fa15d0d2e3498/> consolidated include/exclude to one filter string
+ - <csr-id-37030caa9d8930774f6cac2f0b921d6f7d793941/> renamed transaction to executioncontext in interpreter
 
 ## v0.2.1 (2023-08-28)
 

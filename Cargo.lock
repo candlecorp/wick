@@ -152,7 +152,7 @@ dependencies = [
 
 [[package]]
 name = "asset-container"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "bitflags 2.4.0",
@@ -1080,7 +1080,7 @@ dependencies = [
 
 [[package]]
 name = "derive-asset-container"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "asset-container",
@@ -1482,7 +1482,7 @@ dependencies = [
 
 [[package]]
 name = "flow-component"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "futures 0.3.28",
@@ -1496,7 +1496,7 @@ dependencies = [
 
 [[package]]
 name = "flow-expression-parser"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "liquid-json",
@@ -1517,7 +1517,7 @@ dependencies = [
 
 [[package]]
 name = "flow-graph"
-version = "0.22.0"
+version = "0.23.0"
 dependencies = [
  "anyhow",
  "thiserror",
@@ -1525,7 +1525,7 @@ dependencies = [
 
 [[package]]
 name = "flow-graph-interpreter"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3010,7 +3010,7 @@ checksum = "9b2a4787296e9989611394c33f193f676704af1686e70b8f8033ab5ba9a35a94"
 
 [[package]]
 name = "performance-mark"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -3734,7 +3734,7 @@ dependencies = [
 
 [[package]]
 name = "seeded-random"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "parking_lot",
  "rand",
@@ -4419,7 +4419,7 @@ dependencies = [
 
 [[package]]
 name = "tap-harness"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "testanything",
@@ -5890,7 +5890,7 @@ checksum = "22fc3756b8a9133049b26c7f61ab35416c130e8c09b660f5b3958b446f52cc50"
 
 [[package]]
 name = "wick-asset-reference"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "asset-container",
@@ -5911,7 +5911,7 @@ dependencies = [
 
 [[package]]
 name = "wick-cli"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "anyhow",
  "atty",
@@ -5957,7 +5957,7 @@ dependencies = [
 
 [[package]]
 name = "wick-component"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -5984,7 +5984,7 @@ dependencies = [
 
 [[package]]
 name = "wick-component-cli"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -6013,7 +6013,7 @@ dependencies = [
 
 [[package]]
 name = "wick-component-codegen"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "bitflags 2.4.0",
@@ -6067,7 +6067,7 @@ dependencies = [
 
 [[package]]
 name = "wick-config"
-version = "0.27.0"
+version = "0.28.0"
 dependencies = [
  "anyhow",
  "asset-container",
@@ -6110,7 +6110,7 @@ dependencies = [
 
 [[package]]
 name = "wick-host"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6146,7 +6146,7 @@ dependencies = [
 
 [[package]]
 name = "wick-http-client"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "eventsource-stream",
@@ -6172,7 +6172,7 @@ dependencies = [
 
 [[package]]
 name = "wick-interface-cli"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "serde",
  "wick-component",
@@ -6181,7 +6181,7 @@ dependencies = [
 
 [[package]]
 name = "wick-interface-http"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -6196,7 +6196,7 @@ dependencies = [
 
 [[package]]
 name = "wick-interface-types"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "derive_builder",
@@ -6213,7 +6213,7 @@ dependencies = [
 
 [[package]]
 name = "wick-invocation-server"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6233,7 +6233,7 @@ dependencies = [
 
 [[package]]
 name = "wick-logger"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ansi_term",
  "console-subscriber",
@@ -6253,7 +6253,7 @@ dependencies = [
 
 [[package]]
 name = "wick-oci-utils"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -6281,7 +6281,7 @@ dependencies = [
 
 [[package]]
 name = "wick-operation"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -6293,7 +6293,7 @@ dependencies = [
 
 [[package]]
 name = "wick-package"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "asset-container",
@@ -6317,7 +6317,7 @@ dependencies = [
 
 [[package]]
 name = "wick-packet"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "base64 0.21.3",
@@ -6349,7 +6349,7 @@ dependencies = [
 
 [[package]]
 name = "wick-rpc"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "prost",
  "serde",
@@ -6365,7 +6365,7 @@ dependencies = [
 
 [[package]]
 name = "wick-runtime"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6410,7 +6410,7 @@ dependencies = [
 
 [[package]]
 name = "wick-settings"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "derive_builder",
  "serde",
@@ -6422,7 +6422,7 @@ dependencies = [
 
 [[package]]
 name = "wick-sql"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6455,7 +6455,7 @@ dependencies = [
 
 [[package]]
 name = "wick-test"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "assert-json-diff",
@@ -6624,7 +6624,7 @@ dependencies = [
 
 [[package]]
 name = "wick-wascap"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "base64 0.21.3",
@@ -6656,7 +6656,7 @@ dependencies = [
 
 [[package]]
 name = "wick-xdg"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "getset",
  "serde",

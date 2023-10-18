@@ -5,10 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.6.0 (2023-09-14)
+## v0.7.0 (2023-10-18)
 
 ### Chore
 
+ - <csr-id-35ff51b8a93c27475765a7eb65c23256f4f93d67/> updated versions and changelogs
  - <csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/> migrated AsRef<str> to concrete types or Into<String>
  - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
  - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
@@ -66,9 +67,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 27 commits contributed to the release over the course of 146 calendar days.
- - 148 days passed between releases.
- - 25 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 28 commits contributed to the release over the course of 180 calendar days.
+ - 182 days passed between releases.
+ - 26 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#232](https://github.com/candlecorp/wick/issues/232), [#319](https://github.com/candlecorp/wick/issues/319), [#388](https://github.com/candlecorp/wick/issues/388)
 
 ### Commit Details
@@ -84,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#388](https://github.com/candlecorp/wick/issues/388)**
     - Added `wick install` ([`3158048`](https://github.com/candlecorp/wick/commit/3158048ad1d0c33518cb647d08f927606afcecd0))
  * **Uncategorized**
+    - Updated versions and changelogs ([`35ff51b`](https://github.com/candlecorp/wick/commit/35ff51b8a93c27475765a7eb65c23256f4f93d67))
     - Merge remote-tracking branch 'refs/remotes/origin/main' ([`4d6e3f4`](https://github.com/candlecorp/wick/commit/4d6e3f437964552cfd6917310c17548b12e83eaf))
     - Made ComponentError anyhow::Error ([`534d209`](https://github.com/candlecorp/wick/commit/534d209c797d962d4fd90d590ecdb5916ecede56))
     - Made generic Binding struct ([`644c2ff`](https://github.com/candlecorp/wick/commit/644c2ffde3be9b39bd087147d2e6599fbb6c1c85))
@@ -109,6 +111,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added pluck & merge ([`027392a`](https://github.com/candlecorp/wick/commit/027392a9514ba4846e068b21476e980ea53bee1d))
     - Added the ability to create inline node IDs in flow config ([`f7d7274`](https://github.com/candlecorp/wick/commit/f7d72741adae67477634ccdf52b93fe8f0c3c35f))
 </details>
+
+## v0.6.0 (2023-09-14)
+
+<csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/>
+<csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/>
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-ab7d5355945adb592c4e00ccdc8b268e146e6535/>
+<csr-id-3158048ad1d0c33518cb647d08f927606afcecd0/>
+<csr-id-644c2ffde3be9b39bd087147d2e6599fbb6c1c85/>
+<csr-id-39f6a7d7d8a2079a5961eb2c550cd6e02d77e19f/>
+
+### Chore
+
+ - <csr-id-60128f7707f2d2a537ffa32e24376f58d7faa7be/> migrated AsRef<str> to concrete types or Into<String>
+ - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
+ - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
+ - <csr-id-ab7d5355945adb592c4e00ccdc8b268e146e6535/> fixed warnings
+
+### Documentation
+
+ - <csr-id-37905206a10ff16406b77ad296d467ebf76fc8fb/> added changelog
+ - <csr-id-0d37e8af72f6578595deb2138b57711a2ff6ceca/> added example docs, updated generated docs
+
+### New Features
+
+ - <csr-id-7bacdb9a4559e3de86e0a17544e76634ffe4de28/> made generating v1 configs wasm-compatible
+ - <csr-id-33ea9cd5fff9a85398e7fc15661cb9401a085c18/> added `wick config expand`
+ - <csr-id-e5ed32378e0fd61c8bb1560027d252c0c93059a1/> added wick config dotviz, made interpreter tolerant of unused ports
+ - <csr-id-2a5cf0c1adcd6aacd083967da9e8e7c6c46a9695/> added flow sequences, enhanced port inference
+ - <csr-id-7ab25d2fc1274fbf552b86f59774b1b24ea12b0f/> propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates
+ - <csr-id-d0d58bed91a911c19a8fcd54d2ec5f9a6fd1d74d/> added configurable timeout per-operation
+ - <csr-id-bd8af683437d46ed7281fd8cd806efe22ffa0f6f/> added quote-delimeted paths to field syntax, made rest router return errors on error packets
+ - <csr-id-f9a4b37da51df156e4293e639becbed06813ff46/> added wick new and better config serialization
+ - <csr-id-51d1da4a4ac6908fd1041ffd14ac7387b80b8ff6/> added arbitrary length plucked paths w/ support for array indices
+ - <csr-id-262e0b50c84229872ce7d1f006a878281b46d8e9/> added pluck shorthand where e.g. `op.name.input -> op.name`
+ - <csr-id-1d37fb5a9aebec3653425ddc102c2f2d4f5fcd71/> added codec to HTTP server, added runtime constraints, ability to explicitly drop packets
+ - <csr-id-88dbedb624e1e381f253fb6b56d9af81ceeb00c8/> added operation context
+ - <csr-id-027392a9514ba4846e068b21476e980ea53bee1d/> added pluck & merge
+ - <csr-id-f7d72741adae67477634ccdf52b93fe8f0c3c35f/> added the ability to create inline node IDs in flow config
+
+### Bug Fixes
+
+ - <csr-id-5f59bb11179ee19f49c82159e3b34f3abfe1c5ab/> fixed quoted field syntax, empty JSON body decoding, increased wasm buffer size to 5mb
+
+### Other
+
+ - <csr-id-3158048ad1d0c33518cb647d08f927606afcecd0/> Added `wick install`
+   * feat: added `wick install`
+   
+   * fix: using batch and ps1 files vs links on windows
+   
+   * ci: increment wick version
+   
+   * test: added wick install test for local app
+   
+   ---------
+
+### Refactor
+
+ - <csr-id-644c2ffde3be9b39bd087147d2e6599fbb6c1c85/> made generic Binding struct
+ - <csr-id-39f6a7d7d8a2079a5961eb2c550cd6e02d77e19f/> cleaned up intepreter, made some errors/warnings more clear
+
+### New Features (BREAKING)
+
+ - <csr-id-534d209c797d962d4fd90d590ecdb5916ecede56/> made ComponentError anyhow::Error
 
 ## v0.5.1 (2023-08-28)
 

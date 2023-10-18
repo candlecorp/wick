@@ -5,7 +5,126 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.3.0 (2023-10-18)
+
+### Chore
+
+ - <csr-id-becc5a1f54b42a29ec34f94fd13c3e8de7e27c46/> removed bad include directive
+ - <csr-id-35ff51b8a93c27475765a7eb65c23256f4f93d67/> updated versions and changelogs
+ - <csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/> updated lints
+ - <csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/> explicitly defined all features
+ - <csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/> updated include directives in Cargo.toml
+ - <csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/> updated lints, deprecated Link type, removed Ref type, renamed Custom->Named
+
+### Documentation
+
+ - <csr-id-37905206a10ff16406b77ad296d467ebf76fc8fb/> added changelog
+ - <csr-id-0d37e8af72f6578595deb2138b57711a2ff6ceca/> added example docs, updated generated docs
+ - <csr-id-10672c5db34d10e50869b2c14977f9235761cabd/> updated config codegen, refactored config for clarity, fixed template
+
+### New Features
+
+ - <csr-id-8760659095ce1f0f9a0bbd835bcf34827b21317c/> added __dirname, consolidated loose render events
+ - <csr-id-f52600c28f377b06b723e651daa8a4b8d7268d8a/> added lessthan, greaterthan, equals, and regex assertions
+ - <csr-id-72a2fb3af224ff0b674c8e75a8c6e94070c181a7/> added packet assertions to wick test cases
+ - <csr-id-ce9d2020b4a1a8397ae2013b05f8de4fd1e96a85/> re-added exposing volumes to WASI components
+ - <csr-id-cc404a0dd2006e63fbd399c8c8ae5d12cec55913/> made name in test definitions optional
+ - <csr-id-efe605510b846d2556f6060ba710fa154bdca7c4/> added ctx.inherent.timestamp, improved error message output
+ - <csr-id-7ab25d2fc1274fbf552b86f59774b1b24ea12b0f/> propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates
+ - <csr-id-3213e75c9e1a08db300d521e228d65e27671a779/> added support for input-less ops, added test for wasm RNG from inherent seed
+ - <csr-id-8058284a1a686366fa8829f9377981d7ba389554/> propagating component config through to user code
+ - <csr-id-a4dfea5a6d76b3f8d6df83758ac8bff9f5e744e7/> made wick test output more intuitive, updated rust template
+ - <csr-id-56959c74e0fa96870d6fdd4197a30606041a0f8a/> normalized accessor api for wick-config
+ - <csr-id-27c1fba1d6af314e3b5f317178426331acc4b071/> added context for wasm components
+ - <csr-id-88dbedb624e1e381f253fb6b56d9af81ceeb00c8/> added operation context
+
+### Bug Fixes
+
+ - <csr-id-3208691ffb824e9f83d9845ae274c9b60bb8d4fa/> converted all level spans to info_spans
+ - <csr-id-516a395842bf80d81f17db30727ee2b5be69256f/> fixed ignored --filter argument on wick test
+ - <csr-id-bf239832ccb282b7ce56430157a3412efc9737a6/> made configuration init a hard boundary with earlier validation
+ - <csr-id-221be200017943aae5d2c78254a8194d72600f7a/> made inherent data required vs optional/missing
+ - <csr-id-9cd1fc007e6a21944f4fd65f3f65f4a2a86fd1bd/> fixed trace spans, jaeger->otlp, fixed serving static from root
+
+### Refactor
+
+ - <csr-id-378c726823ec2fe65a168d7e205ea613b2b1c1b3/> unified input/output structs for all calls
+ - <csr-id-69d79c1c8eee66dcd766648c359145a1898691c7/> removed native stdlib and associated references
+ - <csr-id-0f3fef30abf88525a9966b823edccb18a1919aaf/> removed mutexes in PacketStream, made Invocation state error-proof
+ - <csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/> made v0, v1, and normalized config conditional features
+ - <csr-id-33527b199a5057e0bf9d51c6e5a4068b9a8dc830/> improved reliability and tolerance of wick test execution
+ - <csr-id-12a0f6de257cf4b5789474fef448c7828f315bb5/> re-integrated Packet/PacketStream with Invocation
+
+### Test
+
+ - <csr-id-5172449837c489f0231d4979ca4a5bb48f412aa2/> added cli test for wick test, fixed wasm test
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 35 commits contributed to the release over the course of 176 calendar days.
+ - 181 days passed between releases.
+ - 34 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 2 unique issues were worked on: [#319](https://github.com/candlecorp/wick/issues/319), [#341](https://github.com/candlecorp/wick/issues/341)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#319](https://github.com/candlecorp/wick/issues/319)**
+    - Propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates ([`7ab25d2`](https://github.com/candlecorp/wick/commit/7ab25d2fc1274fbf552b86f59774b1b24ea12b0f))
+ * **[#341](https://github.com/candlecorp/wick/issues/341)**
+    - Added ctx.inherent.timestamp, improved error message output ([`efe6055`](https://github.com/candlecorp/wick/commit/efe605510b846d2556f6060ba710fa154bdca7c4))
+ * **Uncategorized**
+    - Unified input/output structs for all calls ([`378c726`](https://github.com/candlecorp/wick/commit/378c726823ec2fe65a168d7e205ea613b2b1c1b3))
+    - Removed native stdlib and associated references ([`69d79c1`](https://github.com/candlecorp/wick/commit/69d79c1c8eee66dcd766648c359145a1898691c7))
+    - Removed bad include directive ([`becc5a1`](https://github.com/candlecorp/wick/commit/becc5a1f54b42a29ec34f94fd13c3e8de7e27c46))
+    - Updated versions and changelogs ([`35ff51b`](https://github.com/candlecorp/wick/commit/35ff51b8a93c27475765a7eb65c23256f4f93d67))
+    - Removed mutexes in PacketStream, made Invocation state error-proof ([`0f3fef3`](https://github.com/candlecorp/wick/commit/0f3fef30abf88525a9966b823edccb18a1919aaf))
+    - Updated lints ([`7bb6865`](https://github.com/candlecorp/wick/commit/7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c))
+    - Added __dirname, consolidated loose render events ([`8760659`](https://github.com/candlecorp/wick/commit/8760659095ce1f0f9a0bbd835bcf34827b21317c))
+    - Merge remote-tracking branch 'refs/remotes/origin/main' ([`344b60c`](https://github.com/candlecorp/wick/commit/344b60c854bd33f1d267c7f422378e2716496ba6))
+    - Added changelog ([`3790520`](https://github.com/candlecorp/wick/commit/37905206a10ff16406b77ad296d467ebf76fc8fb))
+    - Made v0, v1, and normalized config conditional features ([`f28522f`](https://github.com/candlecorp/wick/commit/f28522fa663f121f5da90df9dd8461d85c6222ed))
+    - Added lessthan, greaterthan, equals, and regex assertions ([`f52600c`](https://github.com/candlecorp/wick/commit/f52600c28f377b06b723e651daa8a4b8d7268d8a))
+    - Added packet assertions to wick test cases ([`72a2fb3`](https://github.com/candlecorp/wick/commit/72a2fb3af224ff0b674c8e75a8c6e94070c181a7))
+    - Converted all level spans to info_spans ([`3208691`](https://github.com/candlecorp/wick/commit/3208691ffb824e9f83d9845ae274c9b60bb8d4fa))
+    - Explicitly defined all features ([`7968fb0`](https://github.com/candlecorp/wick/commit/7968fb0b6fe519732595ed1e3ed9cc429a45d0c4))
+    - Updated include directives in Cargo.toml ([`4090c8f`](https://github.com/candlecorp/wick/commit/4090c8fa7fba8254570cc10024fd8a6b15c076ab))
+    - Re-added exposing volumes to WASI components ([`ce9d202`](https://github.com/candlecorp/wick/commit/ce9d2020b4a1a8397ae2013b05f8de4fd1e96a85))
+    - Improved reliability and tolerance of wick test execution ([`33527b1`](https://github.com/candlecorp/wick/commit/33527b199a5057e0bf9d51c6e5a4068b9a8dc830))
+    - Fixed ignored --filter argument on wick test ([`516a395`](https://github.com/candlecorp/wick/commit/516a395842bf80d81f17db30727ee2b5be69256f))
+    - Made name in test definitions optional ([`cc404a0`](https://github.com/candlecorp/wick/commit/cc404a0dd2006e63fbd399c8c8ae5d12cec55913))
+    - Made configuration init a hard boundary with earlier validation ([`bf23983`](https://github.com/candlecorp/wick/commit/bf239832ccb282b7ce56430157a3412efc9737a6))
+    - Added example docs, updated generated docs ([`0d37e8a`](https://github.com/candlecorp/wick/commit/0d37e8af72f6578595deb2138b57711a2ff6ceca))
+    - Added support for input-less ops, added test for wasm RNG from inherent seed ([`3213e75`](https://github.com/candlecorp/wick/commit/3213e75c9e1a08db300d521e228d65e27671a779))
+    - Made inherent data required vs optional/missing ([`221be20`](https://github.com/candlecorp/wick/commit/221be200017943aae5d2c78254a8194d72600f7a))
+    - Updated config codegen, refactored config for clarity, fixed template ([`10672c5`](https://github.com/candlecorp/wick/commit/10672c5db34d10e50869b2c14977f9235761cabd))
+    - Updated lints, deprecated Link type, removed Ref type, renamed Custom->Named ([`eb26a15`](https://github.com/candlecorp/wick/commit/eb26a1586f0e00137bbd9ee608cd15d3cde074d0))
+    - Propagating component config through to user code ([`8058284`](https://github.com/candlecorp/wick/commit/8058284a1a686366fa8829f9377981d7ba389554))
+    - Made wick test output more intuitive, updated rust template ([`a4dfea5`](https://github.com/candlecorp/wick/commit/a4dfea5a6d76b3f8d6df83758ac8bff9f5e744e7))
+    - Re-integrated Packet/PacketStream with Invocation ([`12a0f6d`](https://github.com/candlecorp/wick/commit/12a0f6de257cf4b5789474fef448c7828f315bb5))
+    - Fixed trace spans, jaeger->otlp, fixed serving static from root ([`9cd1fc0`](https://github.com/candlecorp/wick/commit/9cd1fc007e6a21944f4fd65f3f65f4a2a86fd1bd))
+    - Normalized accessor api for wick-config ([`56959c7`](https://github.com/candlecorp/wick/commit/56959c74e0fa96870d6fdd4197a30606041a0f8a))
+    - Added context for wasm components ([`27c1fba`](https://github.com/candlecorp/wick/commit/27c1fba1d6af314e3b5f317178426331acc4b071))
+    - Added operation context ([`88dbedb`](https://github.com/candlecorp/wick/commit/88dbedb624e1e381f253fb6b56d9af81ceeb00c8))
+    - Added cli test for wick test, fixed wasm test ([`5172449`](https://github.com/candlecorp/wick/commit/5172449837c489f0231d4979ca4a5bb48f412aa2))
+</details>
+
 ## v0.2.0 (2023-09-14)
+
+<csr-id-7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c/>
+<csr-id-7968fb0b6fe519732595ed1e3ed9cc429a45d0c4/>
+<csr-id-4090c8fa7fba8254570cc10024fd8a6b15c076ab/>
+<csr-id-eb26a1586f0e00137bbd9ee608cd15d3cde074d0/>
+<csr-id-0f3fef30abf88525a9966b823edccb18a1919aaf/>
+<csr-id-f28522fa663f121f5da90df9dd8461d85c6222ed/>
+<csr-id-33527b199a5057e0bf9d51c6e5a4068b9a8dc830/>
+<csr-id-12a0f6de257cf4b5789474fef448c7828f315bb5/>
+<csr-id-5172449837c489f0231d4979ca4a5bb48f412aa2/>
 
 ### Chore
 
@@ -54,57 +173,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Test
 
  - <csr-id-5172449837c489f0231d4979ca4a5bb48f412aa2/> added cli test for wick test, fixed wasm test
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 31 commits contributed to the release over the course of 143 calendar days.
- - 148 days passed between releases.
- - 30 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 2 unique issues were worked on: [#319](https://github.com/candlecorp/wick/issues/319), [#341](https://github.com/candlecorp/wick/issues/341)
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **[#319](https://github.com/candlecorp/wick/issues/319)**
-    - Propagated context to non-wasm components, removed $ENV syntax in favor of liquid templates ([`7ab25d2`](https://github.com/candlecorp/wick/commit/7ab25d2fc1274fbf552b86f59774b1b24ea12b0f))
- * **[#341](https://github.com/candlecorp/wick/issues/341)**
-    - Added ctx.inherent.timestamp, improved error message output ([`efe6055`](https://github.com/candlecorp/wick/commit/efe605510b846d2556f6060ba710fa154bdca7c4))
- * **Uncategorized**
-    - Removed mutexes in PacketStream, made Invocation state error-proof ([`0f3fef3`](https://github.com/candlecorp/wick/commit/0f3fef30abf88525a9966b823edccb18a1919aaf))
-    - Updated lints ([`7bb6865`](https://github.com/candlecorp/wick/commit/7bb686524f6adaaebbd3d6502ee24c0d5f6efc7c))
-    - Added __dirname, consolidated loose render events ([`8760659`](https://github.com/candlecorp/wick/commit/8760659095ce1f0f9a0bbd835bcf34827b21317c))
-    - Merge remote-tracking branch 'refs/remotes/origin/main' ([`344b60c`](https://github.com/candlecorp/wick/commit/344b60c854bd33f1d267c7f422378e2716496ba6))
-    - Added changelog ([`3790520`](https://github.com/candlecorp/wick/commit/37905206a10ff16406b77ad296d467ebf76fc8fb))
-    - Made v0, v1, and normalized config conditional features ([`f28522f`](https://github.com/candlecorp/wick/commit/f28522fa663f121f5da90df9dd8461d85c6222ed))
-    - Added lessthan, greaterthan, equals, and regex assertions ([`f52600c`](https://github.com/candlecorp/wick/commit/f52600c28f377b06b723e651daa8a4b8d7268d8a))
-    - Added packet assertions to wick test cases ([`72a2fb3`](https://github.com/candlecorp/wick/commit/72a2fb3af224ff0b674c8e75a8c6e94070c181a7))
-    - Converted all level spans to info_spans ([`3208691`](https://github.com/candlecorp/wick/commit/3208691ffb824e9f83d9845ae274c9b60bb8d4fa))
-    - Explicitly defined all features ([`7968fb0`](https://github.com/candlecorp/wick/commit/7968fb0b6fe519732595ed1e3ed9cc429a45d0c4))
-    - Updated include directives in Cargo.toml ([`4090c8f`](https://github.com/candlecorp/wick/commit/4090c8fa7fba8254570cc10024fd8a6b15c076ab))
-    - Re-added exposing volumes to WASI components ([`ce9d202`](https://github.com/candlecorp/wick/commit/ce9d2020b4a1a8397ae2013b05f8de4fd1e96a85))
-    - Improved reliability and tolerance of wick test execution ([`33527b1`](https://github.com/candlecorp/wick/commit/33527b199a5057e0bf9d51c6e5a4068b9a8dc830))
-    - Fixed ignored --filter argument on wick test ([`516a395`](https://github.com/candlecorp/wick/commit/516a395842bf80d81f17db30727ee2b5be69256f))
-    - Made name in test definitions optional ([`cc404a0`](https://github.com/candlecorp/wick/commit/cc404a0dd2006e63fbd399c8c8ae5d12cec55913))
-    - Made configuration init a hard boundary with earlier validation ([`bf23983`](https://github.com/candlecorp/wick/commit/bf239832ccb282b7ce56430157a3412efc9737a6))
-    - Added example docs, updated generated docs ([`0d37e8a`](https://github.com/candlecorp/wick/commit/0d37e8af72f6578595deb2138b57711a2ff6ceca))
-    - Added support for input-less ops, added test for wasm RNG from inherent seed ([`3213e75`](https://github.com/candlecorp/wick/commit/3213e75c9e1a08db300d521e228d65e27671a779))
-    - Made inherent data required vs optional/missing ([`221be20`](https://github.com/candlecorp/wick/commit/221be200017943aae5d2c78254a8194d72600f7a))
-    - Updated config codegen, refactored config for clarity, fixed template ([`10672c5`](https://github.com/candlecorp/wick/commit/10672c5db34d10e50869b2c14977f9235761cabd))
-    - Updated lints, deprecated Link type, removed Ref type, renamed Custom->Named ([`eb26a15`](https://github.com/candlecorp/wick/commit/eb26a1586f0e00137bbd9ee608cd15d3cde074d0))
-    - Propagating component config through to user code ([`8058284`](https://github.com/candlecorp/wick/commit/8058284a1a686366fa8829f9377981d7ba389554))
-    - Made wick test output more intuitive, updated rust template ([`a4dfea5`](https://github.com/candlecorp/wick/commit/a4dfea5a6d76b3f8d6df83758ac8bff9f5e744e7))
-    - Re-integrated Packet/PacketStream with Invocation ([`12a0f6d`](https://github.com/candlecorp/wick/commit/12a0f6de257cf4b5789474fef448c7828f315bb5))
-    - Fixed trace spans, jaeger->otlp, fixed serving static from root ([`9cd1fc0`](https://github.com/candlecorp/wick/commit/9cd1fc007e6a21944f4fd65f3f65f4a2a86fd1bd))
-    - Normalized accessor api for wick-config ([`56959c7`](https://github.com/candlecorp/wick/commit/56959c74e0fa96870d6fdd4197a30606041a0f8a))
-    - Added context for wasm components ([`27c1fba`](https://github.com/candlecorp/wick/commit/27c1fba1d6af314e3b5f317178426331acc4b071))
-    - Added operation context ([`88dbedb`](https://github.com/candlecorp/wick/commit/88dbedb624e1e381f253fb6b56d9af81ceeb00c8))
-    - Added cli test for wick test, fixed wasm test ([`5172449`](https://github.com/candlecorp/wick/commit/5172449837c489f0231d4979ca4a5bb48f412aa2))
-</details>
 
 ## v0.1.1 (2023-08-28)
 
