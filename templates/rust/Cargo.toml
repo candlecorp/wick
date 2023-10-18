@@ -16,13 +16,13 @@ panic = "abort"
 crate-type = ["cdylib"]
 
 [dependencies]
-wick-component = { git = "https://github.com/candlecorp/wick.git" }
+wick-component = { version = "0.17.0" }
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"
 anyhow = { version = "1" }
 
 [build-dependencies]
-wick-component-codegen = { git = "https://github.com/candlecorp/wick.git" }
+wick-component-codegen = { version = "0.6.0" }
 
 # Including this section keeps this crate out of a workspace without needing to alter the workspace.
 [workspace]

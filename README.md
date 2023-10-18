@@ -18,7 +18,7 @@
   </picture>
 
   <p align="center">
-    A flow-based runtime for WebAssembly components.
+    A functional framework for WebAssembly components that run on the server and client.
     <br />
     <a href="https://candle.dev/docs/"><strong>Explore the docs »</strong></a>
     <br />
@@ -63,30 +63,41 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Wick is a low-code, flow-like runtime for stitching together WebAssembly components into full applications. Built With ❤️, Rust, and Wasm.
+Wick is a runtime for running and composing WebAssembly components together as full applications. Wick is built With ❤️, Rust, and Wasm.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Why Wick?
 
-## What can you do with Wick?
+We built wick because we wanted a secure, fast, functional framework that used WebAssembly as its core component model. We wanted to build applications and libraries that could run on the server, client, and everywhere else. We needed it to be async first, streaming, and not rely on external systems. Suprisingly, nothing like this existed, so we built it.
 
-Wick revolves around components. Components are essentially libraries that export operations, or functions.
+## Who should use Wick?
 
-<img src="docs/static/images/gifs/wick-new-component.gif"/>
+If you:
 
-Every wick component acts on streams. You can invoke components directly from the command line or combine them to build CLI tools, web applications, or even other components.
+- Like functional programming ideas.
+- Want to write code once and use it the same way everywhere.
+- Like security baked into your applications.
+- Have built enough software to recognize everyone is solving the same problems.
+- Play on the bleeding edge of technology.
 
-<img src="docs/static/images/gifs/wick-invoke.gif"/>
+Then Wick is for you.
 
-We built wick to reduce all the wasted effort in building software. When all pieces of software connect the same way, we can build single tools that work for *everything*.
+## Demos/Examples
 
-Like a test runner that can test anything via configuration alone:
+Online demos of Wick in action:
 
-<img src="docs/static/images/gifs/wick-test.gif"/>
+- [Text generation](https://wasm.candle.dev/llama2)
+- [Text redaction](https://wasm.candle.dev/redact)
+- [Object detection](https://wasm.candle.dev/yolo)
 
-Or the ability to audit every resource your application uses *and* validate it in one fell swoop.
+Public repository of component examples:
 
-<img src="docs/static/images/gifs/wick-config-lockdown.gif"/>
+- [Wick Components](https://github.com/candlecorp/wick-components/tree/main/components)
+
+Wick's example directory:
+
+- [Wick examples](https://github.com/candlecorp/wick/tree/main/examples)
 
 <!-- GETTING STARTED -->
 ## Getting Started
@@ -147,30 +158,29 @@ just install # or cargo install --path .
 <!-- USAGE EXAMPLES -->
 ## Usage
 
+Wick's original WebAssembly component protocol uses RSocket to support complex, rich streams in WebAssembly.
+
+*Wick supports varying degrees of the standard WebAssembly component model and will continue to support more as the specification stabilizes.*
+
+To build a WebAssembly component
+
+- Clone the template with `cargo generate` (or git clone)
+- Build & sign it with `just build`
+- Execute your new library component with `wick invoke`
+
+```
+$ cargo generate candlecorp/wick templates/rust --name my-project
+$ cd my-project
+$ just build
+$ wick invoke component.wick greet -- --input="$USER"
+{"payload":{"value":"Hello, jsoverson"},"port":"output"}
+```
+
 We're constantly adding examples to the [./examples](https://github.com/candlecorp/wick/tree/main/examples) directory, which we also use as a base for our integration tests.
 
 _For more information, please refer to the [Documentation](https://candle.dev/docs/)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- ROADMAP -->
-## Roadmap
-
-- [X] HTTP Trigger
-- [X] Cron Trigger
-- [X] CLI Trigger
-- [X] Expand automatic API generation
-- [X] audit/lockdown support
-- [ ] WebAssembly Component-model support
-- [ ] WebSocket support
-    - [ ] WebTransport as support improves
-
-See the [open issues](https://github.com/candlecorp/wick/issues) for a full list of proposed features (and known issues).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 
 <!-- CONTRIBUTING -->
