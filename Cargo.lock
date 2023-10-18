@@ -6604,7 +6604,7 @@ dependencies = [
 
 [[package]]
 name = "wick-trigger-wasm-command"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "parking_lot",

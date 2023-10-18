@@ -5,7 +5,6 @@ pub(super) mod generated {
   use wasmtime::component::bindgen;
   bindgen!({
     world: "command-trigger",
-    path: "../../../wit/",
     async:true,
   });
 }

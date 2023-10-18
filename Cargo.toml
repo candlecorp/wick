@@ -117,7 +117,7 @@ wick-trigger = { path = "./crates/wick/wick-trigger", version = "0.1.0" }
 wick-trigger-cli = { path = "./crates/wick/wick-trigger-cli", version = "0.1.0" }
 wick-trigger-http = { path = "./crates/wick/wick-trigger-http", version = "0.1.0" }
 wick-trigger-time = { path = "./crates/wick/wick-trigger-time", version = "0.1.0" }
-wick-trigger-wasm-command = { path = "./crates/wick/wick-trigger-wasm-command", version = "0.1.0" }
+wick-trigger-wasm-command = { path = "./crates/wick/wick-trigger-wasm-command", version = "0.1.1" }
 wick-wascap = { path = "./crates/wick/wick-wascap", version = "0.3.0" }
 wick-wasm-engine = { path = "./crates/wick/wick-wasm-engine", version = "0.1.0" }
 wick-xdg = { path = "./crates/wick/wick-xdg", version = "0.4.0" }
