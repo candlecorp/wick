@@ -172,7 +172,7 @@ pub(crate) async fn print_stream_json(
   mut stream: PacketStream,
 
   filter: &[String],
-  _terse: bool,
+  terse: bool,
   raw: bool,
 ) -> Result<()> {
   if !filter.is_empty() {
@@ -181,15 +181,34 @@ pub(crate) async fn print_stream_json(
   while let Some(packet) = stream.next().await {
     match packet {
       Ok(packet) => {
-        if (packet.is_done()) && !raw {
+        if (packet.is_signal()) && !raw {
           continue;
         }
         if !filter.is_empty() && !filter.iter().any(|name| name == packet.port()) {
           tracing::debug!(port = %packet.port(), "cli:output:filtering");
           continue;
         }
-        let json = packet.to_json();
-        println!("{}", json);
+        if terse {
+          match packet.payload {
+            wick_packet::PacketPayload::Ok(_) => {
+              let value = packet.decode_value()?;
+              match value {
+                Value::String(s) => {
+                  println!("{}", s);
+                }
+                _ => {
+                  println!("{}", value);
+                }
+              }
+            }
+            wick_packet::PacketPayload::Err(e) => {
+              anyhow::bail!("{}", e);
+            }
+          }
+        } else {
+          let json = packet.to_json();
+          println!("{}", json);
+        }
       }
       Err(e) => {
         error!(error = %e, "cli:output:error");
