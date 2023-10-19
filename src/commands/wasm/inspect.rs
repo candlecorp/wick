@@ -1,6 +1,3 @@
-use std::fs::File;
-use std::io::Read;
-
 use anyhow::Result;
 use clap::Args;
 use serde_json::json;
@@ -22,12 +19,11 @@ pub(crate) async fn handle(
   span: tracing::Span,
 ) -> Result<StructuredOutput> {
   let _enter = span.enter();
-  let mut file = File::open(opts.module)?;
-  let mut buf = Vec::new();
-  file.read_to_end(&mut buf)?;
+
+  let buf = std::fs::read(opts.module)?;
 
   // Extract will return an error if it encounters an invalid hash in the claims
-  let claims = wick_wascap::extract_claims(&buf)?;
+  let claims = wick_wascap::extract_claims(buf)?;
   match claims {
     Some(claims) => Ok(StructuredOutput::new(
       serde_json::to_string(&claims)?,

@@ -35,7 +35,7 @@ impl RuntimeConfig {
   pub fn from_value(value: Value) -> Result<Self, Error> {
     match value {
       Value::Object(map) => {
-        let mut hm = HashMap::new();
+        let mut hm = HashMap::with_capacity(map.len());
         for (k, v) in map {
           hm.insert(k, v);
         }
@@ -95,7 +95,7 @@ impl TryFrom<Value> for RuntimeConfig {
   fn try_from(value: Value) -> Result<Self, Self::Error> {
     match value {
       Value::Object(map) => {
-        let mut hm = HashMap::new();
+        let mut hm = HashMap::with_capacity(map.len());
         for (k, v) in map {
           hm.insert(k, v);
         }

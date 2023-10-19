@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::Write;
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -52,9 +52,7 @@ pub(crate) async fn handle(
     .into_inner()
     .try_component_config()?;
 
-  let mut source_file = File::open(&opts.source).unwrap();
-  let mut buf = Vec::new();
-  source_file.read_to_end(&mut buf).unwrap();
+  let buf = std::fs::read(&opts.source)?;
 
   let (account, subject) = get_module_keys(
     interface.name().map(|s| s.as_str()),

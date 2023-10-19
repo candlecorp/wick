@@ -54,7 +54,7 @@ impl AppHost {
   }
 
   fn init_resources(&mut self) -> Result<HashMap<BoundIdentifier, Resource>> {
-    let mut resources = HashMap::new();
+    let mut resources = HashMap::with_capacity(self.manifest.resources().len());
     for def in self.manifest.resources() {
       let resource = Resource::new(def.kind().clone())?;
       resources.insert(def.binding().clone(), resource);

@@ -142,7 +142,7 @@ impl Trigger for Http {
     let span = info_span!(parent: &span,"trigger:http:routers");
 
     let routers = span.in_scope(|| {
-      let mut routers = Vec::new();
+      let mut routers = Vec::with_capacity(config.routers().len());
       for (i, router) in config.routers().iter().enumerate() {
         info!(path = router.path(), kind = %router.kind(), "registering http router");
 

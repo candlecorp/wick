@@ -265,8 +265,8 @@ impl<'a> Future for AssetPull<'a> {
 
   fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
     let mut all_done = true;
-    let mut results = Vec::new();
     let this = self.get_mut();
+    let mut results = Vec::with_capacity(this.assets.len());
     for asset in &mut this.assets {
       let name = &asset.name;
       let fut = &mut asset.progress;
@@ -329,7 +329,7 @@ impl<'a> Stream for AssetPullWithProgress<'a> {
 
   fn poll_next(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
     let mut all_done = true;
-    let mut progress = Vec::new();
+    let mut progress = Vec::with_capacity(self.assets.len());
     for asset in &mut self.assets {
       let name = &asset.name;
       let stream = &mut asset.progress;

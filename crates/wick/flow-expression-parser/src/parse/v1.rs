@@ -140,7 +140,7 @@ fn connection_expression_sequence(input: &str) -> IResult<&str, FlowExpression> 
     )),
   )(input)?;
 
-  let mut connections = Vec::new();
+  let mut connections = Vec::with_capacity(hops.len());
 
   let mut last_hop = from;
   last_hop.0.ensure_id();
@@ -333,9 +333,9 @@ mod tests {
 
   fn flow_block<const K: usize>(seed: u64, hops: impl FnOnce() -> [(InstTgt, InstPort); K]) -> FE {
     set_seed(seed);
-    let mut connections = Vec::new();
     let mut last_hop: Option<(InstanceTarget, InstancePort)> = None;
     let hops = hops();
+    let mut connections = Vec::with_capacity(hops.len());
     for hop in hops {
       if let Some(last) = last_hop.take() {
         last_hop = Some(hop.clone());

@@ -239,7 +239,7 @@ where
 {
   span.in_scope(|| debug!(stmt = %stmt, "preparing query for stream"));
   'outer: loop {
-    let mut incoming_packets = Vec::new();
+    let mut incoming_packets = Vec::with_capacity(input_streams.len());
 
     for input in &mut input_streams {
       let packet = input.next().await;
@@ -260,7 +260,7 @@ where
       return Err(Error::ComponentError(e.clone()));
     }
     let fields = opdef.inputs();
-    let mut type_wrappers = Vec::new();
+    let mut type_wrappers = Vec::with_capacity(incoming_packets.len());
 
     for packet in incoming_packets {
       let packet = packet.unwrap();

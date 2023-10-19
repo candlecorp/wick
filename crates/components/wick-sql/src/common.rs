@@ -43,7 +43,7 @@ pub(crate) fn convert_url_resource(resolver: &Resolver, id: &BoundIdentifier) ->
 }
 
 pub(crate) fn bind_args(positional_args: &[String], values: &[(Type, Packet)]) -> Result<Vec<ConvertedType>> {
-  let mut bound_args: Vec<ConvertedType> = Vec::new();
+  let mut bound_args: Vec<ConvertedType> = Vec::with_capacity(positional_args.len());
   for arg in positional_args {
     let (arg, spread) = if arg.ends_with("...") {
       let arg = arg.trim_end_matches("...");

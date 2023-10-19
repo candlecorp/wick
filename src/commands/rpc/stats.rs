@@ -30,7 +30,7 @@ pub(crate) async fn handle(
 
   let list = client.stats(StatsRequest {}).await?;
 
-  let mut converted: Vec<Statistics> = Vec::new();
+  let mut converted: Vec<Statistics> = Vec::with_capacity(list.stats.len());
 
   for item in list.stats {
     converted.push(item.into());

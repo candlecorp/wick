@@ -248,10 +248,7 @@ fn struct_to_schema(ty: &StructDefinition, named: &mut HashSet<String>) -> Schem
 }
 
 fn enum_to_schema(ty: &EnumDefinition, _named: &mut HashSet<String>) -> Schema {
-  let mut variants = Vec::new();
-  for variant in &ty.variants {
-    variants.push(Some(variant.name.clone()));
-  }
+  let variants = ty.variants.iter().map(|v| Some(v.name.clone())).collect();
   Schema {
     schema_data: SchemaData {
       description: ty.description.clone(),
@@ -266,10 +263,11 @@ fn enum_to_schema(ty: &EnumDefinition, _named: &mut HashSet<String>) -> Schema {
 }
 
 fn union_to_schema(ty: &UnionDefinition, named: &mut HashSet<String>) -> Schema {
-  let mut variants = Vec::new();
-  for variant in &ty.types {
-    variants.push(ReferenceOr::Item(type_to_schema(variant, named)));
-  }
+  let variants = ty
+    .types
+    .iter()
+    .map(|v| ReferenceOr::Item(type_to_schema(v, named)))
+    .collect();
   Schema {
     schema_data: SchemaData {
       description: ty.description.clone(),

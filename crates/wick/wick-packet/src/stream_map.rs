@@ -42,7 +42,7 @@ impl StreamMap {
   /// Take one packet from each stream in the map. Returns an error if a complete set can't be made.
   pub async fn next_set(&mut self) -> Result<Option<HashMap<String, Packet>>> {
     let keys = self.inner.keys().cloned().collect::<Vec<_>>();
-    let mut raw = HashMap::new();
+    let mut raw = HashMap::with_capacity(keys.len());
     for key in keys {
       let packet = self.next_for(&key).await;
       raw.insert(key, packet);
@@ -52,7 +52,7 @@ impl StreamMap {
     } else if let Some((name, _)) = raw.iter().find(|(_, p)| p.is_none()) {
       Err(Error::StreamMapMissing(name.clone()))
     } else {
-      let mut rv = HashMap::new();
+      let mut rv = HashMap::with_capacity(raw.len());
       for (key, packet) in raw {
         let packet = packet.unwrap();
         if let Err(e) = &packet {

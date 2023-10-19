@@ -27,11 +27,11 @@ pub(crate) fn to_wick_response(
 }
 
 fn convert_headers(from_headers: &HeaderMap) -> Result<HashMap<String, Vec<String>>, Error> {
-  let mut to_headers = HashMap::new();
+  let mut to_headers = HashMap::with_capacity(from_headers.len());
   for (key, value) in from_headers {
     let key = key.as_str().to_owned();
     let value = value.to_str().map_err(|_| Error::InvalidHeader(key.clone()))?;
-    to_headers.entry(key).or_insert_with(Vec::new).push(value.to_owned());
+    to_headers.insert(key, vec![value.to_owned()]);
   }
   Ok(to_headers)
 }

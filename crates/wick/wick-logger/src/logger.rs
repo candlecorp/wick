@@ -37,8 +37,6 @@ pub struct LoggingGuard {
   #[allow(unused)]
   env: Environment,
   #[allow(unused)]
-  logfile: Option<WorkerGuard>,
-  #[allow(unused)]
   console: WorkerGuard,
   #[allow(unused)]
   tracer_provider: Option<opentelemetry::sdk::trace::TracerProvider>,
@@ -47,13 +45,11 @@ pub struct LoggingGuard {
 impl LoggingGuard {
   fn new(
     env: Environment,
-    logfile: Option<WorkerGuard>,
     console: WorkerGuard,
     tracer_provider: Option<opentelemetry::sdk::trace::TracerProvider>,
   ) -> Self {
     Self {
       env,
-      logfile,
       console,
       tracer_provider,
     }
@@ -138,7 +134,7 @@ fn try_init(opts: &LoggingOptions, environment: Environment) -> Result<LoggingGu
 
   // This is ugly. If you can improve it, go for it, but
   // start here to understand why it's laid out like this: https://github.com/tokio-rs/tracing/issues/575
-  let (verbose_layer, normal_layer, logfile_guard, test_layer) = match environment {
+  let (verbose_layer, normal_layer, test_layer) = match environment {
     Environment::Prod => {
       if opts.verbose {
         (
@@ -155,7 +151,6 @@ fn try_init(opts: &LoggingOptions, environment: Environment) -> Result<LoggingGu
           ),
           None,
           None,
-          None,
         )
       } else {
         (
@@ -170,12 +165,10 @@ fn try_init(opts: &LoggingOptions, environment: Environment) -> Result<LoggingGu
               .with_filter(opts.levels.stderr.clone()),
           ),
           None,
-          None,
         )
       }
     }
     Environment::Test => (
-      None,
       None,
       None,
       Some(
@@ -200,12 +193,7 @@ fn try_init(opts: &LoggingOptions, environment: Environment) -> Result<LoggingGu
   let subscriber = subscriber.with(console_subscriber::spawn());
 
   tracing::subscriber::set_global_default(subscriber)?;
-  let guards = Ok(LoggingGuard::new(
-    environment,
-    logfile_guard,
-    console_guard,
-    tracer_provider,
-  ));
+  let guards = Ok(LoggingGuard::new(environment, console_guard, tracer_provider));
   trace!(options=?opts,"logger initialized");
 
   guards

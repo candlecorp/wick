@@ -85,7 +85,7 @@ impl LiquidJsonConfig {
 
     let ctx = Self::make_context(base, root, config, env, inherent)?;
 
-    let mut map = HashMap::new();
+    let mut map = HashMap::with_capacity(self.template.len());
     for (k, v) in &self.template {
       map.insert(k.clone(), v.render(&ctx)?);
     }
@@ -98,7 +98,7 @@ impl LiquidJsonConfig {
       "ctx": ctx,
     });
 
-    let mut map = HashMap::new();
+    let mut map = HashMap::with_capacity(self.template.len());
     for (k, v) in &self.template {
       map.insert(k.clone(), v.render(&ctx)?);
     }
@@ -169,7 +169,7 @@ impl TryFrom<Value> for LiquidJsonConfig {
       return Err(Error::ConfigurationTemplate("expected object".to_owned()));
     };
 
-    let mut template = HashMap::new();
+    let mut template = HashMap::with_capacity(value.len());
     for (k, v) in value {
       template.insert(k, v.into());
     }

@@ -54,7 +54,7 @@ pub(super) fn query_params_to_wick(query: Option<&str>) -> Result<HashMap<String
   let query = url::form_urlencoded::parse(query.unwrap_or_default().as_bytes())
     .into_owned()
     .collect::<Vec<(String, String)>>();
-  let mut map = HashMap::new();
+  let mut map = HashMap::with_capacity(query.len());
   for (key, value) in query {
     map.entry(key).or_insert_with(Vec::new).push(value);
   }
@@ -80,11 +80,11 @@ pub(super) fn version_to_wick(version: hyper::http::Version) -> Result<wick_http
 }
 
 pub(super) fn headers_to_wick(headers: &hyper::http::HeaderMap) -> Result<HashMap<String, Vec<String>>, HttpError> {
-  let mut map = HashMap::new();
+  let mut map = HashMap::with_capacity(headers.len());
   for (key, value) in headers {
     let key = key.as_str().to_owned();
     let value = value.to_str().unwrap().to_owned();
-    map.entry(key).or_insert_with(Vec::new).push(value);
+    map.insert(key, vec![value]);
   }
   Ok(map)
 }
@@ -96,19 +96,21 @@ pub(super) fn request_and_body_to_wick<B>(
 where
   B: Send + Sync + 'static,
 {
+  let (req, body) = req.into_parts();
+
   Ok((
     wick_http::HttpRequest {
-      method: method_to_wick(req.method())?,
-      scheme: scheme_to_wick(req.uri().scheme())?,
-      authority: authority_to_wick(req.uri().authority())?,
-      query_parameters: query_params_to_wick(req.uri().query())?,
-      path: path_to_wick(req.uri().path())?,
-      uri: uri_to_wick(req.uri())?,
-      version: version_to_wick(req.version())?,
-      headers: headers_to_wick(req.headers())?,
+      method: method_to_wick(&req.method)?,
+      scheme: scheme_to_wick(req.uri.scheme())?,
+      authority: authority_to_wick(req.uri.authority())?,
+      query_parameters: query_params_to_wick(req.uri.query())?,
+      path: path_to_wick(req.uri.path())?,
+      uri: req.uri.to_string(),
+      version: version_to_wick(req.version)?,
+      headers: headers_to_wick(&req.headers)?,
       remote_addr: remote_addr.to_string(),
     },
-    req.into_body(),
+    body,
   ))
 }
 
@@ -141,7 +143,7 @@ pub(super) fn convert_response(mut builder: Builder, res: wick_http::HttpRespons
   builder = builder.status(convert_status(res.status)?);
   for header in res.headers {
     for value in header.1 {
-      builder = builder.header(header.0.clone(), value);
+      builder = builder.header(&header.0, value);
     }
   }
   Ok(builder)

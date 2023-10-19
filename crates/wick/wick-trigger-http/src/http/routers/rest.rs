@@ -332,7 +332,7 @@ pub(crate) fn register_rest_router(
 ) -> Result<HttpRouter, HttpError> {
   trace!(index, "registering rest router");
   let middleware = resolve_middleware_components(router_config)?;
-  let mut routes = Vec::new();
+  let mut routes = Vec::with_capacity(router_config.routes().len());
 
   for route in router_config.routes().iter() {
     info!(sub_path = route.sub_path(), "registering rest route");

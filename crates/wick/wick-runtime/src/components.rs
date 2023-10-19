@@ -176,7 +176,7 @@ pub(crate) async fn init_impl(
       unimplemented!("WASM components are not yet supported in wick releases");
     }
     config::ComponentImplementation::WasmRs(wasmimpl) => {
-      let mut dirs = HashMap::new();
+      let mut dirs = HashMap::with_capacity(wasmimpl.volumes().len());
       for volume in wasmimpl.volumes() {
         let resource = (resolver)(volume.resource())?.try_resource()?.try_volume()?;
         dirs.insert(volume.path().to_owned(), resource.path()?);
