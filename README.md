@@ -90,6 +90,7 @@ Online demos of Wick in action:
 - [Text generation](https://wasm.candle.dev/llama2)
 - [Text redaction](https://wasm.candle.dev/redact)
 - [Object detection](https://wasm.candle.dev/yolo)
+- [Resume Refining SAAS](https://resumerefiner.com)
 
 Public repository of component examples:
 
