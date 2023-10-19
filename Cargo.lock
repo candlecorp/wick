@@ -5911,7 +5911,7 @@ dependencies = [
 
 [[package]]
 name = "wick-cli"
-version = "0.16.0"
+version = "0.16.1"
 dependencies = [
  "anyhow",
  "atty",
@@ -6110,7 +6110,7 @@ dependencies = [
 
 [[package]]
 name = "wick-host"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6539,7 +6539,7 @@ dependencies = [
 
 [[package]]
 name = "wick-trigger-http"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
