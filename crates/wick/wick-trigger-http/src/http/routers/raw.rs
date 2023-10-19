@@ -114,7 +114,7 @@ impl RawHandler {
         let bytes: Result<Vec<bytes::Bytes>, _> = body.try_collect().await;
         match bytes {
           Ok(b) => {
-            let bytes = b.join(&0);
+            let bytes = b.concat();
             trace!(?bytes, "http:codec:json:bytes");
             let packet = if bytes.is_empty() {
               Packet::encode("body", None::<Value>)
