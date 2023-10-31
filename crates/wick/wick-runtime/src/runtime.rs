@@ -41,6 +41,9 @@ pub struct RuntimeInit {
 
   #[builder(setter(custom = true))]
   pub(crate) initial_components: ComponentRegistry,
+
+  #[builder(default)]
+  pub(crate) max_packet_size: Option<u32>,
 }
 
 impl Runtime {
@@ -248,6 +251,7 @@ impl RuntimeBuilder {
     Runtime::new(
       seed.unwrap_or_else(new_seed),
       RuntimeInit {
+        max_packet_size: self.max_packet_size.flatten(),
         manifest: definition,
         allow_latest: self.allow_latest.unwrap_or_default(),
         allowed_insecure: self.allowed_insecure.unwrap_or_default(),

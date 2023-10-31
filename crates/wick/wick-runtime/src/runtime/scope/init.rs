@@ -27,6 +27,7 @@ pub(crate) struct ScopeInit {
   pub(crate) constraints: Vec<RuntimeConstraint>,
   pub(crate) initial_components: ComponentRegistry,
   pub(crate) span: Span,
+  pub(crate) max_packet_size: Option<u32>,
 }
 
 impl ScopeInit {
@@ -43,6 +44,7 @@ impl ScopeInit {
       constraints: config.constraints,
       initial_components: config.initial_components,
       span: config.span,
+      max_packet_size: config.max_packet_size,
     }
   }
 
@@ -59,10 +61,16 @@ impl ScopeInit {
       constraints: config.constraints,
       initial_components: config.initial_components,
       span: config.span,
+      max_packet_size: config.max_packet_size,
     }
   }
 
-  pub(super) fn child_init(&self, root_config: Option<RuntimeConfig>, provided: Option<HandlerMap>) -> ChildInit {
+  pub(super) fn child_init(
+    &self,
+    root_config: Option<RuntimeConfig>,
+    provided: Option<HandlerMap>,
+    max_packet_size: Option<u32>,
+  ) -> ChildInit {
     ChildInit {
       rng_seed: self.rng.seed(),
       runtime_id: self.id,
@@ -71,6 +79,7 @@ impl ScopeInit {
       allowed_insecure: self.allowed_insecure.clone(),
       provided,
       span: self.span.clone(),
+      max_packet_size,
     }
   }
 
@@ -106,7 +115,7 @@ impl ScopeInit {
       Some(config.extends())
     } else {
       // Instantiate non-composite component as an exposed, standalone component.
-      let child_init = self.child_init(self.manifest.root_config().cloned(), None);
+      let child_init = self.child_init(self.manifest.root_config().cloned(), None, self.max_packet_size);
 
       self
         .span
@@ -120,7 +129,7 @@ impl ScopeInit {
         provided.insert(req.id().to_owned(), Entity::component(req.id()).url());
       }
 
-      let component = init_impl(&self.manifest, ns.clone(), child_init, None, provided).await?;
+      let component = init_impl(&self.manifest, ns.clone(), child_init, self.max_packet_size, provided).await?;
       component.expose();
 
       expect_signature_match(
@@ -144,7 +153,7 @@ impl ScopeInit {
   ) -> Result<HandlerMap, ScopeError> {
     for binding in self.manifest.import() {
       let provided = generate_provides_handlers(binding.kind().provide(), &components)?;
-      let component_init = self.child_init(binding.kind().config().cloned(), Some(provided));
+      let component_init = self.child_init(binding.kind().config().cloned(), Some(provided), self.max_packet_size);
       if let Some(component) = instantiate_import(binding, component_init, self.manifest.resolver()).await? {
         if let Some(extends) = extends {
           if extends.iter().any(|n| n == component.namespace()) {
