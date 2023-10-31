@@ -17,16 +17,18 @@ pub(crate) struct ChildInit {
   pub(crate) allowed_insecure: Vec<String>,
   pub(crate) root_config: Option<RuntimeConfig>,
   pub(crate) provided: Option<HandlerMap>,
+  pub(crate) max_packet_size: Option<u32>,
   #[allow(unused)]
   pub(crate) span: Span,
 }
 
 impl std::fmt::Debug for ChildInit {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("ComponentInitOptions")
+    f.debug_struct("ChildInit")
       .field("rng_seed", &self.rng_seed)
       .field("runtime_id", &self.runtime_id)
       .field("allow_latest", &self.allow_latest)
+      .field("max_packet_size", &self.max_packet_size)
       .field("allowed_insecure", &self.allowed_insecure)
       .field("root_config", &self.root_config)
       .field("provided", &self.provided.as_ref().map(|p| p.inner().keys()))
@@ -39,6 +41,7 @@ pub(crate) fn init_child(
   manifest: ComponentConfiguration,
   namespace: String,
   opts: ChildInit,
+  max_packet_size: Option<u32>,
 ) -> BoxFuture<'static, Result<Scope, ScopeError>> {
   let child_span = info_span!(parent:&opts.span,"scope",id=%namespace);
   let mut components = ComponentRegistry::default();
@@ -61,6 +64,7 @@ pub(crate) fn init_child(
       constraints: Default::default(),
       span: child_span,
       initial_components: components,
+      max_packet_size,
     };
 
     let init = ScopeInit::new_with_id(Some(opts.runtime_id), uid, opts.rng_seed, config);

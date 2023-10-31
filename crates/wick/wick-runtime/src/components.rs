@@ -146,7 +146,7 @@ pub(crate) async fn init_manifest_component(
   opts.rng_seed = rng.seed();
 
   let uuid = rng.uuid();
-  let _scope = init_child(uuid, manifest.clone(), id.clone(), opts).await?;
+  let _scope = init_child(uuid, manifest.clone(), id.clone(), opts, kind.max_packet_size()).await?;
 
   let component = Arc::new(scope_component::ScopeComponent::new(uuid));
   let service = NativeComponentService::new(component);
