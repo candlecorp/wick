@@ -1,6 +1,6 @@
 [package]
 name = "wick-cli"
-version = "0.16.1"
+version = "0.16.2"
 edition = "2021"
 default-run = "wick"
 license = "Elastic-2.0"
@@ -102,7 +102,7 @@ wick-component-cli = { path = "./crates/wick/wick-component-cli", version = "0.3
 wick-component-codegen = { path = "./crates/wick/wick-component-codegen", version = "0.6.0" }
 wick-component-wasmrs = { path = "./crates/wick/wick-component-wasmrs", version = "0.3.0" }
 wick-config = { path = "./crates/wick/wick-config", version = "0.28.0", default-features = false }
-wick-host = { path = "./crates/wick/wick-host", version = "0.6.1" }
+wick-host = { path = "./crates/wick/wick-host", version = "0.6.2" }
 wick-interface-types = { path = "./crates/wick/wick-interface-types", version = "0.17.0" }
 wick-invocation-server = { path = "./crates/wick/wick-invocation-server", version = "0.3.0" }
 wick-oci-utils = { path = "./crates/wick/wick-oci-utils", version = "0.5.0", default-features = false }
@@ -111,7 +111,7 @@ wick-package = { path = "./crates/wick/wick-package", version = "0.4.0" }
 wick-packet = { path = "./crates/wick/wick-packet", version = "0.17.0", default-features = false }
 wick-settings = { path = "./crates/wick/wick-settings", version = "0.3.0" }
 wick-rpc = { path = "./crates/wick/wick-rpc", version = "0.3.0", default-features = false }
-wick-runtime = { path = "./crates/wick/wick-runtime", version = "0.24.0" }
+wick-runtime = { path = "./crates/wick/wick-runtime", version = "0.24.1" }
 wick-test = { path = "./crates/wick/wick-test", version = "0.3.0" }
 wick-trigger = { path = "./crates/wick/wick-trigger", version = "0.1.0" }
 wick-trigger-cli = { path = "./crates/wick/wick-trigger-cli", version = "0.1.0" }

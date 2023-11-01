@@ -1,6 +1,6 @@
 [package]
 name = "wick-host"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Jarrod Overson <jsoverson@gmail.com>"]
 edition = "2021"
 license = "Elastic-2.0"
