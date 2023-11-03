@@ -1,5 +1,5 @@
 ---
-title: Composite Components
+title: Composite
 weight: 2
 file: data/examples/components/echo.wick
 ref: compositecomponentconfiguration

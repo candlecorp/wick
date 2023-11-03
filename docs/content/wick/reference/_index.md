@@ -1,5 +1,5 @@
 ---
-title: Guide
+title: Reference
 weight: 3
 ---
 
