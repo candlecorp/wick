@@ -152,7 +152,7 @@ docsite:
 
 # Run the development hugo server
 devdocs:
-  cd docs && hugo serve --disableFastRender --cleanDestinationDir --ignoreCache --gc
+  cd docs && hugo serve --disableFastRender --cleanDestinationDir --ignoreCache --gc --tlsAuto
 
 # Run `cargo doc` to generate rust documentation and copy it to the docs site
 rustdoc:

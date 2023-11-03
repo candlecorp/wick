@@ -1,5 +1,5 @@
 ---
-title: HTTP Client Components
+title: HTTP Client
 weight: 3
 file: data/examples/components/http-client.wick
 ref: httpclientcomponent

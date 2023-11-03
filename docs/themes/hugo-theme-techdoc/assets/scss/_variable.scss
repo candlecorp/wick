@@ -1,18 +1,29 @@
-@use 'function/calc-stack';
+@use "function/calc-stack";
 
 $default-layout-width: 1024px !default;
 
-$default-base-font-size: 18px !default;
-$default-font-size: 18px !default;
+$default-base-font-size: 14px !default;
+$default-font-size: 14px !default;
 $default-line-space: 6px !default;
-$default-line-height: calc-stack.line-height($default-line-space, $default-font-size, $default-base-font-size) !default;
-$default-stack: calc-stack.stack($default-line-height, $default-font-size, $default-base-font-size) !default;
+$default-line-height: calc-stack.line-height(
+	$default-line-space,
+	$default-font-size,
+	$default-base-font-size
+) !default;
+$default-stack: calc-stack.stack(
+	$default-line-height,
+	$default-font-size,
+	$default-base-font-size
+) !default;
 
 $default-layout-margin: 0 !default;
 $default-layout-padding: $default-stack !default;
 
 $default-font-color: #000 !default;
-$default-font-family: -apple-system, BlinkMacSystemFont, "游ゴシック体", YuGothic, "メイリオ", Meiryo, "Helvetica Neue", HelveticaNeue, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !default;
+$default-font-family: -apple-system, BlinkMacSystemFont, "游ゴシック体",
+	YuGothic, "メイリオ", Meiryo, "Helvetica Neue", HelveticaNeue, Helvetica,
+	Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+	"Noto Color Emoji" !default;
 
 // color
 $default-background-color: #fafafa !default;
@@ -26,11 +37,11 @@ $sidebar-hover-color: #eee !default;
 $sidebar-active-color: #eee !default;
 
 // code
-$code-font-size: .95rem !default;
+$code-font-size: 0.95rem !default;
 $code-block-background-color: #f4f6f8 !default;
 $code-border-color: #f0f0f0 !default;
 $code-inline-background-color: #f0f0f0 !default;
-$code-font-family: Consolas,"Liberation Mono",Menlo,Courier,monospace !default;
+$code-font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace !default;
 
 // breakpoint
 $default-breakpoints: (
@@ -38,7 +49,7 @@ $default-breakpoints: (
 	lg: 1024px,
 	md: 896px,
 	sm: 768px,
-	xs: 480px
+	xs: 480px,
 ) !default;
 
 // grid

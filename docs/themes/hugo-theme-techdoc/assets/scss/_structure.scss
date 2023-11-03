@@ -1,11 +1,11 @@
 // Built-In Modules
-@use 'sass:map';
+@use "sass:map";
 
 // Custom Modules
-@use '../../node_modules/flexbox-grid-mixins/dart-sass/flexbox-grid-mixins';
+@use "../../node_modules/flexbox-grid-mixins/dart-sass/flexbox-grid-mixins";
 
 // Included Modules
-@use 'variable';
+@use "variable";
 
 /*-----------------------*
 		Structure
@@ -13,7 +13,6 @@
 html,
 body {
 	height: 100%;
-	background-color: aqua;
 }
 
 .container {
@@ -24,15 +23,27 @@ body {
 }
 
 .content-container {
-	@include flexbox-grid-mixins.grid-col($flex-grow: 1, $flex-shrink: 0, $flex-basis: auto);
+	@include flexbox-grid-mixins.grid-col(
+		$flex-grow: 1,
+		$flex-shrink: 0,
+		$flex-basis: auto
+	);
 	@include flexbox-grid-mixins.grid($justify-content: center);
 }
 
 main {
-	@include flexbox-grid-mixins.grid-col($col: 9, $flex-shrink: 0, $max-width: 75%);
+	@include flexbox-grid-mixins.grid-col(
+		$col: 9,
+		$flex-shrink: 0,
+		$max-width: 75%
+	);
 
 	&:only-child {
-		@include flexbox-grid-mixins.grid-col($col: 12, $flex-shrink: 0, $max-width: 100%);
+		@include flexbox-grid-mixins.grid-col(
+			$col: 12,
+			$flex-shrink: 0,
+			$max-width: 100%
+		);
 	}
 }
 
@@ -50,7 +61,11 @@ main {
 	}
 
 	main {
-		@include flexbox-grid-mixins.grid-col($col: none, $flex-shrink: 0, $min-width: 100%);
+		@include flexbox-grid-mixins.grid-col(
+			$col: none,
+			$flex-shrink: 0,
+			$min-width: 100%
+		);
 	}
 	.sidebar {
 		@include flexbox-grid-mixins.grid-col($col: none, $order: 1);

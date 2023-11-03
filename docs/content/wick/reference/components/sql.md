@@ -1,5 +1,5 @@
 ---
-title: SQL Components
+title: SQL
 weight: 4
 file: data/examples/db/postgres-component.wick
 ref: sqlcomponent
