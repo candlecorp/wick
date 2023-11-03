@@ -177,7 +177,11 @@ $ wick invoke component.wick greet -- --input="$USER"
 {"payload":{"value":"Hello, jsoverson"},"port":"output"}
 ```
 
-We're constantly adding examples to the [./examples](https://github.com/candlecorp/wick/tree/main/examples) directory, which we also use as a base for our integration tests.
+Check out the [WebAssembly tutorial](https://candle.dev/docs/wick/getting-started/webassembly/) to learn more and go from here.
+
+## Examples
+
+We're always adding examples to the [./examples](https://github.com/candlecorp/wick/tree/main/examples) directory, which we also use as a base for our integration tests.
 
 _For more information, please refer to the [Documentation](https://candle.dev/docs/)_
 
