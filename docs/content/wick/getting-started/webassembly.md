@@ -7,6 +7,12 @@ weight: 1
 
 In this tutorial we'll be making a template renderer component in Rust.
 
+# Prerequisites
+
+Ensure you have [wick-cli](https://candle.dev/docs/wick/getting-started/installation/) and [`just`](https://github.com/casey/just#installation) installed.
+
+# Starting
+
 The `wick` repository includes templates in the `templates/` folder with templates in the common `liquid` template format. Use `cargo generate` (`cargo install cargo-generate`) to easily pull, render, and setup new components.
 
 ```console
@@ -24,23 +30,23 @@ metadata:
 component:
   kind: wick/component/wasmrs@v1
   ref: build/component.signed.wasm
-operations:
-  - name: greet
-    inputs:
-      - name: input
-        type: string
-    outputs:
-      - name: output
-        type: string
-  - name: add
-    inputs:
-      - name: left
-        type: u64
-      - name: right
-        type: u64
-    outputs:
-      - name: output
-        type: u64
+  operations:
+    - name: greet
+      inputs:
+        - name: input
+          type: string
+      outputs:
+        - name: output
+          type: string
+    - name: add
+      inputs:
+        - name: left
+          type: u64
+        - name: right
+          type: u64
+      outputs:
+        - name: output
+          type: u64
 ```
 
 This file powers Wick's code generation and is embedded into your WebAssembly module at build time. Wick uses the configuration and its operations, types, descriptions, and other metadata to automatically configure and validate Wick applications.
@@ -60,17 +66,17 @@ metadata:
 component:
   kind: wick/component/wasmrs@v1
   ref: build/component.signed.wasm
-operations:
-  - name: render
-    with:
-      - name: template
-        type: string
-    inputs:
-      - name: data
-        type: object
-    outputs:
-      - name: rendered
-        type: string
+  operations:
+    - name: render
+      with:
+        - name: template
+          type: string
+      inputs:
+        - name: data
+          type: object
+      outputs:
+        - name: rendered
+          type: string
 ```
 
 # Add dependencies
@@ -123,9 +129,9 @@ Finally we send the rendered template to our output stream named `rendered` with
 
 Outside the loop we can do whatever cleanup we need and close the output streams with `outputs.rendered.done()`. The streams will close automatically when the operation returns, but it's good practice to close them explicitly.
 
-# Run just build
+# Run `just build`
 
-Run the `just build` task to compile our code to WebAssembly, embed our component definition and types, and sign the module with our private key. If you don't have any keys yet, `wick` will make them for you automatically and put them in `~/.wick/keys/`.
+Run the `just build` task to compile our code to WebAssembly, embed our component definition and types, and sign the module with our private key. If you don't have any keys yet, they will be automatically generated for you by `wick` when you run `just build` and they will be put in `~/.wick/keys/`.
 
 ```console
 $ just build
