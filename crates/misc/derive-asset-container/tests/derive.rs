@@ -146,9 +146,7 @@ impl Asset for TestAsset {
   fn fetch(
     &self,
     _options: Self::Options,
-  ) -> std::pin::Pin<
-    Box<dyn futures::Future<Output = std::result::Result<Vec<u8>, asset_container::Error>> + Send + Sync>,
-  > {
+  ) -> std::pin::Pin<Box<dyn futures::Future<Output = std::result::Result<Vec<u8>, asset_container::Error>> + Send>> {
     let path = self.path.clone();
     Box::pin(async move {
       let mut file = tokio::fs::File::open(&path)

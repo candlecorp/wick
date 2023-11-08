@@ -183,6 +183,19 @@ pub enum WickPackageKind {
   TYPES,
 }
 
+impl WickPackageKind {
+  /// Get the media type for the kind.
+  #[must_use]
+  pub const fn media_type(&self) -> &'static str {
+    use self::package::media_types;
+    match self {
+      Self::APPLICATION => media_types::APPLICATION,
+      Self::COMPONENT => media_types::COMPONENT,
+      Self::TYPES => media_types::TYPES,
+    }
+  }
+}
+
 /// Retrieve a manifest from an OCI url.
 pub async fn fetch_image_manifest(image: &str, options: &OciOptions) -> Result<(OciImageManifest, String), OciError> {
   if !options.allow_latest && image.ends_with(":latest") {

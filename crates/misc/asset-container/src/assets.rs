@@ -41,7 +41,7 @@ where
     self.asset.fetch_with_progress(options)
   }
 
-  fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + Sync + '_>> {
+  fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + '_>> {
     self.asset.fetch(options)
   }
 
@@ -406,7 +406,7 @@ pub trait AssetManager {
 pub trait Asset: AssetManager {
   type Options: Clone;
   fn fetch_with_progress(&self, options: Self::Options) -> Pin<Box<dyn Stream<Item = Progress> + Send + '_>>;
-  fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + Sync + '_>>;
+  fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + '_>>;
   fn name(&self) -> &str;
   fn update_baseurl(&self, baseurl: &Path);
 }
@@ -432,7 +432,7 @@ where
     )
   }
 
-  fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + Sync + '_>> {
+  fn fetch(&self, options: Self::Options) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, Error>> + Send + '_>> {
     Box::pin(async move {
       match self {
         Some(a) => a.fetch(options).await,

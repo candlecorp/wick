@@ -135,9 +135,7 @@ impl Asset for LocationReference {
   fn fetch(
     &self,
     _options: Self::Options,
-  ) -> std::pin::Pin<
-    Box<dyn futures::Future<Output = std::result::Result<Vec<u8>, asset_container::Error>> + Send + Sync>,
-  > {
+  ) -> std::pin::Pin<Box<dyn futures::Future<Output = std::result::Result<Vec<u8>, asset_container::Error>> + Send>> {
     let mut path = self
       .baseurl
       .lock()

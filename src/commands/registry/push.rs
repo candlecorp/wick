@@ -72,29 +72,20 @@ pub(crate) async fn handle(
 
   let mut lines = Vec::new();
 
-  let url = if !opts.tags.is_empty() {
-    for tag in &opts.tags {
-      let mut pack = package.clone();
-      let tagged_reference = pack.tagged_reference(tag).unwrap();
-      span.in_scope(|| info!(reference = &tagged_reference, "pushing tag"));
-      pack.push(&tagged_reference, &oci_opts).await?;
-      lines.push(format!("Pushed tag: {}", reference));
-    }
+  let response = package.push(&reference, opts.tags, &oci_opts).await?;
 
-    // there must be a better way than cloning the package here, feel free to fix it.
-    let url = package.clone().push(&reference, &oci_opts).await?;
+  span.in_scope(|| info!(url=%response.reference, "manifest pushed"));
+  for tag in &response.tags {
+    span.in_scope(|| info!(url=%tag, "tag pushed"));
+  }
 
-    span.in_scope(|| info!(%url, "artifact pushed"));
+  let json = json!({"manifest_url":&response.manifest_url, reference: &response.reference,"tags": &response.tags});
 
-    package.push(&reference, &oci_opts).await?;
-    url
-  } else {
-    package.push(&reference, &oci_opts).await?
-  };
-  let json = json!({"url":&url, "tags": opts.tags});
-
-  span.in_scope(|| info!(%url, "artifact pushed"));
-  lines.push(format!("Pushed artifact: {}", url));
+  lines.push(format!("Manifest URL: {}", response.manifest_url));
+  lines.push(format!("Pushed reference: {}", response.reference));
+  if !response.tags.is_empty() {
+    lines.push(format!("Pushed tags:\n{}", response.tags.join("\n")));
+  }
 
   Ok(StructuredOutput::new(lines.join("\n"), json))
 }
